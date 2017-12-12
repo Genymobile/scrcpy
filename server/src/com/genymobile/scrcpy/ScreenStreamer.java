@@ -13,7 +13,7 @@ public class ScreenStreamer {
 
     public ScreenStreamer(DesktopConnection connection) {
         this.connection = connection;
-        ScreenUtil.registerRotationWatcher(new IRotationWatcher.Stub() {
+        DeviceUtil.registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
                 reset();

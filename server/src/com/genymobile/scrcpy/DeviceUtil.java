@@ -1,12 +1,13 @@
 package com.genymobile.scrcpy;
 
+import android.os.Build;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.view.IRotationWatcher;
 
 import java.lang.reflect.Method;
 
-public class ScreenUtil {
+public class DeviceUtil {
 
     private static final ServiceManager serviceManager = new ServiceManager();
 
@@ -16,6 +17,10 @@ public class ScreenUtil {
 
     public static void registerRotationWatcher(IRotationWatcher rotationWatcher) {
         serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher);
+    }
+
+    public static String getDeviceName() {
+        return Build.MODEL;
     }
 
     private static class ServiceManager {

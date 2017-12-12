@@ -18,10 +18,10 @@ ANDROID_JAR := $(ANDROID_HOME)/platforms/android-26/android.jar
 AIDL_SRC := android/view/IRotationWatcher.aidl
 SRC := com/genymobile/scrcpy/ScrCpyServer.java \
 	com/genymobile/scrcpy/DesktopConnection.java \
+	com/genymobile/scrcpy/DeviceUtil.java \
 	com/genymobile/scrcpy/ScreenInfo.java \
 	com/genymobile/scrcpy/ScreenStreamer.java \
 	com/genymobile/scrcpy/ScreenStreamerSession.java \
-	com/genymobile/scrcpy/ScreenUtil.java \
 
 JAR := scrcpy-server.jar
 MAIN := com.genymobile.scrcpy.ScrCpyServer

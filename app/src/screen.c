@@ -14,6 +14,7 @@
 #include "lockutil.h"
 #include "netutil.h"
 
+#define DEVICE_NAME_FIELD_LENGTH 64
 #define SOCKET_NAME "scrcpy"
 #define DISPLAY_MARGINS 96
 #define MIN(X,Y) (X) < (Y) ? (X) : (Y)
@@ -58,13 +59,18 @@ static void stop_server(process_t server) {
     }
 }
 
-SDL_bool read_initial_device_size(TCPsocket socket, struct size *size) {
-    unsigned char buf[4];
+// name must be at least DEVICE_NAME_FIELD_LENGTH bytes
+SDL_bool read_initial_device_info(TCPsocket socket, char *device_name, struct size *size) {
+    unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     if (SDLNet_TCP_Recv(socket, buf, sizeof(buf)) <= 0) {
         return SDL_FALSE;
     }
-    size->width = (buf[0] << 8) | buf[1];
-    size->height = (buf[2] << 8) | buf[3];
+    buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0'; // in case the client sends garbage
+    // scrcpy is safe here, since name contains at least DEVICE_NAME_FIELD_LENGTH bytes
+    // and strlen(buf) < DEVICE_NAME_FIELD_LENGTH
+    strcpy(device_name, (char *) buf);
+    size->width = (buf[DEVICE_NAME_FIELD_LENGTH] << 8) | buf[DEVICE_NAME_FIELD_LENGTH + 1];
+    size->height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8) | buf[DEVICE_NAME_FIELD_LENGTH + 3];
     return SDL_TRUE;
 }
 
@@ -252,11 +258,12 @@ int show_screen(const char *serial, Uint16 local_port) {
     }
 
     struct size frame_size;
+    char device_name[DEVICE_NAME_FIELD_LENGTH];
 
     // screenrecord does not send frames when the screen content does not change
     // therefore, we transmit the screen size before the video stream, to be able
     // to init the window immediately
-    if (!read_initial_device_size(device_socket, &frame_size)) {
+    if (!read_initial_device_info(device_socket, device_name, &frame_size)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not retrieve initial screen size");
         ret = -1;
         SDLNet_TCP_Close(device_socket);
@@ -297,7 +304,7 @@ int show_screen(const char *serial, Uint16 local_port) {
     }
 
     struct size window_size = get_initial_optimal_size(frame_size);
-    SDL_Window *window = SDL_CreateWindow("scrcpy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+    SDL_Window *window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                           window_size.width, window_size.height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
         SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not create window: %s", SDL_GetError());

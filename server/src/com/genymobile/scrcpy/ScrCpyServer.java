@@ -5,10 +5,11 @@ import java.io.IOException;
 public class ScrCpyServer {
 
     public static void scrcpy() throws IOException {
-        ScreenInfo initialScreenInfo = ScreenUtil.getScreenInfo();
+        String deviceName = DeviceUtil.getDeviceName();
+        ScreenInfo initialScreenInfo = DeviceUtil.getScreenInfo();
         int width = initialScreenInfo.getLogicalWidth();
         int height = initialScreenInfo.getLogicalHeight();
-        try (DesktopConnection connection = DesktopConnection.open(width, height)) {
+        try (DesktopConnection connection = DesktopConnection.open(deviceName, width, height)) {
             try {
                 new ScreenStreamer(connection).streamScreen();
             } catch (IOException e) {
