@@ -22,6 +22,9 @@ SRC := com/genymobile/scrcpy/ScrCpyServer.java \
 	com/genymobile/scrcpy/ScreenInfo.java \
 	com/genymobile/scrcpy/ScreenStreamer.java \
 	com/genymobile/scrcpy/ScreenStreamerSession.java \
+	com/genymobile/scrcpy/wrappers/DisplayManager.java \
+	com/genymobile/scrcpy/wrappers/ServiceManager.java \
+	com/genymobile/scrcpy/wrappers/WindowManager.java \
 
 JAR := scrcpy-server.jar
 MAIN := com.genymobile.scrcpy.ScrCpyServer
