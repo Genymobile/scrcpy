@@ -12,9 +12,9 @@ src = [
 ]
 
 if host_machine.system() == 'windows'
-    src += [ 'src/win/command.c' ]
+    src += [ 'src/sys/win/command.c' ]
 else
-    src += [ 'src/unix/command.c' ]
+    src += [ 'src/sys/unix/command.c' ]
 endif
 
 dependencies = [
