@@ -1,4 +1,4 @@
-.PHONY: default release clean build-app build-server dist
+.PHONY: default release clean build-app build-server dist dist-zip sums test
 
 BUILD_DIR := build
 DIST := dist
@@ -36,3 +36,7 @@ dist-zip: dist
 sums:
 	cd "$(DIST)"; \
 		sha256sum *.zip > SHA256SUM.txt
+
+test:
+	+$(MAKE) -C server test
+	ninja -C "$(BUILD_DIR)" test

@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import android.os.Build;
 import android.view.IRotationWatcher;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public class DeviceUtil {
@@ -19,5 +20,9 @@ public class DeviceUtil {
 
     public static String getDeviceName() {
         return Build.MODEL;
+    }
+
+    public static InputManager getInputManager() {
+        return serviceManager.getInputManager();
     }
 }

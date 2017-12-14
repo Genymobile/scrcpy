@@ -33,4 +33,8 @@ public class ServiceManager {
     public DisplayManager getDisplayManager() {
         return new DisplayManager(getService("display", "android.hardware.display.IDisplayManager"));
     }
+
+    public InputManager getInputManager() {
+        return new InputManager(getService("input", "android.hardware.input.IInputManager"));
+    }
 }

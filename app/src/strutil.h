@@ -11,4 +11,4 @@ size_t xstrncpy(char *dest, const char *src, size_t n);
 // join tokens by sep into dst
 // returns the number of chars actually written (max n-1) if no trucation
 // occurred, or n if truncated
-size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t);
+size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);

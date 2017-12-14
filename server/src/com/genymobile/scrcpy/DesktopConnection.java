@@ -5,6 +5,8 @@ import android.net.LocalSocketAddress;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public class DesktopConnection implements Closeable {
@@ -14,9 +16,15 @@ public class DesktopConnection implements Closeable {
     private static final String SOCKET_NAME = "scrcpy";
 
     private final LocalSocket socket;
+    private final InputStream inputStream;
+    private final OutputStream outputStream;
+
+    private final ControlEventReader reader = new ControlEventReader();
 
     private DesktopConnection(LocalSocket socket) throws IOException {
         this.socket = socket;
+        inputStream = socket.getInputStream();
+        outputStream = socket.getOutputStream();
     }
 
     private static LocalSocket connect(String abstractName) throws IOException {
@@ -27,8 +35,9 @@ public class DesktopConnection implements Closeable {
 
     public static DesktopConnection open(String deviceName, int width, int height) throws IOException {
         LocalSocket socket = connect(SOCKET_NAME);
-        send(socket, deviceName, width, height);
-        return new DesktopConnection(socket);
+        DesktopConnection connection = new DesktopConnection(socket);
+        connection.send(deviceName, width, height);
+        return connection;
     }
 
     public void close() throws IOException {
@@ -37,7 +46,7 @@ public class DesktopConnection implements Closeable {
         socket.close();
     }
 
-    private static void send(LocalSocket socket, String deviceName, int width, int height) throws IOException {
+    private void send(String deviceName, int width, int height) throws IOException {
         assert width < 0x10000 : "width may not be stored on 16 bits";
         assert height < 0x10000 : "height may not be stored on 16 bits";
         byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
@@ -51,11 +60,20 @@ public class DesktopConnection implements Closeable {
         buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
         buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
         buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
-        socket.getOutputStream().write(buffer, 0, buffer.length);
+        outputStream.write(buffer, 0, buffer.length);
     }
 
     public void sendVideoStream(byte[] videoStreamBuffer, int len) throws IOException {
-        socket.getOutputStream().write(videoStreamBuffer, 0, len);
+        outputStream.write(videoStreamBuffer, 0, len);
+    }
+
+    public ControlEvent receiveControlEvent() throws IOException {
+        ControlEvent event = reader.next();
+        while (event == null) {
+            reader.readFrom(inputStream);
+            event = reader.next();
+        }
+        return event;
     }
 }
 
