@@ -5,6 +5,7 @@ src = [
     'src/command.c',
     'src/decoder.c',
     'src/frames.c',
+    'src/lockutil.c',
     'src/netutil.c',
     'src/screen.c',
     'src/strutil.c',
