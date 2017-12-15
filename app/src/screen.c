@@ -353,7 +353,7 @@ SDL_bool show_screen(const char *serial, Uint16 local_port) {
             AVFrame *frame = frames.rendering_frame;
             frames.rendering_frame_consumed = SDL_TRUE;
             if (!decoder.skip_frames) {
-                SDL_CondSignal(frames.rendering_frame_consumed_cond);
+                cond_signal(frames.rendering_frame_consumed_cond);
             }
 
             struct size current_frame_size = {frame->width, frame->height};

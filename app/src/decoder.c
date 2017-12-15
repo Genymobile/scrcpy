@@ -24,7 +24,7 @@ static void push_frame(struct decoder *decoder) {
     mutex_lock(frames->mutex);
     if (!decoder->skip_frames) {
         while (!frames->rendering_frame_consumed) {
-            SDL_CondWait(frames->rendering_frame_consumed_cond, frames->mutex);
+            cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
         }
     } else if (!frames->rendering_frame_consumed) {
         SDL_LogInfo(SDL_LOG_CATEGORY_RENDER, "Skip frame");
