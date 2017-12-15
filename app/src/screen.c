@@ -28,7 +28,7 @@ struct size {
     Uint16 height;
 };
 
-static long timestamp_ms() {
+static long timestamp_ms(void) {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
