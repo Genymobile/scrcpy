@@ -213,8 +213,8 @@ static int wait_for_success(process_t proc, const char *name) {
     return 0;
 }
 
-int show_screen(const char *serial, Uint16 local_port) {
-    int ret = 0;
+SDL_bool show_screen(const char *serial, Uint16 local_port) {
+    SDL_bool ret = 0;
 
     const char *server_jar_path = getenv("SCRCPY_SERVER_JAR");
     if (!server_jar_path) {
@@ -222,12 +222,12 @@ int show_screen(const char *serial, Uint16 local_port) {
     }
     process_t push_proc = adb_push(serial, server_jar_path, "/data/local/tmp/");
     if (wait_for_success(push_proc, "adb push")) {
-        return -1;
+        return SDL_FALSE;
     }
 
     process_t reverse_tunnel_proc = adb_reverse(serial, SOCKET_NAME, local_port);
     if (wait_for_success(reverse_tunnel_proc, "adb reverse")) {
-        return -1;
+        return SDL_FALSE;
     }
 
     TCPsocket server_socket = listen_on_port(local_port);
@@ -239,7 +239,7 @@ int show_screen(const char *serial, Uint16 local_port) {
     // server will connect to our socket
     process_t server = start_server(serial);
     if (server == PROCESS_NONE) {
-        ret = -1;
+        ret = SDL_FALSE;
         SDLNet_TCP_Close(server_socket);
         goto screen_finally_adb_reverse_remove;
     }
@@ -252,7 +252,7 @@ int show_screen(const char *serial, Uint16 local_port) {
     SDLNet_TCP_Close(server_socket);
     if (!device_socket) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not accept video socket: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         stop_server(server);
         goto screen_finally_adb_reverse_remove;
     }
@@ -265,14 +265,14 @@ int show_screen(const char *serial, Uint16 local_port) {
     // to init the window immediately
     if (!read_initial_device_info(device_socket, device_name, &frame_size)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not retrieve initial screen size");
-        ret = -1;
+        ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
         goto screen_finally_adb_reverse_remove;
     }
 
-    if (frames_init(&frames)) {
-        ret = -1;
+    if (!frames_init(&frames)) {
+        ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
         goto screen_finally_adb_reverse_remove;
@@ -284,8 +284,8 @@ int show_screen(const char *serial, Uint16 local_port) {
 
     // now we consumed the width and height values, the socket receives the video stream
     // start the decoder
-    if (decoder_start(&decoder)) {
-        ret = -1;
+    if (!decoder_start(&decoder)) {
+        ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
         goto screen_finally_destroy_frames;
@@ -293,7 +293,7 @@ int show_screen(const char *serial, Uint16 local_port) {
 
     if (SDL_Init(SDL_INIT_VIDEO)) {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not initialize SDL: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         goto screen_finally_stop_decoder;
     }
     atexit(SDL_Quit);
@@ -308,20 +308,20 @@ int show_screen(const char *serial, Uint16 local_port) {
                                           window_size.width, window_size.height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (!window) {
         SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not create window: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         goto screen_finally_stop_decoder;
     }
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!renderer) {
         SDL_LogCritical(SDL_LOG_CATEGORY_RENDER, "Could not create renderer: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         goto screen_finally_destroy_window;
     }
 
     if (SDL_RenderSetLogicalSize(renderer, frame_size.width, frame_size.height)) {
         SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Could not set renderer logical size: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         goto screen_finally_destroy_renderer;
     }
 
@@ -329,7 +329,7 @@ int show_screen(const char *serial, Uint16 local_port) {
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, frame_size.width, frame_size.height);
     if (!texture) {
         SDL_LogCritical(SDL_LOG_CATEGORY_RENDER, "Could not create texture: %s", SDL_GetError());
-        ret = -1;
+        ret = SDL_FALSE;
         goto screen_finally_destroy_renderer;
     }
 

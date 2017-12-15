@@ -16,7 +16,7 @@ struct decoder {
     SDL_bool skip_frames;
 };
 
-int decoder_start(struct decoder *decoder);
+SDL_bool decoder_start(struct decoder *decoder);
 void decoder_join(struct decoder *decoder);
 
 #endif

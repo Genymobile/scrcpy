@@ -56,8 +56,8 @@ int main(int argc, char *argv[]) {
         .port = DEFAULT_LOCAL_PORT,
     };
     if (parse_args(&args, argc, argv)) {
-        return -1;
+        return 1;
     }
 
-    return show_screen(args.serial, args.port);
+    return show_screen(args.serial, args.port) ? 0 : 1;
 }

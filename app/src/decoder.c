@@ -148,16 +148,16 @@ run_finally_free_codec_ctx:
     return ret;
 }
 
-int decoder_start(struct decoder *decoder) {
+SDL_bool decoder_start(struct decoder *decoder) {
     SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Starting decoder thread");
 
     decoder->thread = SDL_CreateThread(run_decoder, "video_decoder", decoder);
     if (!decoder->thread) {
         SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not start decoder thread");
-        return -1;
+        return SDL_FALSE;
     }
 
-    return 0;
+    return SDL_TRUE;
 }
 
 void decoder_join(struct decoder *decoder) {

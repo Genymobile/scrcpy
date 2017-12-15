@@ -16,7 +16,7 @@ struct frames {
     SDL_bool rendering_frame_consumed;
 };
 
-int frames_init(struct frames *frames);
+SDL_bool frames_init(struct frames *frames);
 void frames_destroy(struct frames *frames);
 
 void frames_swap(struct frames *frames);

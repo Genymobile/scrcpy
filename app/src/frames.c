@@ -4,7 +4,7 @@
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
 
-int frames_init(struct frames *frames) {
+SDL_bool frames_init(struct frames *frames) {
     if (!(frames->decoding_frame = av_frame_alloc())) {
         goto error_0;
     }
@@ -23,7 +23,7 @@ int frames_init(struct frames *frames) {
 
     frames->rendering_frame_consumed = SDL_TRUE;
 
-    return 0;
+    return SDL_TRUE;
 
 error_3:
     SDL_DestroyMutex(frames->mutex);
@@ -32,7 +32,7 @@ error_2:
 error_1:
     av_frame_free(&frames->decoding_frame);
 error_0:
-    return -1;
+    return SDL_FALSE;
 }
 
 void frames_destroy(struct frames *frames) {
