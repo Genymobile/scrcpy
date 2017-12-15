@@ -349,7 +349,7 @@ SDL_bool show_screen(const char *serial, Uint16 local_port) {
         case SDL_QUIT:
             goto screen_quit;
         case EVENT_NEW_FRAME:
-            lock_mutex(frames.mutex);
+            mutex_lock(frames.mutex);
             AVFrame *frame = frames.rendering_frame;
             frames.rendering_frame_consumed = SDL_TRUE;
             if (!decoder.skip_frames) {
@@ -364,7 +364,7 @@ SDL_bool show_screen(const char *serial, Uint16 local_port) {
             frame_size = current_frame_size;
 
             update_texture(frame, texture);
-            unlock_mutex(frames.mutex);
+            mutex_unlock(frames.mutex);
 
             texture_empty = SDL_FALSE;
 

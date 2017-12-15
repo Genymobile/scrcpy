@@ -21,7 +21,7 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
 // set the decoded frame as ready for rendering, and notify
 static void push_frame(struct decoder *decoder) {
     struct frames *frames = decoder->frames;
-    lock_mutex(frames->mutex);
+    mutex_lock(frames->mutex);
     if (!decoder->skip_frames) {
         while (!frames->rendering_frame_consumed) {
             SDL_CondWait(frames->rendering_frame_consumed_cond, frames->mutex);
@@ -32,7 +32,7 @@ static void push_frame(struct decoder *decoder) {
 
     frames_swap(frames);
     frames->rendering_frame_consumed = SDL_FALSE;
-    unlock_mutex(frames->mutex);
+    mutex_unlock(frames->mutex);
 
     static SDL_Event new_frame_event = {
         .type = EVENT_NEW_FRAME,
