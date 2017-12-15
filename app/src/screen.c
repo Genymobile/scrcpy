@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <libavformat/avformat.h>
 #include <sys/time.h>
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_net.h>
 
 #include "command.h"

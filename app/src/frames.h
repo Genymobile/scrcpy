@@ -1,7 +1,8 @@
 #ifndef FRAMES_H
 #define FRAMES_H
 
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_stdinc.h>
 
 // forward declarations
 typedef struct AVFrame AVFrame;
