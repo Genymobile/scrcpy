@@ -5,8 +5,6 @@
 
 // forward declarations
 typedef struct AVFrame AVFrame;
-typedef struct SDL_mutex SDL_mutex;
-typedef struct SDL_cond SDL_cond;
 
 struct frames {
     AVFrame *decoding_frame;
