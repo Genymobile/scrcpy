@@ -47,9 +47,7 @@ int parse_args(struct args *args, int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-    av_register_all();
-    avformat_network_init();
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
+    int res;
 
     struct args args = {
         .serial = NULL,
@@ -59,5 +57,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    return show_screen(args.serial, args.port) ? 0 : 1;
+    av_register_all();
+
+    if (avformat_network_init()) {
+        return 1;
+    }
+
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
+
+    res = show_screen(args.serial, args.port) ? 0 : 1;
+
+    avformat_network_deinit(); // ignore failure
+
+    return res;
 }
