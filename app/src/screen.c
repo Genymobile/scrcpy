@@ -283,7 +283,7 @@ SDL_bool show_screen(const char *serial, Uint16 local_port) {
     decoder.video_socket = device_socket;
     decoder.skip_frames = SDL_TRUE;
 
-    // now we consumed the width and height values, the socket receives the video stream
+    // now we consumed the header values, the socket receives the video stream
     // start the decoder
     if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
