@@ -36,8 +36,8 @@ error_0:
 }
 
 void frames_destroy(struct frames *frames) {
-    SDL_DestroyMutex(frames->mutex);
     SDL_DestroyCond(frames->rendering_frame_consumed_cond);
+    SDL_DestroyMutex(frames->mutex);
     av_frame_free(&frames->rendering_frame);
     av_frame_free(&frames->decoding_frame);
 }
