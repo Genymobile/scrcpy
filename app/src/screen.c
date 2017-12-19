@@ -297,7 +297,9 @@ SDL_bool show_screen(const char *serial, Uint16 local_port) {
         ret = SDL_FALSE;
         goto screen_finally_stop_decoder;
     }
-    atexit(SDL_Quit);
+    // FIXME it may crash in SDL_Quit in i965_dri.so
+    // As a workaround, do not call SDL_Quit() (we are exiting anyway).
+    // atexit(SDL_Quit);
 
     // Bilinear resizing
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
