@@ -14,7 +14,7 @@ pid_t cmd_execute(const char *path, const char *const argv[]) {
     if (pid == 0) {
         execvp(path, (char *const *)argv);
         perror("exec");
-        exit(1);
+        _exit(1);
     }
     return pid;
 }
