@@ -4,6 +4,8 @@ import java.io.IOException;
 
 public class ScrCpyServer {
 
+    private static final String TAG = "scrcpy";
+
     public static void scrcpy() throws IOException {
         String deviceName = DeviceUtil.getDeviceName();
         ScreenInfo initialScreenInfo = DeviceUtil.getScreenInfo();
@@ -13,8 +15,7 @@ public class ScrCpyServer {
             try {
                 new ScreenStreamer(connection).streamScreen();
             } catch (IOException e) {
-                System.err.println("Screen streaming interrupted: " + e.getMessage());
-                System.err.flush();
+                Ln.e("Screen streaming interrupted", e);
             }
         }
     }
