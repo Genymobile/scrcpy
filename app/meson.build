@@ -35,6 +35,7 @@ executable('scrcpy', src, dependencies: dependencies)
 
 tests = [
     ['test_control_event_queue', ['tests/test_control_event_queue.c', 'src/controlevent.c']],
+    ['test_strutil', ['tests/test_strutil.c', 'src/strutil.c']],
 ]
 
 src_dir = include_directories('src')
