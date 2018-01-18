@@ -82,6 +82,7 @@ from the `PATH`:
 
     export PATH="$JAVA_HOME/bin:$PATH"
 
+
 ### Generate
 
 Make sure your `ANDROID_HOME` variable is set to your Android SDK directory:
@@ -95,9 +96,20 @@ From the project root directory, execute:
 This will generate the application in `dist/scrcpy/`.
 
 
+### Test
+
+To execute unit tests:
+
+    make test
+
+The server-side tests require JUnit 4:
+
+    sudo apt install junit4
+
+
 ## Run
 
-Plug a device, and execute:
+Plug a device, and from `dist/scrcpy/`, execute:
 
     ./scrcpy
 
