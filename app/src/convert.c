@@ -117,7 +117,7 @@ static enum android_motionevent_buttons convert_mouse_buttons(Uint32 state) {
     return buttons;
 }
 
-SDL_bool input_key_from_sdl_to_android(SDL_KeyboardEvent *from, struct control_event *to) {
+SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from, struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->keycode_event.action)) {
@@ -133,7 +133,7 @@ SDL_bool input_key_from_sdl_to_android(SDL_KeyboardEvent *from, struct control_e
     return SDL_TRUE;
 }
 
-SDL_bool mouse_button_from_sdl_to_android(SDL_MouseButtonEvent *from, struct control_event *to) {
+SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from, struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
 
     if (!convert_mouse_action(from->type, &to->mouse_event.action)) {
@@ -147,7 +147,7 @@ SDL_bool mouse_button_from_sdl_to_android(SDL_MouseButtonEvent *from, struct con
     return SDL_TRUE;
 }
 
-SDL_bool mouse_motion_from_sdl_to_android(SDL_MouseMotionEvent *from, struct control_event *to) {
+SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from, struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
     to->mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->mouse_event.buttons = convert_mouse_buttons(from->state);
@@ -157,7 +157,7 @@ SDL_bool mouse_motion_from_sdl_to_android(SDL_MouseMotionEvent *from, struct con
     return SDL_TRUE;
 }
 
-SDL_bool mouse_wheel_from_sdl_to_android(struct complete_mouse_wheel_event *from, struct control_event *to) {
+SDL_bool mouse_wheel_from_sdl_to_android(const struct complete_mouse_wheel_event *from, struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_SCROLL;
 
     to->scroll_event.x = from->x;

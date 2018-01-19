@@ -17,7 +17,7 @@ static inline void write32(Uint8 *buf, Uint32 value) {
     buf[3] = value;
 }
 
-int control_event_serialize(struct control_event *event, unsigned char *buf) {
+int control_event_serialize(const struct control_event *event, unsigned char *buf) {
     buf[0] = event->type;
     switch (event->type) {
     case CONTROL_EVENT_TYPE_KEYCODE:
@@ -53,11 +53,11 @@ int control_event_serialize(struct control_event *event, unsigned char *buf) {
     }
 }
 
-SDL_bool control_event_queue_is_empty(struct control_event_queue *queue) {
+SDL_bool control_event_queue_is_empty(const struct control_event_queue *queue) {
     return queue->head == queue->tail;
 }
 
-SDL_bool control_event_queue_is_full(struct control_event_queue *queue) {
+SDL_bool control_event_queue_is_full(const struct control_event_queue *queue) {
     return (queue->head + 1) % CONTROL_EVENT_QUEUE_SIZE == queue->tail;
 }
 
@@ -72,7 +72,7 @@ void control_event_queue_destroy(struct control_event_queue *queue) {
     // nothing to do in the current implementation
 }
 
-SDL_bool control_event_queue_push(struct control_event_queue *queue, struct control_event *event) {
+SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event) {
     if (control_event_queue_is_full(queue)) {
         return SDL_FALSE;
     }

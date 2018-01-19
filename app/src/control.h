@@ -24,6 +24,6 @@ void controller_stop(struct controller *controller);
 void controller_join(struct controller *controller);
 
 // expose simple API to hide control_event_queue
-SDL_bool controller_push_event(struct controller *controller, struct control_event *event);
+SDL_bool controller_push_event(struct controller *controller, const struct control_event *event);
 
 #endif

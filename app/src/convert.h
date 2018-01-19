@@ -12,9 +12,9 @@ struct complete_mouse_wheel_event {
     Sint32 y;
 };
 
-SDL_bool input_key_from_sdl_to_android(SDL_KeyboardEvent *from, struct control_event *to);
-SDL_bool mouse_button_from_sdl_to_android(SDL_MouseButtonEvent *from, struct control_event *to);
-SDL_bool mouse_motion_from_sdl_to_android(SDL_MouseMotionEvent *from, struct control_event *to);
-SDL_bool mouse_wheel_from_sdl_to_android(struct complete_mouse_wheel_event *from, struct control_event *to);
+SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from, struct control_event *to);
+SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from, struct control_event *to);
+SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from, struct control_event *to);
+SDL_bool mouse_wheel_from_sdl_to_android(const struct complete_mouse_wheel_event *from, struct control_event *to);
 
 #endif

@@ -28,7 +28,7 @@ void controller_destroy(struct controller *controller) {
     control_event_queue_destroy(&controller->queue);
 }
 
-SDL_bool controller_push_event(struct controller *controller, struct control_event *event) {
+SDL_bool controller_push_event(struct controller *controller, const struct control_event *event) {
     SDL_bool res;
     mutex_lock(controller->mutex);
     SDL_bool was_empty = control_event_queue_is_empty(&controller->queue);
@@ -40,7 +40,7 @@ SDL_bool controller_push_event(struct controller *controller, struct control_eve
     return res;
 }
 
-static SDL_bool process_event(struct controller *controller, struct control_event *event) {
+static SDL_bool process_event(struct controller *controller, const struct control_event *event) {
     unsigned char serialized_event[SERIALIZED_EVENT_MAX_SIZE];
     int length = control_event_serialize(event, serialized_event);
     if (!length) {

@@ -51,16 +51,16 @@ struct control_event_queue {
 };
 
 // buf size must be at least SERIALIZED_EVENT_MAX_SIZE
-int control_event_serialize(struct control_event *event, unsigned char *buf);
+int control_event_serialize(const struct control_event *event, unsigned char *buf);
 
 SDL_bool control_event_queue_init(struct control_event_queue *queue);
 void control_event_queue_destroy(struct control_event_queue *queue);
 
-SDL_bool control_event_queue_is_empty(struct control_event_queue *queue);
-SDL_bool control_event_queue_is_full(struct control_event_queue *queue);
+SDL_bool control_event_queue_is_empty(const struct control_event_queue *queue);
+SDL_bool control_event_queue_is_full(const struct control_event_queue *queue);
 
 // event is copied, the queue does not use the event after the function returns
-SDL_bool control_event_queue_push(struct control_event_queue *queue, struct control_event *event);
+SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event);
 SDL_bool control_event_queue_take(struct control_event_queue *queue, struct control_event *event);
 
 #endif

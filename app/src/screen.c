@@ -203,8 +203,7 @@ static inline SDL_bool prepare_for_frame(SDL_Window *window, SDL_Renderer *rende
     return SDL_TRUE;
 }
 
-
-static void update_texture(AVFrame *frame, SDL_Texture *texture) {
+static void update_texture(const AVFrame *frame, SDL_Texture *texture) {
     SDL_UpdateYUVTexture(texture, NULL,
             frame->data[0], frame->linesize[0],
             frame->data[1], frame->linesize[1],
@@ -258,7 +257,7 @@ static SDL_bool handle_new_frame(void) {
     return SDL_TRUE;
 }
 
-static void handle_text_input(SDL_TextInputEvent *event) {
+static void handle_text_input(const SDL_TextInputEvent *event) {
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
@@ -268,7 +267,7 @@ static void handle_text_input(SDL_TextInputEvent *event) {
     }
 }
 
-static void handle_key(SDL_KeyboardEvent *event) {
+static void handle_key(const SDL_KeyboardEvent *event) {
     SDL_Keycode keycode = event->keysym.sym;
     SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
@@ -305,7 +304,7 @@ static void handle_key(SDL_KeyboardEvent *event) {
     }
 }
 
-static void handle_mouse_motion(SDL_MouseMotionEvent *event) {
+static void handle_mouse_motion(const SDL_MouseMotionEvent *event) {
     struct control_event control_event;
     if (mouse_motion_from_sdl_to_android(event, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
@@ -314,7 +313,7 @@ static void handle_mouse_motion(SDL_MouseMotionEvent *event) {
     }
 }
 
-static void handle_mouse_button(SDL_MouseButtonEvent *event) {
+static void handle_mouse_button(const SDL_MouseButtonEvent *event) {
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
@@ -323,7 +322,7 @@ static void handle_mouse_button(SDL_MouseButtonEvent *event) {
     }
 }
 
-static void handle_mouse_wheel(struct complete_mouse_wheel_event *event) {
+static void handle_mouse_wheel(const struct complete_mouse_wheel_event *event) {
     struct control_event control_event;
     if (mouse_wheel_from_sdl_to_android(event, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
