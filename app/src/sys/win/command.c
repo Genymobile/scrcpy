@@ -1,7 +1,7 @@
 #include "../../command.h"
 
-#include <stdio.h>
-#include "../strutil.h"
+#include <SDL2/SDL_log.h>
+#include "../../strutil.h"
 
 HANDLE cmd_execute(const char *path, const char *const argv[]) {
     STARTUPINFO si;
