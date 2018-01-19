@@ -72,35 +72,10 @@ static enum android_metastate convert_meta_state(SDL_Keymod mod) {
 
 static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
     switch (from) {
-        MAP(SDLK_LCTRL,        AKEYCODE_CTRL_LEFT);
-        MAP(SDLK_LSHIFT,       AKEYCODE_SHIFT_LEFT);
-        MAP(SDLK_LALT,         AKEYCODE_ALT_LEFT);
-        MAP(SDLK_LGUI,         AKEYCODE_META_LEFT);
-        MAP(SDLK_RCTRL,        AKEYCODE_CTRL_RIGHT);
-        MAP(SDLK_RSHIFT,       AKEYCODE_SHIFT_RIGHT);
-        MAP(SDLK_RALT,         AKEYCODE_ALT_RIGHT);
-        MAP(SDLK_RGUI,         AKEYCODE_META_RIGHT);
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
         MAP(SDLK_ESCAPE,       AKEYCODE_ESCAPE);
         MAP(SDLK_BACKSPACE,    AKEYCODE_DEL);
         MAP(SDLK_TAB,          AKEYCODE_TAB);
-        MAP(SDLK_SPACE,        AKEYCODE_SPACE);
-        MAP(SDLK_F1,           AKEYCODE_F1);
-        MAP(SDLK_F2,           AKEYCODE_F2);
-        MAP(SDLK_F3,           AKEYCODE_F3);
-        MAP(SDLK_F4,           AKEYCODE_F4);
-        MAP(SDLK_F5,           AKEYCODE_F5);
-        MAP(SDLK_F6,           AKEYCODE_F6);
-        MAP(SDLK_F7,           AKEYCODE_F7);
-        MAP(SDLK_F8,           AKEYCODE_F8);
-        MAP(SDLK_F9,           AKEYCODE_F9);
-        MAP(SDLK_F10,          AKEYCODE_F10);
-        MAP(SDLK_F11,          AKEYCODE_F11);
-        MAP(SDLK_F12,          AKEYCODE_F12);
-        MAP(SDLK_PRINTSCREEN,  AKEYCODE_SYSRQ);
-        MAP(SDLK_SCROLLLOCK,   AKEYCODE_SCROLL_LOCK);
-        MAP(SDLK_PAUSE,        AKEYCODE_BREAK);
-        MAP(SDLK_INSERT,       AKEYCODE_INSERT);
         MAP(SDLK_HOME,         AKEYCODE_HOME);
         MAP(SDLK_PAGEUP,       AKEYCODE_PAGE_UP);
         MAP(SDLK_DELETE,       AKEYCODE_FORWARD_DEL);
@@ -110,23 +85,6 @@ static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
         MAP(SDLK_LEFT,         AKEYCODE_DPAD_LEFT);
         MAP(SDLK_DOWN,         AKEYCODE_DPAD_DOWN);
         MAP(SDLK_UP,           AKEYCODE_DPAD_UP);
-        MAP(SDLK_NUMLOCKCLEAR, AKEYCODE_NUM_LOCK);
-        MAP(SDLK_KP_DIVIDE,    AKEYCODE_NUMPAD_DIVIDE);
-        MAP(SDLK_KP_MULTIPLY,  AKEYCODE_NUMPAD_MULTIPLY);
-        MAP(SDLK_KP_MINUS,     AKEYCODE_NUMPAD_SUBTRACT);
-        MAP(SDLK_KP_PLUS,      AKEYCODE_NUMPAD_ADD);
-        MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
-        MAP(SDLK_KP_1,         AKEYCODE_NUMPAD_1);
-        MAP(SDLK_KP_2,         AKEYCODE_NUMPAD_2);
-        MAP(SDLK_KP_3,         AKEYCODE_NUMPAD_3);
-        MAP(SDLK_KP_4,         AKEYCODE_NUMPAD_4);
-        MAP(SDLK_KP_5,         AKEYCODE_NUMPAD_5);
-        MAP(SDLK_KP_6,         AKEYCODE_NUMPAD_6);
-        MAP(SDLK_KP_7,         AKEYCODE_NUMPAD_7);
-        MAP(SDLK_KP_8,         AKEYCODE_NUMPAD_8);
-        MAP(SDLK_KP_9,         AKEYCODE_NUMPAD_9);
-        MAP(SDLK_KP_0,         AKEYCODE_NUMPAD_0);
-        MAP(SDLK_KP_PERIOD,    AKEYCODE_NUMPAD_DOT);
         FAIL;
     }
 }
