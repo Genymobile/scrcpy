@@ -16,6 +16,7 @@
 #include "frames.h"
 #include "lockutil.h"
 #include "netutil.h"
+#include "server.h"
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 #define SOCKET_NAME "scrcpy"
@@ -63,23 +64,6 @@ static TCPsocket listen_on_port(Uint16 port) {
         .port = SDL_SwapBE16(port),
     };
     return SDLNet_TCP_Open(&addr);
-}
-
-static process_t start_server(const char *serial) {
-    const char *const cmd[] = {
-        "shell",
-        "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
-        "app_process",
-        "/system/bin",
-        "com.genymobile.scrcpy.ScrCpyServer"
-    };
-    return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
-}
-
-static void stop_server(process_t server) {
-    if (!cmd_terminate(server)) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not kill: %s", strerror(errno));
-    }
 }
 
 // name must be at least DEVICE_NAME_FIELD_LENGTH bytes

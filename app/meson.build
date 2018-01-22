@@ -11,6 +11,7 @@ src = [
     'src/lockutil.c',
     'src/netutil.c',
     'src/screen.c',
+    'src/server.c',
     'src/strutil.c',
 ]
 
