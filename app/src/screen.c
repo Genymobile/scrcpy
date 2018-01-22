@@ -9,6 +9,7 @@
 #include <SDL2/SDL_net.h>
 
 #include "command.h"
+#include "common.h"
 #include "control.h"
 #include "convert.h"
 #include "decoder.h"
@@ -20,13 +21,6 @@
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 #define DISPLAY_MARGINS 96
-#define MIN(X,Y) (X) < (Y) ? (X) : (Y)
-#define MAX(X,Y) (X) > (Y) ? (X) : (Y)
-
-struct size {
-    Uint16 width;
-    Uint16 height;
-};
 
 static struct frames frames;
 static struct decoder decoder;
@@ -110,6 +104,17 @@ static inline struct size get_window_size(SDL_Window *window) {
     return size;
 }
 
+static inline struct position get_mouse_position() {
+    int x;
+    int y;
+    SDL_GetMouseState(&x, &y);
+    SDL_assert_release(x >= 0 && x < 0x10000 && y >= 0 && y < 0x10000);
+    return (struct position) {
+        .x = (Uint16) x,
+        .y = (Uint16) y,
+    };
+}
+
 // return the optimal size of the window, with the following constraints:
 //  - it attempts to keep at least one dimension of the current_size (i.e. it crops the black borders)
 //  - it keeps the aspect ratio
@@ -140,7 +145,7 @@ static struct size get_optimal_size(struct size current_size, struct size frame_
     }
 
     // w and h must fit into 16 bits
-    SDL_assert_release(!(w & ~0xffff) && !(h & ~0xffff));
+    SDL_assert_release(w < 0x10000 && h < 0x10000);
     return (struct size) {w, h};
 }
 
@@ -287,27 +292,27 @@ static void handle_key(const SDL_KeyboardEvent *event) {
     }
 }
 
-static void handle_mouse_motion(const SDL_MouseMotionEvent *event) {
+static void handle_mouse_motion(const SDL_MouseMotionEvent *event, struct size screen_size) {
     struct control_event control_event;
-    if (mouse_motion_from_sdl_to_android(event, &control_event)) {
+    if (mouse_motion_from_sdl_to_android(event, screen_size, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse motion event");
         }
     }
 }
 
-static void handle_mouse_button(const SDL_MouseButtonEvent *event) {
+static void handle_mouse_button(const SDL_MouseButtonEvent *event, struct size screen_size) {
     struct control_event control_event;
-    if (mouse_button_from_sdl_to_android(event, &control_event)) {
+    if (mouse_button_from_sdl_to_android(event, screen_size, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse button event");
         }
     }
 }
 
-static void handle_mouse_wheel(const struct complete_mouse_wheel_event *event) {
+static void handle_mouse_wheel(const SDL_MouseWheelEvent *event, struct point point) {
     struct control_event control_event;
-    if (mouse_wheel_from_sdl_to_android(event, &control_event)) {
+    if (mouse_wheel_from_sdl_to_android(event, point, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send wheel button event");
         }
@@ -346,23 +351,21 @@ void event_loop(void) {
             handle_key(&event.key);
             break;
         case SDL_MOUSEMOTION:
-            handle_mouse_motion(&event.motion);
+            handle_mouse_motion(&event.motion, frame_size);
             break;
         case SDL_MOUSEWHEEL: {
-            struct complete_mouse_wheel_event complete_event;
-            complete_event.mouse_wheel_event = &event.wheel;
-            int x;
-            int y;
-            SDL_GetMouseState(&x, &y);
-            complete_event.x = (Sint32) x;
-            complete_event.y = (Sint32) y;
-            handle_mouse_wheel(&complete_event);
+            struct point point = {
+                .screen_size = frame_size,
+                .position = get_mouse_position(),
+            };
+            handle_mouse_wheel(&event.wheel, point);
             break;
         }
         case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            handle_mouse_button(&event.button);
+        case SDL_MOUSEBUTTONUP: {
+            handle_mouse_button(&event.button, frame_size);
             break;
+        }
         }
     }
 }

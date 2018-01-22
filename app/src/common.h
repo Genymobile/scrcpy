@@ -1,0 +1,26 @@
+#ifndef COMMON_H
+#define COMMON_H
+
+#include <SDL2/SDL_stdinc.h>
+
+#define MIN(X,Y) (X) < (Y) ? (X) : (Y)
+#define MAX(X,Y) (X) > (Y) ? (X) : (Y)
+
+struct size {
+    Uint16 width;
+    Uint16 height;
+};
+
+struct position {
+    Uint16 x;
+    Uint16 y;
+};
+
+struct point {
+    // The video screen size may be different from the real device screen size,
+    // so store to which size the absolute position apply, to scale it accordingly.
+    struct size screen_size;
+    struct position position;
+};
+
+#endif

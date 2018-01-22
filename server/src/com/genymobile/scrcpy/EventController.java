@@ -43,10 +43,10 @@ public class EventController {
         coords.touchMinor = 1;
     }
 
-    private void setPointerCoords(int x, int y) {
+    private void setPointerCoords(RawPoint rawPoint) {
         MotionEvent.PointerCoords coords = pointerCoords[0];
-        coords.x = x;
-        coords.y = y;
+        coords.x = rawPoint.getX();
+        coords.y = rawPoint.getY();
     }
 
     private void setScroll(int hScroll, int vScroll) {
@@ -72,10 +72,10 @@ public class EventController {
                 injectText(controlEvent.getText());
                 break;
             case ControlEvent.TYPE_MOUSE:
-                injectMouse(controlEvent.getAction(), controlEvent.getButtons(), controlEvent.getX(), controlEvent.getY());
+                injectMouse(controlEvent.getAction(), controlEvent.getButtons(), controlEvent.getPoint());
                 break;
             case ControlEvent.TYPE_SCROLL:
-                injectScroll(controlEvent.getButtons(), controlEvent.getX(), controlEvent.getY(), controlEvent.getHScroll(), controlEvent.getVScroll());
+                injectScroll(controlEvent.getPoint(), controlEvent.getHScroll(), controlEvent.getVScroll());
         }
         return true;
     }
@@ -97,19 +97,29 @@ public class EventController {
         return true;
     }
 
-    private boolean injectMouse(int action, int buttons, int x, int y) {
+    private boolean injectMouse(int action, int buttons, Point point) {
         long now = SystemClock.uptimeMillis();
         if (action == MotionEvent.ACTION_DOWN) {
             lastMouseDown = now;
         }
-        setPointerCoords(x, y);
+        RawPoint rawPoint = Device.getInstance().getPhysicalPoint(point);
+        if (rawPoint == null) {
+            // ignore event
+            return false;
+        }
+        setPointerCoords(rawPoint);
         MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);
     }
 
-    private boolean injectScroll(int buttons, int x, int y, int hScroll, int vScroll) {
+    private boolean injectScroll(Point point, int hScroll, int vScroll) {
         long now = SystemClock.uptimeMillis();
-        setPointerCoords(x, y);
+        RawPoint rawPoint = Device.getInstance().getPhysicalPoint(point);
+        if (rawPoint == null) {
+            // ignore event
+            return false;
+        }
+        setPointerCoords(rawPoint);
         setScroll(hScroll, vScroll);
         MotionEvent event = MotionEvent.obtain(lastMouseDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);

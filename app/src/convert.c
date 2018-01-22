@@ -117,7 +117,8 @@ static enum android_motionevent_buttons convert_mouse_buttons(Uint32 state) {
     return buttons;
 }
 
-SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from, struct control_event *to) {
+SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
+                                       struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->keycode_event.action)) {
@@ -133,7 +134,9 @@ SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from, struct con
     return SDL_TRUE;
 }
 
-SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from, struct control_event *to) {
+SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
+                                          struct size screen_size,
+                                          struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
 
     if (!convert_mouse_action(from->type, &to->mouse_event.action)) {
@@ -141,32 +144,36 @@ SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from, stru
     }
 
     to->mouse_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
-    to->mouse_event.x = from->x;
-    to->mouse_event.y = from->y;
+    to->mouse_event.point.screen_size = screen_size;
+    to->mouse_event.point.position.x = (Uint16) from->x;
+    to->mouse_event.point.position.y = (Uint16) from->y;
 
     return SDL_TRUE;
 }
 
-SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from, struct control_event *to) {
+SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
+                                          const struct size screen_size,
+                                          struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
     to->mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->mouse_event.buttons = convert_mouse_buttons(from->state);
-    to->mouse_event.x = from->x;
-    to->mouse_event.y = from->y;
+    to->mouse_event.point.screen_size = screen_size;
+    to->mouse_event.point.position.x = from->x;
+    to->mouse_event.point.position.y = from->y;
 
     return SDL_TRUE;
 }
 
-SDL_bool mouse_wheel_from_sdl_to_android(const struct complete_mouse_wheel_event *from, struct control_event *to) {
+SDL_bool mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
+                                         const struct point point,
+                                         struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_SCROLL;
 
-    to->scroll_event.x = from->x;
-    to->scroll_event.y = from->y;
+    to->scroll_event.point = point;
 
-    SDL_MouseWheelEvent *wheel = from->mouse_wheel_event;
-    int mul = wheel->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
-    to->scroll_event.hscroll = mul * wheel->x;
-    to->scroll_event.vscroll = mul * wheel->y;
+    int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
+    to->scroll_event.hscroll = mul * from->x;
+    to->scroll_event.vscroll = mul * from->y;
 
     return SDL_TRUE;
 }

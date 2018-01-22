@@ -16,8 +16,7 @@ public class ControlEvent {
     private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_*
     private int keycode; // KeyEvent.KEYCODE_*
     private int buttons; // MotionEvent.BUTTON_*
-    private int x;
-    private int y;
+    private Point point;
     private int hScroll;
     private int vScroll;
 
@@ -40,21 +39,19 @@ public class ControlEvent {
         return event;
     }
 
-    public static ControlEvent createMotionControlEvent(int action, int buttons, int x, int y) {
+    public static ControlEvent createMotionControlEvent(int action, int buttons, Point point) {
         ControlEvent event = new ControlEvent();
         event.type = TYPE_MOUSE;
         event.action = action;
         event.buttons = buttons;
-        event.x = x;
-        event.y = y;
+        event.point = point;
         return event;
     }
 
-    public static ControlEvent createScrollControlEvent(int x, int y, int hScroll, int vScroll) {
+    public static ControlEvent createScrollControlEvent(Point point, int hScroll, int vScroll) {
         ControlEvent event = new ControlEvent();
         event.type = TYPE_SCROLL;
-        event.x = x;
-        event.y = y;
+        event.point = point;
         event.hScroll = hScroll;
         event.vScroll = vScroll;
         return event;
@@ -84,12 +81,8 @@ public class ControlEvent {
         return buttons;
     }
 
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
+    public Point getPoint() {
+        return point;
     }
 
     public int getHScroll() {

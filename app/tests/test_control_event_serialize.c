@@ -51,8 +51,16 @@ static void test_serialize_mouse_event() {
         .mouse_event = {
             .action = AMOTION_EVENT_ACTION_DOWN,
             .buttons = AMOTION_EVENT_BUTTON_PRIMARY,
-            .x = 260,
-            .y = 1026,
+            .point = {
+                .position = {
+                    .x = 260,
+                    .y = 1026,
+                },
+                .screen_size = {
+                    .width = 1080,
+                    .height = 1920,
+                },
+            },
         },
     };
 
@@ -64,8 +72,8 @@ static void test_serialize_mouse_event() {
         0x02, // CONTROL_EVENT_TYPE_MOUSE
         0x00, // AKEY_EVENT_ACTION_DOWN
         0x00, 0x00, 0x00, 0x01, // AMOTION_EVENT_BUTTON_PRIMARY
-        0x00, 0x00, 0x01, 0x04, // 260
-        0x00, 0x00, 0x04, 0x02, // 1026
+        0x01, 0x04, 0x04, 0x02, // 260 1026
+        0x04, 0x38, 0x07, 0x80, // 1080 1920
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -74,8 +82,16 @@ static void test_serialize_scroll_event() {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_SCROLL,
         .scroll_event = {
-            .x = 260,
-            .y = 1026,
+            .point = {
+                .position = {
+                    .x = 260,
+                    .y = 1026,
+                },
+                .screen_size = {
+                    .width = 1080,
+                    .height = 1920,
+                },
+            },
             .hscroll = 1,
             .vscroll = -1,
         },
@@ -87,8 +103,8 @@ static void test_serialize_scroll_event() {
 
     const unsigned char expected[] = {
         0x03, // CONTROL_EVENT_TYPE_SCROLL
-        0x00, 0x00, 0x01, 0x04, // 260
-        0x00, 0x00, 0x04, 0x02, // 1026
+        0x01, 0x04, 0x04, 0x02, // 260 1026
+        0x04, 0x38, 0x07, 0x80, // 1080 1920
         0x00, 0x00, 0x00, 0x01, // 1
         0xFF, 0xFF, 0xFF, 0xFF, // -1
     };

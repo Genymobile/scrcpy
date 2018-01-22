@@ -51,7 +51,7 @@ public class ControlEventReader {
                 if (buffer.remaining() < KEYCODE_PAYLOAD_LENGTH) {
                     break;
                 }
-                int action = buffer.get() & 0xff; // unsigned
+                int action = toUnsigned(buffer.get());
                 int keycode = buffer.getInt();
                 int metaState = buffer.getInt();
                 return ControlEvent.createKeycodeControlEvent(action, keycode, metaState);
@@ -60,7 +60,7 @@ public class ControlEventReader {
                 if (buffer.remaining() < 1) {
                     break;
                 }
-                int len = buffer.get() & 0xff; // unsigned
+                int len = toUnsigned(buffer.get());
                 if (buffer.remaining() < len) {
                     break;
                 }
@@ -72,21 +72,19 @@ public class ControlEventReader {
                 if (buffer.remaining() < MOUSE_PAYLOAD_LENGTH) {
                     break;
                 }
-                int action = buffer.get() & 0xff; // unsigned
+                int action = toUnsigned(buffer.get());
                 int buttons = buffer.getInt();
-                int x = buffer.getInt();
-                int y = buffer.getInt();
-                return ControlEvent.createMotionControlEvent(action, buttons, x, y);
+                Point point = readPoint(buffer);
+                return ControlEvent.createMotionControlEvent(action, buttons, point);
             }
             case ControlEvent.TYPE_SCROLL: {
                 if (buffer.remaining() < SCROLL_PAYLOAD_LENGTH) {
                     break;
                 }
-                int x = buffer.getInt();
-                int y = buffer.getInt();
+                Point point = readPoint(buffer);
                 int hscroll = buffer.getInt();
                 int vscroll = buffer.getInt();
-                return ControlEvent.createScrollControlEvent(x, y, hscroll, vscroll);
+                return ControlEvent.createScrollControlEvent(point, hscroll, vscroll);
             }
             default:
                 Ln.w("Unknown event type: " + type);
@@ -95,5 +93,21 @@ public class ControlEventReader {
         // failure, reset savedPosition
         buffer.position(savedPosition);
         return null;
+    }
+
+    private static Point readPoint(ByteBuffer buffer) {
+        int x = toUnsigned(buffer.getShort());
+        int y = toUnsigned(buffer.getShort());
+        int screenWidth = toUnsigned(buffer.getShort());
+        int screenHeight = toUnsigned(buffer.getShort());
+        return new Point(x, y, screenWidth, screenHeight);
+    }
+
+    private static int toUnsigned(short value) {
+        return value & 0xffff;
+    }
+
+    private static int toUnsigned(byte value) {
+        return value & 0xff;
     }
 }

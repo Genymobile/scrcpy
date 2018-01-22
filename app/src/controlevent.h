@@ -6,6 +6,7 @@
 
 #include "android/input.h"
 #include "android/keycodes.h"
+#include "common.h"
 
 #define CONTROL_EVENT_QUEUE_SIZE 64
 #define SERIALIZED_EVENT_MAX_SIZE 33
@@ -32,12 +33,10 @@ struct control_event {
         struct {
             enum android_motionevent_action action;
             enum android_motionevent_buttons buttons;
-            Sint32 x;
-            Sint32 y;
+            struct point point;
         } mouse_event;
         struct {
-            Sint32 x;
-            Sint32 y;
+            struct point point;
             Sint32 hscroll;
             Sint32 vscroll;
         } scroll_event;

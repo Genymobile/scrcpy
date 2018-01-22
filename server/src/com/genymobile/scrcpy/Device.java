@@ -48,6 +48,15 @@ public class Device {
         return screenInfo;
     }
 
+    public RawPoint getPhysicalPoint(Point point) {
+        ScreenInfo screenInfo = getScreenInfo();
+        int deviceWidth = screenInfo.getLogicalWidth();
+        int deviceHeight = screenInfo.getLogicalHeight();
+        int scaledX = point.getX() * deviceWidth / point.getScreenWidth();
+        int scaledY = point.getY() * deviceHeight / point.getScreenHeight();
+        return new RawPoint(scaledX, scaledY);
+    }
+
     private ScreenInfo readScreenInfo() {
         return serviceManager.getDisplayManager().getScreenInfo();
     }
