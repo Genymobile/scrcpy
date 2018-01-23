@@ -19,7 +19,6 @@
 #include "server.h"
 
 #define DEVICE_NAME_FIELD_LENGTH 64
-#define SOCKET_NAME "scrcpy"
 #define DISPLAY_MARGINS 96
 #define MIN(X,Y) (X) < (Y) ? (X) : (Y)
 #define MAX(X,Y) (X) > (Y) ? (X) : (Y)
@@ -371,16 +370,12 @@ void event_loop(void) {
 SDL_bool show_screen(const char *serial, Uint16 local_port) {
     SDL_bool ret = 0;
 
-    const char *server_jar_path = getenv("SCRCPY_SERVER_JAR");
-    if (!server_jar_path) {
-        server_jar_path = "scrcpy-server.jar";
-    }
-    process_t push_proc = adb_push(serial, server_jar_path, "/data/local/tmp/");
+    process_t push_proc = push_server(serial);
     if (wait_for_success(push_proc, "adb push")) {
         return SDL_FALSE;
     }
 
-    process_t reverse_tunnel_proc = adb_reverse(serial, SOCKET_NAME, local_port);
+    process_t reverse_tunnel_proc = enable_tunnel(serial, local_port);
     if (wait_for_success(reverse_tunnel_proc, "adb reverse")) {
         return SDL_FALSE;
     }
@@ -531,7 +526,7 @@ screen_finally_destroy_frames:
     frames_destroy(&frames);
 screen_finally_adb_reverse_remove:
     {
-        process_t remove = adb_reverse_remove(serial, SOCKET_NAME);
+        process_t remove = disable_tunnel(serial);
         if (remove != PROCESS_NONE) {
             // ignore failure
             cmd_simple_wait(remove, NULL);

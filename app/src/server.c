@@ -3,6 +3,24 @@
 #include <SDL2/SDL_log.h>
 #include <errno.h>
 
+#define SOCKET_NAME "scrcpy"
+
+process_t push_server(const char *serial) {
+    const char *server_jar_path = getenv("SCRCPY_SERVER_JAR");
+    if (!server_jar_path) {
+        server_jar_path = "scrcpy-server.jar";
+    }
+    return adb_push(serial, server_jar_path, "/data/local/tmp/");
+}
+
+process_t enable_tunnel(const char *serial, Uint16 local_port) {
+    return adb_reverse(serial, SOCKET_NAME, local_port);
+}
+
+process_t disable_tunnel(const char *serial) {
+    return adb_reverse_remove(serial, SOCKET_NAME);
+}
+
 process_t start_server(const char *serial) {
     const char *const cmd[] = {
         "shell",
