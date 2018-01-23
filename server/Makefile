@@ -23,7 +23,7 @@ SRC := com/genymobile/scrcpy/ScrCpyServer.java \
 	com/genymobile/scrcpy/ControlEvent.java \
 	com/genymobile/scrcpy/ControlEventReader.java \
 	com/genymobile/scrcpy/DesktopConnection.java \
-	com/genymobile/scrcpy/DeviceUtil.java \
+	com/genymobile/scrcpy/Device.java \
 	com/genymobile/scrcpy/EventController.java \
 	com/genymobile/scrcpy/ScreenInfo.java \
 	com/genymobile/scrcpy/ScreenStreamer.java \

@@ -1,8 +1,5 @@
 package com.genymobile.scrcpy;
 
-import android.os.RemoteException;
-import android.view.IRotationWatcher;
-
 import java.io.IOException;
 import java.io.InterruptedIOException;
 
@@ -13,12 +10,6 @@ public class ScreenStreamer {
 
     public ScreenStreamer(DesktopConnection connection) {
         this.connection = connection;
-        DeviceUtil.registerRotationWatcher(new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) throws RemoteException {
-                reset();
-            }
-        });
     }
 
     private synchronized ScreenStreamerSession newScreenStreamerSession() {

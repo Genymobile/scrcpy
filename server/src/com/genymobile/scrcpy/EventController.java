@@ -24,7 +24,7 @@ public class EventController {
 
     public EventController(DesktopConnection connection) {
         this.connection = connection;
-        inputManager = DeviceUtil.getInputManager();
+        inputManager = Device.getInstance().getInputManager();
         initPointer();
     }
 
