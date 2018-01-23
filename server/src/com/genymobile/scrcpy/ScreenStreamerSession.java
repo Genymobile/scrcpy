@@ -27,6 +27,7 @@ public class ScreenStreamerSession {
      * @throws IOException if an I/O error occurred
      */
     private boolean streamScreenOnce() throws IOException {
+        Ln.d("Recording...");
         Process process = startScreenRecord();
         setCurrentProcess(process);
         InputStream inputStream = process.getInputStream();
