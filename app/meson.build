@@ -1,7 +1,7 @@
 project('scrcpy-app', 'c')
 
 src = [
-    'src/scrcpy.c',
+    'src/main.c',
     'src/command.c',
     'src/control.c',
     'src/controlevent.c',
@@ -10,7 +10,7 @@ src = [
     'src/frames.c',
     'src/lockutil.c',
     'src/netutil.c',
-    'src/screen.c',
+    'src/scrcpy.c',
     'src/server.c',
     'src/strutil.c',
 ]

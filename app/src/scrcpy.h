@@ -3,6 +3,6 @@
 
 #include <SDL2/SDL_stdinc.h>
 
-SDL_bool show_screen(const char *serial, Uint16 local_port);
+SDL_bool scrcpy(const char *serial, Uint16 local_port);
 
 #endif
