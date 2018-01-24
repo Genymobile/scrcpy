@@ -275,6 +275,12 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             return;
         }
 
+        // Ctrl+g: pixel-perfect (ratio 1:1)
+        if (keycode == SDLK_g && !shift) {
+            SDL_SetWindowSize(window, frame_size.width, frame_size.height);
+            return;
+        }
+
         // Ctrl+f: switch fullscreen
         if (keycode == SDLK_f && !shift) {
             Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
