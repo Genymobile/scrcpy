@@ -33,10 +33,15 @@ public class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(String deviceName, int width, int height) throws IOException {
+    public static DesktopConnection open(Device device) throws IOException {
         LocalSocket socket = connect(SOCKET_NAME);
+
+        ScreenInfo initialScreenInfo = device.getScreenInfo();
+        int width = initialScreenInfo.getLogicalWidth();
+        int height = initialScreenInfo.getLogicalHeight();
+
         DesktopConnection connection = new DesktopConnection(socket);
-        connection.send(deviceName, width, height);
+        connection.send(Device.getDeviceName(), width, height);
         return connection;
     }
 

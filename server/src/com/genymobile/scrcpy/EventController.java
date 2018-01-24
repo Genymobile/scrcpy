@@ -13,6 +13,7 @@ import java.io.IOException;
 
 public class EventController {
 
+    private final Device device;
     private final InputManager inputManager;
     private final DesktopConnection connection;
 
@@ -22,9 +23,10 @@ public class EventController {
     private final MotionEvent.PointerProperties[] pointerProperties = { new MotionEvent.PointerProperties() };
     private final MotionEvent.PointerCoords[] pointerCoords = { new MotionEvent.PointerCoords() };
 
-    public EventController(DesktopConnection connection) {
+    public EventController(Device device, DesktopConnection connection) {
+        this.device = device;
         this.connection = connection;
-        inputManager = Device.getInstance().getInputManager();
+        inputManager = device.getInputManager();
         initPointer();
     }
 
@@ -102,7 +104,7 @@ public class EventController {
         if (action == MotionEvent.ACTION_DOWN) {
             lastMouseDown = now;
         }
-        Point point = Device.getInstance().getPhysicalPoint(position);
+        Point point = device.getPhysicalPoint(position);
         if (point == null) {
             // ignore event
             return false;
@@ -114,7 +116,7 @@ public class EventController {
 
     private boolean injectScroll(Position position, int hScroll, int vScroll) {
         long now = SystemClock.uptimeMillis();
-        Point point = Device.getInstance().getPhysicalPoint(position);
+        Point point = device.getPhysicalPoint(position);
         if (point == null) {
             // ignore event
             return false;

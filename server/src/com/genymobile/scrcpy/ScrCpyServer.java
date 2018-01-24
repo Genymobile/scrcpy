@@ -7,13 +7,10 @@ public class ScrCpyServer {
     private static final String TAG = "scrcpy";
 
     private static void scrcpy() throws IOException {
-        String deviceName = Device.getDeviceName();
-        ScreenInfo initialScreenInfo = Device.getInstance().getScreenInfo();
-        int width = initialScreenInfo.getLogicalWidth();
-        int height = initialScreenInfo.getLogicalHeight();
-        try (DesktopConnection connection = DesktopConnection.open(deviceName, width, height)) {
+        final Device device = new Device();
+        try (DesktopConnection connection = DesktopConnection.open(device)) {
             final ScreenStreamer streamer = new ScreenStreamer(connection);
-            Device.getInstance().setRotationListener(new Device.RotationListener() {
+            device.setRotationListener(new Device.RotationListener() {
                 @Override
                 public void onRotationChanged(int rotation) {
                     streamer.reset();
@@ -21,7 +18,7 @@ public class ScrCpyServer {
             });
 
             // asynchronous
-            startEventController(connection);
+            startEventController(device, connection);
 
             try {
                 // synchronous
@@ -32,12 +29,12 @@ public class ScrCpyServer {
         }
     }
 
-    private static void startEventController(final DesktopConnection connection) {
+    private static void startEventController(final Device device, final DesktopConnection connection) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    new EventController(connection).control();
+                    new EventController(device, connection).control();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

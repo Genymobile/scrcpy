@@ -13,13 +13,12 @@ public class Device {
         void onRotationChanged(int rotation);
     }
 
-    private static final Device INSTANCE = new Device();
     private final ServiceManager serviceManager = new ServiceManager();
 
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
-    private Device() {
+    public Device() {
         screenInfo = readScreenInfo();
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
@@ -35,10 +34,6 @@ public class Device {
                 }
             }
         });
-    }
-
-    public static Device getInstance() {
-        return INSTANCE;
     }
 
     public synchronized ScreenInfo getScreenInfo() {
