@@ -261,18 +261,22 @@ static void handle_key(const SDL_KeyboardEvent *event) {
     SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
     SDL_bool repeat = event->repeat;
 
-    // Capture Ctrl+x: optimal size
-    if (keycode == SDLK_x && !repeat && ctrl && !shift) {
-        if (event->type == SDL_KEYDOWN) {
+    // capture all Ctrl events
+    if (ctrl) {
+        // only consider keydown events, and ignore repeated events
+        if (repeat || event->type != SDL_KEYDOWN) {
+            return;
+        }
+
+        // Ctrl+x: optimal size
+        if (keycode == SDLK_x && !shift) {
             struct size optimal_size = get_optimal_window_size(window, frame_size);
             SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
+            return;
         }
-        return;
-    }
 
-    // Capture Ctrl+f: switch fullscreen
-    if (keycode == SDLK_f && !repeat && ctrl && !shift) {
-        if (event->type == SDL_KEYDOWN) {
+        // Ctrl+f: switch fullscreen
+        if (keycode == SDLK_f && !shift) {
             Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
             if (!SDL_SetWindowFullscreen(window, new_mode)) {
                 fullscreen = !fullscreen;
@@ -280,7 +284,9 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             } else {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
             }
+            return;
         }
+
         return;
     }
 
