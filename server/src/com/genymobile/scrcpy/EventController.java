@@ -31,7 +31,7 @@ public class EventController {
     private void initPointer() {
         MotionEvent.PointerProperties props = pointerProperties[0];
         props.id = 0;
-        props.toolType = MotionEvent.TOOL_TYPE_MOUSE;
+        props.toolType = MotionEvent.TOOL_TYPE_FINGER;
 
         MotionEvent.PointerCoords coords = pointerCoords[0];
         coords.orientation = 0;
@@ -108,7 +108,7 @@ public class EventController {
             return false;
         }
         setPointerCoords(rawPoint);
-        MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+        MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
