@@ -30,4 +30,13 @@ public class Point {
         return screenHeight;
     }
 
+    @Override
+    public String toString() {
+        return "Point{" +
+                "x=" + x +
+                ", y=" + y +
+                ", screenWidth=" + screenWidth +
+                ", screenHeight=" + screenHeight +
+                '}';
+    }
 }

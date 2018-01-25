@@ -17,4 +17,11 @@ public class RawPoint {
         return y;
     }
 
+    @Override
+    public String toString() {
+        return "RawPoint{" +
+                "x=" + x +
+                ", y=" + y +
+                '}';
+    }
 }
