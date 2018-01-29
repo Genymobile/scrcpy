@@ -1,2 +1,4 @@
-build
-/dist
+build/
+/dist/
+.idea/
+.gradle/

@@ -53,9 +53,7 @@ public class ScreenStreamerSession {
         List<String> command = new ArrayList<>();
         command.add("screenrecord");
         command.add("--output-format=h264");
-        if (videoSize != null) {
-            command.add("--size=" + videoSize.getWidth() + "x" + videoSize.getHeight());
-        }
+        command.add("--size=" + videoSize.getWidth() + "x" + videoSize.getHeight());
         command.add("-");
         Process process = new ProcessBuilder(command).start();
         process.getOutputStream().close();

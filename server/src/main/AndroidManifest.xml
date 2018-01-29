@@ -1,0 +1,2 @@
+<!-- not a real Android application, it is run by app_process manually -->
+<manifest package="com.genymobile.scrcpy"/>

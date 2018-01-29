@@ -1,6 +1,8 @@
 .PHONY: default release clean build-app build-server dist dist-zip sums test
 
-BUILD_DIR := build
+GRADLE ?= ./gradlew
+
+APP_BUILD_DIR := app-build
 DIST := dist
 TARGET_DIR := scrcpy
 
@@ -13,21 +15,21 @@ default:
 release: clean dist-zip sums
 
 clean:
-	rm -rf "$(BUILD_DIR)" "$(DIST)"
-	+$(MAKE) -C server clean
+	$(GRADLE) clean
+	rm -rf "$(APP_BUILD_DIR)" "$(DIST)"
 
 build-app:
-	[ -d "$(BUILD_DIR)" ] || ( mkdir "$(BUILD_DIR)" && meson app "$(BUILD_DIR)" --buildtype release )
-	ninja -C "$(BUILD_DIR)"
+	[ -d "$(APP_BUILD_DIR)" ] || ( mkdir "$(APP_BUILD_DIR)" && meson app "$(APP_BUILD_DIR)" --buildtype release )
+	ninja -C "$(APP_BUILD_DIR)"
 
 build-server:
-	+$(MAKE) -C server clean
-	+$(MAKE) -C server jar
+	$(GRADLE) assembleRelease
 
-dist: build-app build-server
+dist: build-server build-app
 	mkdir -p "$(DIST)/$(TARGET_DIR)"
-	cp server/scrcpy-server.jar "$(DIST)/$(TARGET_DIR)/"
-	cp build/scrcpy "$(DIST)/$(TARGET_DIR)/"
+	# no need to sign the APK, we dont "install" it
+	cp server/build/outputs/apk/release/server-release-unsigned.apk "$(DIST)/$(TARGET_DIR)/scrcpy.apk"
+	cp $(APP_BUILD_DIR)/scrcpy "$(DIST)/$(TARGET_DIR)/"
 
 dist-zip: dist
 	cd "$(DIST)"; \
@@ -38,5 +40,5 @@ sums:
 		sha256sum *.zip > SHA256SUM.txt
 
 test:
-	+$(MAKE) -C server test
-	ninja -C "$(BUILD_DIR)" test
+	$(GRADLE) test
+	ninja -C "$(APP_BUILD_DIR)" test

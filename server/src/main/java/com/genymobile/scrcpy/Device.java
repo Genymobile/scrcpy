@@ -40,6 +40,12 @@ public final class Device {
     }
 
     private ScreenInfo computeScreenInfo(int maximumSize) {
+        // Compute the video size and the padding of the content inside this video.
+        // Principle:
+        // - scale down the great side of the screen to maximumSize (if necessary);
+        // - scale down the other side so that the aspect ratio is preserved;
+        // - ceil this value to the next multiple of 8 (H.264 only accepts multiples of 8)
+        // - this may introduce black bands, so store the padding (typically a few pixels)
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();

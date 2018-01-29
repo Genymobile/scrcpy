@@ -6,11 +6,11 @@
 #define SOCKET_NAME "scrcpy"
 
 process_t push_server(const char *serial) {
-    const char *server_jar_path = getenv("SCRCPY_SERVER_JAR");
-    if (!server_jar_path) {
-        server_jar_path = "scrcpy-server.jar";
+    const char *apk_path = getenv("SCRCPY_APK");
+    if (!apk_path) {
+        apk_path = "scrcpy.apk";
     }
-    return adb_push(serial, server_jar_path, "/data/local/tmp/");
+    return adb_push(serial, apk_path, "/data/local/tmp/");
 }
 
 process_t enable_tunnel(const char *serial, Uint16 local_port) {
@@ -26,9 +26,9 @@ process_t start_server(const char *serial, Uint16 maximum_size) {
     sprintf(maximum_size_string, "%d", maximum_size);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
+        "CLASSPATH=/data/local/tmp/scrcpy.apk",
         "app_process",
-        "/system/bin",
+        "/", // unused
         "com.genymobile.scrcpy.ScrCpyServer",
         maximum_size_string,
     };

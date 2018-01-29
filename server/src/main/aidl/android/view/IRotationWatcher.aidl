@@ -20,6 +20,6 @@ package android.view;
 /**
  * {@hide}
  */
-oneway interface IRotationWatcher {
-    void onRotationChanged(int rotation);
+interface IRotationWatcher {
+    oneway void onRotationChanged(int rotation);
 }
