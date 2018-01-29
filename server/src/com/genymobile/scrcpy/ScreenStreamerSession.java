@@ -2,16 +2,20 @@ package com.genymobile.scrcpy;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenStreamerSession {
 
+    private final Device device;
     private final DesktopConnection connection;
     private Process screenRecordProcess; // protected by 'this'
     private final AtomicBoolean stopped = new AtomicBoolean();
     private final byte[] buffer = new byte[0x10000];
 
-    public ScreenStreamerSession(DesktopConnection connection) {
+    public ScreenStreamerSession(Device device, DesktopConnection connection) {
+        this.device = device;
         this.connection = connection;
     }
 
@@ -28,7 +32,8 @@ public class ScreenStreamerSession {
      */
     private boolean streamScreenOnce() throws IOException {
         Ln.d("Recording...");
-        Process process = startScreenRecord();
+        Size videoSize = device.getScreenInfo().getVideoSize();
+        Process process = startScreenRecord(videoSize);
         setCurrentProcess(process);
         InputStream inputStream = process.getInputStream();
         int r;
@@ -44,8 +49,15 @@ public class ScreenStreamerSession {
         killCurrentProcess();
     }
 
-    private static Process startScreenRecord() throws IOException {
-        Process process = new ProcessBuilder("screenrecord", "--output-format=h264", "-").start();
+    private static Process startScreenRecord(Size videoSize) throws IOException {
+        List<String> command = new ArrayList<>();
+        command.add("screenrecord");
+        command.add("--output-format=h264");
+        if (videoSize != null) {
+            command.add("--size=" + videoSize.getWidth() + "x" + videoSize.getHeight());
+        }
+        command.add("-");
+        Process process = new ProcessBuilder(command).start();
         process.getOutputStream().close();
         return process;
     }

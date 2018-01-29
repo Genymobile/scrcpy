@@ -2,7 +2,8 @@ package com.genymobile.scrcpy.wrappers;
 
 import android.os.IInterface;
 
-import com.genymobile.scrcpy.ScreenInfo;
+import com.genymobile.scrcpy.DisplayInfo;
+import com.genymobile.scrcpy.Size;
 
 public class DisplayManager {
     private final IInterface manager;
@@ -11,15 +12,15 @@ public class DisplayManager {
         this.manager = manager;
     }
 
-    public ScreenInfo getScreenInfo() {
+    public DisplayInfo getDisplayInfo() {
         try {
             Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, 0);
             Class<?> cls = displayInfo.getClass();
-            // width and height do not depend on the rotation
-            int width = (Integer) cls.getMethod("getNaturalWidth").invoke(displayInfo);
-            int height = (Integer) cls.getMethod("getNaturalHeight").invoke(displayInfo);
+            // width and height already take the rotation into account
+            int width = cls.getDeclaredField("logicalWidth").getInt(displayInfo);
+            int height = cls.getDeclaredField("logicalHeight").getInt(displayInfo);
             int rotation = cls.getDeclaredField("rotation").getInt(displayInfo);
-            return new ScreenInfo(width, height, rotation);
+            return new DisplayInfo(new Size(width, height), rotation);
         } catch (Exception e) {
             throw new AssertionError(e);
         }

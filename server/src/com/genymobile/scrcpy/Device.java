@@ -7,7 +7,7 @@ import android.view.IRotationWatcher;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
-public class Device {
+public final class Device {
 
     public interface RotationListener {
         void onRotationChanged(int rotation);
@@ -18,13 +18,12 @@ public class Device {
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
-    public Device() {
-        screenInfo = readScreenInfo();
+    public Device(Options options) {
+        screenInfo = computeScreenInfo(options.getMaximumSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
                 synchronized (Device.this) {
-                    // update screenInfo cache
                     screenInfo = screenInfo.withRotation(rotation);
 
                     // notify
@@ -37,23 +36,59 @@ public class Device {
     }
 
     public synchronized ScreenInfo getScreenInfo() {
-        if (screenInfo == null) {
-            screenInfo = readScreenInfo();
-        }
         return screenInfo;
     }
 
-    public Point getPhysicalPoint(Position position) {
-        ScreenInfo screenInfo = getScreenInfo();
-        int deviceWidth = screenInfo.getLogicalWidth();
-        int deviceHeight = screenInfo.getLogicalHeight();
-        int scaledX = position.getX() * deviceWidth / position.getScreenWidth();
-        int scaledY = position.getY() * deviceHeight / position.getScreenHeight();
-        return new Point(scaledX, scaledY);
+    private ScreenInfo computeScreenInfo(int maximumSize) {
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        boolean rotated = (displayInfo.getRotation() & 1) != 0;
+        Size deviceSize = displayInfo.getSize();
+        int w = deviceSize.getWidth();
+        int h = deviceSize.getHeight();
+        int padding = 0;
+        if (maximumSize > 0) {
+            assert maximumSize % 8 == 0;
+            boolean portrait = h > w;
+            int major = portrait ? h : w;
+            int minor = portrait ? w : h;
+            if (major > maximumSize) {
+                int minorExact = minor * maximumSize / major;
+                // +7 to ceil the value on rounding to the next multiple of 8,
+                // so that any necessary black bands to keep the aspect ratio are added to the smallest dimension
+                minor = (minorExact + 7) & ~7;
+                major = maximumSize;
+                padding = minor - minorExact;
+            }
+            w = portrait ? minor : major;
+            h = portrait ? major : minor;
+        }
+        return new ScreenInfo(deviceSize, new Size(w, h), padding, rotated);
     }
 
-    private ScreenInfo readScreenInfo() {
-        return serviceManager.getDisplayManager().getScreenInfo();
+    public Point getPhysicalPoint(Position position) {
+        ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
+        Size videoSize = screenInfo.getVideoSize();
+        Size clientVideoSize = position.getScreenSize();
+        if (!videoSize.equals(clientVideoSize)) {
+            // The client sends a click relative to a video with wrong dimensions,
+            // the device may have been rotated since the event was generated, so ignore the event
+            return null;
+        }
+        Size deviceSize = screenInfo.getDeviceSize();
+        int xPadding = screenInfo.getXPadding();
+        int yPadding = screenInfo.getYPadding();
+        int contentWidth = videoSize.getWidth() - xPadding;
+        int contentHeight = videoSize.getHeight() - yPadding;
+        Point point = position.getPoint();
+        int x = point.getX() - xPadding / 2;
+        int y = point.getY() - yPadding / 2;
+        if (x < 0 || x >= contentWidth || y < 0 || y >= contentHeight) {
+            // out of screen
+            return null;
+        }
+        int scaledX = x * deviceSize.getWidth() / videoSize.getWidth();
+        int scaledY = y * deviceSize.getHeight() / videoSize.getHeight();
+        return new Point(scaledX, scaledY);
     }
 
     public static String getDeviceName() {

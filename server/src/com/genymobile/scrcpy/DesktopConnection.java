@@ -36,12 +36,9 @@ public class DesktopConnection implements Closeable {
     public static DesktopConnection open(Device device) throws IOException {
         LocalSocket socket = connect(SOCKET_NAME);
 
-        ScreenInfo initialScreenInfo = device.getScreenInfo();
-        int width = initialScreenInfo.getLogicalWidth();
-        int height = initialScreenInfo.getLogicalHeight();
-
         DesktopConnection connection = new DesktopConnection(socket);
-        connection.send(Device.getDeviceName(), width, height);
+        Size videoSize = device.getScreenInfo().getVideoSize();
+        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
         return connection;
     }
 
@@ -81,4 +78,3 @@ public class DesktopConnection implements Closeable {
         return event;
     }
 }
-

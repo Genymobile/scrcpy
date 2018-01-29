@@ -24,13 +24,16 @@ SRC := com/genymobile/scrcpy/ScrCpyServer.java \
 	com/genymobile/scrcpy/ControlEventReader.java \
 	com/genymobile/scrcpy/DesktopConnection.java \
 	com/genymobile/scrcpy/Device.java \
+	com/genymobile/scrcpy/DisplayInfo.java \
 	com/genymobile/scrcpy/EventController.java \
 	com/genymobile/scrcpy/Ln.java \
+	com/genymobile/scrcpy/Options.java \
 	com/genymobile/scrcpy/Point.java \
 	com/genymobile/scrcpy/Position.java \
 	com/genymobile/scrcpy/ScreenInfo.java \
 	com/genymobile/scrcpy/ScreenStreamer.java \
 	com/genymobile/scrcpy/ScreenStreamerSession.java \
+	com/genymobile/scrcpy/Size.java \
 	com/genymobile/scrcpy/wrappers/DisplayManager.java \
 	com/genymobile/scrcpy/wrappers/InputManager.java \
 	com/genymobile/scrcpy/wrappers/ServiceManager.java \

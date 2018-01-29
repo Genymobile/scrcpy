@@ -6,10 +6,10 @@ public class ScrCpyServer {
 
     private static final String TAG = "scrcpy";
 
-    private static void scrcpy() throws IOException {
-        final Device device = new Device();
+    private static void scrcpy(Options options) throws IOException {
+        final Device device = new Device(options);
         try (DesktopConnection connection = DesktopConnection.open(device)) {
-            final ScreenStreamer streamer = new ScreenStreamer(connection);
+            final ScreenStreamer streamer = new ScreenStreamer(device, connection);
             device.setRotationListener(new Device.RotationListener() {
                 @Override
                 public void onRotationChanged(int rotation) {
@@ -43,8 +43,13 @@ public class ScrCpyServer {
     }
 
     public static void main(String... args) throws Exception {
+        Options options = new Options();
+        if (args.length > 0) {
+            int maximumSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
+            options.setMaximumSize(maximumSize);
+        }
         try {
-            scrcpy();
+            scrcpy(options);
         } catch (Throwable t) {
             t.printStackTrace();
             throw t;

@@ -1,42 +1,48 @@
 package com.genymobile.scrcpy;
 
-public class Position {
+import java.util.Objects;
 
-    private int x;
-    private int y;
-    private int screenWidth;
-    private int screenHeight;
+public class Position {
+    private Point point;
+    private Size screenSize;
+
+    public Position(Point point, Size screenSize) {
+        this.point = point;
+        this.screenSize = screenSize;
+    }
 
     public Position(int x, int y, int screenWidth, int screenHeight) {
-        this.x = x;
-        this.y = y;
-        this.screenWidth = screenWidth;
-        this.screenHeight = screenHeight;
+        this(new Point(x, y), new Size(screenWidth, screenHeight));
     }
 
-    public int getX() {
-        return x;
+    public Point getPoint() {
+        return point;
     }
 
-    public int getY() {
-        return y;
+    public Size getScreenSize() {
+        return screenSize;
     }
 
-    public int getScreenWidth() {
-        return screenWidth;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Position position = (Position) o;
+        return Objects.equals(point, position.point) &&
+                Objects.equals(screenSize, position.screenSize);
     }
 
-    public int getScreenHeight() {
-        return screenHeight;
+    @Override
+    public int hashCode() {
+        return Objects.hash(point, screenSize);
     }
 
     @Override
     public String toString() {
-        return "Point{" +
-                "x=" + x +
-                ", y=" + y +
-                ", screenWidth=" + screenWidth +
-                ", screenHeight=" + screenHeight +
+        return "Position{" +
+                "point=" + point +
+                ", screenSize=" + screenSize +
                 '}';
     }
+
 }

@@ -5,15 +5,17 @@ import java.io.InterruptedIOException;
 
 public class ScreenStreamer {
 
+    private final Device device;
     private final DesktopConnection connection;
     private ScreenStreamerSession currentStreamer; // protected by 'this'
 
-    public ScreenStreamer(DesktopConnection connection) {
+    public ScreenStreamer(Device device, DesktopConnection connection) {
+        this.device = device;
         this.connection = connection;
     }
 
     private synchronized ScreenStreamerSession newScreenStreamerSession() {
-        currentStreamer = new ScreenStreamerSession(connection);
+        currentStreamer = new ScreenStreamerSession(device, connection);
         return currentStreamer;
     }
 
