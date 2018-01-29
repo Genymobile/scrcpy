@@ -27,7 +27,7 @@ SRC := com/genymobile/scrcpy/ScrCpyServer.java \
 	com/genymobile/scrcpy/EventController.java \
 	com/genymobile/scrcpy/Ln.java \
 	com/genymobile/scrcpy/Point.java \
-	com/genymobile/scrcpy/RawPoint.java \
+	com/genymobile/scrcpy/Position.java \
 	com/genymobile/scrcpy/ScreenInfo.java \
 	com/genymobile/scrcpy/ScreenStreamer.java \
 	com/genymobile/scrcpy/ScreenStreamerSession.java \

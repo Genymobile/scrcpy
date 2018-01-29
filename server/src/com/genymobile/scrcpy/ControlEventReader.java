@@ -74,17 +74,17 @@ public class ControlEventReader {
                 }
                 int action = toUnsigned(buffer.get());
                 int buttons = buffer.getInt();
-                Point point = readPoint(buffer);
-                return ControlEvent.createMotionControlEvent(action, buttons, point);
+                Position position = readPosition(buffer);
+                return ControlEvent.createMotionControlEvent(action, buttons, position);
             }
             case ControlEvent.TYPE_SCROLL: {
                 if (buffer.remaining() < SCROLL_PAYLOAD_LENGTH) {
                     break;
                 }
-                Point point = readPoint(buffer);
-                int hscroll = buffer.getInt();
-                int vscroll = buffer.getInt();
-                return ControlEvent.createScrollControlEvent(point, hscroll, vscroll);
+                Position position = readPosition(buffer);
+                int hScroll = buffer.getInt();
+                int vScroll = buffer.getInt();
+                return ControlEvent.createScrollControlEvent(position, hScroll, vScroll);
             }
             default:
                 Ln.w("Unknown event type: " + type);
@@ -95,12 +95,12 @@ public class ControlEventReader {
         return null;
     }
 
-    private static Point readPoint(ByteBuffer buffer) {
+    private static Position readPosition(ByteBuffer buffer) {
         int x = toUnsigned(buffer.getShort());
         int y = toUnsigned(buffer.getShort());
         int screenWidth = toUnsigned(buffer.getShort());
         int screenHeight = toUnsigned(buffer.getShort());
-        return new Point(x, y, screenWidth, screenHeight);
+        return new Position(x, y, screenWidth, screenHeight);
     }
 
     private static int toUnsigned(short value) {

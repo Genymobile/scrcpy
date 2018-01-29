@@ -29,7 +29,7 @@ SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
 
 // on Android, a scroll event requires the current mouse position
 SDL_bool mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
-                                         struct point point,
+                                         struct position position,
                                          struct control_event *to);
 
 #endif

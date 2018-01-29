@@ -17,11 +17,11 @@ static inline void write32(Uint8 *buf, Uint32 value) {
     buf[3] = value;
 }
 
-static void write_point(Uint8 *buf, const struct point *point) {
-    write16(&buf[0], point->position.x);
-    write16(&buf[2], point->position.y);
-    write16(&buf[4], point->screen_size.width);
-    write16(&buf[6], point->screen_size.height);
+static void write_position(Uint8 *buf, const struct position *position) {
+    write16(&buf[0], position->point.x);
+    write16(&buf[2], position->point.y);
+    write16(&buf[4], position->screen_size.width);
+    write16(&buf[6], position->screen_size.height);
 }
 
 int control_event_serialize(const struct control_event *event, unsigned char *buf) {
@@ -45,10 +45,10 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
     case CONTROL_EVENT_TYPE_MOUSE:
         buf[1] = event->mouse_event.action;
         write32(&buf[2], event->mouse_event.buttons);
-        write_point(&buf[6], &event->mouse_event.point);
+        write_position(&buf[6], &event->mouse_event.position);
         return 14;
     case CONTROL_EVENT_TYPE_SCROLL:
-        write_point(&buf[1], &event->scroll_event.point);
+        write_position(&buf[1], &event->scroll_event.position);
         write32(&buf[9], (Uint32) event->scroll_event.hscroll);
         write32(&buf[13], (Uint32) event->scroll_event.vscroll);
         return 17;

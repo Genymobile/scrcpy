@@ -11,16 +11,16 @@ struct size {
     Uint16 height;
 };
 
-struct position {
+struct point {
     Uint16 x;
     Uint16 y;
 };
 
-struct point {
+struct position {
     // The video screen size may be different from the real device screen size,
     // so store to which size the absolute position apply, to scale it accordingly.
     struct size screen_size;
-    struct position position;
+    struct point point;
 };
 
 #endif

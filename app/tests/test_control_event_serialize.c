@@ -51,8 +51,8 @@ static void test_serialize_mouse_event() {
         .mouse_event = {
             .action = AMOTION_EVENT_ACTION_DOWN,
             .buttons = AMOTION_EVENT_BUTTON_PRIMARY,
-            .point = {
-                .position = {
+            .position = {
+                .point = {
                     .x = 260,
                     .y = 1026,
                 },
@@ -82,8 +82,8 @@ static void test_serialize_scroll_event() {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_SCROLL,
         .scroll_event = {
-            .point = {
-                .position = {
+            .position = {
+                .point = {
                     .x = 260,
                     .y = 1026,
                 },

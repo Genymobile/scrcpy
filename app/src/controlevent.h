@@ -33,10 +33,10 @@ struct control_event {
         struct {
             enum android_motionevent_action action;
             enum android_motionevent_buttons buttons;
-            struct point point;
+            struct position position;
         } mouse_event;
         struct {
-            struct point point;
+            struct position position;
             Sint32 hscroll;
             Sint32 vscroll;
         } scroll_event;

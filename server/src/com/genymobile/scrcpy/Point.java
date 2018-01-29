@@ -1,17 +1,12 @@
 package com.genymobile.scrcpy;
 
 public class Point {
-
     private int x;
     private int y;
-    private int screenWidth;
-    private int screenHeight;
 
-    public Point(int x, int y, int screenWidth, int screenHeight) {
+    public Point(int x, int y) {
         this.x = x;
         this.y = y;
-        this.screenWidth = screenWidth;
-        this.screenHeight = screenHeight;
     }
 
     public int getX() {
@@ -22,21 +17,11 @@ public class Point {
         return y;
     }
 
-    public int getScreenWidth() {
-        return screenWidth;
-    }
-
-    public int getScreenHeight() {
-        return screenHeight;
-    }
-
     @Override
     public String toString() {
         return "Point{" +
                 "x=" + x +
                 ", y=" + y +
-                ", screenWidth=" + screenWidth +
-                ", screenHeight=" + screenHeight +
                 '}';
     }
 }

@@ -104,12 +104,12 @@ static inline struct size get_window_size(SDL_Window *window) {
     return size;
 }
 
-static inline struct position get_mouse_position() {
+static inline struct point get_mouse_point() {
     int x;
     int y;
     SDL_GetMouseState(&x, &y);
     SDL_assert_release(x >= 0 && x < 0x10000 && y >= 0 && y < 0x10000);
-    return (struct position) {
+    return (struct point) {
         .x = (Uint16) x,
         .y = (Uint16) y,
     };
@@ -322,9 +322,9 @@ static void handle_mouse_button(const SDL_MouseButtonEvent *event, struct size s
     }
 }
 
-static void handle_mouse_wheel(const SDL_MouseWheelEvent *event, struct point point) {
+static void handle_mouse_wheel(const SDL_MouseWheelEvent *event, struct position position) {
     struct control_event control_event;
-    if (mouse_wheel_from_sdl_to_android(event, point, &control_event)) {
+    if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send wheel button event");
         }
@@ -366,11 +366,11 @@ void event_loop(void) {
             handle_mouse_motion(&event.motion, frame_size);
             break;
         case SDL_MOUSEWHEEL: {
-            struct point point = {
+            struct position position = {
                 .screen_size = frame_size,
-                .position = get_mouse_position(),
+                .point = get_mouse_point(),
             };
-            handle_mouse_wheel(&event.wheel, point);
+            handle_mouse_wheel(&event.wheel, position);
             break;
         }
         case SDL_MOUSEBUTTONDOWN:
