@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Point;
 import android.os.Build;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
@@ -86,8 +87,8 @@ public final class Device {
         int contentWidth = videoSize.getWidth() - xPadding;
         int contentHeight = videoSize.getHeight() - yPadding;
         Point point = position.getPoint();
-        int x = point.getX() - xPadding / 2;
-        int y = point.getY() - yPadding / 2;
+        int x = point.x - xPadding / 2;
+        int y = point.y - yPadding / 2;
         if (x < 0 || x >= contentWidth || y < 0 || y >= contentHeight) {
             // out of screen
             return null;

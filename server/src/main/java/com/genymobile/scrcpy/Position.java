@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Point;
+
 import java.util.Objects;
 
 public class Position {
