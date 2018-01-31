@@ -42,12 +42,17 @@ public class ScrCpyServer {
         }).start();
     }
 
-    public static void main(String... args) throws Exception {
+    private static Options createOptions(String... args) {
         Options options = new Options();
         if (args.length > 0) {
             int maximumSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
             options.setMaximumSize(maximumSize);
         }
+        return options;
+    }
+
+    public static void main(String... args) throws Exception {
+        Options options = createOptions(args);
         try {
             scrcpy(options);
         } catch (Throwable t) {
