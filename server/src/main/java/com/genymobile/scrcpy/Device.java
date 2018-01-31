@@ -45,14 +45,12 @@ public final class Device {
         // Principle:
         // - scale down the great side of the screen to maximumSize (if necessary);
         // - scale down the other side so that the aspect ratio is preserved;
-        // - ceil this value to the next multiple of 8 (H.264 only accepts multiples of 8)
-        // - this may introduce black bands, so store the padding (typically a few pixels)
+        // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();
         int w = deviceSize.getWidth();
         int h = deviceSize.getHeight();
-        int padding = 0;
         if (maximumSize > 0) {
             assert maximumSize % 8 == 0;
             boolean portrait = h > w;
@@ -60,16 +58,15 @@ public final class Device {
             int minor = portrait ? w : h;
             if (major > maximumSize) {
                 int minorExact = minor * maximumSize / major;
-                // +7 to ceil the value on rounding to the next multiple of 8,
-                // so that any necessary black bands to keep the aspect ratio are added to the smallest dimension
-                minor = (minorExact + 7) & ~7;
+                // +4 to round the value to the nearest multiple of 8
+                minor = (minorExact + 4) & ~7;
                 major = maximumSize;
-                padding = minor - minorExact;
             }
             w = portrait ? minor : major;
             h = portrait ? major : minor;
         }
-        return new ScreenInfo(deviceSize, new Size(w, h), padding, rotated);
+        Size videoSize = new Size(w, h);
+        return new ScreenInfo(deviceSize, videoSize, rotated);
     }
 
     public Point getPhysicalPoint(Position position) {
@@ -82,19 +79,9 @@ public final class Device {
             return null;
         }
         Size deviceSize = screenInfo.getDeviceSize();
-        int xPadding = screenInfo.getXPadding();
-        int yPadding = screenInfo.getYPadding();
-        int contentWidth = videoSize.getWidth() - xPadding;
-        int contentHeight = videoSize.getHeight() - yPadding;
         Point point = position.getPoint();
-        int x = point.x - xPadding / 2;
-        int y = point.y - yPadding / 2;
-        if (x < 0 || x >= contentWidth || y < 0 || y >= contentHeight) {
-            // out of screen
-            return null;
-        }
-        int scaledX = x * deviceSize.getWidth() / videoSize.getWidth();
-        int scaledY = y * deviceSize.getHeight() / videoSize.getHeight();
+        int scaledX = point.x * deviceSize.getWidth() / videoSize.getWidth();
+        int scaledY = point.y * deviceSize.getHeight() / videoSize.getHeight();
         return new Point(scaledX, scaledY);
     }
 

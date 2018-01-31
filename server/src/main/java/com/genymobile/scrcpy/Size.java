@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Rect;
+
 import java.util.Objects;
 
 public final class Size {
@@ -21,6 +23,10 @@ public final class Size {
 
     public Size rotate() {
         return new Size(height, width);
+    }
+
+    public Rect toRect() {
+        return new Rect(0, 0, width, height);
     }
 
     @Override

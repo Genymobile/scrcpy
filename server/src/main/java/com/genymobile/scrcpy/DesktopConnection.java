@@ -65,8 +65,8 @@ public class DesktopConnection implements Closeable {
         outputStream.write(buffer, 0, buffer.length);
     }
 
-    public void sendVideoStream(byte[] videoStreamBuffer, int len) throws IOException {
-        outputStream.write(videoStreamBuffer, 0, len);
+    public OutputStream getOutputStream() {
+        return outputStream;
     }
 
     public ControlEvent receiveControlEvent() throws IOException {

@@ -4,25 +4,17 @@ import java.io.IOException;
 
 public class ScrCpyServer {
 
-    private static final String TAG = "scrcpy";
-
     private static void scrcpy(Options options) throws IOException {
         final Device device = new Device(options);
         try (DesktopConnection connection = DesktopConnection.open(device)) {
-            final ScreenStreamer streamer = new ScreenStreamer(device, connection);
-            device.setRotationListener(new Device.RotationListener() {
-                @Override
-                public void onRotationChanged(int rotation) {
-                    streamer.reset();
-                }
-            });
+            ScreenEncoder screenEncoder = new ScreenEncoder();
 
             // asynchronous
             startEventController(device, connection);
 
             try {
                 // synchronous
-                streamer.streamScreen();
+                screenEncoder.streamScreen(device, connection.getOutputStream());
             } catch (IOException e) {
                 Ln.e("Screen streaming interrupted", e);
             }
