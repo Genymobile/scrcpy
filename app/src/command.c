@@ -6,10 +6,21 @@
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
+static const char *adb_command;
+
+static inline const char *get_adb_command() {
+    if (!adb_command) {
+        adb_command = getenv("ADB");
+        if (!adb_command)
+            adb_command = "adb";
+    }
+    return adb_command;
+}
+
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
     int i;
-    cmd[0] = "adb";
+    cmd[0] = get_adb_command();
     if (serial) {
         cmd[1] = "-s";
         cmd[2] = serial;
