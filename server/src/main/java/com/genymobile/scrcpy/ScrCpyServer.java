@@ -36,7 +36,7 @@ public class ScrCpyServer {
                 try {
                     new EventController(device, connection).control();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Ln.e("Exception from event controller", e);
                 }
             }
         }).start();
@@ -52,12 +52,14 @@ public class ScrCpyServer {
     }
 
     public static void main(String... args) throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                Ln.e("Exception on thread " + t, e);
+            }
+        });
+
         Options options = createOptions(args);
-        try {
-            scrcpy(options);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            throw t;
-        }
+        scrcpy(options);
     }
 }
