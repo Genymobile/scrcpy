@@ -20,7 +20,7 @@ public final class Device {
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        screenInfo = computeScreenInfo(options.getMaximumSize());
+        screenInfo = computeScreenInfo(options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -40,10 +40,10 @@ public final class Device {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(int maximumSize) {
+    private ScreenInfo computeScreenInfo(int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:
-        // - scale down the great side of the screen to maximumSize (if necessary);
+        // - scale down the great side of the screen to maxSize (if necessary);
         // - scale down the other side so that the aspect ratio is preserved;
         // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
@@ -51,16 +51,16 @@ public final class Device {
         Size deviceSize = displayInfo.getSize();
         int w = deviceSize.getWidth();
         int h = deviceSize.getHeight();
-        if (maximumSize > 0) {
-            assert maximumSize % 8 == 0;
+        if (maxSize > 0) {
+            assert maxSize % 8 == 0;
             boolean portrait = h > w;
             int major = portrait ? h : w;
             int minor = portrait ? w : h;
-            if (major > maximumSize) {
-                int minorExact = minor * maximumSize / major;
+            if (major > maxSize) {
+                int minorExact = minor * maxSize / major;
                 // +4 to round the value to the nearest multiple of 8
                 minor = (minorExact + 4) & ~7;
-                major = maximumSize;
+                major = maxSize;
             }
             w = portrait ? minor : major;
             h = portrait ? major : minor;

@@ -37,8 +37,8 @@ public class ScrCpyServer {
     private static Options createOptions(String... args) {
         Options options = new Options();
         if (args.length > 0) {
-            int maximumSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
-            options.setMaximumSize(maximumSize);
+            int maxSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
+            options.setMaxSize(maxSize);
         }
         return options;
     }

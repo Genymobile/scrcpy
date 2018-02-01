@@ -6,11 +6,12 @@
 #include <SDL2/SDL.h>
 
 #define DEFAULT_LOCAL_PORT 27183
+#define DEFAULT_MAX_SIZE 0
 
 struct args {
     const char *serial;
     Uint16 port;
-    Uint16 maximum_size;
+    Uint16 max_size;
 };
 
 static int parse_args(struct args *args, int argc, char *argv[]) {
@@ -40,14 +41,14 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 long value = strtol(optarg, &endptr, 0);
                 if (*optarg == '\0' || *endptr != '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid maximum size: %s\n", optarg);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid max size: %s\n", optarg);
                     return -1;
                 }
                 if (value & ~0xffff) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Maximum size must be between 0 and 65535: %ld\n", value);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size must be between 0 and 65535: %ld\n", value);
                     return -1;
                 }
-                args->maximum_size = (Uint16) value;
+                args->max_size = (Uint16) value;
                 break;
             }
             default:
@@ -72,6 +73,7 @@ int main(int argc, char *argv[]) {
 
     struct args args = {
         .serial = NULL,
+        .max_size = DEFAULT_MAX_SIZE,
         .port = DEFAULT_LOCAL_PORT,
     };
     if (parse_args(&args, argc, argv)) {
@@ -86,7 +88,7 @@ int main(int argc, char *argv[]) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 
-    res = scrcpy(args.serial, args.port, args.maximum_size) ? 0 : 1;
+    res = scrcpy(args.serial, args.port, args.max_size) ? 0 : 1;
 
     avformat_network_deinit(); // ignore failure
 

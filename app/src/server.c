@@ -21,16 +21,16 @@ process_t disable_tunnel(const char *serial) {
     return adb_reverse_remove(serial, SOCKET_NAME);
 }
 
-process_t start_server(const char *serial, Uint16 maximum_size) {
-    char maximum_size_string[6];
-    sprintf(maximum_size_string, "%d", maximum_size);
+process_t start_server(const char *serial, Uint16 max_size) {
+    char max_size_string[6];
+    sprintf(max_size_string, "%d", max_size);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=/data/local/tmp/scrcpy.apk",
         "app_process",
         "/", // unused
         "com.genymobile.scrcpy.ScrCpyServer",
-        maximum_size_string,
+        max_size_string,
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }

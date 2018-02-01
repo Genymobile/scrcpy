@@ -1,13 +1,13 @@
 package com.genymobile.scrcpy;
 
 public class Options {
-    private int maximumSize;
+    private int maxSize;
 
-    public int getMaximumSize() {
-        return maximumSize;
+    public int getMaxSize() {
+        return maxSize;
     }
 
-    public void setMaximumSize(int maximumSize) {
-        this.maximumSize = maximumSize;
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
     }
 }
