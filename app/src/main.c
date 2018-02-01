@@ -65,8 +65,12 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             }
             case 'p': {
                 char *endptr;
+                if (*optarg == '\0') {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port parameter is empty");
+                    return -1;
+                }
                 long value = strtol(optarg, &endptr, 0);
-                if (*optarg == '\0' || *endptr != '\0') {
+                if (*endptr != '\0') {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s", optarg);
                     return -1;
                 }
@@ -79,8 +83,12 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             }
             case 'm': {
                 char *endptr;
+                if (*optarg == '\0') {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size parameter is empty");
+                    return -1;
+                }
                 long value = strtol(optarg, &endptr, 0);
-                if (*optarg == '\0' || *endptr != '\0') {
+                if (*endptr != '\0') {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid max size: %s", optarg);
                     return -1;
                 }
