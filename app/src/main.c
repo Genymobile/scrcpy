@@ -67,11 +67,11 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 long value = strtol(optarg, &endptr, 0);
                 if (*optarg == '\0' || *endptr != '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s\n", optarg);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s", optarg);
                     return -1;
                 }
                 if (value & ~0xffff) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Port out of range: %ld\n", value);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Port out of range: %ld", value);
                     return -1;
                 }
                 args->port = (Uint16) value;
@@ -81,11 +81,11 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 long value = strtol(optarg, &endptr, 0);
                 if (*optarg == '\0' || *endptr != '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid max size: %s\n", optarg);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid max size: %s", optarg);
                     return -1;
                 }
                 if (value & ~0xffff) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size must be between 0 and 65535: %ld\n", value);
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size must be between 0 and 65535: %ld", value);
                     return -1;
                 }
                 args->max_size = (Uint16) value;
@@ -102,7 +102,7 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
         args->serial = argv[index++];
     }
     if (index < argc) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unexpected additional argument: %s\n", argv[index]);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unexpected additional argument: %s", argv[index]);
         return -1;
     }
     return 0;
