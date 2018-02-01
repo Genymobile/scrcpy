@@ -30,6 +30,8 @@ static SDL_Window *window;
 static SDL_Renderer *renderer;
 static SDL_Texture *texture;
 static struct size frame_size;
+// used only in fullscreen mode to know the windowed window size
+static struct size windowed_window_size;
 static SDL_bool texture_empty = SDL_TRUE;
 static SDL_bool fullscreen = SDL_FALSE;
 
@@ -104,6 +106,17 @@ static inline struct size get_window_size(SDL_Window *window) {
     return size;
 }
 
+static void set_window_size(SDL_Window *window, struct size new_size) {
+    // setting the window size during fullscreen is implementation defined,
+    // so apply the resize only after fullscreen is disabled
+    if (fullscreen) {
+        // SDL_SetWindowSize will be called when fullscreen will be disabled
+        windowed_window_size = new_size;
+    } else {
+        SDL_SetWindowSize(window, new_size.width, new_size.height);
+    }
+}
+
 static inline struct point get_mouse_point() {
     int x;
     int y;
@@ -119,7 +132,6 @@ static inline struct point get_mouse_point() {
 //  - it attempts to keep at least one dimension of the current_size (i.e. it crops the black borders)
 //  - it keeps the aspect ratio
 //  - it scales down to make it fit in the display_size
-// TODO unit test
 static struct size get_optimal_size(struct size current_size, struct size frame_size) {
     struct size display_size;
     // 32 bits because we need to multiply two 16 bits values
@@ -160,9 +172,8 @@ static inline struct size get_optimal_window_size(SDL_Window *window, struct siz
     return get_optimal_size(current_size, frame_size);
 }
 
-static inline SDL_bool prepare_for_frame(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture **texture,
-                                         struct size old_frame_size, struct size frame_size) {
-    (void) window; // might be used to resize the window automatically
+static SDL_bool prepare_for_frame(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture **texture,
+                                  struct size old_frame_size, struct size frame_size) {
     if (old_frame_size.width != frame_size.width || old_frame_size.height != frame_size.height) {
         if (SDL_RenderSetLogicalSize(renderer, frame_size.width, frame_size.height)) {
             SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Could not set renderer logical size: %s", SDL_GetError());
@@ -178,7 +189,7 @@ static inline SDL_bool prepare_for_frame(SDL_Window *window, SDL_Renderer *rende
             (Uint32) current_size.height * frame_size.height / old_frame_size.height,
         };
         target_size = get_optimal_size(target_size, frame_size);
-        SDL_SetWindowSize(window, target_size.width, target_size.height);
+        set_window_size(window, target_size);
 
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "New texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
         *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, frame_size.width, frame_size.height);
@@ -204,6 +215,26 @@ static void render(SDL_Renderer *renderer, SDL_Texture *texture) {
         SDL_RenderCopy(renderer, texture, NULL, NULL);
     }
     SDL_RenderPresent(renderer);
+}
+
+static SDL_bool switch_fullscreen(void) {
+    if (!fullscreen) {
+        // going to fullscreen, store the current windowed window size
+        windowed_window_size = get_window_size(window);
+    }
+    Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
+    if (SDL_SetWindowFullscreen(window, new_mode)) {
+        return SDL_FALSE;
+    }
+
+    fullscreen = !fullscreen;
+    if (!fullscreen) {
+        // fullscreen disabled, restore expected windowed window size
+        SDL_SetWindowSize(window, windowed_window_size.width, windowed_window_size.height);
+    }
+
+    render(renderer, texture_empty ? NULL : texture);
+    return SDL_TRUE;
 }
 
 static int wait_for_success(process_t proc, const char *name) {
@@ -270,24 +301,24 @@ static void handle_key(const SDL_KeyboardEvent *event) {
 
         // Ctrl+x: optimal size
         if (keycode == SDLK_x && !shift) {
-            struct size optimal_size = get_optimal_window_size(window, frame_size);
-            SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
+            if (!fullscreen) {
+                struct size optimal_size = get_optimal_window_size(window, frame_size);
+                SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
+            }
             return;
         }
 
         // Ctrl+g: pixel-perfect (ratio 1:1)
         if (keycode == SDLK_g && !shift) {
-            SDL_SetWindowSize(window, frame_size.width, frame_size.height);
+            if (!fullscreen) {
+                SDL_SetWindowSize(window, frame_size.width, frame_size.height);
+            }
             return;
         }
 
         // Ctrl+f: switch fullscreen
         if (keycode == SDLK_f && !shift) {
-            Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-            if (!SDL_SetWindowFullscreen(window, new_mode)) {
-                fullscreen = !fullscreen;
-                render(renderer, texture_empty ? NULL : texture);
-            } else {
+            if (!switch_fullscreen()) {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
             }
             return;
