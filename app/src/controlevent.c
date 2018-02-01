@@ -27,34 +27,34 @@ static void write_position(Uint8 *buf, const struct position *position) {
 int control_event_serialize(const struct control_event *event, unsigned char *buf) {
     buf[0] = event->type;
     switch (event->type) {
-    case CONTROL_EVENT_TYPE_KEYCODE:
-        buf[1] = event->keycode_event.action;
-        write32(&buf[2], event->keycode_event.keycode);
-        write32(&buf[6], event->keycode_event.metastate);
-        return 10;
-    case CONTROL_EVENT_TYPE_TEXT: {
-        // write length (1 byte) + date (non nul-terminated)
-        size_t len = strlen(event->text_event.text);
-        if (len > TEXT_MAX_LENGTH) {
-            len = TEXT_MAX_LENGTH;
+        case CONTROL_EVENT_TYPE_KEYCODE:
+            buf[1] = event->keycode_event.action;
+            write32(&buf[2], event->keycode_event.keycode);
+            write32(&buf[6], event->keycode_event.metastate);
+            return 10;
+        case CONTROL_EVENT_TYPE_TEXT: {
+            // write length (1 byte) + date (non nul-terminated)
+            size_t len = strlen(event->text_event.text);
+            if (len > TEXT_MAX_LENGTH) {
+                len = TEXT_MAX_LENGTH;
+            }
+            buf[1] = (Uint8) len;
+            memcpy(&buf[2], &event->text_event.text, len);
+            return 2 + len;
         }
-        buf[1] = (Uint8) len;
-        memcpy(&buf[2], &event->text_event.text, len);
-        return 2 + len;
-    }
-    case CONTROL_EVENT_TYPE_MOUSE:
-        buf[1] = event->mouse_event.action;
-        write32(&buf[2], event->mouse_event.buttons);
-        write_position(&buf[6], &event->mouse_event.position);
-        return 14;
-    case CONTROL_EVENT_TYPE_SCROLL:
-        write_position(&buf[1], &event->scroll_event.position);
-        write32(&buf[9], (Uint32) event->scroll_event.hscroll);
-        write32(&buf[13], (Uint32) event->scroll_event.vscroll);
-        return 17;
-    default:
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown event type: %u\n", (unsigned) event->type);
-        return 0;
+        case CONTROL_EVENT_TYPE_MOUSE:
+            buf[1] = event->mouse_event.action;
+            write32(&buf[2], event->mouse_event.buttons);
+            write_position(&buf[6], &event->mouse_event.position);
+            return 14;
+        case CONTROL_EVENT_TYPE_SCROLL:
+            write_position(&buf[1], &event->scroll_event.position);
+            write32(&buf[9], (Uint32) event->scroll_event.hscroll);
+            write32(&buf[13], (Uint32) event->scroll_event.vscroll);
+            return 17;
+        default:
+            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown event type: %u\n", (unsigned) event->type);
+            return 0;
     }
 }
 

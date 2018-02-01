@@ -335,49 +335,49 @@ void event_loop(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-        case EVENT_DECODER_STOPPED:
-            SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Video decoder stopped");
-        case SDL_QUIT:
-            return;
-        case EVENT_NEW_FRAME:
-            if (!handle_new_frame()) {
+            case EVENT_DECODER_STOPPED:
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Video decoder stopped");
+            case SDL_QUIT:
                 return;
-            }
-            texture_empty = SDL_FALSE;
-            count_frame(); // display fps for debug
-            break;
-        case SDL_WINDOWEVENT:
-            switch (event.window.event) {
-            case SDL_WINDOWEVENT_EXPOSED:
-            case SDL_WINDOWEVENT_SIZE_CHANGED:
-                render(renderer, texture_empty ? NULL : texture);
+            case EVENT_NEW_FRAME:
+                if (!handle_new_frame()) {
+                    return;
+                }
+                texture_empty = SDL_FALSE;
+                count_frame(); // display fps for debug
+                break;
+            case SDL_WINDOWEVENT:
+                switch (event.window.event) {
+                case SDL_WINDOWEVENT_EXPOSED:
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    render(renderer, texture_empty ? NULL : texture);
+                    break;
+                }
+                break;
+            case SDL_TEXTINPUT: {
+                handle_text_input(&event.text);
                 break;
             }
-            break;
-        case SDL_TEXTINPUT: {
-            handle_text_input(&event.text);
-            break;
-        }
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            handle_key(&event.key);
-            break;
-        case SDL_MOUSEMOTION:
-            handle_mouse_motion(&event.motion, frame_size);
-            break;
-        case SDL_MOUSEWHEEL: {
-            struct position position = {
-                .screen_size = frame_size,
-                .point = get_mouse_point(),
-            };
-            handle_mouse_wheel(&event.wheel, position);
-            break;
-        }
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP: {
-            handle_mouse_button(&event.button, frame_size);
-            break;
-        }
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                handle_key(&event.key);
+                break;
+            case SDL_MOUSEMOTION:
+                handle_mouse_motion(&event.motion, frame_size);
+                break;
+            case SDL_MOUSEWHEEL: {
+                struct position position = {
+                    .screen_size = frame_size,
+                    .point = get_mouse_point(),
+                };
+                handle_mouse_wheel(&event.wheel, position);
+                break;
+            }
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP: {
+                handle_mouse_button(&event.button, frame_size);
+                break;
+            }
         }
     }
 }

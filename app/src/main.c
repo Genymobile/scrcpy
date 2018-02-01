@@ -16,37 +16,37 @@ int parse_args(struct args *args, int argc, char *argv[]) {
     int c;
     while ((c = getopt(argc, argv, "p:m:")) != -1) {
         switch (c) {
-        case 'p': {
-            char *endptr;
-            long value = strtol(optarg, &endptr, 0);
-            if (*optarg == '\0' || *endptr != '\0') {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s\n", optarg);
-                return -1;
+            case 'p': {
+                char *endptr;
+                long value = strtol(optarg, &endptr, 0);
+                if (*optarg == '\0' || *endptr != '\0') {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s\n", optarg);
+                    return -1;
+                }
+                if (value & ~0xffff) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Port out of range: %ld\n", value);
+                    return -1;
+                }
+                args->port = (Uint16) value;
+                break;
             }
-            if (value & ~0xffff) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Port out of range: %ld\n", value);
-                return -1;
+            case 'm': {
+                char *endptr;
+                long value = strtol(optarg, &endptr, 0);
+                if (*optarg == '\0' || *endptr != '\0') {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid maximum size: %s\n", optarg);
+                    return -1;
+                }
+                if (value & ~0xffff) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Maximum size must be between 0 and 65535: %ld\n", value);
+                    return -1;
+                }
+                args->maximum_size = (Uint16) value;
+                break;
             }
-            args->port = (Uint16) value;
-            break;
-        }
-        case 'm': {
-            char *endptr;
-            long value = strtol(optarg, &endptr, 0);
-            if (*optarg == '\0' || *endptr != '\0') {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid maximum size: %s\n", optarg);
+            default:
+                // getopt prints the error message on stderr
                 return -1;
-            }
-            if (value & ~0xffff) {
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Maximum size must be between 0 and 65535: %ld\n", value);
-                return -1;
-            }
-            args->maximum_size = (Uint16) value;
-            break;
-        }
-        default:
-            // getopt prints the error message on stderr
-            return -1;
         }
     }
 
