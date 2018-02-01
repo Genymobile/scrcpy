@@ -7,7 +7,7 @@ public class ScrCpyServer {
     private static void scrcpy(Options options) throws IOException {
         final Device device = new Device(options);
         try (DesktopConnection connection = DesktopConnection.open(device)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder();
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getBitRate());
 
             // asynchronous
             startEventController(device, connection);
@@ -36,10 +36,18 @@ public class ScrCpyServer {
 
     private static Options createOptions(String... args) {
         Options options = new Options();
-        if (args.length > 0) {
-            int maxSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
-            options.setMaxSize(maxSize);
+        if (args.length < 1) {
+            return options;
         }
+        int maxSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
+        options.setMaxSize(maxSize);
+
+        if (args.length < 2) {
+            return options;
+        }
+        int bitRate = Integer.parseInt(args[1]);
+        options.setBitRate(bitRate);
+
         return options;
     }
 

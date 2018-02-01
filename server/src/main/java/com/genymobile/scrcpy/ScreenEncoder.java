@@ -34,6 +34,10 @@ public class ScreenEncoder implements Device.RotationListener {
         this.iFrameInterval = iFrameInterval;
     }
 
+    public ScreenEncoder(int bitRate) {
+        this(bitRate, DEFAULT_FRAME_RATE, DEFAULT_I_FRAME_INTERVAL);
+    }
+
     public ScreenEncoder() {
         this(DEFAULT_BIT_RATE, DEFAULT_FRAME_RATE, DEFAULT_I_FRAME_INTERVAL);
     }

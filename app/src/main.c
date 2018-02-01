@@ -6,13 +6,15 @@
 #include <SDL2/SDL.h>
 
 #define DEFAULT_LOCAL_PORT 27183
-#define DEFAULT_MAX_SIZE 0
+#define DEFAULT_MAX_SIZE 0 // unlimited
+#define DEFAULT_BIT_RATE 4000000 // 4Mbps
 
 struct args {
     const char *serial;
     SDL_bool help;
     Uint16 port;
     Uint16 max_size;
+    Uint32 bit_rate;
 };
 
 static void usage(const char *arg0) {
@@ -24,6 +26,11 @@ static void usage(const char *arg0) {
         "        are connected to adb.\n"
         "\n"
         "Options:\n"
+        "\n"
+        "    -b, --bit-rate value\n"
+        "        Encode the video at the given bit-rate, expressed in bits/s.\n"
+        "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
+        "        Default is %d.\n"
         "\n"
         "    -h, --help\n"
         "        Print this help.\n"
@@ -45,6 +52,7 @@ static void usage(const char *arg0) {
         "    Ctrl+x: resize window to optimal size (remove black borders)\n"
         "\n",
         arg0,
+        DEFAULT_BIT_RATE,
         DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
         DEFAULT_LOCAL_PORT);
 }
@@ -54,10 +62,11 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
         {"help",     no_argument,       NULL, 'h'},
         {"port",     required_argument, NULL, 'p'},
         {"max-size", required_argument, NULL, 'm'},
+        {"bit-rate", required_argument, NULL, 'b'},
         {NULL,       0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "hp:m:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hp:m:b:", long_options, NULL)) != -1) {
         switch (c) {
             case 'h': {
                 args->help = SDL_TRUE;
@@ -99,6 +108,35 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 args->max_size = (Uint16) value;
                 break;
             }
+            case 'b': {
+                char *endptr;
+                if (*optarg == '\0') {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bit-rate parameter is empty");
+                    return -1;
+                }
+                long value = strtol(optarg, &endptr, 0);
+                int mul = 1;
+                if (*endptr != '\0') {
+                    if (optarg == endptr) {
+                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid bit-rate: %s", optarg);
+                        return -1;
+                    }
+                    if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
+                        mul = 1000000;
+                    } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
+                        mul = 1000;
+                    } else {
+                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid bit-rate unit: %s", optarg);
+                        return -1;
+                    }
+                }
+                if (value < 0 || ((Uint32) -1) / mul < value) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bitrate must be positive and less than 2^32: %s", optarg);
+                    return -1;
+                }
+                args->bit_rate = (Uint32) value * mul;
+                break;
+            }
             default:
                 // getopt prints the error message on stderr
                 return -1;
@@ -120,10 +158,11 @@ int main(int argc, char *argv[]) {
     int res;
 
     struct args args = {
-        .help = SDL_FALSE,
         .serial = NULL,
-        .max_size = DEFAULT_MAX_SIZE,
+        .help = SDL_FALSE,
         .port = DEFAULT_LOCAL_PORT,
+        .max_size = DEFAULT_MAX_SIZE,
+        .bit_rate = DEFAULT_BIT_RATE,
     };
     if (parse_args(&args, argc, argv)) {
         usage(argv[0]);
@@ -143,7 +182,7 @@ int main(int argc, char *argv[]) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 
-    res = scrcpy(args.serial, args.port, args.max_size) ? 0 : 1;
+    res = scrcpy(args.serial, args.port, args.max_size, args.bit_rate) ? 0 : 1;
 
     avformat_network_deinit(); // ignore failure
 

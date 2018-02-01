@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL_log.h>
 #include <errno.h>
+#include <stdint.h>
 
 #define SOCKET_NAME "scrcpy"
 
@@ -21,9 +22,11 @@ process_t disable_tunnel(const char *serial) {
     return adb_reverse_remove(serial, SOCKET_NAME);
 }
 
-process_t start_server(const char *serial, Uint16 max_size) {
+process_t start_server(const char *serial, Uint16 max_size, Uint32 bit_rate) {
     char max_size_string[6];
-    sprintf(max_size_string, "%d", max_size);
+    char bit_rate_string[11];
+    sprintf(max_size_string, "%"PRIu16, max_size);
+    sprintf(bit_rate_string, "%"PRIu32, bit_rate);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=/data/local/tmp/scrcpy.apk",
@@ -31,6 +34,7 @@ process_t start_server(const char *serial, Uint16 max_size) {
         "/", // unused
         "com.genymobile.scrcpy.ScrCpyServer",
         max_size_string,
+        bit_rate_string,
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }

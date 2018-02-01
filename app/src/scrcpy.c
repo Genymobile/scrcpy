@@ -417,7 +417,7 @@ void event_loop(void) {
     }
 }
 
-SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size) {
+SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 bit_rate) {
     SDL_bool ret = 0;
 
     process_t push_proc = push_server(serial);
@@ -437,7 +437,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size) {
     }
 
     // server will connect to our socket
-    process_t server = start_server(serial, max_size);
+    process_t server = start_server(serial, max_size, bit_rate);
     if (server == PROCESS_NONE) {
         ret = SDL_FALSE;
         SDLNet_TCP_Close(server_socket);
