@@ -304,6 +304,7 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             if (!fullscreen) {
                 struct size optimal_size = get_optimal_window_size(window, frame_size);
                 SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to optimal size");
             }
             return;
         }
@@ -312,13 +313,16 @@ static void handle_key(const SDL_KeyboardEvent *event) {
         if (keycode == SDLK_g && !shift) {
             if (!fullscreen) {
                 SDL_SetWindowSize(window, frame_size.width, frame_size.height);
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to pixel-perfect");
             }
             return;
         }
 
         // Ctrl+f: switch fullscreen
         if (keycode == SDLK_f && !shift) {
-            if (!switch_fullscreen()) {
+            if (switch_fullscreen()) {
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Switched to %s mode", fullscreen ? "fullscreen" : "windowed");
+            } else {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
             }
             return;
