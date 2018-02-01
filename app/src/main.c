@@ -1,5 +1,6 @@
 #include "scrcpy.h"
 
+#include <getopt.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
@@ -12,9 +13,14 @@ struct args {
     Uint16 maximum_size;
 };
 
-int parse_args(struct args *args, int argc, char *argv[]) {
+static int parse_args(struct args *args, int argc, char *argv[]) {
+    static const struct option long_options[] = {
+        {"port",     required_argument, NULL, 'p'},
+        {"max-size", required_argument, NULL, 'm'},
+        {NULL,       0,                 NULL, 0  },
+    };
     int c;
-    while ((c = getopt(argc, argv, "p:m:")) != -1) {
+    while ((c = getopt_long(argc, argv, "p:m:", long_options, NULL)) != -1) {
         switch (c) {
             case 'p': {
                 char *endptr;
