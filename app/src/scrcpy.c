@@ -217,14 +217,15 @@ static void render(SDL_Renderer *renderer, SDL_Texture *texture) {
     SDL_RenderPresent(renderer);
 }
 
-static SDL_bool switch_fullscreen(void) {
+static void switch_fullscreen(void) {
     if (!fullscreen) {
         // going to fullscreen, store the current windowed window size
         windowed_window_size = get_window_size(window);
     }
     Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
     if (SDL_SetWindowFullscreen(window, new_mode)) {
-        return SDL_FALSE;
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
+        return;
     }
 
     fullscreen = !fullscreen;
@@ -233,8 +234,8 @@ static SDL_bool switch_fullscreen(void) {
         SDL_SetWindowSize(window, windowed_window_size.width, windowed_window_size.height);
     }
 
+    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Switched to %s mode", fullscreen ? "fullscreen" : "windowed");
     render(renderer, texture_empty ? NULL : texture);
-    return SDL_TRUE;
 }
 
 static int wait_for_success(process_t proc, const char *name) {
@@ -362,11 +363,7 @@ static void handle_key(const SDL_KeyboardEvent *event) {
 
         // Ctrl+f: switch fullscreen
         if (keycode == SDLK_f && !shift) {
-            if (switch_fullscreen()) {
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Switched to %s mode", fullscreen ? "fullscreen" : "windowed");
-            } else {
-                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
-            }
+            switch_fullscreen();
             return;
         }
 
