@@ -238,6 +238,21 @@ static void switch_fullscreen(void) {
     render(renderer, texture_empty ? NULL : texture);
 }
 
+static void resize_to_fit(void) {
+    if (!fullscreen) {
+        struct size optimal_size = get_optimal_window_size(window, frame_size);
+        SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
+        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to optimal size");
+    }
+}
+
+static void resize_to_pixel_perfect(void) {
+    if (!fullscreen) {
+        SDL_SetWindowSize(window, frame_size.width, frame_size.height);
+        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to pixel-perfect");
+    }
+}
+
 static int wait_for_success(process_t proc, const char *name) {
     if (proc == PROCESS_NONE) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not execute \"%s\"", name);
@@ -342,22 +357,15 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             return;
         }
 
-        // Ctrl+x: optimal size
+        // Ctrl+x: optimal size (remove black borders)
         if (keycode == SDLK_x && !shift) {
-            if (!fullscreen) {
-                struct size optimal_size = get_optimal_window_size(window, frame_size);
-                SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to optimal size");
-            }
+            resize_to_fit();
             return;
         }
 
         // Ctrl+g: pixel-perfect (ratio 1:1)
         if (keycode == SDLK_g && !shift) {
-            if (!fullscreen) {
-                SDL_SetWindowSize(window, frame_size.width, frame_size.height);
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to pixel-perfect");
-            }
+            resize_to_pixel_perfect();
             return;
         }
 
