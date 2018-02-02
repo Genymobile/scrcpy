@@ -254,6 +254,29 @@ static int wait_for_success(process_t proc, const char *name) {
     return 0;
 }
 
+static void send_keycode(enum android_keycode keycode, const char *name) {
+    // send DOWN event
+    struct control_event control_event = {
+        .type = CONTROL_EVENT_TYPE_KEYCODE,
+        .keycode_event = {
+            .action = AKEY_EVENT_ACTION_DOWN,
+            .keycode = keycode,
+            .metastate = 0,
+        },
+    };
+
+    if (!controller_push_event(&controller, &control_event)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (DOWN)", name);
+        return;
+    }
+
+    // send UP event
+    control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
+    if (!controller_push_event(&controller, &control_event)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (UP)", name);
+    }
+}
+
 static SDL_bool handle_new_frame(void) {
     mutex_lock(frames.mutex);
     AVFrame *frame = frames.rendering_frame;
@@ -276,7 +299,26 @@ static SDL_bool handle_new_frame(void) {
     return SDL_TRUE;
 }
 
+static SDL_bool is_ctrl_down(void) {
+    const Uint8 *state = SDL_GetKeyboardState(NULL);
+    return state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
+}
+
 static void handle_text_input(const SDL_TextInputEvent *event) {
+    if (is_ctrl_down()) {
+        char c = event->text[0];
+        switch (c) {
+            case '+':
+                send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
+                break;
+            case '-':
+                send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
+                break;
+        }
+        // ignore
+        return;
+    }
+
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
@@ -327,6 +369,32 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             }
             return;
         }
+
+        // Ctrl+h: HOME (the HOME key also works natively)
+        if (keycode == SDLK_h && !shift) {
+             send_keycode(AKEYCODE_HOME, "HOME");
+             return;
+        }
+
+        // Ctrl+b or Ctrl+BACKSPACE: BACK (the ESCAPE key also works natively)
+        if ((keycode == SDLK_b && !shift) || keycode == SDLK_BACKSPACE) {
+            send_keycode(AKEYCODE_BACK, "BACK");
+            return;
+        }
+
+        // Ctrl+m: APP_SWITCH
+        if (keycode == SDLK_m && !shift) {
+            send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
+            return;
+        }
+
+        // Ctrl+p: POWER
+        if (keycode == SDLK_p && !shift) {
+            send_keycode(AKEYCODE_POWER, "POWER");
+            return;
+        }
+
+        // volume shortcuts are handled in handle_text_input()
 
         return;
     }
