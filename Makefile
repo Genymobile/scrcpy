@@ -27,8 +27,8 @@ build-server:
 
 dist: build-server build-app
 	mkdir -p "$(DIST)/$(TARGET_DIR)"
-	# no need to sign the APK, we dont "install" it
-	cp server/build/outputs/apk/release/server-release-unsigned.apk "$(DIST)/$(TARGET_DIR)/scrcpy.apk"
+	# no need to sign the APK, we dont "install" it, this is in fact a simple jar
+	cp server/build/outputs/apk/release/server-release-unsigned.apk "$(DIST)/$(TARGET_DIR)/scrcpy-server.jar"
 	cp $(APP_BUILD_DIR)/scrcpy "$(DIST)/$(TARGET_DIR)/"
 
 dist-zip: dist
