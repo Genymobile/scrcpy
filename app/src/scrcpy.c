@@ -320,18 +320,41 @@ static SDL_bool is_ctrl_down(void) {
     return state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
 }
 
+static void handle_shortcut(char c) {
+    switch (c) {
+        case 'h':
+            send_keycode(AKEYCODE_HOME, "HOME");
+            break;
+        case 'b':
+            send_keycode(AKEYCODE_BACK, "BACK");
+            break;
+        case 'm':
+            send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
+            break;
+        case 'p':
+            send_keycode(AKEYCODE_POWER, "POWER");
+            break;
+        case '+':
+            send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
+            break;
+        case '-':
+            send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
+            break;
+        case 'f':
+            switch_fullscreen();
+            break;
+        case 'x':
+            resize_to_fit();
+            break;
+        case 'g':
+            resize_to_pixel_perfect();
+            break;
+    }
+}
+
 static void handle_text_input(const SDL_TextInputEvent *event) {
     if (is_ctrl_down()) {
-        char c = event->text[0];
-        switch (c) {
-            case '+':
-                send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
-                break;
-            case '-':
-                send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
-                break;
-        }
-        // ignore
+        handle_shortcut(event->text[0]);
         return;
     }
 
@@ -357,49 +380,32 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             return;
         }
 
-        // Ctrl+x: optimal size (remove black borders)
-        if (keycode == SDLK_x && !shift) {
-            resize_to_fit();
+        if (shift) {
+            // currently, there is no shortcut implying SHIFT
             return;
         }
 
-        // Ctrl+g: pixel-perfect (ratio 1:1)
-        if (keycode == SDLK_g && !shift) {
-            resize_to_pixel_perfect();
-            return;
+        switch (keycode) {
+            case SDLK_f:
+                handle_shortcut('f');
+                return;
+            case SDLK_x:
+                handle_shortcut('x');
+                return;
+            case SDLK_g:
+                handle_shortcut('g');
+                return;
+            case SDLK_b: // fall-through
+            case SDLK_BACKSPACE:
+                handle_shortcut('b');
+                return;
+            case SDLK_m:
+                handle_shortcut('m');
+                return;
+            case SDLK_p:
+                handle_shortcut('p');
+                return;
         }
-
-        // Ctrl+f: switch fullscreen
-        if (keycode == SDLK_f && !shift) {
-            switch_fullscreen();
-            return;
-        }
-
-        // Ctrl+h: HOME (the HOME key also works natively)
-        if (keycode == SDLK_h && !shift) {
-             send_keycode(AKEYCODE_HOME, "HOME");
-             return;
-        }
-
-        // Ctrl+b or Ctrl+BACKSPACE: BACK (the ESCAPE key also works natively)
-        if ((keycode == SDLK_b && !shift) || keycode == SDLK_BACKSPACE) {
-            send_keycode(AKEYCODE_BACK, "BACK");
-            return;
-        }
-
-        // Ctrl+m: APP_SWITCH
-        if (keycode == SDLK_m && !shift) {
-            send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
-            return;
-        }
-
-        // Ctrl+p: POWER
-        if (keycode == SDLK_p && !shift) {
-            send_keycode(AKEYCODE_POWER, "POWER");
-            return;
-        }
-
-        // volume shortcuts are handled in handle_text_input()
 
         return;
     }
