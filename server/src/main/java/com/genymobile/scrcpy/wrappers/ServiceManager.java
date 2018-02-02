@@ -8,6 +8,11 @@ import java.lang.reflect.Method;
 public class ServiceManager {
     private final Method getServiceMethod;
 
+    private WindowManager windowManager;
+    private DisplayManager displayManager;
+    private InputManager inputManager;
+    private PowerManager powerManager;
+
     public ServiceManager() {
         try {
             getServiceMethod = Class.forName("android.os.ServiceManager").getDeclaredMethod("getService", String.class);
@@ -27,18 +32,30 @@ public class ServiceManager {
     }
 
     public WindowManager getWindowManager() {
-        return new WindowManager(getService("window", "android.view.IWindowManager"));
+        if (windowManager == null) {
+            windowManager = new WindowManager(getService("window", "android.view.IWindowManager"));
+        }
+        return windowManager;
     }
 
     public DisplayManager getDisplayManager() {
-        return new DisplayManager(getService("display", "android.hardware.display.IDisplayManager"));
+        if (displayManager == null) {
+            displayManager = new DisplayManager(getService("display", "android.hardware.display.IDisplayManager"));
+        }
+        return displayManager;
     }
 
     public InputManager getInputManager() {
-        return new InputManager(getService("input", "android.hardware.input.IInputManager"));
+        if (inputManager == null) {
+            inputManager = new InputManager(getService("input", "android.hardware.input.IInputManager"));
+        }
+        return inputManager;
     }
 
     public PowerManager getPowerManager() {
-        return new PowerManager(getService("power", "android.os.IPowerManager"));
+        if (powerManager == null) {
+            powerManager = new PowerManager(getService("power", "android.os.IPowerManager"));
+        }
+        return powerManager;
     }
 }
