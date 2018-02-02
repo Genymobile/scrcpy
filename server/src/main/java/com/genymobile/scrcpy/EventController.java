@@ -32,6 +32,9 @@ public class EventController {
         inputManager = device.getInputManager();
         powerManager = device.getPowerManager();
         initPointer();
+
+        // on start, turn screen on
+        turnScreenOn();
     }
 
     private void initPointer() {
