@@ -4,9 +4,8 @@ import android.graphics.Point;
 import android.os.Build;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
+import android.view.InputEvent;
 
-import com.genymobile.scrcpy.wrappers.InputManager;
-import com.genymobile.scrcpy.wrappers.PowerManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public final class Device {
@@ -90,12 +89,12 @@ public final class Device {
         return Build.MODEL;
     }
 
-    public InputManager getInputManager() {
-        return serviceManager.getInputManager();
+    public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }
 
-    public PowerManager getPowerManager() {
-        return serviceManager.getPowerManager();
+    public boolean isScreenOn() {
+        return serviceManager.getPowerManager().isScreenOn();
     }
 
     public void registerRotationWatcher(IRotationWatcher rotationWatcher) {

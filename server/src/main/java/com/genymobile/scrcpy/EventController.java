@@ -9,15 +9,12 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
-import com.genymobile.scrcpy.wrappers.PowerManager;
 
 import java.io.IOException;
 
 public class EventController {
 
     private final Device device;
-    private final InputManager inputManager;
-    private final PowerManager powerManager;
     private final DesktopConnection connection;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
@@ -29,8 +26,6 @@ public class EventController {
     public EventController(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
-        inputManager = device.getInputManager();
-        powerManager = device.getPowerManager();
         initPointer();
 
         // on start, turn screen on
@@ -153,11 +148,11 @@ public class EventController {
     }
 
     private boolean injectEvent(InputEvent event) {
-        return inputManager.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+        return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
     private boolean turnScreenOn() {
-        return powerManager.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
+        return device.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
     }
 
     private boolean executeCommand(int action) {
