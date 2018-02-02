@@ -293,6 +293,30 @@ static void send_keycode(enum android_keycode keycode, const char *name) {
     }
 }
 
+static inline void action_home(void) {
+    send_keycode(AKEYCODE_HOME, "HOME");
+}
+
+static inline void action_back(void) {
+    send_keycode(AKEYCODE_BACK, "BACK");
+}
+
+static inline void action_app_switch(void) {
+    send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
+}
+
+static inline void action_power(void) {
+    send_keycode(AKEYCODE_POWER, "POWER");
+}
+
+static inline void action_volume_up(void) {
+    send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
+}
+
+static inline void action_volume_down(void) {
+    send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
+}
+
 static void turn_screen_on(void) {
     struct control_event control_event = {
         .type = CONTROL_EVENT_TYPE_COMMAND,
@@ -332,41 +356,16 @@ static SDL_bool is_ctrl_down(void) {
     return state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
 }
 
-static void handle_shortcut(char c) {
-    switch (c) {
-        case 'h':
-            send_keycode(AKEYCODE_HOME, "HOME");
-            break;
-        case 'b':
-            send_keycode(AKEYCODE_BACK, "BACK");
-            break;
-        case 'm':
-            send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
-            break;
-        case 'p':
-            send_keycode(AKEYCODE_POWER, "POWER");
-            break;
-        case '+':
-            send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
-            break;
-        case '-':
-            send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
-            break;
-        case 'f':
-            switch_fullscreen();
-            break;
-        case 'x':
-            resize_to_fit();
-            break;
-        case 'g':
-            resize_to_pixel_perfect();
-            break;
-    }
-}
-
 static void handle_text_input(const SDL_TextInputEvent *event) {
     if (is_ctrl_down()) {
-        handle_shortcut(event->text[0]);
+        switch (event->text[0]) {
+            case '+':
+                action_volume_up();
+                break;
+            case '-':
+                action_volume_down();
+                break;
+        }
         return;
     }
 
@@ -398,27 +397,27 @@ static void handle_key(const SDL_KeyboardEvent *event) {
         }
 
         switch (keycode) {
-            case SDLK_f:
-                handle_shortcut('f');
-                return;
-            case SDLK_x:
-                handle_shortcut('x');
-                return;
-            case SDLK_g:
-                handle_shortcut('g');
-                return;
             case SDLK_h:
-                handle_shortcut('h');
+                action_home();
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                handle_shortcut('b');
+                action_back();
                 return;
             case SDLK_m:
-                handle_shortcut('m');
+                action_app_switch();
                 return;
             case SDLK_p:
-                handle_shortcut('p');
+                action_power();
+                return;
+            case SDLK_f:
+                switch_fullscreen();
+                return;
+            case SDLK_x:
+                resize_to_fit();
+                return;
+            case SDLK_g:
+                resize_to_pixel_perfect();
                 return;
         }
 
