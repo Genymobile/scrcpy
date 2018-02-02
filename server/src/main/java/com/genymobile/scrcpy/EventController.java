@@ -9,6 +9,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.PowerManager;
 
 import java.io.IOException;
 
@@ -16,6 +17,7 @@ public class EventController {
 
     private final Device device;
     private final InputManager inputManager;
+    private final PowerManager powerManager;
     private final DesktopConnection connection;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
@@ -28,6 +30,7 @@ public class EventController {
         this.device = device;
         this.connection = connection;
         inputManager = device.getInputManager();
+        powerManager = device.getPowerManager();
         initPointer();
     }
 
@@ -79,6 +82,10 @@ public class EventController {
                 break;
             case ControlEvent.TYPE_SCROLL:
                 injectScroll(controlEvent.getPosition(), controlEvent.getHScroll(), controlEvent.getVScroll());
+                break;
+            case ControlEvent.TYPE_COMMAND:
+                executeCommand(controlEvent.getAction());
+                break;
         }
         return true;
     }
@@ -137,7 +144,24 @@ public class EventController {
         return injectEvent(event);
     }
 
+    private boolean injectKeycode(int keyCode) {
+        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0)
+                && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0);
+    }
+
     private boolean injectEvent(InputEvent event) {
         return inputManager.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    }
+
+    private boolean turnScreenOn() {
+        return powerManager.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
+    }
+
+    private boolean executeCommand(int action) {
+        switch (action) {
+            case ControlEvent.COMMAND_SCREEN_ON:
+                return turnScreenOn();
+        }
+        return false;
     }
 }

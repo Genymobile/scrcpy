@@ -37,4 +37,8 @@ public class ServiceManager {
     public InputManager getInputManager() {
         return new InputManager(getService("input", "android.hardware.input.IInputManager"));
     }
+
+    public PowerManager getPowerManager() {
+        return new PowerManager(getService("power", "android.os.IPowerManager"));
+    }
 }

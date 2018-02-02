@@ -6,6 +6,7 @@ import android.os.RemoteException;
 import android.view.IRotationWatcher;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.PowerManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public final class Device {
@@ -91,6 +92,10 @@ public final class Device {
 
     public InputManager getInputManager() {
         return serviceManager.getInputManager();
+    }
+
+    public PowerManager getPowerManager() {
+        return serviceManager.getPowerManager();
     }
 
     public void registerRotationWatcher(IRotationWatcher rotationWatcher) {

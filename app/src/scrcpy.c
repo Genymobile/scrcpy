@@ -293,6 +293,18 @@ static void send_keycode(enum android_keycode keycode, const char *name) {
     }
 }
 
+static void turn_screen_on(void) {
+    struct control_event control_event = {
+        .type = CONTROL_EVENT_TYPE_COMMAND,
+        .command_event = {
+            .action = CONTROL_EVENT_COMMAND_SCREEN_ON,
+        },
+    };
+    if (!controller_push_event(&controller, &control_event)) {
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot turn screen on");
+    }
+}
+
 static SDL_bool handle_new_frame(void) {
     mutex_lock(frames.mutex);
     AVFrame *frame = frames.rendering_frame;
@@ -432,6 +444,10 @@ static void handle_mouse_motion(const SDL_MouseMotionEvent *event, struct size s
 }
 
 static void handle_mouse_button(const SDL_MouseButtonEvent *event, struct size screen_size) {
+    if (event->button == SDL_BUTTON_RIGHT) {
+        turn_screen_on();
+        return;
+    };
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, screen_size, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {

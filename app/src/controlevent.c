@@ -52,6 +52,9 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
             write32(&buf[9], (Uint32) event->scroll_event.hscroll);
             write32(&buf[13], (Uint32) event->scroll_event.vscroll);
             return 17;
+        case CONTROL_EVENT_TYPE_COMMAND:
+            buf[1] = event->command_event.action;
+            return 2;
         default:
             SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown event type: %u", (unsigned) event->type);
             return 0;

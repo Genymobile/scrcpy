@@ -9,11 +9,14 @@ public class ControlEvent {
     public static final int TYPE_TEXT = 1;
     public static final int TYPE_MOUSE = 2;
     public static final int TYPE_SCROLL = 3;
+    public static final int TYPE_COMMAND = 4;
+
+    public static final int COMMAND_SCREEN_ON = 0;
 
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
-    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_*
+    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or COMMAND_*
     private int keycode; // KeyEvent.KEYCODE_*
     private int buttons; // MotionEvent.BUTTON_*
     private Position position;
@@ -54,6 +57,13 @@ public class ControlEvent {
         event.position = position;
         event.hScroll = hScroll;
         event.vScroll = vScroll;
+        return event;
+    }
+
+    public static ControlEvent createCommandControlEvent(int action) {
+        ControlEvent event = new ControlEvent();
+        event.type = TYPE_COMMAND;
+        event.action = action;
         return event;
     }
 

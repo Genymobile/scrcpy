@@ -17,7 +17,10 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_TEXT,
     CONTROL_EVENT_TYPE_MOUSE,
     CONTROL_EVENT_TYPE_SCROLL,
+    CONTROL_EVENT_TYPE_COMMAND,
 };
+
+#define CONTROL_EVENT_COMMAND_SCREEN_ON 0
 
 struct control_event {
     enum control_event_type type;
@@ -40,6 +43,9 @@ struct control_event {
             Sint32 hscroll;
             Sint32 vscroll;
         } scroll_event;
+        struct {
+            int action;
+        } command_event;
     };
 };
 

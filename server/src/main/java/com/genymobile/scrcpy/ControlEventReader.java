@@ -10,6 +10,7 @@ public class ControlEventReader {
     private static final int KEYCODE_PAYLOAD_LENGTH = 9;
     private static final int MOUSE_PAYLOAD_LENGTH = 13;
     private static final int SCROLL_PAYLOAD_LENGTH = 16;
+    private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
     private final byte[] rawBuffer = new byte[128];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
@@ -85,6 +86,13 @@ public class ControlEventReader {
                 int hScroll = buffer.getInt();
                 int vScroll = buffer.getInt();
                 return ControlEvent.createScrollControlEvent(position, hScroll, vScroll);
+            }
+            case ControlEvent.TYPE_COMMAND: {
+                if (buffer.remaining() < COMMAND_PAYLOAD_LENGTH) {
+                    break;
+                }
+                int action = toUnsigned(buffer.get());
+                return ControlEvent.createCommandControlEvent(action);
             }
             default:
                 Ln.w("Unknown event type: " + type);
