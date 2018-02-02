@@ -11,7 +11,7 @@ process_t push_server(const char *serial) {
     if (!apk_path) {
         apk_path = "scrcpy.apk";
     }
-    return adb_push(serial, apk_path, "/data/local/tmp/");
+    return adb_push(serial, apk_path, "/data/local/tmp/scrcpy.apk");
 }
 
 process_t enable_tunnel(const char *serial, Uint16 local_port) {
