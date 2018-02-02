@@ -340,6 +340,10 @@ static void handle_key(const SDL_KeyboardEvent *event) {
 }
 
 static void handle_mouse_motion(const SDL_MouseMotionEvent *event, struct size screen_size) {
+    if (!event->state) {
+        // do not send motion events when no button is pressed
+        return;
+    }
     struct control_event control_event;
     if (mouse_motion_from_sdl_to_android(event, screen_size, &control_event)) {
         if (!controller_push_event(&controller, &control_event)) {
