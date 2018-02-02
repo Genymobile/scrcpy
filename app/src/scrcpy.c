@@ -407,6 +407,9 @@ static void handle_key(const SDL_KeyboardEvent *event) {
             case SDLK_g:
                 handle_shortcut('g');
                 return;
+            case SDLK_h:
+                handle_shortcut('h');
+                return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
                 handle_shortcut('b');
