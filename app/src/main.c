@@ -183,8 +183,6 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-    int res;
-
     struct args args = {
         .serial = NULL,
         .help = SDL_FALSE,
@@ -210,7 +208,7 @@ int main(int argc, char *argv[]) {
 
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 
-    res = scrcpy(args.serial, args.port, args.max_size, args.bit_rate) ? 0 : 1;
+    int res = scrcpy(args.serial, args.port, args.max_size, args.bit_rate) ? 0 : 1;
 
     avformat_network_deinit(); // ignore failure
 

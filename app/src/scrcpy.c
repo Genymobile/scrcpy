@@ -519,7 +519,7 @@ void event_loop(void) {
 }
 
 SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 bit_rate) {
-    SDL_bool ret = 0;
+    SDL_bool ret = SDL_TRUE;
 
     process_t push_proc = push_server(serial);
     if (wait_for_success(push_proc, "adb push")) {
