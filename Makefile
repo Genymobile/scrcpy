@@ -1,4 +1,4 @@
-.PHONY: default release clean build-app build-server dist dist-zip sums test
+.PHONY: default release clean build build-app build-server run dist dist-zip sums test
 
 GRADLE ?= ./gradlew
 
@@ -25,7 +25,12 @@ build-app:
 build-server:
 	$(GRADLE) assembleRelease
 
-dist: build-server build-app
+build: build-app build-server
+
+run:
+	SCRCPY_SERVER_JAR=server/build/outputs/apk/release/server-release-unsigned.apk $(APP_BUILD_DIR)/scrcpy $(ARGS)
+
+dist: build
 	mkdir -p "$(DIST)/$(TARGET_DIR)"
 	# no need to sign the APK, we dont "install" it, this is in fact a simple jar
 	cp server/build/outputs/apk/release/server-release-unsigned.apk "$(DIST)/$(TARGET_DIR)/scrcpy-server.jar"

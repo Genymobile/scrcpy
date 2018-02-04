@@ -83,7 +83,7 @@ from the `PATH`:
     export PATH="$JAVA_HOME/bin:$PATH"
 
 
-### Generate
+### Build
 
 Make sure your `ANDROID_HOME` variable is set to your Android SDK directory:
 
@@ -91,9 +91,17 @@ Make sure your `ANDROID_HOME` variable is set to your Android SDK directory:
 
 From the project root directory, execute:
 
-    make release
+    make build
 
-This will generate the application in `dist/scrcpy/`.
+To run the build:
+
+    make run
+
+It is also pass arguments to `scrcpy` via `make`:
+
+    make run ARGS="-p 1234"
+
+The purpose of this command is to execute `scrcpy` during the development.
 
 
 ### Test
@@ -105,6 +113,15 @@ To execute unit tests:
 The server-side tests require JUnit 4:
 
     sudo apt install junit4
+
+
+### Generate a release
+
+From the project root directory, execute:
+
+    make release
+
+This will generate the application in `dist/scrcpy/`.
 
 
 ## Run
@@ -120,3 +137,5 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
 To change the default port (useful to launch several `scrcpy` simultaneously):
 
     ./scrcpy -p 1234
+
+Other options are available, check `scrcpy --help`.
