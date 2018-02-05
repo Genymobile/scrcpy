@@ -622,11 +622,12 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Could not enable bilinear filtering");
     }
 
+#if SDL_VERSION_ATLEAST(2, 0, 5)
     // Handle a click to gain focus as any other click
     if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
         SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Could not enable mouse focus clickthrough");
-
     }
+#endif
 
     struct size window_size = get_initial_optimal_size(frame_size);
     window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
