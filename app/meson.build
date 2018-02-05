@@ -13,6 +13,7 @@ src = [
     'src/scrcpy.c',
     'src/server.c',
     'src/strutil.c',
+    'src/tinyxpm.c',
 ]
 
 if host_machine.system() == 'windows'
@@ -26,7 +27,6 @@ dependencies = [
     dependency('libavcodec'),
     dependency('libavutil'),
     dependency('sdl2'),
-    dependency('SDL2_image'),
     dependency('SDL2_net'),
 ]
 

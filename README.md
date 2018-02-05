@@ -7,13 +7,13 @@ This project displays screens of Android devices plugged on USB in live.
 
 ### Runtime requirements
 
-This projects requires _FFmpeg_, _LibSDL2_, _LibSDL2-image_ and _LibSDL2-net_.
+This projects requires _FFmpeg_, _LibSDL2_ and _LibSDL2-net_.
 
 #### Linux
 
 Install the packages from your package manager. For example, on Debian:
 
-    sudo apt install ffmpeg libsdl2-2.0.0 libsdl2-image-2.0.0 libsdl2-net-2.0.0
+    sudo apt install ffmpeg libsdl2-2.0.0 libsdl2-net-2.0.0
 
 
 #### Windows
@@ -21,7 +21,6 @@ Install the packages from your package manager. For example, on Debian:
 From [MSYS2]:
 
     pacman -S mingw-w64-x86_64-SDL2
-    pacman -S mingw-w64-x86_64-SDL2_image
     pacman -S mingw-w64-x86_64-SDL2_net
     pacman -S mingw-w64-x86_64-ffmpeg
 
@@ -65,7 +64,7 @@ described below.
 
     sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
                      libavcodec-dev libavformat-dev libavutil-dev \
-                     libsdl2-dev libsdl2-image-dev libsdl2-net-dev
+                     libsdl2-dev libsdl2-net-dev
 
 
 #### Windows

@@ -6,7 +6,6 @@
 #include <libavformat/avformat.h>
 #include <sys/time.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_net.h>
 
 #include "command.h"
@@ -19,6 +18,7 @@
 #include "lockutil.h"
 #include "netutil.h"
 #include "server.h"
+#include "tinyxpm.h"
 
 #include "icon.xpm"
 
@@ -651,7 +651,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto screen_finally_destroy_renderer;
     }
 
-    SDL_Surface *icon = IMG_ReadXPMFromArray(icon_xpm);
+    SDL_Surface *icon = read_xpm(icon_xpm);
     if (!icon) {
         SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not load icon: %s", SDL_GetError());
         ret = SDL_FALSE;
