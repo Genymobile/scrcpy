@@ -6,6 +6,7 @@
 #include <libavformat/avformat.h>
 #include <sys/time.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_net.h>
 
 #include "command.h"
@@ -18,6 +19,8 @@
 #include "lockutil.h"
 #include "netutil.h"
 #include "server.h"
+
+#include "icon.xpm"
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 #define DISPLAY_MARGINS 96
@@ -646,6 +649,15 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         ret = SDL_FALSE;
         goto screen_finally_destroy_renderer;
     }
+
+    SDL_Surface *icon = IMG_ReadXPMFromArray(icon_xpm);
+    if (!icon) {
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not load icon: %s", SDL_GetError());
+        ret = SDL_FALSE;
+        goto screen_finally_destroy_renderer;
+    }
+    SDL_SetWindowIcon(window, icon);
+    SDL_FreeSurface(icon);
 
     SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
     texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, frame_size.width, frame_size.height);

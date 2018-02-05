@@ -26,6 +26,7 @@ dependencies = [
     dependency('libavcodec'),
     dependency('libavutil'),
     dependency('sdl2'),
+    dependency('SDL2_image'),
     dependency('SDL2_net'),
 ]
 
