@@ -1,10 +1,6 @@
 .PHONY: default release clean build build-app build-server run dist dist-zip sums test
 
-ifeq ($(OS),Windows_NT)
-  GRADLE ?= gradlew
-else
-  GRADLE ?= ./gradlew
-endif
+GRADLE ?= ./gradlew
 
 APP_BUILD_DIR := app-build
 DIST := dist
