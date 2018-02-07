@@ -53,12 +53,12 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen(Device device, OutputStream outputStream) throws IOException {
         MediaFormat format = createFormat(bitRate, frameRate, iFrameInterval);
-        MediaCodec codec = createCodec();
-        IBinder display = createDisplay();
         device.setRotationListener(this);
         boolean alive;
         try {
             do {
+                MediaCodec codec = createCodec();
+                IBinder display = createDisplay();
                 Rect deviceRect = device.getScreenInfo().getDeviceSize().toRect();
                 Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
                 setSize(format, videoRect.width(), videoRect.height());
@@ -70,13 +70,13 @@ public class ScreenEncoder implements Device.RotationListener {
                     alive = encode(codec, outputStream);
                 } finally {
                     codec.stop();
+                    destroyDisplay(display);
+                    codec.release();
                     surface.release();
                 }
             } while (alive);
         } finally {
             device.setRotationListener(null);
-            destroyDisplay(display);
-            codec.release();
         }
     }
 
