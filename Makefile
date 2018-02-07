@@ -3,6 +3,7 @@
 GRADLE ?= ./gradlew
 
 APP_BUILD_DIR := app-build
+APP_BUILD_DEBUG_DIR := app-build-debug
 DIST := dist
 TARGET_DIR := scrcpy
 
@@ -16,7 +17,19 @@ release: clean dist-zip sums
 
 clean:
 	$(GRADLE) clean
-	rm -rf "$(APP_BUILD_DIR)" "$(DIST)"
+	rm -rf "$(APP_BUILD_DIR)" "$(APP_BUILD_DEBUG_DIR)" "$(DIST)"
+
+build-app-debug:
+	[ -d "$(APP_BUILD_DEBUG_DIR)" ] || ( mkdir "$(APP_BUILD_DEBUG_DIR)" && meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
+	ninja -C "$(APP_BUILD_DEBUG_DIR)"
+
+build-server-debug:
+	$(GRADLE) assembleDebug
+
+build-debug: build-app-debug build-server-debug
+
+run-debug:
+	SCRCPY_SERVER_JAR=server/build/outputs/apk/debug/server-debug.apk $(APP_BUILD_DEBUG_DIR)/scrcpy $(ARGS)
 
 build-app:
 	[ -d "$(APP_BUILD_DIR)" ] || ( mkdir "$(APP_BUILD_DIR)" && meson app "$(APP_BUILD_DIR)" --buildtype release )
