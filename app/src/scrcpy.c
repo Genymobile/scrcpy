@@ -685,6 +685,8 @@ screen_finally_destroy_renderer:
     //SDL_DestroyRenderer(renderer);
 screen_finally_destroy_window:
     //SDL_DestroyWindow(window);
+    // at least we hide it
+    SDL_HideWindow(window);
 screen_finally_stop_and_join_controller:
     controller_stop(&controller);
     controller_join(&controller);
@@ -692,6 +694,14 @@ screen_finally_destroy_controller:
     controller_destroy(&controller);
 screen_finally_stop_decoder:
     SDLNet_TCP_Close(device_socket);
+
+    // let the server some time to print any exception trace before killing it
+    struct timespec timespec = {
+        .tv_sec = 0,
+        .tv_nsec = 100000000, // 100ms
+    };
+    nanosleep(&timespec, NULL); // ignore error
+
     // kill the server before decoder_join() to wake up the decoder
     stop_server(server);
     decoder_join(&decoder);
