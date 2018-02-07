@@ -29,6 +29,11 @@ static SDL_bool find_color(struct index *index, int len, char c, Uint32 *color) 
 // Parameter is not "const char *" because XPM formats are generally stored in a
 // (non-const) "char *"
 SDL_Surface *read_xpm(char *xpm[]) {
+#if SDL_ASSERT_LEVEL >= 2
+    // patch the XPM to change the icon color in debug mode
+    xpm[2] = ".	c #CC00CC";
+#endif
+
     char *endptr;
     // *** No error handling, assume the XPM source is valid ***
     // (it's in our source repo)
