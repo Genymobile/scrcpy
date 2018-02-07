@@ -60,14 +60,13 @@ public class EventController {
     }
 
     public void control() throws IOException {
-        while (handleEvent()) ;
+        while (true) {
+            handleEvent();
+        }
     }
 
-    private boolean handleEvent() throws IOException {
+    private void handleEvent() throws IOException {
         ControlEvent controlEvent = connection.receiveControlEvent();
-        if (controlEvent == null) {
-            return false;
-        }
         switch (controlEvent.getType()) {
             case ControlEvent.TYPE_KEYCODE:
                 injectKeycode(controlEvent.getAction(), controlEvent.getKeycode(), controlEvent.getMetaState());
@@ -85,7 +84,6 @@ public class EventController {
                 executeCommand(controlEvent.getAction());
                 break;
         }
-        return true;
     }
 
     private boolean injectKeycode(int action, int keycode, int metaState) {
