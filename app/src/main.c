@@ -5,9 +5,7 @@
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
 
-#define DEFAULT_LOCAL_PORT 27183
-#define DEFAULT_MAX_SIZE 0 // unlimited
-#define DEFAULT_BIT_RATE 4000000 // 4Mbps
+#include "config.h"
 
 struct args {
     const char *serial;

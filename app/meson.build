@@ -30,6 +30,22 @@ dependencies = [
     dependency('SDL2_net'),
 ]
 
+conf = configuration_data()
+
+# the default client TCP port for the "adb reverse" tunnel
+# overridden by option --port
+conf.set('DEFAULT_LOCAL_PORT', '27183')
+
+# the default max video size for both dimensions, in pixels
+# overridden by option --max-size
+conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
+
+# the default video bitrate, in bits/second
+# overridden by option --bit-rate
+conf.set('DEFAULT_BIT_RATE', '4000000')  # 4Mbps
+
+configure_file(configuration: conf, output: 'config.h')
+
 executable('scrcpy', src, dependencies: dependencies)
 
 
