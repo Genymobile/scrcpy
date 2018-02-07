@@ -478,7 +478,9 @@ void event_loop(void) {
         switch (event.type) {
             case EVENT_DECODER_STOPPED:
                 SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Video decoder stopped");
+                return;
             case SDL_QUIT:
+                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "User requested to quit");
                 return;
             case EVENT_NEW_FRAME:
                 if (!handle_new_frame()) {
