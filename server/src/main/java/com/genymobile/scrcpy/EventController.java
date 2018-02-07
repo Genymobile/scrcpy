@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
+
 import android.graphics.Point;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -8,9 +10,8 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
-import com.genymobile.scrcpy.wrappers.InputManager;
-
 import java.io.IOException;
+
 
 public class EventController {
 
@@ -83,6 +84,8 @@ public class EventController {
             case ControlEvent.TYPE_COMMAND:
                 executeCommand(controlEvent.getAction());
                 break;
+            default:
+                // do nothing
         }
     }
 
@@ -157,6 +160,8 @@ public class EventController {
         switch (action) {
             case ControlEvent.COMMAND_SCREEN_ON:
                 return turnScreenOn();
+            default:
+                Ln.w("Unsupported command: " + action);
         }
         return false;
     }

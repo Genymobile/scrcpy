@@ -1,11 +1,13 @@
 package com.genymobile.scrcpy.wrappers;
 
+import android.annotation.SuppressLint;
 import android.os.IBinder;
 import android.os.IInterface;
 
 import java.lang.reflect.Method;
 
-public class ServiceManager {
+@SuppressLint("PrivateApi")
+public final class ServiceManager {
     private final Method getServiceMethod;
 
     private WindowManager windowManager;

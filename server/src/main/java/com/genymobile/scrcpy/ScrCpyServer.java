@@ -2,7 +2,11 @@ package com.genymobile.scrcpy;
 
 import java.io.IOException;
 
-public class ScrCpyServer {
+public final class ScrCpyServer {
+
+    private ScrCpyServer() {
+        // not instantiable
+    }
 
     private static void scrcpy(Options options) throws IOException {
         final Device device = new Device(options);
@@ -34,6 +38,7 @@ public class ScrCpyServer {
         }).start();
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
         Options options = new Options();
         if (args.length < 1) {

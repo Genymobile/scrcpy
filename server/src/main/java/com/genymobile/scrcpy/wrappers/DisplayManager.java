@@ -1,11 +1,11 @@
 package com.genymobile.scrcpy.wrappers;
 
-import android.os.IInterface;
-
 import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Size;
 
-public class DisplayManager {
+import android.os.IInterface;
+
+public final class DisplayManager {
     private final IInterface manager;
 
     public DisplayManager(IInterface manager) {

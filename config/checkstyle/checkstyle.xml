@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE module PUBLIC
+  "-//Puppy Crawl//DTD Check Configuration 1.3//EN"
+  "http://www.puppycrawl.com/dtds/configuration_1_3.dtd">
+
+<!-- This is a checkstyle configuration file. For descriptions of
+what the following rules do, please see the checkstyle configuration
+page at http://checkstyle.sourceforge.net/config.html -->
+
+<module name="Checker">
+
+  <!-- Checks whether files end with a new line.                        -->
+  <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
+  <module name="NewlineAtEndOfFile" />
+
+  <!-- Checks that property files contain the same keys.         -->
+  <!-- See http://checkstyle.sf.net/config_misc.html#Translation -->
+  <module name="Translation" />
+
+  <!-- Checks for Size Violations.                    -->
+  <!-- See http://checkstyle.sf.net/config_sizes.html -->
+  <module name="FileLength" />
+
+  <!-- Checks for whitespace                               -->
+  <!-- See http://checkstyle.sf.net/config_whitespace.html -->
+  <module name="FileTabCharacter" />
+
+  <!-- Miscellaneous other checks.                   -->
+  <!-- See http://checkstyle.sf.net/config_misc.html -->
+  <module name="RegexpSingleline">
+    <property name="format" value="\s+$" />
+    <property name="minimum" value="0" />
+    <property name="maximum" value="0" />
+    <property name="message" value="Line has trailing spaces." />
+    <property name="severity" value="info" />
+  </module>
+
+  <module name="SuppressWarningsFilter"/>
+
+  <module name="TreeWalker">
+
+    <!-- Checks for Naming Conventions.                  -->
+    <!-- See http://checkstyle.sf.net/config_naming.html -->
+    <module name="ConstantName" />
+    <module name="LocalFinalVariableName" />
+    <module name="LocalVariableName" />
+    <module name="MemberName" />
+    <module name="MethodName" />
+    <module name="PackageName" />
+    <module name="ParameterName" />
+    <module name="StaticVariableName" />
+    <module name="TypeName" />
+
+    <module name="SuppressWarningsHolder"/>
+
+    <!-- Checks for imports                              -->
+    <!-- See http://checkstyle.sf.net/config_import.html -->
+    <module name="AvoidStarImport">
+      <property name="allowStaticMemberImports" value="true" />
+    </module>
+    <module name="IllegalImport" />
+    <!-- defaults to sun.* packages -->
+    <module name="RedundantImport" />
+    <module name="UnusedImports" />
+    <module name="CustomImportOrder">
+        <property name="thirdPartyPackageRegExp" value=".*"/>
+        <property name="specialImportsRegExp" value="com.genymobile"/>
+        <property name="separateLineBetweenGroups" value="true"/>
+        <property name="customImportOrderRules" value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+    </module>
+
+
+    <!-- Checks for Size Violations.                    -->
+    <!-- See http://checkstyle.sf.net/config_sizes.html -->
+    <module name="LineLength">
+      <!-- what is a good max value? -->
+      <property name="max" value="150" />
+      <!-- ignore lines like "$File: //depot/... $" -->
+      <property name="ignorePattern" value="\$File.*\$" />
+      <property name="severity" value="info" />
+    </module>
+    <module name="MethodLength" />
+    <module name="ParameterNumber">
+      <property name="ignoreOverriddenMethods" value="true"/>
+    </module>
+
+
+    <!-- Checks for whitespace                               -->
+    <!-- See http://checkstyle.sf.net/config_whitespace.html -->
+    <module name="EmptyForIteratorPad" />
+    <module name="GenericWhitespace" />
+    <module name="MethodParamPad" />
+    <module name="NoWhitespaceAfter" />
+    <module name="NoWhitespaceBefore" />
+    <module name="OperatorWrap" />
+    <module name="ParenPad" />
+    <module name="TypecastParenPad" />
+    <module name="WhitespaceAfter" />
+    <module name="WhitespaceAround" />
+
+    <!-- Modifier Checks                                    -->
+    <!-- See http://checkstyle.sf.net/config_modifiers.html -->
+    <module name="ModifierOrder" />
+    <module name="RedundantModifier" />
+
+
+    <!-- Checks for blocks. You know, those {}'s         -->
+    <!-- See http://checkstyle.sf.net/config_blocks.html -->
+    <module name="AvoidNestedBlocks" />
+    <module name="EmptyBlock">
+      <property name="option" value="text" />
+    </module>
+    <module name="LeftCurly" />
+    <module name="NeedBraces" />
+    <module name="RightCurly" />
+
+
+    <!-- Checks for common coding problems               -->
+    <!-- See http://checkstyle.sf.net/config_coding.html -->
+    <!-- <module name="AvoidInlineConditionals"/> -->
+    <module name="EmptyStatement" />
+    <module name="EqualsHashCode" />
+    <module name="HiddenField">
+      <property name="tokens" value="VARIABLE_DEF" />
+      <!-- only check variables not parameters -->
+      <property name="ignoreConstructorParameter" value="true" />
+      <property name="ignoreSetter" value="true" />
+      <property name="severity" value="warning" />
+    </module>
+    <module name="IllegalInstantiation" />
+    <module name="InnerAssignment" />
+    <module name="MagicNumber">
+      <property name="severity" value="info" />
+      <property name="ignoreHashCodeMethod" value="true" />
+      <property name="ignoreAnnotation" value="true" />
+    </module>
+    <module name="MissingSwitchDefault" />
+    <module name="SimplifyBooleanExpression" />
+    <module name="SimplifyBooleanReturn" />
+
+    <!-- Checks for class design                         -->
+    <!-- See http://checkstyle.sf.net/config_design.html -->
+    <!-- <module name="DesignForExtension"/> -->
+    <module name="FinalClass" />
+    <module name="HideUtilityClassConstructor" />
+    <module name="InterfaceIsType" />
+    <module name="VisibilityModifier" />
+
+
+    <!-- Miscellaneous other checks.                   -->
+    <!-- See http://checkstyle.sf.net/config_misc.html -->
+    <module name="ArrayTypeStyle" />
+    <!-- <module name="FinalParameters"/> -->
+    <module name="TodoComment">
+      <property name="format" value="TODO" />
+      <property name="severity" value="info" />
+    </module>
+    <module name="UpperEll" />
+
+    <module name="FileContentsHolder" />
+    <!-- Required by comment suppression filters -->
+
+  </module>
+
+  <module name="SuppressionFilter">
+    <!--<property name="file" value="team-props/checkstyle/checkstyle-suppressions.xml" />-->
+  </module>
+
+  <!-- Enable suppression comments -->
+  <module name="SuppressionCommentFilter">
+    <property name="offCommentFormat" value="CHECKSTYLE IGNORE\s+(\S+)" />
+    <property name="onCommentFormat" value="CHECKSTYLE END IGNORE\s+(\S+)" />
+    <property name="checkFormat" value="$1" />
+  </module>
+  <module name="SuppressWithNearbyCommentFilter">
+    <!-- Syntax is "SUPPRESS CHECKSTYLE name" -->
+    <property name="commentFormat" value="SUPPRESS CHECKSTYLE (\w+)" />
+    <property name="checkFormat" value="$1" />
+    <property name="influenceFormat" value="1" />
+  </module>
+
+</module>

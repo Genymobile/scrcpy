@@ -3,7 +3,7 @@ package com.genymobile.scrcpy.wrappers;
 import android.os.IInterface;
 import android.view.IRotationWatcher;
 
-public class WindowManager {
+public final class WindowManager {
     private final IInterface manager;
 
     public WindowManager(IInterface manager) {

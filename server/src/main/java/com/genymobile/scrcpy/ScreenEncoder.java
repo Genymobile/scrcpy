@@ -1,13 +1,13 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.SurfaceControl;
+
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.IBinder;
 import android.view.Surface;
-
-import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -21,6 +21,8 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
 
     private static final int REPEAT_FRAME_DELAY = 6; // repeat after 6 frames
+
+    private static final int MICROSECONDS_IN_ONE_SECOND = 1_000_000;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
 
@@ -81,6 +83,7 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private boolean encode(MediaCodec codec, OutputStream outputStream) throws IOException {
+        @SuppressWarnings("checkstyle:MagicNumber")
         byte[] buf = new byte[bitRate / 8]; // may contain up to 1 second of video
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
@@ -124,7 +127,7 @@ public class ScreenEncoder implements Device.RotationListener {
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval);
         // display the very first frame, and recover from bad quality when no new frames
-        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 1_000_000 * REPEAT_FRAME_DELAY / frameRate); // µs
+        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, MICROSECONDS_IN_ONE_SECOND * REPEAT_FRAME_DELAY / frameRate); // µs
         return format;
     }
 

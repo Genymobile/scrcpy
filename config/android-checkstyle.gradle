@@ -1,0 +1,28 @@
+apply plugin: 'checkstyle'
+check.dependsOn 'checkstyle'
+
+checkstyle {
+    toolVersion = '6.19'
+}
+
+task checkstyle(type: Checkstyle) {
+    description = "Check Java style with Checkstyle"
+    configFile = rootProject.file("config/checkstyle/checkstyle.xml")
+    source = javaSources()
+    classpath = files()
+    ignoreFailures = true
+}
+
+def javaSources() {
+    def files = []
+    android.sourceSets.each { sourceSet ->
+        sourceSet.java.each { javaSource ->
+            javaSource.getSrcDirs().each {
+                if (it.exists()) {
+                    files.add(it)
+                }
+            }
+        }
+    }
+    return files
+}

@@ -12,9 +12,12 @@ public class ControlEventReader {
     private static final int SCROLL_PAYLOAD_LENGTH = 16;
     private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
-    private final byte[] rawBuffer = new byte[128];
+    private static final int MAX_TEXT_LENGTH = 32;
+    private static final int RAW_BUFFER_SIZE = 128;
+
+    private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
-    private final byte[] textBuffer = new byte[32];
+    private final byte[] textBuffer = new byte[MAX_TEXT_LENGTH];
 
     public ControlEventReader() {
         // invariant: the buffer is always in "get" mode
@@ -136,10 +139,12 @@ public class ControlEventReader {
         return new Position(x, y, screenWidth, screenHeight);
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(short value) {
         return value & 0xffff;
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(byte value) {
         return value & 0xff;
     }

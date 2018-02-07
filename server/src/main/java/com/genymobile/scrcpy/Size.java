@@ -31,11 +31,15 @@ public final class Size {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
         Size size = (Size) o;
-        return width == size.width &&
-                height == size.height;
+        return width == size.width
+                && height == size.height;
     }
 
     @Override
@@ -45,9 +49,9 @@ public final class Size {
 
     @Override
     public String toString() {
-        return "Size{" +
-                "width=" + width +
-                ", height=" + height +
-                '}';
+        return "Size{"
+                + "width=" + width
+                + ", height=" + height
+                + '}';
     }
 }

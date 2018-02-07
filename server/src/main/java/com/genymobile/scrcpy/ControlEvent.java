@@ -3,7 +3,7 @@ package com.genymobile.scrcpy;
 /**
  * Union of all supported event types, identified by their {@code type}.
  */
-public class ControlEvent {
+public final class ControlEvent {
 
     public static final int TYPE_KEYCODE = 0;
     public static final int TYPE_TEXT = 1;

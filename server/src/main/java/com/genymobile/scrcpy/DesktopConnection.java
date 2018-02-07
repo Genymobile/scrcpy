@@ -9,7 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
-public class DesktopConnection implements Closeable {
+public final class DesktopConnection implements Closeable {
 
     private static final int DEVICE_NAME_FIELD_LENGTH = 64;
 
@@ -48,9 +48,8 @@ public class DesktopConnection implements Closeable {
         socket.close();
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private void send(String deviceName, int width, int height) throws IOException {
-        assert width < 0x10000 : "width may not be stored on 16 bits";
-        assert height < 0x10000 : "height may not be stored on 16 bits";
         byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
 
         byte[] deviceNameBytes = deviceName.getBytes(StandardCharsets.UTF_8);

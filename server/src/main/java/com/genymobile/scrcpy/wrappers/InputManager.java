@@ -6,7 +6,7 @@ import android.view.InputEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class InputManager {
+public final class InputManager {
 
     public static final int INJECT_INPUT_EVENT_MODE_ASYNC = 0;
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT = 1;

@@ -6,7 +6,7 @@ import android.util.Log;
  * Log both to Android logger (so that logs are visible in "adb logcat") and standard output/error (so that they are visible in the terminal
  * directly).
  */
-public class Ln {
+public final class Ln {
 
     private static final String TAG = "scrcpy";
 

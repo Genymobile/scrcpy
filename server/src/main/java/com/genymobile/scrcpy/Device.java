@@ -1,12 +1,12 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
+
 import android.graphics.Point;
 import android.os.Build;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
 import android.view.InputEvent;
-
-import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public final class Device {
 
@@ -40,6 +40,7 @@ public final class Device {
         return screenInfo;
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private ScreenInfo computeScreenInfo(int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:
@@ -52,7 +53,9 @@ public final class Device {
         int w = deviceSize.getWidth();
         int h = deviceSize.getHeight();
         if (maxSize > 0) {
-            assert maxSize % 8 == 0;
+            if (BuildConfig.DEBUG && maxSize % 8 != 0) {
+                throw new AssertionError("Max size must be a multiple of 8");
+            }
             boolean portrait = h > w;
             int major = portrait ? h : w;
             int minor = portrait ? w : h;
@@ -70,6 +73,7 @@ public final class Device {
     }
 
     public Point getPhysicalPoint(Position position) {
+        @SuppressWarnings("checkstyle:HiddenField") // it hides the field on purpose, to read it with a lock
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
         Size clientVideoSize = position.getScreenSize();
