@@ -10,6 +10,7 @@
 struct args {
     const char *serial;
     SDL_bool help;
+    SDL_bool version;
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;
@@ -42,6 +43,9 @@ static void usage(const char *arg0) {
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
+        "\n"
+        "    -v, --version\n"
+        "        Print the version of scrcpy.\n"
         "\n"
         "Shortcuts:\n"
         "\n"
@@ -89,13 +93,18 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
         {"port",     required_argument, NULL, 'p'},
         {"max-size", required_argument, NULL, 'm'},
         {"bit-rate", required_argument, NULL, 'b'},
+        {"version",  no_argument,       NULL, 'v'},
         {NULL,       0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "hp:m:b:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "hvp:m:b:", long_options, NULL)) != -1) {
         switch (c) {
             case 'h': {
                 args->help = SDL_TRUE;
+                break;
+            }
+            case 'v': {
+                args->version = SDL_TRUE;
                 break;
             }
             case 'p': {
@@ -184,6 +193,7 @@ int main(int argc, char *argv[]) {
     struct args args = {
         .serial = NULL,
         .help = SDL_FALSE,
+        .version = SDL_FALSE,
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
@@ -195,6 +205,11 @@ int main(int argc, char *argv[]) {
 
     if (args.help) {
         usage(argv[0]);
+        return 0;
+    }
+
+    if (args.version) {
+        fprintf(stderr, "scrcpy v%s\n", SCRCPY_VERSION);
         return 0;
     }
 

@@ -32,6 +32,9 @@ dependencies = [
 
 conf = configuration_data()
 
+# the version, updated on release
+conf.set_quoted('SCRCPY_VERSION', '0.1')
+
 # the default client TCP port for the "adb reverse" tunnel
 # overridden by option --port
 conf.set('DEFAULT_LOCAL_PORT', '27183')
