@@ -86,21 +86,26 @@ public class ScreenEncoder implements Device.RotationListener {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         while (!checkRotationChanged() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
-            if (checkRotationChanged()) {
-                // must restart encoding with new size
-                break;
-            }
-            if (outputBufferId >= 0) {
-                ByteBuffer outputBuffer = codec.getOutputBuffer(outputBufferId);
-                while (outputBuffer.hasRemaining()) {
-                    int remaining = outputBuffer.remaining();
-                    int len = Math.min(buf.length, remaining);
-                    // the outputBuffer is probably direct (it has no underlying array), and LocalSocket does not expose channels,
-                    // so we must copy the data locally to write them manually to the output stream
-                    outputBuffer.get(buf, 0, len);
-                    outputStream.write(buf, 0, len);
+            try {
+                if (checkRotationChanged()) {
+                    // must restart encoding with new size
+                    break;
                 }
-                codec.releaseOutputBuffer(outputBufferId, false);
+                if (outputBufferId >= 0) {
+                    ByteBuffer outputBuffer = codec.getOutputBuffer(outputBufferId);
+                    while (outputBuffer.hasRemaining()) {
+                        int remaining = outputBuffer.remaining();
+                        int len = Math.min(buf.length, remaining);
+                        // the outputBuffer is probably direct (it has no underlying array), and LocalSocket does not expose channels,
+                        // so we must copy the data locally to write them manually to the output stream
+                        outputBuffer.get(buf, 0, len);
+                        outputStream.write(buf, 0, len);
+                    }
+                }
+            } finally {
+                if (outputBufferId >= 0) {
+                    codec.releaseOutputBuffer(outputBufferId, false);
+                }
             }
         }
 
