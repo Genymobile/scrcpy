@@ -55,7 +55,7 @@ public class EventController {
 
     private void setScroll(int hScroll, int vScroll) {
         MotionEvent.PointerCoords coords = pointerCoords[0];
-        coords.setAxisValue(MotionEvent.AXIS_SCROLL, hScroll);
+        coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
     }
 
