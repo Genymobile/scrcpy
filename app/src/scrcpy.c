@@ -336,9 +336,11 @@ static SDL_bool handle_new_frame(void) {
     mutex_lock(frames.mutex);
     AVFrame *frame = frames.rendering_frame;
     frames.rendering_frame_consumed = SDL_TRUE;
-    if (!decoder.skip_frames) {
-        cond_signal(frames.rendering_frame_consumed_cond);
-    }
+#ifndef SKIP_FRAMES
+    // if SKIP_FRAMES is disabled, then notify the decoder the current frame is
+    // consumed, so that it may push a new one
+    cond_signal(frames.rendering_frame_consumed_cond);
+#endif
 
     struct size current_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(window, renderer, &texture, frame_size, current_frame_size)) {
@@ -583,7 +585,6 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
 
     decoder.frames = &frames;
     decoder.video_socket = device_socket;
-    decoder.skip_frames = SDL_TRUE;
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder

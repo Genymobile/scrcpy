@@ -11,7 +11,6 @@ struct decoder {
     TCPsocket video_socket;
     SDL_Thread *thread;
     SDL_mutex *mutex;
-    SDL_bool skip_frames;
 };
 
 SDL_bool decoder_start(struct decoder *decoder);

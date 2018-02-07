@@ -44,6 +44,11 @@ conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '4000000')  # 4Mbps
 
+# whether the app should always display the most recent available frame, even
+# if the previous one has not been displayed
+# SKIP_FRAMES improves latency at the cost of framerate
+conf.set('SKIP_FRAMES', true)
+
 configure_file(configuration: conf, output: 'config.h')
 
 executable('scrcpy', src, dependencies: dependencies)

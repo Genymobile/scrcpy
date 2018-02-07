@@ -6,6 +6,7 @@
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
+#include "config.h"
 #include "events.h"
 #include "frames.h"
 #include "lockutil.h"
@@ -22,13 +23,17 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
 static void push_frame(struct decoder *decoder) {
     struct frames *frames = decoder->frames;
     mutex_lock(frames->mutex);
-    if (!decoder->skip_frames) {
-        while (!frames->rendering_frame_consumed) {
-            cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
-        }
-    } else if (!frames->rendering_frame_consumed) {
+#ifndef SKIP_FRAMES
+    // if SKIP_FRAMES is disabled, then the decoder must wait for the current
+    // frame to be consumed
+    while (!frames->rendering_frame_consumed) {
+        cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
+    }
+#else
+    if (!frames->rendering_frame_consumed) {
         SDL_LogInfo(SDL_LOG_CATEGORY_RENDER, "Skip frame");
     }
+#endif
 
     frames_swap(frames);
     frames->rendering_frame_consumed = SDL_FALSE;
