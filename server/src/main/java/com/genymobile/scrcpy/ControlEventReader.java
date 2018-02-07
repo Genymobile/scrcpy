@@ -47,60 +47,85 @@ public class ControlEventReader {
         int savedPosition = buffer.position();
 
         int type = buffer.get();
+        ControlEvent controlEvent;
         switch (type) {
-            case ControlEvent.TYPE_KEYCODE: {
-                if (buffer.remaining() < KEYCODE_PAYLOAD_LENGTH) {
-                    break;
-                }
-                int action = toUnsigned(buffer.get());
-                int keycode = buffer.getInt();
-                int metaState = buffer.getInt();
-                return ControlEvent.createKeycodeControlEvent(action, keycode, metaState);
-            }
-            case ControlEvent.TYPE_TEXT: {
-                if (buffer.remaining() < 1) {
-                    break;
-                }
-                int len = toUnsigned(buffer.get());
-                if (buffer.remaining() < len) {
-                    break;
-                }
-                buffer.get(textBuffer, 0, len);
-                String text = new String(textBuffer, 0, len, StandardCharsets.UTF_8);
-                return ControlEvent.createTextControlEvent(text);
-            }
-            case ControlEvent.TYPE_MOUSE: {
-                if (buffer.remaining() < MOUSE_PAYLOAD_LENGTH) {
-                    break;
-                }
-                int action = toUnsigned(buffer.get());
-                int buttons = buffer.getInt();
-                Position position = readPosition(buffer);
-                return ControlEvent.createMotionControlEvent(action, buttons, position);
-            }
-            case ControlEvent.TYPE_SCROLL: {
-                if (buffer.remaining() < SCROLL_PAYLOAD_LENGTH) {
-                    break;
-                }
-                Position position = readPosition(buffer);
-                int hScroll = buffer.getInt();
-                int vScroll = buffer.getInt();
-                return ControlEvent.createScrollControlEvent(position, hScroll, vScroll);
-            }
-            case ControlEvent.TYPE_COMMAND: {
-                if (buffer.remaining() < COMMAND_PAYLOAD_LENGTH) {
-                    break;
-                }
-                int action = toUnsigned(buffer.get());
-                return ControlEvent.createCommandControlEvent(action);
-            }
+            case ControlEvent.TYPE_KEYCODE:
+                controlEvent = parseKeycodeControlEvent();
+                break;
+            case ControlEvent.TYPE_TEXT:
+                controlEvent = parseTextControlEvent();
+                break;
+            case ControlEvent.TYPE_MOUSE:
+                controlEvent = parseMouseControlEvent();
+                break;
+            case ControlEvent.TYPE_SCROLL:
+                controlEvent = parseScrollControlEvent();
+                break;
+            case ControlEvent.TYPE_COMMAND:
+                controlEvent = parseCommandControlEvent();
+                break;
             default:
                 Ln.w("Unknown event type: " + type);
+                controlEvent = null;
+                break;
         }
 
-        // failure, reset savedPosition
-        buffer.position(savedPosition);
-        return null;
+        if (controlEvent == null) {
+            // failure, reset savedPosition
+            buffer.position(savedPosition);
+        }
+        return controlEvent;
+    }
+
+    private ControlEvent parseKeycodeControlEvent() {
+        if (buffer.remaining() < KEYCODE_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        int keycode = buffer.getInt();
+        int metaState = buffer.getInt();
+        return ControlEvent.createKeycodeControlEvent(action, keycode, metaState);
+    }
+
+    private ControlEvent parseTextControlEvent() {
+        if (buffer.remaining() < 1) {
+            return null;
+        }
+        int len = toUnsigned(buffer.get());
+        if (buffer.remaining() < len) {
+            return null;
+        }
+        buffer.get(textBuffer, 0, len);
+        String text = new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+        return ControlEvent.createTextControlEvent(text);
+    }
+
+    private ControlEvent parseMouseControlEvent() {
+        if (buffer.remaining() < MOUSE_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        int buttons = buffer.getInt();
+        Position position = readPosition(buffer);
+        return ControlEvent.createMotionControlEvent(action, buttons, position);
+    }
+
+    private ControlEvent parseScrollControlEvent() {
+        if (buffer.remaining() < SCROLL_PAYLOAD_LENGTH) {
+            return null;
+        }
+        Position position = readPosition(buffer);
+        int hScroll = buffer.getInt();
+        int vScroll = buffer.getInt();
+        return ControlEvent.createScrollControlEvent(position, hScroll, vScroll);
+    }
+
+    private ControlEvent parseCommandControlEvent() {
+        if (buffer.remaining() < COMMAND_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        return ControlEvent.createCommandControlEvent(action);
     }
 
     private static Position readPosition(ByteBuffer buffer) {
