@@ -65,7 +65,7 @@ static TCPsocket listen_on_port(Uint16 port) {
 }
 
 // name must be at least DEVICE_NAME_FIELD_LENGTH bytes
-SDL_bool read_initial_device_info(TCPsocket socket, char *device_name, struct size *size) {
+static SDL_bool read_initial_device_info(TCPsocket socket, char *device_name, struct size *size) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     if (SDLNet_TCP_Recv(socket, buf, sizeof(buf)) <= 0) {
         return SDL_FALSE;
@@ -472,7 +472,7 @@ static void handle_mouse_wheel(const SDL_MouseWheelEvent *event, struct position
     }
 }
 
-void event_loop(void) {
+static void event_loop(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
