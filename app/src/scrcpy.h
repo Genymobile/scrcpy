@@ -1,5 +1,5 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef SCRCPY_H
+#define SCRCPY_H
 
 #include <SDL2/SDL_stdinc.h>
 

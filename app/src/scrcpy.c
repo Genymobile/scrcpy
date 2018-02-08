@@ -17,26 +17,16 @@
 #include "frames.h"
 #include "lockutil.h"
 #include "netutil.h"
+#include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
 
-#include "icon.xpm"
-
 #define DEVICE_NAME_FIELD_LENGTH 64
-#define DISPLAY_MARGINS 96
 
+static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
-
-static SDL_Window *window;
-static SDL_Renderer *renderer;
-static SDL_Texture *texture;
-static struct size frame_size;
-// used only in fullscreen mode to know the windowed window size
-static struct size windowed_window_size;
-static SDL_bool texture_empty = SDL_TRUE;
-static SDL_bool fullscreen = SDL_FALSE;
 
 static long timestamp_ms(void) {
     struct timeval tv;
@@ -79,48 +69,7 @@ static SDL_bool read_initial_device_info(TCPsocket socket, char *device_name, st
     return SDL_TRUE;
 }
 
-#if SDL_VERSION_ATLEAST(2, 0, 5)
-# define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayUsableBounds((i), (r))
-#else
-# define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayBounds((i), (r))
-#endif
-
-// init the preferred display_bounds (i.e. the screen bounds with some margins)
-static SDL_bool get_preferred_display_bounds(struct size *bounds) {
-    SDL_Rect rect;
-    if (GET_DISPLAY_BOUNDS(0, &rect)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_SYSTEM, "Could not get display usable bounds: %s", SDL_GetError());
-        return SDL_FALSE;
-    }
-
-    bounds->width = MAX(0, rect.w - DISPLAY_MARGINS);
-    bounds->height = MAX(0, rect.h - DISPLAY_MARGINS);
-    return SDL_TRUE;
-}
-
-static inline struct size get_window_size(SDL_Window *window) {
-    int width;
-    int height;
-    SDL_GetWindowSize(window, &width, &height);
-
-    struct size size;
-    size.width = width;
-    size.height = height;
-    return size;
-}
-
-static void set_window_size(SDL_Window *window, struct size new_size) {
-    // setting the window size during fullscreen is implementation defined,
-    // so apply the resize only after fullscreen is disabled
-    if (fullscreen) {
-        // SDL_SetWindowSize will be called when fullscreen will be disabled
-        windowed_window_size = new_size;
-    } else {
-        SDL_SetWindowSize(window, new_size.width, new_size.height);
-    }
-}
-
-static inline struct point get_mouse_point() {
+static struct point get_mouse_point(void) {
     int x;
     int y;
     SDL_GetMouseState(&x, &y);
@@ -129,131 +78,6 @@ static inline struct point get_mouse_point() {
         .x = (Uint16) x,
         .y = (Uint16) y,
     };
-}
-
-// return the optimal size of the window, with the following constraints:
-//  - it attempts to keep at least one dimension of the current_size (i.e. it crops the black borders)
-//  - it keeps the aspect ratio
-//  - it scales down to make it fit in the display_size
-static struct size get_optimal_size(struct size current_size, struct size frame_size) {
-    struct size display_size;
-    // 32 bits because we need to multiply two 16 bits values
-    Uint32 w;
-    Uint32 h;
-
-    if (!get_preferred_display_bounds(&display_size)) {
-        // cannot get display bounds, do not constraint the size
-        w = current_size.width;
-        h = current_size.height;
-    } else {
-        w = MIN(current_size.width, display_size.width);
-        h = MIN(current_size.height, display_size.height);
-    }
-
-    SDL_bool keep_width = frame_size.width * h > frame_size.height * w;
-    if (keep_width) {
-        // remove black borders on top and bottom
-        h = frame_size.height * w / frame_size.width;
-    } else {
-        // remove black borders on left and right (or none at all if it already fits)
-        w = frame_size.width * h / frame_size.height;
-    }
-
-    // w and h must fit into 16 bits
-    SDL_assert_release(w < 0x10000 && h < 0x10000);
-    return (struct size) {w, h};
-}
-
-// initially, there is no current size, so use the frame size as current size
-static inline struct size get_initial_optimal_size(struct size frame_size) {
-    return get_optimal_size(frame_size, frame_size);
-}
-
-// same as get_optimal_size(), but read the current size from the window
-static inline struct size get_optimal_window_size(SDL_Window *window, struct size frame_size) {
-    struct size current_size = get_window_size(window);
-    return get_optimal_size(current_size, frame_size);
-}
-
-static SDL_bool prepare_for_frame(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture **texture,
-                                  struct size old_frame_size, struct size frame_size) {
-    if (old_frame_size.width != frame_size.width || old_frame_size.height != frame_size.height) {
-        if (SDL_RenderSetLogicalSize(renderer, frame_size.width, frame_size.height)) {
-            SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Could not set renderer logical size: %s", SDL_GetError());
-            return SDL_FALSE;
-        }
-
-        // frame dimension changed, destroy texture
-        SDL_DestroyTexture(*texture);
-
-        struct size current_size = get_window_size(window);
-        struct size target_size = {
-            (Uint32) current_size.width * frame_size.width / old_frame_size.width,
-            (Uint32) current_size.height * frame_size.height / old_frame_size.height,
-        };
-        target_size = get_optimal_size(target_size, frame_size);
-        set_window_size(window, target_size);
-
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "New texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
-        *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, frame_size.width, frame_size.height);
-        if (!*texture) {
-            SDL_LogCritical(SDL_LOG_CATEGORY_RENDER, "Could not create texture: %s", SDL_GetError());
-            return SDL_FALSE;
-        }
-    }
-
-    return SDL_TRUE;
-}
-
-static void update_texture(const AVFrame *frame, SDL_Texture *texture) {
-    SDL_UpdateYUVTexture(texture, NULL,
-            frame->data[0], frame->linesize[0],
-            frame->data[1], frame->linesize[1],
-            frame->data[2], frame->linesize[2]);
-}
-
-static void render(SDL_Renderer *renderer, SDL_Texture *texture) {
-    SDL_RenderClear(renderer);
-    if (texture) {
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-    }
-    SDL_RenderPresent(renderer);
-}
-
-static void switch_fullscreen(void) {
-    if (!fullscreen) {
-        // going to fullscreen, store the current windowed window size
-        windowed_window_size = get_window_size(window);
-    }
-    Uint32 new_mode = fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
-    if (SDL_SetWindowFullscreen(window, new_mode)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
-        return;
-    }
-
-    fullscreen = !fullscreen;
-    if (!fullscreen) {
-        // fullscreen disabled, restore expected windowed window size
-        SDL_SetWindowSize(window, windowed_window_size.width, windowed_window_size.height);
-    }
-
-    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Switched to %s mode", fullscreen ? "fullscreen" : "windowed");
-    render(renderer, texture_empty ? NULL : texture);
-}
-
-static void resize_to_fit(void) {
-    if (!fullscreen) {
-        struct size optimal_size = get_optimal_window_size(window, frame_size);
-        SDL_SetWindowSize(window, optimal_size.width, optimal_size.height);
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to optimal size");
-    }
-}
-
-static void resize_to_pixel_perfect(void) {
-    if (!fullscreen) {
-        SDL_SetWindowSize(window, frame_size.width, frame_size.height);
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to pixel-perfect");
-    }
 }
 
 static int wait_for_success(process_t proc, const char *name) {
@@ -342,17 +166,12 @@ static SDL_bool handle_new_frame(void) {
     cond_signal(frames.rendering_frame_consumed_cond);
 #endif
 
-    struct size current_frame_size = {frame->width, frame->height};
-    if (!prepare_for_frame(window, renderer, &texture, frame_size, current_frame_size)) {
+    if (!screen_update(&screen, frame)){
         return SDL_FALSE;
     }
-
-    frame_size = current_frame_size;
-
-    update_texture(frame, texture);
     mutex_unlock(frames.mutex);
 
-    render(renderer, texture);
+    screen_render(&screen);
     return SDL_TRUE;
 }
 
@@ -416,13 +235,13 @@ static void handle_key(const SDL_KeyboardEvent *event) {
                 action_power();
                 return;
             case SDLK_f:
-                switch_fullscreen();
+                screen_switch_fullscreen(&screen);
                 return;
             case SDLK_x:
-                resize_to_fit();
+                screen_resize_to_fit(&screen);
                 return;
             case SDLK_g:
-                resize_to_pixel_perfect();
+                screen_resize_to_pixel_perfect(&screen);
                 return;
         }
 
@@ -486,14 +305,13 @@ static void event_loop(void) {
                 if (!handle_new_frame()) {
                     return;
                 }
-                texture_empty = SDL_FALSE;
                 count_frame(); // display fps for debug
                 break;
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    render(renderer, texture_empty ? NULL : texture);
+                    screen_render(&screen);
                     break;
                 }
                 break;
@@ -506,11 +324,11 @@ static void event_loop(void) {
                 handle_key(&event.key);
                 break;
             case SDL_MOUSEMOTION:
-                handle_mouse_motion(&event.motion, frame_size);
+                handle_mouse_motion(&event.motion, screen.frame_size);
                 break;
             case SDL_MOUSEWHEEL: {
                 struct position position = {
-                    .screen_size = frame_size,
+                    .screen_size = screen.frame_size,
                     .point = get_mouse_point(),
                 };
                 handle_mouse_wheel(&event.wheel, position);
@@ -518,7 +336,7 @@ static void event_loop(void) {
             }
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                handle_mouse_button(&event.button, frame_size);
+                handle_mouse_button(&event.button, screen.frame_size);
                 break;
             }
         }
@@ -541,7 +359,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     TCPsocket server_socket = listen_on_port(local_port);
     if (!server_socket) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open video socket");
-        goto screen_finally_adb_reverse_remove;
+        goto finally_adb_reverse_remove;
     }
 
     // server will connect to our socket
@@ -549,7 +367,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     if (server == PROCESS_NONE) {
         ret = SDL_FALSE;
         SDLNet_TCP_Close(server_socket);
-        goto screen_finally_adb_reverse_remove;
+        goto finally_adb_reverse_remove;
     }
 
     // to reduce startup time, we could be tempted to init other stuff before blocking here
@@ -562,10 +380,11 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not accept video socket: %s", SDL_GetError());
         ret = SDL_FALSE;
         stop_server(server);
-        goto screen_finally_adb_reverse_remove;
+        goto finally_adb_reverse_remove;
     }
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
+    struct size frame_size;
 
     // screenrecord does not send frames when the screen content does not change
     // therefore, we transmit the screen size before the video stream, to be able
@@ -575,14 +394,14 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
-        goto screen_finally_adb_reverse_remove;
+        goto finally_adb_reverse_remove;
     }
 
     if (!frames_init(&frames)) {
         ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
-        goto screen_finally_adb_reverse_remove;
+        goto finally_adb_reverse_remove;
     }
 
     decoder.frames = &frames;
@@ -594,105 +413,43 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
-        goto screen_finally_destroy_frames;
+        goto finally_destroy_frames;
     }
 
     if (!controller_init(&controller, device_socket)) {
         ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
-        goto screen_finally_stop_decoder;
+        goto finally_stop_decoder;
     }
 
     if (!controller_start(&controller)) {
         ret = SDL_FALSE;
         SDLNet_TCP_Close(device_socket);
         stop_server(server);
-        goto screen_finally_destroy_controller;
+        goto finally_destroy_controller;
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not initialize SDL: %s", SDL_GetError());
+    if (!sdl_init_and_configure()) {
         ret = SDL_FALSE;
-        goto screen_finally_stop_and_join_controller;
-    }
-    // FIXME it may crash in SDL_Quit in i965_dri.so
-    // As a workaround, do not call SDL_Quit() (we are exiting anyway).
-    // atexit(SDL_Quit);
-
-    // Bilinear resizing
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Could not enable bilinear filtering");
+        goto finally_stop_and_join_controller;
     }
 
-#if SDL_VERSION_ATLEAST(2, 0, 5)
-    // Handle a click to gain focus as any other click
-    if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_VIDEO, "Could not enable mouse focus clickthrough");
-    }
-#endif
-
-    struct size window_size = get_initial_optimal_size(frame_size);
-    window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                          window_size.width, window_size.height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
-    if (!window) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not create window: %s", SDL_GetError());
+    if (!screen_init_rendering(&screen, device_name, frame_size)) {
         ret = SDL_FALSE;
-        goto screen_finally_stop_decoder;
+        goto finally_stop_and_join_controller;
     }
-
-    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (!renderer) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_RENDER, "Could not create renderer: %s", SDL_GetError());
-        ret = SDL_FALSE;
-        goto screen_finally_destroy_window;
-    }
-
-    if (SDL_RenderSetLogicalSize(renderer, frame_size.width, frame_size.height)) {
-        SDL_LogError(SDL_LOG_CATEGORY_RENDER, "Could not set renderer logical size: %s", SDL_GetError());
-        ret = SDL_FALSE;
-        goto screen_finally_destroy_renderer;
-    }
-
-    SDL_Surface *icon = read_xpm(icon_xpm);
-    if (!icon) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not load icon: %s", SDL_GetError());
-        ret = SDL_FALSE;
-        goto screen_finally_destroy_renderer;
-    }
-    SDL_SetWindowIcon(window, icon);
-    SDL_FreeSurface(icon);
-
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING, frame_size.width, frame_size.height);
-    if (!texture) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_RENDER, "Could not create texture: %s", SDL_GetError());
-        ret = SDL_FALSE;
-        goto screen_finally_destroy_renderer;
-    }
-
-    SDL_RenderClear(renderer);
-    SDL_RenderPresent(renderer);
 
     event_loop();
 
     SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "quit...");
-    SDL_DestroyTexture(texture);
-screen_finally_destroy_renderer:
-    // FIXME it may crash at exit if we destroy the renderer or the window,
-    // with the exact same stack trace as <https://bugs.launchpad.net/mir/+bug/1466535>.
-    // As a workaround, leak the renderer and the window (we are exiting anyway).
-    //SDL_DestroyRenderer(renderer);
-screen_finally_destroy_window:
-    //SDL_DestroyWindow(window);
-    // at least we hide it
-    SDL_HideWindow(window);
-screen_finally_stop_and_join_controller:
+    screen_destroy(&screen);
+finally_stop_and_join_controller:
     controller_stop(&controller);
     controller_join(&controller);
-screen_finally_destroy_controller:
+finally_destroy_controller:
     controller_destroy(&controller);
-screen_finally_stop_decoder:
+finally_stop_decoder:
     SDLNet_TCP_Close(device_socket);
 
     // let the server some time to print any exception trace before killing it
@@ -705,9 +462,9 @@ screen_finally_stop_decoder:
     // kill the server before decoder_join() to wake up the decoder
     stop_server(server);
     decoder_join(&decoder);
-screen_finally_destroy_frames:
+finally_destroy_frames:
     frames_destroy(&frames);
-screen_finally_adb_reverse_remove:
+finally_adb_reverse_remove:
     {
         process_t remove = disable_tunnel(serial);
         if (remove != PROCESS_NONE) {
