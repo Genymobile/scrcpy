@@ -57,6 +57,7 @@ static SDL_bool handle_new_frame(void) {
 #endif
 
     if (!screen_update(&screen, frame)){
+        mutex_unlock(frames.mutex);
         return SDL_FALSE;
     }
     mutex_unlock(frames.mutex);
