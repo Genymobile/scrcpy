@@ -3,8 +3,8 @@ project('scrcpy-app', 'c')
 src = [
     'src/main.c',
     'src/command.c',
-    'src/control.c',
     'src/controlevent.c',
+    'src/controller.c',
     'src/convert.c',
     'src/decoder.c',
     'src/frames.c',

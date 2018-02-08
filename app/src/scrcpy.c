@@ -10,7 +10,7 @@
 
 #include "command.h"
 #include "common.h"
-#include "control.h"
+#include "controller.h"
 #include "convert.h"
 #include "decoder.h"
 #include "events.h"
