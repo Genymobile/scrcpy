@@ -99,12 +99,18 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     return SDL_TRUE;
 }
 
-TCPsocket server_connect_to(struct server *server) {
+TCPsocket server_connect_to(struct server *server, const char *serial) {
     SDL_assert(server->server_socket);
     server->device_socket = server_socket_accept(server->server_socket);
+
     // we don't need the server socket anymore
     SDLNet_TCP_Close(server->server_socket);
     server->server_socket = NULL;
+
+    // we don't need the adb tunnel anymore
+    disable_tunnel(serial); // ignore failure
+    server->adb_reverse_enabled = SDL_FALSE;
+
     return server->device_socket;
 }
 

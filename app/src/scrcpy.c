@@ -311,7 +311,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // to reduce startup time, we could be tempted to init other stuff before blocking here
     // but we should not block after SDL_Init since it handles the signals (Ctrl+C) in its
     // event loop: blocking could lead to deadlock
-    TCPsocket device_socket = server_connect_to(&server);
+    TCPsocket device_socket = server_connect_to(&server, serial);
     if (!device_socket) {
         server_stop(&server, serial);
         return SDL_FALSE;

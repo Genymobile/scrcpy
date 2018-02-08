@@ -26,7 +26,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
                       Uint16 max_size, Uint32 bit_rate);
 
 // block until the communication with the server is established
-TCPsocket server_connect_to(struct server *server);
+TCPsocket server_connect_to(struct server *server, const char *serial);
 
 // disconnect and kill the server process
 void server_stop(struct server *server, const char *serial);
