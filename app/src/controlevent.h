@@ -1,5 +1,5 @@
-#ifndef CONTROL_EVENT_H
-#define CONTROL_EVENT_H
+#ifndef CONTROLEVENT_H
+#define CONTROLEVENT_H
 
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_stdinc.h>

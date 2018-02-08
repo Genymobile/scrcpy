@@ -1,3 +1,6 @@
+#ifndef STRUTIL_H
+#define STRUTIL_H
+
 #include <stddef.h>
 
 // like strncpy, except:
@@ -12,3 +15,5 @@ size_t xstrncpy(char *dest, const char *src, size_t n);
 // returns the number of chars actually written (max n-1) if no trucation
 // occurred, or n if truncated
 size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
+
+#endif
