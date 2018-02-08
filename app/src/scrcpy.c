@@ -23,6 +23,7 @@
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 
+static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
@@ -44,14 +45,6 @@ static void count_frame(void) {
         ts = now;
         nbframes = 0;
     }
-}
-
-static TCPsocket listen_on_port(Uint16 port) {
-    IPaddress addr = {
-        .host = INADDR_ANY,
-        .port = SDL_SwapBE16(port),
-    };
-    return SDLNet_TCP_Open(&addr);
 }
 
 // name must be at least DEVICE_NAME_FIELD_LENGTH bytes
@@ -78,23 +71,6 @@ static struct point get_mouse_point(void) {
         .x = (Uint16) x,
         .y = (Uint16) y,
     };
-}
-
-static int wait_for_success(process_t proc, const char *name) {
-    if (proc == PROCESS_NONE) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not execute \"%s\"", name);
-        return -1;
-    }
-    exit_code_t exit_code;
-    if (!cmd_simple_wait(proc, &exit_code)) {
-        if (exit_code != NO_EXIT_CODE) {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "\"%s\" returned with value %" PRIexitcode, name, exit_code);
-        } else {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "\"%s\" exited unexpectedly", name);
-        }
-        return -1;
-    }
-    return 0;
 }
 
 static void send_keycode(enum android_keycode keycode, const char *name) {
@@ -344,43 +320,17 @@ static void event_loop(void) {
 }
 
 SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 bit_rate) {
-    SDL_bool ret = SDL_TRUE;
-
-    process_t push_proc = push_server(serial);
-    if (wait_for_success(push_proc, "adb push")) {
+    if (!server_start(&server, serial, local_port, max_size, bit_rate)) {
         return SDL_FALSE;
-    }
-
-    process_t reverse_tunnel_proc = enable_tunnel(serial, local_port);
-    if (wait_for_success(reverse_tunnel_proc, "adb reverse")) {
-        return SDL_FALSE;
-    }
-
-    TCPsocket server_socket = listen_on_port(local_port);
-    if (!server_socket) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open video socket");
-        goto finally_adb_reverse_remove;
-    }
-
-    // server will connect to our socket
-    process_t server = start_server(serial, max_size, bit_rate);
-    if (server == PROCESS_NONE) {
-        ret = SDL_FALSE;
-        SDLNet_TCP_Close(server_socket);
-        goto finally_adb_reverse_remove;
     }
 
     // to reduce startup time, we could be tempted to init other stuff before blocking here
     // but we should not block after SDL_Init since it handles the signals (Ctrl+C) in its
     // event loop: blocking could lead to deadlock
-    TCPsocket device_socket = blocking_accept(server_socket);
-    // we don't need the server socket anymore
-    SDLNet_TCP_Close(server_socket);
+    TCPsocket device_socket = server_connect_to(&server);
     if (!device_socket) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not accept video socket: %s", SDL_GetError());
-        ret = SDL_FALSE;
-        stop_server(server);
-        goto finally_adb_reverse_remove;
+        server_stop(&server, serial);
+        return SDL_FALSE;
     }
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
@@ -391,18 +341,16 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // to init the window immediately
     if (!read_initial_device_info(device_socket, device_name, &frame_size)) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not retrieve initial screen size");
-        ret = SDL_FALSE;
-        SDLNet_TCP_Close(device_socket);
-        stop_server(server);
-        goto finally_adb_reverse_remove;
+        server_stop(&server, serial);
+        return SDL_FALSE;
     }
 
     if (!frames_init(&frames)) {
-        ret = SDL_FALSE;
-        SDLNet_TCP_Close(device_socket);
-        stop_server(server);
-        goto finally_adb_reverse_remove;
+        server_stop(&server, serial);
+        return SDL_FALSE;
     }
+
+    SDL_bool ret = SDL_TRUE;
 
     decoder.frames = &frames;
     decoder.video_socket = device_socket;
@@ -411,22 +359,17 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // start the decoder
     if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
-        SDLNet_TCP_Close(device_socket);
-        stop_server(server);
+        server_stop(&server, serial);
         goto finally_destroy_frames;
     }
 
     if (!controller_init(&controller, device_socket)) {
         ret = SDL_FALSE;
-        SDLNet_TCP_Close(device_socket);
-        stop_server(server);
         goto finally_stop_decoder;
     }
 
     if (!controller_start(&controller)) {
         ret = SDL_FALSE;
-        SDLNet_TCP_Close(device_socket);
-        stop_server(server);
         goto finally_destroy_controller;
     }
 
@@ -450,28 +393,11 @@ finally_stop_and_join_controller:
 finally_destroy_controller:
     controller_destroy(&controller);
 finally_stop_decoder:
-    SDLNet_TCP_Close(device_socket);
-
-    // let the server some time to print any exception trace before killing it
-    struct timespec timespec = {
-        .tv_sec = 0,
-        .tv_nsec = 100000000, // 100ms
-    };
-    nanosleep(&timespec, NULL); // ignore error
-
     // kill the server before decoder_join() to wake up the decoder
-    stop_server(server);
+    server_stop(&server, serial);
     decoder_join(&decoder);
 finally_destroy_frames:
     frames_destroy(&frames);
-finally_adb_reverse_remove:
-    {
-        process_t remove = disable_tunnel(serial);
-        if (remove != PROCESS_NONE) {
-            // ignore failure
-            cmd_simple_wait(remove, NULL);
-        }
-    }
 
     return ret;
 }

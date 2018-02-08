@@ -42,4 +42,8 @@ process_t adb_reverse(const char *serial, const char *device_socket_name, uint16
 process_t adb_reverse_remove(const char *serial, const char *device_socket_name);
 process_t adb_push(const char *serial, const char *local, const char *remote);
 
+// convenience function to wait for a successful process execution
+// automatically log process errors with the provided process name
+SDL_bool process_check_success(process_t process, const char *name);
+
 #endif

@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL_net.h>
 
-TCPsocket blocking_accept(TCPsocket server_socket);
+// blocking accept on the server socket
+TCPsocket server_socket_accept(TCPsocket server_socket);
 
 #endif

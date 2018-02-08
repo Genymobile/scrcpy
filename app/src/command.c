@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL2/SDL_log.h>
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 
@@ -62,4 +63,21 @@ process_t adb_reverse_remove(const char *serial, const char *device_socket_name)
 process_t adb_push(const char *serial, const char *local, const char *remote) {
     const char *const adb_cmd[] = {"push", (char *) local, (char *) remote};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+}
+
+SDL_bool process_check_success(process_t proc, const char *name) {
+    if (proc == PROCESS_NONE) {
+        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not execute \"%s\"", name);
+        return SDL_FALSE;
+    }
+    exit_code_t exit_code;
+    if (!cmd_simple_wait(proc, &exit_code)) {
+        if (exit_code != NO_EXIT_CODE) {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "\"%s\" returned with value %" PRIexitcode, name, exit_code);
+        } else {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "\"%s\" exited unexpectedly", name);
+        }
+        return SDL_FALSE;
+    }
+    return SDL_TRUE;
 }
