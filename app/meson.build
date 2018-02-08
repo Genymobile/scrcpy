@@ -13,6 +13,7 @@ src = [
     'src/netutil.c',
     'src/scrcpy.c',
     'src/screen.c',
+    'src/screencontrol.c',
     'src/server.c',
     'src/strutil.c',
     'src/tinyxpm.c',

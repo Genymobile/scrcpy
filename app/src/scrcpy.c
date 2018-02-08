@@ -11,7 +11,6 @@
 #include "command.h"
 #include "common.h"
 #include "controller.h"
-#include "convert.h"
 #include "decoder.h"
 #include "device.h"
 #include "events.h"
@@ -19,6 +18,7 @@
 #include "lockutil.h"
 #include "netutil.h"
 #include "screen.h"
+#include "screencontrol.h"
 #include "server.h"
 #include "tinyxpm.h"
 
@@ -46,76 +46,6 @@ static void count_frame(void) {
     }
 }
 
-static struct point get_mouse_point(void) {
-    int x;
-    int y;
-    SDL_GetMouseState(&x, &y);
-    SDL_assert_release(x >= 0 && x < 0x10000 && y >= 0 && y < 0x10000);
-    return (struct point) {
-        .x = (Uint16) x,
-        .y = (Uint16) y,
-    };
-}
-
-static void send_keycode(enum android_keycode keycode, const char *name) {
-    // send DOWN event
-    struct control_event control_event = {
-        .type = CONTROL_EVENT_TYPE_KEYCODE,
-        .keycode_event = {
-            .action = AKEY_EVENT_ACTION_DOWN,
-            .keycode = keycode,
-            .metastate = 0,
-        },
-    };
-
-    if (!controller_push_event(&controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (DOWN)", name);
-        return;
-    }
-
-    // send UP event
-    control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
-    if (!controller_push_event(&controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (UP)", name);
-    }
-}
-
-static inline void action_home(void) {
-    send_keycode(AKEYCODE_HOME, "HOME");
-}
-
-static inline void action_back(void) {
-    send_keycode(AKEYCODE_BACK, "BACK");
-}
-
-static inline void action_app_switch(void) {
-    send_keycode(AKEYCODE_APP_SWITCH, "APP_SWITCH");
-}
-
-static inline void action_power(void) {
-    send_keycode(AKEYCODE_POWER, "POWER");
-}
-
-static inline void action_volume_up(void) {
-    send_keycode(AKEYCODE_VOLUME_UP, "VOLUME_UP");
-}
-
-static inline void action_volume_down(void) {
-    send_keycode(AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
-}
-
-static void turn_screen_on(void) {
-    struct control_event control_event = {
-        .type = CONTROL_EVENT_TYPE_COMMAND,
-        .command_event = {
-            .action = CONTROL_EVENT_COMMAND_SCREEN_ON,
-        },
-    };
-    if (!controller_push_event(&controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot turn screen on");
-    }
-}
-
 static SDL_bool handle_new_frame(void) {
     mutex_lock(frames.mutex);
     AVFrame *frame = frames.rendering_frame;
@@ -133,122 +63,6 @@ static SDL_bool handle_new_frame(void) {
 
     screen_render(&screen);
     return SDL_TRUE;
-}
-
-static SDL_bool is_ctrl_down(void) {
-    const Uint8 *state = SDL_GetKeyboardState(NULL);
-    return state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
-}
-
-static void handle_text_input(const SDL_TextInputEvent *event) {
-    if (is_ctrl_down()) {
-        switch (event->text[0]) {
-            case '+':
-                action_volume_up();
-                break;
-            case '-':
-                action_volume_down();
-                break;
-        }
-        return;
-    }
-
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_TEXT;
-    strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
-    control_event.text_event.text[TEXT_MAX_LENGTH] = '\0';
-    if (!controller_push_event(&controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send text event");
-    }
-}
-
-static void handle_key(const SDL_KeyboardEvent *event) {
-    SDL_Keycode keycode = event->keysym.sym;
-    SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
-    SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
-    SDL_bool repeat = event->repeat;
-
-    // capture all Ctrl events
-    if (ctrl) {
-        // only consider keydown events, and ignore repeated events
-        if (repeat || event->type != SDL_KEYDOWN) {
-            return;
-        }
-
-        if (shift) {
-            // currently, there is no shortcut implying SHIFT
-            return;
-        }
-
-        switch (keycode) {
-            case SDLK_h:
-                action_home();
-                return;
-            case SDLK_b: // fall-through
-            case SDLK_BACKSPACE:
-                action_back();
-                return;
-            case SDLK_m:
-                action_app_switch();
-                return;
-            case SDLK_p:
-                action_power();
-                return;
-            case SDLK_f:
-                screen_switch_fullscreen(&screen);
-                return;
-            case SDLK_x:
-                screen_resize_to_fit(&screen);
-                return;
-            case SDLK_g:
-                screen_resize_to_pixel_perfect(&screen);
-                return;
-        }
-
-        return;
-    }
-
-    struct control_event control_event;
-    if (input_key_from_sdl_to_android(event, &control_event)) {
-        if (!controller_push_event(&controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send control event");
-        }
-    }
-}
-
-static void handle_mouse_motion(const SDL_MouseMotionEvent *event, struct size screen_size) {
-    if (!event->state) {
-        // do not send motion events when no button is pressed
-        return;
-    }
-    struct control_event control_event;
-    if (mouse_motion_from_sdl_to_android(event, screen_size, &control_event)) {
-        if (!controller_push_event(&controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse motion event");
-        }
-    }
-}
-
-static void handle_mouse_button(const SDL_MouseButtonEvent *event, struct size screen_size) {
-    if (event->button == SDL_BUTTON_RIGHT) {
-        turn_screen_on();
-        return;
-    };
-    struct control_event control_event;
-    if (mouse_button_from_sdl_to_android(event, screen_size, &control_event)) {
-        if (!controller_push_event(&controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse button event");
-        }
-    }
-}
-
-static void handle_mouse_wheel(const SDL_MouseWheelEvent *event, struct position position) {
-    struct control_event control_event;
-    if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
-        if (!controller_push_event(&controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send wheel button event");
-        }
-    }
 }
 
 static void event_loop(void) {
@@ -276,27 +90,23 @@ static void event_loop(void) {
                 }
                 break;
             case SDL_TEXTINPUT: {
-                handle_text_input(&event.text);
+                screencontrol_handle_text_input(&controller, &screen, &event.text);
                 break;
             }
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                handle_key(&event.key);
+                screencontrol_handle_key(&controller, &screen, &event.key);
                 break;
             case SDL_MOUSEMOTION:
-                handle_mouse_motion(&event.motion, screen.frame_size);
+                screencontrol_handle_mouse_motion(&controller, &screen, &event.motion);
                 break;
             case SDL_MOUSEWHEEL: {
-                struct position position = {
-                    .screen_size = screen.frame_size,
-                    .point = get_mouse_point(),
-                };
-                handle_mouse_wheel(&event.wheel, position);
+                screencontrol_handle_mouse_wheel(&controller, &screen, &event.wheel);
                 break;
             }
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                handle_mouse_button(&event.button, screen.frame_size);
+                screencontrol_handle_mouse_button(&controller, &screen, &event.button);
                 break;
             }
         }
