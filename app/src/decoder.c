@@ -21,24 +21,11 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
 
 // set the decoded frame as ready for rendering, and notify
 static void push_frame(struct decoder *decoder) {
-    struct frames *frames = decoder->frames;
-    mutex_lock(frames->mutex);
-#ifndef SKIP_FRAMES
-    // if SKIP_FRAMES is disabled, then the decoder must wait for the current
-    // frame to be consumed
-    while (!frames->rendering_frame_consumed) {
-        cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
+    SDL_bool previous_frame_consumed = frames_offer_decoded_frame(decoder->frames);
+    if (!previous_frame_consumed) {
+        // the previous EVENT_NEW_FRAME will consume this frame
+        return;
     }
-#else
-    if (!frames->rendering_frame_consumed) {
-        SDL_LogInfo(SDL_LOG_CATEGORY_RENDER, "Skip frame");
-    }
-#endif
-
-    frames_swap(frames);
-    frames->rendering_frame_consumed = SDL_FALSE;
-    mutex_unlock(frames->mutex);
-
     static SDL_Event new_frame_event = {
         .type = EVENT_NEW_FRAME,
     };

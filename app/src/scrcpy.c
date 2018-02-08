@@ -48,14 +48,7 @@ static void count_frame(void) {
 
 static SDL_bool handle_new_frame(void) {
     mutex_lock(frames.mutex);
-    AVFrame *frame = frames.rendering_frame;
-    frames.rendering_frame_consumed = SDL_TRUE;
-#ifndef SKIP_FRAMES
-    // if SKIP_FRAMES is disabled, then notify the decoder the current frame is
-    // consumed, so that it may push a new one
-    cond_signal(frames.rendering_frame_consumed_cond);
-#endif
-
+    const AVFrame *frame = frames_consume_rendered_frame(&frames);
     if (!screen_update(&screen, frame)){
         mutex_unlock(frames.mutex);
         return SDL_FALSE;
