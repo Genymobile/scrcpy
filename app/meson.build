@@ -7,6 +7,7 @@ src = [
     'src/controller.c',
     'src/convert.c',
     'src/decoder.c',
+    'src/device.c',
     'src/frames.c',
     'src/lockutil.c',
     'src/netutil.c',

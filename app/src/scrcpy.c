@@ -13,6 +13,7 @@
 #include "controller.h"
 #include "convert.h"
 #include "decoder.h"
+#include "device.h"
 #include "events.h"
 #include "frames.h"
 #include "lockutil.h"
@@ -20,8 +21,6 @@
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
-
-#define DEVICE_NAME_FIELD_LENGTH 64
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
@@ -45,21 +44,6 @@ static void count_frame(void) {
         ts = now;
         nbframes = 0;
     }
-}
-
-// name must be at least DEVICE_NAME_FIELD_LENGTH bytes
-static SDL_bool read_initial_device_info(TCPsocket socket, char *device_name, struct size *size) {
-    unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
-    if (SDLNet_TCP_Recv(socket, buf, sizeof(buf)) <= 0) {
-        return SDL_FALSE;
-    }
-    buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0'; // in case the client sends garbage
-    // scrcpy is safe here, since name contains at least DEVICE_NAME_FIELD_LENGTH bytes
-    // and strlen(buf) < DEVICE_NAME_FIELD_LENGTH
-    strcpy(device_name, (char *) buf);
-    size->width = (buf[DEVICE_NAME_FIELD_LENGTH] << 8) | buf[DEVICE_NAME_FIELD_LENGTH + 1];
-    size->height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8) | buf[DEVICE_NAME_FIELD_LENGTH + 3];
-    return SDL_TRUE;
 }
 
 static struct point get_mouse_point(void) {
@@ -339,8 +323,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // screenrecord does not send frames when the screen content does not change
     // therefore, we transmit the screen size before the video stream, to be able
     // to init the window immediately
-    if (!read_initial_device_info(device_socket, device_name, &frame_size)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not retrieve initial screen size");
+    if (!device_read_info(device_socket, device_name, &frame_size)) {
         server_stop(&server, serial);
         return SDL_FALSE;
     }
