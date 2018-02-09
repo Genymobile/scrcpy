@@ -28,9 +28,6 @@ public class EventController {
         this.device = device;
         this.connection = connection;
         initPointer();
-
-        // on start, turn screen on
-        turnScreenOn();
     }
 
     private void initPointer() {
@@ -61,6 +58,9 @@ public class EventController {
     }
 
     public void control() throws IOException {
+        // on start, turn screen on
+        turnScreenOn();
+
         while (true) {
             handleEvent();
         }
