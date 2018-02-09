@@ -152,6 +152,10 @@ SDL_bool decoder_start(struct decoder *decoder) {
     return SDL_TRUE;
 }
 
+void decoder_stop(struct decoder *decoder) {
+    frames_stop(decoder->frames);
+}
+
 void decoder_join(struct decoder *decoder) {
     SDL_WaitThread(decoder->thread, NULL);
 }

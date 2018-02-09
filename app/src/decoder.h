@@ -14,6 +14,7 @@ struct decoder {
 };
 
 SDL_bool decoder_start(struct decoder *decoder);
+void decoder_stop(struct decoder *decoder);
 void decoder_join(struct decoder *decoder);
 
 #endif

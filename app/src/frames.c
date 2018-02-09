@@ -27,6 +27,7 @@ SDL_bool frames_init(struct frames *frames) {
         SDL_DestroyMutex(frames->mutex);
         goto error_2;
     }
+    frames->stopped = SDL_FALSE;
 #endif
 
     // there is initially no rendering frame, so consider it has already been
@@ -60,24 +61,23 @@ static void frames_swap(struct frames *frames) {
 
 SDL_bool frames_offer_decoded_frame(struct frames *frames) {
     mutex_lock(frames->mutex);
-    SDL_bool previous_frame_consumed;
 #ifndef SKIP_FRAMES
     // if SKIP_FRAMES is disabled, then the decoder must wait for the current
     // frame to be consumed
-    while (!frames->rendering_frame_consumed) {
+    while (!frames->rendering_frame_consumed && !frames->stopped) {
         cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
     }
-    // by definition, we are not skipping the frames
-    previous_frame_consumed = SDL_TRUE;
 #else
-    previous_frame_consumed = frames->rendering_frame_consumed;
-    if (!previous_frame_consumed) {
+    if (!frames->rendering_frame_consumed) {
         SDL_LogDebug(SDL_LOG_CATEGORY_RENDER, "Skip frame");
     }
 #endif
 
     frames_swap(frames);
+
+    SDL_bool previous_frame_consumed = frames->rendering_frame_consumed;
     frames->rendering_frame_consumed = SDL_FALSE;
+
     mutex_unlock(frames->mutex);
     return previous_frame_consumed;
 }
@@ -91,4 +91,16 @@ const AVFrame *frames_consume_rendered_frame(struct frames *frames) {
     cond_signal(frames->rendering_frame_consumed_cond);
 #endif
     return frames->rendering_frame;
+}
+
+void frames_stop(struct frames *frames) {
+#ifdef SKIP_FRAMES
+    (void) frames; // unused
+#else
+    mutex_lock(frames->mutex);
+    frames->stopped = SDL_TRUE;
+    mutex_unlock(frames->mutex);
+    // wake up blocking wait
+    cond_signal(frames->rendering_frame_consumed_cond);
+#endif
 }

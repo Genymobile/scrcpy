@@ -180,6 +180,7 @@ finally_stop_and_join_controller:
 finally_destroy_controller:
     controller_destroy(&controller);
 finally_stop_decoder:
+    decoder_stop(&decoder);
     // kill the server before decoder_join() to wake up the decoder
     server_stop(&server, serial);
     decoder_join(&decoder);

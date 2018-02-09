@@ -14,6 +14,7 @@ struct frames {
     AVFrame *rendering_frame;
     SDL_mutex *mutex;
 #ifndef SKIP_FRAMES
+    SDL_bool stopped;
     SDL_cond *rendering_frame_consumed_cond;
 #endif
     SDL_bool rendering_frame_consumed;
@@ -32,5 +33,8 @@ SDL_bool frames_offer_decoded_frame(struct frames *frames);
 // the caller is expected to render the returned frame to some texture before
 // unlocking frames->mutex
 const AVFrame *frames_consume_rendered_frame(struct frames *frames);
+
+// wake up and avoid any blocking call
+void frames_stop(struct frames *frames);
 
 #endif
