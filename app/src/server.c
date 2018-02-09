@@ -98,9 +98,9 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     return SDL_TRUE;
 }
 
-TCPsocket server_connect_to(struct server *server, const char *serial) {
+TCPsocket server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms) {
     SDL_assert(server->server_socket);
-    server->device_socket = server_socket_accept(server->server_socket);
+    server->device_socket = server_socket_accept(server->server_socket, timeout_ms);
 
     // we don't need the server socket anymore
     SDLNet_TCP_Close(server->server_socket);

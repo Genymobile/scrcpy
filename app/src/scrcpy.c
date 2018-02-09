@@ -111,10 +111,11 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_server;
     }
 
-    // to reduce startup time, we could be tempted to init other stuff before blocking here
-    // but we should not block after SDL_Init since it handles the signals (Ctrl+C) in its
-    // event loop: blocking could lead to deadlock
-    TCPsocket device_socket = server_connect_to(&server, serial);
+    // SDL initialization replace the signal handler for SIGTERM, so Ctrl+C is
+    // managed by the event loop. This blocking call blocks the event loop, so
+    // timeout the connection not to block indefinitely in case of SIGTERM.
+#define SERVER_CONNECT_TIMEOUT_MS 2000
+    TCPsocket device_socket = server_connect_to(&server, serial, SERVER_CONNECT_TIMEOUT_MS);
     if (!device_socket) {
         server_stop(&server, serial);
         ret = SDL_FALSE;
