@@ -177,7 +177,7 @@ void screencontrol_handle_mouse_motion(struct controller *controller,
 void screencontrol_handle_mouse_button(struct controller *controller,
                                        struct screen *screen,
                                        const SDL_MouseButtonEvent *event) {
-    if (event->button == SDL_BUTTON_RIGHT) {
+    if (event->button == SDL_BUTTON_RIGHT && event->type == SDL_MOUSEBUTTONDOWN) {
         turn_screen_on(controller);
         return;
     };
