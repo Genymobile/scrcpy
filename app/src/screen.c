@@ -15,9 +15,7 @@ SDL_bool sdl_init_and_configure(void) {
         return SDL_FALSE;
     }
 
-    // FIXME it may crash in SDL_Quit in i965_dri.so
-    // As a workaround, do not call SDL_Quit() (we are exiting anyway).
-    // atexit(SDL_Quit);
+    atexit(SDL_Quit);
 
     // Bilinear resizing
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
@@ -187,15 +185,10 @@ void screen_destroy(struct screen *screen) {
         SDL_DestroyTexture(screen->texture);
     }
     if (screen->renderer) {
-        // FIXME it may crash at exit if we destroy the renderer or the window,
-        // with the exact same stack trace as <https://bugs.launchpad.net/mir/+bug/1466535>.
-        // As a workaround, leak the renderer and the window (we are exiting anyway).
-        //SDL_DestroyRenderer(screen->renderer);
+        SDL_DestroyRenderer(screen->renderer);
     }
     if (screen->window) {
-        //SDL_DestroyWindow(screen->window);
-        // at least we hide it
-        SDL_HideWindow(screen->window);
+        SDL_DestroyWindow(screen->window);
     }
 }
 
