@@ -46,19 +46,6 @@ static void count_frame(void) {
     }
 }
 
-static SDL_bool handle_new_frame(void) {
-    mutex_lock(frames.mutex);
-    const AVFrame *frame = frames_consume_rendered_frame(&frames);
-    if (!screen_update(&screen, frame)){
-        mutex_unlock(frames.mutex);
-        return SDL_FALSE;
-    }
-    mutex_unlock(frames.mutex);
-
-    screen_render(&screen);
-    return SDL_TRUE;
-}
-
 static void event_loop(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
@@ -70,7 +57,7 @@ static void event_loop(void) {
                 SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "User requested to quit");
                 return;
             case EVENT_NEW_FRAME:
-                if (!handle_new_frame()) {
+                if (!screen_update_frame(&screen, &frames)) {
                     return;
                 }
                 count_frame(); // display fps for debug

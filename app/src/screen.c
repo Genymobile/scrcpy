@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "icon.xpm"
+#include "lockutil.h"
 #include "tinyxpm.h"
 
 #define DISPLAY_MARGINS 96
@@ -237,12 +238,18 @@ static void update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[2], frame->linesize[2]);
 }
 
-SDL_bool screen_update(struct screen *screen, const AVFrame *frame) {
+SDL_bool screen_update_frame(struct screen *screen, struct frames *frames) {
+    mutex_lock(frames->mutex);
+    const AVFrame *frame = frames_consume_rendered_frame(frames);
     struct size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
+        mutex_unlock(frames->mutex);
         return SDL_FALSE;
     }
     update_texture(screen, frame);
+    mutex_unlock(frames->mutex);
+
+    screen_render(screen);
     return SDL_TRUE;
 }
 

@@ -5,6 +5,7 @@
 #include <libavformat/avformat.h>
 
 #include "common.h"
+#include "frames.h"
 
 struct screen {
     SDL_Window *window;
@@ -47,8 +48,8 @@ SDL_bool screen_init_rendering(struct screen *screen,
 // destroy window, renderer and texture (if any)
 void screen_destroy(struct screen *screen);
 
-// resize if necessary and write the frame into the texture
-SDL_bool screen_update(struct screen *screen, const AVFrame *frame);
+// resize if necessary and write the rendered frame into the texture
+SDL_bool screen_update_frame(struct screen *screen, struct frames *frames);
 
 // render the texture to the renderer
 void screen_render(struct screen *screen);
