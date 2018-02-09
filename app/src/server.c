@@ -115,17 +115,19 @@ TCPsocket server_connect_to(struct server *server, const char *serial) {
 
 void server_stop(struct server *server, const char *serial) {
     SDL_assert(server->process != PROCESS_NONE);
-    if (server->server_socket) {
-        SDLNet_TCP_Close(server->server_socket);
-    }
-    if (server->device_socket) {
-        SDLNet_TCP_Close(server->device_socket);
-    }
-
     terminate_server(server->process);
 
     if (server->adb_reverse_enabled) {
         // ignore failure
         disable_tunnel(serial);
+    }
+}
+
+void server_destroy(struct server *server) {
+    if (server->server_socket) {
+        SDLNet_TCP_Close(server->server_socket);
+    }
+    if (server->device_socket) {
+        SDLNet_TCP_Close(server->device_socket);
     }
 }

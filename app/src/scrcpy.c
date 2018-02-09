@@ -99,13 +99,16 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         return SDL_FALSE;
     }
 
+    SDL_bool ret = SDL_TRUE;
+
     // to reduce startup time, we could be tempted to init other stuff before blocking here
     // but we should not block after SDL_Init since it handles the signals (Ctrl+C) in its
     // event loop: blocking could lead to deadlock
     TCPsocket device_socket = server_connect_to(&server, serial);
     if (!device_socket) {
         server_stop(&server, serial);
-        return SDL_FALSE;
+        ret = SDL_FALSE;
+        goto finally_destroy_server;
     }
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
@@ -116,15 +119,15 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // to init the window immediately
     if (!device_read_info(device_socket, device_name, &frame_size)) {
         server_stop(&server, serial);
-        return SDL_FALSE;
+        ret = SDL_FALSE;
+        goto finally_destroy_server;
     }
 
     if (!frames_init(&frames)) {
         server_stop(&server, serial);
-        return SDL_FALSE;
+        ret = SDL_FALSE;
+        goto finally_destroy_server;
     }
-
-    SDL_bool ret = SDL_TRUE;
 
     decoder.frames = &frames;
     decoder.video_socket = device_socket;
@@ -173,6 +176,8 @@ finally_stop_decoder:
     decoder_join(&decoder);
 finally_destroy_frames:
     frames_destroy(&frames);
+finally_destroy_server:
+    server_destroy(&server);
 
     return ret;
 }

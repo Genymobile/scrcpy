@@ -31,4 +31,7 @@ TCPsocket server_connect_to(struct server *server, const char *serial);
 // disconnect and kill the server process
 void server_stop(struct server *server, const char *serial);
 
+// close and release sockets
+void server_destroy(struct server *server);
+
 #endif
