@@ -13,6 +13,7 @@ struct decoder {
     SDL_mutex *mutex;
 };
 
+void decoder_init(struct decoder *decoder, struct frames *frames, TCPsocket video_socket);
 SDL_bool decoder_start(struct decoder *decoder);
 void decoder_stop(struct decoder *decoder);
 void decoder_join(struct decoder *decoder);

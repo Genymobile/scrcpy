@@ -140,6 +140,11 @@ run_finally_free_codec_ctx:
     return ret;
 }
 
+void decoder_init(struct decoder *decoder, struct frames *frames, TCPsocket video_socket) {
+    decoder->frames = frames;
+    decoder->video_socket = video_socket;
+}
+
 SDL_bool decoder_start(struct decoder *decoder) {
     SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Starting decoder thread");
 

@@ -129,8 +129,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_server;
     }
 
-    decoder.frames = &frames;
-    decoder.video_socket = device_socket;
+    decoder_init(&decoder, &frames, device_socket);
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
