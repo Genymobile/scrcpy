@@ -57,6 +57,11 @@ static void event_loop(void) {
                 SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "User requested to quit");
                 return;
             case EVENT_NEW_FRAME:
+                if (!screen.has_frame) {
+                    screen.has_frame = SDL_TRUE;
+                    // this is the very first frame, show the window
+                    screen_show_window(&screen);
+                }
                 if (!screen_update_frame(&screen, &frames)) {
                     return;
                 }
@@ -100,6 +105,11 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     }
 
     SDL_bool ret = SDL_TRUE;
+
+    if (!sdl_init_and_configure()) {
+        ret = SDL_FALSE;
+        goto finally_destroy_server;
+    }
 
     // to reduce startup time, we could be tempted to init other stuff before blocking here
     // but we should not block after SDL_Init since it handles the signals (Ctrl+C) in its
@@ -147,11 +157,6 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     if (!controller_start(&controller)) {
         ret = SDL_FALSE;
         goto finally_destroy_controller;
-    }
-
-    if (!sdl_init_and_configure()) {
-        ret = SDL_FALSE;
-        goto finally_stop_and_join_controller;
     }
 
     if (!screen_init_rendering(&screen, device_name, frame_size)) {

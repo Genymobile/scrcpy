@@ -137,7 +137,7 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
 
     struct size window_size = get_initial_optimal_size(frame_size);
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                      window_size.width, window_size.height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+                                      window_size.width, window_size.height, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
     if (!screen->window) {
         SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not create window: %s", SDL_GetError());
         return SDL_FALSE;
@@ -176,6 +176,10 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
 
     screen_render(screen);
     return SDL_TRUE;
+}
+
+void screen_show_window(struct screen *screen) {
+    SDL_ShowWindow(screen->window);
 }
 
 void screen_destroy(struct screen *screen) {
@@ -231,7 +235,6 @@ static SDL_bool prepare_for_frame(struct screen *screen, struct size new_frame_s
 
 // write the frame into the texture
 static void update_texture(struct screen *screen, const AVFrame *frame) {
-    screen->texture_initialized = SDL_TRUE;
     SDL_UpdateYUVTexture(screen->texture, NULL,
             frame->data[0], frame->linesize[0],
             frame->data[1], frame->linesize[1],
@@ -255,9 +258,7 @@ SDL_bool screen_update_frame(struct screen *screen, struct frames *frames) {
 
 void screen_render(struct screen *screen) {
     SDL_RenderClear(screen->renderer);
-    if (screen->texture_initialized) {
-        SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
-    }
+    SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
     SDL_RenderPresent(screen->renderer);
 }
 

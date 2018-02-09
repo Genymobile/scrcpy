@@ -14,24 +14,24 @@ struct screen {
     struct size frame_size;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
-    SDL_bool texture_initialized;
+    SDL_bool has_frame;
     SDL_bool fullscreen;
 };
 
-#define SCREEN_INITIALIZER {          \
-    .window = NULL,                   \
-    .renderer = NULL,                 \
-    .texture = NULL,                  \
-    .frame_size = {                   \
-        .width = 0,                   \
-        .height = 0,                  \
-    },                                \
-    .windowed_window_size = {         \
-        .width = 0,                   \
-        .height = 0,                  \
-    },                                \
-    .texture_initialized = SDL_FALSE, \
-    .fullscreen = SDL_FALSE,          \
+#define SCREEN_INITIALIZER {  \
+    .window = NULL,           \
+    .renderer = NULL,         \
+    .texture = NULL,          \
+    .frame_size = {           \
+        .width = 0,           \
+        .height = 0,          \
+    },                        \
+    .windowed_window_size = { \
+        .width = 0,           \
+        .height = 0,          \
+    },                        \
+    .has_frame = SDL_FALSE,   \
+    .fullscreen = SDL_FALSE,  \
 }
 
 // init SDL and set appropriate hints
@@ -40,10 +40,13 @@ SDL_bool sdl_init_and_configure(void);
 // initialize default values
 void screen_init(struct screen *screen);
 
-// initialize screen, create window, renderer and texture
+// initialize screen, create window, renderer and texture (window is hidden)
 SDL_bool screen_init_rendering(struct screen *screen,
                                const char *device_name,
                                struct size frame_size);
+
+// show the window
+void screen_show_window(struct screen *screen);
 
 // destroy window, renderer and texture (if any)
 void screen_destroy(struct screen *screen);
