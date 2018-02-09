@@ -20,7 +20,8 @@ clean:
 	rm -rf "$(APP_BUILD_DIR)" "$(APP_BUILD_DEBUG_DIR)" "$(DIST)"
 
 build-app-debug:
-	[ -d "$(APP_BUILD_DEBUG_DIR)" ] || ( mkdir "$(APP_BUILD_DEBUG_DIR)" && meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
+	[ -d "$(APP_BUILD_DEBUG_DIR)" ] || ( mkdir "$(APP_BUILD_DEBUG_DIR)" && \
+		CFLAGS=-fsanitize=address,undefined meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
 	ninja -C "$(APP_BUILD_DEBUG_DIR)"
 
 build-server-debug:
