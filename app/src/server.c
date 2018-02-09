@@ -4,7 +4,6 @@
 #include <SDL2/SDL_net.h>
 #include <errno.h>
 #include <stdint.h>
-#include <time.h>
 #include "netutil.h"
 
 #define SOCKET_NAME "scrcpy"
@@ -122,13 +121,6 @@ void server_stop(struct server *server, const char *serial) {
     if (server->device_socket) {
         SDLNet_TCP_Close(server->device_socket);
     }
-
-    // let the server some time to print any exception trace before killing it
-    struct timespec timespec = {
-        .tv_sec = 0,
-        .tv_nsec = 100000000, // 100ms
-    };
-    nanosleep(&timespec, NULL); // ignore error
 
     terminate_server(server->process);
 
