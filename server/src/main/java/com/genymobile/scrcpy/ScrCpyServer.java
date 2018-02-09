@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 
 public final class ScrCpyServer {
 
@@ -20,7 +21,7 @@ public final class ScrCpyServer {
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getOutputStream());
             } catch (IOException e) {
-                Ln.e("Screen streaming interrupted", e);
+                Ln.w("Screen streaming stopped");
             }
         }
     }
@@ -32,7 +33,7 @@ public final class ScrCpyServer {
                 try {
                     new EventController(device, connection).control();
                 } catch (IOException e) {
-                    Ln.e("Exception from event controller", e);
+                    Ln.w("Event controller stopped");
                 }
             }
         }).start();
@@ -60,6 +61,13 @@ public final class ScrCpyServer {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
+                if (e instanceof AssertionError && e.getCause() instanceof InvocationTargetException) {
+                    // WORKAROUND
+                    // When we call a method of the framework by reflection, it may throw an InvocationTargetException
+                    // (that we wrap into an AssertionError) if this process is being killed.
+                    // To avoid the stacktrace on close, do not log these errors.
+                    return;
+                }
                 Ln.e("Exception on thread " + t, e);
             }
         });
