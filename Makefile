@@ -33,7 +33,8 @@ run-debug:
 	SCRCPY_SERVER_JAR=server/build/outputs/apk/debug/server-debug.apk $(APP_BUILD_DEBUG_DIR)/scrcpy $(ARGS)
 
 build-app:
-	[ -d "$(APP_BUILD_DIR)" ] || ( mkdir "$(APP_BUILD_DIR)" && meson app "$(APP_BUILD_DIR)" --buildtype release )
+	[ -d "$(APP_BUILD_DIR)" ] || ( mkdir "$(APP_BUILD_DIR)" && \
+		meson app "$(APP_BUILD_DIR)" --buildtype release -Db_lto )
 	ninja -C "$(APP_BUILD_DIR)"
 
 build-server:
