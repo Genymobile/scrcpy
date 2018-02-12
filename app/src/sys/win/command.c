@@ -28,7 +28,7 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
 }
 
 SDL_bool cmd_terminate(HANDLE handle) {
-    return CloseHandle(handle);
+    return TerminateProcess(handle, 1) && CloseHandle(handle);
 }
 
 SDL_bool cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
