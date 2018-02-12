@@ -21,7 +21,7 @@ clean:
 
 build-app-debug:
 	[ -d "$(APP_BUILD_DEBUG_DIR)" ] || ( mkdir "$(APP_BUILD_DEBUG_DIR)" && \
-		CFLAGS=-fsanitize=address,undefined meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
+		meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
 	ninja -C "$(APP_BUILD_DEBUG_DIR)"
 
 build-server-debug:
