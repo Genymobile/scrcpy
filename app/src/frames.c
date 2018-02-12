@@ -69,7 +69,7 @@ SDL_bool frames_offer_decoded_frame(struct frames *frames) {
     }
 #else
     if (!frames->rendering_frame_consumed) {
-        SDL_LogDebug(SDL_LOG_CATEGORY_RENDER, "Skip frame");
+        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Skip frame");
     }
 #endif
 

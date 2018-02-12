@@ -80,7 +80,7 @@ SDL_bool controller_start(struct controller *controller) {
 
     controller->thread = SDL_CreateThread(run_controller, "controller", controller);
     if (!controller->thread) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not start controller thread");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not start controller thread");
         return SDL_FALSE;
     }
 

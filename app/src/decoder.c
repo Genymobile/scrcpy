@@ -38,39 +38,39 @@ static int run_decoder(void *data) {
 
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!codec) {
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "H.264 decoder not found");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "H.264 decoder not found");
         return -1;
     }
 
     AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
     if (!codec_ctx) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Could not allocate decoder context");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not allocate decoder context");
         return -1;
     }
 
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not open H.264 codec");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open H.264 codec");
         ret = -1;
         goto run_finally_free_codec_ctx;
     }
 
     AVFormatContext *format_ctx = avformat_alloc_context();
     if (!format_ctx) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Could not allocate format context");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not allocate format context");
         ret = -1;
         goto run_finally_close_codec;
     }
 
     unsigned char *buffer = av_malloc(BUFSIZE);
     if (!buffer) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Could not allocate buffer");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not allocate buffer");
         ret = -1;
         goto run_finally_free_format_ctx;
     }
 
     AVIOContext *avio_ctx = avio_alloc_context(buffer, BUFSIZE, 0, decoder, read_packet, NULL, NULL);
     if (!avio_ctx) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_VIDEO, "Could not allocate avio context");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not allocate avio context");
         // avformat_open_input takes ownership of 'buffer'
         // so only free the buffer before avformat_open_input()
         av_free(buffer);
@@ -82,7 +82,7 @@ static int run_decoder(void *data) {
 
     //const char *url = "tcp://127.0.0.1:1234";
     if (avformat_open_input(&format_ctx, NULL, NULL, NULL) < 0) {
-        SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not open video stream");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not open video stream");
         ret = -1;
         goto run_finally_free_avio_ctx;
     }
@@ -100,7 +100,7 @@ static int run_decoder(void *data) {
             int got_picture;
             int len = avcodec_decode_video2(codec_ctx, decoder->frames->decoding_frame, &got_picture, &packet);
             if (len < 0) {
-                SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not decode video packet: %d", len);
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not decode video packet: %d", len);
                 goto run_quit;
             }
             if (got_picture) {
@@ -112,11 +112,11 @@ static int run_decoder(void *data) {
 #else
         int ret;
         if ((ret = avcodec_send_packet(codec_ctx, &packet)) < 0) {
-            SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not send video packet: %d", ret);
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not send video packet: %d", ret);
             goto run_quit;
         }
         if ((ret = avcodec_receive_frame(codec_ctx, decoder->frames->decoding_frame)) < 0) {
-            SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "Could not receive video frame: %d", ret);
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not receive video frame: %d", ret);
             goto run_quit;
         }
 
@@ -124,7 +124,7 @@ static int run_decoder(void *data) {
 #endif
     }
 
-    SDL_LogDebug(SDL_LOG_CATEGORY_VIDEO, "End of frames");
+    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "End of frames");
 
 run_quit:
     avformat_close_input(&format_ctx);
@@ -150,7 +150,7 @@ SDL_bool decoder_start(struct decoder *decoder) {
 
     decoder->thread = SDL_CreateThread(run_decoder, "video_decoder", decoder);
     if (!decoder->thread) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_SYSTEM, "Could not start decoder thread");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not start decoder thread");
         return SDL_FALSE;
     }
 

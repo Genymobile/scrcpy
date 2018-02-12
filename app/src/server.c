@@ -46,7 +46,7 @@ static process_t execute_server(const char *serial, Uint16 max_size, Uint32 bit_
 
 static void terminate_server(process_t server) {
     if (!cmd_terminate(server)) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not terminate server: %s", strerror(errno));
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not terminate server: %s", strerror(errno));
     }
 }
 

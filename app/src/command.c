@@ -67,7 +67,7 @@ process_t adb_push(const char *serial, const char *local, const char *remote) {
 
 SDL_bool process_check_success(process_t proc, const char *name) {
     if (proc == PROCESS_NONE) {
-        SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Could not execute \"%s\"", name);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not execute \"%s\"", name);
         return SDL_FALSE;
     }
     exit_code_t exit_code;
