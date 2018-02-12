@@ -39,7 +39,8 @@ conf = configuration_data()
 conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
 
 # the version, updated on release
-conf.set_quoted('SCRCPY_VERSION', '0.1')
+# (conf.set_quoted() is not available on old versions of meson)
+conf.set('SCRCPY_VERSION', '"0.1"')
 
 # the default client TCP port for the "adb reverse" tunnel
 # overridden by option --port
