@@ -35,6 +35,9 @@ dependencies = [
 
 conf = configuration_data()
 
+# expose the build type
+conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
+
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', '0.1')
 

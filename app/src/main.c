@@ -231,7 +231,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+#ifdef BUILD_DEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
+#endif
 
     int res = scrcpy(args.serial, args.port, args.max_size, args.bit_rate) ? 0 : 1;
 
