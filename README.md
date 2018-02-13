@@ -1,141 +1,202 @@
-# ScrCpy
+# scrcpy
 
-This project displays screens of Android devices plugged on USB in live.
+This project displays screens of Android devices connected on USB, and allow to
+control them using the host mouse and keyboard. It does not require any _root_
+access. It works on _GNU/Linux_, _Windows_ and _Mac OS_.
+
+![screenshot](assets/screenshot-debian-600.jpg)
 
 
-## Run
+## Requirements
 
-### Runtime requirements
+The Android part requires at least API 21 (Android 5.0).
 
-This projects requires _FFmpeg_, _LibSDL2_ and _LibSDL2-net_.
+You need [adb] (recent enough so that `adb reverse` is implemented, it works
+with 1.0.36). It is available in the [Android SDK platform
+tools][platform-tools], on packaged in your distribution (`android-adb-tools`).
+
+On Windows, just download the [platform-tools][platform-tools-windows] and
+extract the following files to a directory accessible from your `PATH`:
+ - `adb.exe`
+ - `AdbWinApi.dll`
+ - `AdbWinUsbApi.dll`
+
+Make sure you [enabled adb debugging][enable-adb] on your device(s).
+
+[adb]: https://developer.android.com/studio/command-line/adb.html
+[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
+[platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
+[platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
+
+The client requires _FFmpeg_ and _LibSDL2_.
+
+
+## Build and install
+
+### System-specific steps
 
 #### Linux
 
-Install the packages from your package manager. For example, on Debian:
+Install the required packages from your package manager (here, for Debian):
 
-    sudo apt install ffmpeg libsdl2-2.0.0 libsdl2-net-2.0.0
+    # runtime dependencies
+    sudo apt install ffmpeg libsdl2-2.0.0
+
+    # build dependencies
+    sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
+                     libavcodec-dev libavformat-dev libavutil-dev \
+                     libsdl2-dev
 
 
 #### Windows
 
-From [MSYS2]:
+For Windows, for simplicity, a prebuilt package with all the dependencies
+(including `adb`) is available: TODO.
 
-    pacman -S mingw-w64-x86_64-SDL2
-    pacman -S mingw-w64-x86_64-SDL2_net
-    pacman -S mingw-w64-x86_64-ffmpeg
+Instead, you may want to build it manually. You need [MSYS2] to build the
+project. From an MSYS2 terminal, install the required packages:
 
 [MSYS2]: http://www.msys2.org/
 
+    # runtime dependencies
+    pacman -S mingw-w64-x86_64-SDL2 \
+              mingw-w64-x86_64-ffmpeg
 
-#### MacOS
+    # build dependencies
+    pacman -S mingw-w64-x86_64-make \
+              mingw-w64-x86_64-gcc \
+              mingw-w64-x86_64-pkg-config \
+              mingw-w64-x86_64-meson \
+              zip
 
-TODO
-
-
-## Build
-
-The project is divided into two parts:
- - the server, running on the device (in `server/`);
- - the client, running on the computer (in `app/`).
-
-The server is a raw Java project requiring Android SDK. It not an Android
-project: the target file is a `.jar`, and a `main()` method is executed with
-_shell_ rights.
-
-The client is a C project using [SDL] and [FFmpeg], built with [Meson]/[Ninja].
-
-The root directory contains a `Makefile` to build both parts.
-
-[sdl]: https://www.libsdl.org/
-[ffmpeg]: https://www.ffmpeg.org/
-[meson]: http://mesonbuild.com/
-[ninja]: https://ninja-build.org/
-
-
-### Build requirements
-
-Install the [Android SDK], the JDK 8 (`openjdk-8-jdk`), and the packages
-described below.
-
-[Android SDK]: https://developer.android.com/studio/index.html
-
-
-#### Linux
-
-    sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
-                     libavcodec-dev libavformat-dev libavutil-dev \
-                     libsdl2-dev libsdl2-net-dev
-
-
-#### Windows
-
-Install these packages:
-
-    pacman -S mingw-w64-x86_64-make
-    pacman -S mingw-w64-x86_64-gcc
-    pacman -S mingw-w64-x86_64-pkg-config
-    pacman -S mingw-w64-x86_64-meson
-    pacman -S zip
-
-Java 8 is not available in MSYS2, so install it manually and make it available
-from the `PATH`:
+Java (>= 7) is not available in MSYS2, so if you plan to build the server,
+install it manually and make it available from the `PATH`:
 
     export PATH="$JAVA_HOME/bin:$PATH"
 
 
-### Build
+#### Mac OS
 
-Make sure your `ANDROID_HOME` variable is set to your Android SDK directory:
+Use [Homebrew] to install the packages:
+
+[Homebrew]: https://brew.sh/
+
+    # runtime dependencies
+    brew install sdl2 ffmpeg
+
+    # build dependencies
+    brew install gcc pkg-config meson zip
+
+Java (>= 7) is not available in Homebrew, so if you plan to build the server,
+install it manually and make it available from the `PATH`:
+
+    export PATH="$JAVA_HOME/bin:$PATH"
+
+
+### Common steps
+
+Install the [Android SDK] (_Android Studio_), and set `ANDROID_HOME` to
+its directory. For example:
+
+[Android SDK]: https://developer.android.com/studio/index.html
 
     export ANDROID_HOME=~/android/sdk
 
-From the project root directory, execute:
+Then, build `scrcpy`:
 
-    make build
+    meson x --buildtype release --strip -Db_lto=true
+    cd x
+    ninja
 
-To run the build:
+You can test it from here:
 
-    make run
+    ninja run
 
-It is also pass arguments to `scrcpy` via `make`:
+Or you can install it on the system:
 
-    make run ARGS="-p 1234"
+    sudo ninja install    # without sudo on Windows
 
-The purpose of this command is to execute `scrcpy` during the development.
+This installs two files:
 
+ - `/usr/local/bin/scrcpy`
+ - `/usr/local/share/scrcpy/scrcpy-server.jar`
 
-### Test
-
-To execute unit tests:
-
-    make test
-
-The server-side tests require JUnit 4:
-
-    sudo apt install junit4
+Just remove them to "uninstall" the application.
 
 
-### Generate a release
+#### Prebuilt server
 
-From the project root directory, execute:
+Since the server binary, that will be pushed to the Android device, does not
+depend on your system and architecture, you may want to use the prebuilt binary
+instead: [`scrcpy-server.jar`](TODO).
 
-    make release
+In that case, the build does not require Java or the Android SDK.
 
-This will generate the application in `dist/scrcpy/`.
+Download the prebuilt server somewhere, and specify its path during the Meson
+configuration:
+
+    meson x --buildtype release --strip -Db_lto=true \
+        -Dprebuilt_server=/path/to/scrcpy-server.jar
+    cd x
+    ninja
+    sudo ninja install
 
 
 ## Run
 
-Plug a device, and from `dist/scrcpy/`, execute:
+_At runtime, `adb` must be accessible from your `PATH`._
 
-    ./scrcpy
+If everything is ok, just plug an Android device, and execute:
+
+    scrcpy
+
+It accepts command-line arguments, listed by:
+
+    scrcpy --help
+
+For example, to increase video bitrate to 8Mbps (default is 4Mbps):
+
+    scrcpy -b 8M
+
+To limit the video dimensions (e.g. if the device is 2540×1440, but the host
+screen is smaller, or cannot decode such a high definition):
+
+    scrcpy -m 1024
 
 If several devices are listed in `adb devices`, you must specify the _serial_:
 
-    ./scrcpy 0123456789abcdef
+    scrcpy -s 0123456789abcdef
 
-To change the default port (useful to launch several `scrcpy` simultaneously):
 
-    ./scrcpy -p 1234
+## Shortcuts
 
-Other options are available, check `scrcpy --help`.
+ | Action                                 |   Shortcut    |
+ | -------------------------------------  | -------------:|
+ | switch fullscreen mode                 | `Ctrl`+`f`    |
+ | resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`    |
+ | resize window to remove black borders  | `Ctrl`+`x`    |
+ | click on `HOME`                        | `Ctrl`+`h`    |
+ | click on `BACK`                        | `Ctrl`+`b`    |
+ | click on `APP_SWITCH`                  | `Ctrl`+`m`    |
+ | click on `VOLUME_UP`                   | `Ctrl`+`+`    |
+ | click on `VOLUME_DOWN`                 | `Ctrl`+`-`    |
+ | click on `POWER`                       | `Ctrl`+`p`    |
+ | turn screen on                         | _Right-click_ |
+ | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
+
+
+## Licence
+
+    Copyright (C) 2018 Genymobile
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
