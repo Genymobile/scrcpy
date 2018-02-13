@@ -1,9 +1,22 @@
-.PHONY: default release clean build build-app build-server run dist dist-zip sums test
+# This makefile provides recipes to build a "portable" version of scrcpy.
+#
+# Here, "portable" means that the client and server binaries are expected to be
+# anywhere, but in the same directory, instead of well-defined separate
+# locations (e.g. /usr/bin/scrcpy and /usr/share/scrcpy/scrcpy-server.jar).
+#
+# In particular, this implies to change the location from where the client push
+# the server to the device.
+#
+# "make release-portable" builds a zip containing the client and the server.
+#
+# This is a simple Makefile because Meson is not flexible enough to execute some
+# arbitrary commands.
+
+.PHONY: default clean release-portable dist-portable dist-portable-zip sums test check
 
 GRADLE ?= ./gradlew
 
-APP_BUILD_DIR := app-build
-APP_BUILD_DEBUG_DIR := app-build-debug
+PORTABLE_BUILD_DIR := build-portable
 DIST := dist
 TARGET_DIR := scrcpy
 
@@ -11,47 +24,28 @@ VERSION := $(shell git describe --tags --always)
 TARGET := $(TARGET_DIR)-$(VERSION).zip
 
 default:
-	@echo 'You must specify a target. Try: make release'
-
-release: clean dist-zip sums
+	@echo 'You must specify a target. Try: make release-portable'
 
 clean:
 	$(GRADLE) clean
-	rm -rf "$(APP_BUILD_DIR)" "$(APP_BUILD_DEBUG_DIR)" "$(DIST)"
+	rm -rf "$(PORTABLE_BUILD_DIR)" "$(DIST)"
 
-build-app-debug:
-	[ -d "$(APP_BUILD_DEBUG_DIR)" ] || ( mkdir "$(APP_BUILD_DEBUG_DIR)" && \
-		meson app "$(APP_BUILD_DEBUG_DIR)" --buildtype debug )
-	ninja -C "$(APP_BUILD_DEBUG_DIR)"
+build-portable:
+	[ -d "$(PORTABLE_BUILD_DIR)" ] || ( mkdir "$(PORTABLE_BUILD_DIR)" && \
+		meson "$(PORTABLE_BUILD_DIR)" \
+			--buildtype release --strip -Db_lto=true \
+			-Dapp:override_server_jar=scrcpy-server.jar )
+	ninja -C "$(PORTABLE_BUILD_DIR)"
 
-build-server-debug:
-	$(GRADLE) assembleDebug
+release-portable: clean dist-portable-zip sums
+	@echo "Release created in $(DIST)/."
 
-build-debug: build-app-debug build-server-debug
-
-run-debug:
-	SCRCPY_SERVER_JAR=server/build/outputs/apk/debug/server-debug.apk $(APP_BUILD_DEBUG_DIR)/scrcpy $(ARGS)
-
-build-app:
-	[ -d "$(APP_BUILD_DIR)" ] || ( mkdir "$(APP_BUILD_DIR)" && \
-		meson app "$(APP_BUILD_DIR)" --buildtype release -Db_lto )
-	ninja -C "$(APP_BUILD_DIR)"
-
-build-server:
-	$(GRADLE) assembleRelease
-
-build: build-app build-server
-
-run:
-	SCRCPY_SERVER_JAR=server/build/outputs/apk/release/server-release-unsigned.apk $(APP_BUILD_DIR)/scrcpy $(ARGS)
-
-dist: build
+dist-portable: build-portable
 	mkdir -p "$(DIST)/$(TARGET_DIR)"
-	# no need to sign the APK, we dont "install" it, this is in fact a simple jar
-	cp server/build/outputs/apk/release/server-release-unsigned.apk "$(DIST)/$(TARGET_DIR)/scrcpy-server.jar"
-	cp $(APP_BUILD_DIR)/scrcpy "$(DIST)/$(TARGET_DIR)/"
+	cp "$(PORTABLE_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(TARGET_DIR)/"
+	cp "$(PORTABLE_BUILD_DIR)"/app/scrcpy "$(DIST)/$(TARGET_DIR)/"
 
-dist-zip: dist
+dist-portable-zip: dist-portable
 	cd "$(DIST)"; \
 		zip -r "$(TARGET)" "$(TARGET_DIR)"
 
@@ -59,6 +53,10 @@ sums:
 	cd "$(DIST)"; \
 		sha256sum *.zip > SHA256SUM.txt
 
-test:
+test: build-portable
 	$(GRADLE) test
-	ninja -C "$(APP_BUILD_DIR)" test
+	ninja -C "$(PORTABLE_BUILD_DIR)" test
+
+check: build-portable
+	$(GRADLE) check
+	ninja -C "$(PORTABLE_BUILD_DIR)" test

@@ -42,6 +42,22 @@ conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
 # (conf.set_quoted() is not available on old versions of meson)
 conf.set('SCRCPY_VERSION', '"0.1"')
 
+# the prefix used during configuration (meson --prefix=PREFIX)
+conf.set('PREFIX', '"' + get_option('prefix') + '"')
+
+# the path of the server, which will be appended to the prefix
+# ignored if OVERRIDE_SERVER_JAR if defined
+# must be consistent with the install_dir in server/meson.build
+conf.set('PREFIXED_SERVER_JAR', '"/share/scrcpy/scrcpy-server.jar"')
+
+# the path of the server to be used "as is"
+# this is useful for building a "portable" version (with the server in the same
+# directory as the client)
+override_server_jar = get_option('override_server_jar')
+if override_server_jar != ''
+    conf.set('OVERRIDE_SERVER_JAR', '"' + override_server_jar + '"')
+endif
+
 # the default client TCP port for the "adb reverse" tunnel
 # overridden by option --port
 conf.set('DEFAULT_LOCAL_PORT', '27183')
@@ -61,7 +77,7 @@ conf.set('SKIP_FRAMES', true)
 
 configure_file(configuration: conf, input: 'src/config.h.in', output: 'config.h')
 
-executable('scrcpy', src, dependencies: dependencies)
+executable('scrcpy', src, dependencies: dependencies, install: true)
 
 
 ### TESTS

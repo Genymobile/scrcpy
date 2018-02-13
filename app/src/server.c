@@ -4,17 +4,28 @@
 #include <errno.h>
 #include <stdint.h>
 
+#include "config.h"
 #include "log.h"
 #include "netutil.h"
 
 #define SOCKET_NAME "scrcpy"
 
-static SDL_bool push_server(const char *serial) {
+#ifdef OVERRIDE_SERVER_JAR
+# define DEFAULT_SERVER_JAR OVERRIDE_SERVER_JAR
+#else
+# define DEFAULT_SERVER_JAR PREFIX PREFIXED_SERVER_JAR
+#endif
+
+static const char *get_server_path(void) {
     const char *server_path = getenv("SCRCPY_SERVER_JAR");
     if (!server_path) {
-        server_path = "scrcpy-server.jar";
+        server_path = DEFAULT_SERVER_JAR;
     }
-    process_t process = adb_push(serial, server_path, "/data/local/tmp/scrcpy-server.jar");
+    return server_path;
+}
+
+static SDL_bool push_server(const char *serial) {
+    process_t process = adb_push(serial, get_server_path(), "/data/local/tmp/scrcpy-server.jar");
     return process_check_success(process, "adb push");
 }
 
