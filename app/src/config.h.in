@@ -1,0 +1,6 @@
+#mesondefine BUILD_DEBUG
+#mesondefine SCRCPY_VERSION
+#mesondefine DEFAULT_LOCAL_PORT
+#mesondefine DEFAULT_MAX_SIZE
+#mesondefine DEFAULT_BIT_RATE
+#mesondefine SKIP_FRAMES

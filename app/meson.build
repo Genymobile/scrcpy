@@ -59,7 +59,7 @@ conf.set('DEFAULT_BIT_RATE', '4000000')  # 4Mbps
 # SKIP_FRAMES improves latency at the cost of framerate
 conf.set('SKIP_FRAMES', true)
 
-configure_file(configuration: conf, output: 'config.h')
+configure_file(configuration: conf, input: 'src/config.h.in', output: 'config.h')
 
 executable('scrcpy', src, dependencies: dependencies)
 
