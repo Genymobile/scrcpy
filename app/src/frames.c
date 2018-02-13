@@ -1,13 +1,13 @@
 #include "frames.h"
 
 #include <SDL2/SDL_assert.h>
-#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_mutex.h>
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
 
 #include "config.h"
 #include "lockutil.h"
+#include "log.h"
 
 SDL_bool frames_init(struct frames *frames) {
     if (!(frames->decoding_frame = av_frame_alloc())) {
@@ -69,7 +69,7 @@ SDL_bool frames_offer_decoded_frame(struct frames *frames) {
     }
 #else
     if (!frames->rendering_frame_consumed) {
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Skip frame");
+        LOGD("Skip frame");
     }
 #endif
 

@@ -5,13 +5,14 @@
 
 #include "icon.xpm"
 #include "lockutil.h"
+#include "log.h"
 #include "tinyxpm.h"
 
 #define DISPLAY_MARGINS 96
 
 SDL_bool sdl_init_and_configure(void) {
     if (SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not initialize SDL: %s", SDL_GetError());
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
         return SDL_FALSE;
     }
 
@@ -19,13 +20,13 @@ SDL_bool sdl_init_and_configure(void) {
 
     // Bilinear resizing
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not enable bilinear filtering");
+        LOGW("Could not enable bilinear filtering");
     }
 
 #if SDL_VERSION_ATLEAST(2, 0, 5)
     // Handle a click to gain focus as any other click
     if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not enable mouse focus clickthrough");
+        LOGW("Could not enable mouse focus clickthrough");
     }
 #endif
 
@@ -73,7 +74,7 @@ static SDL_bool get_preferred_display_bounds(struct size *bounds) {
 # define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayBounds((i), (r))
 #endif
     if (GET_DISPLAY_BOUNDS(0, &rect)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not get display usable bounds: %s", SDL_GetError());
+        LOGW("Could not get display usable bounds: %s", SDL_GetError());
         return SDL_FALSE;
     }
 
@@ -137,37 +138,37 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                       window_size.width, window_size.height, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
     if (!screen->window) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not create window: %s", SDL_GetError());
+        LOGC("Could not create window: %s", SDL_GetError());
         return SDL_FALSE;
     }
 
     screen->renderer = SDL_CreateRenderer(screen->window, -1, SDL_RENDERER_ACCELERATED);
     if (!screen->renderer) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not create renderer: %s", SDL_GetError());
+        LOGC("Could not create renderer: %s", SDL_GetError());
         screen_destroy(screen);
         return SDL_FALSE;
     }
 
     if (SDL_RenderSetLogicalSize(screen->renderer, frame_size.width, frame_size.height)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not set renderer logical size: %s", SDL_GetError());
+        LOGE("Could not set renderer logical size: %s", SDL_GetError());
         screen_destroy(screen);
         return SDL_FALSE;
     }
 
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (!icon) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not load icon: %s", SDL_GetError());
+        LOGE("Could not load icon: %s", SDL_GetError());
         screen_destroy(screen);
         return SDL_FALSE;
     }
     SDL_SetWindowIcon(screen->window, icon);
     SDL_FreeSurface(icon);
 
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
+    LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
     screen->texture = SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING,
                                         frame_size.width, frame_size.height);
     if (!screen->texture) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not create texture: %s", SDL_GetError());
+        LOGC("Could not create texture: %s", SDL_GetError());
         screen_destroy(screen);
         return SDL_FALSE;
     }
@@ -196,7 +197,7 @@ void screen_destroy(struct screen *screen) {
 static SDL_bool prepare_for_frame(struct screen *screen, struct size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width || screen->frame_size.height != new_frame_size.height) {
         if (SDL_RenderSetLogicalSize(screen->renderer, new_frame_size.width, new_frame_size.height)) {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not set renderer logical size: %s", SDL_GetError());
+            LOGE("Could not set renderer logical size: %s", SDL_GetError());
             return SDL_FALSE;
         }
 
@@ -213,12 +214,12 @@ static SDL_bool prepare_for_frame(struct screen *screen, struct size new_frame_s
 
         screen->frame_size = new_frame_size;
 
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "New texture: %" PRIu16 "x%" PRIu16,
+        LOGD("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
         screen->texture = SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING,
                                             new_frame_size.width, new_frame_size.height);
         if (!screen->texture) {
-            SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not create texture: %s", SDL_GetError());
+            LOGC("Could not create texture: %s", SDL_GetError());
             return SDL_FALSE;
         }
     }
@@ -262,7 +263,7 @@ void screen_switch_fullscreen(struct screen *screen) {
     }
     Uint32 new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
     if (SDL_SetWindowFullscreen(screen->window, new_mode)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Could not switch fullscreen mode: %s", SDL_GetError());
+        LOGW("Could not switch fullscreen mode: %s", SDL_GetError());
         return;
     }
 
@@ -272,7 +273,7 @@ void screen_switch_fullscreen(struct screen *screen) {
         SDL_SetWindowSize(screen->window, screen->windowed_window_size.width, screen->windowed_window_size.height);
     }
 
-    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
+    LOGD("Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
     screen_render(screen);
 }
 
@@ -280,13 +281,13 @@ void screen_resize_to_fit(struct screen *screen) {
     if (!screen->fullscreen) {
         struct size optimal_size = get_optimal_window_size(screen, screen->frame_size);
         SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to optimal size");
+        LOGD("Resized to optimal size");
     }
 }
 
 void screen_resize_to_pixel_perfect(struct screen *screen) {
     if (!screen->fullscreen) {
         SDL_SetWindowSize(screen->window, screen->frame_size.width, screen->frame_size.height);
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Resized to pixel-perfect");
+        LOGD("Resized to pixel-perfect");
     }
 }

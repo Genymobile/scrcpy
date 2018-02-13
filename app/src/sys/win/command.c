@@ -1,6 +1,6 @@
 #include "../../command.h"
 
-#include <SDL2/SDL_log.h>
+#include "../../log.h"
 #include "../../strutil.h"
 
 HANDLE cmd_execute(const char *path, const char *const argv[]) {
@@ -16,7 +16,7 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
     char cmd[256];
     size_t ret = xstrjoin(cmd, argv, ' ', sizeof(cmd));
     if (ret >= sizeof(cmd)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Command too long (%" PRIsizet " chars)", sizeof(cmd) - 1);
+        LOGE("Command too long (%" PRIsizet " chars)", sizeof(cmd) - 1);
         return NULL;
     }
 

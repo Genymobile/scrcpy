@@ -1,9 +1,9 @@
 #include "controlevent.h"
 
-#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_stdinc.h>
 
 #include "lockutil.h"
+#include "log.h"
 
 static inline void write16(Uint8 *buf, Uint16 value) {
     buf[0] = value >> 8;
@@ -56,7 +56,7 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
             buf[1] = event->command_event.action;
             return 2;
         default:
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown event type: %u", (unsigned) event->type);
+            LOGW("Unknown event type: %u", (unsigned) event->type);
             return 0;
     }
 }

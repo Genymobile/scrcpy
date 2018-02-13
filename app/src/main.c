@@ -7,6 +7,7 @@
 #include <SDL2/SDL_net.h>
 
 #include "config.h"
+#include "log.h"
 
 struct args {
     const char *serial;
@@ -122,16 +123,16 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             case 'p': {
                 char *endptr;
                 if (*optarg == '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port parameter is empty");
+                    LOGE("Invalid port parameter is empty");
                     return -1;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 if (*endptr != '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid port: %s", optarg);
+                    LOGE("Invalid port: %s", optarg);
                     return -1;
                 }
                 if (value & ~0xffff) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Port out of range: %ld", value);
+                    LOGE("Port out of range: %ld", value);
                     return -1;
                 }
                 args->port = (Uint16) value;
@@ -140,16 +141,16 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             case 'm': {
                 char *endptr;
                 if (*optarg == '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size parameter is empty");
+                    LOGE("Max size parameter is empty");
                     return -1;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 if (*endptr != '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid max size: %s", optarg);
+                    LOGE("Invalid max size: %s", optarg);
                     return -1;
                 }
                 if (value & ~0xffff) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Max size must be between 0 and 65535: %ld", value);
+                    LOGE("Max size must be between 0 and 65535: %ld", value);
                     return -1;
                 }
                 args->max_size = (Uint16) value;
@@ -158,14 +159,14 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             case 'b': {
                 char *endptr;
                 if (*optarg == '\0') {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bit-rate parameter is empty");
+                    LOGE("Bit-rate parameter is empty");
                     return -1;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 int mul = 1;
                 if (*endptr != '\0') {
                     if (optarg == endptr) {
-                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid bit-rate: %s", optarg);
+                        LOGE("Invalid bit-rate: %s", optarg);
                         return -1;
                     }
                     if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
@@ -173,12 +174,12 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                     } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
                         mul = 1000;
                     } else {
-                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Invalid bit-rate unit: %s", optarg);
+                        LOGE("Invalid bit-rate unit: %s", optarg);
                         return -1;
                     }
                 }
                 if (value < 0 || ((Uint32) -1) / mul < value) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Bitrate must be positive and less than 2^32: %s", optarg);
+                    LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
                     return -1;
                 }
                 args->bit_rate = (Uint32) value * mul;
@@ -195,7 +196,7 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
         args->serial = argv[index++];
     }
     if (index < argc) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Unexpected additional argument: %s", argv[index]);
+        LOGE("Unexpected additional argument: %s", argv[index]);
         return -1;
     }
     return 0;

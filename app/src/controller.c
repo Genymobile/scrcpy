@@ -1,6 +1,7 @@
 #include "controller.h"
 
 #include "lockutil.h"
+#include "log.h"
 
 SDL_bool controller_init(struct controller *controller, TCPsocket video_socket) {
     if (!control_event_queue_init(&controller->queue)) {
@@ -65,7 +66,7 @@ static int run_controller(void *data) {
         struct control_event event;
         while (control_event_queue_take(&controller->queue, &event)) {
             if (!process_event(controller, &event)) {
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Cannot write event to socket");
+                LOGD("Cannot write event to socket");
                 goto end;
             }
         }
@@ -76,11 +77,11 @@ end:
 }
 
 SDL_bool controller_start(struct controller *controller) {
-    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Starting controller thread");
+    LOGD("Starting controller thread");
 
     controller->thread = SDL_CreateThread(run_controller, "controller", controller);
     if (!controller->thread) {
-        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Could not start controller thread");
+        LOGC("Could not start controller thread");
         return SDL_FALSE;
     }
 

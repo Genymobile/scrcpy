@@ -1,9 +1,10 @@
 #include "server.h"
 
-#include <SDL2/SDL_log.h>
 #include <SDL2/SDL_net.h>
 #include <errno.h>
 #include <stdint.h>
+
+#include "log.h"
 #include "netutil.h"
 
 #define SOCKET_NAME "scrcpy"
@@ -46,7 +47,7 @@ static process_t execute_server(const char *serial, Uint16 max_size, Uint32 bit_
 
 static void terminate_server(process_t server) {
     if (!cmd_terminate(server)) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not terminate server: %s", strerror(errno));
+        LOGE("Could not terminate server: %s", strerror(errno));
     }
 }
 
@@ -80,7 +81,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
 
     server->server_socket = listen_on_port(local_port);
     if (!server->server_socket) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not listen on port %" PRIu16, local_port);
+        LOGE("Could not listen on port %" PRIu16, local_port);
         disable_tunnel(serial);
         return SDL_FALSE;
     }

@@ -1,8 +1,7 @@
 #include "screencontrol.h"
 
-#include <SDL2/SDL_log.h>
-
 #include "convert.h"
+#include "log.h"
 
 static struct point get_mouse_point(void) {
     int x;
@@ -32,14 +31,14 @@ static void send_keycode(struct controller *controller, enum android_keycode key
     };
 
     if (!controller_push_event(controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (DOWN)", name);
+        LOGW("Cannot send %s (DOWN)", name);
         return;
     }
 
     // send UP event
     control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
     if (!controller_push_event(controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send %s (UP)", name);
+        LOGW("Cannot send %s (UP)", name);
     }
 }
 
@@ -75,7 +74,7 @@ static void turn_screen_on(struct controller *controller) {
         },
     };
     if (!controller_push_event(controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot turn screen on");
+        LOGW("Cannot turn screen on");
     }
 }
 
@@ -99,7 +98,7 @@ void screencontrol_handle_text_input(struct controller *controller,
     strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
     control_event.text_event.text[TEXT_MAX_LENGTH] = '\0';
     if (!controller_push_event(controller, &control_event)) {
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send text event");
+        LOGW("Cannot send text event");
     }
 }
 
@@ -154,7 +153,7 @@ void screencontrol_handle_key(struct controller *controller,
     struct control_event control_event;
     if (input_key_from_sdl_to_android(event, &control_event)) {
         if (!controller_push_event(controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send control event");
+            LOGW("Cannot send control event");
         }
     }
 }
@@ -169,7 +168,7 @@ void screencontrol_handle_mouse_motion(struct controller *controller,
     struct control_event control_event;
     if (mouse_motion_from_sdl_to_android(event, screen->frame_size, &control_event)) {
         if (!controller_push_event(controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse motion event");
+            LOGW("Cannot send mouse motion event");
         }
     }
 }
@@ -184,7 +183,7 @@ void screencontrol_handle_mouse_button(struct controller *controller,
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, screen->frame_size, &control_event)) {
         if (!controller_push_event(controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send mouse button event");
+            LOGW("Cannot send mouse button event");
         }
     }
 }
@@ -199,7 +198,7 @@ void screencontrol_handle_mouse_wheel(struct controller *controller,
     struct control_event control_event;
     if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
         if (!controller_push_event(controller, &control_event)) {
-            SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Cannot send wheel button event");
+            LOGW("Cannot send wheel button event");
         }
     }
 }

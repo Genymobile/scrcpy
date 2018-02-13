@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "log.h"
+
 struct index {
     char c;
     Uint32 color;
@@ -69,7 +71,7 @@ SDL_Surface *read_xpm(char *xpm[]) {
     // parse image
     Uint32 *pixels = SDL_malloc(4 * width * height);
     if (!pixels) {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Could not allocate icon memory");
+        LOGE("Could not allocate icon memory");
         return NULL;
     }
     for (int y = 0; y < height; ++y) {

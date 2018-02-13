@@ -15,6 +15,7 @@
 #include "device.h"
 #include "events.h"
 #include "frames.h"
+#include "log.h"
 #include "lockutil.h"
 #include "netutil.h"
 #include "screen.h"
@@ -40,7 +41,7 @@ static void count_frame(void) {
     long now = timestamp_ms();
     ++nbframes;
     if (now - ts > 1000) {
-        SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "%d fps", nbframes);
+        LOGD("%d fps", nbframes);
         ts = now;
         nbframes = 0;
     }
@@ -51,10 +52,10 @@ static void event_loop(void) {
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case EVENT_DECODER_STOPPED:
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "Video decoder stopped");
+                LOGD("Video decoder stopped");
                 return;
             case SDL_QUIT:
-                SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "User requested to quit");
+                LOGD("User requested to quit");
                 return;
             case EVENT_NEW_FRAME:
                 if (!screen.has_frame) {
@@ -167,7 +168,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
 
     event_loop();
 
-    SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, "quit...");
+    LOGD("quit...");
     screen_destroy(&screen);
 finally_stop_and_join_controller:
     controller_stop(&controller);
