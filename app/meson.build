@@ -37,23 +37,25 @@ conf = configuration_data()
 conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
 
 # the version, updated on release
-# (conf.set_quoted() is not available on old versions of meson)
-conf.set('SCRCPY_VERSION', '"0.1"')
+conf.set_quoted('SCRCPY_VERSION', '0.1')
 
 # the prefix used during configuration (meson --prefix=PREFIX)
-conf.set('PREFIX', '"' + get_option('prefix') + '"')
+conf.set_quoted('PREFIX', get_option('prefix'))
 
 # the path of the server, which will be appended to the prefix
 # ignored if OVERRIDE_SERVER_JAR if defined
 # must be consistent with the install_dir in server/meson.build
-conf.set('PREFIXED_SERVER_JAR', '"/share/scrcpy/scrcpy-server.jar"')
+conf.set_quoted('PREFIXED_SERVER_JAR', '/share/scrcpy/scrcpy-server.jar')
 
 # the path of the server to be used "as is"
 # this is useful for building a "portable" version (with the server in the same
 # directory as the client)
 override_server_jar = get_option('override_server_jar')
 if override_server_jar != ''
-    conf.set('OVERRIDE_SERVER_JAR', '"' + override_server_jar + '"')
+    conf.set_quoted('OVERRIDE_SERVER_JAR', override_server_jar)
+else
+    # undefine it
+    conf.set('OVERRIDE_SERVER_JAR', false)
 endif
 
 # the default client TCP port for the "adb reverse" tunnel
@@ -73,7 +75,7 @@ conf.set('DEFAULT_BIT_RATE', '4000000')  # 4Mbps
 # SKIP_FRAMES improves latency at the cost of framerate
 conf.set('SKIP_FRAMES', true)
 
-configure_file(configuration: conf, input: 'src/config.h.in', output: 'config.h')
+configure_file(configuration: conf, output: 'config.h')
 
 executable('scrcpy', src, dependencies: dependencies, install: true)
 
