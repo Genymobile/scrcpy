@@ -102,60 +102,16 @@ static void print_version(void) {
 
 static int parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"help",     no_argument,       NULL, 'h'},
-        {"port",     required_argument, NULL, 'p'},
-        {"max-size", required_argument, NULL, 'm'},
         {"bit-rate", required_argument, NULL, 'b'},
+        {"help",     no_argument,       NULL, 'h'},
+        {"max-size", required_argument, NULL, 'm'},
+        {"port",     required_argument, NULL, 'p'},
         {"version",  no_argument,       NULL, 'v'},
         {NULL,       0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "hvp:m:b:", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:hm:p:v", long_options, NULL)) != -1) {
         switch (c) {
-            case 'h': {
-                args->help = SDL_TRUE;
-                break;
-            }
-            case 'v': {
-                args->version = SDL_TRUE;
-                break;
-            }
-            case 'p': {
-                char *endptr;
-                if (*optarg == '\0') {
-                    LOGE("Invalid port parameter is empty");
-                    return -1;
-                }
-                long value = strtol(optarg, &endptr, 0);
-                if (*endptr != '\0') {
-                    LOGE("Invalid port: %s", optarg);
-                    return -1;
-                }
-                if (value & ~0xffff) {
-                    LOGE("Port out of range: %ld", value);
-                    return -1;
-                }
-                args->port = (Uint16) value;
-                break;
-            }
-            case 'm': {
-                char *endptr;
-                if (*optarg == '\0') {
-                    LOGE("Max size parameter is empty");
-                    return -1;
-                }
-                long value = strtol(optarg, &endptr, 0);
-                if (*endptr != '\0') {
-                    LOGE("Invalid max size: %s", optarg);
-                    return -1;
-                }
-                if (value & ~0xffff) {
-                    LOGE("Max size must be between 0 and 65535: %ld", value);
-                    return -1;
-                }
-                args->max_size = (Uint16) value;
-                break;
-            }
             case 'b': {
                 char *endptr;
                 if (*optarg == '\0') {
@@ -183,6 +139,50 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                     return -1;
                 }
                 args->bit_rate = (Uint32) value * mul;
+                break;
+            }
+            case 'h': {
+                args->help = SDL_TRUE;
+                break;
+            }
+            case 'm': {
+                char *endptr;
+                if (*optarg == '\0') {
+                    LOGE("Max size parameter is empty");
+                    return -1;
+                }
+                long value = strtol(optarg, &endptr, 0);
+                if (*endptr != '\0') {
+                    LOGE("Invalid max size: %s", optarg);
+                    return -1;
+                }
+                if (value & ~0xffff) {
+                    LOGE("Max size must be between 0 and 65535: %ld", value);
+                    return -1;
+                }
+                args->max_size = (Uint16) value;
+                break;
+            }
+            case 'p': {
+                char *endptr;
+                if (*optarg == '\0') {
+                    LOGE("Invalid port parameter is empty");
+                    return -1;
+                }
+                long value = strtol(optarg, &endptr, 0);
+                if (*endptr != '\0') {
+                    LOGE("Invalid port: %s", optarg);
+                    return -1;
+                }
+                if (value & ~0xffff) {
+                    LOGE("Port out of range: %ld", value);
+                    return -1;
+                }
+                args->port = (Uint16) value;
+                break;
+            }
+            case 'v': {
+                args->version = SDL_TRUE;
                 break;
             }
             default:
