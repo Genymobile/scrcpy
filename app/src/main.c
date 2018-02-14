@@ -238,7 +238,6 @@ int main(int argc, char *argv[]) {
         .bit_rate = DEFAULT_BIT_RATE,
     };
     if (!parse_args(&args, argc, argv)) {
-        usage(argv[0]);
         return 1;
     }
 
