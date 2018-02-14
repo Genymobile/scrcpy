@@ -20,11 +20,7 @@ struct args {
 
 static void usage(const char *arg0) {
     fprintf(stderr,
-        "Usage: %s [options] [serial]\n"
-        "\n"
-        "    serial\n"
-        "        The device serial number. Mandatory only if several devices\n"
-        "        are connected to adb.\n"
+        "Usage: %s [options]\n"
         "\n"
         "Options:\n"
         "\n"
@@ -45,6 +41,10 @@ static void usage(const char *arg0) {
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
+        "\n"
+        "    -s, --serial\n"
+        "        The device serial number. Mandatory only if several devices\n"
+        "        are connected to adb.\n"
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
@@ -177,11 +177,12 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"help",     no_argument,       NULL, 'h'},
         {"max-size", required_argument, NULL, 'm'},
         {"port",     required_argument, NULL, 'p'},
+        {"serial",   required_argument, NULL, 's'},
         {"version",  no_argument,       NULL, 'v'},
         {NULL,       0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:hm:p:v", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:hm:p:s:v", long_options, NULL)) != -1) {
         switch (c) {
             case 'b': {
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -205,6 +206,10 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 }
                 break;
             }
+            case 's': {
+                args->serial = optarg;
+                break;
+            }
             case 'v': {
                 args->version = SDL_TRUE;
                 break;
@@ -216,9 +221,6 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     }
 
     int index = optind;
-    if (index < argc) {
-        args->serial = argv[index++];
-    }
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
         return SDL_FALSE;
