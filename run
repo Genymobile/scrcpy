@@ -1,0 +1,23 @@
+#!/bin/bash
+# Run scrcpy generated in the specified BUILDDIR.
+#
+# This provides the same feature as "ninja run", except that it is possible to
+# pass arguments to scrcpy.
+#
+# Syntax: ./run BUILDDIR <scrcpy options ...>
+if [[ $# = 0 ]]
+then
+    echo "Syntax: $0 BUILDDIR <scrcpy options>" >&2
+    exit 1
+fi
+
+BUILDDIR="$1"
+shift
+
+if [[ ! -d "$BUILDDIR" ]]
+then
+    echo "The build dir \"$BUILDDIR\" does not exist." >&2
+    exit 1
+fi
+
+SCRCPY_SERVER_JAR="$BUILDDIR/server/scrcpy-server.jar" "$BUILDDIR/app/scrcpy" "$@"
