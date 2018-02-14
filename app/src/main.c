@@ -100,7 +100,7 @@ static void print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO);
 }
 
-static int parse_args(struct args *args, int argc, char *argv[]) {
+static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"bit-rate", required_argument, NULL, 'b'},
         {"help",     no_argument,       NULL, 'h'},
@@ -116,14 +116,14 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 if (*optarg == '\0') {
                     LOGE("Bit-rate parameter is empty");
-                    return -1;
+                    return SDL_FALSE;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 int mul = 1;
                 if (*endptr != '\0') {
                     if (optarg == endptr) {
                         LOGE("Invalid bit-rate: %s", optarg);
-                        return -1;
+                        return SDL_FALSE;
                     }
                     if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
                         mul = 1000000;
@@ -131,12 +131,12 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                         mul = 1000;
                     } else {
                         LOGE("Invalid bit-rate unit: %s", optarg);
-                        return -1;
+                        return SDL_FALSE;
                     }
                 }
                 if (value < 0 || ((Uint32) -1) / mul < value) {
                     LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
-                    return -1;
+                    return SDL_FALSE;
                 }
                 args->bit_rate = (Uint32) value * mul;
                 break;
@@ -149,16 +149,16 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 if (*optarg == '\0') {
                     LOGE("Max size parameter is empty");
-                    return -1;
+                    return SDL_FALSE;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 if (*endptr != '\0') {
                     LOGE("Invalid max size: %s", optarg);
-                    return -1;
+                    return SDL_FALSE;
                 }
                 if (value & ~0xffff) {
                     LOGE("Max size must be between 0 and 65535: %ld", value);
-                    return -1;
+                    return SDL_FALSE;
                 }
                 args->max_size = (Uint16) value;
                 break;
@@ -167,16 +167,16 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
                 char *endptr;
                 if (*optarg == '\0') {
                     LOGE("Invalid port parameter is empty");
-                    return -1;
+                    return SDL_FALSE;
                 }
                 long value = strtol(optarg, &endptr, 0);
                 if (*endptr != '\0') {
                     LOGE("Invalid port: %s", optarg);
-                    return -1;
+                    return SDL_FALSE;
                 }
                 if (value & ~0xffff) {
                     LOGE("Port out of range: %ld", value);
-                    return -1;
+                    return SDL_FALSE;
                 }
                 args->port = (Uint16) value;
                 break;
@@ -187,7 +187,7 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
             }
             default:
                 // getopt prints the error message on stderr
-                return -1;
+                return SDL_FALSE;
         }
     }
 
@@ -197,9 +197,9 @@ static int parse_args(struct args *args, int argc, char *argv[]) {
     }
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
-        return -1;
+        return SDL_FALSE;
     }
-    return 0;
+    return SDL_TRUE;
 }
 
 int main(int argc, char *argv[]) {
@@ -211,7 +211,7 @@ int main(int argc, char *argv[]) {
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
     };
-    if (parse_args(&args, argc, argv)) {
+    if (!parse_args(&args, argc, argv)) {
         usage(argv[0]);
         return 1;
     }
