@@ -100,6 +100,77 @@ static void print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO);
 }
 
+static SDL_bool parse_bit_rate(char *optarg, Uint32 *bit_rate) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Bit-rate parameter is empty");
+        return SDL_FALSE;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    int mul = 1;
+    if (*endptr != '\0') {
+        if (optarg == endptr) {
+            LOGE("Invalid bit-rate: %s", optarg);
+            return SDL_FALSE;
+        }
+        if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
+            mul = 1000000;
+        } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
+            mul = 1000;
+        } else {
+            LOGE("Invalid bit-rate unit: %s", optarg);
+            return SDL_FALSE;
+        }
+    }
+    if (value < 0 || ((Uint32) -1) / mul < value) {
+        LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
+        return SDL_FALSE;
+    }
+
+    *bit_rate = (Uint32) value * mul;
+    return SDL_TRUE;
+}
+
+static SDL_bool parse_max_size(char *optarg, Uint16 *max_size) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Max size parameter is empty");
+        return SDL_FALSE;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid max size: %s", optarg);
+        return SDL_FALSE;
+    }
+    if (value & ~0xffff) {
+        LOGE("Max size must be between 0 and 65535: %ld", value);
+        return SDL_FALSE;
+    }
+
+    *max_size = (Uint16) value;
+    return SDL_TRUE;
+}
+
+static SDL_bool parse_port(char *optarg, Uint16 *port) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Invalid port parameter is empty");
+        return SDL_FALSE;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid port: %s", optarg);
+        return SDL_FALSE;
+    }
+    if (value & ~0xffff) {
+        LOGE("Port out of range: %ld", value);
+        return SDL_FALSE;
+    }
+
+    *port = (Uint16) value;
+    return SDL_TRUE;
+}
+
 static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"bit-rate", required_argument, NULL, 'b'},
@@ -113,32 +184,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     while ((c = getopt_long(argc, argv, "b:hm:p:v", long_options, NULL)) != -1) {
         switch (c) {
             case 'b': {
-                char *endptr;
-                if (*optarg == '\0') {
-                    LOGE("Bit-rate parameter is empty");
+                if (!parse_bit_rate(optarg, &args->bit_rate)) {
                     return SDL_FALSE;
                 }
-                long value = strtol(optarg, &endptr, 0);
-                int mul = 1;
-                if (*endptr != '\0') {
-                    if (optarg == endptr) {
-                        LOGE("Invalid bit-rate: %s", optarg);
-                        return SDL_FALSE;
-                    }
-                    if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
-                        mul = 1000000;
-                    } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
-                        mul = 1000;
-                    } else {
-                        LOGE("Invalid bit-rate unit: %s", optarg);
-                        return SDL_FALSE;
-                    }
-                }
-                if (value < 0 || ((Uint32) -1) / mul < value) {
-                    LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
-                    return SDL_FALSE;
-                }
-                args->bit_rate = (Uint32) value * mul;
                 break;
             }
             case 'h': {
@@ -146,39 +194,15 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             }
             case 'm': {
-                char *endptr;
-                if (*optarg == '\0') {
-                    LOGE("Max size parameter is empty");
+                if (!parse_max_size(optarg, &args->max_size)) {
                     return SDL_FALSE;
                 }
-                long value = strtol(optarg, &endptr, 0);
-                if (*endptr != '\0') {
-                    LOGE("Invalid max size: %s", optarg);
-                    return SDL_FALSE;
-                }
-                if (value & ~0xffff) {
-                    LOGE("Max size must be between 0 and 65535: %ld", value);
-                    return SDL_FALSE;
-                }
-                args->max_size = (Uint16) value;
                 break;
             }
             case 'p': {
-                char *endptr;
-                if (*optarg == '\0') {
-                    LOGE("Invalid port parameter is empty");
+                if (!parse_port(optarg, &args->port)) {
                     return SDL_FALSE;
                 }
-                long value = strtol(optarg, &endptr, 0);
-                if (*endptr != '\0') {
-                    LOGE("Invalid port: %s", optarg);
-                    return SDL_FALSE;
-                }
-                if (value & ~0xffff) {
-                    LOGE("Port out of range: %ld", value);
-                    return SDL_FALSE;
-                }
-                args->port = (Uint16) value;
                 break;
             }
             case 'v': {
