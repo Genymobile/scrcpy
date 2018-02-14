@@ -1,5 +1,3 @@
-project('scrcpy-app', 'c')
-
 src = [
     'src/main.c',
     'src/command.c',

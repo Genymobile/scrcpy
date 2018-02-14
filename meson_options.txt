@@ -1,0 +1,3 @@
+option('build_app', type: 'boolean', value: true)
+option('build_server', type: 'boolean', value: true)
+option('override_server_jar', type: 'string')
