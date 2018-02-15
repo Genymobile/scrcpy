@@ -51,6 +51,23 @@ ssize_t net_recv(socket_t socket, void *buf, size_t len) {
     return recv(socket, buf, len, 0);
 }
 
+ssize_t net_recv_all(socket_t socket, void *buf, size_t len) {
+    return recv(socket, buf, len, MSG_WAITALL);
+}
+
 ssize_t net_send(socket_t socket, void *buf, size_t len) {
     return send(socket, buf, len, 0);
+}
+
+ssize_t net_send_all(socket_t socket, void *buf, size_t len) {
+    ssize_t w;
+    while (len > 0) {
+        w = send(socket, buf, len, 0);
+        if (w == -1) {
+            return -1;
+        }
+        len -= w;
+        buf += w;
+    }
+    return w;
 }

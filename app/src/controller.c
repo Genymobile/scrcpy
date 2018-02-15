@@ -47,7 +47,7 @@ static SDL_bool process_event(struct controller *controller, const struct contro
     if (!length) {
         return SDL_FALSE;
     }
-    int w = net_send(controller->video_socket, serialized_event, length);
+    int w = net_send_all(controller->video_socket, serialized_event, length);
     return w == length;
 }
 
