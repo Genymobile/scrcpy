@@ -86,7 +86,6 @@ static int run_decoder(void *data) {
 
     format_ctx->pb = avio_ctx;
 
-    //const char *url = "tcp://127.0.0.1:1234";
     if (avformat_open_input(&format_ctx, NULL, NULL, NULL) < 0) {
         LOGE("Could not open video stream");
         ret = -1;
