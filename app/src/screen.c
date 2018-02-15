@@ -173,7 +173,6 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
         return SDL_FALSE;
     }
 
-    screen_render(screen);
     return SDL_TRUE;
 }
 
