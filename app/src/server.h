@@ -1,20 +1,20 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <SDL2/SDL_net.h>
 #include "command.h"
+#include "net.h"
 
 struct server {
     process_t process;
-    TCPsocket server_socket;
-    TCPsocket device_socket;
+    socket_t server_socket;
+    socket_t device_socket;
     SDL_bool adb_reverse_enabled;
 };
 
 #define SERVER_INITIALIZER {          \
     .process = PROCESS_NONE,          \
-    .server_socket = NULL,            \
-    .device_socket = NULL,            \
+    .server_socket = INVALID_SOCKET,  \
+    .device_socket = INVALID_SOCKET,  \
     .adb_reverse_enabled = SDL_FALSE, \
 }
 
@@ -26,7 +26,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
                       Uint16 max_size, Uint32 bit_rate);
 
 // block until the communication with the server is established
-TCPsocket server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms);
+socket_t server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms);
 
 // disconnect and kill the server process
 void server_stop(struct server *server, const char *serial);

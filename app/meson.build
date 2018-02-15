@@ -10,7 +10,7 @@ src = [
     'src/frames.c',
     'src/inputmanager.c',
     'src/lockutil.c',
-    'src/netutil.c',
+    'src/net.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
@@ -18,19 +18,23 @@ src = [
     'src/tinyxpm.c',
 ]
 
-if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/command.c' ]
-else
-    src += [ 'src/sys/unix/command.c' ]
-endif
-
 dependencies = [
     dependency('libavformat'),
     dependency('libavcodec'),
     dependency('libavutil'),
     dependency('sdl2'),
-    dependency('SDL2_net'),
 ]
+
+cc = meson.get_compiler('c')
+
+if host_machine.system() == 'windows'
+    src += [ 'src/sys/win/command.c' ]
+    src += [ 'src/sys/win/net.c' ]
+    dependencies += cc.find_library('ws2_32')
+else
+    src += [ 'src/sys/unix/command.c' ]
+    src += [ 'src/sys/unix/net.c' ]
+endif
 
 conf = configuration_data()
 

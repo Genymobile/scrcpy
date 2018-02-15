@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
 
 #include "config.h"
 #include "log.h"
@@ -97,7 +96,6 @@ static void print_version(void) {
 
     fprintf(stderr, "dependencies:\n");
     fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-    fprintf(stderr, " - SDL_net %d.%d.%d\n", SDL_NET_MAJOR_VERSION, SDL_NET_MINOR_VERSION, SDL_NET_PATCHLEVEL);
     fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO);
     fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO);
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO);

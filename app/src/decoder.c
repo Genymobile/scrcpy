@@ -1,8 +1,8 @@
 #include "decoder.h"
 
 #include <libavformat/avformat.h>
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_net.h>
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
@@ -11,13 +11,12 @@
 #include "frames.h"
 #include "lockutil.h"
 #include "log.h"
-#include "netutil.h"
 
 #define BUFSIZE 0x10000
 
 static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct decoder *decoder = opaque;
-    return SDLNet_TCP_Recv(decoder->video_socket, buf, buf_size);
+    return net_recv(decoder->video_socket, buf, buf_size);
 }
 
 // set the decoded frame as ready for rendering, and notify
@@ -147,7 +146,7 @@ run_finally_free_codec_ctx:
     return ret;
 }
 
-void decoder_init(struct decoder *decoder, struct frames *frames, TCPsocket video_socket) {
+void decoder_init(struct decoder *decoder, struct frames *frames, socket_t video_socket) {
     decoder->frames = frames;
     decoder->video_socket = video_socket;
 }

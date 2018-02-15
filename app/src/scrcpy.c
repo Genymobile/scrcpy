@@ -6,7 +6,6 @@
 #include <libavformat/avformat.h>
 #include <sys/time.h>
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
 
 #include "command.h"
 #include "common.h"
@@ -19,7 +18,7 @@
 #include "inputmanager.h"
 #include "log.h"
 #include "lockutil.h"
-#include "netutil.h"
+#include "net.h"
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
@@ -104,8 +103,8 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // managed by the event loop. This blocking call blocks the event loop, so
     // timeout the connection not to block indefinitely in case of SIGTERM.
 #define SERVER_CONNECT_TIMEOUT_MS 2000
-    TCPsocket device_socket = server_connect_to(&server, serial, SERVER_CONNECT_TIMEOUT_MS);
-    if (!device_socket) {
+    socket_t device_socket = server_connect_to(&server, serial, SERVER_CONNECT_TIMEOUT_MS);
+    if (device_socket == INVALID_SOCKET) {
         server_stop(&server, serial);
         ret = SDL_FALSE;
         goto finally_destroy_server;

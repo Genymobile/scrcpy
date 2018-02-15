@@ -1,9 +1,9 @@
 #include "device.h"
 #include "log.h"
 
-SDL_bool device_read_info(TCPsocket device_socket, char *device_name, struct size *size) {
+SDL_bool device_read_info(socket_t device_socket, char *device_name, struct size *size) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
-    if (SDLNet_TCP_Recv(device_socket, buf, sizeof(buf)) <= 0) {
+    if (net_recv(device_socket, buf, sizeof(buf)) <= 0) {
         LOGE("Could not retrieve device information");
         return SDL_FALSE;
     }

@@ -1,12 +1,12 @@
 #include "server.h"
 
-#include <SDL2/SDL_net.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <stdint.h>
+#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "log.h"
-#include "netutil.h"
 
 #define SOCKET_NAME "scrcpy"
 
@@ -62,12 +62,9 @@ static void terminate_server(process_t server) {
     }
 }
 
-static TCPsocket listen_on_port(Uint16 port) {
-    IPaddress addr = {
-        .host = INADDR_ANY,
-        .port = SDL_SwapBE16(port),
-    };
-    return SDLNet_TCP_Open(&addr);
+static socket_t listen_on_port(Uint16 port) {
+#define IPV4_LOCALHOST 0x7F000001
+    return net_listen(IPV4_LOCALHOST, port, 1);
 }
 
 void server_init(struct server *server) {
@@ -91,7 +88,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     // connect until the server socket is listening on the device.
 
     server->server_socket = listen_on_port(local_port);
-    if (!server->server_socket) {
+    if (server->server_socket == INVALID_SOCKET) {
         LOGE("Could not listen on port %" PRIu16, local_port);
         disable_tunnel(serial);
         return SDL_FALSE;
@@ -100,7 +97,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     // server will connect to our server socket
     server->process = execute_server(serial, max_size, bit_rate);
     if (server->process == PROCESS_NONE) {
-        SDLNet_TCP_Close(server->server_socket);
+        net_close(server->server_socket);
         disable_tunnel(serial);
         return SDL_FALSE;
     }
@@ -110,13 +107,15 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     return SDL_TRUE;
 }
 
-TCPsocket server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms) {
-    SDL_assert(server->server_socket);
-    server->device_socket = server_socket_accept(server->server_socket, timeout_ms);
+socket_t server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms) {
+    server->device_socket = net_accept(server->server_socket);
+    if (server->device_socket == INVALID_SOCKET) {
+        return INVALID_SOCKET;
+    }
 
     // we don't need the server socket anymore
-    SDLNet_TCP_Close(server->server_socket);
-    server->server_socket = NULL;
+    net_close(server->server_socket);
+    server->server_socket = INVALID_SOCKET;
 
     // we don't need the adb tunnel anymore
     disable_tunnel(serial); // ignore failure
@@ -136,10 +135,10 @@ void server_stop(struct server *server, const char *serial) {
 }
 
 void server_destroy(struct server *server) {
-    if (server->server_socket) {
-        SDLNet_TCP_Close(server->server_socket);
+    if (server->server_socket != INVALID_SOCKET) {
+        net_close(server->server_socket);
     }
-    if (server->device_socket) {
-        SDLNet_TCP_Close(server->device_socket);
+    if (server->device_socket != INVALID_SOCKET) {
+        net_close(server->device_socket);
     }
 }

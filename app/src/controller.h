@@ -4,11 +4,13 @@
 #include "controlevent.h"
 
 #include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_net.h>
 #include <SDL2/SDL_stdinc.h>
+#include <SDL2/SDL_thread.h>
+
+#include "net.h"
 
 struct controller {
-    TCPsocket video_socket;
+    socket_t video_socket;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     SDL_cond *event_cond;
@@ -16,7 +18,7 @@ struct controller {
     struct control_event_queue queue;
 };
 
-SDL_bool controller_init(struct controller *controller, TCPsocket video_socket);
+SDL_bool controller_init(struct controller *controller, socket_t video_socket);
 void controller_destroy(struct controller *controller);
 
 SDL_bool controller_start(struct controller *controller);

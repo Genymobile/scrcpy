@@ -20,6 +20,7 @@
 #endif
 
 #ifdef __WINDOWS__
+# include <winsock2.h> // not needed here, but must never be included AFTER windows.h
 # include <windows.h>
 # define PROCESS_NONE NULL
   typedef HANDLE process_t;

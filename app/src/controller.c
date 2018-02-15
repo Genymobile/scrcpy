@@ -3,7 +3,7 @@
 #include "lockutil.h"
 #include "log.h"
 
-SDL_bool controller_init(struct controller *controller, TCPsocket video_socket) {
+SDL_bool controller_init(struct controller *controller, socket_t video_socket) {
     if (!control_event_queue_init(&controller->queue)) {
         return SDL_FALSE;
     }
@@ -47,7 +47,7 @@ static SDL_bool process_event(struct controller *controller, const struct contro
     if (!length) {
         return SDL_FALSE;
     }
-    int w = SDLNet_TCP_Send(controller->video_socket, serialized_event, length);
+    int w = net_send(controller->video_socket, serialized_event, length);
     return w == length;
 }
 
