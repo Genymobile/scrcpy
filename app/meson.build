@@ -6,6 +6,7 @@ src = [
     'src/convert.c',
     'src/decoder.c',
     'src/device.c',
+    'src/fpscounter.c',
     'src/frames.c',
     'src/lockutil.c',
     'src/netutil.c',

@@ -33,6 +33,7 @@ SDL_bool frames_init(struct frames *frames) {
     // there is initially no rendering frame, so consider it has already been
     // consumed
     frames->rendering_frame_consumed = SDL_TRUE;
+    fps_counter_init(&frames->fps_counter);
 
     return SDL_TRUE;
 
@@ -68,8 +69,8 @@ SDL_bool frames_offer_decoded_frame(struct frames *frames) {
         cond_wait(frames->rendering_frame_consumed_cond, frames->mutex);
     }
 #else
-    if (!frames->rendering_frame_consumed) {
-        LOGD("Skip frame");
+    if (frames->fps_counter.started && !frames->rendering_frame_consumed) {
+        fps_counter_add_skipped_frame(&frames->fps_counter);
     }
 #endif
 
@@ -85,6 +86,9 @@ SDL_bool frames_offer_decoded_frame(struct frames *frames) {
 const AVFrame *frames_consume_rendered_frame(struct frames *frames) {
     SDL_assert(!frames->rendering_frame_consumed);
     frames->rendering_frame_consumed = SDL_TRUE;
+    if (frames->fps_counter.started) {
+        fps_counter_add_rendered_frame(&frames->fps_counter);
+    }
 #ifndef SKIP_FRAMES
     // if SKIP_FRAMES is disabled, then notify the decoder the current frame is
     // consumed, so that it may push a new one

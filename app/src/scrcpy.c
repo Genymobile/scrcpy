@@ -15,6 +15,7 @@
 #include "device.h"
 #include "events.h"
 #include "frames.h"
+#include "fpscounter.h"
 #include "log.h"
 #include "lockutil.h"
 #include "netutil.h"
@@ -28,24 +29,6 @@ static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
-
-static long timestamp_ms(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-}
-
-static void count_frame(void) {
-    static long ts = 0;
-    static int nbframes = 0;
-    long now = timestamp_ms();
-    ++nbframes;
-    if (now - ts > 1000) {
-        LOGD("%d fps", nbframes);
-        ts = now;
-        nbframes = 0;
-    }
-}
 
 static void event_loop(void) {
     SDL_Event event;
@@ -62,11 +45,11 @@ static void event_loop(void) {
                     screen.has_frame = SDL_TRUE;
                     // this is the very first frame, show the window
                     screen_show_window(&screen);
+                    fps_counter_start(&frames.fps_counter);
                 }
                 if (!screen_update_frame(&screen, &frames)) {
                     return;
                 }
-                count_frame(); // display fps for debug
                 break;
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {

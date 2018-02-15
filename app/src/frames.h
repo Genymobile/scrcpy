@@ -5,6 +5,7 @@
 #include <SDL2/SDL_stdinc.h>
 
 #include "config.h"
+#include "fpscounter.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
@@ -18,6 +19,7 @@ struct frames {
     SDL_cond *rendering_frame_consumed_cond;
 #endif
     SDL_bool rendering_frame_consumed;
+    struct fps_counter fps_counter;
 };
 
 SDL_bool frames_init(struct frames *frames);
