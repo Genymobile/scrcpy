@@ -1,4 +1,4 @@
-#include "screencontrol.h"
+#include "inputmanager.h"
 
 #include "convert.h"
 #include "log.h"
@@ -78,16 +78,15 @@ static void turn_screen_on(struct controller *controller) {
     }
 }
 
-void screencontrol_handle_text_input(struct controller *controller,
-                                     struct screen *screen,
-                                     const SDL_TextInputEvent *event) {
+void input_manager_process_text_input(struct input_manager *input_manager,
+                                      const SDL_TextInputEvent *event) {
     if (is_ctrl_down()) {
         switch (event->text[0]) {
             case '+':
-                action_volume_up(controller);
+                action_volume_up(input_manager->controller);
                 break;
             case '-':
-                action_volume_down(controller);
+                action_volume_down(input_manager->controller);
                 break;
         }
         return;
@@ -97,14 +96,13 @@ void screencontrol_handle_text_input(struct controller *controller,
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
     control_event.text_event.text[TEXT_MAX_LENGTH] = '\0';
-    if (!controller_push_event(controller, &control_event)) {
+    if (!controller_push_event(input_manager->controller, &control_event)) {
         LOGW("Cannot send text event");
     }
 }
 
-void screencontrol_handle_key(struct controller *controller,
-                              struct screen *screen,
-                              const SDL_KeyboardEvent *event) {
+void input_manager_process_key(struct input_manager *input_manager,
+                               const SDL_KeyboardEvent *event) {
     SDL_Keycode keycode = event->keysym.sym;
     SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
@@ -124,26 +122,26 @@ void screencontrol_handle_key(struct controller *controller,
 
         switch (keycode) {
             case SDLK_h:
-                action_home(controller);
+                action_home(input_manager->controller);
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                action_back(controller);
+                action_back(input_manager->controller);
                 return;
             case SDLK_m:
-                action_app_switch(controller);
+                action_app_switch(input_manager->controller);
                 return;
             case SDLK_p:
-                action_power(controller);
+                action_power(input_manager->controller);
                 return;
             case SDLK_f:
-                screen_switch_fullscreen(screen);
+                screen_switch_fullscreen(input_manager->screen);
                 return;
             case SDLK_x:
-                screen_resize_to_fit(screen);
+                screen_resize_to_fit(input_manager->screen);
                 return;
             case SDLK_g:
-                screen_resize_to_pixel_perfect(screen);
+                screen_resize_to_pixel_perfect(input_manager->screen);
                 return;
         }
 
@@ -152,52 +150,49 @@ void screencontrol_handle_key(struct controller *controller,
 
     struct control_event control_event;
     if (input_key_from_sdl_to_android(event, &control_event)) {
-        if (!controller_push_event(controller, &control_event)) {
+        if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send control event");
         }
     }
 }
 
-void screencontrol_handle_mouse_motion(struct controller *controller,
-                                       struct screen *screen,
-                                       const SDL_MouseMotionEvent *event) {
+void input_manager_process_mouse_motion(struct input_manager *input_manager,
+                                        const SDL_MouseMotionEvent *event) {
     if (!event->state) {
         // do not send motion events when no button is pressed
         return;
     }
     struct control_event control_event;
-    if (mouse_motion_from_sdl_to_android(event, screen->frame_size, &control_event)) {
-        if (!controller_push_event(controller, &control_event)) {
+    if (mouse_motion_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+        if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse motion event");
         }
     }
 }
 
-void screencontrol_handle_mouse_button(struct controller *controller,
-                                       struct screen *screen,
-                                       const SDL_MouseButtonEvent *event) {
+void input_manager_process_mouse_button(struct input_manager *input_manager,
+                                        const SDL_MouseButtonEvent *event) {
     if (event->button == SDL_BUTTON_RIGHT && event->type == SDL_MOUSEBUTTONDOWN) {
-        turn_screen_on(controller);
+        turn_screen_on(input_manager->controller);
         return;
     };
     struct control_event control_event;
-    if (mouse_button_from_sdl_to_android(event, screen->frame_size, &control_event)) {
-        if (!controller_push_event(controller, &control_event)) {
+    if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+        if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse button event");
         }
     }
 }
 
-void screencontrol_handle_mouse_wheel(struct controller *controller,
-                                      struct screen *screen,
-                                      const SDL_MouseWheelEvent *event) {
+void input_manager_process_mouse_wheel(struct input_manager *input_manager,
+                                       const SDL_MouseWheelEvent *event) {
     struct position position = {
-        .screen_size = screen->frame_size,
+        .screen_size = input_manager->screen->frame_size,
         .point = get_mouse_point(),
     };
     struct control_event control_event;
     if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
-        if (!controller_push_event(controller, &control_event)) {
+        if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send wheel button event");
         }
     }

@@ -16,11 +16,11 @@
 #include "events.h"
 #include "frames.h"
 #include "fpscounter.h"
+#include "inputmanager.h"
 #include "log.h"
 #include "lockutil.h"
 #include "netutil.h"
 #include "screen.h"
-#include "screencontrol.h"
 #include "server.h"
 #include "tinyxpm.h"
 
@@ -29,6 +29,11 @@ static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
+
+static struct input_manager input_manager = {
+    .controller = &controller,
+    .screen = &screen,
+};
 
 static void event_loop(void) {
     SDL_Event event;
@@ -60,23 +65,23 @@ static void event_loop(void) {
                 }
                 break;
             case SDL_TEXTINPUT: {
-                screencontrol_handle_text_input(&controller, &screen, &event.text);
+                input_manager_process_text_input(&input_manager, &event.text);
                 break;
             }
             case SDL_KEYDOWN:
             case SDL_KEYUP:
-                screencontrol_handle_key(&controller, &screen, &event.key);
+                input_manager_process_key(&input_manager, &event.key);
                 break;
             case SDL_MOUSEMOTION:
-                screencontrol_handle_mouse_motion(&controller, &screen, &event.motion);
+                input_manager_process_mouse_motion(&input_manager, &event.motion);
                 break;
             case SDL_MOUSEWHEEL: {
-                screencontrol_handle_mouse_wheel(&controller, &screen, &event.wheel);
+                input_manager_process_mouse_wheel(&input_manager, &event.wheel);
                 break;
             }
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
-                screencontrol_handle_mouse_button(&controller, &screen, &event.button);
+                input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
             }
         }
