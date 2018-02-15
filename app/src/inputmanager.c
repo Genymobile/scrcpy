@@ -1,6 +1,7 @@
 #include "inputmanager.h"
 
 #include "convert.h"
+#include "lockutil.h"
 #include "log.h"
 
 static struct point get_mouse_point(void) {
@@ -78,6 +79,18 @@ static void turn_screen_on(struct controller *controller) {
     }
 }
 
+static void switch_fps_counter_state(struct frames *frames) {
+    mutex_lock(frames->mutex);
+    if (frames->fps_counter.started) {
+        LOGI("FPS counter stopped");
+        fps_counter_stop(&frames->fps_counter);
+    } else {
+        LOGI("FPS counter started");
+        fps_counter_start(&frames->fps_counter);
+    }
+    mutex_unlock(frames->mutex);
+}
+
 void input_manager_process_text_input(struct input_manager *input_manager,
                                       const SDL_TextInputEvent *event) {
     if (is_ctrl_down()) {
@@ -142,6 +155,9 @@ void input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_g:
                 screen_resize_to_pixel_perfect(input_manager->screen);
+                return;
+            case SDLK_i:
+                switch_fps_counter_state(input_manager->frames);
                 return;
         }
 

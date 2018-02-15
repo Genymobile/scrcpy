@@ -82,6 +82,9 @@ static void usage(const char *arg0) {
         "\n"
         "    Right-click\n"
         "        turn screen on\n"
+        "\n"
+        "    Ctrl+i\n"
+        "        enable/disable FPS counter (print frames/second in logs)\n"
         "\n",
         arg0,
         DEFAULT_BIT_RATE,

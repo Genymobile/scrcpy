@@ -3,10 +3,13 @@
 
 #include "common.h"
 #include "controller.h"
+#include "fpscounter.h"
+#include "frames.h"
 #include "screen.h"
 
 struct input_manager {
     struct controller *controller;
+    struct frames *frames;
     struct screen *screen;
 };
 

@@ -32,6 +32,7 @@ static struct controller controller;
 
 static struct input_manager input_manager = {
     .controller = &controller,
+    .frames = &frames,
     .screen = &screen,
 };
 
@@ -50,7 +51,6 @@ static void event_loop(void) {
                     screen.has_frame = SDL_TRUE;
                     // this is the very first frame, show the window
                     screen_show_window(&screen);
-                    fps_counter_start(&frames.fps_counter);
                 }
                 if (!screen_update_frame(&screen, &frames)) {
                     return;
