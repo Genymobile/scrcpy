@@ -88,6 +88,11 @@ static SDL_bool get_preferred_display_bounds(struct size *bounds) {
 //  - it keeps the aspect ratio
 //  - it scales down to make it fit in the display_size
 static struct size get_optimal_size(struct size current_size, struct size frame_size) {
+    if (frame_size.width == 0 || frame_size.height == 0) {
+        // avoid division by 0
+        return current_size;
+    }
+
     struct size display_size;
     // 32 bits because we need to multiply two 16 bits values
     Uint32 w;
