@@ -33,6 +33,12 @@ static void push_frame(struct decoder *decoder) {
     SDL_PushEvent(&new_frame_event);
 }
 
+static void notify_stopped(void) {
+    SDL_Event stop_event;
+    stop_event.type = EVENT_DECODER_STOPPED;
+    SDL_PushEvent(&stop_event);
+}
+
 static int run_decoder(void *data) {
     struct decoder *decoder = data;
     int ret = 0;
@@ -137,7 +143,7 @@ run_finally_close_codec:
     avcodec_close(codec_ctx);
 run_finally_free_codec_ctx:
     avcodec_free_context(&codec_ctx);
-    SDL_PushEvent(&(SDL_Event) {.type = EVENT_DECODER_STOPPED});
+    notify_stopped();
     return ret;
 }
 
