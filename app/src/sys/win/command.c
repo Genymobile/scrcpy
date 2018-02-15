@@ -20,7 +20,7 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
         return NULL;
     }
 
-    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
+    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
         return NULL;
     }
 
