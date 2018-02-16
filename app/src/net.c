@@ -25,6 +25,11 @@ socket_t net_listen(Uint32 addr, Uint16 port, int backlog) {
         return INVALID_SOCKET;
     }
 
+    int reuse = 1;
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuse, sizeof(reuse)) == -1) {
+        perror("setsockopt(SO_REUSEADDR)");
+    }
+
     SOCKADDR_IN sin;
     sin.sin_family = AF_INET;
     sin.sin_addr.s_addr = htonl(addr); // htonl() harmless on INADDR_ANY
