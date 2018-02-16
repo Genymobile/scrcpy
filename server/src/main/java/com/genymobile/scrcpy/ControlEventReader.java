@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -28,7 +29,7 @@ public class ControlEventReader {
         return buffer.remaining() == rawBuffer.length;
     }
 
-    public boolean readFrom(InputStream input) throws IOException {
+    public void readFrom(InputStream input) throws IOException {
         if (isFull()) {
             throw new IllegalStateException("Buffer full, call next() to consume");
         }
@@ -36,11 +37,10 @@ public class ControlEventReader {
         int head = buffer.position();
         int r = input.read(rawBuffer, head, rawBuffer.length - head);
         if (r == -1) {
-            return false;
+            throw new EOFException("Event controller socket closed");
         }
         buffer.position(head + r);
         buffer.flip();
-        return true;
     }
 
     public ControlEvent next() {
