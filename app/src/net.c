@@ -71,3 +71,7 @@ ssize_t net_send_all(socket_t socket, void *buf, size_t len) {
     }
     return w;
 }
+
+SDL_bool net_shutdown(socket_t socket, int how) {
+    return !shutdown(socket, how);
+}

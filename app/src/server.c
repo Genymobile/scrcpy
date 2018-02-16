@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "log.h"
+#include "net.h"
 
 #define SOCKET_NAME "scrcpy"
 
@@ -54,12 +55,6 @@ static process_t execute_server(const char *serial, Uint16 max_size, Uint32 bit_
         bit_rate_string,
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
-}
-
-static void terminate_server(process_t server) {
-    if (!cmd_terminate(server)) {
-        LOGE("Could not terminate server: %s", strerror(errno));
-    }
 }
 
 static socket_t listen_on_port(Uint16 port) {
@@ -126,7 +121,15 @@ socket_t server_connect_to(struct server *server, const char *serial, Uint32 tim
 
 void server_stop(struct server *server, const char *serial) {
     SDL_assert(server->process != PROCESS_NONE);
-    terminate_server(server->process);
+
+    if (server->device_socket != INVALID_SOCKET) {
+        // shutdown the socket to finish the device process gracefully
+        net_shutdown(server->device_socket, SHUT_RDWR);
+    }
+
+    LOGD("Waiting the server to complete execution on the device...");
+    cmd_simple_wait(server->process, NULL); // ignore exit code
+    LOGD("Server terminated");
 
     if (server->adb_reverse_enabled) {
         // ignore failure

@@ -21,7 +21,8 @@ public final class ScrCpyServer {
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getOutputStream());
             } catch (IOException e) {
-                Ln.w("Screen streaming stopped");
+                // this is expected on close
+                Ln.d("Screen streaming stopped");
             }
         }
     }
@@ -33,7 +34,8 @@ public final class ScrCpyServer {
                 try {
                     new EventController(device, connection).control();
                 } catch (IOException e) {
-                    Ln.w("Event controller stopped");
+                    // this is expected on close
+                    Ln.d("Event controller stopped");
                 }
             }
         }).start();
