@@ -11,16 +11,16 @@
 
 #define SOCKET_NAME "scrcpy"
 
-#ifdef OVERRIDE_SERVER_JAR
-# define DEFAULT_SERVER_JAR OVERRIDE_SERVER_JAR
+#ifdef OVERRIDE_SERVER_PATH
+# define DEFAULT_SERVER_PATH OVERRIDE_SERVER_PATH
 #else
-# define DEFAULT_SERVER_JAR PREFIX PREFIXED_SERVER_JAR
+# define DEFAULT_SERVER_PATH PREFIX PREFIXED_SERVER_PATH
 #endif
 
 static const char *get_server_path(void) {
-    const char *server_path = getenv("SCRCPY_SERVER_JAR");
+    const char *server_path = getenv("SCRCPY_SERVER_PATH");
     if (!server_path) {
-        server_path = DEFAULT_SERVER_JAR;
+        server_path = DEFAULT_SERVER_PATH;
     }
     return server_path;
 }

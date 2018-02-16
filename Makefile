@@ -34,7 +34,7 @@ build-portable:
 	[ -d "$(PORTABLE_BUILD_DIR)" ] || ( mkdir "$(PORTABLE_BUILD_DIR)" && \
 		meson "$(PORTABLE_BUILD_DIR)" \
 			--buildtype release --strip -Db_lto=true \
-			-Doverride_server_jar=scrcpy-server.jar )
+			-Doverride_server_path=scrcpy-server.jar )
 	ninja -C "$(PORTABLE_BUILD_DIR)"
 
 release-portable: clean dist-portable-zip sums
