@@ -12,7 +12,7 @@
 # This is a simple Makefile because Meson is not flexible enough to execute some
 # arbitrary commands.
 
-.PHONY: default clean release-portable dist-portable dist-portable-zip sums test check
+.PHONY: default clean build-portable release-portable dist-portable dist-portable-zip sums test check
 
 GRADLE ?= ./gradlew
 
