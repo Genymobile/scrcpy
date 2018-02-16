@@ -11,6 +11,6 @@ void net_cleanup(void) {
     // do nothing
 }
 
-void net_close(socket_t socket) {
-    close(socket);
+SDL_bool net_close(socket_t socket) {
+    return !close(socket);
 }

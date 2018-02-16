@@ -1,5 +1,7 @@
 #include "net.h"
 
+#include <stdio.h>
+
 #include "log.h"
 
 #ifdef __WINDOWS__
@@ -19,7 +21,7 @@
 socket_t net_listen(Uint32 addr, Uint16 port, int backlog) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
-        LOGE("Cannot create socket");
+        perror("socket");
         return INVALID_SOCKET;
     }
 
@@ -29,12 +31,12 @@ socket_t net_listen(Uint32 addr, Uint16 port, int backlog) {
     sin.sin_port = htons(port);
 
     if (bind(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
-        LOGE("Cannot bind");
+        perror("bind");
         return INVALID_SOCKET;
     }
 
     if (listen(sock, backlog) == SOCKET_ERROR) {
-        LOGE("Cannot listen on port %" PRIu16, port);
+        perror("listen");
         return INVALID_SOCKET;
     }
 

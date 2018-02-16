@@ -16,6 +16,6 @@ void net_cleanup(void) {
     WSACleanup();
 }
 
-void net_close(socket_t socket) {
-    closesocket(socket);
+SDL_bool net_close(socket_t socket) {
+    return !closesocket(socket);
 }

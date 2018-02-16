@@ -31,6 +31,6 @@ ssize_t net_send(socket_t socket, void *buf, size_t len);
 ssize_t net_send_all(socket_t socket, void *buf, size_t len);
 // how is SHUT_RD (read), SHUT_WR (write) or SHUT_RDWR (both)
 SDL_bool net_shutdown(socket_t socket, int how);
-void net_close(socket_t socket);
+SDL_bool net_close(socket_t socket);
 
 #endif

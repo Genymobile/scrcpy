@@ -62,6 +62,15 @@ static socket_t listen_on_port(Uint16 port) {
     return net_listen(IPV4_LOCALHOST, port, 1);
 }
 
+static void close_socket(socket_t *socket) {
+    SDL_assert(*socket != INVALID_SOCKET);
+    if (!net_close(*socket)) {
+        LOGW("Cannot close socket");
+        return;
+    }
+    *socket = INVALID_SOCKET;
+}
+
 void server_init(struct server *server) {
     *server = (struct server) SERVER_INITIALIZER;
 }
@@ -92,7 +101,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     // server will connect to our server socket
     server->process = execute_server(serial, max_size, bit_rate);
     if (server->process == PROCESS_NONE) {
-        net_close(server->server_socket);
+        close_socket(&server->server_socket);
         disable_tunnel(serial);
         return SDL_FALSE;
     }
@@ -109,8 +118,7 @@ socket_t server_connect_to(struct server *server, const char *serial, Uint32 tim
     }
 
     // we don't need the server socket anymore
-    net_close(server->server_socket);
-    server->server_socket = INVALID_SOCKET;
+    close_socket(&server->server_socket);
 
     // we don't need the adb tunnel anymore
     disable_tunnel(serial); // ignore failure
@@ -124,7 +132,9 @@ void server_stop(struct server *server, const char *serial) {
 
     if (server->device_socket != INVALID_SOCKET) {
         // shutdown the socket to finish the device process gracefully
-        net_shutdown(server->device_socket, SHUT_RDWR);
+        if (!net_shutdown(server->device_socket, SHUT_RDWR)) {
+            LOGW("Cannot shutdown socket");
+        }
     }
 
     LOGD("Waiting the server to complete execution on the device...");
@@ -139,9 +149,9 @@ void server_stop(struct server *server, const char *serial) {
 
 void server_destroy(struct server *server) {
     if (server->server_socket != INVALID_SOCKET) {
-        net_close(server->server_socket);
+        close_socket(&server->server_socket);
     }
     if (server->device_socket != INVALID_SOCKET) {
-        net_close(server->device_socket);
+        close_socket(&server->device_socket);
     }
 }
