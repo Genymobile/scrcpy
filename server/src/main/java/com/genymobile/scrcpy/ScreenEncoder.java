@@ -89,6 +89,7 @@ public class ScreenEncoder implements Device.RotationListener {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         while (!checkRotationChanged() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
+            eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
             try {
                 if (checkRotationChanged()) {
                     // must restart encoding with new size
