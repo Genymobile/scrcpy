@@ -50,7 +50,7 @@ static process_t execute_server(const char *serial, Uint16 max_size, Uint32 bit_
         "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
         "app_process",
         "/", // unused
-        "com.genymobile.scrcpy.ScrCpyServer",
+        "com.genymobile.scrcpy.Server",
         max_size_string,
         bit_rate_string,
     };

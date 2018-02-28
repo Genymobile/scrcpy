@@ -2,9 +2,9 @@ package com.genymobile.scrcpy;
 
 import java.io.IOException;
 
-public final class ScrCpyServer {
+public final class Server {
 
-    private ScrCpyServer() {
+    private Server() {
         // not instantiable
     }
 
