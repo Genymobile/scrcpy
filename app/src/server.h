@@ -9,13 +9,15 @@ struct server {
     socket_t server_socket;
     socket_t device_socket;
     SDL_bool adb_reverse_enabled;
+    SDL_bool server_copied_to_device;
 };
 
-#define SERVER_INITIALIZER {          \
-    .process = PROCESS_NONE,          \
-    .server_socket = INVALID_SOCKET,  \
-    .device_socket = INVALID_SOCKET,  \
-    .adb_reverse_enabled = SDL_FALSE, \
+#define SERVER_INITIALIZER {              \
+    .process = PROCESS_NONE,              \
+    .server_socket = INVALID_SOCKET,      \
+    .device_socket = INVALID_SOCKET,      \
+    .adb_reverse_enabled = SDL_FALSE,     \
+    .server_copied_to_device = SDL_FALSE, \
 }
 
 // init default values

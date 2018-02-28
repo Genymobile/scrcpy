@@ -17,6 +17,8 @@
 # define DEFAULT_SERVER_PATH PREFIX PREFIXED_SERVER_PATH
 #endif
 
+#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+
 static const char *get_server_path(void) {
     const char *server_path = getenv("SCRCPY_SERVER_PATH");
     if (!server_path) {
@@ -26,8 +28,13 @@ static const char *get_server_path(void) {
 }
 
 static SDL_bool push_server(const char *serial) {
-    process_t process = adb_push(serial, get_server_path(), "/data/local/tmp/scrcpy-server.jar");
+    process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
+}
+
+static SDL_bool remove_server(const char *serial) {
+    process_t process = adb_remove_path(serial, DEVICE_SERVER_PATH);
+    return process_check_success(process, "adb shell rm");
 }
 
 static SDL_bool enable_tunnel(const char *serial, Uint16 local_port) {
@@ -81,6 +88,8 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
         return SDL_FALSE;
     }
 
+    server->server_copied_to_device = SDL_TRUE;
+
     if (!enable_tunnel(serial, local_port)) {
         return SDL_FALSE;
     }
@@ -120,6 +129,10 @@ socket_t server_connect_to(struct server *server, const char *serial, Uint32 tim
     // we don't need the server socket anymore
     close_socket(&server->server_socket);
 
+    // the server is started, we can clean up the jar from the temporary folder
+    remove_server(serial); // ignore failure
+    server->server_copied_to_device = SDL_FALSE;
+
     // we don't need the adb tunnel anymore
     disable_tunnel(serial); // ignore failure
     server->adb_reverse_enabled = SDL_FALSE;
@@ -144,6 +157,10 @@ void server_stop(struct server *server, const char *serial) {
     if (server->adb_reverse_enabled) {
         // ignore failure
         disable_tunnel(serial);
+    }
+
+    if (server->server_copied_to_device) {
+        remove_server(serial); // ignore failure
     }
 }
 
