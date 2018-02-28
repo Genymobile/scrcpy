@@ -143,14 +143,10 @@ socket_t server_connect_to(struct server *server, const char *serial, Uint32 tim
 void server_stop(struct server *server, const char *serial) {
     SDL_assert(server->process != PROCESS_NONE);
 
-    if (server->device_socket != INVALID_SOCKET) {
-        // shutdown the socket to finish the device process gracefully
-        if (!net_shutdown(server->device_socket, SHUT_RDWR)) {
-            LOGW("Cannot shutdown socket");
-        }
+    if (!cmd_terminate(server->process)) {
+        LOGW("Cannot terminate server");
     }
 
-    LOGD("Waiting the server to complete execution on the device...");
     cmd_simple_wait(server->process, NULL); // ignore exit code
     LOGD("Server terminated");
 
