@@ -62,7 +62,7 @@ process_t adb_reverse_remove(const char *serial, const char *device_socket_name)
 }
 
 process_t adb_push(const char *serial, const char *local, const char *remote) {
-    const char *const adb_cmd[] = {"push", (char *) local, (char *) remote};
+    const char *const adb_cmd[] = {"push", local, remote};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
