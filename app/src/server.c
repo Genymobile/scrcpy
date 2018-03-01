@@ -95,10 +95,10 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     }
 
     // At the application level, the device part is "the server" because it
-    // serves video stream and control. However, at network level, the client
-    // listens and the server connects to the client. That way, the client can
-    // listen before starting the server app, so there is no need to try to
-    // connect until the server socket is listening on the device.
+    // serves video stream and control. However, at the network level, the
+    // client listens and the server connects to the client. That way, the
+    // client can listen before starting the server app, so there is no need to
+    // try to connect until the server socket is listening on the device.
 
     server->server_socket = listen_on_port(local_port);
     if (server->server_socket == INVALID_SOCKET) {
