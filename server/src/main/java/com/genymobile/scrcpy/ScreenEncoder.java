@@ -49,7 +49,7 @@ public class ScreenEncoder implements Device.RotationListener {
         rotationChanged.set(true);
     }
 
-    public boolean checkRotationChanged() {
+    public boolean consumeRotationChange() {
         return rotationChanged.getAndSet(false);
     }
 
@@ -87,11 +87,11 @@ public class ScreenEncoder implements Device.RotationListener {
         byte[] buf = new byte[bitRate / 8]; // may contain up to 1 second of video
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        while (!checkRotationChanged() && !eof) {
+        while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
             try {
-                if (checkRotationChanged()) {
+                if (consumeRotationChange()) {
                     // must restart encoding with new size
                     break;
                 }
