@@ -1,8 +1,8 @@
 # scrcpy
 
-This project displays screens of Android devices connected on USB, and allow to
-control them using the host mouse and keyboard. It does not require any _root_
-access. It works on _GNU/Linux_, _Windows_ and _Mac OS_.
+This application provides display and control of Android devices connected on
+USB. It does not require any _root_ access. It works on _GNU/Linux_, _Windows_
+and _Mac OS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -183,6 +183,23 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
  | click on `POWER`                       | `Ctrl`+`p`    |
  | turn screen on                         | _Right-click_ |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
+
+
+## Why _scrcpy_?
+
+A colleague challenged me to find a name as unpronounceable as [gnirehtet].
+
+[`strcpy`] copies a **str**ing; `scrcpy` copies a **scr**een.
+
+[gnirehtet]: https://github.com/Genymobile/gnirehtet
+[`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
+
+
+## Developers
+
+Read the [developers page].
+
+[developers page]: DEVELOP.md
 
 
 ## Licence
