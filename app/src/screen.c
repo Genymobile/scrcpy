@@ -141,7 +141,8 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
 
     struct size window_size = get_initial_optimal_size(frame_size);
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                      window_size.width, window_size.height, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
+                                      window_size.width, window_size.height,
+                                      SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
         return SDL_FALSE;
