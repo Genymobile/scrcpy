@@ -73,7 +73,7 @@ conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
-conf.set('DEFAULT_BIT_RATE', '4000000')  # 4Mbps
+conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
 # whether the app should always display the most recent available frame, even
 # if the previous one has not been displayed

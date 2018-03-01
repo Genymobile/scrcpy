@@ -154,9 +154,9 @@ It accepts command-line arguments, listed by:
 
     scrcpy --help
 
-For example, to increase video bitrate to 8Mbps (default is 4Mbps):
+For example, to decrease video bitrate to 2Mbps (default is 8Mbps):
 
-    scrcpy -b 8M
+    scrcpy -b 2M
 
 To limit the video dimensions (e.g. if the device is 2540×1440, but the host
 screen is smaller, or cannot decode such a high definition):
