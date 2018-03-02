@@ -35,6 +35,21 @@ static struct input_manager input_manager = {
     .screen = &screen,
 };
 
+static void hidpi_fix_coordinates(Sint32 *x, Sint32 *y) {
+    struct screen_sizes sizes = screen_get_sizes(&screen);
+    Uint16 ww = sizes.window_size.width;
+    Uint16 wh = sizes.window_size.height;
+    Uint16 dw = sizes.drawable_size.width;
+    Uint16 dh = sizes.drawable_size.height;
+    printf("window=%dx%d; drawable=%dx%d\n", (int) ww, (int) wh, (int) dw, (int) dh);
+    if (dw && dw != ww) {
+        *x = ((Sint64) *x) * ww / dw;
+    }
+    if (dh && dh != wh) {
+        *y = ((Sint64) *y) * wh / dh;
+    }
+}
+
 static void event_loop(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
@@ -72,14 +87,17 @@ static void event_loop(void) {
                 input_manager_process_key(&input_manager, &event.key);
                 break;
             case SDL_MOUSEMOTION:
+                hidpi_fix_coordinates(&event.motion.x, &event.motion.y);
                 input_manager_process_mouse_motion(&input_manager, &event.motion);
                 break;
             case SDL_MOUSEWHEEL: {
+                hidpi_fix_coordinates(&event.wheel.x, &event.wheel.y);
                 input_manager_process_mouse_wheel(&input_manager, &event.wheel);
                 break;
             }
             case SDL_MOUSEBUTTONDOWN:
             case SDL_MOUSEBUTTONUP: {
+                hidpi_fix_coordinates(&event.button.y, &event.button.y);
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
             }

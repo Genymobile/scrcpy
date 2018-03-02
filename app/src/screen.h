@@ -34,6 +34,15 @@ struct screen {
     .fullscreen = SDL_FALSE,  \
 }
 
+// the window and drawable size may differ if hi-dpi is enabled
+struct screen_sizes {
+    // the size of the window client area, as reported by SDL_GetWindowSize()
+    struct size window_size;
+    // the size of the window underlying drawable, as reported by
+    // SDL_GL_GetDrawableSize()
+    struct size drawable_size;
+};
+
 // init SDL and set appropriate hints
 SDL_bool sdl_init_and_configure(void);
 
@@ -65,5 +74,7 @@ void screen_resize_to_fit(struct screen *screen);
 
 // resize window to 1:1 (pixel-perfect)
 void screen_resize_to_pixel_perfect(struct screen *screen);
+
+struct screen_sizes screen_get_sizes(const struct screen *screen);
 
 #endif

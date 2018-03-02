@@ -45,6 +45,27 @@ static struct size get_native_window_size(SDL_Window *window) {
     return size;
 }
 
+// get the size of the window underlying drawable in pixels
+// may differ from get_native_window_size() if hi-dpi is enabled
+static struct size get_native_drawable_size(SDL_Window *window) {
+    int width;
+    int height;
+    SDL_GL_GetDrawableSize(window, &width, &height);
+
+    struct size size;
+    size.width = width;
+    size.height = height;
+    return size;
+}
+
+// return both the native window size and native drawable size
+struct screen_sizes screen_get_sizes(const struct screen *screen) {
+    struct screen_sizes sizes;
+    sizes.window_size = get_native_window_size(screen->window);
+    sizes.drawable_size = get_native_drawable_size(screen->window);
+    return sizes;
+}
+
 // get the windowed window size
 static struct size get_window_size(const struct screen *screen) {
     if (screen->fullscreen) {
@@ -141,7 +162,8 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
 
     struct size window_size = get_initial_optimal_size(frame_size);
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                      window_size.width, window_size.height, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
+                                      window_size.width, window_size.height,
+                                      SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
         return SDL_FALSE;
