@@ -71,6 +71,7 @@ static socket_t listen_on_port(Uint16 port) {
 
 static void close_socket(socket_t *socket) {
     SDL_assert(*socket != INVALID_SOCKET);
+    net_shutdown(*socket, SHUT_RDWR);
     if (!net_close(*socket)) {
         LOGW("Cannot close socket");
         return;
