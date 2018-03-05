@@ -40,37 +40,33 @@ static void notify_stopped(void) {
 
 static int run_decoder(void *data) {
     struct decoder *decoder = data;
-    int ret = 0;
 
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!codec) {
         LOGE("H.264 decoder not found");
-        return -1;
+        goto run_end;
     }
 
     AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
     if (!codec_ctx) {
         LOGC("Could not allocate decoder context");
-        return -1;
+        goto run_end;
     }
 
     if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
         LOGE("Could not open H.264 codec");
-        ret = -1;
         goto run_finally_free_codec_ctx;
     }
 
     AVFormatContext *format_ctx = avformat_alloc_context();
     if (!format_ctx) {
         LOGC("Could not allocate format context");
-        ret = -1;
         goto run_finally_close_codec;
     }
 
     unsigned char *buffer = av_malloc(BUFSIZE);
     if (!buffer) {
         LOGC("Could not allocate buffer");
-        ret = -1;
         goto run_finally_free_format_ctx;
     }
 
@@ -80,7 +76,6 @@ static int run_decoder(void *data) {
         // avformat_open_input takes ownership of 'buffer'
         // so only free the buffer before avformat_open_input()
         av_free(buffer);
-        ret = -1;
         goto run_finally_free_format_ctx;
     }
 
@@ -88,7 +83,6 @@ static int run_decoder(void *data) {
 
     if (avformat_open_input(&format_ctx, NULL, NULL, NULL) < 0) {
         LOGE("Could not open video stream");
-        ret = -1;
         goto run_finally_free_avio_ctx;
     }
 
@@ -142,7 +136,8 @@ run_finally_close_codec:
 run_finally_free_codec_ctx:
     avcodec_free_context(&codec_ctx);
     notify_stopped();
-    return ret;
+run_end:
+    return 0;
 }
 
 void decoder_init(struct decoder *decoder, struct frames *frames, socket_t video_socket) {
