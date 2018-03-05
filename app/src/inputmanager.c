@@ -1,6 +1,7 @@
 #include "inputmanager.h"
 
 #include "convert.h"
+#include "hidpi.h"
 #include "lockutil.h"
 #include "log.h"
 
@@ -18,10 +19,19 @@ static void convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int 
 }
 
 static struct point get_mouse_point(struct screen *screen) {
-    int x;
-    int y;
-    SDL_GetMouseState(&x, &y);
-    convert_to_renderer_coordinates(screen->renderer, &x, &y);
+    int mx;
+    int my;
+    SDL_GetMouseState(&mx, &my);
+    convert_to_renderer_coordinates(screen->renderer, &mx, &my);
+
+    struct hidpi_scale hidpi_scale;
+    hidpi_get_scale(screen, &hidpi_scale);
+
+    // SDL sometimes uses "int", sometimes "Sint32"
+    Sint32 x = mx;
+    Sint32 y = my;
+    hidpi_unscale_coordinates(&hidpi_scale, &x, &y);
+
     SDL_assert_release(x >= 0 && x < 0x10000 && y >= 0 && y < 0x10000);
     return (struct point) {
         .x = (Uint16) x,
@@ -192,8 +202,12 @@ void input_manager_process_mouse_motion(struct input_manager *input_manager,
         // do not send motion events when no button is pressed
         return;
     }
+
+    struct hidpi_scale hidpi_scale;
+    hidpi_get_scale(input_manager->screen, &hidpi_scale);
+
     struct control_event control_event;
-    if (mouse_motion_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+    if (mouse_motion_from_sdl_to_android(event, input_manager->screen->frame_size, &hidpi_scale, &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse motion event");
         }
@@ -206,8 +220,12 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
         turn_screen_on(input_manager->controller);
         return;
     };
+
+    struct hidpi_scale hidpi_scale;
+    hidpi_get_scale(input_manager->screen, &hidpi_scale);
+
     struct control_event control_event;
-    if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+    if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &hidpi_scale, &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse button event");
         }

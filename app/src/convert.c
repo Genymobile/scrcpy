@@ -136,6 +136,7 @@ SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
 
 SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
                                           struct size screen_size,
+                                          struct hidpi_scale *hidpi_scale,
                                           struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
 
@@ -145,21 +146,30 @@ SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
 
     to->mouse_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
     to->mouse_event.position.screen_size = screen_size;
-    to->mouse_event.position.point.x = (Uint16) from->x;
-    to->mouse_event.position.point.y = (Uint16) from->y;
+
+    Sint32 x = from->x;
+    Sint32 y = from->y;
+    hidpi_unscale_coordinates(hidpi_scale, &x, &y);
+    to->mouse_event.position.point.x = (Uint16) x;
+    to->mouse_event.position.point.y = (Uint16) y;
 
     return SDL_TRUE;
 }
 
 SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
                                           struct size screen_size,
+                                          struct hidpi_scale *hidpi_scale,
                                           struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
     to->mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->mouse_event.buttons = convert_mouse_buttons(from->state);
     to->mouse_event.position.screen_size = screen_size;
-    to->mouse_event.position.point.x = from->x;
-    to->mouse_event.position.point.y = from->y;
+
+    Sint32 x = from->x;
+    Sint32 y = from->y;
+    hidpi_unscale_coordinates(hidpi_scale, &x, &y);
+    to->mouse_event.position.point.x = (Uint16) x;
+    to->mouse_event.position.point.y = (Uint16) y;
 
     return SDL_TRUE;
 }

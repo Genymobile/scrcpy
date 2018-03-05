@@ -8,6 +8,7 @@ src = [
     'src/device.c',
     'src/fpscounter.c',
     'src/frames.c',
+    'src/hidpi.c',
     'src/inputmanager.c',
     'src/lockutil.c',
     'src/net.c',

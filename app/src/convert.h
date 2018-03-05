@@ -3,7 +3,10 @@
 
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_events.h>
+
+#include "common.h"
 #include "controlevent.h"
+#include "hidpi.h"
 
 struct complete_mouse_motion_event {
     SDL_MouseMotionEvent *mouse_motion_event;
@@ -19,12 +22,14 @@ SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
                                        struct control_event *to);
 SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
                                           struct size screen_size,
+                                          struct hidpi_scale *hidpi_scale,
                                           struct control_event *to);
 
 // the video size may be different from the real device size, so we need the size
 // to which the absolute position apply, to scale it accordingly
 SDL_bool mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
                                           struct size screen_size,
+                                          struct hidpi_scale *hidpi_scale,
                                           struct control_event *to);
 
 // on Android, a scroll event requires the current mouse position
