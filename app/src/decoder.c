@@ -100,12 +100,14 @@ static int run_decoder(void *data) {
             LOGE("Could not send video packet: %d", ret);
             goto run_quit;
         }
-        if ((ret = avcodec_receive_frame(codec_ctx, decoder->frames->decoding_frame)) < 0) {
+        ret = avcodec_receive_frame(codec_ctx, decoder->frames->decoding_frame);
+        if (!ret) {
+            // a frame was received
+            push_frame(decoder);
+        } else if (ret != AVERROR(EAGAIN)) {
             LOGE("Could not receive video frame: %d", ret);
             goto run_quit;
         }
-
-        push_frame(decoder);
 #else
         while (packet.size > 0) {
             int got_picture;
