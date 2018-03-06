@@ -130,23 +130,24 @@ void input_manager_process_text_input(struct input_manager *input_manager,
 
 void input_manager_process_key(struct input_manager *input_manager,
                                const SDL_KeyboardEvent *event) {
-    SDL_Keycode keycode = event->keysym.sym;
     SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
-    SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
-    SDL_bool repeat = event->repeat;
 
     // capture all Ctrl events
     if (ctrl) {
+        SDL_bool repeat = event->repeat;
+
         // only consider keydown events, and ignore repeated events
         if (repeat || event->type != SDL_KEYDOWN) {
             return;
         }
 
+        SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         if (shift) {
             // currently, there is no shortcut implying SHIFT
             return;
         }
 
+        SDL_Keycode keycode = event->keysym.sym;
         switch (keycode) {
             case SDLK_h:
                 action_home(input_manager->controller);
