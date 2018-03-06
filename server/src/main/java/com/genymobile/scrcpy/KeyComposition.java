@@ -11,7 +11,7 @@ import java.util.Map;
  * This is useful for injecting key events to generate the expected character ({@link android.view.KeyCharacterMap#getEvents(char[])}
  * KeyCharacterMap.getEvents()} returns {@code null} with input {@code "é"} but works with input {@code "\u0301e"}).
  * <p>
- * See <a href="https://source.android.com/devices/input/key-character-map-files#key-declarations">diacritical dead key characters</a>.
+ * See <a href="https://source.android.com/devices/input/key-character-map-files#behaviors">diacritical dead key characters</a>.
  */
 public final class KeyComposition {
 
