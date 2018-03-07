@@ -80,6 +80,9 @@ conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 # SKIP_FRAMES improves latency at the cost of framerate
 conf.set('SKIP_FRAMES', get_option('skip_frames'))
 
+# enable High DPI support
+conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
+
 configure_file(configuration: conf, output: 'config.h')
 
 executable('scrcpy', src, dependencies: dependencies, install: true)

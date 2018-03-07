@@ -140,8 +140,12 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
     screen->frame_size = frame_size;
 
     struct size window_size = get_initial_optimal_size(frame_size);
+    Uint32 window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
+#ifdef HIDPI_SUPPORT
+    window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
+#endif
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                      window_size.width, window_size.height, SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE);
+                                      window_size.width, window_size.height, window_flags);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
         return SDL_FALSE;
