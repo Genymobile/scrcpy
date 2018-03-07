@@ -93,14 +93,12 @@ public class EventController {
         return injectKeyEvent(action, keycode, 0, metaState);
     }
 
-    private boolean injectText(String text) {
-        return injectText(text, true);
-    }
-
-    private boolean injectText(String text, boolean decomposeOnFailure) {
-        KeyEvent[] events = charMap.getEvents(text.toCharArray());
+    private boolean injectChar(char c) {
+        String decomposed = KeyComposition.decompose(c);
+        char[] chars = decomposed != null ? decomposed.toCharArray() : new char[] {c};
+        KeyEvent[] events = charMap.getEvents(chars);
         if (events == null) {
-            return decomposeOnFailure ? injectDecomposition(text) : false;
+            return false;
         }
         for (KeyEvent event : events) {
             if (!injectEvent(event)) {
@@ -110,10 +108,9 @@ public class EventController {
         return true;
     }
 
-    private boolean injectDecomposition(String text) {
+    private boolean injectText(String text) {
         for (char c : text.toCharArray()) {
-            String composedText = KeyComposition.decompose(c);
-            if (composedText == null || !injectText(composedText, false)) {
+            if (!injectChar(c)) {
                 return false;
             }
         }

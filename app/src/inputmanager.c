@@ -100,6 +100,27 @@ static void switch_fps_counter_state(struct frames *frames) {
     mutex_unlock(frames->mutex);
 }
 
+static void clipboard_paste(struct controller *controller) {
+    char *text = SDL_GetClipboardText();
+    if (!text) {
+        LOGW("Cannot get clipboard text: %s", SDL_GetError());
+        return;
+    }
+    if (!*text) {
+        // empty text
+        SDL_free(text);
+        return;
+    }
+
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_TEXT;
+    control_event.text_event.text = text;
+    if (!controller_push_event(controller, &control_event)) {
+        SDL_free(text);
+        LOGW("Cannot send clipboard paste event");
+    }
+}
+
 void input_manager_process_text_input(struct input_manager *input_manager,
                                       const SDL_TextInputEvent *event) {
     if (is_ctrl_down()) {
@@ -116,8 +137,11 @@ void input_manager_process_text_input(struct input_manager *input_manager,
 
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
-    strncpy(control_event.text_event.text, event->text, TEXT_MAX_LENGTH);
-    control_event.text_event.text[TEXT_MAX_LENGTH] = '\0';
+    control_event.text_event.text = SDL_strdup(event->text);
+    if (!control_event.text_event.text) {
+        LOGW("Cannot strdup input text");
+        return;
+    }
     if (!controller_push_event(input_manager->controller, &control_event)) {
         LOGW("Cannot send text event");
     }
@@ -156,6 +180,9 @@ void input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_p:
                 action_power(input_manager->controller);
+                return;
+            case SDLK_v:
+                clipboard_paste(input_manager->controller);
                 return;
             case SDLK_f:
                 screen_switch_fullscreen(input_manager->screen);

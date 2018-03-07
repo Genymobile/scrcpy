@@ -182,6 +182,7 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`    |
  | click on `POWER`                       | `Ctrl`+`p`    |
  | turn screen on                         | _Right-click_ |
+ | paste computer clipboard to device     | `Ctrl`+`v`    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
 
 

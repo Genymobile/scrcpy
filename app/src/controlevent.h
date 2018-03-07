@@ -10,7 +10,7 @@
 
 #define CONTROL_EVENT_QUEUE_SIZE 64
 #define SERIALIZED_EVENT_MAX_SIZE 33
-#define TEXT_MAX_LENGTH 31
+#define TEXT_MAX_LENGTH 256
 
 enum control_event_type {
     CONTROL_EVENT_TYPE_KEYCODE,
@@ -31,7 +31,7 @@ struct control_event {
             enum android_metastate metastate;
         } keycode_event;
         struct {
-            char text[TEXT_MAX_LENGTH + 1]; // nul-terminated string
+            char *text; // owned, to be freed by SDL_free()
         } text_event;
         struct {
             enum android_motionevent_action action;
@@ -67,5 +67,7 @@ SDL_bool control_event_queue_is_full(const struct control_event_queue *queue);
 // event is copied, the queue does not use the event after the function returns
 SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event);
 SDL_bool control_event_queue_take(struct control_event_queue *queue, struct control_event *event);
+
+void control_event_destroy(struct control_event *event);
 
 #endif

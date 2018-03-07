@@ -36,10 +36,11 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
             // write length (1 byte) + date (non nul-terminated)
             size_t len = strlen(event->text_event.text);
             if (len > TEXT_MAX_LENGTH) {
+                // injecting a text takes time, so limit the text length
                 len = TEXT_MAX_LENGTH;
             }
             buf[1] = (Uint8) len;
-            memcpy(&buf[2], &event->text_event.text, len);
+            memcpy(&buf[2], event->text_event.text, len);
             return 2 + len;
         }
         case CONTROL_EVENT_TYPE_MOUSE:
@@ -61,6 +62,12 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
     }
 }
 
+void control_event_destroy(struct control_event *event) {
+    if (event->type == CONTROL_EVENT_TYPE_TEXT) {
+        SDL_free(event->text_event.text);
+    }
+}
+
 SDL_bool control_event_queue_is_empty(const struct control_event_queue *queue) {
     return queue->head == queue->tail;
 }
@@ -77,7 +84,11 @@ SDL_bool control_event_queue_init(struct control_event_queue *queue) {
 }
 
 void control_event_queue_destroy(struct control_event_queue *queue) {
-    // nothing to do in the current implementation
+    int i = queue->tail;
+    while (i != queue->head) {
+        control_event_destroy(&queue->data[i]);
+        i = (i + 1) % CONTROL_EVENT_QUEUE_SIZE;
+    }
 }
 
 SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event) {

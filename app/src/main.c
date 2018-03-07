@@ -82,6 +82,9 @@ static void usage(const char *arg0) {
         "    Right-click\n"
         "        turn screen on\n"
         "\n"
+        "    Ctrl+v\n"
+        "        paste computer clipboard to device\n"
+        "\n"
         "    Ctrl+i\n"
         "        enable/disable FPS counter (print frames/second in logs)\n"
         "\n",

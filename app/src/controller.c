@@ -65,7 +65,9 @@ static int run_controller(void *data) {
         }
         struct control_event event;
         while (control_event_queue_take(&controller->queue, &event)) {
-            if (!process_event(controller, &event)) {
+            SDL_bool ok = process_event(controller, &event);
+            control_event_destroy(&event);
+            if (!ok) {
                 LOGD("Cannot write event to socket");
                 goto end;
             }

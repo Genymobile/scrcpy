@@ -13,12 +13,12 @@ public class ControlEventReader {
     private static final int SCROLL_PAYLOAD_LENGTH = 16;
     private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
-    private static final int MAX_TEXT_LENGTH = 32;
+    private static final int TEXT_MAX_LENGTH = 256;
     private static final int RAW_BUFFER_SIZE = 128;
 
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
-    private final byte[] textBuffer = new byte[MAX_TEXT_LENGTH];
+    private final byte[] textBuffer = new byte[TEXT_MAX_LENGTH];
 
     public ControlEventReader() {
         // invariant: the buffer is always in "get" mode
