@@ -36,14 +36,11 @@ static SDL_bool is_ctrl_down(void) {
 
 static void send_keycode(struct controller *controller, enum android_keycode keycode, const char *name) {
     // send DOWN event
-    struct control_event control_event = {
-        .type = CONTROL_EVENT_TYPE_KEYCODE,
-        .keycode_event = {
-            .action = AKEY_EVENT_ACTION_DOWN,
-            .keycode = keycode,
-            .metastate = 0,
-        },
-    };
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_KEYCODE;
+    control_event.keycode_event.action = AKEY_EVENT_ACTION_DOWN;
+    control_event.keycode_event.keycode = keycode;
+    control_event.keycode_event.metastate = 0;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot send %s (DOWN)", name);
@@ -82,12 +79,10 @@ static inline void action_volume_down(struct controller *controller) {
 }
 
 static void turn_screen_on(struct controller *controller) {
-    struct control_event control_event = {
-        .type = CONTROL_EVENT_TYPE_COMMAND,
-        .command_event = {
-            .action = CONTROL_EVENT_COMMAND_SCREEN_ON,
-        },
-    };
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
+    control_event.command_event.action = CONTROL_EVENT_COMMAND_SCREEN_ON;
+
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot turn screen on");
     }
