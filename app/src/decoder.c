@@ -106,6 +106,7 @@ static int run_decoder(void *data) {
             push_frame(decoder);
         } else if (ret != AVERROR(EAGAIN)) {
             LOGE("Could not receive video frame: %d", ret);
+            av_packet_unref(&packet);
             goto run_quit;
         }
 #else
