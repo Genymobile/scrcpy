@@ -1,8 +1,8 @@
 # scrcpy
 
-This project displays screens of Android devices connected on USB, and allow to
-control them using the host mouse and keyboard. It does not require any _root_
-access. It works on _GNU/Linux_, _Windows_ and _Mac OS_.
+This application provides display and control of Android devices connected on
+USB. It does not require any _root_ access. It works on _GNU/Linux_, _Windows_
+and _Mac OS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -50,8 +50,15 @@ Install the required packages from your package manager (here, for Debian):
 
 #### Windows
 
-For Windows, for simplicity, a prebuilt package with all the dependencies
-(including `adb`) is available: TODO.
+For Windows, for simplicity, a prebuilt archive with all the dependencies
+(including `adb`) is available:
+
+ - [`scrcpy-windows-with-deps-v1.0.zip`][direct-windows-with-deps].  
+   _(SHA-256: TODO)_
+
+[direct-windows-with-deps]: https://github.com/Genymobile/scrcpy/releases/download/v1.0/scrcpy-windows-with-deps-v1.0.zip
+
+_(It's just a portable version including _dll_ copied from MSYS2.)_
 
 Instead, you may want to build it manually. You need [MSYS2] to build the
 project. From an MSYS2 terminal, install the required packages:
@@ -128,7 +135,12 @@ Just remove them to "uninstall" the application.
 
 Since the server binary, that will be pushed to the Android device, does not
 depend on your system and architecture, you may want to use the prebuilt binary
-instead: [`scrcpy-server.jar`](TODO).
+instead:
+
+ - [`scrcpy-server-v1.0.jar`][direct-scrcpy-server].  
+   _(SHA-256: TODO)_
+
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.0/scrcpy-server-v1.0.jar
 
 In that case, the build does not require Java or the Android SDK.
 
@@ -184,6 +196,23 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
  | turn screen on                         | _Right-click_ |
  | paste computer clipboard to device     | `Ctrl`+`v`    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
+
+
+## Why _scrcpy_?
+
+A colleague challenged me to find a name as unpronounceable as [gnirehtet].
+
+[`strcpy`] copies a **str**ing; `scrcpy` copies a **scr**een.
+
+[gnirehtet]: https://github.com/Genymobile/gnirehtet
+[`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
+
+
+## Developers
+
+Read the [developers page].
+
+[developers page]: DEVELOP.md
 
 
 ## Licence
