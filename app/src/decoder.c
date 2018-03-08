@@ -123,6 +123,7 @@ static int run_decoder(void *data) {
             packet.data += len;
         }
 #endif
+        av_packet_unref(&packet);
     }
 
     LOGD("End of frames");
