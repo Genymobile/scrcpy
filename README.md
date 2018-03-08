@@ -54,7 +54,7 @@ For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
  - [`scrcpy-windows-with-deps-v1.0.zip`][direct-windows-with-deps].  
-   _(SHA-256: TODO)_
+   _(SHA-256: bc4bf32600e8548cdce490f94bed5dcba0006cdd38aff95748972e5d9877dd62)_
 
 [direct-windows-with-deps]: https://github.com/Genymobile/scrcpy/releases/download/v1.0/scrcpy-windows-with-deps-v1.0.zip
 
@@ -138,7 +138,7 @@ depend on your system and architecture, you may want to use the prebuilt binary
 instead:
 
  - [`scrcpy-server-v1.0.jar`][direct-scrcpy-server].  
-   _(SHA-256: TODO)_
+   _(SHA-256: b573b06a6072476b85b6308e3ad189f2665ad5be4f8ca3a6b9ec81d64df20558)_
 
 [direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.0/scrcpy-server-v1.0.jar
 
