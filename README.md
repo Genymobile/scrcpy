@@ -179,6 +179,12 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
 
     scrcpy -s 0123456789abcdef
 
+To run without installing:
+
+    ./run x [options]
+
+(where `x` is your build directory).
+
 
 ## Shortcuts
 
