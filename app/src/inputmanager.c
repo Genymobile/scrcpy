@@ -226,9 +226,15 @@ void input_manager_process_mouse_motion(struct input_manager *input_manager,
 
 void input_manager_process_mouse_button(struct input_manager *input_manager,
                                         const SDL_MouseButtonEvent *event) {
-    if (event->button == SDL_BUTTON_RIGHT && event->type == SDL_MOUSEBUTTONDOWN) {
-        press_back_or_turn_screen_on(input_manager->controller);
-        return;
+    if (event->type == SDL_MOUSEBUTTONDOWN) {
+        if (event->button == SDL_BUTTON_RIGHT) {
+            press_back_or_turn_screen_on(input_manager->controller);
+            return;
+        }
+        if (event->button == SDL_BUTTON_MIDDLE) {
+            action_home(input_manager->controller);
+            return;
+        }
     };
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {

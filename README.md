@@ -188,22 +188,22 @@ To run without installing:
 
 ## Shortcuts
 
- | Action                                 |   Shortcut    |
- | -------------------------------------  | -------------:|
- | switch fullscreen mode                 | `Ctrl`+`f`    |
- | resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`    |
- | resize window to remove black borders  | `Ctrl`+`x`    |
- | click on `HOME`                        | `Ctrl`+`h`    |
- | click on `BACK`                        | `Ctrl`+`b`    |
- | click on `APP_SWITCH`                  | `Ctrl`+`m`    |
- | click on `VOLUME_UP`                   | `Ctrl`+`+`    |
- | click on `VOLUME_DOWN`                 | `Ctrl`+`-`    |
- | click on `POWER`                       | `Ctrl`+`p`    |
- | turn screen on or press BACK¹          | _Right-click_ |
- | paste computer clipboard to device     | `Ctrl`+`v`    |
- | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
+ | Action                                 |   Shortcut                   |
+ | -------------------------------------- |:---------------------------- |
+ | switch fullscreen mode                 | `Ctrl`+`f`                   |
+ | resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                   |
+ | resize window to remove black borders  | `Ctrl`+`x`                   |
+ | click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_ |
+ | click on `BACK`                        | `Ctrl`+`b` \| _Right-click¹_ |
+ | click on `APP_SWITCH`                  | `Ctrl`+`m`                   |
+ | click on `VOLUME_UP`                   | `Ctrl`+`+`                   |
+ | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                   |
+ | click on `POWER`                       | `Ctrl`+`p`                   |
+ | turn screen on                         | _Right-click¹_               |
+ | paste computer clipboard to device     | `Ctrl`+`v`                   |
+ | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                   |
 
-_¹ Press BACK if the screen is already on._
+_¹Right-click turns the screen on if it was off, presses BACK otherwise._
 
 
 ## Why _scrcpy_?
