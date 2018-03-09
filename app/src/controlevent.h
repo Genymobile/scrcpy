@@ -20,7 +20,7 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_COMMAND,
 };
 
-#define CONTROL_EVENT_COMMAND_SCREEN_ON 0
+#define CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON 0
 
 struct control_event {
     enum control_event_type type;

@@ -199,9 +199,11 @@ To run without installing:
  | click on `VOLUME_UP`                   | `Ctrl`+`+`    |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`    |
  | click on `POWER`                       | `Ctrl`+`p`    |
- | turn screen on                         | _Right-click_ |
+ | turn screen on or press BACK¹          | _Right-click_ |
  | paste computer clipboard to device     | `Ctrl`+`v`    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`    |
+
+_¹ Press BACK if the screen is already on._
 
 
 ## Why _scrcpy_?

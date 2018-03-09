@@ -11,7 +11,7 @@ public final class ControlEvent {
     public static final int TYPE_SCROLL = 3;
     public static final int TYPE_COMMAND = 4;
 
-    public static final int COMMAND_SCREEN_ON = 0;
+    public static final int COMMAND_BACK_OR_SCREEN_ON = 0;
 
     private int type;
     private String text;

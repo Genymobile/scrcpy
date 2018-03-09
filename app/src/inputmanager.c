@@ -78,10 +78,11 @@ static inline void action_volume_down(struct controller *controller) {
     send_keycode(controller, AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
 }
 
-static void turn_screen_on(struct controller *controller) {
+// turn the screen on if it was off, press BACK otherwise
+static void press_back_or_turn_screen_on(struct controller *controller) {
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action = CONTROL_EVENT_COMMAND_SCREEN_ON;
+    control_event.command_event.action = CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot turn screen on");
@@ -226,7 +227,7 @@ void input_manager_process_mouse_motion(struct input_manager *input_manager,
 void input_manager_process_mouse_button(struct input_manager *input_manager,
                                         const SDL_MouseButtonEvent *event) {
     if (event->button == SDL_BUTTON_RIGHT && event->type == SDL_MOUSEBUTTONDOWN) {
-        turn_screen_on(input_manager->controller);
+        press_back_or_turn_screen_on(input_manager->controller);
         return;
     };
     struct control_event control_event;

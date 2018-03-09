@@ -167,10 +167,15 @@ public class EventController {
         return device.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
     }
 
+    private boolean pressBackOrTurnScreenOn() {
+        int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
+        return injectKeycode(keycode);
+    }
+
     private boolean executeCommand(int action) {
         switch (action) {
-            case ControlEvent.COMMAND_SCREEN_ON:
-                return turnScreenOn();
+            case ControlEvent.COMMAND_BACK_OR_SCREEN_ON:
+                return pressBackOrTurnScreenOn();
             default:
                 Ln.w("Unsupported command: " + action);
         }
