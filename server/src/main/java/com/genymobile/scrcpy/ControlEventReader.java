@@ -13,8 +13,8 @@ public class ControlEventReader {
     private static final int SCROLL_PAYLOAD_LENGTH = 16;
     private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
-    private static final int TEXT_MAX_LENGTH = 256;
-    private static final int RAW_BUFFER_SIZE = 128;
+    public static final int TEXT_MAX_LENGTH = 300;
+    private static final int RAW_BUFFER_SIZE = 1024;
 
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
@@ -94,7 +94,7 @@ public class ControlEventReader {
         if (buffer.remaining() < 1) {
             return null;
         }
-        int len = toUnsigned(buffer.get());
+        int len = toUnsigned(buffer.getShort());
         if (buffer.remaining() < len) {
             return null;
         }
