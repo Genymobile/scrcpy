@@ -37,7 +37,7 @@ public class EventController {
 
         MotionEvent.PointerCoords coords = pointerCoords[0];
         coords.orientation = 0;
-        coords.pressure = 1;
+        coords.pressure = 0.9999f;
         coords.size = 1;
         coords.toolMajor = 1;
         coords.toolMinor = 1;
