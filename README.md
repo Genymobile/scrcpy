@@ -2,7 +2,7 @@
 
 This application provides display and control of Android devices connected on
 USB. It does not require any _root_ access. It works on _GNU/Linux_, _Windows_
-and _Mac OS_.
+and _MacOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -39,14 +39,15 @@ The client requires _FFmpeg_ and _LibSDL2_.
 
 Install the required packages from your package manager (here, for Debian):
 
-    # runtime dependencies
-    sudo apt install ffmpeg libsdl2-2.0.0
+```bash
+# runtime dependencies
+sudo apt install ffmpeg libsdl2-2.0.0
 
-    # build dependencies
-    sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
-                     libavcodec-dev libavformat-dev libavutil-dev \
-                     libsdl2-dev
-
+# build dependencies
+sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
+                 libavcodec-dev libavformat-dev libavutil-dev \
+                 libsdl2-dev
+```
 
 #### Windows
 
@@ -65,22 +66,25 @@ project. From an MSYS2 terminal, install the required packages:
 
 [MSYS2]: http://www.msys2.org/
 
-    # runtime dependencies
-    pacman -S mingw-w64-x86_64-SDL2 \
-              mingw-w64-x86_64-ffmpeg
+```bash
+# runtime dependencies
+pacman -S mingw-w64-x86_64-SDL2 \
+          mingw-w64-x86_64-ffmpeg
 
-    # build dependencies
-    pacman -S mingw-w64-x86_64-make \
-              mingw-w64-x86_64-gcc \
-              mingw-w64-x86_64-pkg-config \
-              mingw-w64-x86_64-meson \
-              zip
+# build dependencies
+pacman -S mingw-w64-x86_64-make \
+          mingw-w64-x86_64-gcc \
+          mingw-w64-x86_64-pkg-config \
+          mingw-w64-x86_64-meson \
+          zip
+```
 
 Java (>= 7) is not available in MSYS2, so if you plan to build the server,
 install it manually and make it available from the `PATH`:
 
-    export PATH="$JAVA_HOME/bin:$PATH"
-
+```bash
+export PATH="$JAVA_HOME/bin:$PATH"
+```
 
 #### Mac OS
 
@@ -88,17 +92,20 @@ Use [Homebrew] to install the packages:
 
 [Homebrew]: https://brew.sh/
 
-    # runtime dependencies
-    brew install sdl2 ffmpeg
+```bash
+# runtime dependencies
+brew install sdl2 ffmpeg
 
-    # build dependencies
-    brew install gcc pkg-config meson zip
+# build dependencies
+brew install gcc pkg-config meson zip
+```
 
 Java (>= 7) is not available in Homebrew, so if you plan to build the server,
 install it manually and make it available from the `PATH`:
 
-    export PATH="$JAVA_HOME/bin:$PATH"
-
+```bash
+export PATH="$JAVA_HOME/bin:$PATH"
+```
 
 ### Common steps
 
@@ -107,21 +114,29 @@ its directory. For example:
 
 [Android SDK]: https://developer.android.com/studio/index.html
 
-    export ANDROID_HOME=~/android/sdk
+```bash
+export ANDROID_HOME=~/android/sdk
+```
 
 Then, build `scrcpy`:
 
-    meson x --buildtype release --strip -Db_lto=true
-    cd x
-    ninja
+```bash
+meson x --buildtype release --strip -Db_lto=true
+cd x
+ninja
+```
 
 You can test it from here:
 
-    ninja run
+```bash
+ninja run
+```
 
 Or you can install it on the system:
 
-    sudo ninja install    # without sudo on Windows
+```bash
+sudo ninja install    # without sudo on Windows
+```
 
 This installs two files:
 
@@ -147,12 +162,13 @@ In that case, the build does not require Java or the Android SDK.
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
 
-    meson x --buildtype release --strip -Db_lto=true \
-        -Dprebuilt_server=/path/to/scrcpy-server.jar
-    cd x
-    ninja
-    sudo ninja install
-
+```bash
+meson x --buildtype release --strip -Db_lto=true \
+    -Dprebuilt_server=/path/to/scrcpy-server.jar
+cd x
+ninja
+sudo ninja install
+```
 
 ## Run
 
@@ -160,28 +176,40 @@ _At runtime, `adb` must be accessible from your `PATH`._
 
 If everything is ok, just plug an Android device, and execute:
 
-    scrcpy
+```bash
+scrcpy
+```
 
 It accepts command-line arguments, listed by:
 
-    scrcpy --help
+```bash
+scrcpy --help
+```
 
 For example, to decrease video bitrate to 2Mbps (default is 8Mbps):
 
-    scrcpy -b 2M
+```bash
+scrcpy -b 2M
+```
 
 To limit the video dimensions (e.g. if the device is 2540×1440, but the host
 screen is smaller, or cannot decode such a high definition):
 
-    scrcpy -m 1024
+```bash
+scrcpy -m 1024
+```
 
 If several devices are listed in `adb devices`, you must specify the _serial_:
 
-    scrcpy -s 0123456789abcdef
+```bash
+scrcpy -s 0123456789abcdef
+```
 
 To run without installing:
 
-    ./run x [options]
+```bash
+./run x [options]
+```
 
 (where `x` is your build directory).
 
