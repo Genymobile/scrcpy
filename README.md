@@ -46,6 +46,9 @@ Install the required packages from your package manager (here, for Debian):
     sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
                      libavcodec-dev libavformat-dev libavutil-dev \
                      libsdl2-dev
+                     
+For Fedora you need to install the following packages:
+    sudo dnf install SDL2-devel ffmm2-devel meson gcc make
 
 
 #### Windows
