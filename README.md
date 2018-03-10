@@ -38,6 +38,7 @@ The client requires _FFmpeg_ and _LibSDL2_.
 #### Linux
 
 Install the required packages from your package manager (here, for Debian):
+
 ```bash
 # runtime dependencies
 sudo apt install ffmpeg libsdl2-2.0.0
@@ -45,7 +46,7 @@ sudo apt install ffmpeg libsdl2-2.0.0
 # build dependencies
 sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
                  libavcodec-dev libavformat-dev libavutil-dev \
-                 libsdl2-dev
+                 libsdl2-dev
 ```
 
 #### Windows
@@ -64,6 +65,7 @@ Instead, you may want to build it manually. You need [MSYS2] to build the
 project. From an MSYS2 terminal, install the required packages:
 
 [MSYS2]: http://www.msys2.org/
+
 ```bash
 # runtime dependencies
 pacman -S mingw-w64-x86_64-SDL2 \
@@ -74,10 +76,12 @@ pacman -S mingw-w64-x86_64-make \
           mingw-w64-x86_64-gcc \
           mingw-w64-x86_64-pkg-config \
           mingw-w64-x86_64-meson \
-          zip
+          zip
 ```
+
 Java (>= 7) is not available in MSYS2, so if you plan to build the server,
 install it manually and make it available from the `PATH`:
+
 ```bash
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
@@ -87,6 +91,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 Use [Homebrew] to install the packages:
 
 [Homebrew]: https://brew.sh/
+
 ```bash
 # runtime dependencies
 brew install sdl2 ffmpeg
@@ -94,8 +99,10 @@ brew install sdl2 ffmpeg
 # build dependencies
 brew install gcc pkg-config meson zip
 ```
+
 Java (>= 7) is not available in Homebrew, so if you plan to build the server,
 install it manually and make it available from the `PATH`:
+
 ```bash
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
@@ -106,23 +113,31 @@ Install the [Android SDK] (_Android Studio_), and set `ANDROID_HOME` to
 its directory. For example:
 
 [Android SDK]: https://developer.android.com/studio/index.html
+
 ```bash
 export ANDROID_HOME=~/android/sdk
 ```
+
 Then, build `scrcpy`:
+
 ```bash
 meson x --buildtype release --strip -Db_lto=true
 cd x
 ninja
 ```
+
 You can test it from here:
+
 ```bash
 ninja run
 ```
+
 Or you can install it on the system:
+
 ```bash
-sudo ninja install    # without sudo on Windows
+sudo ninja install    # without sudo on Windows
 ```
+
 This installs two files:
 
  - `/usr/local/bin/scrcpy`
@@ -146,6 +161,7 @@ In that case, the build does not require Java or the Android SDK.
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
+
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
     -Dprebuilt_server=/path/to/scrcpy-server.jar
@@ -159,30 +175,42 @@ sudo ninja install
 _At runtime, `adb` must be accessible from your `PATH`._
 
 If everything is ok, just plug an Android device, and execute:
+
 ```bash
 scrcpy
 ```
+
 It accepts command-line arguments, listed by:
+
 ```bash
 scrcpy --help
 ```
+
 For example, to decrease video bitrate to 2Mbps (default is 8Mbps):
+
 ```bash
 scrcpy -b 2M
 ```
+
 To limit the video dimensions (e.g. if the device is 2540×1440, but the host
 screen is smaller, or cannot decode such a high definition):
+
 ```bash
 scrcpy -m 1024
 ```
+
 If several devices are listed in `adb devices`, you must specify the _serial_:
+
 ```bash
 scrcpy -s 0123456789abcdef
 ```
+
 To run without installing:
+
 ```bash
 ./run x [options]
 ```
+
 (where `x` is your build directory).
 
 
