@@ -50,8 +50,8 @@ public final class Device {
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();
-        int w = deviceSize.getWidth();
-        int h = deviceSize.getHeight();
+        int w = deviceSize.getWidth() & ~7; // in case it's not a multiple of 8
+        int h = deviceSize.getHeight() & ~7;
         if (maxSize > 0) {
             if (BuildConfig.DEBUG && maxSize % 8 != 0) {
                 throw new AssertionError("Max size must be a multiple of 8");
