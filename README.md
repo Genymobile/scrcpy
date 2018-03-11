@@ -43,10 +43,13 @@ Install the required packages from your package manager (here, for Debian):
 # runtime dependencies
 sudo apt install ffmpeg libsdl2-2.0.0
 
-# build dependencies
-sudo apt install make gcc openjdk-8-jdk pkg-config meson zip \
+# client build dependencies
+sudo apt install make gcc pkg-config meson \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
+
+# server build dependencies
+sudo apt install openjdk-8-jdk
 ```
 
 #### Windows
@@ -71,12 +74,11 @@ project. From an MSYS2 terminal, install the required packages:
 pacman -S mingw-w64-x86_64-SDL2 \
           mingw-w64-x86_64-ffmpeg
 
-# build dependencies
+# client build dependencies
 pacman -S mingw-w64-x86_64-make \
           mingw-w64-x86_64-gcc \
           mingw-w64-x86_64-pkg-config \
-          mingw-w64-x86_64-meson \
-          zip
+          mingw-w64-x86_64-meson
 ```
 
 Java (>= 7) is not available in MSYS2, so if you plan to build the server,
@@ -96,8 +98,8 @@ Use [Homebrew] to install the packages:
 # runtime dependencies
 brew install sdl2 ffmpeg
 
-# build dependencies
-brew install gcc pkg-config meson zip
+# client build dependencies
+brew install gcc pkg-config meson
 ```
 
 Java (>= 7) is not available in Homebrew, so if you plan to build the server,
