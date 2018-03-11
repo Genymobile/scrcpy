@@ -52,6 +52,14 @@ sudo apt install make gcc pkg-config meson \
 sudo apt install openjdk-8-jdk
 ```
 
+For Fedora you need to install the following packages:
+
+```bash
+# enable RPM fusion free
+sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+sudo dnf install SDL2-devel ffms2-devel meson gcc make
+```
+
 #### Windows
 
 For Windows, for simplicity, a prebuilt archive with all the dependencies
