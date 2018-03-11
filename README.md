@@ -242,6 +242,11 @@ A colleague challenged me to find a name as unpronounceable as [gnirehtet].
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
 
 
+## Common issues
+
+See the [FAQ](FAQ.md).
+
+
 ## Developers
 
 Read the [developers page].
