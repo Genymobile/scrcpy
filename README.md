@@ -37,7 +37,9 @@ The client requires _FFmpeg_ and _LibSDL2_.
 
 #### Linux
 
-Install the required packages from your package manager (here, for Debian):
+Install the required packages from your package manager.
+
+##### Debian/Ubuntu
 
 ```bash
 # runtime dependencies
@@ -52,12 +54,17 @@ sudo apt install make gcc pkg-config meson \
 sudo apt install openjdk-8-jdk
 ```
 
-For Fedora you need to install the following packages:
+##### Fedora
 
 ```bash
 # enable RPM fusion free
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
+
+# client build dependencies
 sudo dnf install SDL2-devel ffms2-devel meson gcc make
+
+# server build dependencies
+sudo dnf install java
 ```
 
 #### Windows
