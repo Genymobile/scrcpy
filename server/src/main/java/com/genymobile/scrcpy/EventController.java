@@ -39,10 +39,6 @@ public class EventController {
         coords.orientation = 0;
         coords.pressure = 1;
         coords.size = 1;
-        coords.toolMajor = 1;
-        coords.toolMinor = 1;
-        coords.touchMajor = 1;
-        coords.touchMinor = 1;
     }
 
     private void setPointerCoords(Point point) {
