@@ -7,9 +7,11 @@
 struct server {
     const char *serial;
     process_t process;
-    socket_t server_socket;
+    socket_t server_socket; // only used if !tunnel_forward
     socket_t device_socket;
-    SDL_bool adb_reverse_enabled;
+    Uint16 local_port;
+    SDL_bool tunnel_enabled;
+    SDL_bool tunnel_forward; // use "adb forward" instead of "adb reverse"
     SDL_bool server_copied_to_device;
 };
 
@@ -18,7 +20,9 @@ struct server {
     .process = PROCESS_NONE,              \
     .server_socket = INVALID_SOCKET,      \
     .device_socket = INVALID_SOCKET,      \
-    .adb_reverse_enabled = SDL_FALSE,     \
+    .local_port = 0,                      \
+    .tunnel_enabled = SDL_FALSE,          \
+    .tunnel_forward = SDL_FALSE,          \
     .server_copied_to_device = SDL_FALSE, \
 }
 

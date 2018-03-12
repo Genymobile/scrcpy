@@ -39,6 +39,7 @@ SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len);
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name);
+process_t adb_forward_remove(const char *serial, uint16_t local_port);
 process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port);
 process_t adb_reverse_remove(const char *serial, const char *device_socket_name);
 process_t adb_push(const char *serial, const char *local, const char *remote);

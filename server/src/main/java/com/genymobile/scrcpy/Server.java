@@ -10,7 +10,8 @@ public final class Server {
 
     private static void scrcpy(Options options) throws IOException {
         final Device device = new Device(options);
-        try (DesktopConnection connection = DesktopConnection.open(device)) {
+        boolean tunnelForward = options.isTunnelForward();
+        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getBitRate());
 
             // asynchronous
@@ -54,6 +55,13 @@ public final class Server {
         }
         int bitRate = Integer.parseInt(args[1]);
         options.setBitRate(bitRate);
+
+        if (args.length < 3) {
+            return options;
+        }
+        // use "adb forward" instead of "adb tunnel"? (so the server must listen)
+        boolean tunnelForward = Boolean.parseBoolean(args[2]);
+        options.setTunnelForward(tunnelForward);
 
         return options;
     }

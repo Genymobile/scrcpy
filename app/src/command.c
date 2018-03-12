@@ -45,6 +45,13 @@ process_t adb_forward(const char *serial, uint16_t local_port, const char *devic
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
+process_t adb_forward_remove(const char *serial, uint16_t local_port) {
+    char local[4 + 5 + 1]; // tcp:PORT
+    sprintf(local, "tcp:%" PRIu16, local_port);
+    const char *const adb_cmd[] = {"forward", "--remove", local};
+    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+}
+
 process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME

@@ -18,6 +18,26 @@
   typedef struct in_addr IN_ADDR;
 #endif
 
+socket_t net_connect(Uint32 addr, Uint16 port) {
+    socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == INVALID_SOCKET) {
+        perror("socket");
+        return INVALID_SOCKET;
+    }
+
+    SOCKADDR_IN sin;
+    sin.sin_family = AF_INET;
+    sin.sin_addr.s_addr = htonl(addr);
+    sin.sin_port = htons(port);
+
+    if (connect(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
+        perror("connect");
+        return INVALID_SOCKET;
+    }
+
+    return sock;
+}
+
 socket_t net_listen(Uint32 addr, Uint16 port, int backlog) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {

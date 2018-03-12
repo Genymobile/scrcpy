@@ -21,6 +21,7 @@
 SDL_bool net_init(void);
 void net_cleanup(void);
 
+socket_t net_connect(Uint32 addr, Uint16 port);
 socket_t net_listen(Uint32 addr, Uint16 port, int backlog);
 socket_t net_accept(socket_t server_socket);
 
