@@ -5,6 +5,7 @@
 #include "net.h"
 
 struct server {
+    const char *serial;
     process_t process;
     socket_t server_socket;
     socket_t device_socket;
@@ -13,6 +14,7 @@ struct server {
 };
 
 #define SERVER_INITIALIZER {              \
+    .serial = NULL,                       \
     .process = PROCESS_NONE,              \
     .server_socket = INVALID_SOCKET,      \
     .device_socket = INVALID_SOCKET,      \
@@ -28,10 +30,10 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
                       Uint16 max_size, Uint32 bit_rate);
 
 // block until the communication with the server is established
-socket_t server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms);
+socket_t server_connect_to(struct server *server, Uint32 timeout_ms);
 
 // disconnect and kill the server process
-void server_stop(struct server *server, const char *serial);
+void server_stop(struct server *server);
 
 // close and release sockets
 void server_destroy(struct server *server);

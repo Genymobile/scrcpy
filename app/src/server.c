@@ -85,6 +85,10 @@ void server_init(struct server *server) {
 
 SDL_bool server_start(struct server *server, const char *serial, Uint16 local_port,
                       Uint16 max_size, Uint32 bit_rate) {
+    if (serial) {
+        server->serial = SDL_strdup(serial);
+    }
+
     if (!push_server(serial)) {
         return SDL_FALSE;
     }
@@ -121,7 +125,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     return SDL_TRUE;
 }
 
-socket_t server_connect_to(struct server *server, const char *serial, Uint32 timeout_ms) {
+socket_t server_connect_to(struct server *server, Uint32 timeout_ms) {
     server->device_socket = net_accept(server->server_socket);
     if (server->device_socket == INVALID_SOCKET) {
         return INVALID_SOCKET;
@@ -131,17 +135,17 @@ socket_t server_connect_to(struct server *server, const char *serial, Uint32 tim
     close_socket(&server->server_socket);
 
     // the server is started, we can clean up the jar from the temporary folder
-    remove_server(serial); // ignore failure
+    remove_server(server->serial); // ignore failure
     server->server_copied_to_device = SDL_FALSE;
 
     // we don't need the adb tunnel anymore
-    disable_tunnel(serial); // ignore failure
+    disable_tunnel(server->serial); // ignore failure
     server->adb_reverse_enabled = SDL_FALSE;
 
     return server->device_socket;
 }
 
-void server_stop(struct server *server, const char *serial) {
+void server_stop(struct server *server) {
     SDL_assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
@@ -153,11 +157,11 @@ void server_stop(struct server *server, const char *serial) {
 
     if (server->adb_reverse_enabled) {
         // ignore failure
-        disable_tunnel(serial);
+        disable_tunnel(server->serial);
     }
 
     if (server->server_copied_to_device) {
-        remove_server(serial); // ignore failure
+        remove_server(server->serial); // ignore failure
     }
 }
 
@@ -168,4 +172,5 @@ void server_destroy(struct server *server) {
     if (server->device_socket != INVALID_SOCKET) {
         close_socket(&server->device_socket);
     }
+    SDL_free((void *) server->serial);
 }
