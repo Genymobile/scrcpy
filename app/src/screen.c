@@ -18,8 +18,8 @@ SDL_bool sdl_init_and_configure(void) {
 
     atexit(SDL_Quit);
 
-    // Bilinear resizing
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
+    // Use the best available scale quality
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
         LOGW("Could not enable bilinear filtering");
     }
 
