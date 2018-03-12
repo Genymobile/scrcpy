@@ -67,6 +67,16 @@ sudo dnf install SDL2-devel ffms2-devel meson gcc make
 sudo dnf install java
 ```
 
+##### Arch Linux
+
+Two [AUR] packages have been created by users:
+
+ - [`scrcpy`](https://aur.archlinux.org/packages/scrcpy/)
+ - [`scrcpy-prebuiltserver`](https://aur.archlinux.org/packages/scrcpy-prebuiltserver/)
+
+[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
+
+
 #### Windows
 
 For Windows, for simplicity, a prebuilt archive with all the dependencies
