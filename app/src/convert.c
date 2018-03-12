@@ -172,7 +172,10 @@ SDL_bool mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
     to->scroll_event.position = position;
 
     int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
-    to->scroll_event.hscroll = mul * from->x;
+    // SDL behavior seems inconsistent between horizontal and vertical scrolling
+    // so reverse the horizontal
+    // <https://wiki.libsdl.org/SDL_MouseWheelEvent#Remarks>
+    to->scroll_event.hscroll = -mul * from->x;
     to->scroll_event.vscroll = mul * from->y;
 
     return SDL_TRUE;
