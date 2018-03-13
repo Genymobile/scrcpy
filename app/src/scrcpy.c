@@ -35,7 +35,29 @@ static struct input_manager input_manager = {
     .screen = &screen,
 };
 
+#if defined(__APPLE__) || defined(__WINDOWS__)
+# define CONTINUOUS_RESIZING_WORKAROUND
+#endif
+
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+// On Windows and MacOS, resizing blocks the event loop, so resizing events are
+// not triggered. As a workaround, handle them in an event handler.
+//
+// <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
+// <https://stackoverflow.com/a/40693139/1987178>
+static int event_watcher(void* data, SDL_Event* event) {
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        // called from another thread, not very safe, but it's a workaround!
+        screen_render(&screen);
+    }
+    return 0;
+}
+#endif
+
 static void event_loop(void) {
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+    SDL_AddEventWatch(event_watcher, screen.window);
+#endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
