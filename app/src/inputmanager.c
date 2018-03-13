@@ -235,6 +235,16 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
             action_home(input_manager->controller);
             return;
         }
+        // double-click on black borders resize to fit the device screen
+        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
+            SDL_bool outside_device_screen =
+                    event->x < 0 || event->x >= input_manager->screen->frame_size.width ||
+                    event->y < 0 || event->y >= input_manager->screen->frame_size.height;
+                if (outside_device_screen) {
+                    screen_resize_to_fit(input_manager->screen);
+                }
+            return;
+        }
     };
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {

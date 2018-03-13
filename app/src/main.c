@@ -57,6 +57,7 @@ static void usage(const char *arg0) {
         "        resize window to 1:1 (pixel-perfect)\n"
         "\n"
         "    Ctrl+x\n"
+        "    Double-click on black borders\n"
         "        resize window to remove black borders\n"
         "\n"
         "    Ctrl+h\n"
