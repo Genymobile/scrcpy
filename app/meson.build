@@ -42,7 +42,7 @@ conf = configuration_data()
 conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
 
 # the version, updated on release
-conf.set_quoted('SCRCPY_VERSION', '1.0')
+conf.set_quoted('SCRCPY_VERSION', '1.1')
 
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
