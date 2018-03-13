@@ -233,6 +233,12 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+#ifdef __WINDOWS__
+    // disable buffering, we want logs immediately
+    // even line buffering (setvbuf() with mode _IOLBF) is not sufficient
+    setbuf(stdout, NULL);
+    setbuf(stderr, NULL);
+#endif
     struct args args = {
         .serial = NULL,
         .help = SDL_FALSE,
