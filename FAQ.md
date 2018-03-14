@@ -34,27 +34,6 @@ If you still encounter problems, please see [issue 9].
 [issue 9]: https://github.com/Genymobile/scrcpy/issues/9
 
 
-### The application does not work over `adb connect`
-
-If the device is connected using `adb connect`, then you'll get this error:
-
-    error: more than one device/emulator
-    ERROR: "adb reverse" returned with value 1
-
-We plan to support it in future versions. See [issue 5].
-
-[issue 5]: https://github.com/Genymobile/scrcpy/issues/5
-
-
-### Mouse clicks do not work
-
-On many LG devices, [mouse clicks do not work][issue 18]. We're [working][pr27]
-on it.
-
-[issue 18]: https://github.com/Genymobile/scrcpy/issues/18
-[pr27]: https://github.com/Genymobile/scrcpy/pull/27
-
-
 ### I get a black screen for some applications like Silence
 
 This is expected, they requested to protect the screen.
