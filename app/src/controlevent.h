@@ -9,8 +9,8 @@
 #include "common.h"
 
 #define CONTROL_EVENT_QUEUE_SIZE 64
-#define SERIALIZED_EVENT_MAX_SIZE 33
-#define TEXT_MAX_LENGTH 256
+#define TEXT_MAX_LENGTH 300
+#define SERIALIZED_EVENT_MAX_SIZE 3 + TEXT_MAX_LENGTH
 
 enum control_event_type {
     CONTROL_EVENT_TYPE_KEYCODE,
@@ -20,7 +20,7 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_COMMAND,
 };
 
-#define CONTROL_EVENT_COMMAND_SCREEN_ON 0
+#define CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON 0
 
 struct control_event {
     enum control_event_type type;

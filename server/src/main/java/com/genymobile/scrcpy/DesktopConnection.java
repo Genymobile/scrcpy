@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 
@@ -33,8 +34,24 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(Device device) throws IOException {
-        LocalSocket socket = connect(SOCKET_NAME);
+    private static LocalSocket listenAndAccept(String abstractName) throws IOException {
+        LocalServerSocket localServerSocket = new LocalServerSocket(abstractName);
+        try {
+            return localServerSocket.accept();
+        } finally {
+            localServerSocket.close();
+        }
+    }
+
+    public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
+        LocalSocket socket;
+        if (tunnelForward) {
+            socket = listenAndAccept(SOCKET_NAME);
+            // send one byte so the client may read() to detect a connection error
+            socket.getOutputStream().write(0);
+        } else {
+            socket = connect(SOCKET_NAME);
+        }
 
         DesktopConnection connection = new DesktopConnection(socket);
         Size videoSize = device.getScreenInfo().getVideoSize();

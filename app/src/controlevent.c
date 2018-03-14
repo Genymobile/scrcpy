@@ -39,9 +39,9 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
                 // injecting a text takes time, so limit the text length
                 len = TEXT_MAX_LENGTH;
             }
-            buf[1] = (Uint8) len;
-            memcpy(&buf[2], event->text_event.text, len);
-            return 2 + len;
+            write16(&buf[1], (Uint16) len);
+            memcpy(&buf[3], event->text_event.text, len);
+            return 3 + len;
         }
         case CONTROL_EVENT_TYPE_MOUSE:
             buf[1] = event->mouse_event.action;

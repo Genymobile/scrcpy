@@ -35,7 +35,29 @@ static struct input_manager input_manager = {
     .screen = &screen,
 };
 
+#if defined(__APPLE__) || defined(__WINDOWS__)
+# define CONTINUOUS_RESIZING_WORKAROUND
+#endif
+
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+// On Windows and MacOS, resizing blocks the event loop, so resizing events are
+// not triggered. As a workaround, handle them in an event handler.
+//
+// <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
+// <https://stackoverflow.com/a/40693139/1987178>
+static int event_watcher(void *data, SDL_Event *event) {
+    if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        // called from another thread, not very safe, but it's a workaround!
+        screen_render(&screen);
+    }
+    return 0;
+}
+#endif
+
 static void event_loop(void) {
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+    SDL_AddEventWatch(event_watcher, NULL);
+#endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -103,9 +125,9 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // managed by the event loop. This blocking call blocks the event loop, so
     // timeout the connection not to block indefinitely in case of SIGTERM.
 #define SERVER_CONNECT_TIMEOUT_MS 2000
-    socket_t device_socket = server_connect_to(&server, serial, SERVER_CONNECT_TIMEOUT_MS);
+    socket_t device_socket = server_connect_to(&server, SERVER_CONNECT_TIMEOUT_MS);
     if (device_socket == INVALID_SOCKET) {
-        server_stop(&server, serial);
+        server_stop(&server);
         ret = SDL_FALSE;
         goto finally_destroy_server;
     }
@@ -117,13 +139,13 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // therefore, we transmit the screen size before the video stream, to be able
     // to init the window immediately
     if (!device_read_info(device_socket, device_name, &frame_size)) {
-        server_stop(&server, serial);
+        server_stop(&server);
         ret = SDL_FALSE;
         goto finally_destroy_server;
     }
 
     if (!frames_init(&frames)) {
-        server_stop(&server, serial);
+        server_stop(&server);
         ret = SDL_FALSE;
         goto finally_destroy_server;
     }
@@ -134,7 +156,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     // start the decoder
     if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
-        server_stop(&server, serial);
+        server_stop(&server);
         goto finally_destroy_frames;
     }
 
@@ -165,7 +187,7 @@ finally_destroy_controller:
 finally_stop_decoder:
     decoder_stop(&decoder);
     // stop the server before decoder_join() to wake up the decoder
-    server_stop(&server, serial);
+    server_stop(&server);
     decoder_join(&decoder);
 finally_destroy_frames:
     frames_destroy(&frames);

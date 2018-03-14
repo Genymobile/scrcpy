@@ -35,13 +35,33 @@ static void test_serialize_text_event() {
 
     unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
-    assert(size == 15);
+    assert(size == 16);
 
     const unsigned char expected[] = {
         0x01, // CONTROL_EVENT_TYPE_KEYCODE
-        0x0d, // text length
+        0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
     };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_long_text_event() {
+    struct control_event event;
+    event.type = CONTROL_EVENT_TYPE_TEXT;
+    char text[TEXT_MAX_LENGTH];
+    memset(text, 'a', sizeof(text));
+    event.text_event.text = text;
+
+    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 3 + sizeof(text));
+
+    unsigned char expected[3 + TEXT_MAX_LENGTH];
+    expected[0] = 0x01; // CONTROL_EVENT_TYPE_KEYCODE
+    expected[1] = 0x01;
+    expected[2] = 0x2c; // text length (16 bits)
+    memset(&expected[3], 'a', TEXT_MAX_LENGTH);
+
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
@@ -114,6 +134,7 @@ static void test_serialize_scroll_event() {
 int main() {
     test_serialize_keycode_event();
     test_serialize_text_event();
+    test_serialize_long_text_event();
     test_serialize_mouse_event();
     test_serialize_scroll_event();
     return 0;
