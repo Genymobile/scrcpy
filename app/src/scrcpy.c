@@ -45,7 +45,7 @@ static struct input_manager input_manager = {
 //
 // <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
 // <https://stackoverflow.com/a/40693139/1987178>
-static int event_watcher(void* data, SDL_Event* event) {
+static int event_watcher(void *data, SDL_Event *event) {
     if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED) {
         // called from another thread, not very safe, but it's a workaround!
         screen_render(&screen);
@@ -56,7 +56,7 @@ static int event_watcher(void* data, SDL_Event* event) {
 
 static void event_loop(void) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
-    SDL_AddEventWatch(event_watcher, screen.window);
+    SDL_AddEventWatch(event_watcher, NULL);
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
