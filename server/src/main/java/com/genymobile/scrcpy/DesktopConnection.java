@@ -36,7 +36,11 @@ public final class DesktopConnection implements Closeable {
 
     private static LocalSocket listenAndAccept(String abstractName) throws IOException {
         LocalServerSocket localServerSocket = new LocalServerSocket(abstractName);
-        return localServerSocket.accept();
+        try {
+            return localServerSocket.accept();
+        } finally {
+            localServerSocket.close();
+        }
     }
 
     public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
