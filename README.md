@@ -300,6 +300,7 @@ Read the [developers page].
     See the License for the specific language governing permissions and
     limitations under the License.
 
-## Article
+## Articles
 
 - [Introducing scrcpy](https://blog.rom1v.com/2018/03/introducing-scrcpy/)
+- [Scrcpy now works wirelessly](https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/)
