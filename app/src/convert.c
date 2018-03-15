@@ -145,8 +145,8 @@ SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
 
     to->mouse_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
     to->mouse_event.position.screen_size = screen_size;
-    to->mouse_event.position.point.x = (Uint16) from->x;
-    to->mouse_event.position.point.y = (Uint16) from->y;
+    to->mouse_event.position.point.x = from->x;
+    to->mouse_event.position.point.y = from->y;
 
     return SDL_TRUE;
 }
