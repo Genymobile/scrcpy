@@ -47,6 +47,13 @@ See [issue 36].
 [issue 36]: https://github.com/Genymobile/scrcpy/issues/36
 
 
+### Mouse clicks do not work
+
+On some devices, you may need to enable an option to allow [simulating input].
+
+[simulating input]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
+
+
 ### Mouse clicks at wrong location
 
 On MacOS, with HiDPI support and multiple screens, input location are wrongly
