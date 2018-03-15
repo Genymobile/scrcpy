@@ -263,7 +263,7 @@ void input_manager_process_mouse_wheel(struct input_manager *input_manager,
     struct control_event control_event;
     if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
-            LOGW("Cannot send wheel button event");
+            LOGW("Cannot send mouse wheel event");
         }
     }
 }
