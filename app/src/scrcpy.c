@@ -79,16 +79,15 @@ static void event_loop(void) {
                 break;
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
-                case SDL_WINDOWEVENT_EXPOSED:
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    screen_render(&screen);
-                    break;
+                    case SDL_WINDOWEVENT_EXPOSED:
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                        screen_render(&screen);
+                        break;
                 }
                 break;
-            case SDL_TEXTINPUT: {
+            case SDL_TEXTINPUT:
                 input_manager_process_text_input(&input_manager, &event.text);
                 break;
-            }
             case SDL_KEYDOWN:
             case SDL_KEYUP:
                 input_manager_process_key(&input_manager, &event.key);
@@ -96,15 +95,13 @@ static void event_loop(void) {
             case SDL_MOUSEMOTION:
                 input_manager_process_mouse_motion(&input_manager, &event.motion);
                 break;
-            case SDL_MOUSEWHEEL: {
+            case SDL_MOUSEWHEEL:
                 input_manager_process_mouse_wheel(&input_manager, &event.wheel);
                 break;
-            }
             case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP: {
+            case SDL_MOUSEBUTTONUP:
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
-            }
         }
     }
 }
