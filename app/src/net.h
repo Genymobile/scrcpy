@@ -9,8 +9,6 @@
   #define SHUT_RD SD_RECEIVE
   #define SHUT_WR SD_SEND
   #define SHUT_RDWR SD_BOTH
-  typedef SIZE_T size_t;
-  typedef SSIZE_T ssize_t;
   typedef SOCKET socket_t;
 #else
 # include <sys/socket.h>

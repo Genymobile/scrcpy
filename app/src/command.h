@@ -7,12 +7,11 @@
 
 // <https://stackoverflow.com/a/44383330/1987178>
 #ifdef _WIN32
+# define PRIexitcode "lu"
 # ifdef _WIN64
 #   define PRIsizet PRIu64
-#   define PRIexitcode "lu"
 # else
 #   define PRIsizet PRIu32
-#   define PRIexitcode "u"
 # endif
 #else
 # define PRIsizet "zu"
