@@ -145,7 +145,14 @@ its directory. For example:
 export ANDROID_HOME=~/android/sdk
 ```
 
-Then, build `scrcpy`:
+Clone the project:
+
+```bash
+git clone https://github.com/Genymobile/scrcpy
+cd scrcpy
+```
+
+Then, build:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true
