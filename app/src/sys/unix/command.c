@@ -1,4 +1,4 @@
-#include "../../command.h"
+#include "command.h"
 
 #include <signal.h>
 #include <sys/types.h>

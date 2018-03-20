@@ -1,6 +1,6 @@
-#include "../../net.h"
+#include "net.h"
 
-#include "../../log.h"
+#include "log.h"
 
 SDL_bool net_init(void) {
     WSADATA wsa;

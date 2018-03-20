@@ -85,7 +85,8 @@ conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 
 configure_file(configuration: conf, output: 'config.h')
 
-executable('scrcpy', src, dependencies: dependencies, install: true)
+src_dir = include_directories('src')
+executable('scrcpy', src, dependencies: dependencies, include_directories: src_dir, install: true)
 
 
 ### TESTS
@@ -95,8 +96,6 @@ tests = [
     ['test_control_event_serialize', ['tests/test_control_event_serialize.c', 'src/controlevent.c']],
     ['test_strutil', ['tests/test_strutil.c', 'src/strutil.c']],
 ]
-
-src_dir = include_directories('src')
 
 foreach t : tests
     exe = executable(t[0], t[1], include_directories: src_dir, dependencies: dependencies)
