@@ -78,6 +78,10 @@ static inline void action_volume_down(struct controller *controller) {
     send_keycode(controller, AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
 }
 
+static inline void action_shake(struct controller *controller) {
+    send_keycode(controller, AKEYCODE_MENU, "SHAKE");
+}
+
 // turn the screen on if it was off, press BACK otherwise
 static void press_back_or_turn_screen_on(struct controller *controller) {
     struct control_event control_event;
@@ -178,6 +182,9 @@ void input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_m:
                 action_app_switch(input_manager->controller);
+                return;
+            case SDLK_s:
+                action_shake(input_manager->controller);
                 return;
             case SDLK_p:
                 action_power(input_manager->controller);

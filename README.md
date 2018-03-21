@@ -258,6 +258,7 @@ To run without installing:
  | click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
  | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
  | click on `APP_SWITCH`                  | `Ctrl`+`m`                    |
+ | click on `MENU`                        | `Ctrl`+`s`                    |
  | click on `VOLUME_UP`                   | `Ctrl`+`+`                    |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                    |
  | click on `POWER`                       | `Ctrl`+`p`                    |
