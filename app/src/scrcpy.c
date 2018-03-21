@@ -106,8 +106,9 @@ static void event_loop(void) {
     }
 }
 
-SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 bit_rate) {
-    if (!server_start(&server, serial, local_port, max_size, bit_rate)) {
+SDL_bool scrcpy(const struct scrcpy_options *options) {
+    if (!server_start(&server, options->serial, options->port,
+                      options->max_size, options->bit_rate)) {
         return SDL_FALSE;
     }
 

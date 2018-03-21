@@ -271,7 +271,13 @@ int main(int argc, char *argv[]) {
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 #endif
 
-    int res = scrcpy(args.serial, args.port, args.max_size, args.bit_rate) ? 0 : 1;
+    struct scrcpy_options options = {
+        .serial = args.serial,
+        .port = args.port,
+        .max_size = args.max_size,
+        .bit_rate = args.bit_rate,
+    };
+    int res = scrcpy(&options) ? 0 : 1;
 
     avformat_network_deinit(); // ignore failure
 
