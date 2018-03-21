@@ -113,16 +113,16 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
 
     SDL_bool ret = SDL_TRUE;
 
+    if (!SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1")) {
+        LOGW("Cannot request to keep default signal handlers");
+    }
+
     if (!sdl_init_and_configure()) {
         ret = SDL_FALSE;
         goto finally_destroy_server;
     }
 
-    // SDL initialization replace the signal handler for SIGTERM, so Ctrl+C is
-    // managed by the event loop. This blocking call blocks the event loop, so
-    // timeout the connection not to block indefinitely in case of SIGTERM.
-#define SERVER_CONNECT_TIMEOUT_MS 2000
-    socket_t device_socket = server_connect_to(&server, SERVER_CONNECT_TIMEOUT_MS);
+    socket_t device_socket = server_connect_to(&server);
     if (device_socket == INVALID_SOCKET) {
         server_stop(&server);
         ret = SDL_FALSE;

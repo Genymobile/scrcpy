@@ -195,7 +195,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     return SDL_TRUE;
 }
 
-socket_t server_connect_to(struct server *server, Uint32 timeout_ms) {
+socket_t server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
     } else {
