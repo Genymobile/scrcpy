@@ -35,7 +35,7 @@ struct screen {
 }
 
 // init SDL and set appropriate hints
-SDL_bool sdl_init_and_configure(void);
+SDL_bool sdl_video_init(void);
 
 // initialize default values
 void screen_init(struct screen *screen);

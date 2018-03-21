@@ -10,13 +10,11 @@
 
 #define DISPLAY_MARGINS 96
 
-SDL_bool sdl_init_and_configure(void) {
-    if (SDL_Init(SDL_INIT_VIDEO)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
+SDL_bool sdl_video_init(void) {
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+        LOGC("Could not initialize SDL video: %s", SDL_GetError());
         return SDL_FALSE;
     }
-
-    atexit(SDL_Quit);
 
     // Use the best available scale quality
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
