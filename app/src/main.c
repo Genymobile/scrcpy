@@ -191,36 +191,30 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     int c;
     while ((c = getopt_long(argc, argv, "b:hm:p:s:v", long_options, NULL)) != -1) {
         switch (c) {
-            case 'b': {
+            case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
                     return SDL_FALSE;
                 }
                 break;
-            }
-            case 'h': {
+            case 'h':
                 args->help = SDL_TRUE;
                 break;
-            }
-            case 'm': {
+            case 'm':
                 if (!parse_max_size(optarg, &args->max_size)) {
                     return SDL_FALSE;
                 }
                 break;
-            }
-            case 'p': {
+            case 'p':
                 if (!parse_port(optarg, &args->port)) {
                     return SDL_FALSE;
                 }
                 break;
-            }
-            case 's': {
+            case 's':
                 args->serial = optarg;
                 break;
-            }
-            case 'v': {
+            case 'v':
                 args->version = SDL_TRUE;
                 break;
-            }
             default:
                 // getopt prints the error message on stderr
                 return SDL_FALSE;
