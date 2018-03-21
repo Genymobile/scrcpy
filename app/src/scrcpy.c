@@ -139,7 +139,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         LOGW("Cannot request to keep default signal handlers");
     }
 
-    if (!sdl_init_and_configure()) {
+    if (!sdl_video_init()) {
         ret = SDL_FALSE;
         goto finally_destroy_server;
     }
