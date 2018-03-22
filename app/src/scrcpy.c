@@ -7,6 +7,8 @@
 #include <sys/time.h>
 #include <SDL2/SDL.h>
 
+#include "aoa.h"
+#include "audio.h"
 #include "command.h"
 #include "common.h"
 #include "controller.h"
@@ -28,6 +30,10 @@ static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
+
+#ifdef AUDIO_SUPPORT
+static struct audio_player audio_player;
+#endif
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -120,9 +126,8 @@ static void wait_show_touches(process_t process) {
 }
 
 SDL_bool scrcpy(const struct scrcpy_options *options) {
-    if (!server_start(&server, options->serial, options->port,
-                      options->max_size, options->bit_rate)) {
-        return SDL_FALSE;
+    if (!SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1")) {
+        LOGW("Cannot request to keep default signal handlers");
     }
 
     process_t proc_show_touches;
@@ -133,10 +138,20 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_FALSE;
     }
 
+#ifdef AUDIO_SUPPORT
+    if (options->forward_audio) {
+        if (!audio_forwarding_start(&audio_player, options->serial)) {
+            return SDL_FALSE;
+        }
+    }
+#endif
+
     SDL_bool ret = SDL_TRUE;
 
-    if (!SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1")) {
-        LOGW("Cannot request to keep default signal handlers");
+    if (!server_start(&server, options->serial, options->port,
+                      options->max_size, options->bit_rate)) {
+        ret = SDL_FALSE;
+        goto finally_disable_audio_forwarding;
     }
 
     if (!sdl_video_init()) {
@@ -228,6 +243,12 @@ finally_destroy_server:
     }
 
     server_destroy(&server);
+finally_disable_audio_forwarding:
+#ifdef AUDIO_SUPPORT
+    if (options->forward_audio) {
+        audio_forwarding_stop(&audio_player);
+    }
+#endif
 
     return ret;
 }

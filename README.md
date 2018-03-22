@@ -23,14 +23,15 @@ and extract the following files to a directory accessible from your `PATH`:
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
-The client requires [FFmpeg] and [LibSDL2].
+The client requires [FFmpeg], [LibSDL2] and [LibUSB].
 
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
 [ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
-[LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
+[libsdl2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
+[libusb]: https://en.wikipedia.org/wiki/Libusb
 
 ## Build and install
 
@@ -44,12 +45,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0.0
+sudo apt install ffmpeg libsdl2-2.0.0 libusb-1.0-0
 
 # client build dependencies
 sudo apt install make gcc pkg-config meson \
                  libavcodec-dev libavformat-dev libavutil-dev \
-                 libsdl2-dev
+                 libsdl2-dev libusb-1.0-0-dev
 
 # server build dependencies
 sudo apt install openjdk-8-jdk
@@ -104,7 +105,8 @@ pacman -S mingw-w64-x86_64-SDL2 \
 pacman -S mingw-w64-x86_64-make \
           mingw-w64-x86_64-gcc \
           mingw-w64-x86_64-pkg-config \
-          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-meson \
+          mingw-w64-x86_64-libusb
 ```
 
 For a 32 bits version, replace `x86_64` by `i686`:
@@ -146,7 +148,7 @@ Instead, you may want to build it manually. Install the packages:
 brew install sdl2 ffmpeg
 
 # client build dependencies
-brew install pkg-config meson
+brew install pkg-config meson libusb
 ```
 
 Additionally, if you want to build the server, install Java 8 from Caskroom, and
@@ -272,6 +274,12 @@ To show physical touches while scrcpy is running:
 
 ```bash
 scrcpy -t
+```
+
+To enable audio forwarding:
+
+```bash
+scrcpy -a
 ```
 
 To run without installing:

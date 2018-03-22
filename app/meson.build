@@ -18,12 +18,23 @@ src = [
     'src/tinyxpm.c',
 ]
 
+if get_option('audio_support')
+    src += [
+        'src/aoa.c',
+        'src/audio.c'
+    ]
+endif
+
 dependencies = [
     dependency('libavformat'),
     dependency('libavcodec'),
     dependency('libavutil'),
     dependency('sdl2'),
 ]
+
+if get_option('audio_support')
+    dependencies += dependency('libusb-1.0')
+endif
 
 cc = meson.get_compiler('c')
 
@@ -82,6 +93,9 @@ conf.set('SKIP_FRAMES', get_option('skip_frames'))
 
 # enable High DPI support
 conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
+
+# enable audio support (enable audio forwarding with --forward-audio)
+conf.set('AUDIO_SUPPORT', get_option('audio_support'))
 
 configure_file(configuration: conf, output: 'config.h')
 

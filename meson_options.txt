@@ -4,3 +4,4 @@ option('prebuilt_server', type: 'string', description: 'Path of the prebuilt ser
 option('override_server_path', type: 'string', description: 'Hardcoded path to find the server at runtime')
 option('skip_frames', type: 'boolean', value: true, description: 'Always display the most recent frame')
 option('hidpi_support', type: 'boolean', value: true, description: 'Enable High DPI support')
+option('audio_support', type: 'boolean', value: true, description: 'Enable audio support')
