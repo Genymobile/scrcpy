@@ -15,6 +15,17 @@ When run in `cmd.exe`, the application does not print anything. Even `scrcpy
 However, if you run the very same `scrcpy.exe` from
 [MSYS2](https://www.msys2.org/) (`mingw64`), then it correctly prints output.
 
+As a workaround, redirect outputs to files, so that you can read the files
+afterwards:
+
+```bash
+scrcpy >stdout 2>stderr
+type stdout
+type stderr
+```
+
+_Note that all SDL logs are printed to stderr._
+
 
 ### On Windows, when I start the application, nothing happens
 
