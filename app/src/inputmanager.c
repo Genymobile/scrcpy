@@ -180,10 +180,10 @@ void input_manager_process_key(struct input_manager *input_manager,
             case SDLK_BACKSPACE:
                 action_back(input_manager->controller);
                 return;
-            case SDLK_m:
+            case SDLK_s:
                 action_app_switch(input_manager->controller);
                 return;
-            case SDLK_s:
+            case SDLK_m:
                 action_menu(input_manager->controller);
                 return;
             case SDLK_p:
