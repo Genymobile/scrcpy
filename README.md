@@ -257,7 +257,8 @@ To run without installing:
  | resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ |
  | click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
  | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
- | click on `APP_SWITCH`                  | `Ctrl`+`m`                    |
+ | click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
+ | click on `MENU`                        | `Ctrl`+`m`                    |
  | click on `VOLUME_UP`                   | `Ctrl`+`+`                    |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                    |
  | click on `POWER`                       | `Ctrl`+`p`                    |
