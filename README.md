@@ -11,12 +11,12 @@ and _MacOS_.
 
 The Android part requires at least API 21 (Android 5.0).
 
-You need [adb] (recent enough so that `adb reverse` is implemented, it works
-with 1.0.36). It is available in the [Android SDK platform
-tools][platform-tools], on packaged in your distribution (`android-adb-tools`).
+You need [adb]. It is available in the [Android SDK platform
+tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
 
-On Windows, just download the [platform-tools][platform-tools-windows] and
-extract the following files to a directory accessible from your `PATH`:
+On Windows, if you use the [prebuilt application](#windows), it is already
+included. Otherwise, just download the [platform-tools][platform-tools-windows]
+and extract the following files to a directory accessible from your `PATH`:
  - `adb.exe`
  - `AdbWinApi.dll`
  - `AdbWinUsbApi.dll`
