@@ -23,13 +23,14 @@ and extract the following files to a directory accessible from your `PATH`:
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
+The client requires [FFmpeg] and [LibSDL2].
+
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
-
-The client requires _FFmpeg_ and _LibSDL2_.
-
+[ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
+[LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
 
 ## Build and install
 
