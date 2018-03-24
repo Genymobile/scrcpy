@@ -29,8 +29,8 @@ The client requires [FFmpeg] and [LibSDL2].
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
-[ffmpeg]: https://ffmpeg.org/
-[LibSDL2]: https://www.libsdl.org/download-2.0.php
+[ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
+[LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
 
 ## Build and install
 
