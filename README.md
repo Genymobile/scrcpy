@@ -125,14 +125,49 @@ Use [Homebrew] to install the packages:
 brew install sdl2 ffmpeg
 
 # client build dependencies
-brew install gcc pkg-config meson
+brew install pkg-config meson
 ```
 
-Java (>= 7) is not available in Homebrew, so if you plan to build the server,
-install it manually and make it available from the `PATH`:
-
+Additionally, if you want to build the server, install Java 8
+from Caskroom, and make it avaliable from the `PATH`:
 ```bash
+brew tap caskroom/versions
+brew cask install java8
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.8)"
 export PATH="$JAVA_HOME/bin:$PATH"
+```
+
+If you don't need to build the server, you can use [this unofficial Homebrew formula](https://github.com/stek29/homebrew-core/blob/3eb5ea5083fc8285d00a4363d64ea3bf68bc98dd/Formula/scrcpy.rb)
+to install scrcpy.
+
+_Notes about common steps when building server_
+Here are macOS/brew specific TLDR commands to get everything up and running:
+```bash
+# Install Android SDK
+brew cask install android-sdk
+export ANDROID_HOME="/usr/local/share/android-sdk"
+
+# Install platform-tools
+sdkmanager platform-tools
+
+# Accept all licenses
+sdkmanager --licenses
+
+# Clone repo if you haven't done it already
+git clone https://github.com/Genymobile/scrcpy.git
+cd scrcpy
+
+# Build
+meson x --buildtype release --strip -Db_lto=true
+cd x
+ninja
+
+# Run
+export ADB="$ANDROID_HOME/platform-tools/adb"
+ninja run
+
+# You may want to add $ADB to your rc file, or
+# add $ANDROID_HOME/platform-tools to your PATH
 ```
 
 ### Common steps
