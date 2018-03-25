@@ -135,6 +135,10 @@ install it manually and make it available from the `PATH`:
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
+#### Docker
+
+See [pierlon/scrcpy-docker](https://github.com/pierlon/scrcpy-docker).
+
 ### Common steps
 
 Install the [Android SDK] (_Android Studio_), and set `ANDROID_HOME` to
