@@ -106,19 +106,31 @@ static void event_loop(void) {
     }
 }
 
-static SDL_bool set_show_touches_enabled(const char *serial, SDL_bool enabled) {
+static process_t set_show_touches_enabled(const char *serial, SDL_bool enabled) {
     const char *value = enabled ? "1" : "0";
     const char *const adb_cmd[] = {
         "shell", "settings", "put", "system", "show_touches", value
     };
-    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
-    return process_check_success(proc, "show_touches");
+    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+}
+
+static void wait_show_touches(process_t process) {
+    // reap the process, ignore the result
+    process_check_success(process, "show_touches");
 }
 
 SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (!server_start(&server, options->serial, options->port,
                       options->max_size, options->bit_rate)) {
         return SDL_FALSE;
+    }
+
+    process_t proc_show_touches;
+    SDL_bool show_touches_waited;
+    if (options->show_touches) {
+        LOGI("Enable show_touches");
+        proc_show_touches = set_show_touches_enabled(options->serial, SDL_TRUE);
+        show_touches_waited = SDL_FALSE;
     }
 
     SDL_bool ret = SDL_TRUE;
@@ -183,8 +195,8 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     if (options->show_touches) {
-        LOGI("Enable show_touches");
-        set_show_touches_enabled(options->serial, SDL_TRUE);
+        wait_show_touches(proc_show_touches);
+        show_touches_waited = SDL_TRUE;
     }
 
     event_loop();
@@ -192,10 +204,6 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     screen_destroy(&screen);
 
-    if (options->show_touches) {
-        LOGI("Disable show_touches");
-        set_show_touches_enabled(options->serial, SDL_FALSE);
-    }
 finally_stop_and_join_controller:
     controller_stop(&controller);
     controller_join(&controller);
@@ -209,6 +217,16 @@ finally_stop_decoder:
 finally_destroy_frames:
     frames_destroy(&frames);
 finally_destroy_server:
+    if (options->show_touches) {
+        if (!show_touches_waited) {
+            // wait the process which enabled "show touches"
+            wait_show_touches(proc_show_touches);
+        }
+        LOGI("Disable show_touches");
+        proc_show_touches = set_show_touches_enabled(options->serial, SDL_FALSE);
+        wait_show_touches(proc_show_touches);
+    }
+
     server_destroy(&server);
 
     return ret;
