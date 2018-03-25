@@ -262,7 +262,7 @@ To run without installing:
  | click on `VOLUME_UP`                   | `Ctrl`+`+`                    |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                    |
  | click on `POWER`                       | `Ctrl`+`p`                    |
- | turn screen on                         | _Right-click¹_                |
+ | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 
