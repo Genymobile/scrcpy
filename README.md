@@ -11,25 +11,26 @@ and _MacOS_.
 
 The Android part requires at least API 21 (Android 5.0).
 
-You need [adb] (recent enough so that `adb reverse` is implemented, it works
-with 1.0.36). It is available in the [Android SDK platform
-tools][platform-tools], on packaged in your distribution (`android-adb-tools`).
+You need [adb]. It is available in the [Android SDK platform
+tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
 
-On Windows, just download the [platform-tools][platform-tools-windows] and
-extract the following files to a directory accessible from your `PATH`:
+On Windows, if you use the [prebuilt application](#windows), it is already
+included. Otherwise, just download the [platform-tools][platform-tools-windows]
+and extract the following files to a directory accessible from your `PATH`:
  - `adb.exe`
  - `AdbWinApi.dll`
  - `AdbWinUsbApi.dll`
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
+The client requires [FFmpeg] and [LibSDL2].
+
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
-
-The client requires _FFmpeg_ and _LibSDL2_.
-
+[ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
+[LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
 
 ## Build and install
 
@@ -124,15 +125,22 @@ Use [Homebrew] to install the packages:
 brew install sdl2 ffmpeg
 
 # client build dependencies
-brew install gcc pkg-config meson
+brew install pkg-config meson
 ```
 
-Java (>= 7) is not available in Homebrew, so if you plan to build the server,
-install it manually and make it available from the `PATH`:
+Additionally, if you want to build the server, install Java 8 from Caskroom, and
+make it avaliable from the `PATH`:
 
 ```bash
+brew tap caskroom/versions
+brew cask install java8
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.8)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
+
+#### Docker
+
+See [pierlon/scrcpy-docker](https://github.com/pierlon/scrcpy-docker).
 
 ### Common steps
 
@@ -262,7 +270,7 @@ To run without installing:
  | click on `VOLUME_UP`                   | `Ctrl`+`+`                    |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                    |
  | click on `POWER`                       | `Ctrl`+`p`                    |
- | turn screen on                         | _Right-click¹_                |
+ | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 

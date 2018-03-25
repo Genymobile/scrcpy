@@ -91,7 +91,7 @@ static int run_decoder(void *data) {
     packet.data = NULL;
     packet.size = 0;
 
-    while (!av_read_frame(format_ctx, &packet) && !avio_ctx->eof_reached) {
+    while (!av_read_frame(format_ctx, &packet)) {
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 0)
@@ -125,6 +125,10 @@ static int run_decoder(void *data) {
         }
 #endif
         av_packet_unref(&packet);
+
+        if (avio_ctx->eof_reached) {
+            break;
+        }
     }
 
     LOGD("End of frames");
