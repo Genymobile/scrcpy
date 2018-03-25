@@ -125,13 +125,16 @@ Use [Homebrew] to install the packages:
 brew install sdl2 ffmpeg
 
 # client build dependencies
-brew install gcc pkg-config meson
+brew install pkg-config meson
 ```
 
-Java (>= 7) is not available in Homebrew, so if you plan to build the server,
-install it manually and make it available from the `PATH`:
+Additionally, if you want to build the server, install Java 8 from Caskroom, and
+make it avaliable from the `PATH`:
 
 ```bash
+brew tap caskroom/versions
+brew cask install java8
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.8)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
