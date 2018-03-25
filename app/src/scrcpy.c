@@ -190,12 +190,12 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     event_loop();
     LOGD("quit...");
 
+    screen_destroy(&screen);
+
     if (options->show_touches) {
         LOGI("Disable show_touches");
         set_show_touches_enabled(options->serial, SDL_FALSE);
     }
-
-    screen_destroy(&screen);
 finally_stop_and_join_controller:
     controller_stop(&controller);
     controller_join(&controller);
