@@ -106,6 +106,15 @@ static void event_loop(void) {
     }
 }
 
+static SDL_bool set_show_touches_enabled(const char *serial, SDL_bool enabled) {
+    const char *value = enabled ? "1" : "0";
+    const char *const adb_cmd[] = {
+        "shell", "settings", "put", "system", "show_touches", value
+    };
+    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return process_check_success(proc, "show_touches");
+}
+
 SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (!server_start(&server, options->serial, options->port,
                       options->max_size, options->bit_rate)) {
@@ -173,9 +182,19 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_stop_and_join_controller;
     }
 
-    event_loop();
+    if (options->show_touches) {
+        LOGI("Enable show_touches");
+        set_show_touches_enabled(options->serial, SDL_TRUE);
+    }
 
+    event_loop();
     LOGD("quit...");
+
+    if (options->show_touches) {
+        LOGI("Disable show_touches");
+        set_show_touches_enabled(options->serial, SDL_FALSE);
+    }
+
     screen_destroy(&screen);
 finally_stop_and_join_controller:
     controller_stop(&controller);

@@ -247,6 +247,12 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
 scrcpy -s 0123456789abcdef
 ```
 
+To show physical touches while scrcpy is running:
+
+```bash
+scrcpy -t
+```
+
 To run without installing:
 
 ```bash
