@@ -136,6 +136,11 @@ void screen_init(struct screen *screen) {
     *screen = (struct screen) SCREEN_INITIALIZER;
 }
 
+static inline SDL_Texture *create_texture(SDL_Renderer *renderer, struct size frame_size) {
+    return SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING,
+                             frame_size.width, frame_size.height);
+}
+
 SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, struct size frame_size) {
     screen->frame_size = frame_size;
 
@@ -174,8 +179,7 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
     SDL_FreeSurface(icon);
 
     LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width, frame_size.height);
-    screen->texture = SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING,
-                                        frame_size.width, frame_size.height);
+    screen->texture = create_texture(screen->renderer, frame_size);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
         screen_destroy(screen);
@@ -224,8 +228,7 @@ static SDL_bool prepare_for_frame(struct screen *screen, struct size new_frame_s
 
         LOGD("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
-        screen->texture = SDL_CreateTexture(screen->renderer, SDL_PIXELFORMAT_YV12, SDL_TEXTUREACCESS_STREAMING,
-                                            new_frame_size.width, new_frame_size.height);
+        screen->texture = create_texture(screen->renderer, new_frame_size);
         if (!screen->texture) {
             LOGC("Could not create texture: %s", SDL_GetError());
             return SDL_FALSE;
