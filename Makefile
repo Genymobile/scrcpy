@@ -9,6 +9,9 @@
 #
 # "make release-portable" builds a zip containing the client and the server.
 #
+# On Windows with MSYS2/mingw64, execute:
+#     GRADLE="$PWD/gradlew" mingw32-make release-portable
+#
 # This is a simple Makefile because Meson is not flexible enough to execute some
 # arbitrary commands.
 
