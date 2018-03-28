@@ -4,7 +4,7 @@ android {
     compileSdkVersion 31
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 31
         versionCode 12400
         versionName "1.24"
