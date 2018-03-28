@@ -3,6 +3,9 @@ package com.genymobile.scrcpy;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -10,8 +13,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import org.junit.Assert;
-import org.junit.Test;
 
 public class ControlEventReaderTest {
 
