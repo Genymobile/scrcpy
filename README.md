@@ -116,9 +116,16 @@ export PATH="$JAVA_HOME/bin:$PATH"
 
 #### Mac OS
 
-Use [Homebrew] to install the packages:
+The application is available in [Homebrew]. Just install it:
 
 [Homebrew]: https://brew.sh/
+
+```bash
+brew install scrcpy
+```
+
+Instead, you may want to build it manually. Install the packages:
+
 
 ```bash
 # runtime dependencies
