@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
@@ -77,11 +78,17 @@ public class ScreenEncoder implements Device.RotationListener {
         }
     }
 
+    @SuppressWarnings("deprecation") // Android API 19 requires to call deprecated methods
     private boolean encode(MediaCodec codec, OutputStream outputStream) throws IOException {
         @SuppressWarnings("checkstyle:MagicNumber")
         byte[] buf = new byte[bitRate / 8]; // may contain up to 1 second of video
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+
+        ByteBuffer[] outputBuffers = null;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            outputBuffers = codec.getOutputBuffers();
+        }
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -91,7 +98,12 @@ public class ScreenEncoder implements Device.RotationListener {
                     break;
                 }
                 if (outputBufferId >= 0) {
-                    ByteBuffer outputBuffer = codec.getOutputBuffer(outputBufferId);
+                    ByteBuffer outputBuffer;
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        outputBuffer = codec.getOutputBuffer(outputBufferId);
+                    } else {
+                        outputBuffer = outputBuffers[outputBufferId];
+                    }
                     while (outputBuffer.hasRemaining()) {
                         int remaining = outputBuffer.remaining();
                         int len = Math.min(buf.length, remaining);
@@ -100,6 +112,8 @@ public class ScreenEncoder implements Device.RotationListener {
                         outputBuffer.get(buf, 0, len);
                         outputStream.write(buf, 0, len);
                     }
+                } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP && outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
+                    outputBuffers = codec.getOutputBuffers();
                 }
             } finally {
                 if (outputBufferId >= 0) {

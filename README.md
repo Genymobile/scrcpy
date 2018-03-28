@@ -9,7 +9,7 @@ and _MacOS_.
 
 ## Requirements
 
-The Android part requires at least API 21 (Android 5.0).
+The Android part requires at least API 19 (Android 4.4).
 
 You need [adb]. It is available in the [Android SDK platform
 tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
