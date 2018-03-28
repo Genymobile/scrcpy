@@ -247,10 +247,11 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
             SDL_bool outside_device_screen =
                     event->x < 0 || event->x >= input_manager->screen->frame_size.width ||
                     event->y < 0 || event->y >= input_manager->screen->frame_size.height;
-                if (outside_device_screen) {
-                    screen_resize_to_fit(input_manager->screen);
-                }
-            return;
+            if (outside_device_screen) {
+                screen_resize_to_fit(input_manager->screen);
+                return;
+            }
+            // otherwise, send the click event to the device
         }
     };
     struct control_event control_event;
