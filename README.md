@@ -107,6 +107,20 @@ pacman -S mingw-w64-x86_64-make \
           mingw-w64-x86_64-meson
 ```
 
+For a 32 bits version, replace `x86_64` by `i686`:
+
+```bash
+# runtime dependencies
+pacman -S mingw-w64-i686-SDL2 \
+          mingw-w64-i686-ffmpeg
+
+# client build dependencies
+pacman -S mingw-w64-i686-make \
+          mingw-w64-i686-gcc \
+          mingw-w64-i686-pkg-config \
+          mingw-w64-i686-meson
+```
+
 Java (>= 7) is not available in MSYS2, so if you plan to build the server,
 install it manually and make it available from the `PATH`:
 
