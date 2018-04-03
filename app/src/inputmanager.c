@@ -29,11 +29,6 @@ static struct point get_mouse_point(struct screen *screen) {
     };
 }
 
-static SDL_bool is_ctrl_down(void) {
-    const Uint8 *state = SDL_GetKeyboardState(NULL);
-    return state[SDL_SCANCODE_LCTRL] || state[SDL_SCANCODE_RCTRL];
-}
-
 static void send_keycode(struct controller *controller, enum android_keycode keycode, const char *name) {
     // send DOWN event
     struct control_event control_event;
@@ -128,18 +123,6 @@ static void clipboard_paste(struct controller *controller) {
 
 void input_manager_process_text_input(struct input_manager *input_manager,
                                       const SDL_TextInputEvent *event) {
-    if (is_ctrl_down()) {
-        switch (event->text[0]) {
-            case '+':
-                action_volume_up(input_manager->controller);
-                break;
-            case '-':
-                action_volume_down(input_manager->controller);
-                break;
-        }
-        return;
-    }
-
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     control_event.text_event.text = SDL_strdup(event->text);
@@ -188,6 +171,12 @@ void input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_p:
                 action_power(input_manager->controller);
+                return;
+            case SDLK_DOWN:
+                action_volume_down(input_manager->controller);
+                return;
+            case SDLK_UP:
+                action_volume_up(input_manager->controller);
                 return;
             case SDLK_v:
                 clipboard_paste(input_manager->controller);

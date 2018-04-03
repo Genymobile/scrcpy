@@ -273,8 +273,8 @@ To run without installing:
  | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
  | click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
  | click on `MENU`                        | `Ctrl`+`m`                    |
- | click on `VOLUME_UP`                   | `Ctrl`+`+`                    |
- | click on `VOLUME_DOWN`                 | `Ctrl`+`-`                    |
+ | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             |
+ | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           |
  | click on `POWER`                       | `Ctrl`+`p`                    |
  | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
