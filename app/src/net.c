@@ -94,7 +94,7 @@ ssize_t net_send_all(socket_t socket, const void *buf, size_t len) {
             return -1;
         }
         len -= w;
-        buf += w;
+        buf = (char *) buf + w;
     }
     return w;
 }
