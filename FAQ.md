@@ -79,3 +79,12 @@ meson x --buildtype release -Dhidpi_support=false
 ```
 
 However, the video will be displayed at lower resolution.
+
+
+### KWin compositor crashes
+
+On Plasma Desktop, compositor is disabled while _scrcpy_ is running.
+
+As a workaround, [disable "Block compositing"][kwin].
+
+[kwin]: https://github.com/Genymobile/scrcpy/issues/114#issuecomment-378778613
