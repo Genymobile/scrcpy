@@ -73,6 +73,7 @@ static enum android_metastate convert_meta_state(SDL_Keymod mod) {
 static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
+        MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
         MAP(SDLK_ESCAPE,       AKEYCODE_ESCAPE);
         MAP(SDLK_BACKSPACE,    AKEYCODE_DEL);
         MAP(SDLK_TAB,          AKEYCODE_TAB);
