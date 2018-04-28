@@ -72,6 +72,11 @@ process_t adb_push(const char *serial, const char *local, const char *remote) {
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
+process_t adb_install(const char *serial, const char *local) {
+    const char *const adb_cmd[] = {"install", "-r", local};
+    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+}
+
 process_t adb_remove_path(const char *serial, const char *path) {
     const char *const adb_cmd[] = {"shell", "rm", path};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
