@@ -33,6 +33,9 @@ void server_init(struct server *server);
 SDL_bool server_start(struct server *server, const char *serial, Uint16 local_port,
                       Uint16 max_size, Uint32 bit_rate);
 
+// install an apk file located to apk_path
+SDL_bool server_install(struct server *server, const char* apk_path);
+
 // block until the communication with the server is established
 socket_t server_connect_to(struct server *server);
 

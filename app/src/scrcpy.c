@@ -102,6 +102,9 @@ static void event_loop(void) {
             case SDL_MOUSEBUTTONUP:
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
+            case SDL_DROPFILE:
+                server_install(&server, event.drop.file);
+                break;
         }
     }
 }
