@@ -1,7 +1,5 @@
 #include "apkinstaller.h"
 
-#include "server.h" // contains server path
-
 #include "lockutil.h"
 #include "log.h"
 #include "command.h"
