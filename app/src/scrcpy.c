@@ -22,12 +22,14 @@
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
+#include "apkinstaller.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
+static struct installer installer;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -103,7 +105,8 @@ static void event_loop(void) {
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
             case SDL_DROPFILE:
-                server_install(&server, event.drop.file);
+                // TODO(adopi) init here
+                installer_push_apk(&installer, event.drop.file);
                 break;
         }
     }
@@ -170,6 +173,12 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_controller;
     }
 
+    // TODO(adopi) init the installer when we really want to use it
+    if (!installer_init(&installer, server.serial)) {
+        ret = SDL_FALSE;
+        goto finally_destroy_installer;
+    }
+
     if (!screen_init_rendering(&screen, device_name, frame_size)) {
         ret = SDL_FALSE;
         goto finally_stop_and_join_controller;
@@ -184,6 +193,11 @@ finally_stop_and_join_controller:
     controller_join(&controller);
 finally_destroy_controller:
     controller_destroy(&controller);
+finally_stop_and_join_installer:
+    installer_stop(&installer);
+    installer_join(&installer);
+finally_destroy_installer:
+    installer_destroy(&installer);
 finally_stop_decoder:
     decoder_stop(&decoder);
     // stop the server before decoder_join() to wake up the decoder
