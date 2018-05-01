@@ -16,6 +16,7 @@ src = [
     'src/server.c',
     'src/strutil.c',
     'src/tinyxpm.c',
+    'src/apkinstaller.c'
 ]
 
 dependencies = [
