@@ -146,9 +146,8 @@ void server_init(struct server *server) {
 }
 
 SDL_bool server_install(struct server *server, const char* apk_path) {
-    adb_install(server->serial, apk_path, DEVICE_SERVER_PATH);
-    // async command
-    return SDL_TRUE;
+    process_t process = adb_install(server->serial, apk_path);
+    return process_check_success(process, "adb install");
 }
 
 SDL_bool server_start(struct server *server, const char *serial, Uint16 local_port,
