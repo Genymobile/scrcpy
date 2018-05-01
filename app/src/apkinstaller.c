@@ -5,7 +5,10 @@
 #include "command.h"
 #include "string.h"
 
-// apk queue
+// NOTE(adopi) this can be more generic:
+// it could be used with a command queue instead of a filename queue
+// then we would have a generic invoker (useful if we want to handle more async commands)
+
 SDL_bool apk_queue_is_empty(const struct apk_queue *queue) {
     return queue->head == queue->tail;
 }
@@ -103,10 +106,9 @@ static int run_installer(void *data) {
         char* apk = "";
         while (apk_queue_take(&installer->queue, apk)) {
             SDL_bool ok = process_install(installer,apk);
-            free(apk);
-            apk = NULL;
+            SDL_free(apk);
             if (!ok) {
-                LOGD("Cannot write event to socket");
+                LOGD("Error during installation");
                 goto end;
             }
         }
