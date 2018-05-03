@@ -25,8 +25,19 @@ struct installer {
     SDL_mutex *mutex;
     SDL_cond *event_cond;
     SDL_bool stopped;
+    SDL_bool initialized;
     struct apk_queue queue;
 };
+
+#define INSTALLER_INITIALIZER { \
+    .serial = NULL,             \
+    .thread = NULL,             \
+    .mutex = NULL,              \
+    .event_cond = NULL,         \
+    .stopped = SDL_FALSE,       \
+    .initialized = SDL_FALSE    \
+}
+
 
 SDL_bool installer_init(struct installer *installer, const char* serial);
 void installer_destroy(struct installer *installer);

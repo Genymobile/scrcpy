@@ -70,8 +70,7 @@ SDL_bool installer_init(struct installer *installer, const char* serial) {
         installer->serial = SDL_strdup(serial);
     }
 
-// TODO(adopi)
-//    installer->initialized = SDL_TRUE;
+    installer->initialized = SDL_TRUE;
 
     installer->stopped = SDL_FALSE;
     return SDL_TRUE;
@@ -82,6 +81,8 @@ void installer_destroy(struct installer *installer) {
     SDL_DestroyMutex(installer->mutex);
     apk_queue_destroy(&installer->queue);
     SDL_free((void *) installer->serial);
+    installer->initialized = SDL_FALSE;
+    installer->stopped = SDL_FALSE;
 }
 
 SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
