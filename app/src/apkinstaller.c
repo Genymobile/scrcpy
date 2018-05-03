@@ -81,6 +81,7 @@ void installer_destroy(struct installer *installer) {
     SDL_DestroyCond(installer->event_cond);
     SDL_DestroyMutex(installer->mutex);
     apk_queue_destroy(&installer->queue);
+    SDL_free((void *) installer->serial);
 }
 
 SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
@@ -121,7 +122,6 @@ static int run_installer(void *data) {
             }
         }
     }
-end:
     mutex_unlock(installer->mutex);
     return 0;
 }
