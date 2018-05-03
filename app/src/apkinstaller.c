@@ -35,12 +35,13 @@ SDL_bool apk_queue_push(struct apk_queue *queue, const char *apk) {
     if (apk_queue_is_full(queue)) {
         return SDL_FALSE;
     }
-    strcpy(queue->data[queue->head],apk);
+
+    strcpy(queue->data[queue->head], apk);
     queue->head = (queue->head + 1) % APK_QUEUE_SIZE;
     return SDL_TRUE;
 }
 
-SDL_bool apk_queue_take(struct apk_queue *queue, char* apk) {
+SDL_bool apk_queue_take(struct apk_queue *queue, char *apk) {
     if (apk_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
@@ -50,6 +51,7 @@ SDL_bool apk_queue_take(struct apk_queue *queue, char* apk) {
 }
 
 SDL_bool installer_init(struct installer *installer, const char* serial) {
+
     if (!apk_queue_init(&installer->queue)) {
         return SDL_FALSE;
     }
@@ -63,8 +65,15 @@ SDL_bool installer_init(struct installer *installer, const char* serial) {
         return SDL_FALSE;
     }
 
-    installer->stopped = SDL_FALSE;
+    installer->serial = NULL;
+    if (serial) {
+        installer->serial = SDL_strdup(serial);
+    }
 
+// TODO(adopi)
+//    installer->initialized = SDL_TRUE;
+
+    installer->stopped = SDL_FALSE;
     return SDL_TRUE;
 }
 
@@ -87,6 +96,7 @@ SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
 }
 
 static SDL_bool process_install(struct installer *installer, const char* filename) {
+    LOGI("%s will be installed",filename);
     process_t process = adb_install(installer->serial, filename);
     return process_check_success(process, "adb install");
 }
@@ -94,6 +104,7 @@ static SDL_bool process_install(struct installer *installer, const char* filenam
 static int run_installer(void *data) {
     struct installer *installer = data;
 
+    char current_apk[MAX_FILENAME_SIZE];
     mutex_lock(installer->mutex);
     for (;;) {
         while (!installer->stopped && apk_queue_is_empty(&installer->queue)) {
@@ -103,13 +114,10 @@ static int run_installer(void *data) {
             // stop immediately, do not process further events
             break;
         }
-        char* apk = "";
-        while (apk_queue_take(&installer->queue, apk)) {
-            SDL_bool ok = process_install(installer,apk);
-            SDL_free(apk);
+        while (apk_queue_take(&installer->queue, current_apk)) {
+            SDL_bool ok = process_install(installer,current_apk);
             if (!ok) {
                 LOGD("Error during installation");
-                goto end;
             }
         }
     }

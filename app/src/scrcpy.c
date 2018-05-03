@@ -174,7 +174,12 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     }
 
     // TODO(adopi) init the installer when we really want to use it
-    if (!installer_init(&installer, server.serial)) {
+    if (!installer_init(&installer, serial)) {
+        ret = SDL_FALSE;
+        goto finally_stop_and_join_installer;
+    }
+
+    if (!installer_start(&installer)) {
         ret = SDL_FALSE;
         goto finally_destroy_installer;
     }

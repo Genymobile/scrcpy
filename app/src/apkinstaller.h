@@ -2,6 +2,8 @@
 #define APK_INSTALLER_H
 
 #define APK_QUEUE_SIZE 16
+#define MAX_FILENAME_SIZE 1024
+
 
 #include "apkinstaller.h"
 
@@ -12,14 +14,13 @@
 // NOTE(AdoPi) apk_queue and control_event can use a generic queue
 
 struct apk_queue {
-    char* data[APK_QUEUE_SIZE];
+    char data[APK_QUEUE_SIZE][MAX_FILENAME_SIZE];
     int tail;
     int head;
 };
 
-
 struct installer {
-    char* serial;
+    const char* serial;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     SDL_cond *event_cond;
