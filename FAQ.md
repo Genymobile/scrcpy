@@ -1,5 +1,9 @@
 # Frequently Asked Questions
 
+### Troubles with the installation process?
+
+[Here](https://www.youtube.com/watch?v=8yUkzI0ElDo) is a short and thorough video guide by XDAdevelopers. If you are still having problems, continue on...
+
 ## Common issues
 
 The application is very young, it is not unlikely that you encounter problems
