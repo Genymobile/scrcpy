@@ -3,7 +3,7 @@
 #include "lockutil.h"
 #include "log.h"
 #include "command.h"
-#include "string.h"
+#include <string.h>
 
 
 // NOTE(adopi) this can be more generic:
@@ -37,7 +37,7 @@ SDL_bool apk_queue_push(struct apk_queue *queue, const char *apk) {
         return SDL_FALSE;
     }
 
-    strcpy(queue->data[queue->head], apk);
+    strncpy(queue->data[queue->head], apk, MAX_FILENAME_SIZE);
     queue->head = (queue->head + 1) % APK_QUEUE_SIZE;
     return SDL_TRUE;
 }
@@ -46,7 +46,7 @@ SDL_bool apk_queue_take(struct apk_queue *queue, char *apk) {
     if (apk_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
-    strcpy(apk,queue->data[queue->tail]);
+    strncpy(apk, queue->data[queue->tail], MAX_FILENAME_SIZE);
     queue->tail = (queue->tail + 1) % APK_QUEUE_SIZE;
     return SDL_TRUE;
 }
