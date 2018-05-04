@@ -10,6 +10,7 @@
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_thread.h>
+#include "command.h"
 
 // NOTE(AdoPi) apk_queue and control_event can use a generic queue
 
@@ -26,16 +27,18 @@ struct installer {
     SDL_cond *event_cond;
     SDL_bool stopped;
     SDL_bool initialized;
+    process_t current_process;
     struct apk_queue queue;
 };
 
-#define INSTALLER_INITIALIZER { \
-    .serial = NULL,             \
-    .thread = NULL,             \
-    .mutex = NULL,              \
-    .event_cond = NULL,         \
-    .stopped = SDL_FALSE,       \
-    .initialized = SDL_FALSE    \
+#define INSTALLER_INITIALIZER {     \
+    .serial = NULL,                 \
+    .thread = NULL,                 \
+    .mutex = NULL,                  \
+    .event_cond = NULL,             \
+    .stopped = SDL_FALSE,           \
+    .initialized = SDL_FALSE,       \
+    .current_process = PROCESS_NONE \
 }
 
 

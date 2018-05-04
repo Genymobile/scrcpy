@@ -5,6 +5,7 @@
 #include "command.h"
 #include "string.h"
 
+
 // NOTE(adopi) this can be more generic:
 // it could be used with a command queue instead of a filename queue
 // then we would have a generic invoker (useful if we want to handle more async commands)
@@ -83,6 +84,7 @@ void installer_destroy(struct installer *installer) {
     SDL_free((void *) installer->serial);
     installer->initialized = SDL_FALSE;
     installer->stopped = SDL_FALSE;
+    installer->current_process = PROCESS_NONE;
 }
 
 SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
@@ -100,6 +102,7 @@ SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
 static SDL_bool process_install(struct installer *installer, const char* filename) {
     LOGI("%s will be installed",filename);
     process_t process = adb_install(installer->serial, filename);
+    installer->current_process = process;
     return process_check_success(process, "adb install");
 }
 
@@ -143,6 +146,13 @@ void installer_stop(struct installer *installer) {
     mutex_lock(installer->mutex);
     installer->stopped = SDL_TRUE;
     cond_signal(installer->event_cond);
+    if (installer->current_process == PROCESS_NONE) {
+        if (!cmd_terminate(installer->current_process)) {
+            LOGW("Cannot terminate install process");
+        }
+        cmd_simple_wait(installer->current_process, NULL);
+        installer->current_process = PROCESS_NONE;
+    }
     mutex_unlock(installer->mutex);
 }
 
