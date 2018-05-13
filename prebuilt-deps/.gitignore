@@ -1,0 +1,4 @@
+*
+!/.gitignore
+!/Makefile
+!/prepare-dep
