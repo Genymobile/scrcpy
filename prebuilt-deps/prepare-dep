@@ -1,0 +1,58 @@
+#!/bin/bash
+set -e
+url="$1"
+sum="$2"
+dir="$3"
+
+checksum() {
+    local file="$1"
+    local sum="$2"
+    echo "$file: verifying checksum..."
+    echo "$sum  $file" | sha256sum -c
+}
+
+get_file() {
+    local url="$1"
+    local file="$2"
+    local sum="$3"
+    if [[ -f "$file" ]]
+    then
+        echo "$file: found"
+    else
+        echo "$file: not found, downloading..."
+        wget "$url" -O "$file"
+    fi
+    checksum "$file" "$sum"
+}
+
+extract() {
+    local file="$1"
+    echo "Extracting $file..."
+    if [[ "$file" == *.zip ]]
+    then
+        unzip -q "$file"
+    elif [[ "$file" == *.tar.gz ]]
+    then
+        tar xf "$file"
+    else
+        echo "Unsupported file: $file"
+        return 1
+    fi
+}
+
+get_dep() {
+    local url="$1"
+    local sum="$2"
+    local dir="$3"
+    local file="${url##*/}"
+    if [[ -d "$dir" ]]
+    then
+        echo "$dir: found"
+    else
+        echo "$dir: not found"
+        get_file "$url" "$file" "$sum"
+        extract "$file"
+    fi
+}
+
+get_dep "$1" "$2" "$3"

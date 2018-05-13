@@ -1,0 +1,20 @@
+# apt install mingw-w64 mingw-w64-tools
+
+[binaries]
+name = 'mingw'
+c = '/usr/bin/i686-w64-mingw32-gcc'
+cpp = '/usr/bin/i686-w64-mingw32-g++'
+ar = '/usr/bin/i686-w64-mingw32-ar'
+strip = '/usr/bin/i686-w64-mingw32-strip'
+pkgconfig = '/usr/bin/i686-w64-mingw32-pkg-config'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86'
+cpu = 'i686'
+endian = 'little'
+
+[properties]
+prebuilt_ffmpeg_shared = 'ffmpeg-4.0-win32-shared'
+prebuilt_ffmpeg_dev = 'ffmpeg-4.0-win32-dev'
+prebuilt_sdl2 = 'SDL2-2.0.8/i686-w64-mingw32'
