@@ -1,6 +1,7 @@
 #include "controlevent.h"
 
 #include <SDL2/SDL_stdinc.h>
+#include <string.h>
 
 #include "lockutil.h"
 #include "log.h"

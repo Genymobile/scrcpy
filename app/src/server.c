@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
