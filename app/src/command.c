@@ -74,7 +74,7 @@ process_t adb_push(const char *serial, const char *local, const char *remote) {
 }
 
 process_t adb_install(const char *serial, const char *local) {
-    const char *const adb_cmd[] = {"install", local};
+    const char *const adb_cmd[] = {"install", "-r", local};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
