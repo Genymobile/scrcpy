@@ -25,7 +25,11 @@ SDL_bool apk_queue_init(struct apk_queue *queue) {
 }
 
 void apk_queue_destroy(struct apk_queue *queue) {
-    // do nothing as we are on the stack
+    int i = queue->tail;
+    while (i != queue->head) {
+        SDL_free(queue->data[i]);
+        i = (i + 1) % APK_QUEUE_SIZE;
+    }
 }
 
 SDL_bool apk_queue_push(struct apk_queue *queue, const char *apk) {
