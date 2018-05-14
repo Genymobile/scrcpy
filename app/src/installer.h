@@ -27,17 +27,6 @@ struct installer {
     struct apk_queue queue;
 };
 
-#define INSTALLER_INITIALIZER {     \
-    .serial = NULL,                 \
-    .thread = NULL,                 \
-    .mutex = NULL,                  \
-    .event_cond = NULL,             \
-    .stopped = SDL_FALSE,           \
-    .initialized = SDL_FALSE,       \
-    .current_process = PROCESS_NONE \
-}
-
-
 SDL_bool installer_init(struct installer *installer, const char *serial);
 void installer_destroy(struct installer *installer);
 

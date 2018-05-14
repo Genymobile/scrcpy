@@ -5,7 +5,6 @@
 #include "log.h"
 #include "command.h"
 
-
 // NOTE(adopi) this can be more generic:
 // it could be used with a command queue instead of a filename queue
 // then we would have a generic invoker (useful if we want to handle more async commands)
@@ -82,9 +81,6 @@ void installer_destroy(struct installer *installer) {
     SDL_DestroyMutex(installer->mutex);
     apk_queue_destroy(&installer->queue);
     SDL_free((void *) installer->serial);
-    installer->initialized = SDL_FALSE;
-    installer->stopped = SDL_FALSE;
-    installer->current_process = PROCESS_NONE;
 }
 
 SDL_bool installer_install_apk(struct installer *installer, const char *apk) {
