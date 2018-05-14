@@ -1,9 +1,9 @@
-#include "apkinstaller.h"
+#include "installer.h"
 
+#include <string.h>
 #include "lockutil.h"
 #include "log.h"
 #include "command.h"
-#include <string.h>
 
 
 // NOTE(adopi) this can be more generic:
@@ -33,21 +33,23 @@ SDL_bool apk_queue_push(struct apk_queue *queue, const char *apk) {
         return SDL_FALSE;
     }
 
-    strncpy(queue->data[queue->head], apk, MAX_FILENAME_SIZE);
+    queue->data[queue->head] = SDL_strdup(apk);
+//    strncpy(queue->data[queue->head], apk, MAX_FILENAME_SIZE);
     queue->head = (queue->head + 1) % APK_QUEUE_SIZE;
     return SDL_TRUE;
 }
 
-SDL_bool apk_queue_take(struct apk_queue *queue, char *apk) {
+SDL_bool apk_queue_take(struct apk_queue *queue, char **apk) {
     if (apk_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
-    strncpy(apk, queue->data[queue->tail], MAX_FILENAME_SIZE);
+    *apk = SDL_strdup(queue->data[queue->tail]);
+//    strncpy(apk, queue->data[queue->tail], MAX_FILENAME_SIZE);
     queue->tail = (queue->tail + 1) % APK_QUEUE_SIZE;
     return SDL_TRUE;
 }
 
-SDL_bool installer_init(struct installer *installer, const char* serial) {
+SDL_bool installer_init(struct installer *installer, const char *serial) {
 
     if (!apk_queue_init(&installer->queue)) {
         return SDL_FALSE;
@@ -67,7 +69,8 @@ SDL_bool installer_init(struct installer *installer, const char* serial) {
         installer->serial = SDL_strdup(serial);
     }
 
-    installer->initialized = SDL_TRUE;
+    // lazy initialization
+    installer->initialized = SDL_FALSE;
 
     installer->stopped = SDL_FALSE;
     return SDL_TRUE;
@@ -83,8 +86,17 @@ void installer_destroy(struct installer *installer) {
     installer->current_process = PROCESS_NONE;
 }
 
-SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
+SDL_bool installer_install_apk(struct installer *installer, const char *apk) {
     SDL_bool res;
+
+    // start installer if it's used for the first time
+    if (!installer->initialized) {
+        if (!installer_start(installer)) {
+            return SDL_FALSE;
+        }
+        installer->initialized = SDL_TRUE;
+    }
+
     mutex_lock(installer->mutex);
     SDL_bool was_empty = apk_queue_is_empty(&installer->queue);
     res = apk_queue_push(&installer->queue, apk);
@@ -95,7 +107,7 @@ SDL_bool installer_push_apk(struct installer *installer, const char* apk) {
     return res;
 }
 
-static SDL_bool process_install(struct installer *installer, const char* filename) {
+static SDL_bool process_install(struct installer *installer, const char *filename) {
     LOGI("%s will be installed",filename);
     process_t process = adb_install(installer->serial, filename);
     installer->current_process = process;
@@ -105,7 +117,7 @@ static SDL_bool process_install(struct installer *installer, const char* filenam
 static int run_installer(void *data) {
     struct installer *installer = data;
 
-    char current_apk[MAX_FILENAME_SIZE];
+    char *current_apk;
     mutex_lock(installer->mutex);
     for (;;) {
         while (!installer->stopped && apk_queue_is_empty(&installer->queue)) {
@@ -115,7 +127,7 @@ static int run_installer(void *data) {
             // stop immediately, do not process further events
             break;
         }
-        while (apk_queue_take(&installer->queue, current_apk)) {
+        while (apk_queue_take(&installer->queue, &current_apk)) {
             SDL_bool ok = process_install(installer,current_apk);
             if (!ok) {
                 LOGD("Error during installation");

@@ -22,7 +22,7 @@
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
-#include "apkinstaller.h"
+#include "installer.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
@@ -105,16 +105,7 @@ static void event_loop(void) {
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
             case SDL_DROPFILE:
-
-                if (!installer.initialized) {
-                    SDL_bool init_ok = installer_init(&installer, server.serial);
-                    if (init_ok && installer_start(&installer)) {
-                        goto push;
-                    }
-                    installer_destroy(&installer);
-                }
-                push:
-                installer_push_apk(&installer, event.drop.file);
+                installer_install_apk(&installer, event.drop.file);
                 break;
         }
     }
@@ -161,6 +152,9 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_server;
     }
 
+    // TODO(adopi) check failure
+    installer_init(&installer,server.serial);
+
     decoder_init(&decoder, &frames, device_socket);
 
     // now we consumed the header values, the socket receives the video stream
@@ -181,7 +175,6 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_controller;
     }
 
-
     if (!screen_init_rendering(&screen, device_name, frame_size)) {
         ret = SDL_FALSE;
         goto finally_stop_and_join_controller;
@@ -199,11 +192,9 @@ finally_destroy_controller:
 finally_stop_decoder:
     decoder_stop(&decoder);
     // stop installer
-    if (installer.initialized) {
-        installer_stop(&installer);
-        installer_join(&installer);
-        installer_destroy(&installer);
-    }
+    installer_stop(&installer);
+    installer_join(&installer);
+    installer_destroy(&installer);
     // stop the server before decoder_join() to wake up the decoder
     server_stop(&server);
     decoder_join(&decoder);
