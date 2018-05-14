@@ -9,6 +9,7 @@ src = [
     'src/fpscounter.c',
     'src/frames.c',
     'src/inputmanager.c',
+    'src/installer.c'
     'src/lockutil.c',
     'src/net.c',
     'src/scrcpy.c',
@@ -16,7 +17,6 @@ src = [
     'src/server.c',
     'src/strutil.c',
     'src/tinyxpm.c',
-    'src/apkinstaller.c'
 ]
 
 dependencies = [
