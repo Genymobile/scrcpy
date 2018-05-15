@@ -22,12 +22,14 @@
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
+#include "installer.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
+static struct installer installer;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -102,6 +104,9 @@ static void event_loop(void) {
             case SDL_MOUSEBUTTONUP:
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
+            case SDL_DROPFILE:
+                installer_install_apk(&installer, event.drop.file);
+                break;
         }
     }
 }
@@ -147,6 +152,12 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
         goto finally_destroy_server;
     }
 
+    if (!installer_init(&installer,server.serial)) {
+        ret = SDL_FALSE;
+        server_stop(&server);
+        goto finally_destroy_installer;
+    }
+
     decoder_init(&decoder, &frames, device_socket);
 
     // now we consumed the header values, the socket receives the video stream
@@ -186,6 +197,10 @@ finally_stop_decoder:
     // stop the server before decoder_join() to wake up the decoder
     server_stop(&server);
     decoder_join(&decoder);
+finally_destroy_installer:
+    installer_stop(&installer);
+    installer_join(&installer);
+    installer_destroy(&installer);
 finally_destroy_frames:
     frames_destroy(&frames);
 finally_destroy_server:

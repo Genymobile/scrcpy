@@ -42,6 +42,7 @@ process_t adb_forward_remove(const char *serial, uint16_t local_port);
 process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port);
 process_t adb_reverse_remove(const char *serial, const char *device_socket_name);
 process_t adb_push(const char *serial, const char *local, const char *remote);
+process_t adb_install(const char *serial, const char *local);
 process_t adb_remove_path(const char *serial, const char *path);
 
 // convenience function to wait for a successful process execution
