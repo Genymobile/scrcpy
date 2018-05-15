@@ -1,9 +1,9 @@
 #include "installer.h"
 
 #include <string.h>
+#include "command.h"
 #include "lockutil.h"
 #include "log.h"
-#include "command.h"
 
 // NOTE(adopi) this can be more generic:
 // it could be used with a command queue instead of a filename queue
@@ -132,6 +132,7 @@ static int run_installer(void *data) {
         }
     }
     mutex_unlock(installer->mutex);
+    SDL_free(current_apk);
     return 0;
 }
 
