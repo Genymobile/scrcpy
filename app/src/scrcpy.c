@@ -155,7 +155,7 @@ SDL_bool scrcpy(const char *serial, Uint16 local_port, Uint16 max_size, Uint32 b
     if (!installer_init(&installer,server.serial)) {
         ret = SDL_FALSE;
         server_stop(&server);
-        goto finally_destroy_frames;
+        goto finally_destroy_installer;
     }
 
     decoder_init(&decoder, &frames, device_socket);
