@@ -54,27 +54,32 @@ static SDL_bool process_event(struct controller *controller, const struct contro
 static int run_controller(void *data) {
     struct controller *controller = data;
 
-    mutex_lock(controller->mutex);
     for (;;) {
+        mutex_lock(controller->mutex);
         while (!controller->stopped && control_event_queue_is_empty(&controller->queue)) {
             cond_wait(controller->event_cond, controller->mutex);
         }
         if (controller->stopped) {
             // stop immediately, do not process further events
+            mutex_unlock(controller->mutex);
             break;
         }
         struct control_event event;
-        while (control_event_queue_take(&controller->queue, &event)) {
-            SDL_bool ok = process_event(controller, &event);
-            control_event_destroy(&event);
-            if (!ok) {
-                LOGD("Cannot write event to socket");
-                goto end;
-            }
+#ifdef BUILD_DEBUG
+        bool non_empty = control_event_queue_take(&controller->queue, &event);
+        SDL_assert(non_empty);
+#else
+        control_event_queue_take(&controller->queue, &event);
+#endif
+        mutex_unlock(controller->mutex);
+
+        SDL_bool ok = process_event(controller, &event);
+        control_event_destroy(&event);
+        if (!ok) {
+            LOGD("Cannot write event to socket");
+            break;
         }
     }
-end:
-    mutex_unlock(controller->mutex);
     return 0;
 }
 
