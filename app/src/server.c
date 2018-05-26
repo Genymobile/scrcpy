@@ -152,15 +152,20 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
 
     if (serial) {
         server->serial = SDL_strdup(serial);
+        if (!server->serial) {
+            return SDL_FALSE;
+        }
     }
 
     if (!push_server(serial)) {
+        SDL_free((void *) server->serial);
         return SDL_FALSE;
     }
 
     server->server_copied_to_device = SDL_TRUE;
 
     if (!enable_tunnel(server)) {
+        SDL_free((void *) server->serial);
         return SDL_FALSE;
     }
 
@@ -177,6 +182,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
         if (server->server_socket == INVALID_SOCKET) {
             LOGE("Could not listen on port %" PRIu16, local_port);
             disable_tunnel(server);
+            SDL_free((void *) server->serial);
             return SDL_FALSE;
         }
     }
@@ -188,6 +194,7 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
             close_socket(&server->server_socket);
         }
         disable_tunnel(server);
+        SDL_free((void *) server->serial);
         return SDL_FALSE;
     }
 
