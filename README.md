@@ -91,8 +91,37 @@ For Windows, for simplicity, a prebuilt archive with all the dependencies
 
 _(It's just a portable version including _dll_ copied from MSYS2.)_
 
-Instead, you may want to build it manually. You need [MSYS2] to build the
-project. From an MSYS2 terminal, install the required packages:
+Instead, you may want to build it manually.
+
+##### Cross-compile from Linux
+
+This is the preferred method (and the way the release is built).
+
+From _Debian_, install _mingw_:
+
+```bash
+sudo apt install mingw-w64 mingw-w64-tools
+```
+
+You also need the JDK to build the server:
+
+```bash
+sudo apt install openjdk-8-jdk
+```
+
+Then generate the releases:
+
+```bash
+make -f Makefile.CrossWindows
+```
+
+It will generate win32 and win64 releases into `dist/`.
+
+
+##### In MSYS2
+
+From Windows, you need [MSYS2] to build the project. From an MSYS2 terminal,
+install the required packages:
 
 [MSYS2]: http://www.msys2.org/
 
