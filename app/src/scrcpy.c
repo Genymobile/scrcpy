@@ -125,7 +125,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         return SDL_FALSE;
     }
 
-    process_t proc_show_touches;
+    process_t proc_show_touches = PROCESS_NONE;
     SDL_bool show_touches_waited;
     if (options->show_touches) {
         LOGI("Enable show_touches");
