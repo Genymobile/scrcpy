@@ -11,7 +11,8 @@
 .PHONY: default clean \
 	build-server \
 	prepare-deps-win32 prepare-deps-win64 \
-	build-win32 build-win64 \
+	build-win32 build-win32-noconsole \
+	build-win64 build-win64-noconsole \
 	dist-win32 dist-win64 \
 	zip-win32 zip-win64 \
 	sums release
@@ -20,7 +21,9 @@ GRADLE ?= ./gradlew
 
 SERVER_BUILD_DIR := build-server
 WIN32_BUILD_DIR := build-win32
+WIN32_NOCONSOLE_BUILD_DIR := build-win32-noconsole
 WIN64_BUILD_DIR := build-win64
+WIN64_NOCONSOLE_BUILD_DIR := build-win64-noconsole
 
 DIST := dist
 WIN32_TARGET_DIR := scrcpy-win32
@@ -55,6 +58,16 @@ build-win32: prepare-deps-win32
 			-Doverride_server_path=scrcpy-server.jar )
 	ninja -C "$(WIN32_BUILD_DIR)"
 
+build-win32-noconsole: prepare-deps-win32
+	[ -d "$(WIN32_NOCONSOLE_BUILD_DIR)" ] || ( mkdir "$(WIN32_NOCONSOLE_BUILD_DIR)" && \
+		meson "$(WIN32_NOCONSOLE_BUILD_DIR)" \
+			--cross-file cross_win32.txt \
+			--buildtype release --strip -Db_lto=true \
+			-Dbuild_server=false \
+			-Dwindows_noconsole=true \
+			-Doverride_server_path=scrcpy-server.jar )
+	ninja -C "$(WIN32_NOCONSOLE_BUILD_DIR)"
+
 prepare-deps-win64:
 	-$(MAKE) -C prebuilt-deps prepare-win64
 
@@ -67,10 +80,21 @@ build-win64: prepare-deps-win64
 			-Doverride_server_path=scrcpy-server.jar )
 	ninja -C "$(WIN64_BUILD_DIR)"
 
-dist-win32: build-server build-win32
+build-win64-noconsole: prepare-deps-win64
+	[ -d "$(WIN64_NOCONSOLE_BUILD_DIR)" ] || ( mkdir "$(WIN64_NOCONSOLE_BUILD_DIR)" && \
+		meson "$(WIN64_NOCONSOLE_BUILD_DIR)" \
+			--cross-file cross_win64.txt \
+			--buildtype release --strip -Db_lto=true \
+			-Dbuild_server=false \
+			-Dwindows_noconsole=true \
+			-Doverride_server_path=scrcpy-server.jar )
+	ninja -C "$(WIN64_NOCONSOLE_BUILD_DIR)"
+
+dist-win32: build-server build-win32 build-win32-noconsole
 	mkdir -p "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp "$(WIN32_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/scrcpy-noconsole.exe"
 	cp prebuilt-deps/ffmpeg-4.0-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.0-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.0-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
@@ -80,10 +104,11 @@ dist-win32: build-server build-win32
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/SDL2-2.0.8/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
-dist-win64: build-server build-win64
+dist-win64: build-server build-win64 build-win64-noconsole
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp "$(WIN64_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/scrcpy-noconsole.exe"
 	cp prebuilt-deps/ffmpeg-4.0-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.0-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.0-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"

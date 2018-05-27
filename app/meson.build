@@ -129,7 +129,16 @@ conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
-executable('scrcpy', src, dependencies: dependencies, include_directories: src_dir, install: true)
+
+if get_option('windows_noconsole')
+    c_args = [ '-mwindows' ]
+    link_args = [ '-mwindows' ]
+else
+    c_args = []
+    link_args = []
+endif
+
+executable('scrcpy', src, dependencies: dependencies, include_directories: src_dir, install: true, c_args: c_args, link_args: link_args)
 
 
 ### TESTS
