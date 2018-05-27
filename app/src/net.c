@@ -87,7 +87,7 @@ ssize_t net_send(socket_t socket, const void *buf, size_t len) {
 }
 
 ssize_t net_send_all(socket_t socket, const void *buf, size_t len) {
-    ssize_t w;
+    ssize_t w = 0;
     while (len > 0) {
         w = send(socket, buf, len, 0);
         if (w == -1) {
