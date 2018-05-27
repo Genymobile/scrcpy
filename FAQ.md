@@ -7,29 +7,8 @@ with it.
 
 Here are the common reported problems and their status.
 
-### On Windows, I have no output in the console
 
-When run in `cmd.exe`, the application does not print anything. Even `scrcpy
---help` have no output. We don't know why yet.
-
-However, if you run the very same `scrcpy.exe` from
-[MSYS2](https://www.msys2.org/) (`mingw64`), then it correctly prints output.
-
-As a workaround, redirect outputs to files, so that you can read the files
-afterwards:
-
-```bash
-scrcpy >stdout 2>stderr
-type stdout
-type stderr
-```
-
-_Note that all SDL logs are printed to stderr._
-
-
-### On Windows, when I start the application, nothing happens
-
-The previous problem does not help to get a clue about the cause.
+### On Windows, my device is not detected
 
 The most common is your device not being detected by `adb`, or is unauthorized.
 Check everything is ok by calling:
