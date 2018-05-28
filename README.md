@@ -1,4 +1,4 @@
-# scrcpy
+# scrcpy (v1.2)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -81,15 +81,16 @@ Two [AUR] packages have been created by users:
 
 #### Windows
 
-For Windows, for simplicity, a prebuilt archive with all the dependencies
-(including `adb`) is available:
+For Windows, for simplicity, prebuilt archives with all the dependencies
+(including `adb`) are available:
 
- - [`scrcpy-windows-with-deps-v1.1.zip`][direct-windows-with-deps].  
-   _(SHA-256: 27eb36c15937601d1062c1dc0b45faae0e06fefea2019aadeb4fa7f76a07bb4c)_
+ - [`scrcpy-win32-v1.2.zip`][direct-win32].  
+   _(SHA-256: a1fe1de67ec75dcf970ca5d97a04c26ff0f2d61871f2ef51b6f2f0bf666966b2)_
+ - [`scrcpy-win64-v1.2.zip`][direct-win64].  
+   _(SHA-256: 35ae3bcee51771e7c51b8a8be87aef2295c9f267606a7cf83ebb0a4d583ef536)_
 
-[direct-windows-with-deps]: https://github.com/Genymobile/scrcpy/releases/download/v1.1/scrcpy-windows-with-deps-v1.1.zip
-
-_(It's just a portable version including _dll_ copied from MSYS2.)_
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.2/scrcpy-win32-v1.2.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.2/scrcpy-win64-v1.2.zip
 
 Instead, you may want to build it manually.
 
@@ -245,10 +246,10 @@ Since the server binary, that will be pushed to the Android device, does not
 depend on your system and architecture, you may want to use the prebuilt binary
 instead:
 
- - [`scrcpy-server-v1.1.jar`][direct-scrcpy-server].  
-   _(SHA-256: 14826512bf38447ec94adf3b531676ce038d19e7e06757fb4e537882b17e77b3)_
+ - [`scrcpy-server-v1.2.jar`][direct-scrcpy-server].  
+   _(SHA-256: cb39654ed2fda3d30ddff292806950ccc5c394375ea12b974f790c7f38f61f60)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.1/scrcpy-server-v1.1.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.2/scrcpy-server-v1.2.jar
 
 In that case, the build does not require Java or the Android SDK.
 
