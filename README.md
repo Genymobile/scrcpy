@@ -300,6 +300,7 @@ To run without installing:
  | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
+ | install APK from computer              | drag & drop APK file          |
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._

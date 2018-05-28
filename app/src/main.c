@@ -98,6 +98,9 @@ static void usage(const char *arg0) {
         "\n"
         "    Ctrl+i\n"
         "        enable/disable FPS counter (print frames/second in logs)\n"
+        "\n"
+        "    Drag & drop APK file\n"
+        "        install APK from computer\n"
         "\n",
         arg0,
         DEFAULT_BIT_RATE,
