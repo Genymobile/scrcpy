@@ -128,4 +128,4 @@ zip-win64: dist-win64
 
 sums:
 	cd "$(DIST)"; \
-		sha256sum *.zip > SHA256SUM.txt
+		sha256sum *.zip > SHA256SUMS.txt
