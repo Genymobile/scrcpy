@@ -23,7 +23,8 @@ and extract the following files to a directory accessible from your `PATH`:
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
-The client requires [FFmpeg] and [LibSDL2].
+The client requires [FFmpeg] and [LibSDL2]. On Windows, they are included in the
+[prebuilt application](#windows).
 
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
