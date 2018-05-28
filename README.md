@@ -1,8 +1,8 @@
 # scrcpy
 
 This application provides display and control of Android devices connected on
-USB. It does not require any _root_ access. It works on _GNU/Linux_, _Windows_
-and _MacOS_.
+USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
+It works on _GNU/Linux_, _Windows_ and _MacOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -346,5 +346,8 @@ Read the [developers page].
 
 ## Articles
 
-- [Introducing scrcpy](https://blog.rom1v.com/2018/03/introducing-scrcpy/)
-- [Scrcpy now works wirelessly](https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/)
+- [Introducing scrcpy][article-intro]
+- [Scrcpy now works wirelessly][article-tcpip]
+
+[article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
+[article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
