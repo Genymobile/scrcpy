@@ -1,5 +1,6 @@
 #include "command.h"
 
+#include "config.h"
 #include "log.h"
 #include "strutil.h"
 
@@ -20,7 +21,12 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
         return NULL;
     }
 
-    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+#ifdef WINDOWS_NOCONSOLE
+    int flags = CREATE_NO_WINDOW;
+#else
+    int flags = 0;
+#endif
+    if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, flags, NULL, NULL, &si, &pi)) {
         return NULL;
     }
 
