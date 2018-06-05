@@ -38,7 +38,8 @@ release: clean zip-win32 zip-win64 sums
 
 clean:
 	$(GRADLE) clean
-	rm -rf "$(SERVER_BUILD_DIR)" "$(WIN32_BUILD_DIR)" "$(WIN64_BUILD_DIR)" "$(DIST)"
+	rm -rf "$(SERVER_BUILD_DIR)" "$(WIN32_BUILD_DIR)" "$(WIN64_BUILD_DIR)" \
+		   "$(WIN32_NOCONSOLE_BUILD_DIR)" "$(WIN64_NOCONSOLE_BUILD_DIR)" "$(DIST)"
 
 build-server:
 	[ -d "$(SERVER_BUILD_DIR)" ] || ( mkdir "$(SERVER_BUILD_DIR)" && \
