@@ -19,7 +19,7 @@ src = [
     'src/tinyxpm.c',
 ]
 
-if not meson.is_cross_build()
+if not get_option('crossbuild_windows')
 
     # native build
     dependencies = [
