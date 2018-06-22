@@ -79,6 +79,8 @@ SDL_bool installer_init(struct installer *installer, const char *serial) {
     installer->initialized = SDL_FALSE;
 
     installer->stopped = SDL_FALSE;
+    installer->current_process = PROCESS_NONE;
+
     return SDL_TRUE;
 }
 
