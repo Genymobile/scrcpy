@@ -1,9 +1,11 @@
 #include "command.h"
 
 #include <signal.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include "log.h"
 
 pid_t cmd_execute(const char *path, const char *const argv[]) {
     pid_t pid = fork();
@@ -20,6 +22,10 @@ pid_t cmd_execute(const char *path, const char *const argv[]) {
 }
 
 SDL_bool cmd_terminate(pid_t pid) {
+    if (pid <= 0) {
+        LOGC("Requested to kill %d, this is an error. Please report the bug.\n", (int) pid);
+        abort();
+    }
     return kill(pid, SIGTERM) != -1;
 }
 
