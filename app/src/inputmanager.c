@@ -150,7 +150,7 @@ void input_manager_process_key(struct input_manager *input_manager,
 
         SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         if (shift) {
-            // currently, there is no shortcut implying SHIFT
+            // currently, there is no shortcut involving SHIFT
             return;
         }
 
