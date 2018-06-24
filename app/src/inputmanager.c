@@ -29,52 +29,58 @@ static struct point get_mouse_point(struct screen *screen) {
     };
 }
 
-static void send_keycode(struct controller *controller, enum android_keycode keycode, const char *name) {
+static const int ACTION_DOWN = 1;
+static const int ACTION_UP = 1 << 1;
+
+static void send_keycode(struct controller *controller, enum android_keycode keycode, int actions, const char *name) {
     // send DOWN event
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_KEYCODE;
-    control_event.keycode_event.action = AKEY_EVENT_ACTION_DOWN;
     control_event.keycode_event.keycode = keycode;
     control_event.keycode_event.metastate = 0;
 
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot send %s (DOWN)", name);
-        return;
+    if (actions & ACTION_DOWN) {
+        control_event.keycode_event.action = AKEY_EVENT_ACTION_DOWN;
+        if (!controller_push_event(controller, &control_event)) {
+            LOGW("Cannot send %s (DOWN)", name);
+            return;
+        }
     }
 
-    // send UP event
-    control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot send %s (UP)", name);
+    if (actions & ACTION_UP) {
+        control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
+        if (!controller_push_event(controller, &control_event)) {
+            LOGW("Cannot send %s (UP)", name);
+        }
     }
 }
 
-static inline void action_home(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_HOME, "HOME");
+static inline void action_home(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_HOME, actions, "HOME");
 }
 
-static inline void action_back(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_BACK, "BACK");
+static inline void action_back(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_BACK, actions, "BACK");
 }
 
-static inline void action_app_switch(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_APP_SWITCH, "APP_SWITCH");
+static inline void action_app_switch(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_APP_SWITCH, actions, "APP_SWITCH");
 }
 
-static inline void action_power(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_POWER, "POWER");
+static inline void action_power(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_POWER, actions, "POWER");
 }
 
-static inline void action_volume_up(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_VOLUME_UP, "VOLUME_UP");
+static inline void action_volume_up(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_VOLUME_UP, actions, "VOLUME_UP");
 }
 
-static inline void action_volume_down(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_VOLUME_DOWN, "VOLUME_DOWN");
+static inline void action_volume_down(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_VOLUME_DOWN, actions, "VOLUME_DOWN");
 }
 
-static inline void action_menu(struct controller *controller) {
-    send_keycode(controller, AKEYCODE_MENU, "MENU");
+static inline void action_menu(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
@@ -143,8 +149,8 @@ void input_manager_process_key(struct input_manager *input_manager,
     if (ctrl) {
         SDL_bool repeat = event->repeat;
 
-        // only consider keydown events, and ignore repeated events
-        if (repeat || event->type != SDL_KEYDOWN) {
+        // ignore repeated events
+        if (repeat) {
             return;
         }
 
@@ -155,43 +161,54 @@ void input_manager_process_key(struct input_manager *input_manager,
         }
 
         SDL_Keycode keycode = event->keysym.sym;
+        int action = event->type == SDL_KEYDOWN ? ACTION_DOWN : ACTION_UP;
         switch (keycode) {
             case SDLK_h:
-                action_home(input_manager->controller);
+                action_home(input_manager->controller, action);
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                action_back(input_manager->controller);
+                action_back(input_manager->controller, action);
                 return;
             case SDLK_s:
-                action_app_switch(input_manager->controller);
+                action_app_switch(input_manager->controller, action);
                 return;
             case SDLK_m:
-                action_menu(input_manager->controller);
+                action_menu(input_manager->controller, action);
                 return;
             case SDLK_p:
-                action_power(input_manager->controller);
+                action_power(input_manager->controller, action);
                 return;
             case SDLK_DOWN:
-                action_volume_down(input_manager->controller);
+                action_volume_down(input_manager->controller, action);
                 return;
             case SDLK_UP:
-                action_volume_up(input_manager->controller);
+                action_volume_up(input_manager->controller, action);
                 return;
             case SDLK_v:
-                clipboard_paste(input_manager->controller);
+                if (event->type == SDL_KEYDOWN) {
+                    clipboard_paste(input_manager->controller);
+                }
                 return;
             case SDLK_f:
-                screen_switch_fullscreen(input_manager->screen);
+                if (event->type == SDL_KEYDOWN) {
+                    screen_switch_fullscreen(input_manager->screen);
+                }
                 return;
             case SDLK_x:
-                screen_resize_to_fit(input_manager->screen);
+                if (event->type == SDL_KEYDOWN) {
+                    screen_resize_to_fit(input_manager->screen);
+                }
                 return;
             case SDLK_g:
-                screen_resize_to_pixel_perfect(input_manager->screen);
+                if (event->type == SDL_KEYDOWN) {
+                    screen_resize_to_pixel_perfect(input_manager->screen);
+                }
                 return;
             case SDLK_i:
-                switch_fps_counter_state(input_manager->frames);
+                if (event->type == SDL_KEYDOWN) {
+                    switch_fps_counter_state(input_manager->frames);
+                }
                 return;
         }
 
@@ -228,7 +245,7 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
             return;
         }
         if (event->button == SDL_BUTTON_MIDDLE) {
-            action_home(input_manager->controller);
+            action_home(input_manager->controller, ACTION_DOWN | ACTION_UP);
             return;
         }
         // double-click on black borders resize to fit the device screen
