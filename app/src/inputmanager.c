@@ -147,13 +147,6 @@ void input_manager_process_key(struct input_manager *input_manager,
 
     // capture all Ctrl events
     if (ctrl) {
-        SDL_bool repeat = event->repeat;
-
-        // ignore repeated events
-        if (repeat) {
-            return;
-        }
-
         SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         if (shift) {
             // currently, there is no shortcut involving SHIFT
@@ -162,51 +155,64 @@ void input_manager_process_key(struct input_manager *input_manager,
 
         SDL_Keycode keycode = event->keysym.sym;
         int action = event->type == SDL_KEYDOWN ? ACTION_DOWN : ACTION_UP;
+        SDL_bool repeat = event->repeat;
         switch (keycode) {
             case SDLK_h:
-                action_home(input_manager->controller, action);
+                if (!repeat) {
+                    action_home(input_manager->controller, action);
+                }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                action_back(input_manager->controller, action);
+                if (!repeat) {
+                    action_back(input_manager->controller, action);
+                }
                 return;
             case SDLK_s:
-                action_app_switch(input_manager->controller, action);
+                if (!repeat) {
+                    action_app_switch(input_manager->controller, action);
+                }
                 return;
             case SDLK_m:
-                action_menu(input_manager->controller, action);
+                if (!repeat) {
+                    action_menu(input_manager->controller, action);
+                }
                 return;
             case SDLK_p:
-                action_power(input_manager->controller, action);
+                if (!repeat) {
+                    action_power(input_manager->controller, action);
+                }
                 return;
             case SDLK_DOWN:
+                // forward repeated events
                 action_volume_down(input_manager->controller, action);
                 return;
             case SDLK_UP:
+                // forward repeated events
                 action_volume_up(input_manager->controller, action);
                 return;
             case SDLK_v:
-                if (event->type == SDL_KEYDOWN) {
+                if (!repeat && event->type == SDL_KEYDOWN) {
                     clipboard_paste(input_manager->controller);
                 }
                 return;
             case SDLK_f:
-                if (event->type == SDL_KEYDOWN) {
+                if (!repeat && event->type == SDL_KEYDOWN) {
                     screen_switch_fullscreen(input_manager->screen);
                 }
                 return;
             case SDLK_x:
-                if (event->type == SDL_KEYDOWN) {
+                if (!repeat && event->type == SDL_KEYDOWN) {
                     screen_resize_to_fit(input_manager->screen);
                 }
                 return;
             case SDLK_g:
-                if (event->type == SDL_KEYDOWN) {
+                if (!repeat && event->type == SDL_KEYDOWN) {
                     screen_resize_to_pixel_perfect(input_manager->screen);
                 }
                 return;
             case SDLK_i:
-                if (event->type == SDL_KEYDOWN) {
+                if (!repeat && event->type == SDL_KEYDOWN) {
                     switch_fps_counter_state(input_manager->frames);
                 }
                 return;
