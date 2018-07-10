@@ -20,6 +20,8 @@ public final class KeyComposition {
     private static final String KEY_DEAD_CIRCUMFLEX = "\u0302";
     private static final String KEY_DEAD_TILDE = "\u0303";
     private static final String KEY_DEAD_UMLAUT = "\u0308";
+    private static final String KEY_DEAD_RING_ABOVE = "\u030A";
+    private static final String KEY_DEAD_CARON = "\u030C";
 
     private static final Map<Character, String> COMPOSITION_MAP = createDecompositionMap();
 
@@ -49,6 +51,14 @@ public final class KeyComposition {
 
     private static String umlaut(char c) {
         return KEY_DEAD_UMLAUT + c;
+    }
+
+    private static String ringAbove(char c) {
+        return KEY_DEAD_RING_ABOVE + c;
+    }
+
+    private static String caron(char c) {
+        return KEY_DEAD_CARON + c;
     }
 
     private static Map<Character, String> createDecompositionMap() {
@@ -168,6 +178,26 @@ public final class KeyComposition {
         map.put('Ẍ', umlaut('X'));
         map.put('ẍ', umlaut('x'));
         map.put('ẗ', umlaut('t'));
+
+        map.put('Ů', ringAbove('U'));
+        map.put('ů', ringAbove('u'));
+
+        map.put('Č', caron('C'));
+        map.put('Ď', caron('D'));
+        map.put('Ě', caron('E'));
+        map.put('Ň', caron('N'));
+        map.put('Ř', caron('R'));
+        map.put('Š', caron('S'));
+        map.put('Ť', caron('T'));
+        map.put('Ž', caron('Z'));
+        map.put('č', caron('c'));
+        map.put('ď', caron('d'));
+        map.put('ě', caron('e'));
+        map.put('ň', caron('n'));
+        map.put('ř', caron('r'));
+        map.put('š', caron('s'));
+        map.put('ť', caron('t'));
+        map.put('ž', caron('z'));
 
         return map;
     }
