@@ -14,12 +14,7 @@ The Android part requires at least API 21 (Android 5.0).
 You need [adb]. It is available in the [Android SDK platform
 tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
 
-On Windows, if you use the [prebuilt application](#windows), it is already
-included. Otherwise, just download the [platform-tools][platform-tools-windows]
-and extract the following files to a directory accessible from your `PATH`:
- - `adb.exe`
- - `AdbWinApi.dll`
- - `AdbWinUsbApi.dll`
+On Windows, just [download scrcpy for Windows](#windows), `adb` is included.
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
@@ -93,6 +88,12 @@ For Windows, for simplicity, prebuilt archives with all the dependencies
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.2/scrcpy-win64-v1.2.zip
 
 Instead, you may want to build it manually.
+
+In that case, download the [platform-tools][platform-tools-windows] and extract
+the following files to a directory accessible from your `PATH`:
+ - `adb.exe`
+ - `AdbWinApi.dll`
+ - `AdbWinUsbApi.dll`
 
 ##### Cross-compile from Linux
 
