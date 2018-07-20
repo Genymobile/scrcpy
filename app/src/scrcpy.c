@@ -56,7 +56,7 @@ static int event_watcher(void *data, SDL_Event *event) {
 }
 #endif
 
-static void event_loop(void) {
+static SDL_bool event_loop(void) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     SDL_AddEventWatch(event_watcher, NULL);
 #endif
@@ -65,10 +65,10 @@ static void event_loop(void) {
         switch (event.type) {
             case EVENT_DECODER_STOPPED:
                 LOGD("Video decoder stopped");
-                return;
+                return SDL_FALSE;
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return;
+                return SDL_TRUE;
             case EVENT_NEW_FRAME:
                 if (!screen.has_frame) {
                     screen.has_frame = SDL_TRUE;
@@ -76,7 +76,7 @@ static void event_loop(void) {
                     screen_show_window(&screen);
                 }
                 if (!screen_update_frame(&screen, &frames)) {
-                    return;
+                    return SDL_FALSE;
                 }
                 break;
             case SDL_WINDOWEVENT:
@@ -109,6 +109,7 @@ static void event_loop(void) {
                 break;
         }
     }
+    return SDL_FALSE;
 }
 
 static process_t set_show_touches_enabled(const char *serial, SDL_bool enabled) {
@@ -210,7 +211,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
-    event_loop();
+    ret = event_loop();
     LOGD("quit...");
 
     screen_destroy(&screen);
