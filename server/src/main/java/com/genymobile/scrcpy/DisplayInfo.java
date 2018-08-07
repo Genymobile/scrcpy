@@ -16,5 +16,16 @@ public final class DisplayInfo {
     public int getRotation() {
         return rotation;
     }
+
+    public DisplayInfo withRotation(int rotation) {
+        if (rotation == this.rotation) {
+            return this;
+        }
+        Size newSize = size;
+        if ((rotation & 1) != (this.rotation & 1)) {
+            newSize = size.rotate();
+        }
+        return new DisplayInfo(newSize, rotation);
+    }
 }
 

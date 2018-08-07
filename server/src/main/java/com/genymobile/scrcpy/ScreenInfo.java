@@ -6,26 +6,22 @@ public final class ScreenInfo {
     private final Size deviceSize;
     private final Size videoSize;
     private final Rect crop;
-    private final boolean rotated;
 
     private ScreenInfo(Size deviceSize, Size videoSize, Rect crop, boolean rotated) {
         this.deviceSize = deviceSize;
         this.videoSize = videoSize;
-        this.rotated = rotated;
         this.crop = crop;
     }
 
-    public static ScreenInfo create(DisplayInfo displayInfo, int maxSize, Rect crop) {
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
-        // the device size (provided by the system) takes the rotation into account
-        Size deviceSize = displayInfo.getSize();
+    public static ScreenInfo create(Size deviceSize, int maxSize, Rect crop, boolean rotated) {
         Size inputSize;
         if (crop == null) {
             inputSize = deviceSize;
         } else {
             if (rotated) {
                 // the crop (provided by the user) is expressed in the natural orientation
-                crop = rotateCrop(crop, deviceSize.rotate());
+                // the device size (provided by the system) already takes the rotation into account
+                crop = rotateCrop(crop, deviceSize);
             }
             inputSize = new Size(crop.width(), crop.height());
         }
@@ -78,27 +74,8 @@ public final class ScreenInfo {
         return crop != null ? crop : deviceSize.toRect();
     }
 
-    public ScreenInfo withRotation(int rotation) {
-        boolean newRotated = (rotation & 1) != 0;
-        if (rotated == newRotated) {
-            return this;
-        }
-        Rect newCrop = null;
-        if (crop != null) {
-            // the crop has typically a meaning only in one dimension, but we must rotate it so that the
-            // video size matches on rotation
-            newCrop = newRotated ? rotateCrop(crop, deviceSize) : unrotateCrop(crop, deviceSize);
-        }
-        return new ScreenInfo(deviceSize.rotate(), videoSize.rotate(), newCrop, newRotated);
-    }
-
-    private static Rect rotateCrop(Rect crop, Size deviceSize) {
-        int w = deviceSize.getWidth();
+    private static Rect rotateCrop(Rect crop, Size rotatedSize) {
+        int w = rotatedSize.getHeight(); // the size is already rotated
         return new Rect(crop.top, w - crop.right, crop.bottom, w - crop.left);
-    }
-
-    private static Rect unrotateCrop(Rect crop, Size deviceSize) {
-        int h = deviceSize.getHeight();
-        return new Rect(h - crop.bottom, crop.left, h - crop.top, crop.right);
     }
 }

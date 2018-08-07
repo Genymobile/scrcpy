@@ -19,15 +19,30 @@ public final class Device {
 
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
+    private boolean rotated;
 
     public Device(Options options) {
-        options.setCrop(new Rect(100, 100, 300, 250));
-        screenInfo = computeScreenInfo(options.getMaxSize(), options.getCrop());
+        options.setCrop(new Rect(0, 960, 1080, 1920));
+
+        final int maxSize = options.getMaxSize();
+        final Rect crop = options.getCrop();
+
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        rotated = (displayInfo.getRotation() & 1) != 0;
+
+        screenInfo = ScreenInfo.create(displayInfo.getSize(), maxSize, crop, rotated);
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
-            public void onRotationChanged(int rotation) throws RemoteException {
+            public void onRotationChanged(int rotation) {
+                boolean rotated = (rotation & 1) != 0;
                 synchronized (Device.this) {
-                    screenInfo = screenInfo.withRotation(rotation);
+                    // Do not call getDisplayInfo(), the resulting rotation may be inconsistent with
+                    // the rotation parameter (race condition).
+                    // Instead, compute the new size from the (rotated) old size.
+                    Size oldSize = screenInfo.getDeviceSize();
+                    Size newSize = rotated != Device.this.rotated ? oldSize.rotate() : oldSize;
+                    screenInfo = ScreenInfo.create(newSize, maxSize, crop, rotated);
+                    Device.this.rotated = rotated;
 
                     // notify
                     if (rotationListener != null) {
@@ -42,14 +57,9 @@ public final class Device {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(int maxSize, Rect crop) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        return ScreenInfo.create(displayInfo, maxSize, crop);
-    }
-
     public Point getPhysicalPoint(Position position) {
         @SuppressWarnings("checkstyle:HiddenField") // it hides the field on purpose, to read it with a lock
-        ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
+                ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
         Size clientVideoSize = position.getScreenSize();
         if (!videoSize.equals(clientVideoSize)) {
