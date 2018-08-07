@@ -68,11 +68,11 @@ public final class Device {
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
         }
-        Size deviceSize = screenInfo.getDeviceSize();
+        Rect contentRect = screenInfo.getContentRect();
         Point point = position.getPoint();
-        int scaledX = point.x * deviceSize.getWidth() / videoSize.getWidth();
-        int scaledY = point.y * deviceSize.getHeight() / videoSize.getHeight();
-        return new Point(scaledX, scaledY);
+        int deviceX = contentRect.left + point.x * contentRect.width() / videoSize.getWidth();
+        int deviceY = contentRect.top + point.y * contentRect.height() / videoSize.getHeight();
+        return new Point(deviceX, deviceY);
     }
 
     public static String getDeviceName() {
