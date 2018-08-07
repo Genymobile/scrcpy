@@ -22,7 +22,9 @@ public final class Device {
     private boolean rotated;
 
     public Device(Options options) {
-        options.setCrop(new Rect(0, 960, 1080, 1920));
+        options.setCrop(new Rect(0, 0, 1280, 1440));
+
+        // TODO crop the crop to the device size!!!
 
         final int maxSize = options.getMaxSize();
         final Rect crop = options.getCrop();
