@@ -1,9 +1,12 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Rect;
+
 public class Options {
     private int maxSize;
     private int bitRate;
     private boolean tunnelForward;
+    private Rect crop;
 
     public int getMaxSize() {
         return maxSize;
@@ -27,5 +30,13 @@ public class Options {
 
     public void setTunnelForward(boolean tunnelForward) {
         this.tunnelForward = tunnelForward;
+    }
+
+    public Rect getCrop() {
+        return crop;
+    }
+
+    public void setCrop(Rect crop) {
+        this.crop = crop;
     }
 }

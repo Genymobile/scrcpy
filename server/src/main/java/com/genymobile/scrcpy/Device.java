@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
@@ -20,7 +21,8 @@ public final class Device {
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        screenInfo = computeScreenInfo(options.getMaxSize());
+        options.setCrop(new Rect(100, 100, 300, 250));
+        screenInfo = computeScreenInfo(options.getMaxSize(), options.getCrop());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -40,40 +42,9 @@ public final class Device {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(int maxSize) {
+    private ScreenInfo computeScreenInfo(int maxSize, Rect crop) {
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
-        Size deviceSize = displayInfo.getSize();
-        Size videoSize = computeVideoSize(deviceSize, maxSize);
-        return new ScreenInfo(deviceSize, videoSize, rotated);
-    }
-
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private static Size computeVideoSize(Size inputSize, int maxSize) {
-        // Compute the video size and the padding of the content inside this video.
-        // Principle:
-        // - scale down the great side of the screen to maxSize (if necessary);
-        // - scale down the other side so that the aspect ratio is preserved;
-        // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
-        int w = inputSize.getWidth() & ~7; // in case it's not a multiple of 8
-        int h = inputSize.getHeight() & ~7;
-        if (maxSize > 0) {
-            if (BuildConfig.DEBUG && maxSize % 8 != 0) {
-                throw new AssertionError("Max size must be a multiple of 8");
-            }
-            boolean portrait = h > w;
-            int major = portrait ? h : w;
-            int minor = portrait ? w : h;
-            if (major > maxSize) {
-                int minorExact = minor * maxSize / major;
-                // +4 to round the value to the nearest multiple of 8
-                minor = (minorExact + 4) & ~7;
-                major = maxSize;
-            }
-            w = portrait ? minor : major;
-            h = portrait ? major : minor;
-        }
-        return new Size(w, h);
+        return ScreenInfo.create(displayInfo, maxSize, crop);
     }
 
     public Point getPhysicalPoint(Position position) {
