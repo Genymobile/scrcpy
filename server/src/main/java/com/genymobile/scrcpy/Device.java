@@ -40,18 +40,23 @@ public final class Device {
         return screenInfo;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private ScreenInfo computeScreenInfo(int maxSize) {
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        boolean rotated = (displayInfo.getRotation() & 1) != 0;
+        Size deviceSize = displayInfo.getSize();
+        Size videoSize = computeVideoSize(deviceSize, maxSize);
+        return new ScreenInfo(deviceSize, videoSize, rotated);
+    }
+
+    @SuppressWarnings("checkstyle:MagicNumber")
+    private static Size computeVideoSize(Size inputSize, int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:
         // - scale down the great side of the screen to maxSize (if necessary);
         // - scale down the other side so that the aspect ratio is preserved;
         // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
-        Size deviceSize = displayInfo.getSize();
-        int w = deviceSize.getWidth() & ~7; // in case it's not a multiple of 8
-        int h = deviceSize.getHeight() & ~7;
+        int w = inputSize.getWidth() & ~7; // in case it's not a multiple of 8
+        int h = inputSize.getHeight() & ~7;
         if (maxSize > 0) {
             if (BuildConfig.DEBUG && maxSize % 8 != 0) {
                 throw new AssertionError("Max size must be a multiple of 8");
@@ -68,8 +73,7 @@ public final class Device {
             w = portrait ? minor : major;
             h = portrait ? major : minor;
         }
-        Size videoSize = new Size(w, h);
-        return new ScreenInfo(deviceSize, videoSize, rotated);
+        return new Size(w, h);
     }
 
     public Point getPhysicalPoint(Position position) {
