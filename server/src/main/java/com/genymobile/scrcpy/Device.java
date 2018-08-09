@@ -77,7 +77,8 @@ public final class Device {
     }
 
     public Point getPhysicalPoint(Position position) {
-        @SuppressWarnings("checkstyle:HiddenField") // it hides the field on purpose, to read it with a lock
+        // it hides the field on purpose, to read it with a lock
+        @SuppressWarnings("checkstyle:HiddenField")
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
         Size clientVideoSize = position.getScreenSize();
