@@ -56,12 +56,12 @@ public class ScreenEncoder implements Device.RotationListener {
             do {
                 MediaCodec codec = createCodec();
                 IBinder display = createDisplay();
-                Rect deviceRect = device.getScreenInfo().getDeviceSize().toRect();
+                Rect contentRect = device.getScreenInfo().getContentRect();
                 Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, deviceRect, videoRect);
+                setDisplaySurface(display, surface, contentRect, videoRect);
                 codec.start();
                 try {
                     alive = encode(codec, outputStream);

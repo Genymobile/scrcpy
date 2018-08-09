@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Rect;
+
 import java.io.IOException;
 
 public final class Server {
@@ -63,7 +65,29 @@ public final class Server {
         boolean tunnelForward = Boolean.parseBoolean(args[2]);
         options.setTunnelForward(tunnelForward);
 
+        if (args.length < 4) {
+            return options;
+        }
+        Rect crop = parseCrop(args[3]);
+        options.setCrop(crop);
+
         return options;
+    }
+
+    private static Rect parseCrop(String crop) {
+        if (crop.isEmpty()) {
+            return null;
+        }
+        // input format: "width:height:x:y"
+        String[] tokens = crop.split(":");
+        if (tokens.length != 4) {
+            throw new IllegalArgumentException("Crop must contains 4 values separated by colons: \"" + crop + "\"");
+        }
+        int width = Integer.parseInt(tokens[0]);
+        int height = Integer.parseInt(tokens[1]);
+        int x = Integer.parseInt(tokens[2]);
+        int y = Integer.parseInt(tokens[3]);
+        return new Rect(x, y, x + width, y + height);
     }
 
     public static void main(String... args) throws Exception {

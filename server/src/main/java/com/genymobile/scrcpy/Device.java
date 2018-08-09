@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.os.Build;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
@@ -20,7 +21,7 @@ public final class Device {
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        screenInfo = computeScreenInfo(options.getMaxSize());
+        screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -40,23 +41,40 @@ public final class Device {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(int maxSize) {
+    private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();
-        Size videoSize = computeVideoSize(deviceSize, maxSize);
-        return new ScreenInfo(deviceSize, videoSize, rotated);
+        Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
+        if (crop != null) {
+            if (rotated) {
+                // the crop (provided by the user) is expressed in the natural orientation
+                crop = flipRect(crop);
+            }
+            if (!contentRect.intersect(crop)) {
+                // intersect() changes contentRect so that it is intersected with crop
+                Ln.w("Crop rectangle (" + formatCrop(crop) + ") does not intersect device screen (" + formatCrop(deviceSize.toRect()) + ")");
+                contentRect = new Rect(); // empty
+            }
+        }
+
+        Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
+        return new ScreenInfo(contentRect, videoSize, rotated);
+    }
+
+    private static String formatCrop(Rect rect) {
+        return rect.width() + ":" + rect.height() + ":" + rect.left + ":" + rect.top;
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
-    private static Size computeVideoSize(Size inputSize, int maxSize) {
+    private static Size computeVideoSize(int w, int h, int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:
         // - scale down the great side of the screen to maxSize (if necessary);
         // - scale down the other side so that the aspect ratio is preserved;
         // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
-        int w = inputSize.getWidth() & ~7; // in case it's not a multiple of 8
-        int h = inputSize.getHeight() & ~7;
+        w &= ~7; // in case it's not a multiple of 8
+        h &= ~7;
         if (maxSize > 0) {
             if (BuildConfig.DEBUG && maxSize % 8 != 0) {
                 throw new AssertionError("Max size must be a multiple of 8");
@@ -87,10 +105,10 @@ public final class Device {
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
         }
-        Size deviceSize = screenInfo.getDeviceSize();
+        Rect contentRect = screenInfo.getContentRect();
         Point point = position.getPoint();
-        int scaledX = point.x * deviceSize.getWidth() / videoSize.getWidth();
-        int scaledY = point.y * deviceSize.getHeight() / videoSize.getHeight();
+        int scaledX = contentRect.left + point.x * contentRect.width() / videoSize.getWidth();
+        int scaledY = contentRect.top + point.y * contentRect.height() / videoSize.getHeight();
         return new Point(scaledX, scaledY);
     }
 
@@ -112,5 +130,9 @@ public final class Device {
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
         this.rotationListener = rotationListener;
+    }
+
+    static Rect flipRect(Rect crop) {
+        return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }
 }

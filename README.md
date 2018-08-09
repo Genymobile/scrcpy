@@ -294,6 +294,12 @@ screen is smaller, or cannot decode such a high definition):
 scrcpy -m 1024
 ```
 
+The device screen may be cropped to mirror only part of the screen:
+
+```bash
+scrcpy -c 1224:1440:0:0   # 1224x1440 at offset (0,0)
+```
+
 If several devices are listed in `adb devices`, you must specify the _serial_:
 
 ```bash

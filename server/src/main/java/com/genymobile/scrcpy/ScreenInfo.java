@@ -1,18 +1,20 @@
 package com.genymobile.scrcpy;
 
+import android.graphics.Rect;
+
 public final class ScreenInfo {
-    private final Size deviceSize;
+    private final Rect contentRect; // device size, possibly cropped
     private final Size videoSize;
     private final boolean rotated;
 
-    public ScreenInfo(Size deviceSize, Size videoSize, boolean rotated) {
-        this.deviceSize = deviceSize;
+    public ScreenInfo(Rect contentRect, Size videoSize, boolean rotated) {
+        this.contentRect = contentRect;
         this.videoSize = videoSize;
         this.rotated = rotated;
     }
 
-    public Size getDeviceSize() {
-        return deviceSize;
+    public Rect getContentRect() {
+        return contentRect;
     }
 
     public Size getVideoSize() {
@@ -24,6 +26,6 @@ public final class ScreenInfo {
         if (rotated == newRotated) {
             return this;
         }
-        return new ScreenInfo(deviceSize.rotate(), videoSize.rotate(), newRotated);
+        return new ScreenInfo(Device.flipRect(contentRect), videoSize.rotate(), newRotated);
     }
 }
