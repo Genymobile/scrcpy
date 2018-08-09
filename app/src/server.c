@@ -207,7 +207,7 @@ socket_t server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
     } else {
-        Uint32 attempts = 50;
+        Uint32 attempts = 100;
         Uint32 delay = 100; // ms
         server->device_socket = connect_to_server(server->local_port, attempts, delay);
     }
