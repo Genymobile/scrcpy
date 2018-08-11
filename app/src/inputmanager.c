@@ -265,7 +265,7 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
             }
             // otherwise, send the click event to the device
         }
-    };
+    }
     struct control_event control_event;
     if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
