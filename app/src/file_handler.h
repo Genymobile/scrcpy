@@ -6,12 +6,15 @@
 #include <SDL2/SDL_thread.h>
 #include "command.h"
 
-#define FILE_QUEUE_SIZE 16
+#define REQUEST_QUEUE_SIZE 16
 
-// NOTE(AdoPi) file_queue and control_event can use a generic queue
+typedef enum {
+    ACTION_INSTALL_APK,
+    ACTION_PUSH_FILE,
+} file_handler_action_t;
 
-struct file_queue {
-    char *data[FILE_QUEUE_SIZE];
+struct request_queue {
+    struct request *reqs[REQUEST_QUEUE_SIZE];
     int tail;
     int head;
 };
@@ -24,7 +27,7 @@ struct file_handler {
     SDL_bool stopped;
     SDL_bool initialized;
     process_t current_process;
-    struct file_queue queue;
+    struct request_queue queue;
 };
 
 SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial);
@@ -34,6 +37,8 @@ SDL_bool file_handler_start(struct file_handler *file_handler);
 void file_handler_stop(struct file_handler *file_handler);
 void file_handler_join(struct file_handler *file_handler);
 
-SDL_bool file_handler_do(struct file_handler *file_handler, const char *filename);
+SDL_bool file_handler_request(struct file_handler *file_handler,
+                              file_handler_action_t action,
+                              const char *file);
 
 #endif

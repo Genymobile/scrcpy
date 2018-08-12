@@ -2,57 +2,77 @@
 
 #include <string.h>
 #include "command.h"
+#include "device.h"
 #include "lockutil.h"
 #include "log.h"
 
-// NOTE(adopi) this can be more generic:
-// it could be used with a command queue instead of a filename queue
-// then we would have a generic invoker (useful if we want to handle more async commands)
+struct request {
+    file_handler_action_t action;
+    const char *file;
+};
 
-SDL_bool file_queue_is_empty(const struct file_queue *queue) {
+static struct request *request_new(file_handler_action_t action, const char *file) {
+    struct request *req = SDL_malloc(sizeof(*req));
+    if (!req) {
+        return NULL;
+    }
+    req->action = action;
+    req->file = file;
+    return req;
+}
+
+static void request_free(struct request *req) {
+    if (!req) {
+        return;
+    }
+    SDL_free((void *) req->file);
+    SDL_free((void *) req);
+}
+
+SDL_bool request_queue_is_empty(const struct request_queue *queue) {
     return queue->head == queue->tail;
 }
 
-SDL_bool file_queue_is_full(const struct file_queue *queue) {
-    return (queue->head + 1) % FILE_QUEUE_SIZE == queue->tail;
+SDL_bool request_queue_is_full(const struct request_queue *queue) {
+    return (queue->head + 1) % REQUEST_QUEUE_SIZE == queue->tail;
 }
 
-SDL_bool file_queue_init(struct file_queue *queue) {
+SDL_bool request_queue_init(struct request_queue *queue) {
     queue->head = 0;
     queue->tail = 0;
     return SDL_TRUE;
 }
 
-void file_queue_destroy(struct file_queue *queue) {
+void request_queue_destroy(struct request_queue *queue) {
     int i = queue->tail;
     while (i != queue->head) {
-        SDL_free(queue->data[i]);
-        i = (i + 1) % FILE_QUEUE_SIZE;
+        request_free(queue->reqs[i]);
+        i = (i + 1) % REQUEST_QUEUE_SIZE;
     }
 }
 
-SDL_bool file_queue_push(struct file_queue *queue, const char *file) {
-    if (file_queue_is_full(queue)) {
+SDL_bool request_queue_push(struct request_queue *queue, struct request *req) {
+    if (request_queue_is_full(queue)) {
         return SDL_FALSE;
     }
-    queue->data[queue->head] = SDL_strdup(file);
-    queue->head = (queue->head + 1) % FILE_QUEUE_SIZE;
+    queue->reqs[queue->head] = req;
+    queue->head = (queue->head + 1) % REQUEST_QUEUE_SIZE;
     return SDL_TRUE;
 }
 
-SDL_bool file_queue_take(struct file_queue *queue, char **file) {
-    if (file_queue_is_empty(queue)) {
+SDL_bool request_queue_take(struct request_queue *queue, struct request **req) {
+    if (request_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
     // transfer ownership
-    *file = queue->data[queue->tail];
-    queue->tail = (queue->tail + 1) % FILE_QUEUE_SIZE;
+    *req = queue->reqs[queue->tail];
+    queue->tail = (queue->tail + 1) % REQUEST_QUEUE_SIZE;
     return SDL_TRUE;
 }
 
 SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial) {
 
-    if (!file_queue_init(&file_handler->queue)) {
+    if (!request_queue_init(&file_handler->queue)) {
         return SDL_FALSE;
     }
 
@@ -88,11 +108,21 @@ SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial
 void file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
-    file_queue_destroy(&file_handler->queue);
+    request_queue_destroy(&file_handler->queue);
     SDL_free((void *) file_handler->serial);
 }
 
-SDL_bool file_handler_do(struct file_handler *file_handler, const char *file) {
+static process_t install_apk(const char *serial, const char *file) {
+    return adb_install(serial, file);
+}
+
+static process_t push_file(const char *serial, const char *file) {
+    return adb_push(serial, file, DEVICE_SDCARD_PATH);
+}
+
+SDL_bool file_handler_request(struct file_handler *file_handler,
+                              file_handler_action_t action,
+                              const char *file) {
     SDL_bool res;
 
     // start file_handler if it's used for the first time
@@ -103,9 +133,16 @@ SDL_bool file_handler_do(struct file_handler *file_handler, const char *file) {
         file_handler->initialized = SDL_TRUE;
     }
 
+    LOGI("Request to %s %s", action == ACTION_INSTALL_APK ? "install" : "push", file);
+    struct request *req = request_new(action, file);
+    if (!req) {
+        LOGE("Could not create request");
+        return SDL_FALSE;
+    }
+
     mutex_lock(file_handler->mutex);
-    SDL_bool was_empty = file_queue_is_empty(&file_handler->queue);
-    res = file_queue_push(&file_handler->queue, file);
+    SDL_bool was_empty = request_queue_is_empty(&file_handler->queue);
+    res = request_queue_push(&file_handler->queue, req);
     if (was_empty) {
         cond_signal(file_handler->event_cond);
     }
@@ -119,7 +156,7 @@ static int run_file_handler(void *data) {
     for (;;) {
         mutex_lock(file_handler->mutex);
         file_handler->current_process = PROCESS_NONE;
-        while (!file_handler->stopped && file_queue_is_empty(&file_handler->queue)) {
+        while (!file_handler->stopped && request_queue_is_empty(&file_handler->queue)) {
             cond_wait(file_handler->event_cond, file_handler->mutex);
         }
         if (file_handler->stopped) {
@@ -127,25 +164,39 @@ static int run_file_handler(void *data) {
             mutex_unlock(file_handler->mutex);
             break;
         }
-        char *current_apk;
+        struct request *req;
 #ifdef BUILD_DEBUG
-        bool non_empty = file_queue_take(&file_handler->queue, &current_apk);
+        bool non_empty = request_queue_take(&file_handler->queue, &req);
         SDL_assert(non_empty);
 #else
-        file_queue_take(&file_handler->queue, &current_apk);
+        request_queue_take(&file_handler->queue, &req);
 #endif
-        LOGI("Installing %s...", current_apk);
-        process_t process = adb_install(file_handler->serial, current_apk);
+        process_t process;
+        if (req->action == ACTION_INSTALL_APK) {
+            LOGI("Installing %s...", req->file);
+            process = install_apk(file_handler->serial, req->file);
+        } else {
+            LOGI("Pushing %s...", req->file);
+            process = push_file(file_handler->serial, req->file);
+        }
         file_handler->current_process = process;
-
         mutex_unlock(file_handler->mutex);
 
-        if (process_check_success(process, "adb install")) {
-            LOGI("%s installed successfully", current_apk);
+        if (req->action == ACTION_INSTALL_APK) {
+            if (process_check_success(process, "adb install")) {
+                LOGI("%s successfully installed", req->file);
+            } else {
+                LOGE("Failed to install %s", req->file);
+            }
         } else {
-            LOGE("Failed to install %s", current_apk);
+            if (process_check_success(process, "adb push")) {
+                LOGI("%s successfully pushed to /sdcard/", req->file);
+            } else {
+                LOGE("Failed to push %s to /sdcard/", req->file);
+            }
         }
-        SDL_free(current_apk);
+
+        request_free(req);
     }
     return 0;
 }

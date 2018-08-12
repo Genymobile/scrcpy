@@ -56,6 +56,11 @@ static int event_watcher(void *data, SDL_Event *event) {
 }
 #endif
 
+static SDL_bool is_apk(const char *file) {
+    const char *ext = strrchr(file, '.');
+    return ext && !strcmp(ext, ".apk");
+}
+
 static SDL_bool event_loop(void) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     SDL_AddEventWatch(event_watcher, NULL);
@@ -104,9 +109,16 @@ static SDL_bool event_loop(void) {
             case SDL_MOUSEBUTTONUP:
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
-            case SDL_DROPFILE:
-                file_handler_do(&file_handler, event.drop.file);
+            case SDL_DROPFILE: {
+                file_handler_action_t action;
+                if (is_apk(event.drop.file)) {
+                    action = ACTION_INSTALL_APK;
+                } else {
+                    action = ACTION_PUSH_FILE;
+                }
+                file_handler_request(&file_handler, action, event.drop.file);
                 break;
+            }
         }
     }
     return SDL_FALSE;
