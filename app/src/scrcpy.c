@@ -13,6 +13,7 @@
 #include "decoder.h"
 #include "device.h"
 #include "events.h"
+#include "file_handler.h"
 #include "frames.h"
 #include "fpscounter.h"
 #include "inputmanager.h"
@@ -22,14 +23,13 @@
 #include "screen.h"
 #include "server.h"
 #include "tinyxpm.h"
-#include "installer.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
-static struct installer installer;
+static struct file_handler file_handler;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -105,7 +105,7 @@ static SDL_bool event_loop(void) {
                 input_manager_process_mouse_button(&input_manager, &event.button);
                 break;
             case SDL_DROPFILE:
-                installer_install_apk(&installer, event.drop.file);
+                file_handler_do(&file_handler, event.drop.file);
                 break;
         }
     }
@@ -175,7 +175,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    if (!installer_init(&installer, server.serial)) {
+    if (!file_handler_init(&file_handler, server.serial)) {
         ret = SDL_FALSE;
         server_stop(&server);
         goto finally_destroy_frames;
@@ -188,7 +188,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
         server_stop(&server);
-        goto finally_destroy_installer;
+        goto finally_destroy_file_handler;
     }
 
     if (!controller_init(&controller, device_socket)) {
@@ -226,10 +226,10 @@ finally_stop_decoder:
     // stop the server before decoder_join() to wake up the decoder
     server_stop(&server);
     decoder_join(&decoder);
-finally_destroy_installer:
-    installer_stop(&installer);
-    installer_join(&installer);
-    installer_destroy(&installer);
+finally_destroy_file_handler:
+    file_handler_stop(&file_handler);
+    file_handler_join(&file_handler);
+    file_handler_destroy(&file_handler);
 finally_destroy_frames:
     frames_destroy(&frames);
 finally_destroy_server:
