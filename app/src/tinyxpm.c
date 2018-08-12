@@ -40,15 +40,15 @@ SDL_Surface *read_xpm(char *xpm[]) {
     // *** No error handling, assume the XPM source is valid ***
     // (it's in our source repo)
     // Assertions are only checked in debug
-    Uint32 width = strtol(xpm[0], &endptr, 10);
-    Uint32 height = strtol(endptr + 1, &endptr, 10);
-    Uint32 colors = strtol(endptr + 1, &endptr, 10);
-    Uint32 chars = strtol(endptr + 1, &endptr, 10);
+    int width = strtol(xpm[0], &endptr, 10);
+    int height = strtol(endptr + 1, &endptr, 10);
+    int colors = strtol(endptr + 1, &endptr, 10);
+    int chars = strtol(endptr + 1, &endptr, 10);
 
     // sanity checks
-    SDL_assert(width < 256);
-    SDL_assert(height < 256);
-    SDL_assert(colors < 256);
+    SDL_assert(0 <= width && width < 256);
+    SDL_assert(0 <= height && height < 256);
+    SDL_assert(0 <= colors && colors < 256);
     SDL_assert(chars == 1); // this implementation does not support more
 
     // init index
