@@ -1,4 +1,4 @@
-project('scrcpy', 'c', meson_version: '>= 0.37', default_options : 'c_std=c99')
+project('scrcpy', 'c', meson_version: '>= 0.37', default_options : 'c_std=c11')
 
 if get_option('build_app')
     subdir('app')
