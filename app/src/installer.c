@@ -69,6 +69,7 @@ SDL_bool installer_init(struct installer *installer, const char *serial) {
         installer->serial = SDL_strdup(serial);
         if (!installer->serial) {
             LOGW("Cannot strdup serial");
+            SDL_DestroyMutex(installer->mutex);
             return SDL_FALSE;
         }
     } else {

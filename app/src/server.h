@@ -31,7 +31,7 @@ void server_init(struct server *server);
 
 // push, enable tunnel et start the server
 SDL_bool server_start(struct server *server, const char *serial, Uint16 local_port,
-                      Uint16 max_size, Uint32 bit_rate);
+                      Uint16 max_size, Uint32 bit_rate, const char *crop);
 
 // block until the communication with the server is established
 socket_t server_connect_to(struct server *server);

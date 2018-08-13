@@ -5,6 +5,7 @@
 
 struct scrcpy_options {
     const char *serial;
+    const char *crop;
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;

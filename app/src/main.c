@@ -10,6 +10,7 @@
 
 struct args {
     const char *serial;
+    const char *crop;
     SDL_bool help;
     SDL_bool version;
     SDL_bool show_touches;
@@ -28,6 +29,12 @@ static void usage(const char *arg0) {
         "        Encode the video at the given bit-rate, expressed in bits/s.\n"
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
         "        Default is %d.\n"
+        "\n"
+        "    -c, --crop width:height:x:y\n"
+        "        Crop the device screen on the server.\n"
+        "        The values are expressed in the device natural orientation\n"
+        "        (typically, portrait for a phone, landscape for a tablet).\n"
+        "        Any --max-size value is computed on the cropped size.\n"
         "\n"
         "    -h, --help\n"
         "        Print this help.\n"
@@ -192,6 +199,7 @@ static SDL_bool parse_port(char *optarg, Uint16 *port) {
 static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"bit-rate",     required_argument, NULL, 'b'},
+        {"crop",         required_argument, NULL, 'c'},
         {"help",         no_argument,       NULL, 'h'},
         {"max-size",     required_argument, NULL, 'm'},
         {"port",         required_argument, NULL, 'p'},
@@ -201,12 +209,15 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:hm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:hm:p:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
                     return SDL_FALSE;
                 }
+                break;
+            case 'c':
+                args->crop = optarg;
                 break;
             case 'h':
                 args->help = SDL_TRUE;
@@ -253,6 +264,7 @@ int main(int argc, char *argv[]) {
 #endif
     struct args args = {
         .serial = NULL,
+        .crop = NULL,
         .help = SDL_FALSE,
         .version = SDL_FALSE,
         .show_touches = SDL_FALSE,
@@ -274,7 +286,9 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
     av_register_all();
+#endif
 
     if (avformat_network_init()) {
         return 1;
@@ -286,6 +300,7 @@ int main(int argc, char *argv[]) {
 
     struct scrcpy_options options = {
         .serial = args.serial,
+        .crop = args.crop,
         .port = args.port,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
