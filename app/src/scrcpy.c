@@ -35,6 +35,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .frames = &frames,
     .screen = &screen,
+    .raw_key_events = SDL_FALSE,
 };
 
 #if defined(__APPLE__) || defined(__WINDOWS__)
@@ -221,12 +222,6 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (options->show_touches) {
         wait_show_touches(proc_show_touches);
         show_touches_waited = SDL_TRUE;
-    }
-
-    // configure the "raw key events" flag on the input manager
-    input_manager.raw_key_events = options->raw_key_events;
-    if (options->raw_key_events) {
-        LOGI("Raw key events mode enabled");
     }
 
     ret = event_loop();

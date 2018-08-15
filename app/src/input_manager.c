@@ -220,6 +220,13 @@ void input_manager_process_key(struct input_manager *input_manager,
                     switch_fps_counter_state(input_manager->frames);
                 }
                 return;
+            case SDLK_k:
+                if (!repeat && event->type == SDL_KEYDOWN) {
+                    input_manager->raw_key_events ^= SDL_TRUE; // toggle
+                    LOGI("Raw key events mode %s",
+                         input_manager->raw_key_events ? "enabled" : "disabled");
+                }
+                return;
         }
 
         return;

@@ -312,19 +312,6 @@ To show physical touches while scrcpy is running:
 scrcpy -t
 ```
 
-For playing games, it may be useful to enable "raw key events" (see [#87] and
-[#127]):
-
-```bash
-scrcpy -k
-```
-
-Note that in this mode, text inputs may not work as expected. As a workaround,
-it is still possible to send text using copy-paste.
-
-[#87]: https://github.com/Genymobile/scrcpy/issues/87
-[#127]: https://github.com/Genymobile/scrcpy/issues/127
-
 To run without installing:
 
 ```bash
@@ -351,11 +338,14 @@ To run without installing:
  | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
+ | toggle "raw key events" mode ([#87])   | `Ctrl`+`k`                    |
  | install APK from computer              | drag & drop APK file          |
  | push file to `/sdcard/`                | drag & drop non-APK file      |
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
+
+[#87]: https://github.com/Genymobile/scrcpy/issues/87
 
 
 ## Why _scrcpy_?
