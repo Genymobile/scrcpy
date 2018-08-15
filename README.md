@@ -312,6 +312,19 @@ To show physical touches while scrcpy is running:
 scrcpy -t
 ```
 
+For playing games, it may be useful to enable "raw key events" (see [#87] and
+[#127]):
+
+```bash
+scrcpy -k
+```
+
+Note that in this mode, text inputs may not work as expected. As a workaround,
+it is still possible to send text using copy-paste.
+
+[#87]: https://github.com/Genymobile/scrcpy/issues/87
+[#127]: https://github.com/Genymobile/scrcpy/issues/127
+
 To run without installing:
 
 ```bash

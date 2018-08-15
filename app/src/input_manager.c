@@ -129,6 +129,10 @@ static void clipboard_paste(struct controller *controller) {
 
 void input_manager_process_text_input(struct input_manager *input_manager,
                                       const SDL_TextInputEvent *event) {
+    if (input_manager->raw_key_events) {
+        // we will forward the raw key events instead
+        return;
+    }
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     control_event.text_event.text = SDL_strdup(event->text);
@@ -222,7 +226,8 @@ void input_manager_process_key(struct input_manager *input_manager,
     }
 
     struct control_event control_event;
-    if (input_key_from_sdl_to_android(event, &control_event)) {
+    SDL_bool raw_key_events = input_manager->raw_key_events;
+    if (input_key_from_sdl_to_android(event, &control_event, raw_key_events)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send control event");
         }

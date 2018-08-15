@@ -223,6 +223,12 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
+    // configure the "raw key events" flag on the input manager
+    input_manager.raw_key_events = options->raw_key_events;
+    if (options->raw_key_events) {
+        LOGI("Raw key events mode enabled");
+    }
+
     ret = event_loop();
     LOGD("quit...");
 

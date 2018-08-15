@@ -70,6 +70,83 @@ static enum android_metastate convert_meta_state(SDL_Keymod mod) {
     return autocomplete_metastate(metastate);
 }
 
+// only used if raw_key_events is enabled
+static SDL_bool convert_text_keycode(SDL_Keycode from, enum android_keycode *to) {
+    switch (from) {
+        MAP(SDLK_SPACE,         AKEYCODE_SPACE);
+        MAP(SDLK_HASH,          AKEYCODE_POUND);
+        MAP(SDLK_QUOTE,         AKEYCODE_APOSTROPHE);
+        MAP(SDLK_ASTERISK,      AKEYCODE_STAR);
+        MAP(SDLK_COMMA,         AKEYCODE_COMMA);
+        MAP(SDLK_MINUS,         AKEYCODE_MINUS);
+        MAP(SDLK_PERIOD,        AKEYCODE_PERIOD);
+        MAP(SDLK_SLASH,         AKEYCODE_SLASH);
+        MAP(SDLK_0,             AKEYCODE_0);
+        MAP(SDLK_1,             AKEYCODE_1);
+        MAP(SDLK_2,             AKEYCODE_2);
+        MAP(SDLK_3,             AKEYCODE_3);
+        MAP(SDLK_4,             AKEYCODE_4);
+        MAP(SDLK_5,             AKEYCODE_5);
+        MAP(SDLK_6,             AKEYCODE_6);
+        MAP(SDLK_7,             AKEYCODE_7);
+        MAP(SDLK_8,             AKEYCODE_8);
+        MAP(SDLK_9,             AKEYCODE_9);
+        MAP(SDLK_SEMICOLON,     AKEYCODE_SEMICOLON);
+        MAP(SDLK_EQUALS,        AKEYCODE_EQUALS);
+        MAP(SDLK_AT,            AKEYCODE_AT);
+        MAP(SDLK_LEFTBRACKET,   AKEYCODE_LEFT_BRACKET);
+        MAP(SDLK_BACKSLASH,     AKEYCODE_BACKSLASH);
+        MAP(SDLK_RIGHTBRACKET,  AKEYCODE_RIGHT_BRACKET);
+        MAP(SDLK_BACKQUOTE,     AKEYCODE_GRAVE);
+        MAP(SDLK_a,             AKEYCODE_A);
+        MAP(SDLK_b,             AKEYCODE_B);
+        MAP(SDLK_c,             AKEYCODE_C);
+        MAP(SDLK_d,             AKEYCODE_D);
+        MAP(SDLK_e,             AKEYCODE_E);
+        MAP(SDLK_f,             AKEYCODE_F);
+        MAP(SDLK_g,             AKEYCODE_G);
+        MAP(SDLK_h,             AKEYCODE_H);
+        MAP(SDLK_i,             AKEYCODE_I);
+        MAP(SDLK_j,             AKEYCODE_J);
+        MAP(SDLK_k,             AKEYCODE_K);
+        MAP(SDLK_l,             AKEYCODE_L);
+        MAP(SDLK_m,             AKEYCODE_M);
+        MAP(SDLK_n,             AKEYCODE_N);
+        MAP(SDLK_o,             AKEYCODE_O);
+        MAP(SDLK_p,             AKEYCODE_P);
+        MAP(SDLK_q,             AKEYCODE_Q);
+        MAP(SDLK_r,             AKEYCODE_R);
+        MAP(SDLK_s,             AKEYCODE_S);
+        MAP(SDLK_t,             AKEYCODE_T);
+        MAP(SDLK_u,             AKEYCODE_U);
+        MAP(SDLK_v,             AKEYCODE_V);
+        MAP(SDLK_w,             AKEYCODE_W);
+        MAP(SDLK_x,             AKEYCODE_X);
+        MAP(SDLK_y,             AKEYCODE_Y);
+        MAP(SDLK_z,             AKEYCODE_Z);
+        MAP(SDLK_KP_ENTER,      AKEYCODE_NUMPAD_ENTER);
+        MAP(SDLK_KP_1,          AKEYCODE_NUMPAD_1);
+        MAP(SDLK_KP_2,          AKEYCODE_NUMPAD_2);
+        MAP(SDLK_KP_3,          AKEYCODE_NUMPAD_3);
+        MAP(SDLK_KP_4,          AKEYCODE_NUMPAD_4);
+        MAP(SDLK_KP_5,          AKEYCODE_NUMPAD_5);
+        MAP(SDLK_KP_6,          AKEYCODE_NUMPAD_6);
+        MAP(SDLK_KP_7,          AKEYCODE_NUMPAD_7);
+        MAP(SDLK_KP_8,          AKEYCODE_NUMPAD_8);
+        MAP(SDLK_KP_9,          AKEYCODE_NUMPAD_9);
+        MAP(SDLK_KP_0,          AKEYCODE_NUMPAD_0);
+        MAP(SDLK_KP_DIVIDE,     AKEYCODE_NUMPAD_DIVIDE);
+        MAP(SDLK_KP_MULTIPLY,   AKEYCODE_NUMPAD_MULTIPLY);
+        MAP(SDLK_KP_MINUS,      AKEYCODE_NUMPAD_SUBTRACT);
+        MAP(SDLK_KP_PLUS,       AKEYCODE_NUMPAD_ADD);
+        MAP(SDLK_KP_PERIOD,     AKEYCODE_NUMPAD_DOT);
+        MAP(SDLK_KP_EQUALS,     AKEYCODE_NUMPAD_EQUALS);
+        MAP(SDLK_KP_LEFTPAREN,  AKEYCODE_NUMPAD_LEFT_PAREN);
+        MAP(SDLK_KP_RIGHTPAREN, AKEYCODE_NUMPAD_RIGHT_PAREN);
+        FAIL;
+    }
+}
+
 static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
@@ -119,7 +196,8 @@ static enum android_motionevent_buttons convert_mouse_buttons(Uint32 state) {
 }
 
 SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
-                                       struct control_event *to) {
+                                       struct control_event *to,
+                                       SDL_bool raw_key_events) {
     to->type = CONTROL_EVENT_TYPE_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->keycode_event.action)) {
@@ -127,7 +205,10 @@ SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
     }
 
     if (!convert_keycode(from->keysym.sym, &to->keycode_event.keycode)) {
-        return SDL_FALSE;
+        if (!raw_key_events ||
+                !convert_text_keycode(from->keysym.sym, &to->keycode_event.keycode)) {
+            return SDL_FALSE;
+        }
     }
 
     to->keycode_event.metastate = convert_meta_state(from->keysym.mod);

@@ -16,7 +16,9 @@ struct complete_mouse_wheel_event {
 };
 
 SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
-                                       struct control_event *to);
+                                       struct control_event *to,
+                                       SDL_bool raw_key_events);
+
 SDL_bool mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
                                           struct size screen_size,
                                           struct control_event *to);

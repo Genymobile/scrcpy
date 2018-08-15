@@ -14,6 +14,7 @@ struct args {
     SDL_bool help;
     SDL_bool version;
     SDL_bool show_touches;
+    SDL_bool raw_key_events;
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;
@@ -35,6 +36,11 @@ static void usage(const char *arg0) {
         "        The values are expressed in the device natural orientation\n"
         "        (typically, portrait for a phone, landscape for a tablet).\n"
         "        Any --max-size value is computed on the cropped size.\n"
+        "\n"
+        "    -k, --raw-key-events\n"
+        "        Send key events even for text keys, and ignore text input\n"
+        "        events. This is useful when text keys are not used for\n"
+        "        typing text, for example in video games.\n"
         "\n"
         "    -h, --help\n"
         "        Print this help.\n"
@@ -198,18 +204,19 @@ static SDL_bool parse_port(char *optarg, Uint16 *port) {
 
 static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"bit-rate",     required_argument, NULL, 'b'},
-        {"crop",         required_argument, NULL, 'c'},
-        {"help",         no_argument,       NULL, 'h'},
-        {"max-size",     required_argument, NULL, 'm'},
-        {"port",         required_argument, NULL, 'p'},
-        {"serial",       required_argument, NULL, 's'},
-        {"show-touches", no_argument,       NULL, 't'},
-        {"version",      no_argument,       NULL, 'v'},
-        {NULL,           0,                 NULL, 0  },
+        {"bit-rate",       required_argument, NULL, 'b'},
+        {"crop",           required_argument, NULL, 'c'},
+        {"raw-key-events", no_argument,       NULL, 'k'},
+        {"help",           no_argument,       NULL, 'h'},
+        {"max-size",       required_argument, NULL, 'm'},
+        {"port",           required_argument, NULL, 'p'},
+        {"serial",         required_argument, NULL, 's'},
+        {"show-touches",   no_argument,       NULL, 't'},
+        {"version",        no_argument,       NULL, 'v'},
+        {NULL,             0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:hm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:khm:p:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -218,6 +225,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'c':
                 args->crop = optarg;
+                break;
+            case 'k':
+                args->raw_key_events = SDL_TRUE;
                 break;
             case 'h':
                 args->help = SDL_TRUE;
@@ -268,6 +278,7 @@ int main(int argc, char *argv[]) {
         .help = SDL_FALSE,
         .version = SDL_FALSE,
         .show_touches = SDL_FALSE,
+        .raw_key_events = SDL_FALSE,
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
@@ -305,6 +316,7 @@ int main(int argc, char *argv[]) {
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
+        .raw_key_events = args.raw_key_events,
     };
     int res = scrcpy(&options) ? 0 : 1;
 

@@ -10,6 +10,7 @@ struct scrcpy_options {
     Uint16 max_size;
     Uint32 bit_rate;
     SDL_bool show_touches;
+    SDL_bool raw_key_events; // ignore text input, forward key events instead
 };
 
 SDL_bool scrcpy(const struct scrcpy_options *options);

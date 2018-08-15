@@ -11,6 +11,7 @@ struct input_manager {
     struct controller *controller;
     struct frames *frames;
     struct screen *screen;
+    SDL_bool raw_key_events;
 };
 
 void input_manager_process_text_input(struct input_manager *input_manager,
