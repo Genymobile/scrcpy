@@ -1,6 +1,8 @@
 #include "file_handler.h"
 
 #include <string.h>
+#include <SDL2/SDL_assert.h>
+#include "config.h"
 #include "command.h"
 #include "device.h"
 #include "lockutil.h"
@@ -166,7 +168,7 @@ static int run_file_handler(void *data) {
         }
         struct request *req;
 #ifdef BUILD_DEBUG
-        bool non_empty = request_queue_take(&file_handler->queue, &req);
+        SDL_bool non_empty = request_queue_take(&file_handler->queue, &req);
         SDL_assert(non_empty);
 #else
         request_queue_take(&file_handler->queue, &req);

@@ -1,5 +1,7 @@
 #include "controller.h"
 
+#include <SDL2/SDL_assert.h>
+#include "config.h"
 #include "lockutil.h"
 #include "log.h"
 
@@ -66,7 +68,7 @@ static int run_controller(void *data) {
         }
         struct control_event event;
 #ifdef BUILD_DEBUG
-        bool non_empty = control_event_queue_take(&controller->queue, &event);
+        SDL_bool non_empty = control_event_queue_take(&controller->queue, &event);
         SDL_assert(non_empty);
 #else
         control_event_queue_take(&controller->queue, &event);
