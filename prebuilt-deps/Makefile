@@ -35,6 +35,6 @@ prepare-sdl2:
 		SDL2-2.0.8
 
 prepare-adb:
-	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r27.0.1-windows.zip \
-	    880662adfb0d6911ff250b9e13930ae1a4110fc36d5866afd4f8f56d935f7939 \
+	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r28.0.0-windows.zip \
+		e2c1ec7c8e9b71cf1c8befd3bff91d06b26dd334c3f32b3817e9d46ba260b0e8 \
 		platform-tools
