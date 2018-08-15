@@ -31,21 +31,21 @@ static void request_free(struct request *req) {
     SDL_free((void *) req);
 }
 
-SDL_bool request_queue_is_empty(const struct request_queue *queue) {
+static SDL_bool request_queue_is_empty(const struct request_queue *queue) {
     return queue->head == queue->tail;
 }
 
-SDL_bool request_queue_is_full(const struct request_queue *queue) {
+static SDL_bool request_queue_is_full(const struct request_queue *queue) {
     return (queue->head + 1) % REQUEST_QUEUE_SIZE == queue->tail;
 }
 
-SDL_bool request_queue_init(struct request_queue *queue) {
+static SDL_bool request_queue_init(struct request_queue *queue) {
     queue->head = 0;
     queue->tail = 0;
     return SDL_TRUE;
 }
 
-void request_queue_destroy(struct request_queue *queue) {
+static void request_queue_destroy(struct request_queue *queue) {
     int i = queue->tail;
     while (i != queue->head) {
         request_free(queue->reqs[i]);
@@ -53,7 +53,7 @@ void request_queue_destroy(struct request_queue *queue) {
     }
 }
 
-SDL_bool request_queue_push(struct request_queue *queue, struct request *req) {
+static SDL_bool request_queue_push(struct request_queue *queue, struct request *req) {
     if (request_queue_is_full(queue)) {
         return SDL_FALSE;
     }
@@ -62,7 +62,7 @@ SDL_bool request_queue_push(struct request_queue *queue, struct request *req) {
     return SDL_TRUE;
 }
 
-SDL_bool request_queue_take(struct request_queue *queue, struct request **req) {
+static SDL_bool request_queue_take(struct request_queue *queue, struct request **req) {
     if (request_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
