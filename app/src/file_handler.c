@@ -167,12 +167,9 @@ static int run_file_handler(void *data) {
             break;
         }
         struct request *req;
-#ifdef BUILD_DEBUG
         SDL_bool non_empty = request_queue_take(&file_handler->queue, &req);
         SDL_assert(non_empty);
-#else
-        request_queue_take(&file_handler->queue, &req);
-#endif
+
         process_t process;
         if (req->action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req->file);
