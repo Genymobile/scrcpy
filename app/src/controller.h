@@ -1,7 +1,7 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#include "controlevent.h"
+#include "control_event.h"
 
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_stdinc.h>

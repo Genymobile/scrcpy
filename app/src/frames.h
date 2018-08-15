@@ -5,7 +5,7 @@
 #include <SDL2/SDL_stdinc.h>
 
 #include "config.h"
-#include "fpscounter.h"
+#include "fps_counter.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;

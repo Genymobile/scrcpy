@@ -5,7 +5,7 @@
 #include "config.h"
 #include "command.h"
 #include "device.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 struct request {

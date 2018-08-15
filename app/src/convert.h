@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL_stdinc.h>
 #include <SDL2/SDL_events.h>
-#include "controlevent.h"
+#include "control_event.h"
 
 struct complete_mouse_motion_event {
     SDL_MouseMotionEvent *mouse_motion_event;

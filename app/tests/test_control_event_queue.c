@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "controlevent.h"
+#include "control_event.h"
 
 static void test_control_event_queue_empty() {
     struct control_event_queue queue;

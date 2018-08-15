@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "controlevent.h"
+#include "control_event.h"
 
 static void test_serialize_keycode_event() {
     struct control_event event = {

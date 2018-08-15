@@ -15,14 +15,14 @@
 #include "events.h"
 #include "file_handler.h"
 #include "frames.h"
-#include "fpscounter.h"
-#include "inputmanager.h"
+#include "fps_counter.h"
+#include "input_manager.h"
 #include "log.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "net.h"
 #include "screen.h"
 #include "server.h"
-#include "tinyxpm.h"
+#include "tiny_xpm.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;

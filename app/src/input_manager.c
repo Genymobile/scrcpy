@@ -1,7 +1,7 @@
-#include "inputmanager.h"
+#include "input_manager.h"
 
 #include "convert.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 // Convert window coordinates (as provided by SDL_GetMouseState() to renderer coordinates (as provided in SDL mouse events)

@@ -2,7 +2,7 @@
 
 #include <SDL2/SDL_assert.h>
 #include "config.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 SDL_bool controller_init(struct controller *controller, socket_t video_socket) {

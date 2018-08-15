@@ -1,4 +1,4 @@
-#include "fpscounter.h"
+#include "fps_counter.h"
 
 #include <SDL2/SDL_timer.h>
 

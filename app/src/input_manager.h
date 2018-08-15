@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "controller.h"
-#include "fpscounter.h"
+#include "fps_counter.h"
 #include "frames.h"
 #include "screen.h"
 

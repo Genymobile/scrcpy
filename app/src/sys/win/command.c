@@ -2,7 +2,7 @@
 
 #include "config.h"
 #include "log.h"
-#include "strutil.h"
+#include "str_util.h"
 
 HANDLE cmd_execute(const char *path, const char *const argv[]) {
     STARTUPINFO si;

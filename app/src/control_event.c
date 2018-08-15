@@ -1,9 +1,9 @@
-#include "controlevent.h"
+#include "control_event.h"
 
 #include <SDL2/SDL_stdinc.h>
 #include <string.h>
 
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 static inline void write16(Uint8 *buf, Uint16 value) {

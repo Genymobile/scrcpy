@@ -1,4 +1,4 @@
-#include "tinyxpm.h"
+#include "tiny_xpm.h"
 
 #include <stdio.h>
 #include <stdlib.h>
