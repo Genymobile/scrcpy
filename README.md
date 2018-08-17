@@ -58,6 +58,12 @@ The application is available in [Homebrew]. Just install it:
 brew install scrcpy
 ```
 
+You need `adb`, accessible from your `PATH`. If you don't have it yet:
+
+```bash
+brew cask install android-platform-tools
+```
+
 You can also [build the app manually][BUILD].
 
 
