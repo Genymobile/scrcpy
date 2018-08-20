@@ -777,9 +777,6 @@ enum android_input_source {
     AINPUT_SOURCE_JOYSTICK = 0x01000000 | AINPUT_SOURCE_CLASS_JOYSTICK,
     /** rotary encoder */
     AINPUT_SOURCE_ROTARY_ENCODER = 0x00400000 | AINPUT_SOURCE_CLASS_NONE,
-
-    /** any */
-    AINPUT_SOURCE_ANY = 0xffffff00,
 };
 
 /**

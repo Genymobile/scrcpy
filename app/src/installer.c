@@ -118,6 +118,7 @@ static int run_installer(void *data) {
 
     for (;;) {
         mutex_lock(installer->mutex);
+        installer->current_process = PROCESS_NONE;
         while (!installer->stopped && apk_queue_is_empty(&installer->queue)) {
             cond_wait(installer->event_cond, installer->mutex);
         }
