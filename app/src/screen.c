@@ -65,6 +65,15 @@ static void set_window_size(struct screen *screen, struct size new_size) {
     }
 }
 
+void get_window_scale(SDL_Window *window, int *scale_x, int *scale_y) {
+    int win_w, win_h;
+    SDL_GetWindowSize(window, &win_w, &win_h);
+    int output_w, output_h;
+    SDL_GL_GetDrawableSize(window, &output_w, &output_h);
+    *scale_x = output_w / win_w;
+    *scale_y = output_h / win_h;
+}
+
 // get the preferred display bounds (i.e. the screen bounds with some margins)
 static SDL_bool get_preferred_display_bounds(struct size *bounds) {
     SDL_Rect rect;
@@ -168,6 +177,7 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
         screen_destroy(screen);
         return SDL_FALSE;
     }
+    get_window_scale(screen->window, &screen->scale_x, &screen->scale_y);
 
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (!icon) {

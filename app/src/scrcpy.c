@@ -84,6 +84,17 @@ static SDL_bool event_loop(void) {
                     case SDL_WINDOWEVENT_EXPOSED:
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
                         screen_render(&screen);
+                        int scale_x, scale_y;
+                        get_window_scale(SDL_GetWindowFromID(event.button.windowID), &scale_x, &scale_y);
+                        if (scale_x != screen.scale_x || scale_y != screen.scale_y) {
+                            int logical_width, logical_height;
+                            SDL_RenderGetLogicalSize(screen.renderer, &logical_width, &logical_height);
+                            logical_width *= (float)scale_x / screen.scale_x;
+                            logical_height *= (float)scale_y / screen.scale_y;
+                            screen.scale_x = scale_x;
+                            screen.scale_y = scale_y;
+                            SDL_RenderSetLogicalSize(screen.renderer, logical_width, logical_height);
+                        }
                         break;
                 }
                 break;
