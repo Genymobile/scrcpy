@@ -32,7 +32,7 @@
 #endif
 # define NO_EXIT_CODE -1
 
-process_t cmd_execute(const char *path, const char *const argv[]);
+int cmd_execute(const char *path, const char *const argv[], process_t *process);
 SDL_bool cmd_terminate(process_t pid);
 SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
