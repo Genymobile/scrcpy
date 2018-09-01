@@ -1,5 +1,8 @@
 #include "command.h"
 
+#ifndef __WINDOWS__
+# include <errno.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,9 +21,30 @@ static inline const char *get_adb_command() {
     return adb_command;
 }
 
+static void show_err_msg(int err) {
+#ifdef __WINDOWS__
+    (void) err; // unused
+    LOGE("Failed to execute adb");
+#else
+    switch (err) {
+        case -1:
+            LOGE("Failed to execute adb");
+            break;
+        case ENOENT:
+            LOGE("'adb' command not found (make it accessible from your PATH "
+                  "or define its full path in the ADB environment variable)");
+            break;
+        default:
+            LOGE("Failed to execute adb: %s", strerror(err));
+            break;
+    }
+#endif
+}
+
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
     int i;
+    process_t process;
     cmd[0] = get_adb_command();
     if (serial) {
         cmd[1] = "-s";
@@ -32,7 +56,12 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    return cmd_execute(cmd[0], cmd);
+    int r = cmd_execute(cmd[0], cmd, &process);
+    if (r != 0) {
+        show_err_msg(r);
+        return PROCESS_NONE;
+    }
+    return process;
 }
 
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name) {
