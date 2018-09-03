@@ -1,5 +1,9 @@
 #include "command.h"
 
+#ifdef __WINDOWS__
+#else
+#include <errno.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,9 +22,30 @@ static inline const char *get_adb_command() {
     return adb_command;
 }
 
+static void show_err_msg(int err) {
+#ifdef __WINDOWS__
+    LOGE("Failed to execute adb.\n");
+#else
+    switch (err) {
+    case 0:
+        break;
+    case -1:
+        LOGE("Failed to execute adb.\n");
+        break;
+    case ENOENT:
+        LOGE("Missing adb. You need adb, accessible from your PATH to execute scrcpy.\n");
+        break;
+    default:
+        LOGE("Failed to execute adb, errno: [%d].\n", err);
+        break;
+    }
+#endif
+}
+
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
-    int i;
+    int i, r;
+    process_t process;
     cmd[0] = get_adb_command();
     if (serial) {
         cmd[1] = "-s";
@@ -32,7 +57,12 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    return cmd_execute(cmd[0], cmd);
+    r = cmd_execute(cmd[0], cmd, &process);
+    if (r != 0) {
+        show_err_msg(r);
+        return -1;
+    }
+    return process;
 }
 
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name) {
