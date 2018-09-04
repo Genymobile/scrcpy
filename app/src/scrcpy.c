@@ -223,6 +223,10 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
+    if (options->fullscreen) {
+        screen_switch_fullscreen(&screen);
+    }
+
     ret = event_loop();
     LOGD("quit...");
 

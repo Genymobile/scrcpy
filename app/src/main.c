@@ -11,6 +11,7 @@
 struct args {
     const char *serial;
     const char *crop;
+    SDL_bool fullscreen;
     SDL_bool help;
     SDL_bool version;
     SDL_bool show_touches;
@@ -35,6 +36,9 @@ static void usage(const char *arg0) {
         "        The values are expressed in the device natural orientation\n"
         "        (typically, portrait for a phone, landscape for a tablet).\n"
         "        Any --max-size value is computed on the cropped size.\n"
+        "\n"
+        "    -f, --fullscreen\n"
+        "        Start in fullscreen.\n"
         "\n"
         "    -h, --help\n"
         "        Print this help.\n"
@@ -200,6 +204,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"bit-rate",     required_argument, NULL, 'b'},
         {"crop",         required_argument, NULL, 'c'},
+        {"fullscreen",   no_argument,       NULL, 'f'},
         {"help",         no_argument,       NULL, 'h'},
         {"max-size",     required_argument, NULL, 'm'},
         {"port",         required_argument, NULL, 'p'},
@@ -209,7 +214,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:hm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fhm:p:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -218,6 +223,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'c':
                 args->crop = optarg;
+                break;
+            case 'f':
+                args->fullscreen = SDL_TRUE;
                 break;
             case 'h':
                 args->help = SDL_TRUE;
@@ -305,6 +313,7 @@ int main(int argc, char *argv[]) {
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
+        .fullscreen = args.fullscreen,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
