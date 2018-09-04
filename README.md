@@ -312,6 +312,12 @@ To show physical touches while scrcpy is running:
 scrcpy -t
 ```
 
+The app may be started directly in fullscreen:
+
+```
+scrcpy -f
+```
+
 To run without installing:
 
 ```bash
