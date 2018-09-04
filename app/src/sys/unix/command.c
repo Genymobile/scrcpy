@@ -9,19 +9,20 @@
 #include <unistd.h>
 #include "log.h"
 
-int cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
+enum process_result cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
     int fd[2];
-    int ret = 0;
 
     if (pipe(fd) == -1) {
         perror("pipe");
-        return -1;
+        return PROCESS_ERROR_GENERIC;
     }
+
+    enum process_result ret = PROCESS_SUCCESS;
 
     *pid = fork();
     if (*pid == -1) {
         perror("fork");
-        ret = -1;
+        ret = PROCESS_ERROR_GENERIC;
         goto end;
     }
 
@@ -30,9 +31,9 @@ int cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
         close(fd[1]);
         fd[1] = -1;
         // wait for EOF or receive errno from child
-        if (read(fd[0], &ret, sizeof(int)) == -1) {
+        if (read(fd[0], &ret, sizeof(ret)) == -1) {
             perror("read");
-            ret = -1;
+            ret = PROCESS_ERROR_GENERIC;
             goto end;
         }
     } else if (*pid == 0) {
@@ -40,12 +41,18 @@ int cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
         close(fd[0]);
         if (fcntl(fd[1], F_SETFD, FD_CLOEXEC) == 0) {
             execvp(path, (char *const *)argv);
+            if (errno == ENOENT) {
+                ret = PROCESS_ERROR_MISSING_BINARY;
+            } else {
+                ret = PROCESS_ERROR_GENERIC;
+            }
+            perror("exec");
         } else {
             perror("fcntl");
+            ret = PROCESS_ERROR_GENERIC;
         }
-        // send errno to the parent
-        ret = errno;
-        if (write(fd[1], &ret, sizeof(int)) == -1) {
+        // send ret to the parent
+        if (write(fd[1], &ret, sizeof(ret)) == -1) {
             perror("write");
         }
         // close write side before exiting

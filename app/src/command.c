@@ -1,8 +1,5 @@
 #include "command.h"
 
-#ifndef __WINDOWS__
-# include <errno.h>
-#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,24 +18,19 @@ static inline const char *get_adb_command() {
     return adb_command;
 }
 
-static void show_err_msg(int err) {
-#ifdef __WINDOWS__
-    (void) err; // unused
-    LOGE("Failed to execute adb");
-#else
+static void show_adb_err_msg(enum process_result err) {
     switch (err) {
-        case -1:
+        case PROCESS_ERROR_GENERIC:
             LOGE("Failed to execute adb");
             break;
-        case ENOENT:
+        case PROCESS_ERROR_MISSING_BINARY:
             LOGE("'adb' command not found (make it accessible from your PATH "
                   "or define its full path in the ADB environment variable)");
             break;
-        default:
-            LOGE("Failed to execute adb: %s", strerror(err));
+        case PROCESS_SUCCESS:
+            /* do nothing */
             break;
     }
-#endif
 }
 
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
@@ -56,9 +48,9 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    int r = cmd_execute(cmd[0], cmd, &process);
-    if (r != 0) {
-        show_err_msg(r);
+    enum process_result r = cmd_execute(cmd[0], cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r);
         return PROCESS_NONE;
     }
     return process;

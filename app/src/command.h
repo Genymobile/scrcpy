@@ -32,7 +32,13 @@
 #endif
 # define NO_EXIT_CODE -1
 
-int cmd_execute(const char *path, const char *const argv[], process_t *process);
+enum process_result {
+    PROCESS_SUCCESS,
+    PROCESS_ERROR_GENERIC,
+    PROCESS_ERROR_MISSING_BINARY,
+};
+
+enum process_result cmd_execute(const char *path, const char *const argv[], process_t *process);
 SDL_bool cmd_terminate(process_t pid);
 SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
