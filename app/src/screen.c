@@ -132,6 +132,17 @@ static inline struct size get_initial_optimal_size(struct size frame_size) {
     return get_optimal_size(frame_size, frame_size);
 }
 
+// apply hidpi scaling and call SDL_RenderSetLogicalSize
+static inline SDL_bool render_set_scaled_logical_size(struct screen *screen, struct size size) {
+    int w, h, dw, dh;
+    SDL_GL_GetDrawableSize(screen->window, &w, &h);
+    SDL_GetWindowSize(screen->window, &dw, &dh);
+    // use 32 bits unsigned not to lose precision (width and height fit in 16 bits)
+    int scaled_x = (Uint32) size.width * (Uint32) w / (Uint32) dw;
+    int scaled_y = (Uint32) size.height * (Uint32) h / (Uint32) dh;
+    return SDL_RenderSetLogicalSize(screen->renderer, scaled_x, scaled_y);
+}
+
 void screen_init(struct screen *screen) {
     *screen = (struct screen) SCREEN_INITIALIZER;
 }
@@ -163,7 +174,7 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
         return SDL_FALSE;
     }
 
-    if (SDL_RenderSetLogicalSize(screen->renderer, frame_size.width, frame_size.height)) {
+    if (render_set_scaled_logical_size(screen, frame_size)) {
         LOGE("Could not set renderer logical size: %s", SDL_GetError());
         screen_destroy(screen);
         return SDL_FALSE;
@@ -208,7 +219,7 @@ void screen_destroy(struct screen *screen) {
 // recreate the texture and resize the window if the frame size has changed
 static SDL_bool prepare_for_frame(struct screen *screen, struct size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width || screen->frame_size.height != new_frame_size.height) {
-        if (SDL_RenderSetLogicalSize(screen->renderer, new_frame_size.width, new_frame_size.height)) {
+        if (render_set_scaled_logical_size(screen, new_frame_size)) {
             LOGE("Could not set renderer logical size: %s", SDL_GetError());
             return SDL_FALSE;
         }
