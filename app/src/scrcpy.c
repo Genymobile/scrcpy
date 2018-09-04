@@ -212,7 +212,6 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
     
     if (options->fullscreen) {
-
         screen_switch_fullscreen(input_manager.screen);
     }
 
