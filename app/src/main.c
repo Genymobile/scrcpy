@@ -14,6 +14,7 @@ struct args {
     SDL_bool help;
     SDL_bool version;
     SDL_bool show_touches;
+    SDL_bool fullscreen;
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;
@@ -56,6 +57,9 @@ static void usage(const char *arg0) {
         "    -t, --show-touches\n"
         "        Enable \"show touches\" on start, disable on quit.\n"
         "        It only shows physical touches (not clicks from scrcpy).\n"
+        "\n"
+        "    -f, --fullscreen\n"
+        "        Start the app in fullscreen.\n"
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
@@ -205,11 +209,12 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"port",         required_argument, NULL, 'p'},
         {"serial",       required_argument, NULL, 's'},
         {"show-touches", no_argument,       NULL, 't'},
+        {"fullscreen",   no_argument,       NULL, 'f'},
         {"version",      no_argument,       NULL, 'v'},
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:hm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:hm:p:s:tfv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -237,6 +242,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 't':
                 args->show_touches = SDL_TRUE;
+                break;
+            case 'f':
+                args->fullscreen = SDL_TRUE;
                 break;
             case 'v':
                 args->version = SDL_TRUE;
@@ -305,6 +313,7 @@ int main(int argc, char *argv[]) {
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
+        .fullscreen = args.fullscreen,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
