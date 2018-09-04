@@ -4,7 +4,7 @@
 #include "log.h"
 #include "str_util.h"
 
-HANDLE cmd_execute(const char *path, const char *const argv[]) {
+enum process_result cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
@@ -18,7 +18,8 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
     size_t ret = xstrjoin(cmd, argv, ' ', sizeof(cmd));
     if (ret >= sizeof(cmd)) {
         LOGE("Command too long (%" PRIsizet " chars)", sizeof(cmd) - 1);
-        return NULL;
+        *handle = NULL;
+        return PROCESS_ERROR_GENERIC;
     }
 
 #ifdef WINDOWS_NOCONSOLE
@@ -27,10 +28,12 @@ HANDLE cmd_execute(const char *path, const char *const argv[]) {
     int flags = 0;
 #endif
     if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, flags, NULL, NULL, &si, &pi)) {
-        return NULL;
+        *handle = NULL;
+        return PROCESS_ERROR_GENERIC;
     }
 
-    return pi.hProcess;
+    *handle = pi.hProcess;
+    return PROCESS_SUCCESS;
 }
 
 SDL_bool cmd_terminate(HANDLE handle) {

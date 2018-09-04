@@ -18,9 +18,25 @@ static inline const char *get_adb_command() {
     return adb_command;
 }
 
+static void show_adb_err_msg(enum process_result err) {
+    switch (err) {
+        case PROCESS_ERROR_GENERIC:
+            LOGE("Failed to execute adb");
+            break;
+        case PROCESS_ERROR_MISSING_BINARY:
+            LOGE("'adb' command not found (make it accessible from your PATH "
+                  "or define its full path in the ADB environment variable)");
+            break;
+        case PROCESS_SUCCESS:
+            /* do nothing */
+            break;
+    }
+}
+
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
     int i;
+    process_t process;
     cmd[0] = get_adb_command();
     if (serial) {
         cmd[1] = "-s";
@@ -32,7 +48,12 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    return cmd_execute(cmd[0], cmd);
+    enum process_result r = cmd_execute(cmd[0], cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r);
+        return PROCESS_NONE;
+    }
+    return process;
 }
 
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name) {
