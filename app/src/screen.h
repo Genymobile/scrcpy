@@ -70,4 +70,6 @@ void screen_resize_to_pixel_perfect(struct screen *screen);
 
 void get_window_scale(SDL_Window *window, int *scale_x, int *scale_y);
 
+SDL_bool screen_update_logical_size_if_needed(struct screen *screen);
+
 #endif

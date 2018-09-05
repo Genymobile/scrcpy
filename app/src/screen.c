@@ -74,6 +74,24 @@ void get_window_scale(SDL_Window *window, int *scale_x, int *scale_y) {
     *scale_y = output_h / win_h;
 }
 
+SDL_bool screen_update_logical_size_if_needed(struct screen *screen) {
+    int scale_x, scale_y;
+    get_window_scale(screen->window, &scale_x, &scale_y);
+    if (scale_x != screen->scale_x || scale_y != screen->scale_y) {
+        int logical_width, logical_height;
+        SDL_RenderGetLogicalSize(screen->renderer, &logical_width, &logical_height);
+        logical_width *= (float)scale_x / screen->scale_x;
+        logical_height *= (float)scale_y / screen->scale_y;
+        screen->scale_x = scale_x;
+        screen->scale_y = scale_y;
+        if (SDL_RenderSetLogicalSize(screen->renderer, logical_width, logical_height)) {
+            LOGE("Could not set renderer logical size: %s", SDL_GetError());
+            return SDL_FALSE;
+        }
+    }
+    return SDL_TRUE;
+}
+
 // get the preferred display bounds (i.e. the screen bounds with some margins)
 static SDL_bool get_preferred_display_bounds(struct size *bounds) {
     SDL_Rect rect;
