@@ -65,23 +65,23 @@ static void set_window_size(struct screen *screen, struct size new_size) {
     }
 }
 
-void get_window_scale(SDL_Window *window, int *scale_x, int *scale_y) {
+void get_window_scale(SDL_Window *window, float *scale_x, float *scale_y) {
     int win_w, win_h;
     SDL_GetWindowSize(window, &win_w, &win_h);
     int output_w, output_h;
     SDL_GL_GetDrawableSize(window, &output_w, &output_h);
-    *scale_x = output_w / win_w;
-    *scale_y = output_h / win_h;
+    *scale_x = (float)output_w / win_w;
+    *scale_y = (float)output_h / win_h;
 }
 
 SDL_bool screen_update_logical_size_if_needed(struct screen *screen) {
-    int scale_x, scale_y;
+    float scale_x, scale_y;
     get_window_scale(screen->window, &scale_x, &scale_y);
     if (scale_x != screen->scale_x || scale_y != screen->scale_y) {
         int logical_width, logical_height;
         SDL_RenderGetLogicalSize(screen->renderer, &logical_width, &logical_height);
-        logical_width *= (float)scale_x / screen->scale_x;
-        logical_height *= (float)scale_y / screen->scale_y;
+        logical_width *= scale_x / screen->scale_x;
+        logical_height *= scale_y / screen->scale_y;
         screen->scale_x = scale_x;
         screen->scale_y = scale_y;
         if (SDL_RenderSetLogicalSize(screen->renderer, logical_width, logical_height)) {

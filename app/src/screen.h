@@ -12,8 +12,8 @@ struct screen {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     struct size frame_size;
-    int scale_x;
-    int scale_y;
+    float scale_x;
+    float scale_y;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
     SDL_bool has_frame;
@@ -68,7 +68,7 @@ void screen_resize_to_fit(struct screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void screen_resize_to_pixel_perfect(struct screen *screen);
 
-void get_window_scale(SDL_Window *window, int *scale_x, int *scale_y);
+void get_window_scale(SDL_Window *window, float *scale_x, float *scale_y);
 
 SDL_bool screen_update_logical_size_if_needed(struct screen *screen);
 
