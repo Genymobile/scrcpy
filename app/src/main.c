@@ -319,5 +319,10 @@ int main(int argc, char *argv[]) {
 
     avformat_network_deinit(); // ignore failure
 
+#if defined (__WINDOWS__) && ! defined (WINDOWS_NOCONSOLE)
+    if (res != 0) {
+        system("pause");
+    }
+#endif
     return res;
 }
