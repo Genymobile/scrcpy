@@ -29,7 +29,11 @@ enum process_result cmd_execute(const char *path, const char *const argv[], HAND
 #endif
     if (!CreateProcess(NULL, cmd, NULL, NULL, FALSE, flags, NULL, NULL, &si, &pi)) {
         *handle = NULL;
-        return PROCESS_ERROR_GENERIC;
+        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+            return PROCESS_ERROR_MISSING_BINARY;
+        } else {
+            return PROCESS_ERROR_GENERIC;
+        }
     }
 
     *handle = pi.hProcess;
