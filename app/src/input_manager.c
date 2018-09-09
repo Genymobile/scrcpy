@@ -1,5 +1,6 @@
 #include "input_manager.h"
 
+#include <SDL2/SDL_assert.h>
 #include "convert.h"
 #include "lock_util.h"
 #include "log.h"
@@ -129,6 +130,12 @@ static void clipboard_paste(struct controller *controller) {
 
 void input_manager_process_text_input(struct input_manager *input_manager,
                                       const SDL_TextInputEvent *event) {
+    char c = event->text[0];
+    if (isalpha(c) || c == ' ') {
+        SDL_assert(event->text[1] == '\0');
+        // letters and space are handled as raw key event
+        return;
+    }
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_TEXT;
     control_event.text_event.text = SDL_strdup(event->text);
