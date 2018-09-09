@@ -70,7 +70,7 @@ static enum android_metastate convert_meta_state(SDL_Keymod mod) {
     return autocomplete_metastate(metastate);
 }
 
-static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
+static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to, Uint16 mod) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
         MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
@@ -86,6 +86,39 @@ static SDL_bool convert_keycode(SDL_Keycode from, enum android_keycode *to) {
         MAP(SDLK_LEFT,         AKEYCODE_DPAD_LEFT);
         MAP(SDLK_DOWN,         AKEYCODE_DPAD_DOWN);
         MAP(SDLK_UP,           AKEYCODE_DPAD_UP);
+    }
+    if (mod & (KMOD_LALT | KMOD_RALT | KMOD_LGUI | KMOD_RGUI)) {
+        return SDL_FALSE;
+    }
+    // if ALT and META are not pressed, also handle letters and space
+    switch (from) {
+        MAP(SDLK_a,            AKEYCODE_A);
+        MAP(SDLK_b,            AKEYCODE_B);
+        MAP(SDLK_c,            AKEYCODE_C);
+        MAP(SDLK_d,            AKEYCODE_D);
+        MAP(SDLK_e,            AKEYCODE_E);
+        MAP(SDLK_f,            AKEYCODE_F);
+        MAP(SDLK_g,            AKEYCODE_G);
+        MAP(SDLK_h,            AKEYCODE_H);
+        MAP(SDLK_i,            AKEYCODE_I);
+        MAP(SDLK_j,            AKEYCODE_J);
+        MAP(SDLK_k,            AKEYCODE_K);
+        MAP(SDLK_l,            AKEYCODE_L);
+        MAP(SDLK_m,            AKEYCODE_M);
+        MAP(SDLK_n,            AKEYCODE_N);
+        MAP(SDLK_o,            AKEYCODE_O);
+        MAP(SDLK_p,            AKEYCODE_P);
+        MAP(SDLK_q,            AKEYCODE_Q);
+        MAP(SDLK_r,            AKEYCODE_R);
+        MAP(SDLK_s,            AKEYCODE_S);
+        MAP(SDLK_t,            AKEYCODE_T);
+        MAP(SDLK_u,            AKEYCODE_U);
+        MAP(SDLK_v,            AKEYCODE_V);
+        MAP(SDLK_w,            AKEYCODE_W);
+        MAP(SDLK_x,            AKEYCODE_X);
+        MAP(SDLK_y,            AKEYCODE_Y);
+        MAP(SDLK_z,            AKEYCODE_Z);
+        MAP(SDLK_SPACE,        AKEYCODE_SPACE);
         FAIL;
     }
 }
@@ -126,11 +159,12 @@ SDL_bool input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
         return SDL_FALSE;
     }
 
-    if (!convert_keycode(from->keysym.sym, &to->keycode_event.keycode)) {
+    Uint16 mod = from->keysym.mod;
+    if (!convert_keycode(from->keysym.sym, &to->keycode_event.keycode, mod)) {
         return SDL_FALSE;
     }
 
-    to->keycode_event.metastate = convert_meta_state(from->keysym.mod);
+    to->keycode_event.metastate = convert_meta_state(mod);
 
     return SDL_TRUE;
 }
