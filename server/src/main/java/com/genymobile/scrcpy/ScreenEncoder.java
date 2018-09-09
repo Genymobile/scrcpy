@@ -9,8 +9,8 @@ import android.media.MediaFormat;
 import android.os.IBinder;
 import android.view.Surface;
 
+import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -48,7 +48,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, OutputStream outputStream) throws IOException {
+    public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         MediaFormat format = createFormat(bitRate, frameRate, iFrameInterval);
         device.setRotationListener(this);
         boolean alive;
@@ -64,7 +64,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 setDisplaySurface(display, surface, contentRect, videoRect);
                 codec.start();
                 try {
-                    alive = encode(codec, outputStream);
+                    alive = encode(codec, fd);
                 } finally {
                     codec.stop();
                     destroyDisplay(display);
@@ -77,9 +77,7 @@ public class ScreenEncoder implements Device.RotationListener {
         }
     }
 
-    private boolean encode(MediaCodec codec, OutputStream outputStream) throws IOException {
-        @SuppressWarnings("checkstyle:MagicNumber")
-        byte[] buf = new byte[bitRate / 8]; // may contain up to 1 second of video
+    private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
         while (!consumeRotationChange() && !eof) {
@@ -91,15 +89,8 @@ public class ScreenEncoder implements Device.RotationListener {
                     break;
                 }
                 if (outputBufferId >= 0) {
-                    ByteBuffer outputBuffer = codec.getOutputBuffer(outputBufferId);
-                    while (outputBuffer.hasRemaining()) {
-                        int remaining = outputBuffer.remaining();
-                        int len = Math.min(buf.length, remaining);
-                        // the outputBuffer is probably direct (it has no underlying array), and LocalSocket does not expose channels,
-                        // so we must copy the data locally to write them manually to the output stream
-                        outputBuffer.get(buf, 0, len);
-                        outputStream.write(buf, 0, len);
-                    }
+                    ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
+                    IO.writeFully(fd, codecBuffer);
                 }
             } finally {
                 if (outputBufferId >= 0) {
