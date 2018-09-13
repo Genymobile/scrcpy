@@ -1,5 +1,5 @@
 #ifndef FILE_HANDLER_H
-#define FILE_HADNELR_H
+#define FILE_HANDLER_H
 
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_stdinc.h>
