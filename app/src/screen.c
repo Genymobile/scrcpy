@@ -313,3 +313,7 @@ void screen_resize_to_pixel_perfect(struct screen *screen) {
         LOGD("Resized to pixel-perfect");
     }
 }
+
+void screen_update_scale(struct screen *screen) {
+    render_set_scaled_logical_size(screen, screen->frame_size);
+}

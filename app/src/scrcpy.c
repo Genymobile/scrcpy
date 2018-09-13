@@ -88,6 +88,7 @@ static SDL_bool event_loop(void) {
                 switch (event.window.event) {
                     case SDL_WINDOWEVENT_EXPOSED:
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
+                        screen_update_scale(&screen);
                         screen_render(&screen);
                         break;
                 }

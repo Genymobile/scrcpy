@@ -66,4 +66,8 @@ void screen_resize_to_fit(struct screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void screen_resize_to_pixel_perfect(struct screen *screen);
 
+// recompute the scale in case the window moved from/to another screen with a
+// different HiDPI
+void screen_update_scale(struct screen *screen);
+
 #endif
