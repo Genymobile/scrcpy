@@ -31,6 +31,11 @@ For Arch Linux, two [AUR] packages have been created by users:
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 
+For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
+
+[Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
+[ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
+
 
 ### Windows
 

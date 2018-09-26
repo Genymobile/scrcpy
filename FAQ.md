@@ -26,10 +26,11 @@ If you still encounter problems, please see [issue 9].
 
 ### I get a black screen for some applications like Silence
 
-This is expected, they requested to protect the screen.
+This is expected, they requested to [protect] the screen.
 
 In [Silence], you can disable it in settings → Privacy → Screen security.
 
+[protect]: https://developer.android.com/reference/android/view/Display#FLAG_SECURE
 [silence]: https://f-droid.org/en/packages/org.smssecure.smssecure/
 
 See [issue 36].
