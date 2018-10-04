@@ -16,4 +16,8 @@ size_t xstrncpy(char *dest, const char *src, size_t n);
 // occurred, or n if truncated
 size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
 
+// quote a string
+// returns the new allocated string, to be freed by the caller
+char *strquote(const char *src);
+
 #endif

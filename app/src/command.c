@@ -6,6 +6,7 @@
 
 #include "common.h"
 #include "log.h"
+#include "str_util.h"
 
 static const char *adb_command;
 
@@ -89,23 +90,49 @@ process_t adb_reverse_remove(const char *serial, const char *device_socket_name)
 }
 
 process_t adb_push(const char *serial, const char *local, const char *remote) {
+#ifdef __WINDOWS__
+    // Windows will parse the string, so the paths must be quoted
+    // (see sys/win/command.c)
+    local = strquote(local);
+    if (!local) {
+        return PROCESS_NONE;
+    }
+    remote = strquote(remote);
+    if (!remote) {
+        free((void *) local);
+        return PROCESS_NONE;
+    }
+#endif
+
     const char *const adb_cmd[] = {"push", local, remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+#ifdef __WINDOWS__
+    free((void *) remote);
+    free((void *) local);
+#endif
+
+    return proc;
 }
 
 process_t adb_install(const char *serial, const char *local) {
 #ifdef __WINDOWS__
-    // Windows will parse the string, so the local name must be quoted (see sys/win/command.c)
-    size_t len = strlen(local);
-    char quoted[len + 3];
-    memcpy(&quoted[1], local, len);
-    quoted[0] = '"';
-    quoted[len + 1] = '"';
-    quoted[len + 2] = '\0';
-    local = quoted;
+    // Windows will parse the string, so the local name must be quoted
+    // (see sys/win/command.c)
+    local = strquote(local);
+    if (!local) {
+        return PROCESS_NONE;
+    }
 #endif
+
     const char *const adb_cmd[] = {"install", "-r", local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+#ifdef __WINDOWS__
+    free((void *) local);
+#endif
+
+    return proc;
 }
 
 process_t adb_remove_path(const char *serial, const char *path) {
