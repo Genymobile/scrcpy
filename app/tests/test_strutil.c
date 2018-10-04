@@ -3,7 +3,7 @@
 
 #include "str_util.h"
 
-static void test_xstrncpy_simple() {
+static void test_xstrncpy_simple(void) {
     char s[] = "xxxxxxxxxx";
     size_t w = xstrncpy(s, "abcdef", sizeof(s));
 
@@ -20,7 +20,7 @@ static void test_xstrncpy_simple() {
     assert(!strcmp("abcdef", s));
 }
 
-static void test_xstrncpy_just_fit() {
+static void test_xstrncpy_just_fit(void) {
     char s[] = "xxxxxx";
     size_t w = xstrncpy(s, "abcdef", sizeof(s));
 
@@ -34,7 +34,7 @@ static void test_xstrncpy_just_fit() {
     assert(!strcmp("abcdef", s));
 }
 
-static void test_xstrncpy_truncated() {
+static void test_xstrncpy_truncated(void) {
     char s[] = "xxx";
     size_t w = xstrncpy(s, "abcdef", sizeof(s));
 
@@ -48,7 +48,7 @@ static void test_xstrncpy_truncated() {
     assert(!strncmp("abcdef", s, 3));
 }
 
-static void test_xstrjoin_simple() {
+static void test_xstrjoin_simple(void) {
     const char *const tokens[] = { "abc", "de", "fghi", NULL };
     char s[] = "xxxxxxxxxxxxxx";
     size_t w = xstrjoin(s, tokens, ' ', sizeof(s));
@@ -66,7 +66,7 @@ static void test_xstrjoin_simple() {
     assert(!strcmp("abc de fghi", s));
 }
 
-static void test_xstrjoin_just_fit() {
+static void test_xstrjoin_just_fit(void) {
     const char *const tokens[] = { "abc", "de", "fghi", NULL };
     char s[] = "xxxxxxxxxxx";
     size_t w = xstrjoin(s, tokens, ' ', sizeof(s));
@@ -81,7 +81,7 @@ static void test_xstrjoin_just_fit() {
     assert(!strcmp("abc de fghi", s));
 }
 
-static void test_xstrjoin_truncated_in_token() {
+static void test_xstrjoin_truncated_in_token(void) {
     const char *const tokens[] = { "abc", "de", "fghi", NULL };
     char s[] = "xxxxx";
     size_t w = xstrjoin(s, tokens, ' ', sizeof(s));
@@ -96,7 +96,7 @@ static void test_xstrjoin_truncated_in_token() {
     assert(!strcmp("abc d", s));
 }
 
-static void test_xstrjoin_truncated_before_sep() {
+static void test_xstrjoin_truncated_before_sep(void) {
     const char *const tokens[] = { "abc", "de", "fghi", NULL };
     char s[] = "xxxxxx";
     size_t w = xstrjoin(s, tokens, ' ', sizeof(s));
@@ -111,7 +111,7 @@ static void test_xstrjoin_truncated_before_sep() {
     assert(!strcmp("abc de", s));
 }
 
-static void test_xstrjoin_truncated_after_sep() {
+static void test_xstrjoin_truncated_after_sep(void) {
     const char *const tokens[] = { "abc", "de", "fghi", NULL };
     char s[] = "xxxxxxx";
     size_t w = xstrjoin(s, tokens, ' ', sizeof(s));
@@ -126,7 +126,7 @@ static void test_xstrjoin_truncated_after_sep() {
     assert(!strcmp("abc de ", s));
 }
 
-int main() {
+int main(void) {
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
     test_xstrncpy_truncated();

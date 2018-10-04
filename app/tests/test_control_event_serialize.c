@@ -3,7 +3,7 @@
 
 #include "control_event.h"
 
-static void test_serialize_keycode_event() {
+static void test_serialize_keycode_event(void) {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_KEYCODE,
         .keycode_event = {
@@ -26,7 +26,7 @@ static void test_serialize_keycode_event() {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_text_event() {
+static void test_serialize_text_event(void) {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_TEXT,
         .text_event = {
@@ -46,7 +46,7 @@ static void test_serialize_text_event() {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_long_text_event() {
+static void test_serialize_long_text_event(void) {
     struct control_event event;
     event.type = CONTROL_EVENT_TYPE_TEXT;
     char text[TEXT_MAX_LENGTH];
@@ -66,7 +66,7 @@ static void test_serialize_long_text_event() {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_mouse_event() {
+static void test_serialize_mouse_event(void) {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_MOUSE,
         .mouse_event = {
@@ -99,7 +99,7 @@ static void test_serialize_mouse_event() {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_scroll_event() {
+static void test_serialize_scroll_event(void) {
     struct control_event event = {
         .type = CONTROL_EVENT_TYPE_SCROLL,
         .scroll_event = {
@@ -132,11 +132,10 @@ static void test_serialize_scroll_event() {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-int main() {
+int main(void) {
     test_serialize_keycode_event();
     test_serialize_text_event();
     test_serialize_long_text_event();
     test_serialize_mouse_event();
     test_serialize_scroll_event();
-    return 0;
 }

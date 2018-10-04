@@ -3,7 +3,7 @@
 
 #include "control_event.h"
 
-static void test_control_event_queue_empty() {
+static void test_control_event_queue_empty(void) {
     struct control_event_queue queue;
     SDL_bool init_ok = control_event_queue_init(&queue);
     assert(init_ok);
@@ -25,7 +25,7 @@ static void test_control_event_queue_empty() {
     control_event_queue_destroy(&queue);
 }
 
-static void test_control_event_queue_full() {
+static void test_control_event_queue_full(void) {
     struct control_event_queue queue;
     SDL_bool init_ok = control_event_queue_init(&queue);
     assert(init_ok);
@@ -43,7 +43,7 @@ static void test_control_event_queue_full() {
     control_event_queue_destroy(&queue);
 }
 
-static void test_control_event_queue_push_take() {
+static void test_control_event_queue_push_take(void) {
     struct control_event_queue queue;
     SDL_bool init_ok = control_event_queue_init(&queue);
     assert(init_ok);
@@ -87,7 +87,7 @@ static void test_control_event_queue_push_take() {
     control_event_queue_destroy(&queue);
 }
 
-int main() {
+int main(void) {
     test_control_event_queue_empty();
     test_control_event_queue_full();
     test_control_event_queue_push_take();

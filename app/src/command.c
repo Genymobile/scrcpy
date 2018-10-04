@@ -9,7 +9,7 @@
 
 static const char *adb_command;
 
-static inline const char *get_adb_command() {
+static inline const char *get_adb_command(void) {
     if (!adb_command) {
         adb_command = getenv("ADB");
         if (!adb_command)
