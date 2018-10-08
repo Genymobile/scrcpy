@@ -1,4 +1,4 @@
-# scrcpy (v1.3)
+# scrcpy (v1.4)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -42,13 +42,13 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.3.zip`][direct-win32].  
-   _(SHA-256: 51a2990e631ed469a7a86ff38107d517a91d313fb3f8327eb7bc71dde40870b5)_
- - [`scrcpy-win64-v1.3.zip`][direct-win64].  
-   _(SHA-256: 0768a80d3d600d0bbcd220ca150ae88a3a58d1fe85c308a8c61f44480b711e43)_
+ - [`scrcpy-win32-v1.4.zip`][direct-win32]  
+   _(SHA-256: 1f72fa520980727e8943b7214b64c66b00b9b5267f7cffefb64fa37c3ca803cf)_
+ - [`scrcpy-win64-v1.4.zip`][direct-win64]  
+   _(SHA-256: 382f02bd8ed3db2cc7ab15aabdb83674744993b936d602b01e6959a150584a79)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.3/scrcpy-win32-v1.3.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.3/scrcpy-win64-v1.3.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.4/scrcpy-win32-v1.4.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.4/scrcpy-win64-v1.4.zip
 
 You can also [build the app manually][BUILD].
 
@@ -117,6 +117,12 @@ To show physical touches while scrcpy is running:
 scrcpy -t
 ```
 
+The app may be started directly in fullscreen:
+
+```
+scrcpy -f
+```
+
 ## Shortcuts
 
  | Action                                 |   Shortcut                    |
@@ -135,6 +141,7 @@ scrcpy -t
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
  | install APK from computer              | drag & drop APK file          |
+ | push file to `/sdcard/`                | drag & drop non-APK file      |
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._

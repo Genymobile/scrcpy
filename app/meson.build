@@ -1,22 +1,22 @@
 src = [
     'src/main.c',
     'src/command.c',
-    'src/controlevent.c',
+    'src/control_event.c',
     'src/controller.c',
     'src/convert.c',
     'src/decoder.c',
     'src/device.c',
-    'src/fpscounter.c',
+    'src/file_handler.c',
+    'src/fps_counter.c',
     'src/frames.c',
-    'src/inputmanager.c',
-    'src/installer.c',
-    'src/lockutil.c',
+    'src/input_manager.c',
+    'src/lock_util.c',
     'src/net.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
-    'src/strutil.c',
-    'src/tinyxpm.c',
+    'src/str_util.c',
+    'src/tiny_xpm.c',
 ]
 
 if not get_option('crossbuild_windows')
@@ -85,7 +85,7 @@ conf = configuration_data()
 conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
 
 # the version, updated on release
-conf.set_quoted('SCRCPY_VERSION', '1.3')
+conf.set_quoted('SCRCPY_VERSION', '1.4')
 
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
@@ -147,9 +147,9 @@ executable('scrcpy', src, dependencies: dependencies, include_directories: src_d
 ### TESTS
 
 tests = [
-    ['test_control_event_queue', ['tests/test_control_event_queue.c', 'src/controlevent.c']],
-    ['test_control_event_serialize', ['tests/test_control_event_serialize.c', 'src/controlevent.c']],
-    ['test_strutil', ['tests/test_strutil.c', 'src/strutil.c']],
+    ['test_control_event_queue', ['tests/test_control_event_queue.c', 'src/control_event.c']],
+    ['test_control_event_serialize', ['tests/test_control_event_serialize.c', 'src/control_event.c']],
+    ['test_strutil', ['tests/test_strutil.c', 'src/str_util.c']],
 ]
 
 foreach t : tests

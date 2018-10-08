@@ -5,9 +5,9 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 
 import java.io.Closeable;
+import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public final class DesktopConnection implements Closeable {
@@ -18,14 +18,14 @@ public final class DesktopConnection implements Closeable {
 
     private final LocalSocket socket;
     private final InputStream inputStream;
-    private final OutputStream outputStream;
+    private final FileDescriptor fd;
 
     private final ControlEventReader reader = new ControlEventReader();
 
     private DesktopConnection(LocalSocket socket) throws IOException {
         this.socket = socket;
         inputStream = socket.getInputStream();
-        outputStream = socket.getOutputStream();
+        fd = socket.getFileDescriptor();
     }
 
     private static LocalSocket connect(String abstractName) throws IOException {
@@ -78,11 +78,11 @@ public final class DesktopConnection implements Closeable {
         buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
         buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
         buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
-        outputStream.write(buffer, 0, buffer.length);
+        IO.writeFully(fd, buffer, 0, buffer.length);
     }
 
-    public OutputStream getOutputStream() {
-        return outputStream;
+    public FileDescriptor getFd() {
+        return fd;
     }
 
     public ControlEvent receiveControlEvent() throws IOException {

@@ -1,6 +1,8 @@
 #include "controller.h"
 
-#include "lockutil.h"
+#include <SDL2/SDL_assert.h>
+#include "config.h"
+#include "lock_util.h"
 #include "log.h"
 
 SDL_bool controller_init(struct controller *controller, socket_t video_socket) {
@@ -65,12 +67,8 @@ static int run_controller(void *data) {
             break;
         }
         struct control_event event;
-#ifdef BUILD_DEBUG
-        bool non_empty = control_event_queue_take(&controller->queue, &event);
+        SDL_bool non_empty = control_event_queue_take(&controller->queue, &event);
         SDL_assert(non_empty);
-#else
-        control_event_queue_take(&controller->queue, &event);
-#endif
         mutex_unlock(controller->mutex);
 
         SDL_bool ok = process_event(controller, &event);

@@ -9,7 +9,7 @@
 #include "config.h"
 #include "events.h"
 #include "frames.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 #define BUFSIZE 0x10000

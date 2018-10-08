@@ -6,7 +6,7 @@
 #include <libavformat/avformat.h>
 
 #include "config.h"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
 
 SDL_bool frames_init(struct frames *frames) {

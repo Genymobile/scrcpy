@@ -6,10 +6,11 @@
 
 #include "common.h"
 #include "log.h"
+#include "str_util.h"
 
 static const char *adb_command;
 
-static inline const char *get_adb_command() {
+static inline const char *get_adb_command(void) {
     if (!adb_command) {
         adb_command = getenv("ADB");
         if (!adb_command)
@@ -18,9 +19,25 @@ static inline const char *get_adb_command() {
     return adb_command;
 }
 
+static void show_adb_err_msg(enum process_result err) {
+    switch (err) {
+        case PROCESS_ERROR_GENERIC:
+            LOGE("Failed to execute adb");
+            break;
+        case PROCESS_ERROR_MISSING_BINARY:
+            LOGE("'adb' command not found (make it accessible from your PATH "
+                  "or define its full path in the ADB environment variable)");
+            break;
+        case PROCESS_SUCCESS:
+            /* do nothing */
+            break;
+    }
+}
+
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
     int i;
+    process_t process;
     cmd[0] = get_adb_command();
     if (serial) {
         cmd[1] = "-s";
@@ -32,7 +49,12 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    return cmd_execute(cmd[0], cmd);
+    enum process_result r = cmd_execute(cmd[0], cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r);
+        return PROCESS_NONE;
+    }
+    return process;
 }
 
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name) {
@@ -68,23 +90,49 @@ process_t adb_reverse_remove(const char *serial, const char *device_socket_name)
 }
 
 process_t adb_push(const char *serial, const char *local, const char *remote) {
+#ifdef __WINDOWS__
+    // Windows will parse the string, so the paths must be quoted
+    // (see sys/win/command.c)
+    local = strquote(local);
+    if (!local) {
+        return PROCESS_NONE;
+    }
+    remote = strquote(remote);
+    if (!remote) {
+        free((void *) local);
+        return PROCESS_NONE;
+    }
+#endif
+
     const char *const adb_cmd[] = {"push", local, remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+#ifdef __WINDOWS__
+    free((void *) remote);
+    free((void *) local);
+#endif
+
+    return proc;
 }
 
 process_t adb_install(const char *serial, const char *local) {
 #ifdef __WINDOWS__
-    // Windows will parse the string, so the local name must be quoted (see sys/win/command.c)
-    size_t len = strlen(local);
-    char quoted[len + 3];
-    memcpy(&quoted[1], local, len);
-    quoted[0] = '"';
-    quoted[len + 1] = '"';
-    quoted[len + 2] = '\0';
-    local = quoted;
+    // Windows will parse the string, so the local name must be quoted
+    // (see sys/win/command.c)
+    local = strquote(local);
+    if (!local) {
+        return PROCESS_NONE;
+    }
 #endif
+
     const char *const adb_cmd[] = {"install", "-r", local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+#ifdef __WINDOWS__
+    free((void *) local);
+#endif
+
+    return proc;
 }
 
 process_t adb_remove_path(const char *serial, const char *path) {

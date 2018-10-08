@@ -1,4 +1,7 @@
-#include "strutil.h"
+#include "str_util.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 size_t xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;
@@ -30,4 +33,17 @@ size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n) {
 truncated:
     dst[n - 1] = '\0';
     return n;
+}
+
+char *strquote(const char *src) {
+    size_t len = strlen(src);
+    char *quoted = malloc(len + 3);
+    if (!quoted) {
+        return NULL;
+    }
+    memcpy(&quoted[1], src, len);
+    quoted[0] = '"';
+    quoted[len + 1] = '"';
+    quoted[len + 2] = '\0';
+    return quoted;
 }

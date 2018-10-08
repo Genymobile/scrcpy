@@ -4,9 +4,9 @@
 #include <string.h>
 
 #include "icon.xpm"
-#include "lockutil.h"
+#include "lock_util.h"
 #include "log.h"
-#include "tinyxpm.h"
+#include "tiny_xpm.h"
 
 #define DISPLAY_MARGINS 96
 
