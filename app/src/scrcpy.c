@@ -193,11 +193,11 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_frames;
     }
 
-    decoder_init(&decoder, &frames, device_socket);
+    decoder_init(&decoder, &frames, device_socket, frame_size);
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
-    if (!decoder_start(&decoder)) {
+    if (!decoder_start(&decoder, options->outfilename)) {
         ret = SDL_FALSE;
         server_stop(&server);
         goto finally_destroy_file_handler;
@@ -228,7 +228,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     ret = event_loop();
-    LOGD("quit...");
+    LOGI("quit...");
 
     screen_destroy(&screen);
 
