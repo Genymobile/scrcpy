@@ -11,6 +11,7 @@
 struct args {
     const char *serial;
     const char *crop;
+    const char *out_filename;
     SDL_bool fullscreen;
     SDL_bool help;
     SDL_bool version;
@@ -48,6 +49,9 @@ static void usage(const char *arg0) {
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
         "        Default is %d%s.\n"
+        "\n"
+        "    -o, --output-file\n"
+        "        Write video output to file.\n"
         "\n"
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
@@ -207,6 +211,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"fullscreen",   no_argument,       NULL, 'f'},
         {"help",         no_argument,       NULL, 'h'},
         {"max-size",     required_argument, NULL, 'm'},
+        {"output-file",  required_argument, NULL, 'o'},
         {"port",         required_argument, NULL, 'p'},
         {"serial",       required_argument, NULL, 's'},
         {"show-touches", no_argument,       NULL, 't'},
@@ -214,7 +219,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fhm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fhm:o:p:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -234,6 +239,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 if (!parse_max_size(optarg, &args->max_size)) {
                     return SDL_FALSE;
                 }
+                break;
+            case 'o':
+                args->out_filename = optarg;
                 break;
             case 'p':
                 if (!parse_port(optarg, &args->port)) {
@@ -310,6 +318,7 @@ int main(int argc, char *argv[]) {
         .serial = args.serial,
         .crop = args.crop,
         .port = args.port,
+        .out_filename = args.out_filename,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
