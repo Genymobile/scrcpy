@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
+import android.media.MediaMuxer;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -80,6 +81,8 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+        ByteBuffer bBuffer = ByteBuffer.allocate(16);
+
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -90,6 +93,12 @@ public class ScreenEncoder implements Device.RotationListener {
                 }
                 if (outputBufferId >= 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
+                    bBuffer.position(0);
+                    bBuffer.putLong(bufferInfo.presentationTimeUs);
+                    bBuffer.putInt(bufferInfo.flags);
+                    bBuffer.putInt(codecBuffer.remaining());
+                    bBuffer.position(0);
+                    IO.writeFully(fd, bBuffer);
                     IO.writeFully(fd, codecBuffer);
                 }
             } finally {
