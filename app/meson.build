@@ -143,6 +143,12 @@ endif
 
 executable('scrcpy', src, dependencies: dependencies, include_directories: src_dir, install: true, c_args: c_args, link_args: link_args)
 
+# Desktop entry file for application launchers
+if host_machine.system() == 'linux'
+    # -> /usr/share/applications/scrcpy.desktop
+    install_data('scrcpy.desktop', install_dir : join_paths(get_option('datadir'), 'applications'))
+endif
+
 
 ### TESTS
 
