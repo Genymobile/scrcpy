@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=scrcpy
+GenericName=Android Remote Control
+Comment=Display and control your Android device
+Exec=scrcpy
+Icon=scrcpy
+Terminal=false
+Type=Application
+Categories=Utility;RemoteAccess;
+StartupNotify=false
