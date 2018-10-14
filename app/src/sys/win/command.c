@@ -4,20 +4,27 @@
 #include "log.h"
 #include "str_util.h"
 
+static int build_cmd(char *cmd, size_t len, const char *const argv[]) {
+    // Windows command-line parsing is WTF:
+    // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
+    // only make it work for this very specific program
+    // (don't handle escaping nor quotes)
+    size_t ret = xstrjoin(cmd, argv, ' ', len);
+    if (ret >= len) {
+        LOGE("Command too long (%" PRIsizet " chars)", len - 1);
+        return -1;
+    }
+    return 0;
+}
+
 enum process_result cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
 
-    // Windows command-line parsing is WTF:
-    // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
-    // only make it work for this very specific program
-    // (don't handle escaping nor quotes)
     char cmd[256];
-    size_t ret = xstrjoin(cmd, argv, ' ', sizeof(cmd));
-    if (ret >= sizeof(cmd)) {
-        LOGE("Command too long (%" PRIsizet " chars)", sizeof(cmd) - 1);
+    if (build_cmd(cmd, sizeof(cmd), argv)) {
         *handle = NULL;
         return PROCESS_ERROR_GENERIC;
     }
