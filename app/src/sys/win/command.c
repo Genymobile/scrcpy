@@ -17,15 +17,68 @@ static int build_cmd(char *cmd, size_t len, const char *const argv[]) {
     return 0;
 }
 
-enum process_result cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
+enum process_result cmd_execute_redirect(const char *path, const char *const argv[], HANDLE *handle,
+                                          HANDLE *pipe_stdin, HANDLE *pipe_stdout, HANDLE *pipe_stderr) {
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;
+
+    HANDLE stdin_read_handle;
+    HANDLE stdout_write_handle;
+    HANDLE stderr_write_handle;
+    if (pipe_stdin) {
+        if (!CreatePipe(&stdin_read_handle, pipe_stdin, &sa, 0)) {
+             perror("pipe");
+             return PROCESS_ERROR_GENERIC;
+        }
+    }
+    if (pipe_stdout) {
+        if (!CreatePipe(pipe_stdout, &stdout_write_handle, &sa, 0)) {
+             perror("pipe");
+             // clean up
+             if (pipe_stdin) {
+                CloseHandle(&stdin_read_handle);
+                CloseHandle(pipe_stdin);
+             }
+             return PROCESS_ERROR_GENERIC;
+        }
+    }
+    if (pipe_stderr) {
+        if (!CreatePipe(pipe_stderr, &stderr_write_handle, &sa, 0)) {
+            perror("pipe");
+            // clean up
+             if (pipe_stdin) {
+                CloseHandle(&stdin_read_handle);
+                CloseHandle(pipe_stdin);
+             }
+            if (pipe_stdout) {
+                CloseHandle(pipe_stdout);
+                CloseHandle(&stdout_write_handle);
+            }
+            return PROCESS_ERROR_GENERIC;
+        }
+    }
+
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
+    if (pipe_stdin || pipe_stdout || pipe_stderr) {
+        si.dwFlags = STARTF_USESTDHANDLES;
+        if (pipe_stdin) {
+            si.hStdInput = stdin_read_handle;
+        }
+        if (pipe_stdout) {
+            si.hStdOutput = stdout_write_handle;
+        }
+        if (pipe_stderr) {
+            si.hStdError = stderr_write_handle;
+        }
+    }
 
     char cmd[256];
     if (build_cmd(cmd, sizeof(cmd), argv)) {
-        *handle = NULL;
         return PROCESS_ERROR_GENERIC;
     }
 
@@ -44,6 +97,10 @@ enum process_result cmd_execute(const char *path, const char *const argv[], HAND
 
     *handle = pi.hProcess;
     return PROCESS_SUCCESS;
+}
+
+enum process_result cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
+    return cmd_execute_redirect(path, argv, handle, NULL, NULL, NULL);
 }
 
 SDL_bool cmd_terminate(HANDLE handle) {

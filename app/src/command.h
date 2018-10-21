@@ -24,11 +24,13 @@
 # define PROCESS_NONE NULL
   typedef HANDLE process_t;
   typedef DWORD exit_code_t;
+  typedef HANDLE pipe_t;
 #else
 # include <sys/types.h>
 # define PROCESS_NONE -1
   typedef pid_t process_t;
   typedef int exit_code_t;
+  typedef int pipe_t;
 #endif
 # define NO_EXIT_CODE -1
 
@@ -39,6 +41,8 @@ enum process_result {
 };
 
 enum process_result cmd_execute(const char *path, const char *const argv[], process_t *process);
+enum process_result cmd_execute_redirect(const char *path, const char *const argv[], process_t *process,
+                                         pipe_t *pipe_stdin, pipe_t *pipe_stdout, pipe_t *pipe_stderr);
 SDL_bool cmd_terminate(process_t pid);
 SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
@@ -54,5 +58,8 @@ process_t adb_remove_path(const char *serial, const char *path);
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 SDL_bool process_check_success(process_t process, const char *name);
+
+int read_pipe(pipe_t pipe, char *data, size_t len);
+void close_pipe(pipe_t pipe);
 
 #endif
