@@ -47,6 +47,8 @@ SDL_bool cmd_terminate(process_t pid);
 SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t adb_execute(const char *serial, const char *const adb_cmd[], int len);
+process_t adb_execute_redirect(const char *serial, const char *const adb_cmd[], int len,
+                               pipe_t *pipe_stdin, pipe_t *pipe_stdout, pipe_t *pipe_stderr);
 process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name);
 process_t adb_forward_remove(const char *serial, uint16_t local_port);
 process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port);
@@ -54,6 +56,10 @@ process_t adb_reverse_remove(const char *serial, const char *device_socket_name)
 process_t adb_push(const char *serial, const char *local, const char *remote);
 process_t adb_install(const char *serial, const char *local);
 process_t adb_remove_path(const char *serial, const char *path);
+
+// return number of bytes read (-1 on error)
+int adb_read_serialno(const char *serial, char *data, size_t len);
+int adb_read_model(const char *serial, char *data, size_t len);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
