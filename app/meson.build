@@ -19,6 +19,13 @@ src = [
     'src/tiny_xpm.c',
 ]
 
+if get_option('audio_support')
+    src += [
+        'src/aoa.c',
+        'src/audio.c',
+    ]
+endif
+
 if not get_option('crossbuild_windows')
 
     # native build
@@ -28,6 +35,10 @@ if not get_option('crossbuild_windows')
         dependency('libavutil'),
         dependency('sdl2'),
     ]
+
+    if get_option('audio_support')
+        dependencies += dependency('libusb-1.0')
+    endif
 
 else
 
@@ -125,6 +136,9 @@ conf.set('SKIP_FRAMES', get_option('skip_frames'))
 
 # enable High DPI support
 conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
+
+# enable audio support (enable audio forwarding with --forward-audio)
+conf.set('AUDIO_SUPPORT', get_option('audio_support'))
 
 # disable console on Windows
 conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))

@@ -20,14 +20,15 @@ the following files to a directory accessible from your `PATH`:
  - `AdbWinApi.dll`
  - `AdbWinUsbApi.dll`
 
-The client requires [FFmpeg] and [LibSDL2]. Just follow the instructions.
+The client requires [FFmpeg], [LibSDL2] and [LibUSB]. Just follow the
+instructions.
 
 [adb]: https://developer.android.com/studio/command-line/adb.html
 [platform-tools]: https://developer.android.com/studio/releases/platform-tools.html
 [platform-tools-windows]: https://dl.google.com/android/repository/platform-tools-latest-windows.zip
 [ffmpeg]: https://en.wikipedia.org/wiki/FFmpeg
 [LibSDL2]: https://en.wikipedia.org/wiki/Simple_DirectMedia_Layer
-
+[LibUSB]: https://en.wikipedia.org/wiki/Libusb
 
 
 ## System-specific steps
@@ -40,12 +41,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0.0
+sudo apt install ffmpeg libsdl2-2.0.0 libusb-1.0-0
 
 # client build dependencies
 sudo apt install make gcc pkg-config meson \
                  libavcodec-dev libavformat-dev libavutil-dev \
-                 libsdl2-dev
+                 libsdl2-dev libusb-1.0-0-dev
 
 # server build dependencies
 sudo apt install openjdk-8-jdk
@@ -109,7 +110,8 @@ pacman -S mingw-w64-x86_64-SDL2 \
 pacman -S mingw-w64-x86_64-make \
           mingw-w64-x86_64-gcc \
           mingw-w64-x86_64-pkg-config \
-          mingw-w64-x86_64-meson
+          mingw-w64-x86_64-meson \
+          mingw-w64-x86_64-libusb
 ```
 
 For a 32 bits version, replace `x86_64` by `i686`:
@@ -123,7 +125,8 @@ pacman -S mingw-w64-i686-SDL2 \
 pacman -S mingw-w64-i686-make \
           mingw-w64-i686-gcc \
           mingw-w64-i686-pkg-config \
-          mingw-w64-i686-meson
+          mingw-w64-i686-meson \
+          mingw-w64-i686-libusb
 ```
 
 Java (>= 7) is not available in MSYS2, so if you plan to build the server,
@@ -144,7 +147,7 @@ Install the packages with [Homebrew]:
 brew install sdl2 ffmpeg
 
 # client build dependencies
-brew install pkg-config meson
+brew install pkg-config meson libusb
 ```
 
 Additionally, if you want to build the server, install Java 8 from Caskroom, and

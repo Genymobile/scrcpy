@@ -7,6 +7,9 @@
 #include <sys/time.h>
 #include <SDL2/SDL.h>
 
+#include "config.h"
+#include "aoa.h"
+#include "audio.h"
 #include "command.h"
 #include "common.h"
 #include "controller.h"
@@ -30,6 +33,10 @@ static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
 static struct file_handler file_handler;
+
+#ifdef AUDIO_SUPPORT
+static struct audio_player audio_player;
+#endif
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -143,6 +150,17 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         return SDL_FALSE;
     }
 
+    SDL_bool ret = SDL_TRUE;
+
+#ifdef AUDIO_SUPPORT
+    if (options->forward_audio) {
+        if (!audio_forwarding_start(&audio_player, options->serial)) {
+            ret = SDL_FALSE;
+            goto finally_destroy_server;
+        }
+    }
+#endif
+
     process_t proc_show_touches = PROCESS_NONE;
     SDL_bool show_touches_waited;
     if (options->show_touches) {
@@ -151,15 +169,13 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_FALSE;
     }
 
-    SDL_bool ret = SDL_TRUE;
-
     if (!SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1")) {
         LOGW("Cannot request to keep default signal handlers");
     }
 
     if (!sdl_video_init()) {
         ret = SDL_FALSE;
-        goto finally_destroy_server;
+        goto finally_revert_show_touches;
     }
 
     socket_t device_socket = server_connect_to(&server);
@@ -248,7 +264,7 @@ finally_destroy_file_handler:
     file_handler_destroy(&file_handler);
 finally_destroy_frames:
     frames_destroy(&frames);
-finally_destroy_server:
+finally_revert_show_touches:
     if (options->show_touches) {
         if (!show_touches_waited) {
             // wait the process which enabled "show touches"
@@ -258,7 +274,12 @@ finally_destroy_server:
         proc_show_touches = set_show_touches_enabled(options->serial, SDL_FALSE);
         wait_show_touches(proc_show_touches);
     }
-
+#ifdef AUDIO_SUPPORT
+    if (options->forward_audio) {
+        audio_forwarding_stop(&audio_player);
+    }
+#endif
+finally_destroy_server:
     server_destroy(&server);
 
     return ret;

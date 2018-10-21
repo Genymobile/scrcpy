@@ -123,6 +123,13 @@ The app may be started directly in fullscreen:
 scrcpy -f
 ```
 
+To enable audio forwarding (experimental):
+
+```
+scrcpy -a
+```
+
+
 ## Shortcuts
 
  | Action                                 |   Shortcut                    |
