@@ -200,13 +200,21 @@ void input_manager_process_key(struct input_manager *input_manager,
                 }
                 return;
             case SDLK_DOWN:
+#ifdef __APPLE__
+                if (!ctrl && meta) {
+#else
                 if (ctrl && !meta) {
+#endif
                     // forward repeated events
                     action_volume_down(input_manager->controller, action);
                 }
                 return;
             case SDLK_UP:
+#ifdef __APPLE__
+                if (!ctrl && meta) {
+#else
                 if (ctrl && !meta) {
+#endif
                     // forward repeated events
                     action_volume_up(input_manager->controller, action);
                 }

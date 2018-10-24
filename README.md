@@ -134,8 +134,8 @@ scrcpy -f
  | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
  | click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
  | click on `MENU`                        | `Ctrl`+`m`                    |
- | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             |
- | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           |
+ | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
+ | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
  | turn screen on                         | _Right-click²_                |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
