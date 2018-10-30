@@ -144,6 +144,7 @@ void input_manager_process_text_input(struct input_manager *input_manager,
         return;
     }
     if (!controller_push_event(input_manager->controller, &control_event)) {
+        SDL_free(control_event.text_event.text);
         LOGW("Cannot send text event");
     }
 }
@@ -151,6 +152,14 @@ void input_manager_process_text_input(struct input_manager *input_manager,
 void input_manager_process_key(struct input_manager *input_manager,
                                const SDL_KeyboardEvent *event) {
     SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+    SDL_bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
+    SDL_bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+
+    if (alt | meta) {
+        // no shortcut involves Alt or Meta, and they should not be forwarded
+        // to the device
+        return;
+    }
 
     // capture all Ctrl events
     if (ctrl) {

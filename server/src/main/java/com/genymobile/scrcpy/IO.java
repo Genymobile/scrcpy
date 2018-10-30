@@ -14,9 +14,18 @@ public class IO {
     }
 
     public static void writeFully(FileDescriptor fd, ByteBuffer from) throws IOException {
-        while (from.hasRemaining()) {
+        // ByteBuffer position is not updated as expected by Os.write() on old Android versions, so
+        // count the remaining bytes manually.
+        // See <https://github.com/Genymobile/scrcpy/issues/291>.
+        int remaining = from.remaining();
+        while (remaining > 0) {
             try {
-                Os.write(fd, from);
+                int w = Os.write(fd, from);
+                if (BuildConfig.DEBUG && w < 0) {
+                    // w should not be negative, since an exception is thrown on error
+                    throw new AssertionError("Os.write() returned a negative value (" + w + ")");
+                }
+                remaining -= w;
             } catch (ErrnoException e) {
                 if (e.errno != OsConstants.EINTR) {
                     throw new IOException(e);
