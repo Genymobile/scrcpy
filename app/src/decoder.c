@@ -147,7 +147,7 @@ static int run_decoder(void *data) {
             outstream->codec->width = decoder->frame_size.width;
             outstream->codec->height = decoder->frame_size.height;
             outstream->time_base = (AVRational) {1, 60};
-            outstream->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+            outstream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
             ret = avio_open(&output_ctx->pb, decoder->out_filename, AVIO_FLAG_WRITE);
             if (ret < 0) {
                 LOGE("Failed to open output file");
