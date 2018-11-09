@@ -115,6 +115,7 @@ static int run_decoder(void *data) {
             int len = avcodec_decode_video2(codec_ctx, decoder->frames->decoding_frame, &got_picture, &packet);
             if (len < 0) {
                 LOGE("Could not decode video packet: %d", len);
+                av_packet_unref(&packet);
                 goto run_quit;
             }
             if (got_picture) {
