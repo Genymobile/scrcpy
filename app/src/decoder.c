@@ -142,24 +142,6 @@ static int run_decoder(void *data) {
     packet.size = 0;
 
     while (!av_read_frame(format_ctx, &packet)) {
-        if (decoder->recorder) {
-            // do not record configuration packets
-            // (they contain no media data and have no PTS/DTS)
-            // FIXME do not use MediaCodec specific flags
-            if (!(decoder->buffer_info_flags & MEDIA_CODEC_FLAG_CONFIG)) {
-                packet.pts = decoder->pts;
-                packet.dts = decoder->pts;
-
-                // no need to rescale with av_packet_rescale_ts(), the timestamps
-                // are in microseconds both in input and output
-                if (!recorder_write(decoder->recorder, &packet)) {
-                    LOGE("Could not write frame to output file");
-                    av_packet_unref(&packet);
-                    goto run_quit;
-                }
-            }
-        }
-
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 0)
@@ -193,6 +175,24 @@ static int run_decoder(void *data) {
             packet.data += len;
         }
 #endif
+
+        if (decoder->recorder) {
+            // do not record configuration packets
+            // (they contain no media data and have no PTS/DTS)
+            // FIXME do not use MediaCodec specific flags
+            if (!(decoder->buffer_info_flags & MEDIA_CODEC_FLAG_CONFIG)) {
+                packet.pts = decoder->pts;
+                packet.dts = decoder->pts;
+
+                // no need to rescale with av_packet_rescale_ts(), the timestamps
+                // are in microseconds both in input and output
+                if (!recorder_write(decoder->recorder, &packet)) {
+                    LOGE("Could not write frame to output file");
+                    av_packet_unref(&packet);
+                    goto run_quit;
+                }
+            }
+        }
 
         av_packet_unref(&packet);
 
