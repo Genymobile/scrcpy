@@ -20,6 +20,7 @@
 #include "log.h"
 #include "lock_util.h"
 #include "net.h"
+#include "recorder.h"
 #include "screen.h"
 #include "server.h"
 #include "tiny_xpm.h"
@@ -30,6 +31,7 @@ static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
 static struct file_handler file_handler;
+static struct recorder recorder;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -193,14 +195,24 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_frames;
     }
 
-    decoder_init(&decoder, &frames, device_socket, frame_size);
+    struct recorder *rec = NULL;
+    if (options->out_filename) {
+        if (!recorder_init(&recorder, options->out_filename, frame_size)) {
+            ret = SDL_FALSE;
+            server_stop(&server);
+            goto finally_destroy_file_handler;
+        }
+        rec = &recorder;
+    }
+
+    decoder_init(&decoder, &frames, device_socket, rec);
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
-    if (!decoder_start(&decoder, options->out_filename)) {
+    if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
         server_stop(&server);
-        goto finally_destroy_file_handler;
+        goto finally_destroy_recorder;
     }
 
     if (!controller_init(&controller, device_socket)) {
@@ -246,6 +258,10 @@ finally_destroy_file_handler:
     file_handler_stop(&file_handler);
     file_handler_join(&file_handler);
     file_handler_destroy(&file_handler);
+finally_destroy_recorder:
+    if (options->out_filename) {
+        recorder_destroy(&recorder);
+    }
 finally_destroy_frames:
     frames_destroy(&frames);
 finally_destroy_server:

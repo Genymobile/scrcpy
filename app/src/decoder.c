@@ -12,10 +12,9 @@
 #include "frames.h"
 #include "lock_util.h"
 #include "log.h"
+#include "recorder.h"
 
 #define BUFSIZE 0x10000
-
-static AVRational us = {1, 1000000};
 
 static inline uint64_t from_be(uint8_t *b, int size)
 {
@@ -40,6 +39,7 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
 
     remaining = decoder->remaining;
     if (remaining == 0) {
+        // FIXME what if only part of the header is available?
         ret = net_recv(decoder->video_socket, header, HEADER_SIZE);
         if (ret <= 0)
             return ret;
@@ -82,7 +82,6 @@ static void notify_stopped(void) {
 
 static int run_decoder(void *data) {
     struct decoder *decoder = data;
-    int ret;
 
     AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if (!codec) {
@@ -129,37 +128,10 @@ static int run_decoder(void *data) {
         goto run_finally_free_avio_ctx;
     }
 
-    AVStream *outstream = NULL;
-    AVFormatContext *output_ctx = NULL;
-    if (decoder->out_filename) {
-        avformat_alloc_output_context2(&output_ctx, NULL, NULL, decoder->out_filename);
-        if (!output_ctx) {
-            LOGE("Could not allocate output format context");
-            goto run_finally_free_avio_ctx;
-        } else {
-            outstream = avformat_new_stream(output_ctx, codec);
-            if (!outstream) {
-                LOGE("Could not allocate output stream");
-                goto run_finally_free_output_ctx;
-            }
-            outstream->codec = avcodec_alloc_context3(codec);
-            outstream->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-            outstream->codec->width = decoder->frame_size.width;
-            outstream->codec->height = decoder->frame_size.height;
-            outstream->time_base = (AVRational) {1, 60};
-            outstream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-            ret = avio_open(&output_ctx->pb, decoder->out_filename, AVIO_FLAG_WRITE);
-            if (ret < 0) {
-                LOGE("Failed to open output file");
-                goto run_finally_free_output_ctx;
-            }
-            ret = avformat_write_header(output_ctx, NULL);
-            if (ret < 0) {
-                LOGE("Error writing output header");
-                avio_closep(&output_ctx->pb);
-                goto run_finally_free_output_ctx;
-            }
-        }
+    if (decoder->recorder &&
+            !recorder_open(decoder->recorder, codec)) {
+        LOGE("Could not open recorder");
+        goto run_finally_close_input;
     }
 
     AVPacket packet;
@@ -168,16 +140,21 @@ static int run_decoder(void *data) {
     packet.size = 0;
 
     while (!av_read_frame(format_ctx, &packet)) {
-
-        if (output_ctx) {
+        if (decoder->recorder) {
             packet.pts = decoder->pts;
-            av_packet_rescale_ts(&packet, us, outstream->time_base);
-            ret = av_write_frame(output_ctx, &packet);
+            // no need to rescale with av_packet_rescale_ts(), the timestamps
+            // are in microseconds both in input and output
+            if (!recorder_write(decoder->recorder, &packet)) {
+                LOGE("Could not write frame to output file");
+                av_packet_unref(&packet);
+                goto run_quit;
+            }
         }
 
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 0)
+        int ret;
         if ((ret = avcodec_send_packet(codec_ctx, &packet)) < 0) {
             LOGE("Could not send video packet: %d", ret);
             goto run_quit;
@@ -218,14 +195,11 @@ static int run_decoder(void *data) {
     LOGD("End of frames");
 
 run_quit:
-    if (output_ctx) {
-        ret = av_write_trailer(output_ctx);
-        avio_closep(&output_ctx->pb);
+    if (decoder->recorder) {
+        recorder_close(decoder->recorder);
     }
+run_finally_close_input:
     avformat_close_input(&format_ctx);
-run_finally_free_output_ctx:
-    if (output_ctx)
-        avformat_free_context(output_ctx);
 run_finally_free_avio_ctx:
     av_freep(&avio_ctx);
 run_finally_free_format_ctx:
@@ -239,16 +213,16 @@ run_end:
     return 0;
 }
 
-void decoder_init(struct decoder *decoder, struct frames *frames, socket_t video_socket, struct size frame_size) {
+void decoder_init(struct decoder *decoder, struct frames *frames,
+                  socket_t video_socket, struct recorder *recorder) {
     decoder->frames = frames;
     decoder->video_socket = video_socket;
-    decoder->frame_size = frame_size;
+    decoder->recorder = recorder;
 }
 
-SDL_bool decoder_start(struct decoder *decoder, const char *out_filename) {
+SDL_bool decoder_start(struct decoder *decoder) {
     LOGD("Starting decoder thread");
 
-    decoder->out_filename = out_filename;
     decoder->thread = SDL_CreateThread(run_decoder, "video_decoder", decoder);
     if (!decoder->thread) {
         LOGC("Could not start decoder thread");
