@@ -29,6 +29,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private int bitRate;
     private int frameRate;
     private int iFrameInterval;
+    private long ptsOrigin;
 
     public ScreenEncoder(int bitRate, int frameRate, int iFrameInterval) {
         this.bitRate = bitRate;
@@ -93,11 +94,22 @@ public class ScreenEncoder implements Device.RotationListener {
                 }
                 if (outputBufferId >= 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
-                    bBuffer.position(0);
-                    bBuffer.putLong(bufferInfo.presentationTimeUs);
+                    bBuffer.clear();
+
+                    long pts;
+                    if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+                        pts = 0; // non-media data packet
+                    } else {
+                        if (ptsOrigin == 0) {
+                            ptsOrigin = bufferInfo.presentationTimeUs;
+                        }
+                        pts = bufferInfo.presentationTimeUs - ptsOrigin;
+                    }
+
+                    bBuffer.putLong(pts);
                     bBuffer.putInt(bufferInfo.flags);
                     bBuffer.putInt(codecBuffer.remaining());
-                    bBuffer.position(0);
+                    bBuffer.flip();
                     IO.writeFully(fd, bBuffer);
                     IO.writeFully(fd, codecBuffer);
                 }

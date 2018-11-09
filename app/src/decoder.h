@@ -10,12 +10,13 @@
 struct frames;
 
 struct decoder {
-    uint64_t pts;
     struct frames *frames;
     socket_t video_socket;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     struct recorder *recorder;
+    uint64_t pts;
+    uint32_t buffer_info_flags;
     int remaining;
 };
 

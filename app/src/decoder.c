@@ -15,6 +15,7 @@
 #include "recorder.h"
 
 #define BUFSIZE 0x10000
+#define MEDIA_CODEC_FLAG_CONFIG 2 // MediaCodec.BUFFER_FLAG_CODEC_CONFIG
 
 static inline uint64_t from_be(uint8_t *b, int size)
 {
@@ -45,6 +46,7 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
             return ret;
 
         decoder->pts = from_be(header, 8);
+        decoder->buffer_info_flags = from_be(header + 8, 4);
         remaining = from_be(header + 12, 4);
     }
 
@@ -141,13 +143,20 @@ static int run_decoder(void *data) {
 
     while (!av_read_frame(format_ctx, &packet)) {
         if (decoder->recorder) {
-            packet.pts = decoder->pts;
-            // no need to rescale with av_packet_rescale_ts(), the timestamps
-            // are in microseconds both in input and output
-            if (!recorder_write(decoder->recorder, &packet)) {
-                LOGE("Could not write frame to output file");
-                av_packet_unref(&packet);
-                goto run_quit;
+            // do not record configuration packets
+            // (they contain no media data and have no PTS/DTS)
+            // FIXME do not use MediaCodec specific flags
+            if (!(decoder->buffer_info_flags & MEDIA_CODEC_FLAG_CONFIG)) {
+                packet.pts = decoder->pts;
+                packet.dts = decoder->pts;
+
+                // no need to rescale with av_packet_rescale_ts(), the timestamps
+                // are in microseconds both in input and output
+                if (!recorder_write(decoder->recorder, &packet)) {
+                    LOGE("Could not write frame to output file");
+                    av_packet_unref(&packet);
+                    goto run_quit;
+                }
             }
         }
 
