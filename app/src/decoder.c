@@ -40,12 +40,16 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
 
     remaining = decoder->remaining;
     if (remaining == 0) {
+        // the previous PTS read is now for the current frame
+        decoder->pts = decoder->next_pts;
+
         // FIXME what if only part of the header is available?
         ret = net_recv(decoder->video_socket, header, HEADER_SIZE);
         if (ret <= 0)
             return ret;
 
-        decoder->pts = from_be(header, 8);
+        // read the PTS for the next frame
+        decoder->next_pts = from_be(header, 8);
         decoder->buffer_info_flags = from_be(header + 8, 4);
         remaining = from_be(header + 12, 4);
     }
