@@ -17,7 +17,6 @@ struct decoder {
     struct recorder *recorder;
     uint64_t next_pts;
     uint64_t pts;
-    uint32_t buffer_info_flags;
     int remaining;
 };
 

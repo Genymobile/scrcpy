@@ -82,7 +82,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        ByteBuffer bBuffer = ByteBuffer.allocate(16);
+        ByteBuffer bBuffer = ByteBuffer.allocate(12);
 
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
@@ -107,7 +107,6 @@ public class ScreenEncoder implements Device.RotationListener {
                     }
 
                     bBuffer.putLong(pts);
-                    bBuffer.putInt(bufferInfo.flags);
                     bBuffer.putInt(codecBuffer.remaining());
                     bBuffer.flip();
                     IO.writeFully(fd, bBuffer);
