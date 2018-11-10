@@ -1,3 +1,5 @@
+#define _POSIX_SOURCE // for kill()
+
 #include "command.h"
 
 #include <errno.h>
