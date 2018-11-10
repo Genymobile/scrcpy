@@ -84,6 +84,22 @@ static inline void action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
+static inline void action_media_playpause(struct controller *controller, int ac$
+    send_keycode(controller, AKEYCODE_MEDIA_PLAY_PAUSE, actions, "MEDIA_PLAYPAU$
+}
+
+static inline void action_media_next(struct controller *controller, int actions$
+    send_keycode(controller, AKEYCODE_MEDIA_NEXT, actions, "MEDIA_NEXT");
+}
+
+static inline void action_media_previous(struct controller *controller, int act$
+    send_keycode(controller, AKEYCODE_MEDIA_PREVIOUS, actions, "MEDIA_PREVIOUS"$
+}
+
+static inline void action_voice_assist(struct controller *controller, int actio$
+    send_keycode(controller, AKEYCODE_VOICE_ASSIST, actions, "VOICE_ASSIST");
+}
+
 // turn the screen on if it was off, press BACK otherwise
 static void press_back_or_turn_screen_on(struct controller *controller) {
     struct control_event control_event;
@@ -244,8 +260,32 @@ void input_manager_process_key(struct input_manager *input_manager,
                     switch_fps_counter_state(input_manager->frames);
                 }
                 return;
-        }
+            case SDLK_l:
+                fprintf(stderr, "case SDLK_l\n");
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                    action_media_playpause(input_manager->controller, action);
+                }
+                return;
+            case SDLK_a:
+                fprintf(stderr, "case SDLK_a\n");
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                    action_voice_assist(input_manager->controller, action);
+                }
+                return;
+            case SDLK_RIGHT:
+                fprintf(stderr, "case SDLK_RIGHT\n");
+                if (ctrl && !meta && event->type == SDL_KEYDOWN) {
+                    action_media_next(input_manager->controller, action);
+                }
+                return;
+            case SDLK_LEFT:
+                fprintf(stderr, "case SDLK_AUDIOPREV\n");
 
+                if (ctrl && !meta && event->type == SDL_KEYDOWN) {
+                    action_media_previous(input_manager->controller, action);
+                }
+                return;
+        }
         return;
     }
 
