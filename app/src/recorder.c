@@ -6,10 +6,16 @@
 #include "log.h"
 
 static const AVOutputFormat *find_mp4_muxer(void) {
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
     void *opaque = NULL;
-    const AVOutputFormat *oformat;
+#endif
+    const AVOutputFormat *oformat = NULL;
     do {
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
         oformat = av_muxer_iterate(&opaque);
+#else
+        oformat = av_oformat_next(oformat);
+#endif
         // until null or with name "mp4"
     } while (oformat && strcmp(oformat->name, "mp4"));
     return oformat;
