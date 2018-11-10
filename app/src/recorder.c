@@ -63,11 +63,25 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
+// In ffmpeg/doc/APIchanges:
+// 2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
+//   Add AVStream.codecpar, deprecate AVStream.codec.
+#if    (LIBAVFORMAT_VERSION_MICRO >= 100 /* FFmpeg */ && \
+        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)) \
+    || (LIBAVFORMAT_VERSION_MICRO < 100 && /* Libav */ \
+        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 5, 0))
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     ostream->codecpar->codec_id = input_codec->id;
     ostream->codecpar->format = AV_PIX_FMT_YUV420P;
     ostream->codecpar->width = recorder->declared_frame_size.width;
     ostream->codecpar->height = recorder->declared_frame_size.height;
+#else
+    ostream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+    ostream->codec->codec_id = input_codec->id;
+    ostream->codec->pix_fmt = AV_PIX_FMT_YUV420P;
+    ostream->codec->width = recorder->declared_frame_size.width;
+    ostream->codec->height = recorder->declared_frame_size.height;
+#endif
     ostream->time_base = (AVRational) {1, 1000000}; // timestamps in us
 
     int ret = avio_open(&recorder->ctx->pb, recorder->filename,
