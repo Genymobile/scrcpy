@@ -51,6 +51,15 @@ sudo apt install make gcc pkg-config meson \
 sudo apt install openjdk-8-jdk
 ```
 
+On old versions (like Ubuntu 16.04), `meson` is too old. In that case, install
+it from `pip3`:
+
+```bash
+sudo apt install python3-pip
+pip3 install meson
+```
+
+
 #### Fedora
 
 ```bash
