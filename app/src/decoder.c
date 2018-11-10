@@ -8,6 +8,7 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "buffer_util.h"
 #include "events.h"
 #include "frames.h"
 #include "lock_util.h"
@@ -15,19 +16,6 @@
 #include "recorder.h"
 
 #define BUFSIZE 0x10000
-
-static inline uint64_t from_be(uint8_t *b, int size)
-{
-    uint64_t x = 0;
-    int i;
-
-    for (i = 0; i < size; i += 1) {
-        x <<= 8;
-        x |= b[i];
-    }
-
-    return x;
-}
 
 #define HEADER_SIZE 12
 
@@ -48,8 +36,8 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
             return ret;
 
         // read the PTS for the next frame
-        decoder->next_pts = from_be(header, 8);
-        remaining = from_be(header + 8, 4);
+        decoder->next_pts = buffer_read64be(header);
+        remaining = buffer_read32be(&header[8]);
     }
 
     if (buf_size > remaining)
