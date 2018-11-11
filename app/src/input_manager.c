@@ -84,19 +84,19 @@ static inline void action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
-static inline void action_media_playpause(struct controller *controller, int ac$
-    send_keycode(controller, AKEYCODE_MEDIA_PLAY_PAUSE, actions, "MEDIA_PLAYPAU$
+static inline void action_media_playpause(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_MEDIA_PLAY_PAUSE, actions, "MEDIA_PLAYPAUSE");
 }
 
-static inline void action_media_next(struct controller *controller, int actions$
+static inline void action_media_next(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MEDIA_NEXT, actions, "MEDIA_NEXT");
 }
 
-static inline void action_media_previous(struct controller *controller, int act$
+static inline void action_media_previous(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MEDIA_PREVIOUS, actions, "MEDIA_PREVIOUS");
 }
 
-static inline void action_voice_assist(struct controller *controller, int actio$
+static inline void action_voice_assist(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_VOICE_ASSIST, actions, "VOICE_ASSIST");
 }
 
