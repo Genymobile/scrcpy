@@ -11,6 +11,7 @@
 struct args {
     const char *serial;
     const char *crop;
+    const char *record_filename;
     SDL_bool fullscreen;
     SDL_bool help;
     SDL_bool version;
@@ -52,6 +53,9 @@ static void usage(const char *arg0) {
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
+        "\n"
+        "    -r, --record file.mp4\n"
+        "        Record screen to file.\n"
         "\n"
         "    -s, --serial\n"
         "        The device serial number. Mandatory only if several devices\n"
@@ -208,13 +212,14 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"help",         no_argument,       NULL, 'h'},
         {"max-size",     required_argument, NULL, 'm'},
         {"port",         required_argument, NULL, 'p'},
+        {"record",       required_argument, NULL, 'r'},
         {"serial",       required_argument, NULL, 's'},
         {"show-touches", no_argument,       NULL, 't'},
         {"version",      no_argument,       NULL, 'v'},
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fhm:p:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fhm:p:r:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -239,6 +244,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 if (!parse_port(optarg, &args->port)) {
                     return SDL_FALSE;
                 }
+                break;
+            case 'r':
+                args->record_filename = optarg;
                 break;
             case 's':
                 args->serial = optarg;
@@ -273,6 +281,7 @@ int main(int argc, char *argv[]) {
     struct args args = {
         .serial = NULL,
         .crop = NULL,
+        .record_filename = NULL,
         .help = SDL_FALSE,
         .version = SDL_FALSE,
         .show_touches = SDL_FALSE,
@@ -310,6 +319,7 @@ int main(int argc, char *argv[]) {
         .serial = args.serial,
         .crop = args.crop,
         .port = args.port,
+        .record_filename = args.record_filename,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,

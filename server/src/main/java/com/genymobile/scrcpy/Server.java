@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import android.graphics.Rect;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public final class Server {
 
@@ -14,7 +15,7 @@ public final class Server {
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getBitRate());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
 
             // asynchronous
             startEventController(device, connection);
@@ -70,6 +71,12 @@ public final class Server {
         }
         Rect crop = parseCrop(args[3]);
         options.setCrop(crop);
+
+        if (args.length < 5) {
+            return options;
+        }
+        boolean sendFrameMeta = Boolean.parseBoolean(args[4]);
+        options.setSendFrameMeta(sendFrameMeta);
 
         return options;
     }

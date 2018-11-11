@@ -20,6 +20,7 @@
 #include "log.h"
 #include "lock_util.h"
 #include "net.h"
+#include "recorder.h"
 #include "screen.h"
 #include "server.h"
 #include "tiny_xpm.h"
@@ -30,6 +31,7 @@ static struct frames frames;
 static struct decoder decoder;
 static struct controller controller;
 static struct file_handler file_handler;
+static struct recorder recorder;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -138,8 +140,10 @@ static void wait_show_touches(process_t process) {
 }
 
 SDL_bool scrcpy(const struct scrcpy_options *options) {
+    SDL_bool send_frame_meta = !!options->record_filename;
     if (!server_start(&server, options->serial, options->port,
-                      options->max_size, options->bit_rate, options->crop)) {
+                      options->max_size, options->bit_rate, options->crop,
+                      send_frame_meta)) {
         return SDL_FALSE;
     }
 
@@ -152,10 +156,6 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     SDL_bool ret = SDL_TRUE;
-
-    if (!SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1")) {
-        LOGW("Cannot request to keep default signal handlers");
-    }
 
     if (!sdl_init_and_configure()) {
         ret = SDL_FALSE;
@@ -193,14 +193,24 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_frames;
     }
 
-    decoder_init(&decoder, &frames, device_socket);
+    struct recorder *rec = NULL;
+    if (options->record_filename) {
+        if (!recorder_init(&recorder, options->record_filename, frame_size)) {
+            ret = SDL_FALSE;
+            server_stop(&server);
+            goto finally_destroy_file_handler;
+        }
+        rec = &recorder;
+    }
+
+    decoder_init(&decoder, &frames, device_socket, rec);
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
     if (!decoder_start(&decoder)) {
         ret = SDL_FALSE;
         server_stop(&server);
-        goto finally_destroy_file_handler;
+        goto finally_destroy_recorder;
     }
 
     if (!controller_init(&controller, device_socket)) {
@@ -246,6 +256,10 @@ finally_destroy_file_handler:
     file_handler_stop(&file_handler);
     file_handler_join(&file_handler);
     file_handler_destroy(&file_handler);
+finally_destroy_recorder:
+    if (options->record_filename) {
+        recorder_destroy(&recorder);
+    }
 finally_destroy_frames:
     frames_destroy(&frames);
 finally_destroy_server:

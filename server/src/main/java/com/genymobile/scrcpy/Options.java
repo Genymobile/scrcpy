@@ -7,6 +7,7 @@ public class Options {
     private int bitRate;
     private boolean tunnelForward;
     private Rect crop;
+    private boolean sendFrameMeta; // send PTS so that the client may record properly
 
     public int getMaxSize() {
         return maxSize;
@@ -38,5 +39,13 @@ public class Options {
 
     public void setCrop(Rect crop) {
         this.crop = crop;
+    }
+
+    public boolean getSendFrameMeta() {
+        return sendFrameMeta;
+    }
+
+    public void setSendFrameMeta(boolean sendFrameMeta) {
+        this.sendFrameMeta = sendFrameMeta;
     }
 }
