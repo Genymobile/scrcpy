@@ -9,6 +9,11 @@
 
 struct frames;
 
+struct frame_meta {
+    uint64_t pts;
+    struct frame_meta *next;
+};
+
 struct decoder {
     struct frames *frames;
     socket_t video_socket;
@@ -16,8 +21,8 @@ struct decoder {
     SDL_mutex *mutex;
     struct recorder *recorder;
     struct receiver_state {
-        uint64_t next_pts;
-        uint64_t pts;
+        // meta (in order) for frames not consumed yet
+        struct frame_meta *frame_meta_queue;
         size_t remaining; // remaining bytes to receive for the current frame
     } receiver_state;
 };

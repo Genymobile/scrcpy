@@ -20,6 +20,46 @@
 
 #define HEADER_SIZE 12
 
+static struct frame_meta *frame_meta_new(uint64_t pts) {
+    struct frame_meta *meta = malloc(sizeof(*meta));
+    if (!meta) {
+        return meta;
+    }
+    meta->pts = pts;
+    meta->next = NULL;
+    return meta;
+}
+
+static void frame_meta_delete(struct frame_meta *frame_meta) {
+    free(frame_meta);
+}
+
+static SDL_bool receiver_state_push_meta(struct receiver_state *state,
+                                         uint64_t pts) {
+    struct frame_meta *frame_meta = frame_meta_new(pts);
+    if (!frame_meta) {
+        return SDL_FALSE;
+    }
+
+    // append to the list
+    // (iterate to find the last item, in practice the list should be tiny)
+    struct frame_meta **p = &state->frame_meta_queue;
+    while (*p) {
+        p = &(*p)->next;
+    }
+    *p = frame_meta;
+    return SDL_TRUE;
+}
+
+static uint64_t receiver_state_take_meta(struct receiver_state *state) {
+    struct frame_meta *frame_meta = state->frame_meta_queue; // first item
+    SDL_assert(frame_meta); // must not be empty
+    uint64_t pts = frame_meta->pts;
+    state->frame_meta_queue = frame_meta->next; // remove the item
+    frame_meta_delete(frame_meta);
+    return pts;
+}
+
 static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     struct decoder *decoder = opaque;
     struct receiver_state *state = &decoder->receiver_state;
@@ -37,9 +77,6 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     // It is followed by <packet_size> bytes containing the packet/frame.
 
     if (!state->remaining) {
-        // the next PTS is now for the current frame
-        state->pts = state->next_pts;
-
 #define HEADER_SIZE 12
         uint8_t header[HEADER_SIZE];
         ssize_t ret = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
@@ -49,8 +86,14 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
         // no partial read (net_recv_all())
         SDL_assert_release(ret == HEADER_SIZE);
 
-        state->next_pts = buffer_read64be(header);
+        uint64_t pts = buffer_read64be(header);
         state->remaining = buffer_read32be(&header[8]);
+
+        if (!receiver_state_push_meta(state, pts)) {
+            LOGE("Could not store PTS for recording");
+            // we cannot save the PTS, the recording would be broken
+            return -1;
+        }
     }
 
     SDL_assert(state->remaining);
@@ -126,6 +169,7 @@ static int run_decoder(void *data) {
     }
 
     // initialize the receiver state
+    decoder->receiver_state.frame_meta_queue = NULL;
     decoder->receiver_state.remaining = 0;
 
     // if recording is enabled, a "header" is sent between raw packets
@@ -195,8 +239,11 @@ static int run_decoder(void *data) {
 #endif
 
         if (decoder->recorder) {
-            packet.pts = decoder->receiver_state.pts;
-            packet.dts = decoder->receiver_state.pts;
+            // we retrieve the PTS in order they were received, so they will
+            // be assigned to the correct frame
+            uint64_t pts = receiver_state_take_meta(&decoder->receiver_state);
+            packet.pts = pts;
+            packet.dts = pts;
 
             // no need to rescale with av_packet_rescale_ts(), the timestamps
             // are in microseconds both in input and output
