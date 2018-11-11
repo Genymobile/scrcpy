@@ -192,8 +192,8 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     struct recorder *rec = NULL;
-    if (options->out_filename) {
-        if (!recorder_init(&recorder, options->out_filename, frame_size)) {
+    if (options->record_filename) {
+        if (!recorder_init(&recorder, options->record_filename, frame_size)) {
             ret = SDL_FALSE;
             server_stop(&server);
             goto finally_destroy_file_handler;
@@ -255,7 +255,7 @@ finally_destroy_file_handler:
     file_handler_join(&file_handler);
     file_handler_destroy(&file_handler);
 finally_destroy_recorder:
-    if (options->out_filename) {
+    if (options->record_filename) {
         recorder_destroy(&recorder);
     }
 finally_destroy_frames:

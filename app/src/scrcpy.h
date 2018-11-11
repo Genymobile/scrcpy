@@ -6,7 +6,7 @@
 struct scrcpy_options {
     const char *serial;
     const char *crop;
-    const char *out_filename;
+    const char *record_filename;
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;
