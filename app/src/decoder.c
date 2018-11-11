@@ -2,6 +2,7 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
+#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
@@ -30,10 +31,12 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
         // the previous PTS read is now for the current frame
         decoder->pts = decoder->next_pts;
 
-        // FIXME what if only part of the header is available?
-        ret = net_recv(decoder->video_socket, header, HEADER_SIZE);
+        ret = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
         if (ret <= 0)
             return ret;
+
+        // no partial read (net_recv_all())
+        SDL_assert_release(ret == HEADER_SIZE);
 
         // read the PTS for the next frame
         decoder->next_pts = buffer_read64be(header);
