@@ -23,6 +23,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int REPEAT_FRAME_DELAY = 6; // repeat after 6 frames
 
     private static final int MICROSECONDS_IN_ONE_SECOND = 1_000_000;
+    private static final int NO_PTS = -1;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
@@ -119,7 +120,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
         long pts;
         if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-            pts = 0; // non-media data packet
+            pts = NO_PTS; // non-media data packet
         } else {
             if (ptsOrigin == 0) {
                 ptsOrigin = bufferInfo.presentationTimeUs;

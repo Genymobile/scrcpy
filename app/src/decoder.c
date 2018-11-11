@@ -19,6 +19,7 @@
 #define BUFSIZE 0x10000
 
 #define HEADER_SIZE 12
+#define NO_PTS UINT64_C(-1)
 
 static struct frame_meta *frame_meta_new(uint64_t pts) {
     struct frame_meta *meta = malloc(sizeof(*meta));
@@ -89,7 +90,7 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
         uint64_t pts = buffer_read64be(header);
         state->remaining = buffer_read32be(&header[8]);
 
-        if (!receiver_state_push_meta(state, pts)) {
+        if (pts != NO_PTS && !receiver_state_push_meta(state, pts)) {
             LOGE("Could not store PTS for recording");
             // we cannot save the PTS, the recording would be broken
             return -1;
