@@ -93,7 +93,7 @@ static inline void action_media_next(struct controller *controller, int actions$
 }
 
 static inline void action_media_previous(struct controller *controller, int act$
-    send_keycode(controller, AKEYCODE_MEDIA_PREVIOUS, actions, "MEDIA_PREVIOUS"$
+    send_keycode(controller, AKEYCODE_MEDIA_PREVIOUS, actions, "MEDIA_PREVIOUS");
 }
 
 static inline void action_voice_assist(struct controller *controller, int actio$
