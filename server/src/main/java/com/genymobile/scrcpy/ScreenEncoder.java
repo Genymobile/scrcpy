@@ -25,20 +25,23 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int MICROSECONDS_IN_ONE_SECOND = 1_000_000;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
+    private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
     private int bitRate;
     private int frameRate;
     private int iFrameInterval;
+    private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(int bitRate, int frameRate, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int frameRate, int iFrameInterval) {
+        this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.frameRate = frameRate;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(int bitRate) {
-        this(bitRate, DEFAULT_FRAME_RATE, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate) {
+        this(sendFrameMeta, bitRate, DEFAULT_FRAME_RATE, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -82,7 +85,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        ByteBuffer bBuffer = ByteBuffer.allocate(12);
+
 
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
@@ -94,22 +97,11 @@ public class ScreenEncoder implements Device.RotationListener {
                 }
                 if (outputBufferId >= 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
-                    bBuffer.clear();
 
-                    long pts;
-                    if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-                        pts = 0; // non-media data packet
-                    } else {
-                        if (ptsOrigin == 0) {
-                            ptsOrigin = bufferInfo.presentationTimeUs;
-                        }
-                        pts = bufferInfo.presentationTimeUs - ptsOrigin;
+                    if (sendFrameMeta) {
+                        writeFrameMeta(fd, bufferInfo, codecBuffer.remaining());
                     }
 
-                    bBuffer.putLong(pts);
-                    bBuffer.putInt(codecBuffer.remaining());
-                    bBuffer.flip();
-                    IO.writeFully(fd, bBuffer);
                     IO.writeFully(fd, codecBuffer);
                 }
             } finally {
@@ -120,6 +112,25 @@ public class ScreenEncoder implements Device.RotationListener {
         }
 
         return !eof;
+    }
+
+    private void writeFrameMeta(FileDescriptor fd, MediaCodec.BufferInfo bufferInfo, int packetSize) throws IOException {
+        headerBuffer.clear();
+
+        long pts;
+        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+            pts = 0; // non-media data packet
+        } else {
+            if (ptsOrigin == 0) {
+                ptsOrigin = bufferInfo.presentationTimeUs;
+            }
+            pts = bufferInfo.presentationTimeUs - ptsOrigin;
+        }
+
+        headerBuffer.putLong(pts);
+        headerBuffer.putInt(packetSize);
+        headerBuffer.flip();
+        IO.writeFully(fd, headerBuffer);
     }
 
     private static MediaCodec createCodec() throws IOException {

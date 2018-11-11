@@ -20,7 +20,7 @@
 
 #define HEADER_SIZE 12
 
-static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
+static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     struct decoder *decoder = opaque;
     struct receiver_state *state = &decoder->receiver_state;
 
@@ -67,6 +67,11 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
     state->remaining -= ret;
 
     return ret;
+}
+
+static int read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
+    struct decoder *decoder = opaque;
+    return net_recv(decoder->video_socket, buf, buf_size);
 }
 
 // set the decoded frame as ready for rendering, and notify
@@ -123,7 +128,11 @@ static int run_decoder(void *data) {
     // initialize the receiver state
     decoder->receiver_state.remaining = 0;
 
-    AVIOContext *avio_ctx = avio_alloc_context(buffer, BUFSIZE, 0, decoder, read_packet, NULL, NULL);
+    // if recording is enabled, a "header" is sent between raw packets
+    int (*read_packet)(void *, uint8_t *, int) =
+            decoder->recorder ? read_packet_with_meta : read_raw_packet;
+    AVIOContext *avio_ctx = avio_alloc_context(buffer, BUFSIZE, 0, decoder,
+                                               read_packet, NULL, NULL);
     if (!avio_ctx) {
         LOGC("Could not allocate avio context");
         // avformat_open_input takes ownership of 'buffer'

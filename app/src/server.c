@@ -78,7 +78,8 @@ static SDL_bool disable_tunnel(struct server *server) {
 
 static process_t execute_server(const char *serial,
                                 Uint16 max_size, Uint32 bit_rate,
-                                const char *crop, SDL_bool tunnel_forward) {
+                                SDL_bool tunnel_forward, const char *crop,
+                                SDL_bool send_frame_meta) {
     char max_size_string[6];
     char bit_rate_string[11];
     sprintf(max_size_string, "%"PRIu16, max_size);
@@ -92,7 +93,8 @@ static process_t execute_server(const char *serial,
         max_size_string,
         bit_rate_string,
         tunnel_forward ? "true" : "false",
-        crop ? crop : "",
+        crop ? crop : "''",
+        send_frame_meta ? "true" : "false",
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
@@ -148,8 +150,9 @@ void server_init(struct server *server) {
     *server = (struct server) SERVER_INITIALIZER;
 }
 
-SDL_bool server_start(struct server *server, const char *serial, Uint16 local_port,
-                      Uint16 max_size, Uint32 bit_rate, const char *crop) {
+SDL_bool server_start(struct server *server, const char *serial,
+                      Uint16 local_port, Uint16 max_size, Uint32 bit_rate,
+                      const char *crop, SDL_bool send_frame_meta) {
     server->local_port = local_port;
 
     if (serial) {
@@ -190,8 +193,10 @@ SDL_bool server_start(struct server *server, const char *serial, Uint16 local_po
     }
 
     // server will connect to our server socket
-    server->process = execute_server(serial, max_size, bit_rate, crop,
-                                     server->tunnel_forward);
+    server->process = execute_server(serial, max_size, bit_rate,
+                                     server->tunnel_forward, crop,
+                                     send_frame_meta);
+
     if (server->process == PROCESS_NONE) {
         if (!server->tunnel_forward) {
             close_socket(&server->server_socket);
