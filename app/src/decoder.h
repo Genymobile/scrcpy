@@ -15,9 +15,11 @@ struct decoder {
     SDL_Thread *thread;
     SDL_mutex *mutex;
     struct recorder *recorder;
-    uint64_t next_pts;
-    uint64_t pts;
-    int remaining;
+    struct receiver_state {
+        uint64_t next_pts;
+        uint64_t pts;
+        size_t remaining; // remaining bytes to receive for the current frame
+    } receiver_state;
 };
 
 void decoder_init(struct decoder *decoder, struct frames *frames,

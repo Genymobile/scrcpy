@@ -22,36 +22,49 @@
 
 static int read_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct decoder *decoder = opaque;
-    uint8_t header[HEADER_SIZE];
-    int remaining;
-    int ret;
+    struct receiver_state *state = &decoder->receiver_state;
 
-    remaining = decoder->remaining;
-    if (remaining == 0) {
-        // the previous PTS read is now for the current frame
-        decoder->pts = decoder->next_pts;
+    // The video stream contains raw packets, without time information. When we
+    // record, we retrieve the timestamps separately, from a "meta" header
+    // added by the server before each raw packet.
+    //
+    // The "meta" header length is 12 bytes:
+    // [. . . . . . . .|. . . .]. . . . . . . . . . . . . . . ...
+    //  <-------------> <-----> <-----------------------------...
+    //        PTS        packet        raw packet
+    //                    size
+    //
+    // It is followed by <packet_size> bytes containing the packet/frame.
 
-        ret = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
-        if (ret <= 0)
+    if (!state->remaining) {
+        // the next PTS is now for the current frame
+        state->pts = state->next_pts;
+
+#define HEADER_SIZE 12
+        uint8_t header[HEADER_SIZE];
+        ssize_t ret = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
+        if (ret <= 0) {
             return ret;
-
+        }
         // no partial read (net_recv_all())
         SDL_assert_release(ret == HEADER_SIZE);
 
-        // read the PTS for the next frame
-        decoder->next_pts = buffer_read64be(header);
-        remaining = buffer_read32be(&header[8]);
+        state->next_pts = buffer_read64be(header);
+        state->remaining = buffer_read32be(&header[8]);
     }
 
-    if (buf_size > remaining)
-        buf_size = remaining;
+    SDL_assert(state->remaining);
 
-    ret = net_recv(decoder->video_socket, buf, buf_size);
-    if (ret <= 0)
+    if (buf_size > state->remaining)
+        buf_size = state->remaining;
+
+    ssize_t ret = net_recv(decoder->video_socket, buf, buf_size);
+    if (ret <= 0) {
         return ret;
+    }
 
-    remaining -= ret;
-    decoder->remaining = remaining;
+    SDL_assert(state->remaining >= ret);
+    state->remaining -= ret;
 
     return ret;
 }
@@ -106,6 +119,9 @@ static int run_decoder(void *data) {
         LOGC("Could not allocate buffer");
         goto run_finally_free_format_ctx;
     }
+
+    // initialize the receiver state
+    decoder->receiver_state.remaining = 0;
 
     AVIOContext *avio_ctx = avio_alloc_context(buffer, BUFSIZE, 0, decoder, read_packet, NULL, NULL);
     if (!avio_ctx) {
@@ -170,8 +186,8 @@ static int run_decoder(void *data) {
 #endif
 
         if (decoder->recorder) {
-            packet.pts = decoder->pts;
-            packet.dts = decoder->pts;
+            packet.pts = decoder->receiver_state.pts;
+            packet.dts = decoder->receiver_state.pts;
 
             // no need to rescale with av_packet_rescale_ts(), the timestamps
             // are in microseconds both in input and output
