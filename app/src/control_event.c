@@ -3,26 +3,15 @@
 #include <SDL2/SDL_stdinc.h>
 #include <string.h>
 
+#include "buffer_util.h"
 #include "lock_util.h"
 #include "log.h"
 
-static inline void write16(Uint8 *buf, Uint16 value) {
-    buf[0] = value >> 8;
-    buf[1] = value;
-}
-
-static inline void write32(Uint8 *buf, Uint32 value) {
-    buf[0] = value >> 24;
-    buf[1] = value >> 16;
-    buf[2] = value >> 8;
-    buf[3] = value;
-}
-
 static void write_position(Uint8 *buf, const struct position *position) {
-    write16(&buf[0], position->point.x);
-    write16(&buf[2], position->point.y);
-    write16(&buf[4], position->screen_size.width);
-    write16(&buf[6], position->screen_size.height);
+    buffer_write16be(&buf[0], position->point.x);
+    buffer_write16be(&buf[2], position->point.y);
+    buffer_write16be(&buf[4], position->screen_size.width);
+    buffer_write16be(&buf[6], position->screen_size.height);
 }
 
 int control_event_serialize(const struct control_event *event, unsigned char *buf) {
@@ -30,8 +19,8 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
     switch (event->type) {
         case CONTROL_EVENT_TYPE_KEYCODE:
             buf[1] = event->keycode_event.action;
-            write32(&buf[2], event->keycode_event.keycode);
-            write32(&buf[6], event->keycode_event.metastate);
+            buffer_write32be(&buf[2], event->keycode_event.keycode);
+            buffer_write32be(&buf[6], event->keycode_event.metastate);
             return 10;
         case CONTROL_EVENT_TYPE_TEXT: {
             // write length (1 byte) + date (non nul-terminated)
@@ -40,19 +29,19 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
                 // injecting a text takes time, so limit the text length
                 len = TEXT_MAX_LENGTH;
             }
-            write16(&buf[1], (Uint16) len);
+            buffer_write16be(&buf[1], (Uint16) len);
             memcpy(&buf[3], event->text_event.text, len);
             return 3 + len;
         }
         case CONTROL_EVENT_TYPE_MOUSE:
             buf[1] = event->mouse_event.action;
-            write32(&buf[2], event->mouse_event.buttons);
+            buffer_write32be(&buf[2], event->mouse_event.buttons);
             write_position(&buf[6], &event->mouse_event.position);
             return 14;
         case CONTROL_EVENT_TYPE_SCROLL:
             write_position(&buf[1], &event->scroll_event.position);
-            write32(&buf[9], (Uint32) event->scroll_event.hscroll);
-            write32(&buf[13], (Uint32) event->scroll_event.vscroll);
+            buffer_write32be(&buf[9], (Uint32) event->scroll_event.hscroll);
+            buffer_write32be(&buf[13], (Uint32) event->scroll_event.vscroll);
             return 17;
         case CONTROL_EVENT_TYPE_COMMAND:
             buf[1] = event->command_event.action;

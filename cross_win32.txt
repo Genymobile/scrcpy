@@ -17,4 +17,4 @@ endian = 'little'
 [properties]
 prebuilt_ffmpeg_shared = 'ffmpeg-4.0.2-win32-shared'
 prebuilt_ffmpeg_dev = 'ffmpeg-4.0.2-win32-dev'
-prebuilt_sdl2 = 'SDL2-2.0.8/i686-w64-mingw32'
+prebuilt_sdl2 = 'SDL2-2.0.9/i686-w64-mingw32'

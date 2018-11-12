@@ -107,7 +107,7 @@ dist-win32: build-server build-win32 build-win32-noconsole
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.8/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.9/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64 build-win64-noconsole
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
@@ -121,7 +121,7 @@ dist-win64: build-server build-win64 build-win64-noconsole
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.8/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.9/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)"; \

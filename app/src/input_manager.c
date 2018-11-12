@@ -155,14 +155,14 @@ void input_manager_process_key(struct input_manager *input_manager,
     SDL_bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     SDL_bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
-    if (alt | meta) {
+    if (alt) {
         // no shortcut involves Alt or Meta, and they should not be forwarded
         // to the device
         return;
     }
 
     // capture all Ctrl events
-    if (ctrl) {
+    if (ctrl | meta) {
         SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         if (shift) {
             // currently, there is no shortcut involving SHIFT
@@ -174,61 +174,73 @@ void input_manager_process_key(struct input_manager *input_manager,
         SDL_bool repeat = event->repeat;
         switch (keycode) {
             case SDLK_h:
-                if (!repeat) {
+                if (ctrl && !meta && !repeat) {
                     action_home(input_manager->controller, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (!repeat) {
+                if (ctrl && !meta && !repeat) {
                     action_back(input_manager->controller, action);
                 }
                 return;
             case SDLK_s:
-                if (!repeat) {
+                if (ctrl && !meta && !repeat) {
                     action_app_switch(input_manager->controller, action);
                 }
                 return;
             case SDLK_m:
-                if (!repeat) {
+                if (ctrl && !meta && !repeat) {
                     action_menu(input_manager->controller, action);
                 }
                 return;
             case SDLK_p:
-                if (!repeat) {
+                if (ctrl && !meta && !repeat) {
                     action_power(input_manager->controller, action);
                 }
                 return;
             case SDLK_DOWN:
-                // forward repeated events
-                action_volume_down(input_manager->controller, action);
+#ifdef __APPLE__
+                if (!ctrl && meta) {
+#else
+                if (ctrl && !meta) {
+#endif
+                    // forward repeated events
+                    action_volume_down(input_manager->controller, action);
+                }
                 return;
             case SDLK_UP:
-                // forward repeated events
-                action_volume_up(input_manager->controller, action);
+#ifdef __APPLE__
+                if (!ctrl && meta) {
+#else
+                if (ctrl && !meta) {
+#endif
+                    // forward repeated events
+                    action_volume_up(input_manager->controller, action);
+                }
                 return;
             case SDLK_v:
-                if (!repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
                     clipboard_paste(input_manager->controller);
                 }
                 return;
             case SDLK_f:
-                if (!repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
                     screen_switch_fullscreen(input_manager->screen);
                 }
                 return;
             case SDLK_x:
-                if (!repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
                     screen_resize_to_fit(input_manager->screen);
                 }
                 return;
             case SDLK_g:
-                if (!repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
                     screen_resize_to_pixel_perfect(input_manager->screen);
                 }
                 return;
             case SDLK_i:
-                if (!repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
                     switch_fps_counter_state(input_manager->frames);
                 }
                 return;
