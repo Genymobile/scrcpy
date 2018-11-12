@@ -43,12 +43,12 @@ For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
  - [`scrcpy-win32-v1.5.zip`][direct-win32]  
-   _(SHA-256: 9118d74655a3e2daf9c1db37caf578f0b5239ccb078dbcbdb451e8a0becfe19f)_
+   _(SHA-256: 46ae0d4c1c6bd049ec4a30080d2ad91a32b31d3f758afdca2c3a915ecabf02c1)_
  - [`scrcpy-win64-v1.5.zip`][direct-win64]  
-   _(SHA-256: fcaf7d596e8829cbcc119d67ec055eef2ee14ee204f28b33b7794f225ce16463)_
+   _(SHA-256: 89daa07325129617cf943a84bc4e304ee5e57118416fe265b9b5d4a1bf87c501)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.5/scrcpy-win32-v1.5.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.5/scrcpy-win64-v1.5.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.5-fixversion/scrcpy-win32-v1.5.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.5-fixversion/scrcpy-win64-v1.5.zip
 
 You can also [build the app manually][BUILD].
 
