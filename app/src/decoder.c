@@ -80,12 +80,15 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     if (!state->remaining) {
 #define HEADER_SIZE 12
         uint8_t header[HEADER_SIZE];
-        ssize_t ret = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
-        if (ret <= 0) {
-            return ret;
+        ssize_t r = net_recv_all(decoder->video_socket, header, HEADER_SIZE);
+        if (r == -1) {
+            return AVERROR(errno);
+        }
+        if (r == 0) {
+            return AVERROR_EOF;
         }
         // no partial read (net_recv_all())
-        SDL_assert_release(ret == HEADER_SIZE);
+        SDL_assert_release(r == HEADER_SIZE);
 
         uint64_t pts = buffer_read64be(header);
         state->remaining = buffer_read32be(&header[8]);
@@ -93,7 +96,7 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
         if (pts != NO_PTS && !receiver_state_push_meta(state, pts)) {
             LOGE("Could not store PTS for recording");
             // we cannot save the PTS, the recording would be broken
-            return -1;
+            return AVERROR(ENOMEM);
         }
     }
 
@@ -102,20 +105,30 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     if (buf_size > state->remaining)
         buf_size = state->remaining;
 
-    ssize_t ret = net_recv(decoder->video_socket, buf, buf_size);
-    if (ret <= 0) {
-        return ret;
+    ssize_t r = net_recv(decoder->video_socket, buf, buf_size);
+    if (r == -1) {
+        return AVERROR(errno);
+    }
+    if (r == 0) {
+        return AVERROR_EOF;
     }
 
-    SDL_assert(state->remaining >= ret);
-    state->remaining -= ret;
+    SDL_assert(state->remaining >= r);
+    state->remaining -= r;
 
-    return ret;
+    return r;
 }
 
 static int read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct decoder *decoder = opaque;
-    return net_recv(decoder->video_socket, buf, buf_size);
+    ssize_t r = net_recv(decoder->video_socket, buf, buf_size);
+    if (r == -1) {
+        return AVERROR(errno);
+    }
+    if (r == 0) {
+        return AVERROR_EOF;
+    }
+    return r;
 }
 
 // set the decoded frame as ready for rendering, and notify
