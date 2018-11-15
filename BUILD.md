@@ -199,6 +199,12 @@ cd x
 ninja
 ```
 
+_Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
+install` must be run as root)._
+
+[ninja-user]: https://github.com/Genymobile/scrcpy/commit/4c49b27e9f6be02b8e63b508b60535426bd0291a
+
+
 ### Run
 
 To run without installing:
