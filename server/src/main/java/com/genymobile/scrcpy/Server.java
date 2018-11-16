@@ -71,7 +71,7 @@ public final class Server {
     }
 
     private static Rect parseCrop(String crop) {
-        if (crop.isEmpty()) {
+        if ("-".equals(crop)) {
             return null;
         }
         // input format: "width:height:x:y"

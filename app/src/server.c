@@ -93,7 +93,7 @@ static process_t execute_server(const char *serial,
         max_size_string,
         bit_rate_string,
         tunnel_forward ? "true" : "false",
-        crop ? crop : "''",
+        crop ? crop : "-",
         send_frame_meta ? "true" : "false",
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
