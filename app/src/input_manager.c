@@ -18,9 +18,15 @@ static void convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int 
     *y = (int) (*y / scale_y) - viewport.y;
 }
 
-static void get_mouse_point(struct screen *screen, int *x, int *y) {
-    SDL_GetMouseState(x, y);
-    convert_to_renderer_coordinates(screen->renderer, x, y);
+static struct point get_mouse_point(struct screen *screen) {
+    int x;
+    int y;
+    SDL_GetMouseState(&x, &y);
+    convert_to_renderer_coordinates(screen->renderer, &x, &y);
+    return (struct point) {
+        .x = x,
+        .y = y,
+    };
 }
 
 static const int ACTION_DOWN = 1;
@@ -273,9 +279,6 @@ static SDL_bool is_outside_device_screen(struct input_manager *input_manager,
 
 void input_manager_process_mouse_button(struct input_manager *input_manager,
                                         const SDL_MouseButtonEvent *event) {
-    SDL_bool outside_device_screen = is_outside_device_screen(input_manager,
-                                                              event->x,
-                                                              event->y);
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(input_manager->controller);
@@ -286,17 +289,16 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
             return;
         }
         // double-click on black borders resize to fit the device screen
-        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2
-                && outside_device_screen) {
-            screen_resize_to_fit(input_manager->screen);
+        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
+            SDL_bool outside= is_outside_device_screen(input_manager,
+                                                       event->x,
+                                                       event->y);
+            if (outside) {
+                screen_resize_to_fit(input_manager->screen);
+            }
             return;
         }
         // otherwise, send the click event to the device
-    }
-
-    if (outside_device_screen) {
-        // ignore
-        return;
     }
 
     struct control_event control_event;
@@ -309,22 +311,9 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
 
 void input_manager_process_mouse_wheel(struct input_manager *input_manager,
                                        const SDL_MouseWheelEvent *event) {
-    int x;
-    int y;
-    get_mouse_point(input_manager->screen, &x, &y);
-    if (is_outside_device_screen(input_manager, x, y)) {
-        // ignore
-        return;
-    }
-
-    SDL_assert_release(x >= 0 && x < 0x10000 && y >= 0 && y < 0x10000);
-
     struct position position = {
         .screen_size = input_manager->screen->frame_size,
-        .point = {
-            .x = (Uint16) x,
-            .y = (Uint16) y,
-        },
+        .point = get_mouse_point(input_manager->screen),
     };
     struct control_event control_event;
     if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
