@@ -15,6 +15,11 @@ Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 
+On some devices, you also need to enable [an additional option][control] to
+control it using keyboard and mouse.
+
+[control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
+
 
 ## Get the app
 
