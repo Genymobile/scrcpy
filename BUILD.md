@@ -43,7 +43,7 @@ Install the required packages from your package manager.
 sudo apt install ffmpeg libsdl2-2.0.0
 
 # client build dependencies
-sudo apt install make gcc pkg-config meson \
+sudo apt install make gcc pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
 
@@ -199,6 +199,12 @@ cd x
 ninja
 ```
 
+_Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
+install` must be run as root)._
+
+[ninja-user]: https://github.com/Genymobile/scrcpy/commit/4c49b27e9f6be02b8e63b508b60535426bd0291a
+
+
 ### Run
 
 To run without installing:
@@ -229,9 +235,9 @@ You can then [run](README.md#run) _scrcpy_.
 ## Prebuilt server
 
  - [`scrcpy-server-v1.5.jar`][direct-scrcpy-server]  
-   _(SHA-256: c827f566172a5c5946e63b8378ac93d374dff9e229083e5cd9980df57536947b)_
+   _(SHA-256: d97aab6f60294e33e7ff79c2856ad3e01f912892395131f4f337e9ece03c24de)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.5/scrcpy-server-v1.5.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.5-fixversion/scrcpy-server-v1.5.jar
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
