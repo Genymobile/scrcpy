@@ -81,6 +81,7 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
     ostream->codec->pix_fmt = AV_PIX_FMT_YUV420P;
     ostream->codec->width = recorder->declared_frame_size.width;
     ostream->codec->height = recorder->declared_frame_size.height;
+    ostream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 #endif
     ostream->time_base = (AVRational) {1, 1000000}; // timestamps in us
 
