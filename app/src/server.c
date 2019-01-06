@@ -80,6 +80,7 @@ static process_t execute_server(const char *serial,
                                 Uint16 max_size, Uint32 bit_rate,
                                 SDL_bool tunnel_forward, const char *crop,
                                 SDL_bool send_frame_meta) {
+    LOGD("tunnel_forward=%d\n", (int) tunnel_forward);
     char max_size_string[6];
     char bit_rate_string[11];
     sprintf(max_size_string, "%"PRIu16, max_size);

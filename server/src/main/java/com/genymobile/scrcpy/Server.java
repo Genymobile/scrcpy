@@ -64,6 +64,7 @@ public final class Server {
         }
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
         boolean tunnelForward = Boolean.parseBoolean(args[2]);
+        Ln.d("tunnelForward = " + tunnelForward);
         options.setTunnelForward(tunnelForward);
 
         if (args.length < 4) {
@@ -104,6 +105,8 @@ public final class Server {
                 Ln.e("Exception on thread " + t, e);
             }
         });
+
+        Ln.d("args: " + Arrays.toString(args));
 
         Options options = createOptions(args);
         scrcpy(options);
