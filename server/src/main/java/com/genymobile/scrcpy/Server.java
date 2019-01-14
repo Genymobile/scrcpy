@@ -2,10 +2,13 @@ package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
 public final class Server {
+
+    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
 
     private Server() {
         // not instantiable
@@ -86,6 +89,14 @@ public final class Server {
         return new Rect(x, y, x + width, y + height);
     }
 
+    private static void unlinkSelf() {
+        try {
+            new File(SERVER_PATH).delete();
+        } catch (Exception e) {
+            Ln.e("Cannot unlink server", e);
+        }
+    }
+
     public static void main(String... args) throws Exception {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
@@ -94,6 +105,7 @@ public final class Server {
             }
         });
 
+        unlinkSelf();
         Options options = createOptions(args);
         scrcpy(options);
     }
