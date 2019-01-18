@@ -30,6 +30,9 @@ SDL_bool sdl_init_and_configure(void) {
     }
 #endif
 
+    // Do not disable the screensaver when scrcpy is running
+    SDL_EnableScreenSaver();
+
     return SDL_TRUE;
 }
 
