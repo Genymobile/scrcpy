@@ -295,8 +295,8 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
                                                        event->y);
             if (outside) {
                 screen_resize_to_fit(input_manager->screen);
+                return;
             }
-            return;
         }
         // otherwise, send the click event to the device
     }
