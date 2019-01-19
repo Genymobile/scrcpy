@@ -34,11 +34,6 @@ static SDL_bool push_server(const char *serial) {
     return process_check_success(process, "adb push");
 }
 
-static SDL_bool remove_server(const char *serial) {
-    process_t process = adb_remove_path(serial, DEVICE_SERVER_PATH);
-    return process_check_success(process, "adb shell rm");
-}
-
 static SDL_bool enable_tunnel_reverse(const char *serial, Uint16 local_port) {
     process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
     return process_check_success(process, "adb reverse");
@@ -93,7 +88,7 @@ static process_t execute_server(const char *serial,
         max_size_string,
         bit_rate_string,
         tunnel_forward ? "true" : "false",
-        crop ? crop : "''",
+        crop ? crop : "-",
         send_frame_meta ? "true" : "false",
     };
     return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
@@ -167,8 +162,6 @@ SDL_bool server_start(struct server *server, const char *serial,
         return SDL_FALSE;
     }
 
-    server->server_copied_to_device = SDL_TRUE;
-
     if (!enable_tunnel(server)) {
         SDL_free((void *) server->serial);
         return SDL_FALSE;
@@ -229,10 +222,6 @@ socket_t server_connect_to(struct server *server) {
         close_socket(&server->server_socket);
     }
 
-    // the server is started, we can clean up the jar from the temporary folder
-    remove_server(server->serial); // ignore failure
-    server->server_copied_to_device = SDL_FALSE;
-
     // we don't need the adb tunnel anymore
     disable_tunnel(server); // ignore failure
     server->tunnel_enabled = SDL_FALSE;
@@ -253,10 +242,6 @@ void server_stop(struct server *server) {
     if (server->tunnel_enabled) {
         // ignore failure
         disable_tunnel(server);
-    }
-
-    if (server->server_copied_to_device) {
-        remove_server(server->serial); // ignore failure
     }
 }
 

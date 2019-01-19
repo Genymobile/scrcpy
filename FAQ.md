@@ -24,20 +24,6 @@ If you still encounter problems, please see [issue 9].
 [issue 9]: https://github.com/Genymobile/scrcpy/issues/9
 
 
-### I get a black screen for some applications like Silence
-
-This is expected, they requested to [protect] the screen.
-
-In [Silence], you can disable it in settings → Privacy → Screen security.
-
-[protect]: https://developer.android.com/reference/android/view/Display#FLAG_SECURE
-[silence]: https://f-droid.org/en/packages/org.smssecure.smssecure/
-
-See [issue 36].
-
-[issue 36]: https://github.com/Genymobile/scrcpy/issues/36
-
-
 ### Mouse clicks do not work
 
 On some devices, you may need to enable an option to allow [simulating input].

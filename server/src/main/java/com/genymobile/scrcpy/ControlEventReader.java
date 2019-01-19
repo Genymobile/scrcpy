@@ -132,8 +132,8 @@ public class ControlEventReader {
     }
 
     private static Position readPosition(ByteBuffer buffer) {
-        int x = toUnsigned(buffer.getShort());
-        int y = toUnsigned(buffer.getShort());
+        int x = buffer.getInt();
+        int y = buffer.getInt();
         int screenWidth = toUnsigned(buffer.getShort());
         int screenHeight = toUnsigned(buffer.getShort());
         return new Position(x, y, screenWidth, screenHeight);

@@ -13,7 +13,6 @@ struct server {
     SDL_bool tunnel_enabled;
     SDL_bool tunnel_forward; // use "adb forward" instead of "adb reverse"
     SDL_bool send_frame_meta; // request frame PTS to be able to record properly
-    SDL_bool server_copied_to_device;
 };
 
 #define SERVER_INITIALIZER {              \
@@ -25,7 +24,6 @@ struct server {
     .tunnel_enabled = SDL_FALSE,          \
     .tunnel_forward = SDL_FALSE,          \
     .send_frame_meta = SDL_FALSE,         \
-    .server_copied_to_device = SDL_FALSE, \
 }
 
 // init default values
