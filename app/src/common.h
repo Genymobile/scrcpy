@@ -13,8 +13,8 @@ struct size {
 };
 
 struct point {
-    Uint16 x;
-    Uint16 y;
+    Sint32 x;
+    Sint32 y;
 };
 
 struct position {

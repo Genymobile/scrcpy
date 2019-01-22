@@ -135,11 +135,6 @@ process_t adb_install(const char *serial, const char *local) {
     return proc;
 }
 
-process_t adb_remove_path(const char *serial, const char *path) {
-    const char *const adb_cmd[] = {"shell", "rm", path};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
-}
-
 SDL_bool process_check_success(process_t proc, const char *name) {
     if (proc == PROCESS_NONE) {
         LOGE("Could not execute \"%s\"", name);
