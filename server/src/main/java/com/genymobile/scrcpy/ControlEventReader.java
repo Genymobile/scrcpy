@@ -9,8 +9,8 @@ import java.nio.charset.StandardCharsets;
 public class ControlEventReader {
 
     private static final int KEYCODE_PAYLOAD_LENGTH = 9;
-    private static final int MOUSE_PAYLOAD_LENGTH = 13;
-    private static final int SCROLL_PAYLOAD_LENGTH = 16;
+    private static final int MOUSE_PAYLOAD_LENGTH = 17;
+    private static final int SCROLL_PAYLOAD_LENGTH = 20;
     private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
     public static final int TEXT_MAX_LENGTH = 300;
