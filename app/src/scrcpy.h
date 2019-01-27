@@ -12,6 +12,7 @@ struct scrcpy_options {
     Uint32 bit_rate;
     SDL_bool show_touches;
     SDL_bool fullscreen;
+    SDL_bool always_on_top;
 };
 
 SDL_bool scrcpy(const struct scrcpy_options *options);

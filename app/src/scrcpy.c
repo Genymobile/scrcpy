@@ -223,7 +223,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_controller;
     }
 
-    if (!screen_init_rendering(&screen, device_name, frame_size)) {
+    if (!screen_init_rendering(&screen, device_name, frame_size, options->always_on_top)) {
         ret = SDL_FALSE;
         goto finally_stop_and_join_controller;
     }

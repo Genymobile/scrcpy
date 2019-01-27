@@ -144,7 +144,10 @@ static inline SDL_Texture *create_texture(SDL_Renderer *renderer, struct size fr
                              frame_size.width, frame_size.height);
 }
 
-SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, struct size frame_size) {
+SDL_bool screen_init_rendering(struct screen *screen,
+                               const char *device_name,
+                               struct size frame_size,
+                               SDL_bool always_on_top) {
     screen->frame_size = frame_size;
 
     struct size window_size = get_initial_optimal_size(frame_size);
@@ -152,6 +155,10 @@ SDL_bool screen_init_rendering(struct screen *screen, const char *device_name, s
 #ifdef HIDPI_SUPPORT
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
+    if (always_on_top) {
+        window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
+    }
+
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                       window_size.width, window_size.height, window_flags);
     if (!screen->window) {

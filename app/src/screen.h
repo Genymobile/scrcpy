@@ -43,7 +43,8 @@ void screen_init(struct screen *screen);
 // initialize screen, create window, renderer and texture (window is hidden)
 SDL_bool screen_init_rendering(struct screen *screen,
                                const char *device_name,
-                               struct size frame_size);
+                               struct size frame_size,
+                               SDL_bool always_on_top);
 
 // show the window
 void screen_show_window(struct screen *screen);

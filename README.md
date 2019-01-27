@@ -196,6 +196,16 @@ scrcpy -f  # short version
 Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
 
 
+### Always on top
+
+The window of app can always be above others by:
+
+```bash
+scrcpy --always-on-top
+scrcpy -T  # short version
+```
+
+
 ### Show touches
 
 For presentations, it may be useful to show physical touches (on the physical
