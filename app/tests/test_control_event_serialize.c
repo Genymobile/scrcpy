@@ -87,13 +87,13 @@ static void test_serialize_mouse_event(void) {
 
     unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
-    assert(size == 14);
+    assert(size == 18);
 
     const unsigned char expected[] = {
         0x02, // CONTROL_EVENT_TYPE_MOUSE
         0x00, // AKEY_EVENT_ACTION_DOWN
         0x00, 0x00, 0x00, 0x01, // AMOTION_EVENT_BUTTON_PRIMARY
-        0x01, 0x04, 0x04, 0x02, // 260 1026
+        0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
         0x04, 0x38, 0x07, 0x80, // 1080 1920
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
@@ -120,11 +120,11 @@ static void test_serialize_scroll_event(void) {
 
     unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
-    assert(size == 17);
+    assert(size == 21);
 
     const unsigned char expected[] = {
         0x03, // CONTROL_EVENT_TYPE_SCROLL
-        0x01, 0x04, 0x04, 0x02, // 260 1026
+        0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
         0x04, 0x38, 0x07, 0x80, // 1080 1920
         0x00, 0x00, 0x00, 0x01, // 1
         0xFF, 0xFF, 0xFF, 0xFF, // -1

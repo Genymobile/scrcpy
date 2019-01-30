@@ -23,7 +23,7 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
             buffer_write32be(&buf[6], event->keycode_event.metastate);
             return 10;
         case CONTROL_EVENT_TYPE_TEXT: {
-            // write length (1 byte) + date (non nul-terminated)
+            // write length (2 bytes) + string (non nul-terminated)
             size_t len = strlen(event->text_event.text);
             if (len > TEXT_MAX_LENGTH) {
                 // injecting a text takes time, so limit the text length
