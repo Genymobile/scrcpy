@@ -33,6 +33,8 @@ static struct controller controller;
 static struct file_handler file_handler;
 static struct recorder recorder;
 
+SDL_bool no_window;
+
 static struct input_manager input_manager = {
     .controller = &controller,
     .frames = &frames,
@@ -80,7 +82,9 @@ static SDL_bool event_loop(void) {
                 if (!screen.has_frame) {
                     screen.has_frame = SDL_TRUE;
                     // this is the very first frame, show the window
-                    screen_show_window(&screen);
+                    if (!no_window) {
+                        screen_show_window(&screen);
+                    }
                 }
                 if (!screen_update_frame(&screen, &frames)) {
                     return SDL_FALSE;
@@ -236,6 +240,8 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (options->fullscreen) {
         screen_switch_fullscreen(&screen);
     }
+
+    no_window = options->no_window;
 
     ret = event_loop();
     LOGD("quit...");
