@@ -16,6 +16,7 @@ struct args {
     const char *record_filename;
     enum recorder_format record_format;
     SDL_bool fullscreen;
+    SDL_bool no_window;
     SDL_bool help;
     SDL_bool version;
     SDL_bool show_touches;
@@ -56,6 +57,9 @@ static void usage(const char *arg0) {
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
         "        Default is %d%s.\n"
+        "\n"
+        "    -n, --no-window\n"
+        "        Do not show window (only when screen recording is enabled).\n"
         "\n"
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
@@ -260,6 +264,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"fullscreen",    no_argument,       NULL, 'f'},
         {"help",          no_argument,       NULL, 'h'},
         {"max-size",      required_argument, NULL, 'm'},
+        {"no-window",     no_argument,       NULL, 'n'},
         {"port",          required_argument, NULL, 'p'},
         {"record",        required_argument, NULL, 'r'},
         {"record-format", required_argument, NULL, 'f'},
@@ -269,7 +274,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:p:r:s:tTv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:np:r:s:tTv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -295,6 +300,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                     return SDL_FALSE;
                 }
                 break;
+            case 'n':
+                args->no_window = SDL_TRUE;
+                break;
             case 'p':
                 if (!parse_port(optarg, &args->port)) {
                     return SDL_FALSE;
@@ -319,6 +327,16 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 // getopt prints the error message on stderr
                 return SDL_FALSE;
         }
+    }
+
+    if (args->no_window && !args->record_filename) {
+        LOGE("-n/--no-window requires screen recording (-r/--record)");
+        return SDL_FALSE;
+    }
+
+    if (args->no_window && args->fullscreen) {
+        LOGE("-f/--fullscreen-window is incompatible with -n/--no-window");
+        return SDL_FALSE;
     }
 
     int index = optind;
@@ -401,6 +419,7 @@ int main(int argc, char *argv[]) {
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
+        .no_window = args.no_window,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
