@@ -10,6 +10,7 @@ struct recorder {
     char *filename;
     AVFormatContext *ctx;
     struct size declared_frame_size;
+    SDL_bool header_written;
 };
 
 SDL_bool recorder_init(struct recorder *recoder, const char *filename,

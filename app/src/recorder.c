@@ -17,7 +17,7 @@ static const AVOutputFormat *find_mp4_muxer(void) {
         oformat = av_oformat_next(oformat);
 #endif
         // until null or with name "mp4"
-    } while (oformat && strcmp(oformat->name, "mp4"));
+    } while (oformat && strcmp(oformat->name, "matroska"));
     return oformat;
 }
 
@@ -30,6 +30,7 @@ SDL_bool recorder_init(struct recorder *recorder, const char *filename,
     }
 
     recorder->declared_frame_size = declared_frame_size;
+    recorder->header_written = SDL_FALSE;
 
     return SDL_TRUE;
 }
@@ -93,14 +94,6 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
-    ret = avformat_write_header(recorder->ctx, NULL);
-    if (ret < 0) {
-        LOGE("Failed to write header to %s", recorder->filename);
-        avio_closep(&recorder->ctx->pb);
-        avformat_free_context(recorder->ctx);
-        return SDL_FALSE;
-    }
-
     return SDL_TRUE;
 }
 
@@ -114,5 +107,33 @@ void recorder_close(struct recorder *recorder) {
 }
 
 SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet) {
-    return av_write_frame(recorder->ctx, packet) >= 0;
+    LOGD("recorder_write");
+    if (recorder->header_written) {
+        LOGD("pts=%ld", (long) packet->pts);
+        return av_write_frame(recorder->ctx, packet) >= 0;
+    }
+    LOGD("recorder_write header");
+
+    //SDL_assert(recorder->ctx->nb_streams == 1);
+    AVStream *ostream = recorder->ctx->streams[0];
+    ostream->codecpar->extradata = malloc(packet->size);
+    memcpy(ostream->codecpar->extradata, packet->data, packet->size);
+    ostream->codecpar->extradata_size = packet->size;
+
+    // write header instead
+    AVDictionary *opts = NULL;
+    av_dict_set_int(&opts, "live", 1, 0);
+    int ret = avformat_write_header(recorder->ctx, &opts);
+    if (ret < 0) {
+        LOGE("Failed to write header to %s", recorder->filename);
+        char err[128];
+        av_strerror(ret, err, sizeof(err));
+        LOGE("%s\n", err);
+        avio_closep(&recorder->ctx->pb);
+        avformat_free_context(recorder->ctx);
+        return SDL_FALSE;
+    }
+
+    recorder->header_written = SDL_TRUE;
+    return SDL_TRUE;
 }

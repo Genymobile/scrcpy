@@ -296,11 +296,16 @@ run_end:
     return 0;
 }
 
+static void av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
+    LOGE(fmt, vl);
+}
+
 void decoder_init(struct decoder *decoder, struct frames *frames,
                   socket_t video_socket, struct recorder *recorder) {
     decoder->frames = frames;
     decoder->video_socket = video_socket;
     decoder->recorder = recorder;
+    av_log_set_callback(av_log_callback);
 }
 
 SDL_bool decoder_start(struct decoder *decoder) {
