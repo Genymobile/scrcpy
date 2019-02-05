@@ -82,6 +82,7 @@ static SDL_bool event_loop(void) {
                 if (!screen.has_frame) {
                     screen.has_frame = SDL_TRUE;
                     // this is the very first frame, show the window
+                    
                     if (!no_window) {
                         screen_show_window(&screen);
                     }
@@ -145,6 +146,8 @@ static void wait_show_touches(process_t process) {
 
 SDL_bool scrcpy(const struct scrcpy_options *options) {
     SDL_bool send_frame_meta = !!options->record_filename;
+    no_window = options->no_window;
+
     if (!server_start(&server, options->serial, options->port,
                       options->max_size, options->bit_rate, options->crop,
                       send_frame_meta)) {
@@ -208,7 +211,6 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     decoder_init(&decoder, &frames, device_socket, rec);
-
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
     if (!decoder_start(&decoder)) {
@@ -237,11 +239,11 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
-    if (options->fullscreen) {
+    if (!no_window && options->fullscreen) {
         screen_switch_fullscreen(&screen);
     }
 
-    no_window = options->no_window;
+    
 
     ret = event_loop();
     LOGD("quit...");

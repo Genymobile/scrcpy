@@ -215,7 +215,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"bit-rate",     required_argument, NULL, 'b'},
         {"crop",         required_argument, NULL, 'c'},
         {"fullscreen",   no_argument,       NULL, 'f'},
-        {"no-window",   no_argument,       NULL, 'n'},
+        {"no-window",    no_argument,       NULL, 'n'},
         {"help",         no_argument,       NULL, 'h'},
         {"max-size",     required_argument, NULL, 'm'},
         {"port",         required_argument, NULL, 'p'},
@@ -226,7 +226,7 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,           0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fnhm:p:r:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fhm:np:r:s:tv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -239,9 +239,6 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
             case 'f':
                 args->fullscreen = SDL_TRUE;
                 break;
-            case 'n':
-                args->no_window = SDL_TRUE;
-                break;
             case 'h':
                 args->help = SDL_TRUE;
                 break;
@@ -249,6 +246,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 if (!parse_max_size(optarg, &args->max_size)) {
                     return SDL_FALSE;
                 }
+                break;
+            case 'n':
+                args->no_window = SDL_TRUE;
                 break;
             case 'p':
                 if (!parse_port(optarg, &args->port)) {
@@ -271,6 +271,11 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 // getopt prints the error message on stderr
                 return SDL_FALSE;
         }
+    }
+
+    if (args->no_window && args->record_filename == NULL) {
+        LOGE("Nothing to do: you asked to have no video feedback  (by providing --no_window/-n argument) and did not specified a filename where video feed should be saved (--record/-r argument)");
+        return SDL_FALSE;
     }
 
     int index = optind;

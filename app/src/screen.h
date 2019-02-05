@@ -16,6 +16,7 @@ struct screen {
     struct size windowed_window_size;
     SDL_bool has_frame;
     SDL_bool fullscreen;
+    SDL_bool no_window;
 };
 
 #define SCREEN_INITIALIZER {  \
@@ -32,6 +33,7 @@ struct screen {
     },                        \
     .has_frame = SDL_FALSE,   \
     .fullscreen = SDL_FALSE,  \
+    .no_window = SDL_FALSE,  \
 }
 
 // init SDL and set appropriate hints
