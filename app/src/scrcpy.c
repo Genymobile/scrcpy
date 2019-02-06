@@ -66,6 +66,7 @@ static SDL_bool is_apk(const char *file) {
 }
 
 static SDL_bool event_loop(void) {
+    LOGI("scrcpy initialized");
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     SDL_AddEventWatch(event_watcher, NULL);
 #endif
