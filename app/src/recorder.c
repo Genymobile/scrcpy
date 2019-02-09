@@ -15,6 +15,8 @@
 # define LAVF_NEW_CODEC_API
 #endif
 
+static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
+
 static const AVOutputFormat *find_mp4_muxer(void) {
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
     void *opaque = NULL;
@@ -87,7 +89,6 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
     ostream->codec->width = recorder->declared_frame_size.width;
     ostream->codec->height = recorder->declared_frame_size.height;
 #endif
-    ostream->time_base = (AVRational) {1, 1000000}; // timestamps in us
 
     int ret = avio_open(&recorder->ctx->pb, recorder->filename,
                         AVIO_FLAG_WRITE);
@@ -143,6 +144,12 @@ recorder_write_header(struct recorder *recorder, AVPacket *packet) {
     return SDL_TRUE;
 }
 
+static void
+recorder_rescale_packet(struct recorder *recorder, AVPacket *packet) {
+    AVStream *ostream = recorder->ctx->streams[0];
+    av_packet_rescale_ts(packet, SCRCPY_TIME_BASE, ostream->time_base);
+}
+
 SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet) {
     if (!recorder->header_written) {
         SDL_bool ok = recorder_write_header(recorder, packet);
@@ -152,5 +159,6 @@ SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet) {
         recorder->header_written = SDL_TRUE;
     }
 
+    recorder_rescale_packet(recorder, packet);
     return av_write_frame(recorder->ctx, packet) >= 0;
 }
