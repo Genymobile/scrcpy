@@ -162,7 +162,7 @@ It is possible to record the screen while mirroring:
 
 ```bash
 scrcpy --record file.mp4
-scrcpy -r file.mp4
+scrcpy -r file.mkv
 ```
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for

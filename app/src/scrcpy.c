@@ -229,7 +229,10 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     struct recorder *rec = NULL;
     if (options->record_filename) {
-        if (!recorder_init(&recorder, options->record_filename, frame_size)) {
+        if (!recorder_init(&recorder,
+                           options->record_filename,
+                           options->record_format,
+                           frame_size)) {
             ret = SDL_FALSE;
             server_stop(&server);
             goto finally_destroy_file_handler;

@@ -1,6 +1,7 @@
 #include "recorder.h"
 
 #include <libavutil/time.h>
+#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "log.h"
@@ -17,7 +18,7 @@
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
-static const AVOutputFormat *find_mp4_muxer(void) {
+static const AVOutputFormat *find_muxer(const char *name) {
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
     void *opaque = NULL;
 #endif
@@ -29,11 +30,13 @@ static const AVOutputFormat *find_mp4_muxer(void) {
         oformat = av_oformat_next(oformat);
 #endif
         // until null or with name "mp4"
-    } while (oformat && strcmp(oformat->name, "mp4"));
+    } while (oformat && strcmp(oformat->name, name));
     return oformat;
 }
 
-SDL_bool recorder_init(struct recorder *recorder, const char *filename,
+SDL_bool recorder_init(struct recorder *recorder,
+                       const char *filename,
+                       enum recorder_format format,
                        struct size declared_frame_size) {
     recorder->filename = SDL_strdup(filename);
     if (!recorder->filename) {
@@ -41,6 +44,7 @@ SDL_bool recorder_init(struct recorder *recorder, const char *filename,
         return SDL_FALSE;
     }
 
+    recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
     recorder->header_written = SDL_FALSE;
 
@@ -51,10 +55,21 @@ void recorder_destroy(struct recorder *recorder) {
     SDL_free(recorder->filename);
 }
 
+static const char *
+recorder_get_format_name(enum recorder_format format) {
+    switch (format) {
+        case RECORDER_FORMAT_MP4: return "mp4";
+        case RECORDER_FORMAT_MKV: return "matroska";
+        default: return NULL;
+    }
+}
+
 SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
-    const AVOutputFormat *mp4 = find_mp4_muxer();
-    if (!mp4) {
-        LOGE("Could not find mp4 muxer");
+    const char *format_name = recorder_get_format_name(recorder->format);
+    SDL_assert(format_name);
+    const AVOutputFormat *format = find_muxer(format_name);
+    if (!format) {
+        LOGE("Could not find muxer");
         return SDL_FALSE;
     }
 
@@ -68,7 +83,7 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
     // returns (on purpose) a pointer-to-const, but AVFormatContext.oformat
     // still expects a pointer-to-non-const (it has not be updated accordingly)
     // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
-    recorder->ctx->oformat = (AVOutputFormat *) mp4;
+    recorder->ctx->oformat = (AVOutputFormat *) format;
 
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
