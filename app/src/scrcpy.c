@@ -139,6 +139,40 @@ static void wait_show_touches(process_t process) {
     process_check_success(process, "show_touches");
 }
 
+static SDL_LogPriority sdl_priority_from_av_level(int level) {
+    switch (level) {
+        case AV_LOG_PANIC:
+        case AV_LOG_FATAL:
+            return SDL_LOG_PRIORITY_CRITICAL;
+        case AV_LOG_ERROR:
+            return SDL_LOG_PRIORITY_ERROR;
+        case AV_LOG_WARNING:
+            return SDL_LOG_PRIORITY_WARN;
+        case AV_LOG_INFO:
+            return SDL_LOG_PRIORITY_INFO;
+    }
+    // do not forward others, which are too verbose
+    return 0;
+}
+
+static void
+av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
+    SDL_LogPriority priority = sdl_priority_from_av_level(level);
+    if (priority == 0) {
+        return;
+    }
+    char *local_fmt = SDL_malloc(strlen(fmt) + 10);
+    if (!local_fmt) {
+        LOGC("Cannot allocate string");
+        return;
+    }
+    // strcpy is safe here, the destination is large enough
+    strcpy(local_fmt, "[FFmpeg] ");
+    strcpy(local_fmt + 9, fmt);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
+    SDL_free(local_fmt);
+}
+
 SDL_bool scrcpy(const struct scrcpy_options *options) {
     SDL_bool send_frame_meta = !!options->record_filename;
     if (!server_start(&server, options->serial, options->port,
@@ -202,6 +236,8 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         }
         rec = &recorder;
     }
+
+    av_log_set_callback(av_log_callback);
 
     decoder_init(&decoder, &frames, device_socket, rec);
 
