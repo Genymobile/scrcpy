@@ -5,6 +5,16 @@
 #include "config.h"
 #include "log.h"
 
+// In ffmpeg/doc/APIchanges:
+// 2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
+//   Add AVStream.codecpar, deprecate AVStream.codec.
+#if    (LIBAVFORMAT_VERSION_MICRO >= 100 /* FFmpeg */ && \
+        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)) \
+    || (LIBAVFORMAT_VERSION_MICRO < 100 && /* Libav */ \
+        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 5, 0))
+# define LAVF_NEW_CODEC_API
+#endif
+
 static const AVOutputFormat *find_mp4_muxer(void) {
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
     void *opaque = NULL;
@@ -30,6 +40,7 @@ SDL_bool recorder_init(struct recorder *recorder, const char *filename,
     }
 
     recorder->declared_frame_size = declared_frame_size;
+    recorder->header_written = SDL_FALSE;
 
     return SDL_TRUE;
 }
@@ -63,13 +74,7 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
-// In ffmpeg/doc/APIchanges:
-// 2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
-//   Add AVStream.codecpar, deprecate AVStream.codec.
-#if    (LIBAVFORMAT_VERSION_MICRO >= 100 /* FFmpeg */ && \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)) \
-    || (LIBAVFORMAT_VERSION_MICRO < 100 && /* Libav */ \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 5, 0))
+#ifdef LAVF_NEW_CODEC_API
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     ostream->codecpar->codec_id = input_codec->id;
     ostream->codecpar->format = AV_PIX_FMT_YUV420P;
@@ -93,14 +98,6 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
-    ret = avformat_write_header(recorder->ctx, NULL);
-    if (ret < 0) {
-        LOGE("Failed to write header to %s", recorder->filename);
-        avio_closep(&recorder->ctx->pb);
-        avformat_free_context(recorder->ctx);
-        return SDL_FALSE;
-    }
-
     return SDL_TRUE;
 }
 
@@ -113,6 +110,47 @@ void recorder_close(struct recorder *recorder) {
     avformat_free_context(recorder->ctx);
 }
 
+static SDL_bool
+recorder_write_header(struct recorder *recorder, AVPacket *packet) {
+    AVStream *ostream = recorder->ctx->streams[0];
+
+    uint8_t *extradata = SDL_malloc(packet->size * sizeof(uint8_t));
+    if (!extradata) {
+        LOGC("Cannot allocate extradata");
+        return SDL_FALSE;
+    }
+
+    // copy the first packet to the extra data
+    memcpy(extradata, packet->data, packet->size);
+
+#ifdef LAVF_NEW_CODEC_API
+    ostream->codecpar->extradata = extradata;
+    ostream->codecpar->extradata_size = packet->size;
+#else
+    ostream->codec->extradata = extradata;
+    ostream->codec->extradata_size = packet->size;
+#endif
+
+    int ret = avformat_write_header(recorder->ctx, NULL);
+    if (ret < 0) {
+        LOGE("Failed to write header to %s", recorder->filename);
+        SDL_free(extradata);
+        avio_closep(&recorder->ctx->pb);
+        avformat_free_context(recorder->ctx);
+        return SDL_FALSE;
+    }
+
+    return SDL_TRUE;
+}
+
 SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet) {
+    if (!recorder->header_written) {
+        SDL_bool ok = recorder_write_header(recorder, packet);
+        if (!ok) {
+            return SDL_FALSE;
+        }
+        recorder->header_written = SDL_TRUE;
+    }
+
     return av_write_frame(recorder->ctx, packet) >= 0;
 }
