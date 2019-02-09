@@ -284,7 +284,8 @@ run_quit:
 run_finally_close_input:
     avformat_close_input(&format_ctx);
 run_finally_free_avio_ctx:
-    av_freep(&avio_ctx);
+    av_free(avio_ctx->buffer);
+    av_free(avio_ctx);
 run_finally_free_format_ctx:
     avformat_free_context(format_ctx);
 run_finally_close_codec:
