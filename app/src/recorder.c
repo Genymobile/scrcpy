@@ -114,6 +114,8 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
+    LOGI("Recording started to %s file: %s", format_name, recorder->filename);
+
     return SDL_TRUE;
 }
 
@@ -124,6 +126,9 @@ void recorder_close(struct recorder *recorder) {
     }
     avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
+
+    const char *format_name = recorder_get_format_name(recorder->format);
+    LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
 }
 
 static SDL_bool
