@@ -34,7 +34,7 @@ WIN32_TARGET := $(WIN32_TARGET_DIR)-$(VERSION).zip
 WIN64_TARGET := $(WIN64_TARGET_DIR)-$(VERSION).zip
 
 release: clean zip-win32 zip-win64 sums
-	@echo "Release created in $(DIST)/."
+	@echo "Windows archives generated in $(DIST)/"
 
 clean:
 	$(GRADLE) clean
