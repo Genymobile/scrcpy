@@ -135,7 +135,7 @@ static SDL_bool
 recorder_write_header(struct recorder *recorder, AVPacket *packet) {
     AVStream *ostream = recorder->ctx->streams[0];
 
-    uint8_t *extradata = SDL_malloc(packet->size * sizeof(uint8_t));
+    uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));
     if (!extradata) {
         LOGC("Cannot allocate extradata");
         return SDL_FALSE;
