@@ -39,6 +39,8 @@
 # define SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
 // <https://wiki.libsdl.org/SDL_GetDisplayUsableBounds>
 # define SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
+// <https://wiki.libsdl.org/SDL_WindowFlags>
+# define SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
 #endif
 
 #endif

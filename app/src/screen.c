@@ -157,7 +157,12 @@ SDL_bool screen_init_rendering(struct screen *screen,
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
     if (always_on_top) {
+#ifdef SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
+#else
+        LOGW("The 'always on top' flag is not available "
+             "(compile with SDL >= 2.0.5 to enable it)");
+#endif
     }
 
     screen->window = SDL_CreateWindow(device_name, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
