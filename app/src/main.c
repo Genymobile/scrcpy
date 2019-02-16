@@ -5,6 +5,7 @@
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
 
+#include "compat.h"
 #include "config.h"
 #include "log.h"
 #include "recorder.h"
@@ -371,7 +372,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+#ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
 #endif
 

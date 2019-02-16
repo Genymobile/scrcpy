@@ -8,6 +8,7 @@
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
+#include "compat.h"
 #include "config.h"
 #include "buffer_util.h"
 #include "events.h"
@@ -220,7 +221,7 @@ static int run_decoder(void *data) {
     while (!av_read_frame(format_ctx, &packet)) {
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 0)
+#ifdef SCRCPY_LAVF_HAS_NEW_ENCODING_DECODING_API
         int ret;
         if ((ret = avcodec_send_packet(codec_ctx, &packet)) < 0) {
             LOGE("Could not send video packet: %d", ret);

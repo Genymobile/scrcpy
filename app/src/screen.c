@@ -3,6 +3,7 @@
 #include <SDL2/SDL.h>
 #include <string.h>
 
+#include "compat.h"
 #include "icon.xpm"
 #include "lock_util.h"
 #include "log.h"
@@ -23,7 +24,7 @@ SDL_bool sdl_init_and_configure(void) {
         LOGW("Could not enable bilinear filtering");
     }
 
-#if SDL_VERSION_ATLEAST(2, 0, 5)
+#ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
     // Handle a click to gain focus as any other click
     if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
         LOGW("Could not enable mouse focus clickthrough");
@@ -71,7 +72,7 @@ static void set_window_size(struct screen *screen, struct size new_size) {
 // get the preferred display bounds (i.e. the screen bounds with some margins)
 static SDL_bool get_preferred_display_bounds(struct size *bounds) {
     SDL_Rect rect;
-#if SDL_VERSION_ATLEAST(2, 0, 5)
+#ifdef SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
 # define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayUsableBounds((i), (r))
 #else
 # define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayBounds((i), (r))

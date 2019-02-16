@@ -3,28 +3,19 @@
 #include <libavutil/time.h>
 #include <SDL2/SDL_assert.h>
 
+#include "compat.h"
 #include "config.h"
 #include "log.h"
-
-// In ffmpeg/doc/APIchanges:
-// 2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
-//   Add AVStream.codecpar, deprecate AVStream.codec.
-#if    (LIBAVFORMAT_VERSION_MICRO >= 100 /* FFmpeg */ && \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)) \
-    || (LIBAVFORMAT_VERSION_MICRO < 100 && /* Libav */ \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 5, 0))
-# define LAVF_NEW_CODEC_API
-#endif
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *find_muxer(const char *name) {
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
+#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
     void *opaque = NULL;
 #endif
     const AVOutputFormat *oformat = NULL;
     do {
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 9, 100)
+#ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
         oformat = av_muxer_iterate(&opaque);
 #else
         oformat = av_oformat_next(oformat);
@@ -91,7 +82,7 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         return SDL_FALSE;
     }
 
-#ifdef LAVF_NEW_CODEC_API
+#ifdef SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     ostream->codecpar->codec_id = input_codec->id;
     ostream->codecpar->format = AV_PIX_FMT_YUV420P;
@@ -144,7 +135,7 @@ recorder_write_header(struct recorder *recorder, AVPacket *packet) {
     // copy the first packet to the extra data
     memcpy(extradata, packet->data, packet->size);
 
-#ifdef LAVF_NEW_CODEC_API
+#ifdef SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
     ostream->codecpar->extradata = extradata;
     ostream->codecpar->extradata_size = packet->size;
 #else
