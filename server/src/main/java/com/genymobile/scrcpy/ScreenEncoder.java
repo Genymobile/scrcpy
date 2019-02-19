@@ -8,6 +8,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.IBinder;
+import android.os.Looper;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
@@ -66,6 +67,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
+                Looper.prepare();
                 Surface surface = codec.createInputSurface();
                 setDisplaySurface(display, surface, contentRect, videoRect);
                 codec.start();
