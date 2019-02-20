@@ -5,13 +5,16 @@
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
 
+#include "compat.h"
 #include "config.h"
 #include "log.h"
+#include "recorder.h"
 
 struct args {
     const char *serial;
     const char *crop;
     const char *record_filename;
+    enum recorder_format record_format;
     SDL_bool fullscreen;
     SDL_bool help;
     SDL_bool version;
@@ -19,6 +22,7 @@ struct args {
     Uint16 port;
     Uint16 max_size;
     Uint32 bit_rate;
+    SDL_bool always_on_top;
 };
 
 static void usage(const char *arg0) {
@@ -41,6 +45,9 @@ static void usage(const char *arg0) {
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
+        "    -F, --record-format\n"
+        "        Force recording format (either mp4 or mkv).\n"
+        "\n"
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
@@ -56,6 +63,8 @@ static void usage(const char *arg0) {
         "\n"
         "    -r, --record file.mp4\n"
         "        Record screen to file.\n"
+        "        The format is determined by the -F/--record-format option if\n"
+        "        set, or by the file extension (.mp4 or .mkv).\n"
         "\n"
         "    -s, --serial\n"
         "        The device serial number. Mandatory only if several devices\n"
@@ -64,6 +73,9 @@ static void usage(const char *arg0) {
         "    -t, --show-touches\n"
         "        Enable \"show touches\" on start, disable on quit.\n"
         "        It only shows physical touches (not clicks from scrcpy).\n"
+        "\n"
+        "    -T, --always-on-top\n"
+        "        Make scrcpy window always on top (above other windows).\n"
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
@@ -204,22 +216,54 @@ static SDL_bool parse_port(char *optarg, Uint16 *port) {
     return SDL_TRUE;
 }
 
+static SDL_bool
+parse_record_format(const char *optarg, enum recorder_format *format) {
+    if (!strcmp(optarg, "mp4")) {
+        *format = RECORDER_FORMAT_MP4;
+        return SDL_TRUE;
+    }
+    if (!strcmp(optarg, "mkv")) {
+        *format = RECORDER_FORMAT_MKV;
+        return SDL_TRUE;
+    }
+    LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
+    return SDL_FALSE;
+}
+
+static enum recorder_format
+guess_record_format(const char *filename) {
+    size_t len = strlen(filename);
+    if (len < 4) {
+        return 0;
+    }
+    const char *ext = &filename[len - 4];
+    if (!strcmp(ext, ".mp4")) {
+        return RECORDER_FORMAT_MP4;
+    }
+    if (!strcmp(ext, ".mkv")) {
+        return RECORDER_FORMAT_MKV;
+    }
+    return 0;
+}
+
 static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"bit-rate",     required_argument, NULL, 'b'},
-        {"crop",         required_argument, NULL, 'c'},
-        {"fullscreen",   no_argument,       NULL, 'f'},
-        {"help",         no_argument,       NULL, 'h'},
-        {"max-size",     required_argument, NULL, 'm'},
-        {"port",         required_argument, NULL, 'p'},
-        {"record",       required_argument, NULL, 'r'},
-        {"serial",       required_argument, NULL, 's'},
-        {"show-touches", no_argument,       NULL, 't'},
-        {"version",      no_argument,       NULL, 'v'},
-        {NULL,           0,                 NULL, 0  },
+        {"always-on-top", no_argument,       NULL, 'T'},
+        {"bit-rate",      required_argument, NULL, 'b'},
+        {"crop",          required_argument, NULL, 'c'},
+        {"fullscreen",    no_argument,       NULL, 'f'},
+        {"help",          no_argument,       NULL, 'h'},
+        {"max-size",      required_argument, NULL, 'm'},
+        {"port",          required_argument, NULL, 'p'},
+        {"record",        required_argument, NULL, 'r'},
+        {"record-format", required_argument, NULL, 'f'},
+        {"serial",        required_argument, NULL, 's'},
+        {"show-touches",  no_argument,       NULL, 't'},
+        {"version",       no_argument,       NULL, 'v'},
+        {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fhm:p:r:s:tv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:p:r:s:tTv", long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -231,6 +275,11 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'f':
                 args->fullscreen = SDL_TRUE;
+                break;
+            case 'F':
+                if (!parse_record_format(optarg, &args->record_format)) {
+                    return SDL_FALSE;
+                }
                 break;
             case 'h':
                 args->help = SDL_TRUE;
@@ -254,6 +303,9 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
             case 't':
                 args->show_touches = SDL_TRUE;
                 break;
+            case 'T':
+                args->always_on_top = SDL_TRUE;
+                break;
             case 'v':
                 args->version = SDL_TRUE;
                 break;
@@ -268,6 +320,21 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         LOGE("Unexpected additional argument: %s", argv[index]);
         return SDL_FALSE;
     }
+
+    if (args->record_format && !args->record_filename) {
+        LOGE("Record format specified without recording");
+        return SDL_FALSE;
+    }
+
+    if (args->record_filename && !args->record_format) {
+        args->record_format = guess_record_format(args->record_filename);
+        if (!args->record_format) {
+            LOGE("No format specified for \"%s\" (try with -F mkv)",
+                 args->record_filename);
+            return SDL_FALSE;
+        }
+    }
+
     return SDL_TRUE;
 }
 
@@ -282,12 +349,14 @@ int main(int argc, char *argv[]) {
         .serial = NULL,
         .crop = NULL,
         .record_filename = NULL,
+        .record_format = 0,
         .help = SDL_FALSE,
         .version = SDL_FALSE,
         .show_touches = SDL_FALSE,
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
+        .always_on_top = SDL_FALSE,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -303,7 +372,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 9, 100)
+#ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
 #endif
 
@@ -320,10 +389,12 @@ int main(int argc, char *argv[]) {
         .crop = args.crop,
         .port = args.port,
         .record_filename = args.record_filename,
+        .record_format = args.record_format,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
+        .always_on_top = args.always_on_top,
     };
     int res = scrcpy(&options) ? 0 : 1;
 

@@ -20,4 +20,10 @@ size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
 // returns the new allocated string, to be freed by the caller
 char *strquote(const char *src);
 
+#ifdef _WIN32
+// convert a UTF-8 string to a wchar_t string
+// returns the new allocated string, to be freed by the caller
+wchar_t *utf8_to_wide_char(const char *utf8);
+#endif
+
 #endif
