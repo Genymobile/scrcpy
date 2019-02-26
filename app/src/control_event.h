@@ -20,7 +20,11 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_COMMAND,
 };
 
-#define CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON 0
+enum control_event_command {
+    CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON,
+    CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL,
+    CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL,
+};
 
 struct control_event {
     enum control_event_type type;
@@ -44,7 +48,7 @@ struct control_event {
             Sint32 vscroll;
         } scroll_event;
         struct {
-            int action;
+            enum control_event_command action;
         } command_event;
     };
 };

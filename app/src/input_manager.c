@@ -94,6 +94,26 @@ static void press_back_or_turn_screen_on(struct controller *controller) {
     }
 }
 
+static void expand_notification_panel(struct controller *controller) {
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
+    control_event.command_event.action = CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL;
+
+    if (!controller_push_event(controller, &control_event)) {
+        LOGW("Cannot expand notification panel");
+    }
+}
+
+static void collapse_notification_panel(struct controller *controller) {
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
+    control_event.command_event.action = CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL;
+
+    if (!controller_push_event(controller, &control_event)) {
+        LOGW("Cannot collapse notification panel");
+    }
+}
+
 static void switch_fps_counter_state(struct frames *frames) {
     mutex_lock(frames->mutex);
     if (frames->fps_counter.started) {
@@ -162,47 +182,42 @@ void input_manager_process_key(struct input_manager *input_manager,
 
     // capture all Ctrl events
     if (ctrl | meta) {
-        SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
-        if (shift) {
-            // currently, there is no shortcut involving SHIFT
-            return;
-        }
-
         SDL_Keycode keycode = event->keysym.sym;
         int action = event->type == SDL_KEYDOWN ? ACTION_DOWN : ACTION_UP;
         SDL_bool repeat = event->repeat;
+        SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
-                if (ctrl && !meta && !repeat) {
+                if (ctrl && !meta && !shift && !repeat) {
                     action_home(input_manager->controller, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (ctrl && !meta && !repeat) {
+                if (ctrl && !meta && !shift && !repeat) {
                     action_back(input_manager->controller, action);
                 }
                 return;
             case SDLK_s:
-                if (ctrl && !meta && !repeat) {
+                if (ctrl && !meta && !shift && !repeat) {
                     action_app_switch(input_manager->controller, action);
                 }
                 return;
             case SDLK_m:
-                if (ctrl && !meta && !repeat) {
+                if (ctrl && !meta && !shift && !repeat) {
                     action_menu(input_manager->controller, action);
                 }
                 return;
             case SDLK_p:
-                if (ctrl && !meta && !repeat) {
+                if (ctrl && !meta && !shift && !repeat) {
                     action_power(input_manager->controller, action);
                 }
                 return;
             case SDLK_DOWN:
 #ifdef __APPLE__
-                if (!ctrl && meta) {
+                if (!ctrl && meta && !shift) {
 #else
-                if (ctrl && !meta) {
+                if (ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
                     action_volume_down(input_manager->controller, action);
@@ -210,37 +225,51 @@ void input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_UP:
 #ifdef __APPLE__
-                if (!ctrl && meta) {
+                if (!ctrl && meta && !shift) {
 #else
-                if (ctrl && !meta) {
+                if (ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
                     action_volume_up(input_manager->controller, action);
                 }
                 return;
             case SDLK_v:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
                     clipboard_paste(input_manager->controller);
                 }
                 return;
             case SDLK_f:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
                     screen_switch_fullscreen(input_manager->screen);
                 }
                 return;
             case SDLK_x:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
                     screen_resize_to_fit(input_manager->screen);
                 }
                 return;
             case SDLK_g:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
                     screen_resize_to_pixel_perfect(input_manager->screen);
                 }
                 return;
             case SDLK_i:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
                     switch_fps_counter_state(input_manager->frames);
+                }
+                return;
+            case SDLK_n:
+                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                    if (shift) {
+                        collapse_notification_panel(input_manager->controller);
+                    } else {
+                        expand_notification_panel(input_manager->controller);
+                    }
                 }
                 return;
         }
