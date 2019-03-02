@@ -27,7 +27,7 @@ SDL_bool video_buffer_init(struct video_buffer *vb) {
         SDL_DestroyMutex(vb->mutex);
         goto error_2;
     }
-    vb->stopped = SDL_FALSE;
+    vb->interrupted = SDL_FALSE;
 #endif
 
     // there is initially no rendering frame, so consider it has already been
@@ -65,7 +65,7 @@ SDL_bool video_buffer_offer_decoded_frame(struct video_buffer *vb) {
 #ifndef SKIP_FRAMES
     // if SKIP_FRAMES is disabled, then the decoder must wait for the current
     // frame to be consumed
-    while (!vb->rendering_frame_consumed && !vb->stopped) {
+    while (!vb->rendering_frame_consumed && !vb->interrupted) {
         cond_wait(vb->rendering_frame_consumed_cond, vb->mutex);
     }
 #else
@@ -97,12 +97,12 @@ const AVFrame *video_buffer_consume_rendered_frame(struct video_buffer *vb) {
     return vb->rendering_frame;
 }
 
-void video_buffer_stop(struct video_buffer *vb) {
+void video_buffer_interrupt(struct video_buffer *vb) {
 #ifdef SKIP_FRAMES
     (void) vb; // unused
 #else
     mutex_lock(vb->mutex);
-    vb->stopped = SDL_TRUE;
+    vb->interrupted = SDL_TRUE;
     mutex_unlock(vb->mutex);
     // wake up blocking wait
     cond_signal(vb->rendering_frame_consumed_cond);

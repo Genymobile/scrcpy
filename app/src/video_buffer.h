@@ -15,7 +15,7 @@ struct video_buffer {
     AVFrame *rendering_frame;
     SDL_mutex *mutex;
 #ifndef SKIP_FRAMES
-    SDL_bool stopped;
+    SDL_bool interrupted;
     SDL_cond *rendering_frame_consumed_cond;
 #endif
     SDL_bool rendering_frame_consumed;
@@ -37,6 +37,6 @@ SDL_bool video_buffer_offer_decoded_frame(struct video_buffer *vb);
 const AVFrame *video_buffer_consume_rendered_frame(struct video_buffer *vb);
 
 // wake up and avoid any blocking call
-void video_buffer_stop(struct video_buffer *vb);
+void video_buffer_interrupt(struct video_buffer *vb);
 
 #endif

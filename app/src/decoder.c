@@ -317,7 +317,7 @@ SDL_bool decoder_start(struct decoder *decoder) {
 }
 
 void decoder_stop(struct decoder *decoder) {
-    video_buffer_stop(decoder->video_buffer);
+    video_buffer_interrupt(decoder->video_buffer);
 }
 
 void decoder_join(struct decoder *decoder) {
