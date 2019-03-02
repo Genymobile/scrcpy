@@ -18,7 +18,6 @@ struct decoder {
     struct frames *frames;
     socket_t video_socket;
     SDL_Thread *thread;
-    SDL_mutex *mutex;
     struct recorder *recorder;
     struct receiver_state {
         // meta (in order) for frames not consumed yet
