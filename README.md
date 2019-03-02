@@ -165,6 +165,14 @@ scrcpy --record file.mp4
 scrcpy -r file.mkv
 ```
 
+To disable mirroring while recording:
+
+```bash
+scrcpy --no-window --record file.mp4
+scrcpy -nr file.mkv
+# interrupt recording with Ctrl+C
+```
+
 "Skipped frames" are recorded, even if they are not displayed in real time (for
 performance reasons). Frames are _timestamped_ on the device, so [packet delay
 variation] does not impact the recorded file.
