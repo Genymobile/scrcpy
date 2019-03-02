@@ -133,9 +133,11 @@ handle_event(SDL_Event *event) {
 }
 
 static SDL_bool
-event_loop(void) {
+event_loop(SDL_bool display) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
-    SDL_AddEventWatch(event_watcher, NULL);
+    if (display) {
+        SDL_AddEventWatch(event_watcher, NULL);
+    }
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
@@ -317,7 +319,7 @@ scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
-    ret = event_loop();
+    ret = event_loop(display);
     LOGD("quit...");
 
     screen_destroy(&screen);
