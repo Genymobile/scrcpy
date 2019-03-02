@@ -17,6 +17,7 @@ src = [
     'src/server.c',
     'src/str_util.c',
     'src/tiny_xpm.c',
+    'src/stream.c',
     'src/video_buffer.c',
 ]
 

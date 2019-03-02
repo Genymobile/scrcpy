@@ -1,35 +1,22 @@
 #ifndef DECODER_H
 #define DECODER_H
 
+#include <libavformat/avformat.h>
 #include <SDL2/SDL_stdinc.h>
-#include <SDL2/SDL_thread.h>
-
-#include "common.h"
-#include "net.h"
 
 struct video_buffer;
 
-struct frame_meta {
-    uint64_t pts;
-    struct frame_meta *next;
-};
-
 struct decoder {
     struct video_buffer *video_buffer;
-    socket_t video_socket;
-    SDL_Thread *thread;
-    struct recorder *recorder;
-    struct receiver_state {
-        // meta (in order) for frames not consumed yet
-        struct frame_meta *frame_meta_queue;
-        size_t remaining; // remaining bytes to receive for the current frame
-    } receiver_state;
+    AVCodecContext *codec_ctx;
 };
 
-void decoder_init(struct decoder *decoder, struct video_buffer *vb,
-                  socket_t video_socket, struct recorder *recoder);
-SDL_bool decoder_start(struct decoder *decoder);
-void decoder_stop(struct decoder *decoder);
-void decoder_join(struct decoder *decoder);
+void decoder_init(struct decoder *decoder, struct video_buffer *vb);
+
+SDL_bool decoder_open(struct decoder *decoder, AVCodec *codec);
+void decoder_close(struct decoder *decoder);
+
+SDL_bool decoder_push(struct decoder *decoder, AVPacket *packet);
+void decoder_interrupt(struct decoder *decoder);
 
 #endif

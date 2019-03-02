@@ -22,16 +22,18 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "stream.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct video_buffer video_buffer;
+static struct stream stream;
 static struct decoder decoder;
+static struct recorder recorder;
 static struct controller controller;
 static struct file_handler file_handler;
-static struct recorder recorder;
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -70,8 +72,8 @@ static SDL_bool event_loop(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-            case EVENT_DECODER_STOPPED:
-                LOGD("Video decoder stopped");
+            case EVENT_STREAM_STOPPED:
+                LOGD("Video stream stopped");
                 return SDL_FALSE;
             case SDL_QUIT:
                 LOGD("User requested to quit");
@@ -227,6 +229,8 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_video_buffer;
     }
 
+    decoder_init(&decoder, &video_buffer);
+
     struct recorder *rec = NULL;
     if (record) {
         if (!recorder_init(&recorder,
@@ -242,11 +246,11 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    decoder_init(&decoder, &video_buffer, device_socket, rec);
+    stream_init(&stream, device_socket, &decoder, rec);
 
     // now we consumed the header values, the socket receives the video stream
-    // start the decoder
-    if (!decoder_start(&decoder)) {
+    // start the stream
+    if (!stream_start(&stream)) {
         ret = SDL_FALSE;
         server_stop(&server);
         goto finally_destroy_recorder;
@@ -254,7 +258,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     if (!controller_init(&controller, device_socket)) {
         ret = SDL_FALSE;
-        goto finally_stop_decoder;
+        goto finally_stop_stream;
     }
 
     if (!controller_start(&controller)) {
@@ -286,11 +290,11 @@ finally_stop_and_join_controller:
     controller_join(&controller);
 finally_destroy_controller:
     controller_destroy(&controller);
-finally_stop_decoder:
-    decoder_stop(&decoder);
-    // stop the server before decoder_join() to wake up the decoder
+finally_stop_stream:
+    stream_stop(&stream);
+    // stop the server before stream_join() to wake up the stream
     server_stop(&server);
-    decoder_join(&decoder);
+    stream_join(&stream);
 finally_destroy_recorder:
     if (record) {
         recorder_destroy(&recorder);
