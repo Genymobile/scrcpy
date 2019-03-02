@@ -291,14 +291,14 @@ finally_stop_decoder:
     // stop the server before decoder_join() to wake up the decoder
     server_stop(&server);
     decoder_join(&decoder);
-finally_destroy_file_handler:
-    file_handler_stop(&file_handler);
-    file_handler_join(&file_handler);
-    file_handler_destroy(&file_handler);
 finally_destroy_recorder:
     if (options->record_filename) {
         recorder_destroy(&recorder);
     }
+finally_destroy_file_handler:
+    file_handler_stop(&file_handler);
+    file_handler_join(&file_handler);
+    file_handler_destroy(&file_handler);
 finally_destroy_video_buffer:
     video_buffer_destroy(&video_buffer);
 finally_destroy_server:
