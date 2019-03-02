@@ -172,12 +172,12 @@ server_start(struct server *server, const char *serial,
     }
 
     if (!push_server(serial)) {
-        SDL_free((void *) server->serial);
+        SDL_free(server->serial);
         return false;
     }
 
     if (!enable_tunnel(server)) {
-        SDL_free((void *) server->serial);
+        SDL_free(server->serial);
         return false;
     }
 
@@ -195,7 +195,7 @@ server_start(struct server *server, const char *serial,
         if (server->server_socket == INVALID_SOCKET) {
             LOGE("Could not listen on port %" PRIu16, local_port);
             disable_tunnel(server);
-            SDL_free((void *) server->serial);
+            SDL_free(server->serial);
             return false;
         }
     }
@@ -271,5 +271,5 @@ server_destroy(struct server *server) {
     if (server->device_socket != INVALID_SOCKET) {
         close_socket(&server->device_socket);
     }
-    SDL_free((void *) server->serial);
+    SDL_free(server->serial);
 }

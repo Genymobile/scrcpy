@@ -8,7 +8,7 @@
 #include "net.h"
 
 struct server {
-    const char *serial;
+    char *serial;
     process_t process;
     socket_t server_socket; // only used if !tunnel_forward
     socket_t device_socket;
