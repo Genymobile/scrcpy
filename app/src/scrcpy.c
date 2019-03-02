@@ -247,7 +247,7 @@ scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    SDL_bool display = !options->no_window;
+    SDL_bool display = !options->no_display;
 
     struct decoder *dec = NULL;
     if (display) {

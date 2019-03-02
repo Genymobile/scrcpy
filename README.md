@@ -168,8 +168,8 @@ scrcpy -r file.mkv
 To disable mirroring while recording:
 
 ```bash
-scrcpy --no-window --record file.mp4
-scrcpy -nr file.mkv
+scrcpy --no-display --record file.mp4
+scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
 ```
 
