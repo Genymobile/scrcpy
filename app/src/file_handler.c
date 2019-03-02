@@ -13,7 +13,8 @@ struct request {
     const char *file;
 };
 
-static struct request *request_new(file_handler_action_t action, const char *file) {
+static struct request *
+request_new(file_handler_action_t action, const char *file) {
     struct request *req = SDL_malloc(sizeof(*req));
     if (!req) {
         return NULL;
@@ -23,7 +24,8 @@ static struct request *request_new(file_handler_action_t action, const char *fil
     return req;
 }
 
-static void request_free(struct request *req) {
+static void
+request_free(struct request *req) {
     if (!req) {
         return;
     }
@@ -31,21 +33,25 @@ static void request_free(struct request *req) {
     SDL_free((void *) req);
 }
 
-static SDL_bool request_queue_is_empty(const struct request_queue *queue) {
+static SDL_bool
+request_queue_is_empty(const struct request_queue *queue) {
     return queue->head == queue->tail;
 }
 
-static SDL_bool request_queue_is_full(const struct request_queue *queue) {
+static SDL_bool
+request_queue_is_full(const struct request_queue *queue) {
     return (queue->head + 1) % REQUEST_QUEUE_SIZE == queue->tail;
 }
 
-static SDL_bool request_queue_init(struct request_queue *queue) {
+static SDL_bool
+request_queue_init(struct request_queue *queue) {
     queue->head = 0;
     queue->tail = 0;
     return SDL_TRUE;
 }
 
-static void request_queue_destroy(struct request_queue *queue) {
+static void
+request_queue_destroy(struct request_queue *queue) {
     int i = queue->tail;
     while (i != queue->head) {
         request_free(queue->reqs[i]);
@@ -53,7 +59,8 @@ static void request_queue_destroy(struct request_queue *queue) {
     }
 }
 
-static SDL_bool request_queue_push(struct request_queue *queue, struct request *req) {
+static SDL_bool
+request_queue_push(struct request_queue *queue, struct request *req) {
     if (request_queue_is_full(queue)) {
         return SDL_FALSE;
     }
@@ -62,7 +69,8 @@ static SDL_bool request_queue_push(struct request_queue *queue, struct request *
     return SDL_TRUE;
 }
 
-static SDL_bool request_queue_take(struct request_queue *queue, struct request **req) {
+static SDL_bool
+request_queue_take(struct request_queue *queue, struct request **req) {
     if (request_queue_is_empty(queue)) {
         return SDL_FALSE;
     }
@@ -72,7 +80,8 @@ static SDL_bool request_queue_take(struct request_queue *queue, struct request *
     return SDL_TRUE;
 }
 
-SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial) {
+SDL_bool
+file_handler_init(struct file_handler *file_handler, const char *serial) {
 
     if (!request_queue_init(&file_handler->queue)) {
         return SDL_FALSE;
@@ -107,24 +116,28 @@ SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial
     return SDL_TRUE;
 }
 
-void file_handler_destroy(struct file_handler *file_handler) {
+void
+file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
     request_queue_destroy(&file_handler->queue);
     SDL_free((void *) file_handler->serial);
 }
 
-static process_t install_apk(const char *serial, const char *file) {
+static process_t
+install_apk(const char *serial, const char *file) {
     return adb_install(serial, file);
 }
 
-static process_t push_file(const char *serial, const char *file) {
+static process_t
+push_file(const char *serial, const char *file) {
     return adb_push(serial, file, DEVICE_SDCARD_PATH);
 }
 
-SDL_bool file_handler_request(struct file_handler *file_handler,
-                              file_handler_action_t action,
-                              const char *file) {
+SDL_bool
+file_handler_request(struct file_handler *file_handler,
+                     file_handler_action_t action,
+                     const char *file) {
     SDL_bool res;
 
     // start file_handler if it's used for the first time
@@ -135,7 +148,8 @@ SDL_bool file_handler_request(struct file_handler *file_handler,
         file_handler->initialized = SDL_TRUE;
     }
 
-    LOGI("Request to %s %s", action == ACTION_INSTALL_APK ? "install" : "push", file);
+    LOGI("Request to %s %s", action == ACTION_INSTALL_APK ? "install" : "push",
+                             file);
     struct request *req = request_new(action, file);
     if (!req) {
         LOGE("Could not create request");
@@ -152,13 +166,15 @@ SDL_bool file_handler_request(struct file_handler *file_handler,
     return res;
 }
 
-static int run_file_handler(void *data) {
+static int
+run_file_handler(void *data) {
     struct file_handler *file_handler = data;
 
     for (;;) {
         mutex_lock(file_handler->mutex);
         file_handler->current_process = PROCESS_NONE;
-        while (!file_handler->stopped && request_queue_is_empty(&file_handler->queue)) {
+        while (!file_handler->stopped
+                && request_queue_is_empty(&file_handler->queue)) {
             cond_wait(file_handler->event_cond, file_handler->mutex);
         }
         if (file_handler->stopped) {
@@ -200,10 +216,12 @@ static int run_file_handler(void *data) {
     return 0;
 }
 
-SDL_bool file_handler_start(struct file_handler *file_handler) {
+SDL_bool
+file_handler_start(struct file_handler *file_handler) {
     LOGD("Starting file_handler thread");
 
-    file_handler->thread = SDL_CreateThread(run_file_handler, "file_handler", file_handler);
+    file_handler->thread = SDL_CreateThread(run_file_handler, "file_handler",
+                                            file_handler);
     if (!file_handler->thread) {
         LOGC("Could not start file_handler thread");
         return SDL_FALSE;
@@ -212,7 +230,8 @@ SDL_bool file_handler_start(struct file_handler *file_handler) {
     return SDL_TRUE;
 }
 
-void file_handler_stop(struct file_handler *file_handler) {
+void
+file_handler_stop(struct file_handler *file_handler) {
     mutex_lock(file_handler->mutex);
     file_handler->stopped = SDL_TRUE;
     cond_signal(file_handler->event_cond);
@@ -226,6 +245,7 @@ void file_handler_stop(struct file_handler *file_handler) {
     mutex_unlock(file_handler->mutex);
 }
 
-void file_handler_join(struct file_handler *file_handler) {
+void
+file_handler_join(struct file_handler *file_handler) {
     SDL_WaitThread(file_handler->thread, NULL);
 }

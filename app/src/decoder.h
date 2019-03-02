@@ -11,12 +11,19 @@ struct decoder {
     AVCodecContext *codec_ctx;
 };
 
-void decoder_init(struct decoder *decoder, struct video_buffer *vb);
+void
+decoder_init(struct decoder *decoder, struct video_buffer *vb);
 
-SDL_bool decoder_open(struct decoder *decoder, AVCodec *codec);
-void decoder_close(struct decoder *decoder);
+SDL_bool
+decoder_open(struct decoder *decoder, AVCodec *codec);
 
-SDL_bool decoder_push(struct decoder *decoder, AVPacket *packet);
-void decoder_interrupt(struct decoder *decoder);
+void
+decoder_close(struct decoder *decoder);
+
+SDL_bool
+decoder_push(struct decoder *decoder, AVPacket *packet);
+
+void
+decoder_interrupt(struct decoder *decoder);
 
 #endif

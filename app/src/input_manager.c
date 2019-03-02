@@ -5,11 +5,13 @@
 #include "lock_util.h"
 #include "log.h"
 
-// Convert window coordinates (as provided by SDL_GetMouseState() to renderer coordinates (as provided in SDL mouse events)
+// Convert window coordinates (as provided by SDL_GetMouseState() to renderer
+// coordinates (as provided in SDL mouse events)
 //
 // See my question:
 // <https://stackoverflow.com/questions/49111054/how-to-get-mouse-position-on-mouse-wheel-event>
-static void convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int *y) {
+static void
+convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int *y) {
     SDL_Rect viewport;
     float scale_x, scale_y;
     SDL_RenderGetViewport(renderer, &viewport);
@@ -18,7 +20,8 @@ static void convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int 
     *y = (int) (*y / scale_y) - viewport.y;
 }
 
-static struct point get_mouse_point(struct screen *screen) {
+static struct point
+get_mouse_point(struct screen *screen) {
     int x;
     int y;
     SDL_GetMouseState(&x, &y);
@@ -32,7 +35,9 @@ static struct point get_mouse_point(struct screen *screen) {
 static const int ACTION_DOWN = 1;
 static const int ACTION_UP = 1 << 1;
 
-static void send_keycode(struct controller *controller, enum android_keycode keycode, int actions, const char *name) {
+static void
+send_keycode(struct controller *controller, enum android_keycode keycode,
+             int actions, const char *name) {
     // send DOWN event
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_KEYCODE;
@@ -55,66 +60,80 @@ static void send_keycode(struct controller *controller, enum android_keycode key
     }
 }
 
-static inline void action_home(struct controller *controller, int actions) {
+static inline void
+action_home(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_HOME, actions, "HOME");
 }
 
-static inline void action_back(struct controller *controller, int actions) {
+static inline void
+action_back(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_BACK, actions, "BACK");
 }
 
-static inline void action_app_switch(struct controller *controller, int actions) {
+static inline void
+action_app_switch(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_APP_SWITCH, actions, "APP_SWITCH");
 }
 
-static inline void action_power(struct controller *controller, int actions) {
+static inline void
+action_power(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_POWER, actions, "POWER");
 }
 
-static inline void action_volume_up(struct controller *controller, int actions) {
+static inline void
+action_volume_up(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_VOLUME_UP, actions, "VOLUME_UP");
 }
 
-static inline void action_volume_down(struct controller *controller, int actions) {
+static inline void
+action_volume_down(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_VOLUME_DOWN, actions, "VOLUME_DOWN");
 }
 
-static inline void action_menu(struct controller *controller, int actions) {
+static inline void
+action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
-static void press_back_or_turn_screen_on(struct controller *controller) {
+static void
+press_back_or_turn_screen_on(struct controller *controller) {
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action = CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON;
+    control_event.command_event.action =
+            CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot turn screen on");
     }
 }
 
-static void expand_notification_panel(struct controller *controller) {
+static void
+expand_notification_panel(struct controller *controller) {
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action = CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL;
+    control_event.command_event.action =
+            CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot expand notification panel");
     }
 }
 
-static void collapse_notification_panel(struct controller *controller) {
+static void
+collapse_notification_panel(struct controller *controller) {
     struct control_event control_event;
     control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action = CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL;
+    control_event.command_event.action =
+            CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot collapse notification panel");
     }
 }
 
-static void switch_fps_counter_state(struct video_buffer *vb) {
+static void
+switch_fps_counter_state(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
     if (vb->fps_counter.started) {
         LOGI("FPS counter stopped");
@@ -126,7 +145,8 @@ static void switch_fps_counter_state(struct video_buffer *vb) {
     mutex_unlock(vb->mutex);
 }
 
-static void clipboard_paste(struct controller *controller) {
+static void
+clipboard_paste(struct controller *controller) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Cannot get clipboard text: %s", SDL_GetError());
@@ -147,8 +167,9 @@ static void clipboard_paste(struct controller *controller) {
     }
 }
 
-void input_manager_process_text_input(struct input_manager *input_manager,
-                                      const SDL_TextInputEvent *event) {
+void
+input_manager_process_text_input(struct input_manager *input_manager,
+                                 const SDL_TextInputEvent *event) {
     char c = event->text[0];
     if (isalpha(c) || c == ' ') {
         SDL_assert(event->text[1] == '\0');
@@ -168,8 +189,9 @@ void input_manager_process_text_input(struct input_manager *input_manager,
     }
 }
 
-void input_manager_process_key(struct input_manager *input_manager,
-                               const SDL_KeyboardEvent *event) {
+void
+input_manager_process_key(struct input_manager *input_manager,
+                          const SDL_KeyboardEvent *event) {
     SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     SDL_bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     SDL_bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
@@ -285,29 +307,33 @@ void input_manager_process_key(struct input_manager *input_manager,
     }
 }
 
-void input_manager_process_mouse_motion(struct input_manager *input_manager,
-                                        const SDL_MouseMotionEvent *event) {
+void
+input_manager_process_mouse_motion(struct input_manager *input_manager,
+                                   const SDL_MouseMotionEvent *event) {
     if (!event->state) {
         // do not send motion events when no button is pressed
         return;
     }
     struct control_event control_event;
-    if (mouse_motion_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+    if (mouse_motion_from_sdl_to_android(event,
+                                         input_manager->screen->frame_size,
+                                         &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse motion event");
         }
     }
 }
 
-static SDL_bool is_outside_device_screen(struct input_manager *input_manager,
-                                         int x, int y)
+static SDL_bool
+is_outside_device_screen(struct input_manager *input_manager, int x, int y)
 {
     return x < 0 || x >= input_manager->screen->frame_size.width ||
            y < 0 || y >= input_manager->screen->frame_size.height;
 }
 
-void input_manager_process_mouse_button(struct input_manager *input_manager,
-                                        const SDL_MouseButtonEvent *event) {
+void
+input_manager_process_mouse_button(struct input_manager *input_manager,
+                                   const SDL_MouseButtonEvent *event) {
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(input_manager->controller);
@@ -331,15 +357,18 @@ void input_manager_process_mouse_button(struct input_manager *input_manager,
     }
 
     struct control_event control_event;
-    if (mouse_button_from_sdl_to_android(event, input_manager->screen->frame_size, &control_event)) {
+    if (mouse_button_from_sdl_to_android(event,
+                                         input_manager->screen->frame_size,
+                                         &control_event)) {
         if (!controller_push_event(input_manager->controller, &control_event)) {
             LOGW("Cannot send mouse button event");
         }
     }
 }
 
-void input_manager_process_mouse_wheel(struct input_manager *input_manager,
-                                       const SDL_MouseWheelEvent *event) {
+void
+input_manager_process_mouse_wheel(struct input_manager *input_manager,
+                                  const SDL_MouseWheelEvent *event) {
     struct position position = {
         .screen_size = input_manager->screen->frame_size,
         .point = get_mouse_point(input_manager->screen),

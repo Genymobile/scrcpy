@@ -10,7 +10,8 @@
 
 static const char *adb_command;
 
-static inline const char *get_adb_command(void) {
+static inline const char *
+get_adb_command(void) {
     if (!adb_command) {
         adb_command = getenv("ADB");
         if (!adb_command)
@@ -19,7 +20,8 @@ static inline const char *get_adb_command(void) {
     return adb_command;
 }
 
-static void show_adb_err_msg(enum process_result err) {
+static void
+show_adb_err_msg(enum process_result err) {
     switch (err) {
         case PROCESS_ERROR_GENERIC:
             LOGE("Failed to execute adb");
@@ -34,7 +36,8 @@ static void show_adb_err_msg(enum process_result err) {
     }
 }
 
-process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) {
+process_t
+adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     const char *cmd[len + 4];
     int i;
     process_t process;
@@ -57,7 +60,9 @@ process_t adb_execute(const char *serial, const char *const adb_cmd[], int len) 
     return process;
 }
 
-process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name) {
+process_t
+adb_forward(const char *serial, uint16_t local_port,
+            const char *device_socket_name) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
@@ -66,14 +71,17 @@ process_t adb_forward(const char *serial, uint16_t local_port, const char *devic
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
-process_t adb_forward_remove(const char *serial, uint16_t local_port) {
+process_t
+adb_forward_remove(const char *serial, uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     sprintf(local, "tcp:%" PRIu16, local_port);
     const char *const adb_cmd[] = {"forward", "--remove", local};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
-process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port) {
+process_t
+adb_reverse(const char *serial, const char *device_socket_name,
+            uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
@@ -82,14 +90,16 @@ process_t adb_reverse(const char *serial, const char *device_socket_name, uint16
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
-process_t adb_reverse_remove(const char *serial, const char *device_socket_name) {
+process_t
+adb_reverse_remove(const char *serial, const char *device_socket_name) {
     char remote[108 + 14 + 1]; // localabstract:NAME
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 }
 
-process_t adb_push(const char *serial, const char *local, const char *remote) {
+process_t
+adb_push(const char *serial, const char *local, const char *remote) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the paths must be quoted
     // (see sys/win/command.c)
@@ -115,7 +125,8 @@ process_t adb_push(const char *serial, const char *local, const char *remote) {
     return proc;
 }
 
-process_t adb_install(const char *serial, const char *local) {
+process_t
+adb_install(const char *serial, const char *local) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the local name must be quoted
     // (see sys/win/command.c)
@@ -135,7 +146,8 @@ process_t adb_install(const char *serial, const char *local) {
     return proc;
 }
 
-SDL_bool process_check_success(process_t proc, const char *name) {
+SDL_bool
+process_check_success(process_t proc, const char *name) {
     if (proc == PROCESS_NONE) {
         LOGE("Could not execute \"%s\"", name);
         return SDL_FALSE;

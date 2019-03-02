@@ -6,7 +6,8 @@
 
 #ifdef _WIN32
 
-# include <winsock2.h> // not needed here, but must never be included AFTER windows.h
+ // not needed here, but winsock2.h must never be included AFTER windows.h
+# include <winsock2.h>
 # include <windows.h>
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
@@ -38,20 +39,41 @@ enum process_result {
     PROCESS_ERROR_MISSING_BINARY,
 };
 
-enum process_result cmd_execute(const char *path, const char *const argv[], process_t *process);
-SDL_bool cmd_terminate(process_t pid);
-SDL_bool cmd_simple_wait(process_t pid, exit_code_t *exit_code);
+enum process_result
+cmd_execute(const char *path, const char *const argv[], process_t *process);
 
-process_t adb_execute(const char *serial, const char *const adb_cmd[], int len);
-process_t adb_forward(const char *serial, uint16_t local_port, const char *device_socket_name);
-process_t adb_forward_remove(const char *serial, uint16_t local_port);
-process_t adb_reverse(const char *serial, const char *device_socket_name, uint16_t local_port);
-process_t adb_reverse_remove(const char *serial, const char *device_socket_name);
-process_t adb_push(const char *serial, const char *local, const char *remote);
-process_t adb_install(const char *serial, const char *local);
+SDL_bool
+cmd_terminate(process_t pid);
+
+SDL_bool
+cmd_simple_wait(process_t pid, exit_code_t *exit_code);
+
+process_t
+adb_execute(const char *serial, const char *const adb_cmd[], int len);
+
+process_t
+adb_forward(const char *serial, uint16_t local_port,
+            const char *device_socket_name);
+
+process_t
+adb_forward_remove(const char *serial, uint16_t local_port);
+
+process_t
+adb_reverse(const char *serial, const char *device_socket_name,
+            uint16_t local_port);
+
+process_t
+adb_reverse_remove(const char *serial, const char *device_socket_name);
+
+process_t
+adb_push(const char *serial, const char *local, const char *remote);
+
+process_t
+adb_install(const char *serial, const char *local);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
-SDL_bool process_check_success(process_t process, const char *name);
+SDL_bool
+process_check_success(process_t process, const char *name);
 
 #endif

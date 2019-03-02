@@ -30,15 +30,24 @@ struct file_handler {
     struct request_queue queue;
 };
 
-SDL_bool file_handler_init(struct file_handler *file_handler, const char *serial);
-void file_handler_destroy(struct file_handler *file_handler);
+SDL_bool
+file_handler_init(struct file_handler *file_handler, const char *serial);
 
-SDL_bool file_handler_start(struct file_handler *file_handler);
-void file_handler_stop(struct file_handler *file_handler);
-void file_handler_join(struct file_handler *file_handler);
+void
+file_handler_destroy(struct file_handler *file_handler);
 
-SDL_bool file_handler_request(struct file_handler *file_handler,
-                              file_handler_action_t action,
-                              const char *file);
+SDL_bool
+file_handler_start(struct file_handler *file_handler);
+
+void
+file_handler_stop(struct file_handler *file_handler);
+
+void
+file_handler_join(struct file_handler *file_handler);
+
+SDL_bool
+file_handler_request(struct file_handler *file_handler,
+                     file_handler_action_t action,
+                     const char *file);
 
 #endif

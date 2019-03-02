@@ -9,7 +9,8 @@
 #include "lock_util.h"
 #include "log.h"
 
-SDL_bool video_buffer_init(struct video_buffer *vb) {
+SDL_bool
+video_buffer_init(struct video_buffer *vb) {
     if (!(vb->decoding_frame = av_frame_alloc())) {
         goto error_0;
     }
@@ -45,7 +46,8 @@ error_0:
     return SDL_FALSE;
 }
 
-void video_buffer_destroy(struct video_buffer *vb) {
+void
+video_buffer_destroy(struct video_buffer *vb) {
 #ifndef SKIP_FRAMES
     SDL_DestroyCond(vb->rendering_frame_consumed_cond);
 #endif
@@ -54,13 +56,15 @@ void video_buffer_destroy(struct video_buffer *vb) {
     av_frame_free(&vb->decoding_frame);
 }
 
-static void video_buffer_swap_frames(struct video_buffer *vb) {
+static void
+video_buffer_swap_frames(struct video_buffer *vb) {
     AVFrame *tmp = vb->decoding_frame;
     vb->decoding_frame = vb->rendering_frame;
     vb->rendering_frame = tmp;
 }
 
-SDL_bool video_buffer_offer_decoded_frame(struct video_buffer *vb) {
+SDL_bool
+video_buffer_offer_decoded_frame(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
 #ifndef SKIP_FRAMES
     // if SKIP_FRAMES is disabled, then the decoder must wait for the current
@@ -83,7 +87,8 @@ SDL_bool video_buffer_offer_decoded_frame(struct video_buffer *vb) {
     return previous_frame_consumed;
 }
 
-const AVFrame *video_buffer_consume_rendered_frame(struct video_buffer *vb) {
+const AVFrame *
+video_buffer_consume_rendered_frame(struct video_buffer *vb) {
     SDL_assert(!vb->rendering_frame_consumed);
     vb->rendering_frame_consumed = SDL_TRUE;
     if (vb->fps_counter.started) {
@@ -97,7 +102,8 @@ const AVFrame *video_buffer_consume_rendered_frame(struct video_buffer *vb) {
     return vb->rendering_frame;
 }
 
-void video_buffer_interrupt(struct video_buffer *vb) {
+void
+video_buffer_interrupt(struct video_buffer *vb) {
 #ifdef SKIP_FRAMES
     (void) vb; // unused
 #else

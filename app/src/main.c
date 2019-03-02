@@ -145,17 +145,26 @@ static void usage(const char *arg0) {
         DEFAULT_LOCAL_PORT);
 }
 
-static void print_version(void) {
+static void
+print_version(void) {
     fprintf(stderr, "scrcpy %s\n\n", SCRCPY_VERSION);
 
     fprintf(stderr, "dependencies:\n");
-    fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-    fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO);
-    fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO);
-    fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO);
+    fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
+                                         SDL_PATCHLEVEL);
+    fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR,
+                                                LIBAVCODEC_VERSION_MINOR,
+                                                LIBAVCODEC_VERSION_MICRO);
+    fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR,
+                                                 LIBAVFORMAT_VERSION_MINOR,
+                                                 LIBAVFORMAT_VERSION_MICRO);
+    fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
+                                               LIBAVUTIL_VERSION_MINOR,
+                                               LIBAVUTIL_VERSION_MICRO);
 }
 
-static SDL_bool parse_bit_rate(char *optarg, Uint32 *bit_rate) {
+static SDL_bool
+parse_bit_rate(char *optarg, Uint32 *bit_rate) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Bit-rate parameter is empty");
@@ -186,7 +195,8 @@ static SDL_bool parse_bit_rate(char *optarg, Uint32 *bit_rate) {
     return SDL_TRUE;
 }
 
-static SDL_bool parse_max_size(char *optarg, Uint16 *max_size) {
+static SDL_bool
+parse_max_size(char *optarg, Uint16 *max_size) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Max size parameter is empty");
@@ -206,7 +216,8 @@ static SDL_bool parse_max_size(char *optarg, Uint16 *max_size) {
     return SDL_TRUE;
 }
 
-static SDL_bool parse_port(char *optarg, Uint16 *port) {
+static SDL_bool
+parse_port(char *optarg, Uint16 *port) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Invalid port parameter is empty");
@@ -256,7 +267,8 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
-static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
+static SDL_bool
+parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top", no_argument,       NULL, 'T'},
         {"bit-rate",      required_argument, NULL, 'b'},
@@ -274,7 +286,8 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:np:r:s:tTv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:np:r:s:tTv", long_options,
+                            NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
@@ -362,7 +375,8 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
     return SDL_TRUE;
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[]) {
 #ifdef __WINDOWS__
     // disable buffering, we want logs immediately
     // even line buffering (setvbuf() with mode _IOLBF) is not sufficient

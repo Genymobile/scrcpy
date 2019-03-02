@@ -22,21 +22,27 @@ struct video_buffer {
     struct fps_counter fps_counter;
 };
 
-SDL_bool video_buffer_init(struct video_buffer *vb);
-void video_buffer_destroy(struct video_buffer *vb);
+SDL_bool
+video_buffer_init(struct video_buffer *vb);
+
+void
+video_buffer_destroy(struct video_buffer *vb);
 
 // set the decoded frame as ready for rendering
 // this function locks frames->mutex during its execution
 // returns true if the previous frame had been consumed
-SDL_bool video_buffer_offer_decoded_frame(struct video_buffer *vb);
+SDL_bool
+video_buffer_offer_decoded_frame(struct video_buffer *vb);
 
 // mark the rendering frame as consumed and return it
 // MUST be called with frames->mutex locked!!!
 // the caller is expected to render the returned frame to some texture before
 // unlocking frames->mutex
-const AVFrame *video_buffer_consume_rendered_frame(struct video_buffer *vb);
+const AVFrame *
+video_buffer_consume_rendered_frame(struct video_buffer *vb);
 
 // wake up and avoid any blocking call
-void video_buffer_interrupt(struct video_buffer *vb);
+void
+video_buffer_interrupt(struct video_buffer *vb);
 
 #endif

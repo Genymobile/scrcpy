@@ -18,6 +18,7 @@ struct scrcpy_options {
     SDL_bool no_window;
 };
 
-SDL_bool scrcpy(const struct scrcpy_options *options);
+SDL_bool
+scrcpy(const struct scrcpy_options *options);
 
 #endif

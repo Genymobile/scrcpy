@@ -22,7 +22,8 @@
 #define HEADER_SIZE 12
 #define NO_PTS UINT64_C(-1)
 
-static struct frame_meta *frame_meta_new(Uint64 pts) {
+static struct frame_meta *
+frame_meta_new(Uint64 pts) {
     struct frame_meta *meta = malloc(sizeof(*meta));
     if (!meta) {
         return meta;
@@ -32,12 +33,13 @@ static struct frame_meta *frame_meta_new(Uint64 pts) {
     return meta;
 }
 
-static void frame_meta_delete(struct frame_meta *frame_meta) {
+static void
+frame_meta_delete(struct frame_meta *frame_meta) {
     free(frame_meta);
 }
 
-static SDL_bool receiver_state_push_meta(struct receiver_state *state,
-                                         Uint64 pts) {
+static SDL_bool
+receiver_state_push_meta(struct receiver_state *state, Uint64 pts) {
     struct frame_meta *frame_meta = frame_meta_new(pts);
     if (!frame_meta) {
         return SDL_FALSE;
@@ -53,7 +55,8 @@ static SDL_bool receiver_state_push_meta(struct receiver_state *state,
     return SDL_TRUE;
 }
 
-static Uint64 receiver_state_take_meta(struct receiver_state *state) {
+static Uint64
+receiver_state_take_meta(struct receiver_state *state) {
     struct frame_meta *frame_meta = state->frame_meta_queue; // first item
     SDL_assert(frame_meta); // must not be empty
     Uint64 pts = frame_meta->pts;
@@ -62,7 +65,8 @@ static Uint64 receiver_state_take_meta(struct receiver_state *state) {
     return pts;
 }
 
-static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
+static int
+read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     struct stream *stream = opaque;
     struct receiver_state *state = &stream->receiver_state;
 
@@ -121,7 +125,8 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
     return r;
 }
 
-static int read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
+static int
+read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct stream *stream = opaque;
     ssize_t r = net_recv(stream->socket, buf, buf_size);
     if (r == -1) {
@@ -133,13 +138,15 @@ static int read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
     return r;
 }
 
-static void notify_stopped(void) {
+static void
+notify_stopped(void) {
     SDL_Event stop_event;
     stop_event.type = EVENT_STREAM_STOPPED;
     SDL_PushEvent(&stop_event);
 }
 
-static int run_stream(void *data) {
+static int
+run_stream(void *data) {
     struct stream *stream = data;
 
     AVFormatContext *format_ctx = avformat_alloc_context();
@@ -246,14 +253,16 @@ end:
     return 0;
 }
 
-void stream_init(struct stream *stream, socket_t socket,
-                 struct decoder *decoder, struct recorder *recorder) {
+void
+stream_init(struct stream *stream, socket_t socket,
+            struct decoder *decoder, struct recorder *recorder) {
     stream->socket = socket;
     stream->decoder = decoder,
     stream->recorder = recorder;
 }
 
-SDL_bool stream_start(struct stream *stream) {
+SDL_bool
+stream_start(struct stream *stream) {
     LOGD("Starting stream thread");
 
     stream->thread = SDL_CreateThread(run_stream, "stream", stream);
@@ -264,12 +273,14 @@ SDL_bool stream_start(struct stream *stream) {
     return SDL_TRUE;
 }
 
-void stream_stop(struct stream *stream) {
+void
+stream_stop(struct stream *stream) {
     if (stream->decoder) {
         decoder_interrupt(stream->decoder);
     }
 }
 
-void stream_join(struct stream *stream) {
+void
+stream_join(struct stream *stream) {
     SDL_WaitThread(stream->thread, NULL);
 }

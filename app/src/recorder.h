@@ -19,16 +19,20 @@ struct recorder {
     SDL_bool header_written;
 };
 
-SDL_bool recorder_init(struct recorder *recoder,
-                       const char *filename,
-                       enum recorder_format format,
-                       struct size declared_frame_size);
+SDL_bool
+recorder_init(struct recorder *recoder, const char *filename,
+              enum recorder_format format, struct size declared_frame_size);
 
-void recorder_destroy(struct recorder *recorder);
+void
+recorder_destroy(struct recorder *recorder);
 
-SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec);
-void recorder_close(struct recorder *recorder);
+SDL_bool
+recorder_open(struct recorder *recorder, AVCodec *input_codec);
 
-SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet);
+void
+recorder_close(struct recorder *recorder);
+
+SDL_bool
+recorder_write(struct recorder *recorder, AVPacket *packet);
 
 #endif

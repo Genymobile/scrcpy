@@ -7,14 +7,16 @@
 #include "lock_util.h"
 #include "log.h"
 
-static void write_position(Uint8 *buf, const struct position *position) {
+static void
+write_position(Uint8 *buf, const struct position *position) {
     buffer_write32be(&buf[0], position->point.x);
     buffer_write32be(&buf[4], position->point.y);
     buffer_write16be(&buf[8], position->screen_size.width);
     buffer_write16be(&buf[10], position->screen_size.height);
 }
 
-int control_event_serialize(const struct control_event *event, unsigned char *buf) {
+int
+control_event_serialize(const struct control_event *event, unsigned char *buf) {
     buf[0] = event->type;
     switch (event->type) {
         case CONTROL_EVENT_TYPE_KEYCODE:
@@ -52,28 +54,33 @@ int control_event_serialize(const struct control_event *event, unsigned char *bu
     }
 }
 
-void control_event_destroy(struct control_event *event) {
+void
+control_event_destroy(struct control_event *event) {
     if (event->type == CONTROL_EVENT_TYPE_TEXT) {
         SDL_free(event->text_event.text);
     }
 }
 
-SDL_bool control_event_queue_is_empty(const struct control_event_queue *queue) {
+SDL_bool
+control_event_queue_is_empty(const struct control_event_queue *queue) {
     return queue->head == queue->tail;
 }
 
-SDL_bool control_event_queue_is_full(const struct control_event_queue *queue) {
+SDL_bool
+control_event_queue_is_full(const struct control_event_queue *queue) {
     return (queue->head + 1) % CONTROL_EVENT_QUEUE_SIZE == queue->tail;
 }
 
-SDL_bool control_event_queue_init(struct control_event_queue *queue) {
+SDL_bool
+control_event_queue_init(struct control_event_queue *queue) {
     queue->head = 0;
     queue->tail = 0;
     // the current implementation may not fail
     return SDL_TRUE;
 }
 
-void control_event_queue_destroy(struct control_event_queue *queue) {
+void
+control_event_queue_destroy(struct control_event_queue *queue) {
     int i = queue->tail;
     while (i != queue->head) {
         control_event_destroy(&queue->data[i]);
@@ -81,7 +88,9 @@ void control_event_queue_destroy(struct control_event_queue *queue) {
     }
 }
 
-SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event) {
+SDL_bool
+control_event_queue_push(struct control_event_queue *queue,
+                         const struct control_event *event) {
     if (control_event_queue_is_full(queue)) {
         return SDL_FALSE;
     }
@@ -90,7 +99,9 @@ SDL_bool control_event_queue_push(struct control_event_queue *queue, const struc
     return SDL_TRUE;
 }
 
-SDL_bool control_event_queue_take(struct control_event_queue *queue, struct control_event *event) {
+SDL_bool
+control_event_queue_take(struct control_event_queue *queue,
+                         struct control_event *event) {
     if (control_event_queue_is_empty(queue)) {
         return SDL_FALSE;
     }

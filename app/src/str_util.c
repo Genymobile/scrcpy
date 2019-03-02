@@ -8,7 +8,8 @@
 # include <tchar.h>
 #endif
 
-size_t xstrncpy(char *dest, const char *src, size_t n) {
+size_t
+xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;
     for (i = 0; i < n - 1 && src[i] != '\0'; ++i)
         dest[i] = src[i];
@@ -17,7 +18,8 @@ size_t xstrncpy(char *dest, const char *src, size_t n) {
     return src[i] == '\0' ? i : n;
 }
 
-size_t xstrjoin(char *dst, const char *const tokens[], char sep, size_t n) {
+size_t
+xstrjoin(char *dst, const char *const tokens[], char sep, size_t n) {
     const char *const *remaining = tokens;
     const char *token = *remaining++;
     size_t i = 0;
@@ -40,7 +42,8 @@ truncated:
     return n;
 }
 
-char *strquote(const char *src) {
+char *
+strquote(const char *src) {
     size_t len = strlen(src);
     char *quoted = malloc(len + 3);
     if (!quoted) {
@@ -55,7 +58,8 @@ char *strquote(const char *src) {
 
 #ifdef _WIN32
 
-wchar_t *utf8_to_wide_char(const char *utf8) {
+wchar_t *
+utf8_to_wide_char(const char *utf8) {
     int len = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
     if (!len) {
         return NULL;

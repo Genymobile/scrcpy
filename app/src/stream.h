@@ -26,10 +26,17 @@ struct stream {
     } receiver_state;
 };
 
-void stream_init(struct stream *stream, socket_t socket,
-                 struct decoder *decoder, struct recorder *recorder);
-SDL_bool stream_start(struct stream *stream);
-void stream_stop(struct stream *stream);
-void stream_join(struct stream *stream);
+void
+stream_init(struct stream *stream, socket_t socket,
+            struct decoder *decoder, struct recorder *recorder);
+
+SDL_bool
+stream_start(struct stream *stream);
+
+void
+stream_stop(struct stream *stream);
+
+void
+stream_join(struct stream *stream);
 
 #endif

@@ -5,7 +5,8 @@
 #include "lock_util.h"
 #include "log.h"
 
-SDL_bool controller_init(struct controller *controller, socket_t video_socket) {
+SDL_bool
+controller_init(struct controller *controller, socket_t video_socket) {
     if (!control_event_queue_init(&controller->queue)) {
         return SDL_FALSE;
     }
@@ -25,13 +26,16 @@ SDL_bool controller_init(struct controller *controller, socket_t video_socket) {
     return SDL_TRUE;
 }
 
-void controller_destroy(struct controller *controller) {
+void
+controller_destroy(struct controller *controller) {
     SDL_DestroyCond(controller->event_cond);
     SDL_DestroyMutex(controller->mutex);
     control_event_queue_destroy(&controller->queue);
 }
 
-SDL_bool controller_push_event(struct controller *controller, const struct control_event *event) {
+SDL_bool
+controller_push_event(struct controller *controller,
+                      const struct control_event *event) {
     SDL_bool res;
     mutex_lock(controller->mutex);
     SDL_bool was_empty = control_event_queue_is_empty(&controller->queue);
@@ -43,7 +47,9 @@ SDL_bool controller_push_event(struct controller *controller, const struct contr
     return res;
 }
 
-static SDL_bool process_event(struct controller *controller, const struct control_event *event) {
+static SDL_bool
+process_event(struct controller *controller,
+              const struct control_event *event) {
     unsigned char serialized_event[SERIALIZED_EVENT_MAX_SIZE];
     int length = control_event_serialize(event, serialized_event);
     if (!length) {
@@ -53,12 +59,14 @@ static SDL_bool process_event(struct controller *controller, const struct contro
     return w == length;
 }
 
-static int run_controller(void *data) {
+static int
+run_controller(void *data) {
     struct controller *controller = data;
 
     for (;;) {
         mutex_lock(controller->mutex);
-        while (!controller->stopped && control_event_queue_is_empty(&controller->queue)) {
+        while (!controller->stopped
+                && control_event_queue_is_empty(&controller->queue)) {
             cond_wait(controller->event_cond, controller->mutex);
         }
         if (controller->stopped) {
@@ -67,7 +75,8 @@ static int run_controller(void *data) {
             break;
         }
         struct control_event event;
-        SDL_bool non_empty = control_event_queue_take(&controller->queue, &event);
+        SDL_bool non_empty = control_event_queue_take(&controller->queue,
+                                                      &event);
         SDL_assert(non_empty);
         mutex_unlock(controller->mutex);
 
@@ -81,10 +90,12 @@ static int run_controller(void *data) {
     return 0;
 }
 
-SDL_bool controller_start(struct controller *controller) {
+SDL_bool
+controller_start(struct controller *controller) {
     LOGD("Starting controller thread");
 
-    controller->thread = SDL_CreateThread(run_controller, "controller", controller);
+    controller->thread = SDL_CreateThread(run_controller, "controller",
+                                          controller);
     if (!controller->thread) {
         LOGC("Could not start controller thread");
         return SDL_FALSE;
@@ -93,13 +104,15 @@ SDL_bool controller_start(struct controller *controller) {
     return SDL_TRUE;
 }
 
-void controller_stop(struct controller *controller) {
+void
+controller_stop(struct controller *controller) {
     mutex_lock(controller->mutex);
     controller->stopped = SDL_TRUE;
     cond_signal(controller->event_cond);
     mutex_unlock(controller->mutex);
 }
 
-void controller_join(struct controller *controller) {
+void
+controller_join(struct controller *controller) {
     SDL_WaitThread(controller->thread, NULL);
 }

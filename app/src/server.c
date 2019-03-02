@@ -21,7 +21,8 @@
 
 #define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
 
-static const char *get_server_path(void) {
+static const char *
+get_server_path(void) {
     const char *server_path = getenv("SCRCPY_SERVER_PATH");
     if (!server_path) {
         server_path = DEFAULT_SERVER_PATH;
@@ -29,32 +30,38 @@ static const char *get_server_path(void) {
     return server_path;
 }
 
-static SDL_bool push_server(const char *serial) {
+static SDL_bool
+push_server(const char *serial) {
     process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
 }
 
-static SDL_bool enable_tunnel_reverse(const char *serial, Uint16 local_port) {
+static SDL_bool
+enable_tunnel_reverse(const char *serial, Uint16 local_port) {
     process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
     return process_check_success(process, "adb reverse");
 }
 
-static SDL_bool disable_tunnel_reverse(const char *serial) {
+static SDL_bool
+disable_tunnel_reverse(const char *serial) {
     process_t process = adb_reverse_remove(serial, SOCKET_NAME);
     return process_check_success(process, "adb reverse --remove");
 }
 
-static SDL_bool enable_tunnel_forward(const char *serial, Uint16 local_port) {
+static SDL_bool
+enable_tunnel_forward(const char *serial, Uint16 local_port) {
     process_t process = adb_forward(serial, local_port, SOCKET_NAME);
     return process_check_success(process, "adb forward");
 }
 
-static SDL_bool disable_tunnel_forward(const char *serial, Uint16 local_port) {
+static SDL_bool
+disable_tunnel_forward(const char *serial, Uint16 local_port) {
     process_t process = adb_forward_remove(serial, local_port);
     return process_check_success(process, "adb forward --remove");
 }
 
-static SDL_bool enable_tunnel(struct server *server) {
+static SDL_bool
+enable_tunnel(struct server *server) {
     if (enable_tunnel_reverse(server->serial, server->local_port)) {
         return SDL_TRUE;
     }
@@ -64,17 +71,19 @@ static SDL_bool enable_tunnel(struct server *server) {
     return enable_tunnel_forward(server->serial, server->local_port);
 }
 
-static SDL_bool disable_tunnel(struct server *server) {
+static SDL_bool
+disable_tunnel(struct server *server) {
     if (server->tunnel_forward) {
         return disable_tunnel_forward(server->serial, server->local_port);
     }
     return disable_tunnel_reverse(server->serial);
 }
 
-static process_t execute_server(const char *serial,
-                                Uint16 max_size, Uint32 bit_rate,
-                                SDL_bool tunnel_forward, const char *crop,
-                                SDL_bool send_frame_meta) {
+static process_t
+execute_server(const char *serial,
+               Uint16 max_size, Uint32 bit_rate,
+               SDL_bool tunnel_forward, const char *crop,
+               SDL_bool send_frame_meta) {
     char max_size_string[6];
     char bit_rate_string[11];
     sprintf(max_size_string, "%"PRIu16, max_size);
@@ -96,11 +105,13 @@ static process_t execute_server(const char *serial,
 
 #define IPV4_LOCALHOST 0x7F000001
 
-static socket_t listen_on_port(Uint16 port) {
+static socket_t
+listen_on_port(Uint16 port) {
     return net_listen(IPV4_LOCALHOST, port, 1);
 }
 
-static socket_t connect_and_read_byte(Uint16 port) {
+static socket_t
+connect_and_read_byte(Uint16 port) {
     socket_t socket = net_connect(IPV4_LOCALHOST, port);
     if (socket == INVALID_SOCKET) {
         return INVALID_SOCKET;
@@ -116,7 +127,8 @@ static socket_t connect_and_read_byte(Uint16 port) {
     return socket;
 }
 
-static socket_t connect_to_server(Uint16 port, Uint32 attempts, Uint32 delay) {
+static socket_t
+connect_to_server(Uint16 port, Uint32 attempts, Uint32 delay) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         socket_t socket = connect_and_read_byte(port);
@@ -131,7 +143,8 @@ static socket_t connect_to_server(Uint16 port, Uint32 attempts, Uint32 delay) {
     return INVALID_SOCKET;
 }
 
-static void close_socket(socket_t *socket) {
+static void
+close_socket(socket_t *socket) {
     SDL_assert(*socket != INVALID_SOCKET);
     net_shutdown(*socket, SHUT_RDWR);
     if (!net_close(*socket)) {
@@ -141,13 +154,15 @@ static void close_socket(socket_t *socket) {
     *socket = INVALID_SOCKET;
 }
 
-void server_init(struct server *server) {
+void
+server_init(struct server *server) {
     *server = (struct server) SERVER_INITIALIZER;
 }
 
-SDL_bool server_start(struct server *server, const char *serial,
-                      Uint16 local_port, Uint16 max_size, Uint32 bit_rate,
-                      const char *crop, SDL_bool send_frame_meta) {
+SDL_bool
+server_start(struct server *server, const char *serial,
+             Uint16 local_port, Uint16 max_size, Uint32 bit_rate,
+             const char *crop, SDL_bool send_frame_meta) {
     server->local_port = local_port;
 
     if (serial) {
@@ -173,8 +188,9 @@ SDL_bool server_start(struct server *server, const char *serial,
         // At the application level, the device part is "the server" because it
         // serves video stream and control. However, at the network level, the
         // client listens and the server connects to the client. That way, the
-        // client can listen before starting the server app, so there is no need to
-        // try to connect until the server socket is listening on the device.
+        // client can listen before starting the server app, so there is no
+        // need to try to connect until the server socket is listening on the
+        // device.
 
         server->server_socket = listen_on_port(local_port);
         if (server->server_socket == INVALID_SOCKET) {
@@ -204,13 +220,15 @@ SDL_bool server_start(struct server *server, const char *serial,
     return SDL_TRUE;
 }
 
-socket_t server_connect_to(struct server *server) {
+socket_t
+server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
     } else {
         Uint32 attempts = 100;
         Uint32 delay = 100; // ms
-        server->device_socket = connect_to_server(server->local_port, attempts, delay);
+        server->device_socket = connect_to_server(server->local_port, attempts,
+                                                  delay);
     }
 
     if (server->device_socket == INVALID_SOCKET) {
@@ -229,7 +247,8 @@ socket_t server_connect_to(struct server *server) {
     return server->device_socket;
 }
 
-void server_stop(struct server *server) {
+void
+server_stop(struct server *server) {
     SDL_assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
@@ -245,7 +264,8 @@ void server_stop(struct server *server) {
     }
 }
 
-void server_destroy(struct server *server) {
+void
+server_destroy(struct server *server) {
     if (server->server_socket != INVALID_SOCKET) {
         close_socket(&server->server_socket);
     }

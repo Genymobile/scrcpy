@@ -19,7 +19,8 @@ struct point {
 
 struct position {
     // The video screen size may be different from the real device screen size,
-    // so store to which size the absolute position apply, to scale it accordingly.
+    // so store to which size the absolute position apply, to scale it
+    // accordingly.
     struct size screen_size;
     struct point point;
 };

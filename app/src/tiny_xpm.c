@@ -10,7 +10,8 @@ struct index {
     Uint32 color;
 };
 
-static SDL_bool find_color(struct index *index, int len, char c, Uint32 *color) {
+static SDL_bool
+find_color(struct index *index, int len, char c, Uint32 *color) {
     // there are typically very few color, so it's ok to iterate over the array
     for (int i = 0; i < len; ++i) {
         if (index[i].c == c) {
@@ -30,7 +31,8 @@ static SDL_bool find_color(struct index *index, int len, char c, Uint32 *color) 
 //
 // Parameter is not "const char *" because XPM formats are generally stored in a
 // (non-const) "char *"
-SDL_Surface *read_xpm(char *xpm[]) {
+SDL_Surface *
+read_xpm(char *xpm[]) {
 #if SDL_ASSERT_LEVEL >= 2
     // patch the XPM to change the icon color in debug mode
     xpm[2] = ".	c #CC00CC";

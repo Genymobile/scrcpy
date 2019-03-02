@@ -27,20 +27,25 @@ struct server {
 }
 
 // init default values
-void server_init(struct server *server);
+void
+server_init(struct server *server);
 
 // push, enable tunnel et start the server
-SDL_bool server_start(struct server *server, const char *serial,
+SDL_bool
+server_start(struct server *server, const char *serial,
                       Uint16 local_port, Uint16 max_size, Uint32 bit_rate,
                       const char *crop, SDL_bool send_frame_meta);
 
 // block until the communication with the server is established
-socket_t server_connect_to(struct server *server);
+socket_t
+server_connect_to(struct server *server);
 
 // disconnect and kill the server process
-void server_stop(struct server *server);
+void
+server_stop(struct server *server);
 
 // close and release sockets
-void server_destroy(struct server *server);
+void
+server_destroy(struct server *server);
 
 #endif
