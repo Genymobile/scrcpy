@@ -8,7 +8,6 @@ src = [
     'src/device.c',
     'src/file_handler.c',
     'src/fps_counter.c',
-    'src/frames.c',
     'src/input_manager.c',
     'src/lock_util.c',
     'src/net.c',
@@ -18,6 +17,7 @@ src = [
     'src/server.c',
     'src/str_util.c',
     'src/tiny_xpm.c',
+    'src/video_buffer.c',
 ]
 
 if not get_option('crossbuild_windows')

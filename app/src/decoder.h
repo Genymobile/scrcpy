@@ -7,7 +7,7 @@
 #include "common.h"
 #include "net.h"
 
-struct frames;
+struct video_buffer;
 
 struct frame_meta {
     uint64_t pts;
@@ -15,7 +15,7 @@ struct frame_meta {
 };
 
 struct decoder {
-    struct frames *frames;
+    struct video_buffer *video_buffer;
     socket_t video_socket;
     SDL_Thread *thread;
     struct recorder *recorder;
@@ -26,7 +26,7 @@ struct decoder {
     } receiver_state;
 };
 
-void decoder_init(struct decoder *decoder, struct frames *frames,
+void decoder_init(struct decoder *decoder, struct video_buffer *vb,
                   socket_t video_socket, struct recorder *recoder);
 SDL_bool decoder_start(struct decoder *decoder);
 void decoder_stop(struct decoder *decoder);

@@ -4,12 +4,12 @@
 #include "common.h"
 #include "controller.h"
 #include "fps_counter.h"
-#include "frames.h"
+#include "video_buffer.h"
 #include "screen.h"
 
 struct input_manager {
     struct controller *controller;
-    struct frames *frames;
+    struct video_buffer *video_buffer;
     struct screen *screen;
 };
 

@@ -12,10 +12,10 @@
 #include "config.h"
 #include "buffer_util.h"
 #include "events.h"
-#include "frames.h"
 #include "lock_util.h"
 #include "log.h"
 #include "recorder.h"
+#include "video_buffer.h"
 
 #define BUFSIZE 0x10000
 
@@ -134,7 +134,7 @@ static int read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
 
 // set the decoded frame as ready for rendering, and notify
 static void push_frame(struct decoder *decoder) {
-    SDL_bool previous_frame_consumed = frames_offer_decoded_frame(decoder->frames);
+    SDL_bool previous_frame_consumed = video_buffer_offer_decoded_frame(decoder->video_buffer);
     if (!previous_frame_consumed) {
         // the previous EVENT_NEW_FRAME will consume this frame
         return;
@@ -227,7 +227,7 @@ static int run_decoder(void *data) {
             LOGE("Could not send video packet: %d", ret);
             goto run_quit;
         }
-        ret = avcodec_receive_frame(codec_ctx, decoder->frames->decoding_frame);
+        ret = avcodec_receive_frame(codec_ctx, decoder->video_buffer->decoding_frame);
         if (!ret) {
             // a frame was received
             push_frame(decoder);
@@ -239,7 +239,7 @@ static int run_decoder(void *data) {
 #else
         while (packet.size > 0) {
             int got_picture;
-            int len = avcodec_decode_video2(codec_ctx, decoder->frames->decoding_frame, &got_picture, &packet);
+            int len = avcodec_decode_video2(codec_ctx, decoder->video_buffer->decoding_frame, &got_picture, &packet);
             if (len < 0) {
                 LOGE("Could not decode video packet: %d", len);
                 av_packet_unref(&packet);
@@ -298,9 +298,9 @@ run_end:
     return 0;
 }
 
-void decoder_init(struct decoder *decoder, struct frames *frames,
+void decoder_init(struct decoder *decoder, struct video_buffer *vb,
                   socket_t video_socket, struct recorder *recorder) {
-    decoder->frames = frames;
+    decoder->video_buffer = vb;
     decoder->video_socket = video_socket;
     decoder->recorder = recorder;
 }
@@ -317,7 +317,7 @@ SDL_bool decoder_start(struct decoder *decoder) {
 }
 
 void decoder_stop(struct decoder *decoder) {
-    frames_stop(decoder->frames);
+    video_buffer_stop(decoder->video_buffer);
 }
 
 void decoder_join(struct decoder *decoder) {

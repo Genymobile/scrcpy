@@ -14,7 +14,6 @@
 #include "device.h"
 #include "events.h"
 #include "file_handler.h"
-#include "frames.h"
 #include "fps_counter.h"
 #include "input_manager.h"
 #include "log.h"
@@ -24,10 +23,11 @@
 #include "screen.h"
 #include "server.h"
 #include "tiny_xpm.h"
+#include "video_buffer.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
-static struct frames frames;
+static struct video_buffer video_buffer;
 static struct decoder decoder;
 static struct controller controller;
 static struct file_handler file_handler;
@@ -35,7 +35,7 @@ static struct recorder recorder;
 
 static struct input_manager input_manager = {
     .controller = &controller,
-    .frames = &frames,
+    .video_buffer = &video_buffer,
     .screen = &screen,
 };
 
@@ -82,7 +82,7 @@ static SDL_bool event_loop(void) {
                     // this is the very first frame, show the window
                     screen_show_window(&screen);
                 }
-                if (!screen_update_frame(&screen, &frames)) {
+                if (!screen_update_frame(&screen, &video_buffer)) {
                     return SDL_FALSE;
                 }
                 break;
@@ -215,7 +215,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    if (!frames_init(&frames)) {
+    if (!video_buffer_init(&video_buffer)) {
         server_stop(&server);
         ret = SDL_FALSE;
         goto finally_destroy_server;
@@ -224,7 +224,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     if (!file_handler_init(&file_handler, server.serial)) {
         ret = SDL_FALSE;
         server_stop(&server);
-        goto finally_destroy_frames;
+        goto finally_destroy_video_buffer;
     }
 
     struct recorder *rec = NULL;
@@ -242,7 +242,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    decoder_init(&decoder, &frames, device_socket, rec);
+    decoder_init(&decoder, &video_buffer, device_socket, rec);
 
     // now we consumed the header values, the socket receives the video stream
     // start the decoder
@@ -299,8 +299,8 @@ finally_destroy_recorder:
     if (options->record_filename) {
         recorder_destroy(&recorder);
     }
-finally_destroy_frames:
-    frames_destroy(&frames);
+finally_destroy_video_buffer:
+    video_buffer_destroy(&video_buffer);
 finally_destroy_server:
     if (options->show_touches) {
         if (!show_touches_waited) {

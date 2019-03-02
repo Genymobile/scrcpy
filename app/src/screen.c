@@ -8,6 +8,7 @@
 #include "lock_util.h"
 #include "log.h"
 #include "tiny_xpm.h"
+#include "video_buffer.h"
 
 #define DISPLAY_MARGINS 96
 
@@ -262,16 +263,16 @@ static void update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[2], frame->linesize[2]);
 }
 
-SDL_bool screen_update_frame(struct screen *screen, struct frames *frames) {
-    mutex_lock(frames->mutex);
-    const AVFrame *frame = frames_consume_rendered_frame(frames);
+SDL_bool screen_update_frame(struct screen *screen, struct video_buffer *vb) {
+    mutex_lock(vb->mutex);
+    const AVFrame *frame = video_buffer_consume_rendered_frame(vb);
     struct size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
-        mutex_unlock(frames->mutex);
+        mutex_unlock(vb->mutex);
         return SDL_FALSE;
     }
     update_texture(screen, frame);
-    mutex_unlock(frames->mutex);
+    mutex_unlock(vb->mutex);
 
     screen_render(screen);
     return SDL_TRUE;

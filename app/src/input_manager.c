@@ -114,16 +114,16 @@ static void collapse_notification_panel(struct controller *controller) {
     }
 }
 
-static void switch_fps_counter_state(struct frames *frames) {
-    mutex_lock(frames->mutex);
-    if (frames->fps_counter.started) {
+static void switch_fps_counter_state(struct video_buffer *vb) {
+    mutex_lock(vb->mutex);
+    if (vb->fps_counter.started) {
         LOGI("FPS counter stopped");
-        fps_counter_stop(&frames->fps_counter);
+        fps_counter_stop(&vb->fps_counter);
     } else {
         LOGI("FPS counter started");
-        fps_counter_start(&frames->fps_counter);
+        fps_counter_start(&vb->fps_counter);
     }
-    mutex_unlock(frames->mutex);
+    mutex_unlock(vb->mutex);
 }
 
 static void clipboard_paste(struct controller *controller) {
@@ -260,7 +260,7 @@ void input_manager_process_key(struct input_manager *input_manager,
             case SDLK_i:
                 if (ctrl && !meta && !shift && !repeat
                         && event->type == SDL_KEYDOWN) {
-                    switch_fps_counter_state(input_manager->frames);
+                    switch_fps_counter_state(input_manager->video_buffer);
                 }
                 return;
             case SDLK_n:
