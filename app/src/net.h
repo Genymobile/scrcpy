@@ -1,8 +1,9 @@
 #ifndef NET_H
 #define NET_H
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL_platform.h>
-#include <SDL2/SDL_stdinc.h>
 
 #ifdef __WINDOWS__
 # include <winsock2.h>
@@ -16,17 +17,17 @@
   typedef int socket_t;
 #endif
 
-SDL_bool
+bool
 net_init(void);
 
 void
 net_cleanup(void);
 
 socket_t
-net_connect(Uint32 addr, Uint16 port);
+net_connect(uint32_t addr, uint16_t port);
 
 socket_t
-net_listen(Uint32 addr, Uint16 port, int backlog);
+net_listen(uint32_t addr, uint16_t port, int backlog);
 
 socket_t
 net_accept(socket_t server_socket);
@@ -45,10 +46,10 @@ ssize_t
 net_send_all(socket_t socket, const void *buf, size_t len);
 
 // how is SHUT_RD (read), SHUT_WR (write) or SHUT_RDWR (both)
-SDL_bool
+bool
 net_shutdown(socket_t socket, int how);
 
-SDL_bool
+bool
 net_close(socket_t socket);
 
 #endif

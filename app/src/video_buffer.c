@@ -9,7 +9,7 @@
 #include "lock_util.h"
 #include "log.h"
 
-SDL_bool
+bool
 video_buffer_init(struct video_buffer *vb) {
     if (!(vb->decoding_frame = av_frame_alloc())) {
         goto error_0;
@@ -28,22 +28,22 @@ video_buffer_init(struct video_buffer *vb) {
         SDL_DestroyMutex(vb->mutex);
         goto error_2;
     }
-    vb->interrupted = SDL_FALSE;
+    vb->interrupted = false;
 #endif
 
     // there is initially no rendering frame, so consider it has already been
     // consumed
-    vb->rendering_frame_consumed = SDL_TRUE;
+    vb->rendering_frame_consumed = true;
     fps_counter_init(&vb->fps_counter);
 
-    return SDL_TRUE;
+    return true;
 
 error_2:
     av_frame_free(&vb->rendering_frame);
 error_1:
     av_frame_free(&vb->decoding_frame);
 error_0:
-    return SDL_FALSE;
+    return false;
 }
 
 void
@@ -63,7 +63,7 @@ video_buffer_swap_frames(struct video_buffer *vb) {
     vb->rendering_frame = tmp;
 }
 
-SDL_bool
+bool
 video_buffer_offer_decoded_frame(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
 #ifndef SKIP_FRAMES
@@ -80,8 +80,8 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb) {
 
     video_buffer_swap_frames(vb);
 
-    SDL_bool previous_frame_consumed = vb->rendering_frame_consumed;
-    vb->rendering_frame_consumed = SDL_FALSE;
+    bool previous_frame_consumed = vb->rendering_frame_consumed;
+    vb->rendering_frame_consumed = false;
 
     mutex_unlock(vb->mutex);
     return previous_frame_consumed;
@@ -90,7 +90,7 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb) {
 const AVFrame *
 video_buffer_consume_rendered_frame(struct video_buffer *vb) {
     SDL_assert(!vb->rendering_frame_consumed);
-    vb->rendering_frame_consumed = SDL_TRUE;
+    vb->rendering_frame_consumed = true;
     if (vb->fps_counter.started) {
         fps_counter_add_rendered_frame(&vb->fps_counter);
     }
@@ -108,7 +108,7 @@ video_buffer_interrupt(struct video_buffer *vb) {
     (void) vb; // unused
 #else
     mutex_lock(vb->mutex);
-    vb->interrupted = SDL_TRUE;
+    vb->interrupted = true;
     mutex_unlock(vb->mutex);
     // wake up blocking wait
     cond_signal(vb->rendering_frame_consumed_cond);

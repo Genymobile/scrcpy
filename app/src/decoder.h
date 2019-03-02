@@ -1,8 +1,8 @@
 #ifndef DECODER_H
 #define DECODER_H
 
+#include <stdbool.h>
 #include <libavformat/avformat.h>
-#include <SDL2/SDL_stdinc.h>
 
 struct video_buffer;
 
@@ -14,13 +14,13 @@ struct decoder {
 void
 decoder_init(struct decoder *decoder, struct video_buffer *vb);
 
-SDL_bool
+bool
 decoder_open(struct decoder *decoder, AVCodec *codec);
 
 void
 decoder_close(struct decoder *decoder);
 
-SDL_bool
+bool
 decoder_push(struct decoder *decoder, AVPacket *packet);
 
 void

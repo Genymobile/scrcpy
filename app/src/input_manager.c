@@ -192,9 +192,9 @@ input_manager_process_text_input(struct input_manager *input_manager,
 void
 input_manager_process_key(struct input_manager *input_manager,
                           const SDL_KeyboardEvent *event) {
-    SDL_bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
-    SDL_bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
-    SDL_bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+    bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+    bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
+    bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
     if (alt) {
         // no shortcut involves Alt or Meta, and they should not be forwarded
@@ -203,14 +203,14 @@ input_manager_process_key(struct input_manager *input_manager,
     }
 
     // false if the user requested not to interact with the device
-    SDL_bool control = input_manager->control;
+    bool control = input_manager->control;
 
     // capture all Ctrl events
     if (ctrl | meta) {
         SDL_Keycode keycode = event->keysym.sym;
         int action = event->type == SDL_KEYDOWN ? ACTION_DOWN : ACTION_UP;
-        SDL_bool repeat = event->repeat;
-        SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
+        bool repeat = event->repeat;
+        bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
                 if (control && ctrl && !meta && !shift && !repeat) {
@@ -332,7 +332,7 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
     }
 }
 
-static SDL_bool
+static bool
 is_outside_device_screen(struct input_manager *input_manager, int x, int y)
 {
     return x < 0 || x >= input_manager->screen->frame_size.width ||
@@ -343,7 +343,7 @@ void
 input_manager_process_mouse_button(struct input_manager *input_manager,
                                    const SDL_MouseButtonEvent *event) {
     // false if the user requested not to interact with the device
-    SDL_bool control = input_manager->control;
+    bool control = input_manager->control;
 
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
@@ -356,7 +356,7 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
         }
         // double-click on black borders resize to fit the device screen
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            SDL_bool outside = is_outside_device_screen(input_manager,
+            bool outside = is_outside_device_screen(input_manager,
                                                         event->x,
                                                         event->y);
             if (outside) {

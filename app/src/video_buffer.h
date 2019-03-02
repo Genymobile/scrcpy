@@ -1,8 +1,8 @@
 #ifndef VIDEO_BUFFER_H
 #define VIDEO_BUFFER_H
 
+#include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_stdinc.h>
 
 #include "config.h"
 #include "fps_counter.h"
@@ -15,14 +15,14 @@ struct video_buffer {
     AVFrame *rendering_frame;
     SDL_mutex *mutex;
 #ifndef SKIP_FRAMES
-    SDL_bool interrupted;
+    bool interrupted;
     SDL_cond *rendering_frame_consumed_cond;
 #endif
-    SDL_bool rendering_frame_consumed;
+    bool rendering_frame_consumed;
     struct fps_counter fps_counter;
 };
 
-SDL_bool
+bool
 video_buffer_init(struct video_buffer *vb);
 
 void
@@ -31,7 +31,7 @@ video_buffer_destroy(struct video_buffer *vb);
 // set the decoded frame as ready for rendering
 // this function locks frames->mutex during its execution
 // returns true if the previous frame had been consumed
-SDL_bool
+bool
 video_buffer_offer_decoded_frame(struct video_buffer *vb);
 
 // mark the rendering frame as consumed and return it

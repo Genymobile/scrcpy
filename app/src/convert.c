@@ -1,9 +1,9 @@
 #include "convert.h"
 
-#define MAP(FROM, TO) case FROM: *to = TO; return SDL_TRUE
-#define FAIL default: return SDL_FALSE
+#define MAP(FROM, TO) case FROM: *to = TO; return true
+#define FAIL default: return false
 
-static SDL_bool
+static bool
 convert_keycode_action(SDL_EventType from, enum android_keyevent_action *to) {
     switch (from) {
         MAP(SDL_KEYDOWN, AKEY_EVENT_ACTION_DOWN);
@@ -73,8 +73,8 @@ convert_meta_state(SDL_Keymod mod) {
     return autocomplete_metastate(metastate);
 }
 
-static SDL_bool
-convert_keycode(SDL_Keycode from, enum android_keycode *to, Uint16 mod) {
+static bool
+convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
         MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
@@ -92,7 +92,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, Uint16 mod) {
         MAP(SDLK_UP,           AKEYCODE_DPAD_UP);
     }
     if (mod & (KMOD_LALT | KMOD_RALT | KMOD_LGUI | KMOD_RGUI)) {
-        return SDL_FALSE;
+        return false;
     }
     // if ALT and META are not pressed, also handle letters and space
     switch (from) {
@@ -127,7 +127,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, Uint16 mod) {
     }
 }
 
-static SDL_bool
+static bool
 convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
     switch (from) {
         MAP(SDL_MOUSEBUTTONDOWN, AMOTION_EVENT_ACTION_DOWN);
@@ -137,7 +137,7 @@ convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
 }
 
 static enum android_motionevent_buttons
-convert_mouse_buttons(Uint32 state) {
+convert_mouse_buttons(uint32_t state) {
     enum android_motionevent_buttons buttons = 0;
     if (state & SDL_BUTTON_LMASK) {
         buttons |= AMOTION_EVENT_BUTTON_PRIMARY;
@@ -157,33 +157,33 @@ convert_mouse_buttons(Uint32 state) {
     return buttons;
 }
 
-SDL_bool
+bool
 input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
                               struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->keycode_event.action)) {
-        return SDL_FALSE;
+        return false;
     }
 
-    Uint16 mod = from->keysym.mod;
+    uint16_t mod = from->keysym.mod;
     if (!convert_keycode(from->keysym.sym, &to->keycode_event.keycode, mod)) {
-        return SDL_FALSE;
+        return false;
     }
 
     to->keycode_event.metastate = convert_meta_state(mod);
 
-    return SDL_TRUE;
+    return true;
 }
 
-SDL_bool
+bool
 mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
                                  struct size screen_size,
                                  struct control_event *to) {
     to->type = CONTROL_EVENT_TYPE_MOUSE;
 
     if (!convert_mouse_action(from->type, &to->mouse_event.action)) {
-        return SDL_FALSE;
+        return false;
     }
 
     to->mouse_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
@@ -191,10 +191,10 @@ mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
     to->mouse_event.position.point.x = from->x;
     to->mouse_event.position.point.y = from->y;
 
-    return SDL_TRUE;
+    return true;
 }
 
-SDL_bool
+bool
 mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
                                  struct size screen_size,
                                  struct control_event *to) {
@@ -205,10 +205,10 @@ mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
     to->mouse_event.position.point.x = from->x;
     to->mouse_event.position.point.y = from->y;
 
-    return SDL_TRUE;
+    return true;
 }
 
-SDL_bool
+bool
 mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
                                 struct position position,
                                 struct control_event *to) {
@@ -223,5 +223,5 @@ mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
     to->scroll_event.hscroll = -mul * from->x;
     to->scroll_event.vscroll = mul * from->y;
 
-    return SDL_TRUE;
+    return true;
 }

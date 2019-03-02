@@ -2,7 +2,6 @@
 
 #include <errno.h>
 #include <inttypes.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
@@ -30,48 +29,48 @@ get_server_path(void) {
     return server_path;
 }
 
-static SDL_bool
+static bool
 push_server(const char *serial) {
     process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
 }
 
-static SDL_bool
-enable_tunnel_reverse(const char *serial, Uint16 local_port) {
+static bool
+enable_tunnel_reverse(const char *serial, uint16_t local_port) {
     process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
     return process_check_success(process, "adb reverse");
 }
 
-static SDL_bool
+static bool
 disable_tunnel_reverse(const char *serial) {
     process_t process = adb_reverse_remove(serial, SOCKET_NAME);
     return process_check_success(process, "adb reverse --remove");
 }
 
-static SDL_bool
-enable_tunnel_forward(const char *serial, Uint16 local_port) {
+static bool
+enable_tunnel_forward(const char *serial, uint16_t local_port) {
     process_t process = adb_forward(serial, local_port, SOCKET_NAME);
     return process_check_success(process, "adb forward");
 }
 
-static SDL_bool
-disable_tunnel_forward(const char *serial, Uint16 local_port) {
+static bool
+disable_tunnel_forward(const char *serial, uint16_t local_port) {
     process_t process = adb_forward_remove(serial, local_port);
     return process_check_success(process, "adb forward --remove");
 }
 
-static SDL_bool
+static bool
 enable_tunnel(struct server *server) {
     if (enable_tunnel_reverse(server->serial, server->local_port)) {
-        return SDL_TRUE;
+        return true;
     }
 
     LOGW("'adb reverse' failed, fallback to 'adb forward'");
-    server->tunnel_forward = SDL_TRUE;
+    server->tunnel_forward = true;
     return enable_tunnel_forward(server->serial, server->local_port);
 }
 
-static SDL_bool
+static bool
 disable_tunnel(struct server *server) {
     if (server->tunnel_forward) {
         return disable_tunnel_forward(server->serial, server->local_port);
@@ -81,9 +80,9 @@ disable_tunnel(struct server *server) {
 
 static process_t
 execute_server(const char *serial,
-               Uint16 max_size, Uint32 bit_rate,
-               SDL_bool tunnel_forward, const char *crop,
-               SDL_bool send_frame_meta) {
+               uint16_t max_size, uint32_t bit_rate,
+               bool tunnel_forward, const char *crop,
+               bool send_frame_meta) {
     char max_size_string[6];
     char bit_rate_string[11];
     sprintf(max_size_string, "%"PRIu16, max_size);
@@ -106,12 +105,12 @@ execute_server(const char *serial,
 #define IPV4_LOCALHOST 0x7F000001
 
 static socket_t
-listen_on_port(Uint16 port) {
+listen_on_port(uint16_t port) {
     return net_listen(IPV4_LOCALHOST, port, 1);
 }
 
 static socket_t
-connect_and_read_byte(Uint16 port) {
+connect_and_read_byte(uint16_t port) {
     socket_t socket = net_connect(IPV4_LOCALHOST, port);
     if (socket == INVALID_SOCKET) {
         return INVALID_SOCKET;
@@ -128,7 +127,7 @@ connect_and_read_byte(Uint16 port) {
 }
 
 static socket_t
-connect_to_server(Uint16 port, Uint32 attempts, Uint32 delay) {
+connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         socket_t socket = connect_and_read_byte(port);
@@ -159,27 +158,27 @@ server_init(struct server *server) {
     *server = (struct server) SERVER_INITIALIZER;
 }
 
-SDL_bool
+bool
 server_start(struct server *server, const char *serial,
-             Uint16 local_port, Uint16 max_size, Uint32 bit_rate,
-             const char *crop, SDL_bool send_frame_meta) {
+             uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
+             const char *crop, bool send_frame_meta) {
     server->local_port = local_port;
 
     if (serial) {
         server->serial = SDL_strdup(serial);
         if (!server->serial) {
-            return SDL_FALSE;
+            return false;
         }
     }
 
     if (!push_server(serial)) {
         SDL_free((void *) server->serial);
-        return SDL_FALSE;
+        return false;
     }
 
     if (!enable_tunnel(server)) {
         SDL_free((void *) server->serial);
-        return SDL_FALSE;
+        return false;
     }
 
     // if "adb reverse" does not work (e.g. over "adb connect"), it fallbacks to
@@ -197,7 +196,7 @@ server_start(struct server *server, const char *serial,
             LOGE("Could not listen on port %" PRIu16, local_port);
             disable_tunnel(server);
             SDL_free((void *) server->serial);
-            return SDL_FALSE;
+            return false;
         }
     }
 
@@ -212,12 +211,12 @@ server_start(struct server *server, const char *serial,
         }
         disable_tunnel(server);
         SDL_free((void *) server->serial);
-        return SDL_FALSE;
+        return false;
     }
 
-    server->tunnel_enabled = SDL_TRUE;
+    server->tunnel_enabled = true;
 
-    return SDL_TRUE;
+    return true;
 }
 
 socket_t
@@ -225,8 +224,8 @@ server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
     } else {
-        Uint32 attempts = 100;
-        Uint32 delay = 100; // ms
+        uint32_t attempts = 100;
+        uint32_t delay = 100; // ms
         server->device_socket = connect_to_server(server->local_port, attempts,
                                                   delay);
     }
@@ -242,7 +241,7 @@ server_connect_to(struct server *server) {
 
     // we don't need the adb tunnel anymore
     disable_tunnel(server); // ignore failure
-    server->tunnel_enabled = SDL_FALSE;
+    server->tunnel_enabled = false;
 
     return server->device_socket;
 }

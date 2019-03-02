@@ -146,11 +146,11 @@ adb_install(const char *serial, const char *local) {
     return proc;
 }
 
-SDL_bool
+bool
 process_check_success(process_t proc, const char *name) {
     if (proc == PROCESS_NONE) {
         LOGE("Could not execute \"%s\"", name);
-        return SDL_FALSE;
+        return false;
     }
     exit_code_t exit_code;
     if (!cmd_simple_wait(proc, &exit_code)) {
@@ -159,7 +159,7 @@ process_check_success(process_t proc, const char *name) {
         } else {
             LOGE("\"%s\" exited unexpectedly", name);
         }
-        return SDL_FALSE;
+        return false;
     }
-    return SDL_TRUE;
+    return true;
 }

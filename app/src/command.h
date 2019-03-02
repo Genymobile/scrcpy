@@ -1,8 +1,8 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
+#include <stdbool.h>
 #include <inttypes.h>
-#include <SDL2/SDL_stdinc.h>
 
 #ifdef _WIN32
 
@@ -42,10 +42,10 @@ enum process_result {
 enum process_result
 cmd_execute(const char *path, const char *const argv[], process_t *process);
 
-SDL_bool
+bool
 cmd_terminate(process_t pid);
 
-SDL_bool
+bool
 cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t
@@ -73,7 +73,7 @@ adb_install(const char *serial, const char *local);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
-SDL_bool
+bool
 process_check_success(process_t process, const char *name);
 
 #endif

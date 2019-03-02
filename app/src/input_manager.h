@@ -1,6 +1,8 @@
 #ifndef INPUTMANAGER_H
 #define INPUTMANAGER_H
 
+#include <stdbool.h>
+
 #include "common.h"
 #include "controller.h"
 #include "fps_counter.h"
@@ -11,7 +13,7 @@ struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
-    SDL_bool control;
+    bool control;
 };
 
 void

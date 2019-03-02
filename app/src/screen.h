@@ -1,6 +1,7 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
@@ -15,9 +16,9 @@ struct screen {
     struct size frame_size;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
-    SDL_bool has_frame;
-    SDL_bool fullscreen;
-    SDL_bool no_window;
+    bool has_frame;
+    bool fullscreen;
+    bool no_window;
 };
 
 #define SCREEN_INITIALIZER {  \
@@ -32,13 +33,13 @@ struct screen {
         .width = 0,           \
         .height = 0,          \
     },                        \
-    .has_frame = SDL_FALSE,   \
-    .fullscreen = SDL_FALSE,  \
-    .no_window = SDL_FALSE,   \
+    .has_frame = false,   \
+    .fullscreen = false,  \
+    .no_window = false,   \
 }
 
 // init SDL and set appropriate hints
-SDL_bool
+bool
 sdl_init_and_configure(void);
 
 // initialize default values
@@ -46,9 +47,9 @@ void
 screen_init(struct screen *screen);
 
 // initialize screen, create window, renderer and texture (window is hidden)
-SDL_bool
+bool
 screen_init_rendering(struct screen *screen, const char *device_name,
-                      struct size frame_size, SDL_bool always_on_top);
+                      struct size frame_size, bool always_on_top);
 
 // show the window
 void
@@ -59,7 +60,7 @@ void
 screen_destroy(struct screen *screen);
 
 // resize if necessary and write the rendered frame into the texture
-SDL_bool
+bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb);
 
 // render the texture to the renderer

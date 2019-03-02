@@ -1,7 +1,8 @@
 #ifndef STREAM_H
 #define STREAM_H
 
-#include <SDL2/SDL_stdinc.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL_thread.h>
 
 #include "net.h"
@@ -9,7 +10,7 @@
 struct video_buffer;
 
 struct frame_meta {
-    Uint64 pts;
+    uint64_t pts;
     struct frame_meta *next;
 };
 
@@ -30,7 +31,7 @@ void
 stream_init(struct stream *stream, socket_t socket,
             struct decoder *decoder, struct recorder *recorder);
 
-SDL_bool
+bool
 stream_start(struct stream *stream);
 
 void

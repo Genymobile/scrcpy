@@ -23,7 +23,7 @@
 #define NO_PTS UINT64_C(-1)
 
 static struct frame_meta *
-frame_meta_new(Uint64 pts) {
+frame_meta_new(uint64_t pts) {
     struct frame_meta *meta = malloc(sizeof(*meta));
     if (!meta) {
         return meta;
@@ -38,11 +38,11 @@ frame_meta_delete(struct frame_meta *frame_meta) {
     free(frame_meta);
 }
 
-static SDL_bool
-receiver_state_push_meta(struct receiver_state *state, Uint64 pts) {
+static bool
+receiver_state_push_meta(struct receiver_state *state, uint64_t pts) {
     struct frame_meta *frame_meta = frame_meta_new(pts);
     if (!frame_meta) {
-        return SDL_FALSE;
+        return false;
     }
 
     // append to the list
@@ -52,14 +52,14 @@ receiver_state_push_meta(struct receiver_state *state, Uint64 pts) {
         p = &(*p)->next;
     }
     *p = frame_meta;
-    return SDL_TRUE;
+    return true;
 }
 
-static Uint64
+static uint64_t
 receiver_state_take_meta(struct receiver_state *state) {
     struct frame_meta *frame_meta = state->frame_meta_queue; // first item
     SDL_assert(frame_meta); // must not be empty
-    Uint64 pts = frame_meta->pts;
+    uint64_t pts = frame_meta->pts;
     state->frame_meta_queue = frame_meta->next; // remove the item
     frame_meta_delete(frame_meta);
     return pts;
@@ -95,7 +95,7 @@ read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
         // no partial read (net_recv_all())
         SDL_assert_release(r == HEADER_SIZE);
 
-        Uint64 pts = buffer_read64be(header);
+        uint64_t pts = buffer_read64be(header);
         state->remaining = buffer_read32be(&header[8]);
 
         if (pts != NO_PTS && !receiver_state_push_meta(state, pts)) {
@@ -215,7 +215,7 @@ run_stream(void *data) {
         if (stream->recorder) {
             // we retrieve the PTS in order they were received, so they will
             // be assigned to the correct frame
-            Uint64 pts = receiver_state_take_meta(&stream->receiver_state);
+            uint64_t pts = receiver_state_take_meta(&stream->receiver_state);
             packet.pts = pts;
             packet.dts = pts;
 
@@ -261,16 +261,16 @@ stream_init(struct stream *stream, socket_t socket,
     stream->recorder = recorder;
 }
 
-SDL_bool
+bool
 stream_start(struct stream *stream) {
     LOGD("Starting stream thread");
 
     stream->thread = SDL_CreateThread(run_stream, "stream", stream);
     if (!stream->thread) {
         LOGC("Could not start stream thread");
-        return SDL_FALSE;
+        return false;
     }
-    return SDL_TRUE;
+    return true;
 }
 
 void

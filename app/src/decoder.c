@@ -20,7 +20,7 @@
 // set the decoded frame as ready for rendering, and notify
 static void
 push_frame(struct decoder *decoder) {
-    SDL_bool previous_frame_consumed =
+    bool previous_frame_consumed =
             video_buffer_offer_decoded_frame(decoder->video_buffer);
     if (!previous_frame_consumed) {
         // the previous EVENT_NEW_FRAME will consume this frame
@@ -37,21 +37,21 @@ decoder_init(struct decoder *decoder, struct video_buffer *vb) {
     decoder->video_buffer = vb;
 }
 
-SDL_bool
+bool
 decoder_open(struct decoder *decoder, AVCodec *codec) {
     decoder->codec_ctx = avcodec_alloc_context3(codec);
     if (!decoder->codec_ctx) {
         LOGC("Could not allocate decoder context");
-        return SDL_FALSE;
+        return false;
     }
 
     if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
         LOGE("Could not open codec");
         avcodec_free_context(&decoder->codec_ctx);
-        return SDL_FALSE;
+        return false;
     }
 
-    return SDL_TRUE;
+    return true;
 }
 
 void
@@ -60,7 +60,7 @@ decoder_close(struct decoder *decoder) {
     avcodec_free_context(&decoder->codec_ctx);
 }
 
-SDL_bool
+bool
 decoder_push(struct decoder *decoder, AVPacket *packet) {
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
@@ -68,7 +68,7 @@ decoder_push(struct decoder *decoder, AVPacket *packet) {
     int ret;
     if ((ret = avcodec_send_packet(decoder->codec_ctx, packet)) < 0) {
         LOGE("Could not send video packet: %d", ret);
-        return SDL_FALSE;
+        return false;
     }
     ret = avcodec_receive_frame(decoder->codec_ctx,
                                 decoder->video_buffer->decoding_frame);
@@ -77,7 +77,7 @@ decoder_push(struct decoder *decoder, AVPacket *packet) {
         push_frame(decoder);
     } else if (ret != AVERROR(EAGAIN)) {
         LOGE("Could not receive video frame: %d", ret);
-        return SDL_FALSE;
+        return false;
     }
 #else
     int got_picture;
@@ -87,13 +87,13 @@ decoder_push(struct decoder *decoder, AVPacket *packet) {
                                     packet);
     if (len < 0) {
         LOGE("Could not decode video packet: %d", len);
-        return SDL_FALSE;
+        return false;
     }
     if (got_picture) {
         push_frame(decoder);
     }
 #endif
-    return SDL_TRUE;
+    return true;
 }
 
 void

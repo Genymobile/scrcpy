@@ -73,7 +73,7 @@ end:
     return ret;
 }
 
-SDL_bool
+bool
 cmd_terminate(pid_t pid) {
     if (pid <= 0) {
         LOGC("Requested to kill %d, this is an error. Please report the bug.\n",
@@ -83,7 +83,7 @@ cmd_terminate(pid_t pid) {
     return kill(pid, SIGTERM) != -1;
 }
 
-SDL_bool
+bool
 cmd_simple_wait(pid_t pid, int *exit_code) {
     int status;
     int code;

@@ -33,21 +33,21 @@ request_free(struct request *req) {
     SDL_free((void *) req);
 }
 
-static SDL_bool
+static bool
 request_queue_is_empty(const struct request_queue *queue) {
     return queue->head == queue->tail;
 }
 
-static SDL_bool
+static bool
 request_queue_is_full(const struct request_queue *queue) {
     return (queue->head + 1) % REQUEST_QUEUE_SIZE == queue->tail;
 }
 
-static SDL_bool
+static bool
 request_queue_init(struct request_queue *queue) {
     queue->head = 0;
     queue->tail = 0;
-    return SDL_TRUE;
+    return true;
 }
 
 static void
@@ -59,41 +59,41 @@ request_queue_destroy(struct request_queue *queue) {
     }
 }
 
-static SDL_bool
+static bool
 request_queue_push(struct request_queue *queue, struct request *req) {
     if (request_queue_is_full(queue)) {
-        return SDL_FALSE;
+        return false;
     }
     queue->reqs[queue->head] = req;
     queue->head = (queue->head + 1) % REQUEST_QUEUE_SIZE;
-    return SDL_TRUE;
+    return true;
 }
 
-static SDL_bool
+static bool
 request_queue_take(struct request_queue *queue, struct request **req) {
     if (request_queue_is_empty(queue)) {
-        return SDL_FALSE;
+        return false;
     }
     // transfer ownership
     *req = queue->reqs[queue->tail];
     queue->tail = (queue->tail + 1) % REQUEST_QUEUE_SIZE;
-    return SDL_TRUE;
+    return true;
 }
 
-SDL_bool
+bool
 file_handler_init(struct file_handler *file_handler, const char *serial) {
 
     if (!request_queue_init(&file_handler->queue)) {
-        return SDL_FALSE;
+        return false;
     }
 
     if (!(file_handler->mutex = SDL_CreateMutex())) {
-        return SDL_FALSE;
+        return false;
     }
 
     if (!(file_handler->event_cond = SDL_CreateCond())) {
         SDL_DestroyMutex(file_handler->mutex);
-        return SDL_FALSE;
+        return false;
     }
 
     if (serial) {
@@ -101,19 +101,19 @@ file_handler_init(struct file_handler *file_handler, const char *serial) {
         if (!file_handler->serial) {
             LOGW("Cannot strdup serial");
             SDL_DestroyMutex(file_handler->mutex);
-            return SDL_FALSE;
+            return false;
         }
     } else {
         file_handler->serial = NULL;
     }
 
     // lazy initialization
-    file_handler->initialized = SDL_FALSE;
+    file_handler->initialized = false;
 
-    file_handler->stopped = SDL_FALSE;
+    file_handler->stopped = false;
     file_handler->current_process = PROCESS_NONE;
 
-    return SDL_TRUE;
+    return true;
 }
 
 void
@@ -134,18 +134,18 @@ push_file(const char *serial, const char *file) {
     return adb_push(serial, file, DEVICE_SDCARD_PATH);
 }
 
-SDL_bool
+bool
 file_handler_request(struct file_handler *file_handler,
                      file_handler_action_t action,
                      const char *file) {
-    SDL_bool res;
+    bool res;
 
     // start file_handler if it's used for the first time
     if (!file_handler->initialized) {
         if (!file_handler_start(file_handler)) {
-            return SDL_FALSE;
+            return false;
         }
-        file_handler->initialized = SDL_TRUE;
+        file_handler->initialized = true;
     }
 
     LOGI("Request to %s %s", action == ACTION_INSTALL_APK ? "install" : "push",
@@ -153,11 +153,11 @@ file_handler_request(struct file_handler *file_handler,
     struct request *req = request_new(action, file);
     if (!req) {
         LOGE("Could not create request");
-        return SDL_FALSE;
+        return false;
     }
 
     mutex_lock(file_handler->mutex);
-    SDL_bool was_empty = request_queue_is_empty(&file_handler->queue);
+    bool was_empty = request_queue_is_empty(&file_handler->queue);
     res = request_queue_push(&file_handler->queue, req);
     if (was_empty) {
         cond_signal(file_handler->event_cond);
@@ -183,7 +183,7 @@ run_file_handler(void *data) {
             break;
         }
         struct request *req;
-        SDL_bool non_empty = request_queue_take(&file_handler->queue, &req);
+        bool non_empty = request_queue_take(&file_handler->queue, &req);
         SDL_assert(non_empty);
 
         process_t process;
@@ -216,7 +216,7 @@ run_file_handler(void *data) {
     return 0;
 }
 
-SDL_bool
+bool
 file_handler_start(struct file_handler *file_handler) {
     LOGD("Starting file_handler thread");
 
@@ -224,16 +224,16 @@ file_handler_start(struct file_handler *file_handler) {
                                             file_handler);
     if (!file_handler->thread) {
         LOGC("Could not start file_handler thread");
-        return SDL_FALSE;
+        return false;
     }
 
-    return SDL_TRUE;
+    return true;
 }
 
 void
 file_handler_stop(struct file_handler *file_handler) {
     mutex_lock(file_handler->mutex);
-    file_handler->stopped = SDL_TRUE;
+    file_handler->stopped = true;
     cond_signal(file_handler->event_cond);
     if (file_handler->current_process != PROCESS_NONE) {
         if (!cmd_terminate(file_handler->current_process)) {

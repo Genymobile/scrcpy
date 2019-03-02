@@ -57,12 +57,12 @@ cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
     return PROCESS_SUCCESS;
 }
 
-SDL_bool
+bool
 cmd_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1) && CloseHandle(handle);
 }
 
-SDL_bool
+bool
 cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0

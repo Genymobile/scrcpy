@@ -19,7 +19,7 @@
 #endif
 
 socket_t
-net_connect(Uint32 addr, Uint16 port) {
+net_connect(uint32_t addr, uint16_t port) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         perror("socket");
@@ -40,7 +40,7 @@ net_connect(Uint32 addr, Uint16 port) {
 }
 
 socket_t
-net_listen(Uint32 addr, Uint16 port, int backlog) {
+net_listen(uint32_t addr, uint16_t port, int backlog) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
         perror("socket");
@@ -107,7 +107,7 @@ net_send_all(socket_t socket, const void *buf, size_t len) {
     return w;
 }
 
-SDL_bool
+bool
 net_shutdown(socket_t socket, int how) {
     return !shutdown(socket, how);
 }

@@ -39,7 +39,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
-    .control = SDL_TRUE,
+    .control = true,
 };
 
 #if defined(__APPLE__) || defined(__WINDOWS__)
@@ -63,7 +63,7 @@ event_watcher(void *data, SDL_Event *event) {
 }
 #endif
 
-static SDL_bool
+static bool
 is_apk(const char *file) {
     const char *ext = strrchr(file, '.');
     return ext && !strcmp(ext, ".apk");
@@ -76,7 +76,7 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event, SDL_bool control) {
+handle_event(SDL_Event *event, bool control) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -86,12 +86,12 @@ handle_event(SDL_Event *event, SDL_bool control) {
             return EVENT_RESULT_STOPPED_BY_USER;
         case EVENT_NEW_FRAME:
             if (!screen.has_frame) {
-                screen.has_frame = SDL_TRUE;
+                screen.has_frame = true;
                 // this is the very first frame, show the window
                 screen_show_window(&screen);
             }
             if (!screen_update_frame(&screen, &video_buffer)) {
-                return SDL_FALSE;
+                return false;
             }
             break;
         case SDL_WINDOWEVENT:
@@ -149,8 +149,8 @@ handle_event(SDL_Event *event, SDL_bool control) {
     return EVENT_RESULT_CONTINUE;
 }
 
-static SDL_bool
-event_loop(SDL_bool display, SDL_bool control) {
+static bool
+event_loop(bool display, bool control) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (display) {
         SDL_AddEventWatch(event_watcher, NULL);
@@ -161,18 +161,18 @@ event_loop(SDL_bool display, SDL_bool control) {
         enum event_result result = handle_event(&event, control);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
-                return SDL_TRUE;
+                return true;
             case EVENT_RESULT_STOPPED_BY_EOS:
-                return SDL_FALSE;
+                return false;
             case EVENT_RESULT_CONTINUE:
                 break;
         }
     }
-    return SDL_FALSE;
+    return false;
 }
 
 static process_t
-set_show_touches_enabled(const char *serial, SDL_bool enabled) {
+set_show_touches_enabled(const char *serial, bool enabled) {
     const char *value = enabled ? "1" : "0";
     const char *const adb_cmd[] = {
         "shell", "settings", "put", "system", "show_touches", value
@@ -221,34 +221,34 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     SDL_free(local_fmt);
 }
 
-SDL_bool
+bool
 scrcpy(const struct scrcpy_options *options) {
-    SDL_bool record = !!options->record_filename;
+    bool record = !!options->record_filename;
     if (!server_start(&server, options->serial, options->port,
                       options->max_size, options->bit_rate, options->crop,
                       record)) {
-        return SDL_FALSE;
+        return false;
     }
 
     process_t proc_show_touches = PROCESS_NONE;
-    SDL_bool show_touches_waited;
+    bool show_touches_waited;
     if (options->show_touches) {
         LOGI("Enable show_touches");
-        proc_show_touches = set_show_touches_enabled(options->serial, SDL_TRUE);
-        show_touches_waited = SDL_FALSE;
+        proc_show_touches = set_show_touches_enabled(options->serial, true);
+        show_touches_waited = false;
     }
 
-    SDL_bool ret = SDL_TRUE;
+    bool ret = true;
 
     if (!sdl_init_and_configure()) {
-        ret = SDL_FALSE;
+        ret = false;
         goto finally_destroy_server;
     }
 
     socket_t device_socket = server_connect_to(&server);
     if (device_socket == INVALID_SOCKET) {
         server_stop(&server);
-        ret = SDL_FALSE;
+        ret = false;
         goto finally_destroy_server;
     }
 
@@ -260,12 +260,12 @@ scrcpy(const struct scrcpy_options *options) {
     // to be able to init the window immediately
     if (!device_read_info(device_socket, device_name, &frame_size)) {
         server_stop(&server);
-        ret = SDL_FALSE;
+        ret = false;
         goto finally_destroy_server;
     }
 
-    SDL_bool display = !options->no_display;
-    SDL_bool control = !options->no_control;
+    bool display = !options->no_display;
+    bool control = !options->no_control;
 
     input_manager.control = control;
 
@@ -273,12 +273,12 @@ scrcpy(const struct scrcpy_options *options) {
     if (display) {
         if (!video_buffer_init(&video_buffer)) {
             server_stop(&server);
-            ret = SDL_FALSE;
+            ret = false;
             goto finally_destroy_server;
         }
 
         if (control && !file_handler_init(&file_handler, server.serial)) {
-            ret = SDL_FALSE;
+            ret = false;
             server_stop(&server);
             goto finally_destroy_video_buffer;
         }
@@ -293,7 +293,7 @@ scrcpy(const struct scrcpy_options *options) {
                            options->record_filename,
                            options->record_format,
                            frame_size)) {
-            ret = SDL_FALSE;
+            ret = false;
             server_stop(&server);
             goto finally_destroy_file_handler;
         }
@@ -307,7 +307,7 @@ scrcpy(const struct scrcpy_options *options) {
     // now we consumed the header values, the socket receives the video stream
     // start the stream
     if (!stream_start(&stream)) {
-        ret = SDL_FALSE;
+        ret = false;
         server_stop(&server);
         goto finally_destroy_recorder;
     }
@@ -315,19 +315,19 @@ scrcpy(const struct scrcpy_options *options) {
     if (display) {
         if (control) {
             if (!controller_init(&controller, device_socket)) {
-                ret = SDL_FALSE;
+                ret = false;
                 goto finally_stop_stream;
             }
 
             if (!controller_start(&controller)) {
-                ret = SDL_FALSE;
+                ret = false;
                 goto finally_destroy_controller;
             }
         }
 
         if (!screen_init_rendering(&screen, device_name, frame_size,
                                    options->always_on_top)) {
-            ret = SDL_FALSE;
+            ret = false;
             goto finally_stop_and_join_controller;
         }
 
@@ -338,7 +338,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     if (options->show_touches) {
         wait_show_touches(proc_show_touches);
-        show_touches_waited = SDL_TRUE;
+        show_touches_waited = true;
     }
 
     ret = event_loop(display, control);
@@ -382,7 +382,7 @@ finally_destroy_server:
         }
         LOGI("Disable show_touches");
         proc_show_touches = set_show_touches_enabled(options->serial,
-                                                     SDL_FALSE);
+                                                     false);
         wait_show_touches(proc_show_touches);
     }
 

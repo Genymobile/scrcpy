@@ -1,11 +1,11 @@
 #include "net.h"
 
-# include <unistd.h>
+#include <unistd.h>
 
-SDL_bool
+bool
 net_init(void) {
     // do nothing
-    return SDL_TRUE;
+    return true;
 }
 
 void
@@ -13,7 +13,7 @@ net_cleanup(void) {
     // do nothing
 }
 
-SDL_bool
+bool
 net_close(socket_t socket) {
     return !close(socket);
 }

@@ -1,13 +1,13 @@
 #include "device.h"
 #include "log.h"
 
-SDL_bool
+bool
 device_read_info(socket_t device_socket, char *device_name, struct size *size) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     int r = net_recv_all(device_socket, buf, sizeof(buf));
     if (r < DEVICE_NAME_FIELD_LENGTH + 4) {
         LOGE("Could not retrieve device information");
-        return SDL_FALSE;
+        return false;
     }
     // in case the client sends garbage
     buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
@@ -18,5 +18,5 @@ device_read_info(socket_t device_socket, char *device_name, struct size *size) {
             | buf[DEVICE_NAME_FIELD_LENGTH + 1];
     size->height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8)
             | buf[DEVICE_NAME_FIELD_LENGTH + 3];
-    return SDL_TRUE;
+    return true;
 }
