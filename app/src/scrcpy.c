@@ -217,19 +217,25 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    if (!video_buffer_init(&video_buffer)) {
-        server_stop(&server);
-        ret = SDL_FALSE;
-        goto finally_destroy_server;
-    }
+    SDL_bool display = !options->no_window;
 
-    if (!file_handler_init(&file_handler, server.serial)) {
-        ret = SDL_FALSE;
-        server_stop(&server);
-        goto finally_destroy_video_buffer;
-    }
+    struct decoder *dec = NULL;
+    if (display) {
+        if (!video_buffer_init(&video_buffer)) {
+            server_stop(&server);
+            ret = SDL_FALSE;
+            goto finally_destroy_server;
+        }
 
-    decoder_init(&decoder, &video_buffer);
+        if (!file_handler_init(&file_handler, server.serial)) {
+            ret = SDL_FALSE;
+            server_stop(&server);
+            goto finally_destroy_video_buffer;
+        }
+
+        decoder_init(&decoder, &video_buffer);
+        dec = &decoder;
+    }
 
     struct recorder *rec = NULL;
     if (record) {
@@ -246,7 +252,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, device_socket, &decoder, rec);
+    stream_init(&stream, device_socket, dec, rec);
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
@@ -256,28 +262,30 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_recorder;
     }
 
-    if (!controller_init(&controller, device_socket)) {
-        ret = SDL_FALSE;
-        goto finally_stop_stream;
-    }
+    if (display) {
+        if (!controller_init(&controller, device_socket)) {
+            ret = SDL_FALSE;
+            goto finally_stop_stream;
+        }
 
-    if (!controller_start(&controller)) {
-        ret = SDL_FALSE;
-        goto finally_destroy_controller;
-    }
+        if (!controller_start(&controller)) {
+            ret = SDL_FALSE;
+            goto finally_destroy_controller;
+        }
 
-    if (!screen_init_rendering(&screen, device_name, frame_size, options->always_on_top)) {
-        ret = SDL_FALSE;
-        goto finally_stop_and_join_controller;
+        if (!screen_init_rendering(&screen, device_name, frame_size, options->always_on_top)) {
+            ret = SDL_FALSE;
+            goto finally_stop_and_join_controller;
+        }
+
+        if (options->fullscreen) {
+            screen_switch_fullscreen(&screen);
+        }
     }
 
     if (options->show_touches) {
         wait_show_touches(proc_show_touches);
         show_touches_waited = SDL_TRUE;
-    }
-
-    if (options->fullscreen) {
-        screen_switch_fullscreen(&screen);
     }
 
     ret = event_loop();
@@ -286,10 +294,14 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     screen_destroy(&screen);
 
 finally_stop_and_join_controller:
-    controller_stop(&controller);
-    controller_join(&controller);
+    if (display) {
+        controller_stop(&controller);
+        controller_join(&controller);
+    }
 finally_destroy_controller:
-    controller_destroy(&controller);
+    if (display) {
+        controller_destroy(&controller);
+    }
 finally_stop_stream:
     stream_stop(&stream);
     // stop the server before stream_join() to wake up the stream
@@ -300,11 +312,15 @@ finally_destroy_recorder:
         recorder_destroy(&recorder);
     }
 finally_destroy_file_handler:
-    file_handler_stop(&file_handler);
-    file_handler_join(&file_handler);
-    file_handler_destroy(&file_handler);
+    if (display) {
+        file_handler_stop(&file_handler);
+        file_handler_join(&file_handler);
+        file_handler_destroy(&file_handler);
+    }
 finally_destroy_video_buffer:
-    video_buffer_destroy(&video_buffer);
+    if (display) {
+        video_buffer_destroy(&video_buffer);
+    }
 finally_destroy_server:
     if (options->show_touches) {
         if (!show_touches_waited) {
