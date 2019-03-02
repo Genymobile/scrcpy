@@ -37,7 +37,7 @@ static void frame_meta_delete(struct frame_meta *frame_meta) {
 }
 
 static SDL_bool receiver_state_push_meta(struct receiver_state *state,
-                                         uint64_t pts) {
+                                         Uint64 pts) {
     struct frame_meta *frame_meta = frame_meta_new(pts);
     if (!frame_meta) {
         return SDL_FALSE;
@@ -53,10 +53,10 @@ static SDL_bool receiver_state_push_meta(struct receiver_state *state,
     return SDL_TRUE;
 }
 
-static uint64_t receiver_state_take_meta(struct receiver_state *state) {
+static Uint64 receiver_state_take_meta(struct receiver_state *state) {
     struct frame_meta *frame_meta = state->frame_meta_queue; // first item
     SDL_assert(frame_meta); // must not be empty
-    uint64_t pts = frame_meta->pts;
+    Uint64 pts = frame_meta->pts;
     state->frame_meta_queue = frame_meta->next; // remove the item
     frame_meta_delete(frame_meta);
     return pts;
@@ -91,7 +91,7 @@ static int read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
         // no partial read (net_recv_all())
         SDL_assert_release(r == HEADER_SIZE);
 
-        uint64_t pts = buffer_read64be(header);
+        Uint64 pts = buffer_read64be(header);
         state->remaining = buffer_read32be(&header[8]);
 
         if (pts != NO_PTS && !receiver_state_push_meta(state, pts)) {
