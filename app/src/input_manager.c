@@ -202,6 +202,9 @@ input_manager_process_key(struct input_manager *input_manager,
         return;
     }
 
+    // false if the user requested not to interact with the device
+    SDL_bool control = input_manager->control;
+
     // capture all Ctrl events
     if (ctrl | meta) {
         SDL_Keycode keycode = event->keysym.sym;
@@ -210,36 +213,36 @@ input_manager_process_key(struct input_manager *input_manager,
         SDL_bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
-                if (ctrl && !meta && !shift && !repeat) {
+                if (control && ctrl && !meta && !shift && !repeat) {
                     action_home(input_manager->controller, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (ctrl && !meta && !shift && !repeat) {
+                if (control && ctrl && !meta && !shift && !repeat) {
                     action_back(input_manager->controller, action);
                 }
                 return;
             case SDLK_s:
-                if (ctrl && !meta && !shift && !repeat) {
+                if (control && ctrl && !meta && !shift && !repeat) {
                     action_app_switch(input_manager->controller, action);
                 }
                 return;
             case SDLK_m:
-                if (ctrl && !meta && !shift && !repeat) {
+                if (control && ctrl && !meta && !shift && !repeat) {
                     action_menu(input_manager->controller, action);
                 }
                 return;
             case SDLK_p:
-                if (ctrl && !meta && !shift && !repeat) {
+                if (control && ctrl && !meta && !shift && !repeat) {
                     action_power(input_manager->controller, action);
                 }
                 return;
             case SDLK_DOWN:
 #ifdef __APPLE__
-                if (!ctrl && meta && !shift) {
+                if (control && !ctrl && meta && !shift) {
 #else
-                if (ctrl && !meta && !shift) {
+                if (control && ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
                     action_volume_down(input_manager->controller, action);
@@ -247,16 +250,16 @@ input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_UP:
 #ifdef __APPLE__
-                if (!ctrl && meta && !shift) {
+                if (control && !ctrl && meta && !shift) {
 #else
-                if (ctrl && !meta && !shift) {
+                if (control && ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
                     action_volume_up(input_manager->controller, action);
                 }
                 return;
             case SDLK_v:
-                if (ctrl && !meta && !shift && !repeat
+                if (control && ctrl && !meta && !shift && !repeat
                         && event->type == SDL_KEYDOWN) {
                     clipboard_paste(input_manager->controller);
                 }
@@ -286,7 +289,8 @@ input_manager_process_key(struct input_manager *input_manager,
                 }
                 return;
             case SDLK_n:
-                if (ctrl && !meta && !repeat && event->type == SDL_KEYDOWN) {
+                if (control && ctrl && !meta
+                        && !repeat && event->type == SDL_KEYDOWN) {
                     if (shift) {
                         collapse_notification_panel(input_manager->controller);
                     } else {
@@ -296,6 +300,10 @@ input_manager_process_key(struct input_manager *input_manager,
                 return;
         }
 
+        return;
+    }
+
+    if (!control) {
         return;
     }
 
@@ -334,26 +342,33 @@ is_outside_device_screen(struct input_manager *input_manager, int x, int y)
 void
 input_manager_process_mouse_button(struct input_manager *input_manager,
                                    const SDL_MouseButtonEvent *event) {
+    // false if the user requested not to interact with the device
+    SDL_bool control = input_manager->control;
+
     if (event->type == SDL_MOUSEBUTTONDOWN) {
-        if (event->button == SDL_BUTTON_RIGHT) {
+        if (control && event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(input_manager->controller);
             return;
         }
-        if (event->button == SDL_BUTTON_MIDDLE) {
+        if (control && event->button == SDL_BUTTON_MIDDLE) {
             action_home(input_manager->controller, ACTION_DOWN | ACTION_UP);
             return;
         }
         // double-click on black borders resize to fit the device screen
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            SDL_bool outside= is_outside_device_screen(input_manager,
-                                                       event->x,
-                                                       event->y);
+            SDL_bool outside = is_outside_device_screen(input_manager,
+                                                        event->x,
+                                                        event->y);
             if (outside) {
                 screen_resize_to_fit(input_manager->screen);
                 return;
             }
         }
         // otherwise, send the click event to the device
+    }
+
+    if (!control) {
+        return;
     }
 
     struct control_event control_event;

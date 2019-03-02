@@ -11,6 +11,7 @@ struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
+    SDL_bool control;
 };
 
 void

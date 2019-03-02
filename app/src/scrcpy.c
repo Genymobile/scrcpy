@@ -39,6 +39,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
+    .control = SDL_TRUE,
 };
 
 #if defined(__APPLE__) || defined(__WINDOWS__)
@@ -75,7 +76,7 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event) {
+handle_event(SDL_Event *event, SDL_bool control) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -102,23 +103,39 @@ handle_event(SDL_Event *event) {
             }
             break;
         case SDL_TEXTINPUT:
+            if (!control) {
+                break;
+            }
             input_manager_process_text_input(&input_manager, &event->text);
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
+            // some key events do not interact with the device, so process the
+            // event even if control is disabled
             input_manager_process_key(&input_manager, &event->key);
             break;
         case SDL_MOUSEMOTION:
+            if (!control) {
+                break;
+            }
             input_manager_process_mouse_motion(&input_manager, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
+            if (!control) {
+                break;
+            }
             input_manager_process_mouse_wheel(&input_manager, &event->wheel);
             break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
+            // some mouse events do not interact with the device, so process
+            // the event even if control is disabled
             input_manager_process_mouse_button(&input_manager, &event->button);
             break;
         case SDL_DROPFILE: {
+            if (!control) {
+                break;
+            }
             file_handler_action_t action;
             if (is_apk(event->drop.file)) {
                 action = ACTION_INSTALL_APK;
@@ -133,7 +150,7 @@ handle_event(SDL_Event *event) {
 }
 
 static SDL_bool
-event_loop(SDL_bool display) {
+event_loop(SDL_bool display, SDL_bool control) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (display) {
         SDL_AddEventWatch(event_watcher, NULL);
@@ -141,7 +158,7 @@ event_loop(SDL_bool display) {
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(&event);
+        enum event_result result = handle_event(&event, control);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return SDL_TRUE;
@@ -248,6 +265,9 @@ scrcpy(const struct scrcpy_options *options) {
     }
 
     SDL_bool display = !options->no_display;
+    SDL_bool control = !options->no_control;
+
+    input_manager.control = control;
 
     struct decoder *dec = NULL;
     if (display) {
@@ -257,7 +277,7 @@ scrcpy(const struct scrcpy_options *options) {
             goto finally_destroy_server;
         }
 
-        if (!file_handler_init(&file_handler, server.serial)) {
+        if (control && !file_handler_init(&file_handler, server.serial)) {
             ret = SDL_FALSE;
             server_stop(&server);
             goto finally_destroy_video_buffer;
@@ -293,14 +313,16 @@ scrcpy(const struct scrcpy_options *options) {
     }
 
     if (display) {
-        if (!controller_init(&controller, device_socket)) {
-            ret = SDL_FALSE;
-            goto finally_stop_stream;
-        }
+        if (control) {
+            if (!controller_init(&controller, device_socket)) {
+                ret = SDL_FALSE;
+                goto finally_stop_stream;
+            }
 
-        if (!controller_start(&controller)) {
-            ret = SDL_FALSE;
-            goto finally_destroy_controller;
+            if (!controller_start(&controller)) {
+                ret = SDL_FALSE;
+                goto finally_destroy_controller;
+            }
         }
 
         if (!screen_init_rendering(&screen, device_name, frame_size,
@@ -319,18 +341,18 @@ scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = SDL_TRUE;
     }
 
-    ret = event_loop(display);
+    ret = event_loop(display, control);
     LOGD("quit...");
 
     screen_destroy(&screen);
 
 finally_stop_and_join_controller:
-    if (display) {
+    if (display && control) {
         controller_stop(&controller);
         controller_join(&controller);
     }
 finally_destroy_controller:
-    if (display) {
+    if (display && control) {
         controller_destroy(&controller);
     }
 finally_stop_stream:
@@ -343,7 +365,7 @@ finally_destroy_recorder:
         recorder_destroy(&recorder);
     }
 finally_destroy_file_handler:
-    if (display) {
+    if (display && control) {
         file_handler_stop(&file_handler);
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);

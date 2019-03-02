@@ -15,6 +15,7 @@ struct scrcpy_options {
     SDL_bool show_touches;
     SDL_bool fullscreen;
     SDL_bool always_on_top;
+    SDL_bool no_control;
     SDL_bool no_display;
 };
 

@@ -247,6 +247,17 @@ _scrcpy_ window.
 There is no visual feedback, a log is printed to the console.
 
 
+### Read-only
+
+To disable controls (everything which can interact with the device: input keys,
+mouse events, drag&drop files):
+
+```bash
+scrcpy --no-control
+scrcpy -n
+```
+
+
 ### Forward audio
 
 Audio is not forwarded by _scrcpy_.

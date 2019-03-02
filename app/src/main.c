@@ -16,6 +16,7 @@ struct args {
     const char *record_filename;
     enum recorder_format record_format;
     SDL_bool fullscreen;
+    SDL_bool no_control;
     SDL_bool no_display;
     SDL_bool help;
     SDL_bool version;
@@ -57,6 +58,9 @@ static void usage(const char *arg0) {
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
         "        Default is %d%s.\n"
+        "\n"
+        "    -n, --no-control\n"
+        "        Disable device control (mirror the device in read-only).\n"
         "\n"
         "    -N, --no-display\n"
         "        Do not display device (only when screen recording is\n"
@@ -277,6 +281,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"fullscreen",    no_argument,       NULL, 'f'},
         {"help",          no_argument,       NULL, 'h'},
         {"max-size",      required_argument, NULL, 'm'},
+        {"no-control",    no_argument,       NULL, 'n'},
         {"no-display",    no_argument,       NULL, 'N'},
         {"port",          required_argument, NULL, 'p'},
         {"record",        required_argument, NULL, 'r'},
@@ -287,7 +292,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:Np:r:s:tTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -313,6 +318,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 if (!parse_max_size(optarg, &args->max_size)) {
                     return SDL_FALSE;
                 }
+                break;
+            case 'n':
+                args->no_control = SDL_TRUE;
                 break;
             case 'N':
                 args->no_display = SDL_TRUE;
@@ -396,6 +404,7 @@ main(int argc, char *argv[]) {
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
         .always_on_top = SDL_FALSE,
+        .no_control = SDL_FALSE,
         .no_display = SDL_FALSE,
     };
     if (!parse_args(&args, argc, argv)) {
@@ -435,6 +444,7 @@ main(int argc, char *argv[]) {
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
+        .no_control = args.no_control,
         .no_display = args.no_display,
     };
     int res = scrcpy(&options) ? 0 : 1;
