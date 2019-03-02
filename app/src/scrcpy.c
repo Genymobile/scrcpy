@@ -68,6 +68,70 @@ is_apk(const char *file) {
     return ext && !strcmp(ext, ".apk");
 }
 
+enum event_result {
+    EVENT_RESULT_CONTINUE,
+    EVENT_RESULT_STOPPED_BY_USER,
+    EVENT_RESULT_STOPPED_BY_EOS,
+};
+
+static enum event_result
+handle_event(SDL_Event *event) {
+    switch (event->type) {
+        case EVENT_STREAM_STOPPED:
+            LOGD("Video stream stopped");
+            return EVENT_RESULT_STOPPED_BY_EOS;
+        case SDL_QUIT:
+            LOGD("User requested to quit");
+            return EVENT_RESULT_STOPPED_BY_USER;
+        case EVENT_NEW_FRAME:
+            if (!screen.has_frame) {
+                screen.has_frame = SDL_TRUE;
+                // this is the very first frame, show the window
+                screen_show_window(&screen);
+            }
+            if (!screen_update_frame(&screen, &video_buffer)) {
+                return SDL_FALSE;
+            }
+            break;
+        case SDL_WINDOWEVENT:
+            switch (event->window.event) {
+                case SDL_WINDOWEVENT_EXPOSED:
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    screen_render(&screen);
+                    break;
+            }
+            break;
+        case SDL_TEXTINPUT:
+            input_manager_process_text_input(&input_manager, &event->text);
+            break;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            input_manager_process_key(&input_manager, &event->key);
+            break;
+        case SDL_MOUSEMOTION:
+            input_manager_process_mouse_motion(&input_manager, &event->motion);
+            break;
+        case SDL_MOUSEWHEEL:
+            input_manager_process_mouse_wheel(&input_manager, &event->wheel);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            input_manager_process_mouse_button(&input_manager, &event->button);
+            break;
+        case SDL_DROPFILE: {
+            file_handler_action_t action;
+            if (is_apk(event->drop.file)) {
+                action = ACTION_INSTALL_APK;
+            } else {
+                action = ACTION_PUSH_FILE;
+            }
+            file_handler_request(&file_handler, action, event->drop.file);
+            break;
+        }
+    }
+    return EVENT_RESULT_CONTINUE;
+}
+
 static SDL_bool
 event_loop(void) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
@@ -75,61 +139,14 @@ event_loop(void) {
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        switch (event.type) {
-            case EVENT_STREAM_STOPPED:
-                LOGD("Video stream stopped");
-                return SDL_FALSE;
-            case SDL_QUIT:
-                LOGD("User requested to quit");
+        enum event_result result = handle_event(&event);
+        switch (result) {
+            case EVENT_RESULT_STOPPED_BY_USER:
                 return SDL_TRUE;
-            case EVENT_NEW_FRAME:
-                if (!screen.has_frame) {
-                    screen.has_frame = SDL_TRUE;
-                    // this is the very first frame, show the window
-                    screen_show_window(&screen);
-                }
-                if (!screen_update_frame(&screen, &video_buffer)) {
-                    return SDL_FALSE;
-                }
+            case EVENT_RESULT_STOPPED_BY_EOS:
+                return SDL_FALSE;
+            case EVENT_RESULT_CONTINUE:
                 break;
-            case SDL_WINDOWEVENT:
-                switch (event.window.event) {
-                    case SDL_WINDOWEVENT_EXPOSED:
-                    case SDL_WINDOWEVENT_SIZE_CHANGED:
-                        screen_render(&screen);
-                        break;
-                }
-                break;
-            case SDL_TEXTINPUT:
-                input_manager_process_text_input(&input_manager, &event.text);
-                break;
-            case SDL_KEYDOWN:
-            case SDL_KEYUP:
-                input_manager_process_key(&input_manager, &event.key);
-                break;
-            case SDL_MOUSEMOTION:
-                input_manager_process_mouse_motion(&input_manager,
-                                                   &event.motion);
-                break;
-            case SDL_MOUSEWHEEL:
-                input_manager_process_mouse_wheel(&input_manager,
-                                                  &event.wheel);
-                break;
-            case SDL_MOUSEBUTTONDOWN:
-            case SDL_MOUSEBUTTONUP:
-                input_manager_process_mouse_button(&input_manager,
-                                                   &event.button);
-                break;
-            case SDL_DROPFILE: {
-                file_handler_action_t action;
-                if (is_apk(event.drop.file)) {
-                    action = ACTION_INSTALL_APK;
-                } else {
-                    action = ACTION_PUSH_FILE;
-                }
-                file_handler_request(&file_handler, action, event.drop.file);
-                break;
-            }
         }
     }
     return SDL_FALSE;
