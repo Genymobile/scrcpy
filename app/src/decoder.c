@@ -20,9 +20,10 @@
 // set the decoded frame as ready for rendering, and notify
 static void
 push_frame(struct decoder *decoder) {
-    bool previous_frame_consumed =
-            video_buffer_offer_decoded_frame(decoder->video_buffer);
-    if (!previous_frame_consumed) {
+    bool previous_frame_skipped;
+    video_buffer_offer_decoded_frame(decoder->video_buffer,
+                                     &previous_frame_skipped);
+    if (previous_frame_skipped) {
         // the previous EVENT_NEW_FRAME will consume this frame
         return;
     }

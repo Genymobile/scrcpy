@@ -63,8 +63,9 @@ video_buffer_swap_frames(struct video_buffer *vb) {
     vb->rendering_frame = tmp;
 }
 
-bool
-video_buffer_offer_decoded_frame(struct video_buffer *vb) {
+void
+video_buffer_offer_decoded_frame(struct video_buffer *vb,
+                                 bool *previous_frame_skipped) {
     mutex_lock(vb->mutex);
 #ifndef SKIP_FRAMES
     // if SKIP_FRAMES is disabled, then the decoder must wait for the current
@@ -80,11 +81,10 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb) {
 
     video_buffer_swap_frames(vb);
 
-    bool previous_frame_consumed = vb->rendering_frame_consumed;
+    *previous_frame_skipped = !vb->rendering_frame_consumed;
     vb->rendering_frame_consumed = false;
 
     mutex_unlock(vb->mutex);
-    return previous_frame_consumed;
 }
 
 const AVFrame *

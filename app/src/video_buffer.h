@@ -30,9 +30,10 @@ video_buffer_destroy(struct video_buffer *vb);
 
 // set the decoded frame as ready for rendering
 // this function locks frames->mutex during its execution
-// returns true if the previous frame had been consumed
-bool
-video_buffer_offer_decoded_frame(struct video_buffer *vb);
+// the output flag is set to report whether the previous frame has been skipped
+void
+video_buffer_offer_decoded_frame(struct video_buffer *vb,
+                                 bool *previous_frame_skipped);
 
 // mark the rendering frame as consumed and return it
 // MUST be called with frames->mutex locked!!!
