@@ -174,10 +174,10 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 }
 
 SDL_bool scrcpy(const struct scrcpy_options *options) {
-    SDL_bool send_frame_meta = !!options->record_filename;
+    SDL_bool record = !!options->record_filename;
     if (!server_start(&server, options->serial, options->port,
                       options->max_size, options->bit_rate, options->crop,
-                      send_frame_meta)) {
+                      record)) {
         return SDL_FALSE;
     }
 
@@ -228,7 +228,7 @@ SDL_bool scrcpy(const struct scrcpy_options *options) {
     }
 
     struct recorder *rec = NULL;
-    if (options->record_filename) {
+    if (record) {
         if (!recorder_init(&recorder,
                            options->record_filename,
                            options->record_format,
@@ -292,7 +292,7 @@ finally_stop_decoder:
     server_stop(&server);
     decoder_join(&decoder);
 finally_destroy_recorder:
-    if (options->record_filename) {
+    if (record) {
         recorder_destroy(&recorder);
     }
 finally_destroy_file_handler:
