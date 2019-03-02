@@ -395,6 +395,7 @@ main(int argc, char *argv[]) {
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
         .always_on_top = SDL_FALSE,
+        .no_window = SDL_FALSE,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
