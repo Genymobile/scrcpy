@@ -237,19 +237,15 @@ static int run_decoder(void *data) {
             goto run_quit;
         }
 #else
-        while (packet.size > 0) {
-            int got_picture;
-            int len = avcodec_decode_video2(codec_ctx, decoder->video_buffer->decoding_frame, &got_picture, &packet);
-            if (len < 0) {
-                LOGE("Could not decode video packet: %d", len);
-                av_packet_unref(&packet);
-                goto run_quit;
-            }
-            if (got_picture) {
-                push_frame(decoder);
-            }
-            packet.size -= len;
-            packet.data += len;
+        int got_picture;
+        int len = avcodec_decode_video2(codec_ctx, decoder->video_buffer->decoding_frame, &got_picture, &packet);
+        if (len < 0) {
+            LOGE("Could not decode video packet: %d", len);
+            av_packet_unref(&packet);
+            goto run_quit;
+        }
+        if (got_picture) {
+            push_frame(decoder);
         }
 #endif
 
