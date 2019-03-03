@@ -15,13 +15,13 @@ void
 decoder_init(struct decoder *decoder, struct video_buffer *vb);
 
 bool
-decoder_open(struct decoder *decoder, AVCodec *codec);
+decoder_open(struct decoder *decoder, const AVCodec *codec);
 
 void
 decoder_close(struct decoder *decoder);
 
 bool
-decoder_push(struct decoder *decoder, AVPacket *packet);
+decoder_push(struct decoder *decoder, const AVPacket *packet);
 
 void
 decoder_interrupt(struct decoder *decoder);

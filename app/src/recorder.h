@@ -27,7 +27,7 @@ void
 recorder_destroy(struct recorder *recorder);
 
 bool
-recorder_open(struct recorder *recorder, AVCodec *input_codec);
+recorder_open(struct recorder *recorder, const AVCodec *input_codec);
 
 void
 recorder_close(struct recorder *recorder);

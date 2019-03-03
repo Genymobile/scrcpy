@@ -59,7 +59,7 @@ recorder_get_format_name(enum recorder_format format) {
 }
 
 bool
-recorder_open(struct recorder *recorder, AVCodec *input_codec) {
+recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const char *format_name = recorder_get_format_name(recorder->format);
     SDL_assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
@@ -128,7 +128,7 @@ recorder_close(struct recorder *recorder) {
 }
 
 static bool
-recorder_write_header(struct recorder *recorder, AVPacket *packet) {
+recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
     AVStream *ostream = recorder->ctx->streams[0];
 
     uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));

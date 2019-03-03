@@ -39,7 +39,7 @@ decoder_init(struct decoder *decoder, struct video_buffer *vb) {
 }
 
 bool
-decoder_open(struct decoder *decoder, AVCodec *codec) {
+decoder_open(struct decoder *decoder, const AVCodec *codec) {
     decoder->codec_ctx = avcodec_alloc_context3(codec);
     if (!decoder->codec_ctx) {
         LOGC("Could not allocate decoder context");
@@ -62,7 +62,7 @@ decoder_close(struct decoder *decoder) {
 }
 
 bool
-decoder_push(struct decoder *decoder, AVPacket *packet) {
+decoder_push(struct decoder *decoder, const AVPacket *packet) {
 // the new decoding/encoding API has been introduced by:
 // <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
 #ifdef SCRCPY_LAVF_HAS_NEW_ENCODING_DECODING_API
