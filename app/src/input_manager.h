@@ -13,7 +13,6 @@ struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
-    bool control;
 };
 
 void
@@ -22,7 +21,8 @@ input_manager_process_text_input(struct input_manager *input_manager,
 
 void
 input_manager_process_key(struct input_manager *input_manager,
-                          const SDL_KeyboardEvent *event);
+                          const SDL_KeyboardEvent *event,
+                          bool control);
 
 void
 input_manager_process_mouse_motion(struct input_manager *input_manager,
@@ -30,7 +30,8 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
 
 void
 input_manager_process_mouse_button(struct input_manager *input_manager,
-                                   const SDL_MouseButtonEvent *event);
+                                   const SDL_MouseButtonEvent *event,
+                                   bool control);
 
 void
 input_manager_process_mouse_wheel(struct input_manager *input_manager,

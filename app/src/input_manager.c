@@ -191,7 +191,8 @@ input_manager_process_text_input(struct input_manager *input_manager,
 
 void
 input_manager_process_key(struct input_manager *input_manager,
-                          const SDL_KeyboardEvent *event) {
+                          const SDL_KeyboardEvent *event,
+                          bool control) {
     bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
@@ -201,9 +202,6 @@ input_manager_process_key(struct input_manager *input_manager,
         // to the device
         return;
     }
-
-    // false if the user requested not to interact with the device
-    bool control = input_manager->control;
 
     // capture all Ctrl events
     if (ctrl | meta) {
@@ -341,10 +339,8 @@ is_outside_device_screen(struct input_manager *input_manager, int x, int y)
 
 void
 input_manager_process_mouse_button(struct input_manager *input_manager,
-                                   const SDL_MouseButtonEvent *event) {
-    // false if the user requested not to interact with the device
-    bool control = input_manager->control;
-
+                                   const SDL_MouseButtonEvent *event,
+                                   bool control) {
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(input_manager->controller);

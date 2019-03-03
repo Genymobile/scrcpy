@@ -39,7 +39,6 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
-    .control = true,
 };
 
 // init SDL and set appropriate hints
@@ -146,7 +145,7 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
-            input_manager_process_key(&input_manager, &event->key);
+            input_manager_process_key(&input_manager, &event->key, control);
             break;
         case SDL_MOUSEMOTION:
             if (!control) {
@@ -164,7 +163,8 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_MOUSEBUTTONUP:
             // some mouse events do not interact with the device, so process
             // the event even if control is disabled
-            input_manager_process_mouse_button(&input_manager, &event->button);
+            input_manager_process_mouse_button(&input_manager, &event->button,
+                                               control);
             break;
         case SDL_DROPFILE: {
             if (!control) {
@@ -300,8 +300,6 @@ scrcpy(const struct scrcpy_options *options) {
         ret = false;
         goto finally_destroy_server;
     }
-
-    input_manager.control = control;
 
     struct decoder *dec = NULL;
     if (display) {
