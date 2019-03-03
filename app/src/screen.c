@@ -13,33 +13,6 @@
 
 #define DISPLAY_MARGINS 96
 
-bool
-sdl_init_and_configure(void) {
-    if (SDL_Init(SDL_INIT_VIDEO)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-
-    atexit(SDL_Quit);
-
-    // Use the best available scale quality
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
-        LOGW("Could not enable bilinear filtering");
-    }
-
-#ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
-    // Handle a click to gain focus as any other click
-    if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
-        LOGW("Could not enable mouse focus clickthrough");
-    }
-#endif
-
-    // Do not disable the screensaver when scrcpy is running
-    SDL_EnableScreenSaver();
-
-    return true;
-}
-
 // get the window size in a struct size
 static struct size
 get_native_window_size(SDL_Window *window) {

@@ -42,6 +42,40 @@ static struct input_manager input_manager = {
     .control = true,
 };
 
+// init SDL and set appropriate hints
+static bool
+sdl_init_and_configure(bool display) {
+    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
+    if (SDL_Init(flags)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
+        return false;
+    }
+
+    atexit(SDL_Quit);
+
+    if (!display) {
+        return true;
+    }
+
+    // Use the best available scale quality
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
+        LOGW("Could not enable bilinear filtering");
+    }
+
+#ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
+    // Handle a click to gain focus as any other click
+    if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
+        LOGW("Could not enable mouse focus clickthrough");
+    }
+#endif
+
+    // Do not disable the screensaver when scrcpy is running
+    SDL_EnableScreenSaver();
+
+    return true;
+}
+
+
 #if defined(__APPLE__) || defined(__WINDOWS__)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
@@ -240,7 +274,10 @@ scrcpy(const struct scrcpy_options *options) {
 
     bool ret = true;
 
-    if (!sdl_init_and_configure()) {
+    bool display = !options->no_display;
+    bool control = !options->no_control;
+
+    if (!sdl_init_and_configure(display)) {
         ret = false;
         goto finally_destroy_server;
     }
@@ -263,9 +300,6 @@ scrcpy(const struct scrcpy_options *options) {
         ret = false;
         goto finally_destroy_server;
     }
-
-    bool display = !options->no_display;
-    bool control = !options->no_control;
 
     input_manager.control = control;
 

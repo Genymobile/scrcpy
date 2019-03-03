@@ -38,10 +38,6 @@ struct screen {
     .no_window = false,   \
 }
 
-// init SDL and set appropriate hints
-bool
-sdl_init_and_configure(void);
-
 // initialize default values
 void
 screen_init(struct screen *screen);
