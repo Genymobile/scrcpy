@@ -234,10 +234,10 @@ You can then [run](README.md#run) _scrcpy_.
 
 ## Prebuilt server
 
- - [`scrcpy-server-v1.7.jar`][direct-scrcpy-server]  
-   _(SHA-256: ee86ec8424f7dc50cacdf927312bdb46e0aa0d68611da584dc4b16d8057bc25e)_
+ - [`scrcpy-server-v1.8.jar`][direct-scrcpy-server]  
+   _(SHA-256: 839055ef905903bf98ead1b9b8a127fe402b39ad657a81f9a914b2dbcb2ce5c0)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.7/scrcpy-server-v1.7.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-server-v1.8.jar
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
