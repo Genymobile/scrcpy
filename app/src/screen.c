@@ -241,7 +241,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 
         screen->frame_size = new_frame_size;
 
-        LOGD("New texture: %" PRIu16 "x%" PRIu16,
+        LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
         screen->texture = create_texture(screen->renderer, new_frame_size);
         if (!screen->texture) {
