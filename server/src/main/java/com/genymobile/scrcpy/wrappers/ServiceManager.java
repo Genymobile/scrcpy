@@ -14,6 +14,7 @@ public final class ServiceManager {
     private DisplayManager displayManager;
     private InputManager inputManager;
     private PowerManager powerManager;
+    private StatusBarManager statusBarManager;
 
     public ServiceManager() {
         try {
@@ -59,5 +60,12 @@ public final class ServiceManager {
             powerManager = new PowerManager(getService("power", "android.os.IPowerManager"));
         }
         return powerManager;
+    }
+
+    public StatusBarManager getStatusBarManager() {
+        if (statusBarManager == null) {
+            statusBarManager = new StatusBarManager(getService("statusbar", "com.android.internal.statusbar.IStatusBarService"));
+        }
+        return statusBarManager;
     }
 }

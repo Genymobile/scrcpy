@@ -165,6 +165,14 @@ scrcpy --record file.mp4
 scrcpy -r file.mkv
 ```
 
+To disable mirroring while recording:
+
+```bash
+scrcpy --no-display --record file.mp4
+scrcpy -Nr file.mkv
+# interrupt recording with Ctrl+C
+```
+
 "Skipped frames" are recorded, even if they are not displayed in real time (for
 performance reasons). Frames are _timestamped_ on the device, so [packet delay
 variation] does not impact the recorded file.
@@ -239,6 +247,17 @@ _scrcpy_ window.
 There is no visual feedback, a log is printed to the console.
 
 
+### Read-only
+
+To disable controls (everything which can interact with the device: input keys,
+mouse events, drag&drop files):
+
+```bash
+scrcpy --no-control
+scrcpy -n
+```
+
+
 ### Forward audio
 
 Audio is not forwarded by _scrcpy_.
@@ -267,6 +286,8 @@ you are interested, see [issue 14].
  | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
  | turn screen on                         | _Right-click²_                |
+ | expand notification panel              | `Ctrl`+`n`                    |
+ | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 

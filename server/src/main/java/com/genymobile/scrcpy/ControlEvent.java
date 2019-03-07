@@ -12,6 +12,8 @@ public final class ControlEvent {
     public static final int TYPE_COMMAND = 4;
 
     public static final int COMMAND_BACK_OR_SCREEN_ON = 0;
+    public static final int COMMAND_EXPAND_NOTIFICATION_PANEL = 1;
+    public static final int COMMAND_COLLAPSE_NOTIFICATION_PANEL = 2;
 
     private int type;
     private String text;

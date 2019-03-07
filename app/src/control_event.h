@@ -1,8 +1,9 @@
 #ifndef CONTROLEVENT_H
 #define CONTROLEVENT_H
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_stdinc.h>
 
 #include "android/input.h"
 #include "android/keycodes.h"
@@ -20,7 +21,11 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_COMMAND,
 };
 
-#define CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON 0
+enum control_event_command {
+    CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON,
+    CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL,
+    CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL,
+};
 
 struct control_event {
     enum control_event_type type;
@@ -40,11 +45,11 @@ struct control_event {
         } mouse_event;
         struct {
             struct position position;
-            Sint32 hscroll;
-            Sint32 vscroll;
+            int32_t hscroll;
+            int32_t vscroll;
         } scroll_event;
         struct {
-            int action;
+            enum control_event_command action;
         } command_event;
     };
 };
@@ -56,18 +61,31 @@ struct control_event_queue {
 };
 
 // buf size must be at least SERIALIZED_EVENT_MAX_SIZE
-int control_event_serialize(const struct control_event *event, unsigned char *buf);
+int
+control_event_serialize(const struct control_event *event, unsigned char *buf);
 
-SDL_bool control_event_queue_init(struct control_event_queue *queue);
-void control_event_queue_destroy(struct control_event_queue *queue);
+bool
+control_event_queue_init(struct control_event_queue *queue);
 
-SDL_bool control_event_queue_is_empty(const struct control_event_queue *queue);
-SDL_bool control_event_queue_is_full(const struct control_event_queue *queue);
+void
+control_event_queue_destroy(struct control_event_queue *queue);
+
+bool
+control_event_queue_is_empty(const struct control_event_queue *queue);
+
+bool
+control_event_queue_is_full(const struct control_event_queue *queue);
 
 // event is copied, the queue does not use the event after the function returns
-SDL_bool control_event_queue_push(struct control_event_queue *queue, const struct control_event *event);
-SDL_bool control_event_queue_take(struct control_event_queue *queue, struct control_event *event);
+bool
+control_event_queue_push(struct control_event_queue *queue,
+                         const struct control_event *event);
 
-void control_event_destroy(struct control_event *event);
+bool
+control_event_queue_take(struct control_event_queue *queue,
+                         struct control_event *event);
+
+void
+control_event_destroy(struct control_event *event);
 
 #endif
