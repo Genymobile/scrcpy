@@ -29,12 +29,10 @@ control it using keyboard and mouse.
 On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
 it's not that hard.
 
-For Arch Linux, two [AUR] packages have been created by users:
-
- - [`scrcpy`](https://aur.archlinux.org/packages/scrcpy/)
- - [`scrcpy-prebuiltserver`](https://aur.archlinux.org/packages/scrcpy-prebuiltserver/)
+For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
+[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
