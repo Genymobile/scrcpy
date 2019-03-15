@@ -2,20 +2,23 @@
 
 #include "log.h"
 
-SDL_bool net_init(void) {
+bool
+net_init(void) {
     WSADATA wsa;
     int res = WSAStartup(MAKEWORD(2, 2), &wsa) < 0;
     if (res < 0) {
         LOGC("WSAStartup failed with error %d", res);
-        return SDL_FALSE;
+        return false;
     }
-    return SDL_TRUE;
+    return true;
 }
 
-void net_cleanup(void) {
+void
+net_cleanup(void) {
     WSACleanup();
 }
 
-SDL_bool net_close(socket_t socket) {
+bool
+net_close(socket_t socket) {
     return !closesocket(socket);
 }

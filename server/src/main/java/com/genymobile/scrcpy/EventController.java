@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.graphics.Point;
 import android.os.SystemClock;
@@ -172,6 +173,12 @@ public class EventController {
         switch (action) {
             case ControlEvent.COMMAND_BACK_OR_SCREEN_ON:
                 return pressBackOrTurnScreenOn();
+            case ControlEvent.COMMAND_EXPAND_NOTIFICATION_PANEL:
+                device.expandNotificationPanel();
+                return true;
+            case ControlEvent.COMMAND_COLLAPSE_NOTIFICATION_PANEL:
+                device.collapsePanels();
+                return true;
             default:
                 Ln.w("Unsupported command: " + action);
         }

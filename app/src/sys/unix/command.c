@@ -11,7 +11,8 @@
 #include <unistd.h>
 #include "log.h"
 
-enum process_result cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
+enum process_result
+cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
     int fd[2];
 
     if (pipe(fd) == -1) {
@@ -72,15 +73,18 @@ end:
     return ret;
 }
 
-SDL_bool cmd_terminate(pid_t pid) {
+bool
+cmd_terminate(pid_t pid) {
     if (pid <= 0) {
-        LOGC("Requested to kill %d, this is an error. Please report the bug.\n", (int) pid);
+        LOGC("Requested to kill %d, this is an error. Please report the bug.\n",
+             (int) pid);
         abort();
     }
     return kill(pid, SIGTERM) != -1;
 }
 
-SDL_bool cmd_simple_wait(pid_t pid, int *exit_code) {
+bool
+cmd_simple_wait(pid_t pid, int *exit_code) {
     int status;
     int code;
     if (waitpid(pid, &status, 0) == -1 || !WIFEXITED(status)) {

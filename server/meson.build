@@ -10,6 +10,10 @@ if prebuilt_server == ''
                   install: true,
                   install_dir: 'share/scrcpy')
 else
+    if not prebuilt_server.startswith('/')
+        # relative path needs some trick
+        prebuilt_server = meson.source_root() + '/' + prebuilt_server
+    endif
     custom_target('scrcpy-server-prebuilt',
                   input: prebuilt_server,
                   output: 'scrcpy-server.jar',

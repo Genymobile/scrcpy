@@ -132,6 +132,14 @@ public final class Device {
         this.rotationListener = rotationListener;
     }
 
+    public void expandNotificationPanel() {
+        serviceManager.getStatusBarManager().expandNotificationsPanel();
+    }
+
+    public void collapsePanels() {
+        serviceManager.getStatusBarManager().collapsePanels();
+    }
+
     static Rect flipRect(Rect crop) {
         return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }

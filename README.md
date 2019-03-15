@@ -1,4 +1,4 @@
-# scrcpy (v1.7)
+# scrcpy (v1.8)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -29,12 +29,10 @@ control it using keyboard and mouse.
 On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
 it's not that hard.
 
-For Arch Linux, two [AUR] packages have been created by users:
-
- - [`scrcpy`](https://aur.archlinux.org/packages/scrcpy/)
- - [`scrcpy-prebuiltserver`](https://aur.archlinux.org/packages/scrcpy-prebuiltserver/)
+For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
+[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
@@ -47,13 +45,13 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.7.zip`][direct-win32]  
-   _(SHA-256: 98ae36f2da0b8212c07066fd93139650554274f863d4cee0781501a0c84f7c23)_
- - [`scrcpy-win64-v1.7.zip`][direct-win64]  
-   _(SHA-256: b41416547521062f19e3f3f539e89a70e713bd086e69ef1b29c128993f7aa462)_
+ - [`scrcpy-win32-v1.8.zip`][direct-win32]  
+   _(SHA-256: c0c29ed1c66deaa73bdadacd09e598aafb3a117929cf7a314cce1cc45e34de53)_
+ - [`scrcpy-win64-v1.8.zip`][direct-win64]  
+   _(SHA-256: 9cc980d07bd8f036ae4e91d0bc6fc3281d7fa8f9752d4913b643c0fb72a19fb7)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.7/scrcpy-win32-v1.7.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.7/scrcpy-win64-v1.7.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-win32-v1.8.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-win64-v1.8.zip
 
 You can also [build the app manually][BUILD].
 
@@ -165,6 +163,15 @@ scrcpy --record file.mp4
 scrcpy -r file.mkv
 ```
 
+To disable mirroring while recording:
+
+```bash
+scrcpy --no-display --record file.mp4
+scrcpy -Nr file.mkv
+# interrupt recording with Ctrl+C
+# Ctrl+C does not terminate properly on Windows, so disconnect the device
+```
+
 "Skipped frames" are recorded, even if they are not displayed in real time (for
 performance reasons). Frames are _timestamped_ on the device, so [packet delay
 variation] does not impact the recorded file.
@@ -239,6 +246,17 @@ _scrcpy_ window.
 There is no visual feedback, a log is printed to the console.
 
 
+### Read-only
+
+To disable controls (everything which can interact with the device: input keys,
+mouse events, drag&drop files):
+
+```bash
+scrcpy --no-control
+scrcpy -n
+```
+
+
 ### Forward audio
 
 Audio is not forwarded by _scrcpy_.
@@ -267,6 +285,8 @@ you are interested, see [issue 14].
  | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
  | turn screen on                         | _Right-click²_                |
+ | expand notification panel              | `Ctrl`+`n`                    |
+ | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 

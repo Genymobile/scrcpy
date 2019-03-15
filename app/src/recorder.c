@@ -9,7 +9,8 @@
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
-static const AVOutputFormat *find_muxer(const char *name) {
+static const AVOutputFormat *
+find_muxer(const char *name) {
 #ifdef SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
     void *opaque = NULL;
 #endif
@@ -25,24 +26,26 @@ static const AVOutputFormat *find_muxer(const char *name) {
     return oformat;
 }
 
-SDL_bool recorder_init(struct recorder *recorder,
-                       const char *filename,
-                       enum recorder_format format,
-                       struct size declared_frame_size) {
+bool
+recorder_init(struct recorder *recorder,
+              const char *filename,
+              enum recorder_format format,
+              struct size declared_frame_size) {
     recorder->filename = SDL_strdup(filename);
     if (!recorder->filename) {
         LOGE("Cannot strdup filename");
-        return SDL_FALSE;
+        return false;
     }
 
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
-    recorder->header_written = SDL_FALSE;
+    recorder->header_written = false;
 
-    return SDL_TRUE;
+    return true;
 }
 
-void recorder_destroy(struct recorder *recorder) {
+void
+recorder_destroy(struct recorder *recorder) {
     SDL_free(recorder->filename);
 }
 
@@ -55,19 +58,20 @@ recorder_get_format_name(enum recorder_format format) {
     }
 }
 
-SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
+bool
+recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const char *format_name = recorder_get_format_name(recorder->format);
     SDL_assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
-        return SDL_FALSE;
+        return false;
     }
 
     recorder->ctx = avformat_alloc_context();
     if (!recorder->ctx) {
         LOGE("Could not allocate output context");
-        return SDL_FALSE;
+        return false;
     }
 
     // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
@@ -79,7 +83,7 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
         avformat_free_context(recorder->ctx);
-        return SDL_FALSE;
+        return false;
     }
 
 #ifdef SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
@@ -102,15 +106,16 @@ SDL_bool recorder_open(struct recorder *recorder, AVCodec *input_codec) {
         LOGE("Failed to open output file: %s", recorder->filename);
         // ostream will be cleaned up during context cleaning
         avformat_free_context(recorder->ctx);
-        return SDL_FALSE;
+        return false;
     }
 
     LOGI("Recording started to %s file: %s", format_name, recorder->filename);
 
-    return SDL_TRUE;
+    return true;
 }
 
-void recorder_close(struct recorder *recorder) {
+void
+recorder_close(struct recorder *recorder) {
     int ret = av_write_trailer(recorder->ctx);
     if (ret < 0) {
         LOGE("Failed to write trailer to %s", recorder->filename);
@@ -122,14 +127,14 @@ void recorder_close(struct recorder *recorder) {
     LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
 }
 
-static SDL_bool
-recorder_write_header(struct recorder *recorder, AVPacket *packet) {
+static bool
+recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
     AVStream *ostream = recorder->ctx->streams[0];
 
     uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));
     if (!extradata) {
         LOGC("Cannot allocate extradata");
-        return SDL_FALSE;
+        return false;
     }
 
     // copy the first packet to the extra data
@@ -149,10 +154,10 @@ recorder_write_header(struct recorder *recorder, AVPacket *packet) {
         SDL_free(extradata);
         avio_closep(&recorder->ctx->pb);
         avformat_free_context(recorder->ctx);
-        return SDL_FALSE;
+        return false;
     }
 
-    return SDL_TRUE;
+    return true;
 }
 
 static void
@@ -161,13 +166,14 @@ recorder_rescale_packet(struct recorder *recorder, AVPacket *packet) {
     av_packet_rescale_ts(packet, SCRCPY_TIME_BASE, ostream->time_base);
 }
 
-SDL_bool recorder_write(struct recorder *recorder, AVPacket *packet) {
+bool
+recorder_write(struct recorder *recorder, AVPacket *packet) {
     if (!recorder->header_written) {
-        SDL_bool ok = recorder_write_header(recorder, packet);
+        bool ok = recorder_write_header(recorder, packet);
         if (!ok) {
-            return SDL_FALSE;
+            return false;
         }
-        recorder->header_written = SDL_TRUE;
+        recorder->header_written = true;
     }
 
     recorder_rescale_packet(recorder, packet);

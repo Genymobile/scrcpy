@@ -1,6 +1,8 @@
 #include "scrcpy.h"
 
 #include <getopt.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
 #include <SDL2/SDL.h>
@@ -15,14 +17,16 @@ struct args {
     const char *crop;
     const char *record_filename;
     enum recorder_format record_format;
-    SDL_bool fullscreen;
-    SDL_bool help;
-    SDL_bool version;
-    SDL_bool show_touches;
-    Uint16 port;
-    Uint16 max_size;
-    Uint32 bit_rate;
-    SDL_bool always_on_top;
+    bool fullscreen;
+    bool no_control;
+    bool no_display;
+    bool help;
+    bool version;
+    bool show_touches;
+    uint16_t port;
+    uint16_t max_size;
+    uint32_t bit_rate;
+    bool always_on_top;
 };
 
 static void usage(const char *arg0) {
@@ -56,6 +60,13 @@ static void usage(const char *arg0) {
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
         "        Default is %d%s.\n"
+        "\n"
+        "    -n, --no-control\n"
+        "        Disable device control (mirror the device in read-only).\n"
+        "\n"
+        "    -N, --no-display\n"
+        "        Do not display device (only when screen recording is\n"
+        "        enabled).\n"
         "\n"
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
@@ -120,6 +131,12 @@ static void usage(const char *arg0) {
         "    Right-click (when screen is off)\n"
         "        turn screen on\n"
         "\n"
+        "    Ctrl+n\n"
+        "       expand notification panel\n"
+        "\n"
+        "    Ctrl+Shift+n\n"
+        "       collapse notification panel\n"
+        "\n"
         "    Ctrl+v\n"
         "        paste computer clipboard to device\n"
         "\n"
@@ -135,28 +152,37 @@ static void usage(const char *arg0) {
         DEFAULT_LOCAL_PORT);
 }
 
-static void print_version(void) {
+static void
+print_version(void) {
     fprintf(stderr, "scrcpy %s\n\n", SCRCPY_VERSION);
 
     fprintf(stderr, "dependencies:\n");
-    fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
-    fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR, LIBAVCODEC_VERSION_MINOR, LIBAVCODEC_VERSION_MICRO);
-    fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR, LIBAVFORMAT_VERSION_MINOR, LIBAVFORMAT_VERSION_MICRO);
-    fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR, LIBAVUTIL_VERSION_MINOR, LIBAVUTIL_VERSION_MICRO);
+    fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
+                                         SDL_PATCHLEVEL);
+    fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR,
+                                                LIBAVCODEC_VERSION_MINOR,
+                                                LIBAVCODEC_VERSION_MICRO);
+    fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR,
+                                                 LIBAVFORMAT_VERSION_MINOR,
+                                                 LIBAVFORMAT_VERSION_MICRO);
+    fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
+                                               LIBAVUTIL_VERSION_MINOR,
+                                               LIBAVUTIL_VERSION_MICRO);
 }
 
-static SDL_bool parse_bit_rate(char *optarg, Uint32 *bit_rate) {
+static bool
+parse_bit_rate(char *optarg, uint32_t *bit_rate) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Bit-rate parameter is empty");
-        return SDL_FALSE;
+        return false;
     }
     long value = strtol(optarg, &endptr, 0);
     int mul = 1;
     if (*endptr != '\0') {
         if (optarg == endptr) {
             LOGE("Invalid bit-rate: %s", optarg);
-            return SDL_FALSE;
+            return false;
         }
         if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
             mul = 1000000;
@@ -164,70 +190,72 @@ static SDL_bool parse_bit_rate(char *optarg, Uint32 *bit_rate) {
             mul = 1000;
         } else {
             LOGE("Invalid bit-rate unit: %s", optarg);
-            return SDL_FALSE;
+            return false;
         }
     }
-    if (value < 0 || ((Uint32) -1) / mul < value) {
+    if (value < 0 || ((uint32_t) -1) / mul < value) {
         LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
-        return SDL_FALSE;
+        return false;
     }
 
-    *bit_rate = (Uint32) value * mul;
-    return SDL_TRUE;
+    *bit_rate = (uint32_t) value * mul;
+    return true;
 }
 
-static SDL_bool parse_max_size(char *optarg, Uint16 *max_size) {
+static bool
+parse_max_size(char *optarg, uint16_t *max_size) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Max size parameter is empty");
-        return SDL_FALSE;
+        return false;
     }
     long value = strtol(optarg, &endptr, 0);
     if (*endptr != '\0') {
         LOGE("Invalid max size: %s", optarg);
-        return SDL_FALSE;
+        return false;
     }
     if (value & ~0xffff) {
         LOGE("Max size must be between 0 and 65535: %ld", value);
-        return SDL_FALSE;
+        return false;
     }
 
-    *max_size = (Uint16) value;
-    return SDL_TRUE;
+    *max_size = (uint16_t) value;
+    return true;
 }
 
-static SDL_bool parse_port(char *optarg, Uint16 *port) {
+static bool
+parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
         LOGE("Invalid port parameter is empty");
-        return SDL_FALSE;
+        return false;
     }
     long value = strtol(optarg, &endptr, 0);
     if (*endptr != '\0') {
         LOGE("Invalid port: %s", optarg);
-        return SDL_FALSE;
+        return false;
     }
     if (value & ~0xffff) {
         LOGE("Port out of range: %ld", value);
-        return SDL_FALSE;
+        return false;
     }
 
-    *port = (Uint16) value;
-    return SDL_TRUE;
+    *port = (uint16_t) value;
+    return true;
 }
 
-static SDL_bool
+static bool
 parse_record_format(const char *optarg, enum recorder_format *format) {
     if (!strcmp(optarg, "mp4")) {
         *format = RECORDER_FORMAT_MP4;
-        return SDL_TRUE;
+        return true;
     }
     if (!strcmp(optarg, "mkv")) {
         *format = RECORDER_FORMAT_MKV;
-        return SDL_TRUE;
+        return true;
     }
     LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
-    return SDL_FALSE;
+    return false;
 }
 
 static enum recorder_format
@@ -246,7 +274,8 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
-static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
+static bool
+parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top", no_argument,       NULL, 'T'},
         {"bit-rate",      required_argument, NULL, 'b'},
@@ -254,6 +283,8 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {"fullscreen",    no_argument,       NULL, 'f'},
         {"help",          no_argument,       NULL, 'h'},
         {"max-size",      required_argument, NULL, 'm'},
+        {"no-control",    no_argument,       NULL, 'n'},
+        {"no-display",    no_argument,       NULL, 'N'},
         {"port",          required_argument, NULL, 'p'},
         {"record",        required_argument, NULL, 'r'},
         {"record-format", required_argument, NULL, 'f'},
@@ -263,35 +294,42 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:p:r:s:tTv", long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv", long_options,
+                            NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
-                    return SDL_FALSE;
+                    return false;
                 }
                 break;
             case 'c':
                 args->crop = optarg;
                 break;
             case 'f':
-                args->fullscreen = SDL_TRUE;
+                args->fullscreen = true;
                 break;
             case 'F':
                 if (!parse_record_format(optarg, &args->record_format)) {
-                    return SDL_FALSE;
+                    return false;
                 }
                 break;
             case 'h':
-                args->help = SDL_TRUE;
+                args->help = true;
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &args->max_size)) {
-                    return SDL_FALSE;
+                    return false;
                 }
+                break;
+            case 'n':
+                args->no_control = true;
+                break;
+            case 'N':
+                args->no_display = true;
                 break;
             case 'p':
                 if (!parse_port(optarg, &args->port)) {
-                    return SDL_FALSE;
+                    return false;
                 }
                 break;
             case 'r':
@@ -301,29 +339,39 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
                 args->serial = optarg;
                 break;
             case 't':
-                args->show_touches = SDL_TRUE;
+                args->show_touches = true;
                 break;
             case 'T':
-                args->always_on_top = SDL_TRUE;
+                args->always_on_top = true;
                 break;
             case 'v':
-                args->version = SDL_TRUE;
+                args->version = true;
                 break;
             default:
                 // getopt prints the error message on stderr
-                return SDL_FALSE;
+                return false;
         }
+    }
+
+    if (args->no_display && !args->record_filename) {
+        LOGE("-N/--no-display requires screen recording (-r/--record)");
+        return false;
+    }
+
+    if (args->no_display && args->fullscreen) {
+        LOGE("-f/--fullscreen-window is incompatible with -N/--no-display");
+        return false;
     }
 
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
-        return SDL_FALSE;
+        return false;
     }
 
     if (args->record_format && !args->record_filename) {
         LOGE("Record format specified without recording");
-        return SDL_FALSE;
+        return false;
     }
 
     if (args->record_filename && !args->record_format) {
@@ -331,14 +379,15 @@ static SDL_bool parse_args(struct args *args, int argc, char *argv[]) {
         if (!args->record_format) {
             LOGE("No format specified for \"%s\" (try with -F mkv)",
                  args->record_filename);
-            return SDL_FALSE;
+            return false;
         }
     }
 
-    return SDL_TRUE;
+    return true;
 }
 
-int main(int argc, char *argv[]) {
+int
+main(int argc, char *argv[]) {
 #ifdef __WINDOWS__
     // disable buffering, we want logs immediately
     // even line buffering (setvbuf() with mode _IOLBF) is not sufficient
@@ -350,13 +399,15 @@ int main(int argc, char *argv[]) {
         .crop = NULL,
         .record_filename = NULL,
         .record_format = 0,
-        .help = SDL_FALSE,
-        .version = SDL_FALSE,
-        .show_touches = SDL_FALSE,
+        .help = false,
+        .version = false,
+        .show_touches = false,
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
-        .always_on_top = SDL_FALSE,
+        .always_on_top = false,
+        .no_control = false,
+        .no_display = false,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -395,6 +446,8 @@ int main(int argc, char *argv[]) {
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
+        .no_control = args.no_control,
+        .no_display = args.no_display,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
