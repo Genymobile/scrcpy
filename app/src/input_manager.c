@@ -160,6 +160,18 @@ set_device_clipboard(struct controller *controller) {
 }
 
 static void
+set_screen_power_mode(struct controller *controller,
+                      enum screen_power_mode mode) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+    msg.set_screen_power_mode.mode = mode;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Cannot request 'set screen power mode'");
+    }
+}
+
+static void
 switch_fps_counter_state(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
     if (vb->fps_counter.started) {
@@ -261,6 +273,14 @@ input_manager_process_key(struct input_manager *input_manager,
             case SDLK_p:
                 if (control && ctrl && !meta && !shift && !repeat) {
                     action_power(input_manager->controller, action);
+                }
+                return;
+            case SDLK_o:
+                if (control && ctrl && !meta && event->type == SDL_KEYDOWN) {
+                    enum screen_power_mode mode = shift
+                                                ? SCREEN_POWER_MODE_NORMAL
+                                                : SCREEN_POWER_MODE_OFF;
+                    set_screen_power_mode(input_manager->controller, mode);
                 }
                 return;
             case SDLK_DOWN:

@@ -1,14 +1,19 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
 import android.view.InputEvent;
 
 public final class Device {
+
+    public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
+    public static final int POWER_MODE_NORMAL = SurfaceControl.POWER_MODE_NORMAL;
 
     public interface RotationListener {
         void onRotationChanged(int rotation);
@@ -150,6 +155,15 @@ public final class Device {
     public void setClipboardText(String text) {
         serviceManager.getClipboardManager().setText(text);
         Ln.i("Device clipboard set");
+    }
+
+    /**
+     * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
+     */
+    public void setScreenPowerMode(int mode) {
+        IBinder d = SurfaceControl.getBuiltInDisplay(0);
+        SurfaceControl.setDisplayPowerMode(d, mode);
+        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
     }
 
     static Rect flipRect(Rect crop) {

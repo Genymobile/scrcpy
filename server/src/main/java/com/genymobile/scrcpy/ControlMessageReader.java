@@ -11,6 +11,7 @@ public class ControlMessageReader {
     private static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
     private static final int INJECT_MOUSE_EVENT_PAYLOAD_LENGTH = 17;
     private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
 
     public static final int TEXT_MAX_LENGTH = 300;
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
@@ -66,6 +67,9 @@ public class ControlMessageReader {
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 msg = parseSetClipboard();
+                break;
+            case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
+                msg = parseSetScreenPowerMode();
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
@@ -142,6 +146,14 @@ public class ControlMessageReader {
             return null;
         }
         return ControlMessage.createSetClipboard(text);
+    }
+
+    private ControlMessage parseSetScreenPowerMode() {
+        if (buffer.remaining() < SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int mode = buffer.get();
+        return ControlMessage.createSetScreenPowerMode(mode);
     }
 
     private static Position readPosition(ByteBuffer buffer) {

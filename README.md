@@ -284,7 +284,9 @@ you are interested, see [issue 14].
  | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
- | turn screen on                         | _Right-click²_                |
+ | power on                               | _Right-click²_                |
+ | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
+ | turn device screen on                  | `Ctrl`+`Shift`+`o`            |
  | expand notification panel              | `Ctrl`+`n`                    |
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
  | copy device clipboard to computer      | `Ctrl`+`c`                    |

@@ -97,6 +97,9 @@ public class Controller {
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 device.setClipboardText(msg.getText());
                 break;
+            case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
+                device.setScreenPowerMode(msg.getAction());
+                break;
             default:
                 // do nothing
         }

@@ -213,6 +213,25 @@ static void test_serialize_set_clipboard(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_set_screen_power_mode(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+        .set_screen_power_mode = {
+            .mode = SCREEN_POWER_MODE_NORMAL,
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    int size = control_msg_serialize(&msg, buf);
+    assert(size == 2);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+        0x02, // SCREEN_POWER_MODE_NORMAL
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(void) {
     test_serialize_inject_keycode();
     test_serialize_inject_text();
@@ -224,5 +243,6 @@ int main(void) {
     test_serialize_collapse_notification_panel();
     test_serialize_get_clipboard();
     test_serialize_set_clipboard();
+    test_serialize_set_screen_power_mode();
     return 0;
 }

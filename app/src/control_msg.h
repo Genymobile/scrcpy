@@ -24,6 +24,13 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL,
     CONTROL_MSG_TYPE_GET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
+    CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+};
+
+enum screen_power_mode {
+    // see <https://android.googlesource.com/platform/frameworks/base.git/+/pie-release-2/core/java/android/view/SurfaceControl.java#305>
+    SCREEN_POWER_MODE_OFF = 0,
+    SCREEN_POWER_MODE_NORMAL = 2,
 };
 
 struct control_msg {
@@ -50,6 +57,9 @@ struct control_msg {
         struct {
             char *text; // owned, to be freed by SDL_free()
         } set_clipboard;
+        struct {
+            enum screen_power_mode mode;
+        } set_screen_power_mode;
     };
 };
 
