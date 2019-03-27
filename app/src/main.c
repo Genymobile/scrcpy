@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 
 #include "compat.h"
