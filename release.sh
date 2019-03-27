@@ -8,6 +8,10 @@ rm -rf "$TESTDIR"
 meson "$TESTDIR" -Db_sanitize=address
 ninja -C"$TESTDIR" test
 
+# test server
+GRADLE=${GRADLE:-./gradlew}
+$GRADLE -p server check
+
 BUILDDIR=build_release
 rm -rf "$BUILDDIR"
 meson "$BUILDDIR" --buildtype release --strip -Db_lto=true
