@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
 #include "compat.h"
