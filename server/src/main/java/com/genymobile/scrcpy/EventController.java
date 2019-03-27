@@ -19,7 +19,8 @@ public class EventController {
     private final Device device;
     private final DesktopConnection connection;
 
-    private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+    // private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+    private KeyCharacterMap charMap;
 
     private long lastMouseDown;
     private final MotionEvent.PointerProperties[] pointerProperties = {new MotionEvent.PointerProperties()};
@@ -93,6 +94,15 @@ public class EventController {
     private boolean injectChar(char c) {
         String decomposed = KeyComposition.decompose(c);
         char[] chars = decomposed != null ? decomposed.toCharArray() : new char[] {c};
+        
+        if (charMap == null) {
+            try {
+                charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+            } catch (KeyCharacterMap.UnavailableException e) {
+                return false;
+            }
+        }
+        
         KeyEvent[] events = charMap.getEvents(chars);
         if (events == null) {
             return false;
