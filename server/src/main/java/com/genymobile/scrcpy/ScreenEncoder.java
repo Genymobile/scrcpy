@@ -3,7 +3,6 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
-import android.media.MediaMuxer;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
