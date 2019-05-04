@@ -1,8 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
-import android.annotation.SuppressLint;
 import android.os.IInterface;
-import android.view.InputEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

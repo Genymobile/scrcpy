@@ -49,13 +49,14 @@ static void test_serialize_text_event(void) {
 static void test_serialize_long_text_event(void) {
     struct control_event event;
     event.type = CONTROL_EVENT_TYPE_TEXT;
-    char text[TEXT_MAX_LENGTH];
+    char text[TEXT_MAX_LENGTH + 1];
     memset(text, 'a', sizeof(text));
+    text[TEXT_MAX_LENGTH] = '\0';
     event.text_event.text = text;
 
     unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
-    assert(size == 3 + sizeof(text));
+    assert(size == 3 + TEXT_MAX_LENGTH);
 
     unsigned char expected[3 + TEXT_MAX_LENGTH];
     expected[0] = 0x01; // CONTROL_EVENT_TYPE_KEYCODE
