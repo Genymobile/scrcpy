@@ -52,7 +52,13 @@ public final class Ln {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
             System.out.println("ERROR: " + message);
-            throwable.printStackTrace();
+            if (throwable != null) {
+                throwable.printStackTrace();
+            }
         }
+    }
+
+    public static void e(String message) {
+        e(message, null);
     }
 }
