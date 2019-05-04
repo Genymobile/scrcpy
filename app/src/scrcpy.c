@@ -9,6 +9,7 @@
 
 #include "command.h"
 #include "common.h"
+#include "compat.h"
 #include "controller.h"
 #include "decoder.h"
 #include "device.h"
