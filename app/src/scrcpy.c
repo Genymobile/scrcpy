@@ -69,6 +69,13 @@ sdl_init_and_configure(bool display) {
     }
 #endif
 
+#ifdef SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
+    // Disable compositor bypassing on X11
+    if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
+        LOGW("Could not disable X11 compositor bypass");
+    }
+#endif
+
     // Do not disable the screensaver when scrcpy is running
     SDL_EnableScreenSaver();
 
