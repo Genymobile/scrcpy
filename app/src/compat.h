@@ -43,4 +43,9 @@
 # define SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
 #endif
 
+#if SDL_VERSION_ATLEAST(2, 0, 8)
+// <https://hg.libsdl.org/SDL/rev/dfde5d3f9781>
+# define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
+#endif
+
 #endif
