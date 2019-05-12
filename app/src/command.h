@@ -49,7 +49,7 @@ bool
 cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], int len);
+adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
 
 process_t
 adb_forward(const char *serial, uint16_t local_port,

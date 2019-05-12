@@ -37,7 +37,7 @@ show_adb_err_msg(enum process_result err) {
 }
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], int len) {
+adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     const char *cmd[len + 4];
     int i;
     process_t process;
