@@ -104,13 +104,15 @@ public class EventController {
         return true;
     }
 
-    private boolean injectText(String text) {
+    private int injectText(String text) {
+        int successCount = 0;
         for (char c : text.toCharArray()) {
             if (!injectChar(c)) {
-                return false;
+                continue;
             }
+            successCount++;
         }
-        return true;
+        return successCount;
     }
 
     private boolean injectMouse(int action, int buttons, Position position) {
