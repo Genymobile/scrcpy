@@ -108,6 +108,7 @@ public class EventController {
         int successCount = 0;
         for (char c : text.toCharArray()) {
             if (!injectChar(c)) {
+                Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
                 continue;
             }
             successCount++;
