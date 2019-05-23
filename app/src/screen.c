@@ -177,13 +177,12 @@ screen_init_rendering(struct screen *screen, const char *device_name,
     }
 
     SDL_Surface *icon = read_xpm(icon_xpm);
-    if (!icon) {
-        LOGE("Could not load icon: %s", SDL_GetError());
-        screen_destroy(screen);
-        return false;
+    if (icon) {
+        SDL_SetWindowIcon(screen->window, icon);
+        SDL_FreeSurface(icon);
+    } else {
+        LOGW("Could not load icon");
     }
-    SDL_SetWindowIcon(screen->window, icon);
-    SDL_FreeSurface(icon);
 
     LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width,
                                                   frame_size.height);
