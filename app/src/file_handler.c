@@ -121,7 +121,7 @@ file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
     request_queue_destroy(&file_handler->queue);
-    SDL_free((void *) file_handler->serial);
+    SDL_free(file_handler->serial);
 }
 
 static process_t

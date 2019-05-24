@@ -21,7 +21,7 @@ struct request_queue {
 };
 
 struct file_handler {
-    const char *serial;
+    char *serial;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     SDL_cond *event_cond;
