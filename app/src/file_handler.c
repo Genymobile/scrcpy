@@ -30,7 +30,7 @@ request_free(struct request *req) {
         return;
     }
     SDL_free((void *) req->file);
-    SDL_free((void *) req);
+    SDL_free(req);
 }
 
 static bool
