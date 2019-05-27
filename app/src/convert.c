@@ -81,9 +81,9 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod) {
         MAP(SDLK_ESCAPE,       AKEYCODE_ESCAPE);
         MAP(SDLK_BACKSPACE,    AKEYCODE_DEL);
         MAP(SDLK_TAB,          AKEYCODE_TAB);
-        MAP(SDLK_HOME,         AKEYCODE_HOME);
         MAP(SDLK_PAGEUP,       AKEYCODE_PAGE_UP);
         MAP(SDLK_DELETE,       AKEYCODE_FORWARD_DEL);
+        MAP(SDLK_HOME,         AKEYCODE_MOVE_HOME);
         MAP(SDLK_END,          AKEYCODE_MOVE_END);
         MAP(SDLK_PAGEDOWN,     AKEYCODE_PAGE_DOWN);
         MAP(SDLK_RIGHT,        AKEYCODE_DPAD_RIGHT);
