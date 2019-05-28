@@ -7,7 +7,7 @@
 #include "log.h"
 
 bool
-controller_init(struct controller *controller, socket_t video_socket) {
+controller_init(struct controller *controller, socket_t control_socket) {
     cbuf_init(&controller->queue);
 
     if (!(controller->mutex = SDL_CreateMutex())) {
@@ -19,7 +19,7 @@ controller_init(struct controller *controller, socket_t video_socket) {
         return false;
     }
 
-    controller->video_socket = video_socket;
+    controller->control_socket = control_socket;
     controller->stopped = false;
 
     return true;
@@ -57,7 +57,7 @@ process_event(struct controller *controller,
     if (!length) {
         return false;
     }
-    int w = net_send_all(controller->video_socket, serialized_event, length);
+    int w = net_send_all(controller->control_socket, serialized_event, length);
     return w == length;
 }
 

@@ -12,7 +12,7 @@
 struct control_event_queue CBUF(struct control_event, 64);
 
 struct controller {
-    socket_t video_socket;
+    socket_t control_socket;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     SDL_cond *event_cond;
@@ -21,7 +21,7 @@ struct controller {
 };
 
 bool
-controller_init(struct controller *controller, socket_t video_socket);
+controller_init(struct controller *controller, socket_t control_socket);
 
 void
 controller_destroy(struct controller *controller);
