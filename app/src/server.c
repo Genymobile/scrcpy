@@ -119,7 +119,7 @@ connect_and_read_byte(uint16_t port) {
     char byte;
     // the connection may succeed even if the server behind the "adb tunnel"
     // is not listening, so read one byte to detect a working connection
-    if (net_recv_all(socket, &byte, 1) != 1) {
+    if (net_recv(socket, &byte, 1) != 1) {
         // the server is not listening yet behind the adb tunnel
         return INVALID_SOCKET;
     }
