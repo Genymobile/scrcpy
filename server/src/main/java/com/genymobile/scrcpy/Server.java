@@ -24,7 +24,7 @@ public final class Server {
 
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, connection.getFd());
+                screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");

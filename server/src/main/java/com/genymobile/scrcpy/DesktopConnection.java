@@ -16,16 +16,20 @@ public final class DesktopConnection implements Closeable {
 
     private static final String SOCKET_NAME = "scrcpy";
 
-    private final LocalSocket socket;
-    private final InputStream inputStream;
-    private final FileDescriptor fd;
+    private final LocalSocket videoSocket;
+    private final FileDescriptor videoFd;
+
+    private final LocalSocket controlSocket;
+    private final InputStream controlInputStream;
+
 
     private final ControlEventReader reader = new ControlEventReader();
 
-    private DesktopConnection(LocalSocket socket) throws IOException {
-        this.socket = socket;
-        inputStream = socket.getInputStream();
-        fd = socket.getFileDescriptor();
+    private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
+        this.videoSocket = videoSocket;
+        this.controlSocket = controlSocket;
+        controlInputStream = controlSocket.getInputStream();
+        videoFd = videoSocket.getFileDescriptor();
     }
 
     private static LocalSocket connect(String abstractName) throws IOException {
@@ -44,25 +48,46 @@ public final class DesktopConnection implements Closeable {
     }
 
     public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
-        LocalSocket socket;
+        LocalSocket videoSocket;
+        LocalSocket controlSocket;
         if (tunnelForward) {
-            socket = listenAndAccept(SOCKET_NAME);
-            // send one byte so the client may read() to detect a connection error
-            socket.getOutputStream().write(0);
+            LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
+            try {
+                videoSocket = localServerSocket.accept();
+                // send one byte so the client may read() to detect a connection error
+                videoSocket.getOutputStream().write(0);
+                try {
+                    controlSocket = localServerSocket.accept();
+                } catch (IOException | RuntimeException e) {
+                    videoSocket.close();
+                    throw e;
+                }
+            } finally {
+                localServerSocket.close();
+            }
         } else {
-            socket = connect(SOCKET_NAME);
+            videoSocket = connect(SOCKET_NAME);
+            try {
+                controlSocket = connect(SOCKET_NAME);
+            } catch (IOException | RuntimeException e) {
+                videoSocket.close();
+                throw e;
+            }
         }
 
-        DesktopConnection connection = new DesktopConnection(socket);
+        DesktopConnection connection = new DesktopConnection(videoSocket, controlSocket);
         Size videoSize = device.getScreenInfo().getVideoSize();
         connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
         return connection;
     }
 
     public void close() throws IOException {
-        socket.shutdownInput();
-        socket.shutdownOutput();
-        socket.close();
+        videoSocket.shutdownInput();
+        videoSocket.shutdownOutput();
+        videoSocket.close();
+        controlSocket.shutdownInput();
+        controlSocket.shutdownOutput();
+        controlSocket.close();
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
@@ -78,17 +103,17 @@ public final class DesktopConnection implements Closeable {
         buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
         buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
         buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
-        IO.writeFully(fd, buffer, 0, buffer.length);
+        IO.writeFully(videoFd, buffer, 0, buffer.length);
     }
 
-    public FileDescriptor getFd() {
-        return fd;
+    public FileDescriptor getVideoFd() {
+        return videoFd;
     }
 
     public ControlEvent receiveControlEvent() throws IOException {
         ControlEvent event = reader.next();
         while (event == null) {
-            reader.readFrom(inputStream);
+            reader.readFrom(controlInputStream);
             event = reader.next();
         }
         return event;

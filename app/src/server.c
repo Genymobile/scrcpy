@@ -222,8 +222,14 @@ server_start(struct server *server, const char *serial,
 bool
 server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
-        server->device_socket = net_accept(server->server_socket);
-        if (server->device_socket == INVALID_SOCKET) {
+        server->video_socket = net_accept(server->server_socket);
+        if (server->video_socket == INVALID_SOCKET) {
+            return false;
+        }
+
+        server->control_socket = net_accept(server->server_socket);
+        if (server->control_socket == INVALID_SOCKET) {
+            // the video_socket will be clean up on destroy
             return false;
         }
 
@@ -232,9 +238,16 @@ server_connect_to(struct server *server) {
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
-        server->device_socket = connect_to_server(server->local_port, attempts,
-                                                  delay);
-        if (server->device_socket == INVALID_SOCKET) {
+        server->video_socket =
+            connect_to_server(server->local_port, attempts, delay);
+        if (server->video_socket == INVALID_SOCKET) {
+            return false;
+        }
+
+        // we know that the device is listening, we don't need several attempts
+        server->control_socket =
+            net_connect(IPV4_LOCALHOST, server->local_port);
+        if (server->control_socket == INVALID_SOCKET) {
             return false;
         }
     }
@@ -268,8 +281,11 @@ server_destroy(struct server *server) {
     if (server->server_socket != INVALID_SOCKET) {
         close_socket(&server->server_socket);
     }
-    if (server->device_socket != INVALID_SOCKET) {
-        close_socket(&server->device_socket);
+    if (server->video_socket != INVALID_SOCKET) {
+        close_socket(&server->video_socket);
+    }
+    if (server->control_socket != INVALID_SOCKET) {
+        close_socket(&server->control_socket);
     }
     SDL_free(server->serial);
 }

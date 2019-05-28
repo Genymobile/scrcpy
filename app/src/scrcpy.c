@@ -296,15 +296,13 @@ scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    socket_t device_socket = server.device_socket;
-
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct size frame_size;
 
     // screenrecord does not send frames when the screen content does not
     // change therefore, we transmit the screen size before the video stream,
     // to be able to init the window immediately
-    if (!device_read_info(device_socket, device_name, &frame_size)) {
+    if (!device_read_info(server.video_socket, device_name, &frame_size)) {
         server_stop(&server);
         ret = false;
         goto finally_destroy_server;
@@ -343,7 +341,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, device_socket, dec, rec);
+    stream_init(&stream, server.video_socket, dec, rec);
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
@@ -355,7 +353,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     if (display) {
         if (control) {
-            if (!controller_init(&controller, device_socket)) {
+            if (!controller_init(&controller, server.control_socket)) {
                 ret = false;
                 goto finally_stop_stream;
             }
