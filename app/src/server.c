@@ -223,20 +223,20 @@ bool
 server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
+        if (server->device_socket == INVALID_SOCKET) {
+            return false;
+        }
+
+        // we don't need the server socket anymore
+        close_socket(&server->server_socket);
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
         server->device_socket = connect_to_server(server->local_port, attempts,
                                                   delay);
-    }
-
-    if (server->device_socket == INVALID_SOCKET) {
-        return false;
-    }
-
-    if (!server->tunnel_forward) {
-        // we don't need the server socket anymore
-        close_socket(&server->server_socket);
+        if (server->device_socket == INVALID_SOCKET) {
+            return false;
+        }
     }
 
     // we don't need the adb tunnel anymore
