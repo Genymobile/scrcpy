@@ -219,7 +219,7 @@ server_start(struct server *server, const char *serial,
     return true;
 }
 
-socket_t
+bool
 server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
         server->device_socket = net_accept(server->server_socket);
@@ -231,7 +231,7 @@ server_connect_to(struct server *server) {
     }
 
     if (server->device_socket == INVALID_SOCKET) {
-        return INVALID_SOCKET;
+        return false;
     }
 
     if (!server->tunnel_forward) {
@@ -243,7 +243,7 @@ server_connect_to(struct server *server) {
     disable_tunnel(server); // ignore failure
     server->tunnel_enabled = false;
 
-    return server->device_socket;
+    return true;
 }
 
 void
