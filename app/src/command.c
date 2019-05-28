@@ -1,5 +1,6 @@
 #include "command.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,15 +21,52 @@ get_adb_command(void) {
     return adb_command;
 }
 
+// serialize argv to string "[arg1], [arg2], [arg3]"
+static size_t
+argv_to_string(const char *const *argv, char *buf, size_t bufsize) {
+    size_t idx = 0;
+    bool first = true;
+    while (*argv) {
+        const char *arg = *argv;
+        size_t len = strlen(arg);
+        // count space for "[], ...\0"
+        if (idx + len + 8 >= bufsize) {
+            // not enough space, truncate
+            assert(idx < bufsize - 4);
+            memcpy(&buf[idx], "...", 3);
+            idx += 3;
+            break;
+        }
+        if (first) {
+            first = false;
+        } else {
+            buf[idx++] = ',';
+            buf[idx++] = ' ';
+        }
+        buf[idx++] = '[';
+        memcpy(&buf[idx], arg, len);
+        idx += len;
+        buf[idx++] = ']';
+        argv++;
+    }
+    assert(idx < bufsize);
+    buf[idx] = '\0';
+    return idx;
+}
+
 static void
-show_adb_err_msg(enum process_result err) {
+show_adb_err_msg(enum process_result err, const char *const argv[]) {
+    char buf[512];
     switch (err) {
         case PROCESS_ERROR_GENERIC:
-            LOGE("Failed to execute adb");
+            argv_to_string(argv, buf, sizeof(buf));
+            LOGE("Failed to execute: %s", buf);
             break;
         case PROCESS_ERROR_MISSING_BINARY:
-            LOGE("'adb' command not found (make it accessible from your PATH "
-                  "or define its full path in the ADB environment variable)");
+            argv_to_string(argv, buf, sizeof(buf));
+            LOGE("Command not found: %s", buf);
+            LOGE("(make 'adb' accessible from your PATH or define its full"
+                 "path in the ADB environment variable)");
             break;
         case PROCESS_SUCCESS:
             /* do nothing */
@@ -37,7 +75,7 @@ show_adb_err_msg(enum process_result err) {
 }
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], int len) {
+adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     const char *cmd[len + 4];
     int i;
     process_t process;
@@ -54,7 +92,7 @@ adb_execute(const char *serial, const char *const adb_cmd[], int len) {
     cmd[len + i] = NULL;
     enum process_result r = cmd_execute(cmd[0], cmd, &process);
     if (r != PROCESS_SUCCESS) {
-        show_adb_err_msg(r);
+        show_adb_err_msg(r, cmd);
         return PROCESS_NONE;
     }
     return process;

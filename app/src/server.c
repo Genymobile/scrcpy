@@ -210,7 +210,7 @@ server_start(struct server *server, const char *serial,
             close_socket(&server->server_socket);
         }
         disable_tunnel(server);
-        SDL_free((void *) server->serial);
+        SDL_free(server->serial);
         return false;
     }
 

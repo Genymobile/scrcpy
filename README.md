@@ -294,6 +294,19 @@ _¹Double-click on black borders to remove them._
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
 
 
+## Custom paths
+
+To use a specific _adb_ binary, configure its path in the environment variable
+`ADB`:
+
+    ADB=/path/to/adb scrcpy
+
+To override the path of the `scrcpy-server.jar` file (it can be [useful] on
+Windows), configure its path in `SCRCPY_SERVER_PATH`.
+
+[useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
+
+
 ## Why _scrcpy_?
 
 A colleague challenged me to find a name as unpronounceable as [gnirehtet].

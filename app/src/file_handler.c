@@ -10,11 +10,11 @@
 
 struct request {
     file_handler_action_t action;
-    const char *file;
+    char *file;
 };
 
 static struct request *
-request_new(file_handler_action_t action, const char *file) {
+request_new(file_handler_action_t action, char *file) {
     struct request *req = SDL_malloc(sizeof(*req));
     if (!req) {
         return NULL;
@@ -29,8 +29,8 @@ request_free(struct request *req) {
     if (!req) {
         return;
     }
-    SDL_free((void *) req->file);
-    SDL_free((void *) req);
+    SDL_free(req->file);
+    SDL_free(req);
 }
 
 static bool
@@ -121,7 +121,7 @@ file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
     request_queue_destroy(&file_handler->queue);
-    SDL_free((void *) file_handler->serial);
+    SDL_free(file_handler->serial);
 }
 
 static process_t
@@ -137,7 +137,7 @@ push_file(const char *serial, const char *file) {
 bool
 file_handler_request(struct file_handler *file_handler,
                      file_handler_action_t action,
-                     const char *file) {
+                     char *file) {
     bool res;
 
     // start file_handler if it's used for the first time

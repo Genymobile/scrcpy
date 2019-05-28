@@ -105,7 +105,6 @@ static void usage(const char *arg0) {
         "        resize window to remove black borders\n"
         "\n"
         "    Ctrl+h\n"
-        "    Home\n"
         "    Middle-click\n"
         "        click on HOME\n"
         "\n"
