@@ -421,8 +421,7 @@ finally_destroy_server:
             wait_show_touches(proc_show_touches);
         }
         LOGI("Disable show_touches");
-        proc_show_touches = set_show_touches_enabled(options->serial,
-                                                     false);
+        proc_show_touches = set_show_touches_enabled(options->serial, false);
         wait_show_touches(proc_show_touches);
     }
 

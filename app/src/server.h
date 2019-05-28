@@ -18,12 +18,12 @@ struct server {
     bool send_frame_meta; // request frame PTS to be able to record properly
 };
 
-#define SERVER_INITIALIZER {              \
-    .serial = NULL,                       \
-    .process = PROCESS_NONE,              \
-    .server_socket = INVALID_SOCKET,      \
-    .device_socket = INVALID_SOCKET,      \
-    .local_port = 0,                      \
+#define SERVER_INITIALIZER {          \
+    .serial = NULL,                   \
+    .process = PROCESS_NONE,          \
+    .server_socket = INVALID_SOCKET,  \
+    .device_socket = INVALID_SOCKET,  \
+    .local_port = 0,                  \
     .tunnel_enabled = false,          \
     .tunnel_forward = false,          \
     .send_frame_meta = false,         \
@@ -36,8 +36,8 @@ server_init(struct server *server);
 // push, enable tunnel et start the server
 bool
 server_start(struct server *server, const char *serial,
-                      uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
-                      const char *crop, bool send_frame_meta);
+             uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
+             const char *crop, bool send_frame_meta);
 
 // block until the communication with the server is established
 socket_t
