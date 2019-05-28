@@ -290,12 +290,13 @@ scrcpy(const struct scrcpy_options *options) {
         goto finally_destroy_server;
     }
 
-    socket_t device_socket = server_connect_to(&server);
-    if (device_socket == INVALID_SOCKET) {
+    if (!server_connect_to(&server)) {
         server_stop(&server);
         ret = false;
         goto finally_destroy_server;
     }
+
+    socket_t device_socket = server.device_socket;
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct size frame_size;

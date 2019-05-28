@@ -40,7 +40,7 @@ server_start(struct server *server, const char *serial,
              const char *crop, bool send_frame_meta);
 
 // block until the communication with the server is established
-socket_t
+bool
 server_connect_to(struct server *server);
 
 // disconnect and kill the server process
