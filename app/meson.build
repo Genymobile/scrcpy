@@ -143,18 +143,34 @@ else
     link_args = []
 endif
 
-executable('scrcpy', src, dependencies: dependencies, include_directories: src_dir, install: true, c_args: c_args, link_args: link_args)
+executable('scrcpy', src,
+           dependencies: dependencies,
+           include_directories: src_dir,
+           install: true,
+           c_args: c_args,
+           link_args: link_args)
 
 
 ### TESTS
 
 tests = [
-    ['test_control_event_queue', ['tests/test_control_event_queue.c', 'src/control_event.c']],
-    ['test_control_event_serialize', ['tests/test_control_event_serialize.c', 'src/control_event.c']],
-    ['test_strutil', ['tests/test_strutil.c', 'src/str_util.c']],
+    ['test_control_event_queue', [
+        'tests/test_control_event_queue.c',
+        'src/control_event.c'
+    ]],
+    ['test_control_event_serialize', [
+        'tests/test_control_event_serialize.c',
+        'src/control_event.c'
+    ]],
+    ['test_strutil', [
+        'tests/test_strutil.c',
+        'src/str_util.c'
+    ]],
 ]
 
 foreach t : tests
-    exe = executable(t[0], t[1], include_directories: src_dir, dependencies: dependencies)
+    exe = executable(t[0], t[1],
+                     include_directories: src_dir,
+                     dependencies: dependencies)
     test(t[0], exe)
 endforeach
