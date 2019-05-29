@@ -75,7 +75,7 @@ control_event_queue_is_empty(const struct control_event_queue *queue);
 bool
 control_event_queue_is_full(const struct control_event_queue *queue);
 
-// event is copied, the queue does not use the event after the function returns
+// the event is "moved": the queue takes ownership of its fields
 bool
 control_event_queue_push(struct control_event_queue *queue,
                          const struct control_event *event);
