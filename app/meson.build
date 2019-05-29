@@ -6,6 +6,7 @@ src = [
     'src/convert.c',
     'src/decoder.c',
     'src/device.c',
+    'src/device_event.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
@@ -161,6 +162,10 @@ tests = [
         'tests/test_control_event_serialize.c',
         'src/control_event.c',
         'src/str_util.c'
+    ]],
+    ['test_device_event_deserialize', [
+        'tests/test_device_event_deserialize.c',
+        'src/device_event.c'
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',
