@@ -10,11 +10,17 @@ bool
 controller_init(struct controller *controller, socket_t control_socket) {
     cbuf_init(&controller->queue);
 
+    if (!receiver_init(&controller->receiver, control_socket)) {
+        return false;
+    }
+
     if (!(controller->mutex = SDL_CreateMutex())) {
+        receiver_destroy(&controller->receiver);
         return false;
     }
 
     if (!(controller->event_cond = SDL_CreateCond())) {
+        receiver_destroy(&controller->receiver);
         SDL_DestroyMutex(controller->mutex);
         return false;
     }
@@ -34,6 +40,8 @@ controller_destroy(struct controller *controller) {
     while (cbuf_take(&controller->queue, &event)) {
         control_event_destroy(&event);
     }
+
+    receiver_destroy(&controller->receiver);
 }
 
 bool
@@ -101,6 +109,12 @@ controller_start(struct controller *controller) {
         return false;
     }
 
+    if (!receiver_start(&controller->receiver)) {
+        controller_stop(controller);
+        SDL_WaitThread(controller->thread, NULL);
+        return false;
+    }
+
     return true;
 }
 
@@ -115,4 +129,5 @@ controller_stop(struct controller *controller) {
 void
 controller_join(struct controller *controller) {
     SDL_WaitThread(controller->thread, NULL);
+    receiver_join(&controller->receiver);
 }

@@ -8,6 +8,7 @@
 #include "cbuf.h"
 #include "control_event.h"
 #include "net.h"
+#include "receiver.h"
 
 struct control_event_queue CBUF(struct control_event, 64);
 
@@ -18,6 +19,7 @@ struct controller {
     SDL_cond *event_cond;
     bool stopped;
     struct control_event_queue queue;
+    struct receiver receiver;
 };
 
 bool

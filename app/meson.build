@@ -12,6 +12,7 @@ src = [
     'src/input_manager.c',
     'src/lock_util.c',
     'src/net.c',
+    'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
