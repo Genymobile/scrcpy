@@ -3,7 +3,6 @@
 #include <string.h>
 
 #include "buffer_util.h"
-#include "lock_util.h"
 #include "log.h"
 
 static void

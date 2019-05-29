@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_mutex.h>
 
 #include "android/input.h"
 #include "android/keycodes.h"
