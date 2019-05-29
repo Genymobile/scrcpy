@@ -24,7 +24,7 @@
 
 static struct frame_meta *
 frame_meta_new(uint64_t pts) {
-    struct frame_meta *meta = malloc(sizeof(*meta));
+    struct frame_meta *meta = SDL_malloc(sizeof(*meta));
     if (!meta) {
         return meta;
     }
@@ -35,7 +35,7 @@ frame_meta_new(uint64_t pts) {
 
 static void
 frame_meta_delete(struct frame_meta *frame_meta) {
-    free(frame_meta);
+    SDL_free(frame_meta);
 }
 
 static bool

@@ -8,6 +8,8 @@
 # include <tchar.h>
 #endif
 
+#include <SDL2/SDL_stdinc.h>
+
 size_t
 xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;
@@ -45,7 +47,7 @@ truncated:
 char *
 strquote(const char *src) {
     size_t len = strlen(src);
-    char *quoted = malloc(len + 3);
+    char *quoted = SDL_malloc(len + 3);
     if (!quoted) {
         return NULL;
     }
@@ -65,7 +67,7 @@ utf8_to_wide_char(const char *utf8) {
         return NULL;
     }
 
-    wchar_t *wide = malloc(len * sizeof(wchar_t));
+    wchar_t *wide = SDL_malloc(len * sizeof(wchar_t));
     if (!wide) {
         return NULL;
     }
