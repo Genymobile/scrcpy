@@ -100,6 +100,7 @@ file_handler_init(struct file_handler *file_handler, const char *serial) {
         file_handler->serial = SDL_strdup(serial);
         if (!file_handler->serial) {
             LOGW("Cannot strdup serial");
+            SDL_DestroyCond(file_handler->event_cond);
             SDL_DestroyMutex(file_handler->mutex);
             return false;
         }
