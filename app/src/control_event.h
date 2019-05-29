@@ -9,7 +9,6 @@
 #include "android/keycodes.h"
 #include "common.h"
 
-#define CONTROL_EVENT_QUEUE_SIZE 64
 #define CONTROL_EVENT_TEXT_MAX_LENGTH 300
 #define CONTROL_EVENT_SERIALIZED_MAX_SIZE (3 + CONTROL_EVENT_TEXT_MAX_LENGTH)
 
@@ -54,37 +53,10 @@ struct control_event {
     };
 };
 
-struct control_event_queue {
-    struct control_event data[CONTROL_EVENT_QUEUE_SIZE];
-    int head;
-    int tail;
-};
-
 // buf size must be at least CONTROL_EVENT_SERIALIZED_MAX_SIZE
 // return the number of bytes written
 size_t
 control_event_serialize(const struct control_event *event, unsigned char *buf);
-
-bool
-control_event_queue_init(struct control_event_queue *queue);
-
-void
-control_event_queue_destroy(struct control_event_queue *queue);
-
-bool
-control_event_queue_is_empty(const struct control_event_queue *queue);
-
-bool
-control_event_queue_is_full(const struct control_event_queue *queue);
-
-// the event is "moved": the queue takes ownership of its fields
-bool
-control_event_queue_push(struct control_event_queue *queue,
-                         const struct control_event *event);
-
-bool
-control_event_queue_take(struct control_event_queue *queue,
-                         struct control_event *event);
 
 void
 control_event_destroy(struct control_event *event);

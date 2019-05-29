@@ -8,9 +8,7 @@
 
 bool
 controller_init(struct controller *controller, socket_t video_socket) {
-    if (!control_event_queue_init(&controller->queue)) {
-        return false;
-    }
+    cbuf_init(&controller->queue);
 
     if (!(controller->mutex = SDL_CreateMutex())) {
         return false;
@@ -31,16 +29,19 @@ void
 controller_destroy(struct controller *controller) {
     SDL_DestroyCond(controller->event_cond);
     SDL_DestroyMutex(controller->mutex);
-    control_event_queue_destroy(&controller->queue);
+
+    struct control_event event;
+    while (cbuf_take(&controller->queue, &event)) {
+        control_event_destroy(&event);
+    }
 }
 
 bool
 controller_push_event(struct controller *controller,
                       const struct control_event *event) {
-    bool res;
     mutex_lock(controller->mutex);
-    bool was_empty = control_event_queue_is_empty(&controller->queue);
-    res = control_event_queue_push(&controller->queue, event);
+    bool was_empty = cbuf_is_empty(&controller->queue);
+    bool res = cbuf_push(&controller->queue, *event);
     if (was_empty) {
         cond_signal(controller->event_cond);
     }
@@ -66,8 +67,7 @@ run_controller(void *data) {
 
     for (;;) {
         mutex_lock(controller->mutex);
-        while (!controller->stopped
-                && control_event_queue_is_empty(&controller->queue)) {
+        while (!controller->stopped && cbuf_is_empty(&controller->queue)) {
             cond_wait(controller->event_cond, controller->mutex);
         }
         if (controller->stopped) {
@@ -76,8 +76,7 @@ run_controller(void *data) {
             break;
         }
         struct control_event event;
-        bool non_empty = control_event_queue_take(&controller->queue,
-                                                      &event);
+        bool non_empty = cbuf_take(&controller->queue, &event);
         SDL_assert(non_empty);
         mutex_unlock(controller->mutex);
 

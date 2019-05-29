@@ -1,13 +1,15 @@
 #ifndef CONTROL_H
 #define CONTROL_H
 
-#include "control_event.h"
-
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
+#include "cbuf.h"
+#include "control_event.h"
 #include "net.h"
+
+struct control_event_queue CBUF(struct control_event, 64);
 
 struct controller {
     socket_t video_socket;
@@ -33,7 +35,6 @@ controller_stop(struct controller *controller);
 void
 controller_join(struct controller *controller);
 
-// expose simple API to hide control_event_queue
 bool
 controller_push_event(struct controller *controller,
                       const struct control_event *event);
