@@ -139,4 +139,5 @@ int main(void) {
     test_serialize_long_text_event();
     test_serialize_mouse_event();
     test_serialize_scroll_event();
+    return 0;
 }
