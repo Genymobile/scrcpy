@@ -9,8 +9,8 @@
 #include "common.h"
 
 #define CONTROL_EVENT_QUEUE_SIZE 64
-#define TEXT_MAX_LENGTH 300
-#define SERIALIZED_EVENT_MAX_SIZE (3 + TEXT_MAX_LENGTH)
+#define CONTROL_EVENT_TEXT_MAX_LENGTH 300
+#define CONTROL_EVENT_SERIALIZED_MAX_SIZE (3 + CONTROL_EVENT_TEXT_MAX_LENGTH)
 
 enum control_event_type {
     CONTROL_EVENT_TYPE_KEYCODE,
@@ -59,7 +59,7 @@ struct control_event_queue {
     int tail;
 };
 
-// buf size must be at least SERIALIZED_EVENT_MAX_SIZE
+// buf size must be at least CONTROL_EVENT_SERIALIZED_MAX_SIZE
 int
 control_event_serialize(const struct control_event *event, unsigned char *buf);
 

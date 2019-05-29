@@ -13,7 +13,7 @@ static void test_serialize_keycode_event(void) {
         },
     };
 
-    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
     assert(size == 10);
 
@@ -34,7 +34,7 @@ static void test_serialize_text_event(void) {
         },
     };
 
-    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
     assert(size == 16);
 
@@ -49,20 +49,20 @@ static void test_serialize_text_event(void) {
 static void test_serialize_long_text_event(void) {
     struct control_event event;
     event.type = CONTROL_EVENT_TYPE_TEXT;
-    char text[TEXT_MAX_LENGTH + 1];
+    char text[CONTROL_EVENT_TEXT_MAX_LENGTH + 1];
     memset(text, 'a', sizeof(text));
-    text[TEXT_MAX_LENGTH] = '\0';
+    text[CONTROL_EVENT_TEXT_MAX_LENGTH] = '\0';
     event.text_event.text = text;
 
-    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
-    assert(size == 3 + TEXT_MAX_LENGTH);
+    assert(size == 3 + CONTROL_EVENT_TEXT_MAX_LENGTH);
 
-    unsigned char expected[3 + TEXT_MAX_LENGTH];
+    unsigned char expected[3 + CONTROL_EVENT_TEXT_MAX_LENGTH];
     expected[0] = 0x01; // CONTROL_EVENT_TYPE_KEYCODE
     expected[1] = 0x01;
     expected[2] = 0x2c; // text length (16 bits)
-    memset(&expected[3], 'a', TEXT_MAX_LENGTH);
+    memset(&expected[3], 'a', CONTROL_EVENT_TEXT_MAX_LENGTH);
 
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -86,7 +86,7 @@ static void test_serialize_mouse_event(void) {
         },
     };
 
-    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
     assert(size == 18);
 
@@ -119,7 +119,7 @@ static void test_serialize_scroll_event(void) {
         },
     };
 
-    unsigned char buf[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int size = control_event_serialize(&event, buf);
     assert(size == 21);
 

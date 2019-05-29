@@ -51,7 +51,7 @@ controller_push_event(struct controller *controller,
 static bool
 process_event(struct controller *controller,
               const struct control_event *event) {
-    unsigned char serialized_event[SERIALIZED_EVENT_MAX_SIZE];
+    unsigned char serialized_event[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
     int length = control_event_serialize(event, serialized_event);
     if (!length) {
         return false;

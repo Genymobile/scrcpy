@@ -25,9 +25,9 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
         case CONTROL_EVENT_TYPE_TEXT: {
             // write length (2 bytes) + string (non nul-terminated)
             size_t len = strlen(event->text_event.text);
-            if (len > TEXT_MAX_LENGTH) {
+            if (len > CONTROL_EVENT_TEXT_MAX_LENGTH) {
                 // injecting a text takes time, so limit the text length
-                len = TEXT_MAX_LENGTH;
+                len = CONTROL_EVENT_TEXT_MAX_LENGTH;
             }
             buffer_write16be(&buf[1], (uint16_t) len);
             memcpy(&buf[3], event->text_event.text, len);
