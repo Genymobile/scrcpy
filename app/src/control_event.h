@@ -2,6 +2,7 @@
 #define CONTROLEVENT_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "android/input.h"
@@ -60,7 +61,8 @@ struct control_event_queue {
 };
 
 // buf size must be at least CONTROL_EVENT_SERIALIZED_MAX_SIZE
-int
+// return the number of bytes written
+size_t
 control_event_serialize(const struct control_event *event, unsigned char *buf);
 
 bool

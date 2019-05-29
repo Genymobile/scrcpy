@@ -13,7 +13,7 @@ write_position(uint8_t *buf, const struct position *position) {
     buffer_write16be(&buf[10], position->screen_size.height);
 }
 
-int
+size_t
 control_event_serialize(const struct control_event *event, unsigned char *buf) {
     buf[0] = event->type;
     switch (event->type) {
