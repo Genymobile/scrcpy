@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.wrappers;
 
-import android.os.IInterface;
-
 import com.genymobile.scrcpy.Ln;
+
+import android.os.IInterface;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
