@@ -92,7 +92,7 @@ public class ControlEventReader {
         return ControlEvent.createKeycodeControlEvent(action, keycode, metaState);
     }
 
-    private ControlEvent parseTextControlEvent() {
+    private String parseString() {
         if (buffer.remaining() < 2) {
             return null;
         }
@@ -101,7 +101,14 @@ public class ControlEventReader {
             return null;
         }
         buffer.get(textBuffer, 0, len);
-        String text = new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+        return new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+    }
+
+    private ControlEvent parseTextControlEvent() {
+        String text = parseString();
+        if (text == null) {
+            return null;
+        }
         return ControlEvent.createTextControlEvent(text);
     }
 
