@@ -14,6 +14,15 @@ write_position(uint8_t *buf, const struct position *position) {
     buffer_write16be(&buf[10], position->screen_size.height);
 }
 
+// write length (2 bytes) + string (non nul-terminated)
+static size_t
+write_string(const char *utf8, size_t max_len, unsigned char *buf) {
+    size_t len = utf8_truncation_index(utf8, max_len);
+    buffer_write16be(buf, (uint16_t) len);
+    memcpy(&buf[2], utf8, len);
+    return 2 + len;
+}
+
 size_t
 control_event_serialize(const struct control_event *event, unsigned char *buf) {
     buf[0] = event->type;
@@ -24,14 +33,9 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
             buffer_write32be(&buf[6], event->keycode_event.metastate);
             return 10;
         case CONTROL_EVENT_TYPE_TEXT: {
-            // write length (2 bytes) + string (non nul-terminated)
-
-            // injecting a text takes time, so limit the text length
-            size_t len = utf8_truncation_index(event->text_event.text,
-                                               CONTROL_EVENT_TEXT_MAX_LENGTH);
-            buffer_write16be(&buf[1], (uint16_t) len);
-            memcpy(&buf[3], event->text_event.text, len);
-            return 3 + len;
+            size_t len = write_string(event->text_event.text,
+                                      CONTROL_EVENT_TEXT_MAX_LENGTH, &buf[1]);
+            return 1 + len;
         }
         case CONTROL_EVENT_TYPE_MOUSE:
             buf[1] = event->mouse_event.action;
