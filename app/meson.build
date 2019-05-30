@@ -159,7 +159,8 @@ tests = [
     ]],
     ['test_control_event_serialize', [
         'tests/test_control_event_serialize.c',
-        'src/control_event.c'
+        'src/control_event.c',
+        'src/str_util.c'
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',
