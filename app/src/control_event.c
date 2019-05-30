@@ -4,6 +4,7 @@
 
 #include "buffer_util.h"
 #include "log.h"
+#include "str_util.h"
 
 static void
 write_position(uint8_t *buf, const struct position *position) {
@@ -24,11 +25,10 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
             return 10;
         case CONTROL_EVENT_TYPE_TEXT: {
             // write length (2 bytes) + string (non nul-terminated)
-            size_t len = strlen(event->text_event.text);
-            if (len > CONTROL_EVENT_TEXT_MAX_LENGTH) {
-                // injecting a text takes time, so limit the text length
-                len = CONTROL_EVENT_TEXT_MAX_LENGTH;
-            }
+
+            // injecting a text takes time, so limit the text length
+            size_t len = utf8_truncation_index(event->text_event.text,
+                                               CONTROL_EVENT_TEXT_MAX_LENGTH);
             buffer_write16be(&buf[1], (uint16_t) len);
             memcpy(&buf[3], event->text_event.text, len);
             return 3 + len;
