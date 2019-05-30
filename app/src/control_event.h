@@ -10,7 +10,9 @@
 #include "common.h"
 
 #define CONTROL_EVENT_TEXT_MAX_LENGTH 300
-#define CONTROL_EVENT_SERIALIZED_MAX_SIZE (3 + CONTROL_EVENT_TEXT_MAX_LENGTH)
+#define CONTROL_EVENT_CLIPBOARD_TEXT_MAX_LENGTH 4093
+#define CONTROL_EVENT_SERIALIZED_MAX_SIZE \
+    (3 + CONTROL_EVENT_CLIPBOARD_TEXT_MAX_LENGTH)
 
 enum control_event_type {
     CONTROL_EVENT_TYPE_KEYCODE,
@@ -21,6 +23,7 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL,
     CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL,
     CONTROL_EVENT_TYPE_GET_CLIPBOARD,
+    CONTROL_EVENT_TYPE_SET_CLIPBOARD,
 };
 
 struct control_event {
@@ -44,6 +47,9 @@ struct control_event {
             int32_t hscroll;
             int32_t vscroll;
         } scroll_event;
+        struct {
+            char *text; // owned, to be freed by SDL_free()
+        } set_clipboard_event;
     };
 };
 

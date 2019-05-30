@@ -47,6 +47,12 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
             buffer_write32be(&buf[13], (uint32_t) event->scroll_event.hscroll);
             buffer_write32be(&buf[17], (uint32_t) event->scroll_event.vscroll);
             return 21;
+        case CONTROL_EVENT_TYPE_SET_CLIPBOARD: {
+            size_t len = write_string(event->text_event.text,
+                                      CONTROL_EVENT_CLIPBOARD_TEXT_MAX_LENGTH,
+                                      &buf[1]);
+            return 1 + len;
+        }
         case CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON:
         case CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL:
@@ -61,7 +67,15 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
 
 void
 control_event_destroy(struct control_event *event) {
-    if (event->type == CONTROL_EVENT_TYPE_TEXT) {
-        SDL_free(event->text_event.text);
+    switch (event->type) {
+        case CONTROL_EVENT_TYPE_TEXT:
+            SDL_free(event->text_event.text);
+            break;
+        case CONTROL_EVENT_TYPE_SET_CLIPBOARD:
+            SDL_free(event->set_clipboard_event.text);
+            break;
+        default:
+            // do nothing
+            break;
     }
 }

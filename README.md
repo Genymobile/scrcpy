@@ -289,6 +289,7 @@ you are interested, see [issue 14].
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
  | copy device clipboard to computer      | `Ctrl`+`c`                    |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
+ | copy computer clipboard to device      | `Ctrl`+`Shift+`v`             |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 
 _¹Double-click on black borders to remove them._  

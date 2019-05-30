@@ -13,6 +13,7 @@ public final class ControlEvent {
     public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 5;
     public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 6;
     public static final int TYPE_GET_CLIPBOARD = 7;
+    public static final int TYPE_SET_CLIPBOARD = 8;
 
     private int type;
     private String text;
@@ -58,6 +59,13 @@ public final class ControlEvent {
         event.position = position;
         event.hScroll = hScroll;
         event.vScroll = vScroll;
+        return event;
+    }
+
+    public static ControlEvent createSetClipboardControlEvent(String text) {
+        ControlEvent event = new ControlEvent();
+        event.type = TYPE_SET_CLIPBOARD;
+        event.text = text;
         return event;
     }
 

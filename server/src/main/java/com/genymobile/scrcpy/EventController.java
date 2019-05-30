@@ -94,6 +94,9 @@ public class EventController {
                 String clipboardText = device.getClipboardText();
                 sender.pushClipboardText(clipboardText);
                 break;
+            case ControlEvent.TYPE_SET_CLIPBOARD:
+                device.setClipboardText(controlEvent.getText());
+                break;
             default:
                 // do nothing
         }

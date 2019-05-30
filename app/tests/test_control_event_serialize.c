@@ -193,6 +193,26 @@ static void test_serialize_get_clipboard_event(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_set_clipboard_event(void) {
+    struct control_event event = {
+        .type = CONTROL_EVENT_TYPE_SET_CLIPBOARD,
+        .text_event = {
+            .text = "hello, world!",
+        },
+    };
+
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 16);
+
+    const unsigned char expected[] = {
+        0x08, // CONTROL_EVENT_TYPE_SET_CLIPBOARD
+        0x00, 0x0d, // text length
+        'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(void) {
     test_serialize_keycode_event();
     test_serialize_text_event();
@@ -203,5 +223,6 @@ int main(void) {
     test_serialize_expand_notification_panel_event();
     test_serialize_collapse_notification_panel_event();
     test_serialize_get_clipboard_event();
+    test_serialize_set_clipboard_event();
     return 0;
 }

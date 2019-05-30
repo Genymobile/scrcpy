@@ -9,11 +9,13 @@ import java.lang.reflect.Method;
 public class ClipboardManager {
     private final IInterface manager;
     private final Method getPrimaryClipMethod;
+    private final Method setPrimaryClipMethod;
 
     public ClipboardManager(IInterface manager) {
         this.manager = manager;
         try {
             getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
+            setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
         } catch (NoSuchMethodException e) {
             throw new AssertionError(e);
         }
@@ -26,6 +28,15 @@ public class ClipboardManager {
                 return null;
             }
             return clipData.getItemAt(0).getText();
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public void setText(CharSequence text) {
+        ClipData clipData = ClipData.newPlainText(null, text);
+        try {
+            setPrimaryClipMethod.invoke(manager, clipData, "com.android.shell");
         } catch (InvocationTargetException | IllegalAccessException e) {
             throw new AssertionError(e);
         }

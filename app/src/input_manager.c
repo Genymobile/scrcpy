@@ -137,6 +137,29 @@ request_device_clipboard(struct controller *controller) {
 }
 
 static void
+set_device_clipboard(struct controller *controller) {
+    char *text = SDL_GetClipboardText();
+    if (!text) {
+        LOGW("Cannot get clipboard text: %s", SDL_GetError());
+        return;
+    }
+    if (!*text) {
+        // empty text
+        SDL_free(text);
+        return;
+    }
+
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_SET_CLIPBOARD;
+    control_event.set_clipboard_event.text = text;
+
+    if (!controller_push_event(controller, &control_event)) {
+        SDL_free(text);
+        LOGW("Cannot send clipboard paste event");
+    }
+}
+
+static void
 switch_fps_counter_state(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
     if (vb->fps_counter.started) {
@@ -267,9 +290,15 @@ input_manager_process_key(struct input_manager *input_manager,
                 }
                 return;
             case SDLK_v:
-                if (control && ctrl && !meta && !shift && !repeat
+                if (control && ctrl && !meta && !repeat
                         && event->type == SDL_KEYDOWN) {
-                    clipboard_paste(input_manager->controller);
+                    if (shift) {
+                        // store the text in the device clipboard
+                        set_device_clipboard(input_manager->controller);
+                    } else {
+                        // inject the text as input events
+                        clipboard_paste(input_manager->controller);
+                    }
                 }
                 return;
             case SDLK_f:

@@ -147,6 +147,10 @@ public final class Device {
         return s.toString();
     }
 
+    public void setClipboardText(String text) {
+        serviceManager.getClipboardManager().setText(text);
+    }
+
     static Rect flipRect(Rect crop) {
         return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }

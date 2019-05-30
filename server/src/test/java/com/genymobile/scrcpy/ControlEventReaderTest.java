@@ -191,6 +191,26 @@ public class ControlEventReaderTest {
     }
 
     @Test
+    public void testParseSetClipboardEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_SET_CLIPBOARD);
+        byte[] text = "testé".getBytes(StandardCharsets.UTF_8);
+        dos.writeShort(text.length);
+        dos.write(text);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_SET_CLIPBOARD, event.getType());
+        Assert.assertEquals("testé", event.getText());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlEventReader reader = new ControlEventReader();
 
