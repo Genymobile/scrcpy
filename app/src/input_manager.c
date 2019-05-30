@@ -127,6 +127,16 @@ collapse_notification_panel(struct controller *controller) {
 }
 
 static void
+request_device_clipboard(struct controller *controller) {
+    struct control_event control_event;
+    control_event.type = CONTROL_EVENT_TYPE_GET_CLIPBOARD;
+
+    if (!controller_push_event(controller, &control_event)) {
+        LOGW("Cannot get device clipboard");
+    }
+}
+
+static void
 switch_fps_counter_state(struct video_buffer *vb) {
     mutex_lock(vb->mutex);
     if (vb->fps_counter.started) {
@@ -248,6 +258,12 @@ input_manager_process_key(struct input_manager *input_manager,
 #endif
                     // forward repeated events
                     action_volume_up(input_manager->controller, action);
+                }
+                return;
+            case SDLK_c:
+                if (control && ctrl && !meta && !shift && !repeat
+                        && event->type == SDL_KEYDOWN) {
+                    request_device_clipboard(input_manager->controller);
                 }
                 return;
             case SDLK_v:

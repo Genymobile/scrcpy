@@ -66,6 +66,7 @@ public class ControlEventReader {
             case ControlEvent.TYPE_BACK_OR_SCREEN_ON:
             case ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+            case ControlEvent.TYPE_GET_CLIPBOARD:
                 controlEvent = ControlEvent.createSimpleControlEvent(type);
                 break;
             default:

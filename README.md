@@ -287,6 +287,7 @@ you are interested, see [issue 14].
  | turn screen on                         | _Right-click²_                |
  | expand notification panel              | `Ctrl`+`n`                    |
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
+ | copy device clipboard to computer      | `Ctrl`+`c`                    |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 

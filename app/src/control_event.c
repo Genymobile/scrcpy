@@ -50,6 +50,7 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
         case CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON:
         case CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL:
+        case CONTROL_EVENT_TYPE_GET_CLIPBOARD:
             // no additional data
             return 1;
         default:

@@ -178,6 +178,21 @@ static void test_serialize_collapse_notification_panel_event(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_get_clipboard_event(void) {
+    struct control_event event = {
+        .type = CONTROL_EVENT_TYPE_GET_CLIPBOARD,
+    };
+
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        0x07, // CONTROL_EVENT_TYPE_GET_CLIPBOARD
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(void) {
     test_serialize_keycode_event();
     test_serialize_text_event();
@@ -187,5 +202,6 @@ int main(void) {
     test_serialize_back_or_screen_on_event();
     test_serialize_expand_notification_panel_event();
     test_serialize_collapse_notification_panel_event();
+    test_serialize_get_clipboard_event();
     return 0;
 }

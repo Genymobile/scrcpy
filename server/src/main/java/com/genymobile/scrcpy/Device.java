@@ -139,6 +139,14 @@ public final class Device {
         serviceManager.getStatusBarManager().collapsePanels();
     }
 
+    public String getClipboardText() {
+        CharSequence s = serviceManager.getClipboardManager().getText();
+        if (s == null) {
+            return null;
+        }
+        return s.toString();
+    }
+
     static Rect flipRect(Rect crop) {
         return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }

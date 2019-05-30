@@ -12,6 +12,7 @@ public final class ControlEvent {
     public static final int TYPE_BACK_OR_SCREEN_ON = 4;
     public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 5;
     public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 6;
+    public static final int TYPE_GET_CLIPBOARD = 7;
 
     private int type;
     private String text;

@@ -90,6 +90,10 @@ public class EventController {
             case ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL:
                 device.collapsePanels();
                 break;
+            case ControlEvent.TYPE_GET_CLIPBOARD:
+                String clipboardText = device.getClipboardText();
+                sender.pushClipboardText(clipboardText);
+                break;
             default:
                 // do nothing
         }

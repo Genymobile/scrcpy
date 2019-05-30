@@ -175,6 +175,22 @@ public class ControlEventReaderTest {
     }
 
     @Test
+    public void testParseGetClipboardEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_GET_CLIPBOARD);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_GET_CLIPBOARD, event.getType());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlEventReader reader = new ControlEventReader();
 
