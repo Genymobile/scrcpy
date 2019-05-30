@@ -2,7 +2,6 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.RemoteException;
@@ -107,8 +106,8 @@ public final class Device {
         }
         Rect contentRect = screenInfo.getContentRect();
         Point point = position.getPoint();
-        int scaledX = contentRect.left + point.x * contentRect.width() / videoSize.getWidth();
-        int scaledY = contentRect.top + point.y * contentRect.height() / videoSize.getHeight();
+        int scaledX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
+        int scaledY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
         return new Point(scaledX, scaledY);
     }
 

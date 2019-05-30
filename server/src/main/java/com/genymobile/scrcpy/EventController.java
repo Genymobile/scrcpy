@@ -2,7 +2,6 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
 
-import android.graphics.Point;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -43,8 +42,8 @@ public class EventController {
 
     private void setPointerCoords(Point point) {
         MotionEvent.PointerCoords coords = pointerCoords[0];
-        coords.x = point.x;
-        coords.y = point.y;
+        coords.x = point.getX();
+        coords.y = point.getY();
     }
 
     private void setScroll(int hScroll, int vScroll) {
