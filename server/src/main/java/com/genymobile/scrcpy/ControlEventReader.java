@@ -93,7 +93,7 @@ public class ControlEventReader {
     }
 
     private ControlEvent parseTextControlEvent() {
-        if (buffer.remaining() < 1) {
+        if (buffer.remaining() < 2) {
             return null;
         }
         int len = toUnsigned(buffer.getShort());
