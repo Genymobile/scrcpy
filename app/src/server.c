@@ -248,6 +248,13 @@ server_connect_to(struct server *server) {
 
 void
 server_stop(struct server *server) {
+    if (server->server_socket != INVALID_SOCKET) {
+        close_socket(&server->server_socket);
+    }
+    if (server->device_socket != INVALID_SOCKET) {
+        close_socket(&server->device_socket);
+    }
+
     SDL_assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
@@ -265,11 +272,5 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
-    if (server->server_socket != INVALID_SOCKET) {
-        close_socket(&server->server_socket);
-    }
-    if (server->device_socket != INVALID_SOCKET) {
-        close_socket(&server->device_socket);
-    }
     SDL_free(server->serial);
 }
