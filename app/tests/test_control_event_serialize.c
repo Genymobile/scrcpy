@@ -133,11 +133,59 @@ static void test_serialize_scroll_event(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_back_or_screen_on_event(void) {
+    struct control_event event = {
+        .type = CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON,
+    };
+
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        0x04, // CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_expand_notification_panel_event(void) {
+    struct control_event event = {
+        .type = CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL,
+    };
+
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        0x05, // CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_collapse_notification_panel_event(void) {
+    struct control_event event = {
+        .type = CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL,
+    };
+
+    unsigned char buf[CONTROL_EVENT_SERIALIZED_MAX_SIZE];
+    int size = control_event_serialize(&event, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        0x06, // CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(void) {
     test_serialize_keycode_event();
     test_serialize_text_event();
     test_serialize_long_text_event();
     test_serialize_mouse_event();
     test_serialize_scroll_event();
+    test_serialize_back_or_screen_on_event();
+    test_serialize_expand_notification_panel_event();
+    test_serialize_collapse_notification_panel_event();
     return 0;
 }

@@ -98,6 +98,83 @@ public class ControlEventReaderTest {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:MagicNumber")
+    public void testParseScrollEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_SCROLL);
+        dos.writeInt(260);
+        dos.writeInt(1026);
+        dos.writeShort(1080);
+        dos.writeShort(1920);
+        dos.writeInt(1);
+        dos.writeInt(-1);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_SCROLL, event.getType());
+        Assert.assertEquals(260, event.getPosition().getPoint().getX());
+        Assert.assertEquals(1026, event.getPosition().getPoint().getY());
+        Assert.assertEquals(1080, event.getPosition().getScreenSize().getWidth());
+        Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
+        Assert.assertEquals(1, event.getHScroll());
+        Assert.assertEquals(-1, event.getVScroll());
+    }
+
+    @Test
+    public void testParseBackOrScreenOnEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_BACK_OR_SCREEN_ON);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_BACK_OR_SCREEN_ON, event.getType());
+    }
+
+    @Test
+    public void testParseExpandNotificationPanelEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL, event.getType());
+    }
+
+    @Test
+    public void testParseCollapseNotificationPanelEvent() throws IOException {
+        ControlEventReader reader = new ControlEventReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlEvent event = reader.next();
+
+        Assert.assertEquals(ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL, event.getType());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlEventReader reader = new ControlEventReader();
 
