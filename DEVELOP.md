@@ -76,6 +76,9 @@ The server uses 2 threads:
  - the **main** thread, encoding and streaming the video to the client;
  - the **controller** thread, listening for _control events_ (typically,
    keyboard and mouse events) from the client.
+ - the **receiver** thread (managed by the controller), sending _device events_
+   to the clients (currently, it is only used to send the device clipboard
+   content).
 
 Since the video encoding is typically hardware, there would be no benefit in
 encoding and streaming in two different threads.
@@ -114,12 +117,12 @@ https://github.com/Genymobile/scrcpy/blob/v1.8/server/src/main/java/com/genymobi
 ### Input events injection
 
 _Control events_ are received from the client by the [`EventController`] (run in
-a separate thread). There are 5 types of input events:
+a separate thread). There are several types of input events:
  - keycode (cf [`KeyEvent`]),
  - text (special characters may not be handled by keycodes directly),
  - mouse motion/click,
  - mouse scroll,
- - custom command (e.g. to switch the screen on).
+ - other commands (e.g. to switch the screen on or to copy the clipboard).
 
 All of them may need to inject input events to the system. To do so, they use
 the _hidden_ method [`InputManager.injectInputEvent`] (exposed by our
@@ -146,8 +149,8 @@ The video stream is decoded by [libav] (FFmpeg).
 ### Initialization
 
 On startup, in addition to _libav_ and _SDL_ initialization, the client must
-push and start the server on the device, and open a socket so that they may
-communicate.
+push and start the server on the device, and open two sockets (one for the video
+stream, one for control) so that they may communicate.
 
 Note that the client-server roles are expressed at the application level:
 
@@ -180,12 +183,14 @@ the connection from the server (see commit [90a46b4]).
 
 ### Threading
 
-The client uses 3 threads:
+The client uses 4 threads:
 
  - the **main** thread, executing the SDL event loop,
  - the **stream** thread, receiving the video and used for decoding and
    recording,
  - the **controller** thread, sending _control events_ to the server.
+ - the **receiver** thread (managed by the controller), receiving _device
+   events_ from the client.
 
 In addition, another thread can be started if necessary to handle APK
 installation or file push requests (via drag&drop on the main window).
@@ -235,9 +240,8 @@ in a separate thread, to avoid I/O on the main thread.
 On SDL event, received on the main thread, the [input manager][inputmanager]
 creates appropriate [_control events_][controlevent]. It is responsible to
 convert SDL events to Android events (using [convert]). It pushes the _control
-events_ to a blocking queue hold by the controller. On its own thread, the
-controller takes events from the queue, that it serializes and sends to the
-client.
+events_ to a queue hold by the controller. On its own thread, the controller
+takes events from the queue, that it serializes and sends to the client.
 
 [controller]: https://github.com/Genymobile/scrcpy/blob/v1.8/app/src/controller.h
 [controlevent]: https://github.com/Genymobile/scrcpy/blob/v1.8/app/src/control_event.h
