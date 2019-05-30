@@ -43,9 +43,11 @@ control_event_serialize(const struct control_event *event, unsigned char *buf) {
             buffer_write32be(&buf[13], (uint32_t) event->scroll_event.hscroll);
             buffer_write32be(&buf[17], (uint32_t) event->scroll_event.vscroll);
             return 21;
-        case CONTROL_EVENT_TYPE_COMMAND:
-            buf[1] = event->command_event.action;
-            return 2;
+        case CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON:
+        case CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL:
+        case CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL:
+            // no additional data
+            return 1;
         default:
             LOGW("Unknown event type: %u", (unsigned) event->type);
             return 0;

@@ -11,7 +11,6 @@ public class ControlEventReader {
     private static final int KEYCODE_PAYLOAD_LENGTH = 9;
     private static final int MOUSE_PAYLOAD_LENGTH = 17;
     private static final int SCROLL_PAYLOAD_LENGTH = 20;
-    private static final int COMMAND_PAYLOAD_LENGTH = 1;
 
     public static final int TEXT_MAX_LENGTH = 300;
     private static final int RAW_BUFFER_SIZE = 1024;
@@ -64,8 +63,10 @@ public class ControlEventReader {
             case ControlEvent.TYPE_SCROLL:
                 controlEvent = parseScrollControlEvent();
                 break;
-            case ControlEvent.TYPE_COMMAND:
-                controlEvent = parseCommandControlEvent();
+            case ControlEvent.TYPE_BACK_OR_SCREEN_ON:
+            case ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL:
+            case ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+                controlEvent = ControlEvent.createSimpleControlEvent(type);
                 break;
             default:
                 Ln.w("Unknown event type: " + type);
@@ -121,14 +122,6 @@ public class ControlEventReader {
         int hScroll = buffer.getInt();
         int vScroll = buffer.getInt();
         return ControlEvent.createScrollControlEvent(position, hScroll, vScroll);
-    }
-
-    private ControlEvent parseCommandControlEvent() {
-        if (buffer.remaining() < COMMAND_PAYLOAD_LENGTH) {
-            return null;
-        }
-        int action = toUnsigned(buffer.get());
-        return ControlEvent.createCommandControlEvent(action);
     }
 
     private static Position readPosition(ByteBuffer buffer) {

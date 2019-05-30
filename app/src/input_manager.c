@@ -99,9 +99,7 @@ action_menu(struct controller *controller, int actions) {
 static void
 press_back_or_turn_screen_on(struct controller *controller) {
     struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action =
-            CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON;
+    control_event.type = CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot turn screen on");
@@ -111,9 +109,7 @@ press_back_or_turn_screen_on(struct controller *controller) {
 static void
 expand_notification_panel(struct controller *controller) {
     struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action =
-            CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL;
+    control_event.type = CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot expand notification panel");
@@ -123,9 +119,7 @@ expand_notification_panel(struct controller *controller) {
 static void
 collapse_notification_panel(struct controller *controller) {
     struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_COMMAND;
-    control_event.command_event.action =
-            CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL;
+    control_event.type = CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL;
 
     if (!controller_push_event(controller, &control_event)) {
         LOGW("Cannot collapse notification panel");

@@ -77,8 +77,14 @@ public class EventController {
             case ControlEvent.TYPE_SCROLL:
                 injectScroll(controlEvent.getPosition(), controlEvent.getHScroll(), controlEvent.getVScroll());
                 break;
-            case ControlEvent.TYPE_COMMAND:
-                executeCommand(controlEvent.getAction());
+            case ControlEvent.TYPE_BACK_OR_SCREEN_ON:
+                pressBackOrTurnScreenOn();
+                break;
+            case ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL:
+                device.expandNotificationPanel();
+                break;
+            case ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+                device.collapsePanels();
                 break;
             default:
                 // do nothing
@@ -169,21 +175,5 @@ public class EventController {
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
         return injectKeycode(keycode);
-    }
-
-    private boolean executeCommand(int action) {
-        switch (action) {
-            case ControlEvent.COMMAND_BACK_OR_SCREEN_ON:
-                return pressBackOrTurnScreenOn();
-            case ControlEvent.COMMAND_EXPAND_NOTIFICATION_PANEL:
-                device.expandNotificationPanel();
-                return true;
-            case ControlEvent.COMMAND_COLLAPSE_NOTIFICATION_PANEL:
-                device.collapsePanels();
-                return true;
-            default:
-                Ln.w("Unsupported command: " + action);
-        }
-        return false;
     }
 }

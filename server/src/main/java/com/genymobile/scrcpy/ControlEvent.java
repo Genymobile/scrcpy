@@ -9,16 +9,14 @@ public final class ControlEvent {
     public static final int TYPE_TEXT = 1;
     public static final int TYPE_MOUSE = 2;
     public static final int TYPE_SCROLL = 3;
-    public static final int TYPE_COMMAND = 4;
-
-    public static final int COMMAND_BACK_OR_SCREEN_ON = 0;
-    public static final int COMMAND_EXPAND_NOTIFICATION_PANEL = 1;
-    public static final int COMMAND_COLLAPSE_NOTIFICATION_PANEL = 2;
+    public static final int TYPE_BACK_OR_SCREEN_ON = 4;
+    public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 5;
+    public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 6;
 
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
-    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or COMMAND_*
+    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_*
     private int keycode; // KeyEvent.KEYCODE_*
     private int buttons; // MotionEvent.BUTTON_*
     private Position position;
@@ -62,10 +60,9 @@ public final class ControlEvent {
         return event;
     }
 
-    public static ControlEvent createCommandControlEvent(int action) {
+    public static ControlEvent createSimpleControlEvent(int type) {
         ControlEvent event = new ControlEvent();
-        event.type = TYPE_COMMAND;
-        event.action = action;
+        event.type = type;
         return event;
     }
 

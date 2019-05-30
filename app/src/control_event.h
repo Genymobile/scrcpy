@@ -17,13 +17,9 @@ enum control_event_type {
     CONTROL_EVENT_TYPE_TEXT,
     CONTROL_EVENT_TYPE_MOUSE,
     CONTROL_EVENT_TYPE_SCROLL,
-    CONTROL_EVENT_TYPE_COMMAND,
-};
-
-enum control_event_command {
-    CONTROL_EVENT_COMMAND_BACK_OR_SCREEN_ON,
-    CONTROL_EVENT_COMMAND_EXPAND_NOTIFICATION_PANEL,
-    CONTROL_EVENT_COMMAND_COLLAPSE_NOTIFICATION_PANEL,
+    CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON,
+    CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL,
+    CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL,
 };
 
 struct control_event {
@@ -47,9 +43,6 @@ struct control_event {
             int32_t hscroll;
             int32_t vscroll;
         } scroll_event;
-        struct {
-            enum control_event_command action;
-        } command_event;
     };
 };
 
