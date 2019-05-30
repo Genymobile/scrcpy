@@ -39,7 +39,7 @@ static void test_serialize_text_event(void) {
     assert(size == 16);
 
     const unsigned char expected[] = {
-        0x01, // CONTROL_EVENT_TYPE_KEYCODE
+        0x01, // CONTROL_EVENT_TYPE_TEXT
         0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
     };
