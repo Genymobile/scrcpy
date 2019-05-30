@@ -207,6 +207,13 @@ run_stream(void *data) {
     packet.size = 0;
 
     while (!av_read_frame(format_ctx, &packet)) {
+        if (SDL_AtomicGet(&stream->stopped)) {
+            // if the stream is stopped, the socket had been shutdown, so the
+            // last packet is probably corrupted (but not detected as such by
+            // FFmpeg) and will not be decoded correctly
+            av_packet_unref(&packet);
+            goto quit;
+        }
         if (stream->decoder && !decoder_push(stream->decoder, &packet)) {
             av_packet_unref(&packet);
             goto quit;
@@ -259,6 +266,7 @@ stream_init(struct stream *stream, socket_t socket,
     stream->socket = socket;
     stream->decoder = decoder,
     stream->recorder = recorder;
+    SDL_AtomicSet(&stream->stopped, 0);
 }
 
 bool
@@ -275,6 +283,7 @@ stream_start(struct stream *stream) {
 
 void
 stream_stop(struct stream *stream) {
+    SDL_AtomicSet(&stream->stopped, 1);
     if (stream->decoder) {
         decoder_interrupt(stream->decoder);
     }
