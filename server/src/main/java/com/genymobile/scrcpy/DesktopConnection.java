@@ -8,6 +8,7 @@ import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public final class DesktopConnection implements Closeable {
@@ -21,14 +22,16 @@ public final class DesktopConnection implements Closeable {
 
     private final LocalSocket controlSocket;
     private final InputStream controlInputStream;
-
+    private final OutputStream controlOutputStream;
 
     private final ControlEventReader reader = new ControlEventReader();
+    private final DeviceEventWriter writer = new DeviceEventWriter();
 
     private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
         this.videoSocket = videoSocket;
         this.controlSocket = controlSocket;
         controlInputStream = controlSocket.getInputStream();
+        controlOutputStream = controlSocket.getOutputStream();
         videoFd = videoSocket.getFileDescriptor();
     }
 
@@ -108,5 +111,9 @@ public final class DesktopConnection implements Closeable {
             event = reader.next();
         }
         return event;
+    }
+
+    public void sendDeviceEvent(DeviceEvent event) throws IOException {
+        writer.writeTo(event, controlOutputStream);
     }
 }

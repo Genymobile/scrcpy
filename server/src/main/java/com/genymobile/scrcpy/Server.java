@@ -19,8 +19,11 @@ public final class Server {
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
 
+            EventController controller = new EventController(device, connection);
+
             // asynchronous
-            startEventController(device, connection);
+            startEventController(controller);
+            startEventSender(controller.getSender());
 
             try {
                 // synchronous
@@ -32,15 +35,29 @@ public final class Server {
         }
     }
 
-    private static void startEventController(final Device device, final DesktopConnection connection) {
+    private static void startEventController(final EventController controller) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    new EventController(device, connection).control();
+                    controller.control();
                 } catch (IOException e) {
                     // this is expected on close
                     Ln.d("Event controller stopped");
+                }
+            }
+        }).start();
+    }
+
+    private static void startEventSender(final EventSender sender) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    sender.loop();
+                } catch (IOException | InterruptedException e) {
+                    // this is expected on close
+                    Ln.d("Event sender stopped");
                 }
             }
         }).start();
