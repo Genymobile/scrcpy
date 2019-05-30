@@ -280,20 +280,24 @@ scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = false;
     }
 
-    bool ret = true;
+    bool ret = false;
+
+    bool video_buffer_initialized = false;
+    bool file_handler_initialized = false;
+    bool recorder_initialized = false;
+    bool stream_started = false;
+    bool controller_initialized = false;
+    bool controller_started = false;
 
     bool display = !options->no_display;
     bool control = !options->no_control;
 
     if (!sdl_init_and_configure(display)) {
-        ret = false;
-        goto finally_destroy_server;
+        goto end;
     }
 
     if (!server_connect_to(&server)) {
-        server_stop(&server);
-        ret = false;
-        goto finally_destroy_server;
+        goto end;
     }
 
     socket_t device_socket = server.device_socket;
@@ -305,23 +309,21 @@ scrcpy(const struct scrcpy_options *options) {
     // change therefore, we transmit the screen size before the video stream,
     // to be able to init the window immediately
     if (!device_read_info(device_socket, device_name, &frame_size)) {
-        server_stop(&server);
-        ret = false;
-        goto finally_destroy_server;
+        goto end;
     }
 
     struct decoder *dec = NULL;
     if (display) {
         if (!video_buffer_init(&video_buffer)) {
-            server_stop(&server);
-            ret = false;
-            goto finally_destroy_server;
+            goto end;
         }
+        video_buffer_initialized = true;
 
-        if (control && !file_handler_init(&file_handler, server.serial)) {
-            ret = false;
-            server_stop(&server);
-            goto finally_destroy_video_buffer;
+        if (control) {
+            if (!file_handler_init(&file_handler, server.serial)) {
+                goto end;
+            }
+            file_handler_initialized = true;
         }
 
         decoder_init(&decoder, &video_buffer);
@@ -334,11 +336,10 @@ scrcpy(const struct scrcpy_options *options) {
                            options->record_filename,
                            options->record_format,
                            frame_size)) {
-            ret = false;
-            server_stop(&server);
-            goto finally_destroy_file_handler;
+            goto end;
         }
         rec = &recorder;
+        recorder_initialized = true;
     }
 
     av_log_set_callback(av_log_callback);
@@ -348,28 +349,24 @@ scrcpy(const struct scrcpy_options *options) {
     // now we consumed the header values, the socket receives the video stream
     // start the stream
     if (!stream_start(&stream)) {
-        ret = false;
-        server_stop(&server);
-        goto finally_destroy_recorder;
+        goto end;
     }
+    stream_started = true;
 
     if (display) {
         if (control) {
             if (!controller_init(&controller, device_socket)) {
-                ret = false;
-                goto finally_stop_stream;
+                goto end;
             }
 
             if (!controller_start(&controller)) {
-                ret = false;
-                goto finally_destroy_controller;
+                goto end;
             }
         }
 
         if (!screen_init_rendering(&screen, device_name, frame_size,
                                    options->always_on_top)) {
-            ret = false;
-            goto finally_stop_and_join_controller;
+            goto end;
         }
 
         if (options->fullscreen) {
@@ -387,35 +384,47 @@ scrcpy(const struct scrcpy_options *options) {
 
     screen_destroy(&screen);
 
-finally_stop_and_join_controller:
-    if (display && control) {
+end:
+    // stop stream and controller so that they don't continue once their socket
+    // is shutdown
+    if (stream_started) {
+        stream_stop(&stream);
+    }
+    if (controller_started) {
         controller_stop(&controller);
+    }
+    if (file_handler_initialized) {
+        file_handler_stop(&file_handler);
+    }
+
+    // shutdown the sockets and kill the server
+    server_stop(&server);
+
+    // now that the sockets are shutdown, the stream and controller are
+    // interrupted, we can join them
+    if (stream_started) {
+        stream_join(&stream);
+    }
+    if (controller_started) {
         controller_join(&controller);
     }
-finally_destroy_controller:
-    if (display && control) {
+    if (controller_initialized) {
         controller_destroy(&controller);
     }
-finally_stop_stream:
-    stream_stop(&stream);
-    // stop the server before stream_join() to wake up the stream
-    server_stop(&server);
-    stream_join(&stream);
-finally_destroy_recorder:
-    if (record) {
+
+    if (recorder_initialized) {
         recorder_destroy(&recorder);
     }
-finally_destroy_file_handler:
-    if (display && control) {
-        file_handler_stop(&file_handler);
+
+    if (file_handler_initialized) {
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);
     }
-finally_destroy_video_buffer:
-    if (display) {
+
+    if (video_buffer_initialized) {
         video_buffer_destroy(&video_buffer);
     }
-finally_destroy_server:
+
     if (options->show_touches) {
         if (!show_touches_waited) {
             // wait the process which enabled "show touches"
