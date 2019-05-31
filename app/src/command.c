@@ -69,7 +69,7 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
                  "path in the ADB environment variable)");
             break;
         case PROCESS_SUCCESS:
-            /* do nothing */
+            // do nothing
             break;
     }
 }
