@@ -132,7 +132,7 @@ handle_event(SDL_Event *event, bool control) {
                 screen_show_window(&screen);
             }
             if (!screen_update_frame(&screen, &video_buffer)) {
-                return false;
+                return EVENT_RESULT_CONTINUE;
             }
             break;
         case SDL_WINDOWEVENT:
