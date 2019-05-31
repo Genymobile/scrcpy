@@ -19,11 +19,11 @@ public final class Server {
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
 
-            EventController controller = new EventController(device, connection);
+            Controller controller = new Controller(device, connection);
 
             // asynchronous
-            startEventController(controller);
-            startEventSender(controller.getSender());
+            startController(controller);
+            startDeviceMessageSender(controller.getSender());
 
             try {
                 // synchronous
@@ -35,7 +35,7 @@ public final class Server {
         }
     }
 
-    private static void startEventController(final EventController controller) {
+    private static void startController(final Controller controller) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -43,13 +43,13 @@ public final class Server {
                     controller.control();
                 } catch (IOException e) {
                     // this is expected on close
-                    Ln.d("Event controller stopped");
+                    Ln.d("Controller stopped");
                 }
             }
         }).start();
     }
 
-    private static void startEventSender(final EventSender sender) {
+    private static void startDeviceMessageSender(final DeviceMessageSender sender) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -57,7 +57,7 @@ public final class Server {
                     sender.loop();
                 } catch (IOException | InterruptedException e) {
                     // this is expected on close
-                    Ln.d("Event sender stopped");
+                    Ln.d("Device message sender stopped");
                 }
             }
         }).start();

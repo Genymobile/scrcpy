@@ -159,19 +159,19 @@ convert_mouse_buttons(uint32_t state) {
 
 bool
 input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
-                              struct control_event *to) {
-    to->type = CONTROL_EVENT_TYPE_KEYCODE;
+                              struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
-    if (!convert_keycode_action(from->type, &to->keycode_event.action)) {
+    if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
         return false;
     }
 
     uint16_t mod = from->keysym.mod;
-    if (!convert_keycode(from->keysym.sym, &to->keycode_event.keycode, mod)) {
+    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod)) {
         return false;
     }
 
-    to->keycode_event.metastate = convert_meta_state(mod);
+    to->inject_keycode.metastate = convert_meta_state(mod);
 
     return true;
 }
@@ -179,17 +179,18 @@ input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
 bool
 mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
                                  struct size screen_size,
-                                 struct control_event *to) {
-    to->type = CONTROL_EVENT_TYPE_MOUSE;
+                                 struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT;
 
-    if (!convert_mouse_action(from->type, &to->mouse_event.action)) {
+    if (!convert_mouse_action(from->type, &to->inject_mouse_event.action)) {
         return false;
     }
 
-    to->mouse_event.buttons = convert_mouse_buttons(SDL_BUTTON(from->button));
-    to->mouse_event.position.screen_size = screen_size;
-    to->mouse_event.position.point.x = from->x;
-    to->mouse_event.position.point.y = from->y;
+    to->inject_mouse_event.buttons =
+        convert_mouse_buttons(SDL_BUTTON(from->button));
+    to->inject_mouse_event.position.screen_size = screen_size;
+    to->inject_mouse_event.position.point.x = from->x;
+    to->inject_mouse_event.position.point.y = from->y;
 
     return true;
 }
@@ -197,13 +198,13 @@ mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
 bool
 mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
                                  struct size screen_size,
-                                 struct control_event *to) {
-    to->type = CONTROL_EVENT_TYPE_MOUSE;
-    to->mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
-    to->mouse_event.buttons = convert_mouse_buttons(from->state);
-    to->mouse_event.position.screen_size = screen_size;
-    to->mouse_event.position.point.x = from->x;
-    to->mouse_event.position.point.y = from->y;
+                                 struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT;
+    to->inject_mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
+    to->inject_mouse_event.buttons = convert_mouse_buttons(from->state);
+    to->inject_mouse_event.position.screen_size = screen_size;
+    to->inject_mouse_event.position.point.x = from->x;
+    to->inject_mouse_event.position.point.y = from->y;
 
     return true;
 }
@@ -211,17 +212,17 @@ mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
 bool
 mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
                                 struct position position,
-                                struct control_event *to) {
-    to->type = CONTROL_EVENT_TYPE_SCROLL;
+                                struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
-    to->scroll_event.position = position;
+    to->inject_scroll_event.position = position;
 
     int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
     // SDL behavior seems inconsistent between horizontal and vertical scrolling
     // so reverse the horizontal
     // <https://wiki.libsdl.org/SDL_MouseWheelEvent#Remarks>
-    to->scroll_event.hscroll = -mul * from->x;
-    to->scroll_event.vscroll = mul * from->y;
+    to->inject_scroll_event.hscroll = -mul * from->x;
+    to->inject_scroll_event.vscroll = mul * from->y;
 
     return true;
 }

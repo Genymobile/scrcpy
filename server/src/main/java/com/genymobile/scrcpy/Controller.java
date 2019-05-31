@@ -11,11 +11,11 @@ import android.view.MotionEvent;
 
 import java.io.IOException;
 
-public class EventController {
+public class Controller {
 
     private final Device device;
     private final DesktopConnection connection;
-    private final EventSender sender;
+    private final DeviceMessageSender sender;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -23,11 +23,11 @@ public class EventController {
     private final MotionEvent.PointerProperties[] pointerProperties = {new MotionEvent.PointerProperties()};
     private final MotionEvent.PointerCoords[] pointerCoords = {new MotionEvent.PointerCoords()};
 
-    public EventController(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
         initPointer();
-        sender = new EventSender(connection);
+        sender = new DeviceMessageSender(connection);
     }
 
     private void initPointer() {
@@ -62,40 +62,40 @@ public class EventController {
         }
     }
 
-    public EventSender getSender() {
+    public DeviceMessageSender getSender() {
         return sender;
     }
 
     private void handleEvent() throws IOException {
-        ControlEvent controlEvent = connection.receiveControlEvent();
-        switch (controlEvent.getType()) {
-            case ControlEvent.TYPE_KEYCODE:
-                injectKeycode(controlEvent.getAction(), controlEvent.getKeycode(), controlEvent.getMetaState());
+        ControlMessage msg = connection.receiveControlMessage();
+        switch (msg.getType()) {
+            case ControlMessage.TYPE_INJECT_KEYCODE:
+                injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
                 break;
-            case ControlEvent.TYPE_TEXT:
-                injectText(controlEvent.getText());
+            case ControlMessage.TYPE_INJECT_TEXT:
+                injectText(msg.getText());
                 break;
-            case ControlEvent.TYPE_MOUSE:
-                injectMouse(controlEvent.getAction(), controlEvent.getButtons(), controlEvent.getPosition());
+            case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
+                injectMouse(msg.getAction(), msg.getButtons(), msg.getPosition());
                 break;
-            case ControlEvent.TYPE_SCROLL:
-                injectScroll(controlEvent.getPosition(), controlEvent.getHScroll(), controlEvent.getVScroll());
+            case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
+                injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
                 break;
-            case ControlEvent.TYPE_BACK_OR_SCREEN_ON:
+            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
                 pressBackOrTurnScreenOn();
                 break;
-            case ControlEvent.TYPE_EXPAND_NOTIFICATION_PANEL:
+            case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
                 device.expandNotificationPanel();
                 break;
-            case ControlEvent.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+            case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
                 device.collapsePanels();
                 break;
-            case ControlEvent.TYPE_GET_CLIPBOARD:
+            case ControlMessage.TYPE_GET_CLIPBOARD:
                 String clipboardText = device.getClipboardText();
                 sender.pushClipboardText(clipboardText);
                 break;
-            case ControlEvent.TYPE_SET_CLIPBOARD:
-                device.setClipboardText(controlEvent.getText());
+            case ControlMessage.TYPE_SET_CLIPBOARD:
+                device.setClipboardText(msg.getText());
                 break;
             default:
                 // do nothing

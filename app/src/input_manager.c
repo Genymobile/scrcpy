@@ -39,23 +39,23 @@ static void
 send_keycode(struct controller *controller, enum android_keycode keycode,
              int actions, const char *name) {
     // send DOWN event
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_KEYCODE;
-    control_event.keycode_event.keycode = keycode;
-    control_event.keycode_event.metastate = 0;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.keycode = keycode;
+    msg.inject_keycode.metastate = 0;
 
     if (actions & ACTION_DOWN) {
-        control_event.keycode_event.action = AKEY_EVENT_ACTION_DOWN;
-        if (!controller_push_event(controller, &control_event)) {
-            LOGW("Cannot send %s (DOWN)", name);
+        msg.inject_keycode.action = AKEY_EVENT_ACTION_DOWN;
+        if (!controller_push_msg(controller, &msg)) {
+            LOGW("Cannot request 'inject %s (DOWN)'", name);
             return;
         }
     }
 
     if (actions & ACTION_UP) {
-        control_event.keycode_event.action = AKEY_EVENT_ACTION_UP;
-        if (!controller_push_event(controller, &control_event)) {
-            LOGW("Cannot send %s (UP)", name);
+        msg.inject_keycode.action = AKEY_EVENT_ACTION_UP;
+        if (!controller_push_msg(controller, &msg)) {
+            LOGW("Cannot request 'inject %s (UP)'", name);
         }
     }
 }
@@ -98,41 +98,41 @@ action_menu(struct controller *controller, int actions) {
 // turn the screen on if it was off, press BACK otherwise
 static void
 press_back_or_turn_screen_on(struct controller *controller) {
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_BACK_OR_SCREEN_ON;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
 
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot turn screen on");
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Cannot request 'turn screen on'");
     }
 }
 
 static void
 expand_notification_panel(struct controller *controller) {
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_EXPAND_NOTIFICATION_PANEL;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
 
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot expand notification panel");
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Cannot request 'expand notification panel'");
     }
 }
 
 static void
 collapse_notification_panel(struct controller *controller) {
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_COLLAPSE_NOTIFICATION_PANEL;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL;
 
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot collapse notification panel");
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Cannot request 'collapse notification panel'");
     }
 }
 
 static void
 request_device_clipboard(struct controller *controller) {
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_GET_CLIPBOARD;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
 
-    if (!controller_push_event(controller, &control_event)) {
-        LOGW("Cannot get device clipboard");
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Cannot request device clipboard");
     }
 }
 
@@ -149,13 +149,13 @@ set_device_clipboard(struct controller *controller) {
         return;
     }
 
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_SET_CLIPBOARD;
-    control_event.set_clipboard_event.text = text;
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
+    msg.set_clipboard.text = text;
 
-    if (!controller_push_event(controller, &control_event)) {
+    if (!controller_push_msg(controller, &msg)) {
         SDL_free(text);
-        LOGW("Cannot send clipboard paste event");
+        LOGW("Cannot request 'set device clipboard'");
     }
 }
 
@@ -185,12 +185,12 @@ clipboard_paste(struct controller *controller) {
         return;
     }
 
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_TEXT;
-    control_event.text_event.text = text;
-    if (!controller_push_event(controller, &control_event)) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.inject_text.text = text;
+    if (!controller_push_msg(controller, &msg)) {
         SDL_free(text);
-        LOGW("Cannot send clipboard paste event");
+        LOGW("Cannot request 'paste clipboard'");
     }
 }
 
@@ -203,16 +203,16 @@ input_manager_process_text_input(struct input_manager *input_manager,
         // letters and space are handled as raw key event
         return;
     }
-    struct control_event control_event;
-    control_event.type = CONTROL_EVENT_TYPE_TEXT;
-    control_event.text_event.text = SDL_strdup(event->text);
-    if (!control_event.text_event.text) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.inject_text.text = SDL_strdup(event->text);
+    if (!msg.inject_text.text) {
         LOGW("Cannot strdup input text");
         return;
     }
-    if (!controller_push_event(input_manager->controller, &control_event)) {
-        SDL_free(control_event.text_event.text);
-        LOGW("Cannot send text event");
+    if (!controller_push_msg(input_manager->controller, &msg)) {
+        SDL_free(msg.inject_text.text);
+        LOGW("Cannot request 'inject text'");
     }
 }
 
@@ -344,10 +344,10 @@ input_manager_process_key(struct input_manager *input_manager,
         return;
     }
 
-    struct control_event control_event;
-    if (input_key_from_sdl_to_android(event, &control_event)) {
-        if (!controller_push_event(input_manager->controller, &control_event)) {
-            LOGW("Cannot send control event");
+    struct control_msg msg;
+    if (input_key_from_sdl_to_android(event, &msg)) {
+        if (!controller_push_msg(input_manager->controller, &msg)) {
+            LOGW("Cannot request 'inject keycode'");
         }
     }
 }
@@ -359,12 +359,12 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
         // do not send motion events when no button is pressed
         return;
     }
-    struct control_event control_event;
+    struct control_msg msg;
     if (mouse_motion_from_sdl_to_android(event,
                                          input_manager->screen->frame_size,
-                                         &control_event)) {
-        if (!controller_push_event(input_manager->controller, &control_event)) {
-            LOGW("Cannot send mouse motion event");
+                                         &msg)) {
+        if (!controller_push_msg(input_manager->controller, &msg)) {
+            LOGW("Cannot request 'inject mouse motion event'");
         }
     }
 }
@@ -391,9 +391,8 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
         }
         // double-click on black borders resize to fit the device screen
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            bool outside = is_outside_device_screen(input_manager,
-                                                        event->x,
-                                                        event->y);
+            bool outside =
+                is_outside_device_screen(input_manager, event->x, event->y);
             if (outside) {
                 screen_resize_to_fit(input_manager->screen);
                 return;
@@ -406,12 +405,12 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
         return;
     }
 
-    struct control_event control_event;
+    struct control_msg msg;
     if (mouse_button_from_sdl_to_android(event,
                                          input_manager->screen->frame_size,
-                                         &control_event)) {
-        if (!controller_push_event(input_manager->controller, &control_event)) {
-            LOGW("Cannot send mouse button event");
+                                         &msg)) {
+        if (!controller_push_msg(input_manager->controller, &msg)) {
+            LOGW("Cannot request 'inject mouse button event'");
         }
     }
 }
@@ -423,10 +422,10 @@ input_manager_process_mouse_wheel(struct input_manager *input_manager,
         .screen_size = input_manager->screen->frame_size,
         .point = get_mouse_point(input_manager->screen),
     };
-    struct control_event control_event;
-    if (mouse_wheel_from_sdl_to_android(event, position, &control_event)) {
-        if (!controller_push_event(input_manager->controller, &control_event)) {
-            LOGW("Cannot send mouse wheel event");
+    struct control_msg msg;
+    if (mouse_wheel_from_sdl_to_android(event, position, &msg)) {
+        if (!controller_push_msg(input_manager->controller, &msg)) {
+            LOGW("Cannot request 'inject mouse wheel event'");
         }
     }
 }

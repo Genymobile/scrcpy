@@ -1,12 +1,12 @@
 src = [
     'src/main.c',
     'src/command.c',
-    'src/control_event.c',
+    'src/control_msg.c',
     'src/controller.c',
     'src/convert.c',
     'src/decoder.c',
     'src/device.c',
-    'src/device_event.c',
+    'src/device_msg.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
@@ -160,13 +160,13 @@ tests = [
         'tests/test_cbuf.c',
     ]],
     ['test_control_event_serialize', [
-        'tests/test_control_event_serialize.c',
-        'src/control_event.c',
+        'tests/test_control_msg_serialize.c',
+        'src/control_msg.c',
         'src/str_util.c'
     ]],
     ['test_device_event_deserialize', [
-        'tests/test_device_event_deserialize.c',
-        'src/device_event.c'
+        'tests/test_device_msg_deserialize.c',
+        'src/device_msg.c'
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',
