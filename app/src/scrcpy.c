@@ -76,6 +76,11 @@ sdl_init_and_configure(bool display) {
     }
 #endif
 
+    // Do not minimize on focus loss
+    if (!SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0")) {
+        LOGW("Could not disable minimize on focus loss");
+    }
+
     // Do not disable the screensaver when scrcpy is running
     SDL_EnableScreenSaver();
 
