@@ -149,6 +149,7 @@ public final class Device {
 
     public void setClipboardText(String text) {
         serviceManager.getClipboardManager().setText(text);
+        Ln.i("Device clipboard set");
     }
 
     static Rect flipRect(Rect crop) {
