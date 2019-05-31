@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.SurfaceControl;
-
 /**
  * Union of all supported event types, identified by their {@code type}.
  */
