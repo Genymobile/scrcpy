@@ -74,6 +74,6 @@ adb_install(const char *serial, const char *local);
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 bool
-process_check_success(process_t process, const char *name);
+process_check_success(process_t proc, const char *name);
 
 #endif

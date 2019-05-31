@@ -11,6 +11,6 @@
 
 // name must be at least DEVICE_NAME_FIELD_LENGTH bytes
 bool
-device_read_info(socket_t device_socket, char *name, struct size *frame_size);
+device_read_info(socket_t device_socket, char *device_name, struct size *size);
 
 #endif

@@ -20,7 +20,7 @@ struct recorder {
 };
 
 bool
-recorder_init(struct recorder *recoder, const char *filename,
+recorder_init(struct recorder *recorder, const char *filename,
               enum recorder_format format, struct size declared_frame_size);
 
 void
