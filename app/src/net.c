@@ -33,6 +33,7 @@ net_connect(uint32_t addr, uint16_t port) {
 
     if (connect(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         perror("connect");
+        close(sock);
         return INVALID_SOCKET;
     }
 
@@ -60,11 +61,13 @@ net_listen(uint32_t addr, uint16_t port, int backlog) {
 
     if (bind(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         perror("bind");
+        close(sock);
         return INVALID_SOCKET;
     }
 
     if (listen(sock, backlog) == SOCKET_ERROR) {
         perror("listen");
+        close(sock);
         return INVALID_SOCKET;
     }
 
