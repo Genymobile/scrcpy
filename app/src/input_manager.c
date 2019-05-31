@@ -232,6 +232,9 @@ void
 input_manager_process_key(struct input_manager *input_manager,
                           const SDL_KeyboardEvent *event,
                           bool control) {
+    // control: indicates the state of the command-line option --no-control
+    // ctrl: the Ctrl key
+
     bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
@@ -242,45 +245,48 @@ input_manager_process_key(struct input_manager *input_manager,
         return;
     }
 
+    struct controller *controller = input_manager->controller;
+
     // capture all Ctrl events
     if (ctrl | meta) {
         SDL_Keycode keycode = event->keysym.sym;
-        int action = event->type == SDL_KEYDOWN ? ACTION_DOWN : ACTION_UP;
+        bool down = event->type == SDL_KEYDOWN;
+        int action = down ? ACTION_DOWN : ACTION_UP;
         bool repeat = event->repeat;
         bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
                 if (control && ctrl && !meta && !shift && !repeat) {
-                    action_home(input_manager->controller, action);
+                    action_home(controller, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
                 if (control && ctrl && !meta && !shift && !repeat) {
-                    action_back(input_manager->controller, action);
+                    action_back(controller, action);
                 }
                 return;
             case SDLK_s:
                 if (control && ctrl && !meta && !shift && !repeat) {
-                    action_app_switch(input_manager->controller, action);
+                    action_app_switch(controller, action);
                 }
                 return;
             case SDLK_m:
                 if (control && ctrl && !meta && !shift && !repeat) {
-                    action_menu(input_manager->controller, action);
+                    action_menu(controller, action);
                 }
                 return;
             case SDLK_p:
                 if (control && ctrl && !meta && !shift && !repeat) {
-                    action_power(input_manager->controller, action);
+                    action_power(controller, action);
                 }
                 return;
             case SDLK_o:
-                if (control && ctrl && !meta && event->type == SDL_KEYDOWN) {
+                if (control && ctrl && !meta && down) {
                     enum screen_power_mode mode = shift
                                                 ? SCREEN_POWER_MODE_NORMAL
                                                 : SCREEN_POWER_MODE_OFF;
-                    set_screen_power_mode(input_manager->controller, mode);
+                    set_screen_power_mode(controller, mode);
                 }
                 return;
             case SDLK_DOWN:
@@ -290,7 +296,7 @@ input_manager_process_key(struct input_manager *input_manager,
                 if (control && ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
-                    action_volume_down(input_manager->controller, action);
+                    action_volume_down(controller, action);
                 }
                 return;
             case SDLK_UP:
@@ -300,58 +306,51 @@ input_manager_process_key(struct input_manager *input_manager,
                 if (control && ctrl && !meta && !shift) {
 #endif
                     // forward repeated events
-                    action_volume_up(input_manager->controller, action);
+                    action_volume_up(controller, action);
                 }
                 return;
             case SDLK_c:
-                if (control && ctrl && !meta && !shift && !repeat
-                        && event->type == SDL_KEYDOWN) {
-                    request_device_clipboard(input_manager->controller);
+                if (control && ctrl && !meta && !shift && !repeat && down) {
+                    request_device_clipboard(controller);
                 }
                 return;
             case SDLK_v:
-                if (control && ctrl && !meta && !repeat
-                        && event->type == SDL_KEYDOWN) {
+                if (control && ctrl && !meta && !repeat && down) {
                     if (shift) {
                         // store the text in the device clipboard
-                        set_device_clipboard(input_manager->controller);
+                        set_device_clipboard(controller);
                     } else {
                         // inject the text as input events
-                        clipboard_paste(input_manager->controller);
+                        clipboard_paste(controller);
                     }
                 }
                 return;
             case SDLK_f:
-                if (ctrl && !meta && !shift && !repeat
-                        && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat && down) {
                     screen_switch_fullscreen(input_manager->screen);
                 }
                 return;
             case SDLK_x:
-                if (ctrl && !meta && !shift && !repeat
-                        && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat && down) {
                     screen_resize_to_fit(input_manager->screen);
                 }
                 return;
             case SDLK_g:
-                if (ctrl && !meta && !shift && !repeat
-                        && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat && down) {
                     screen_resize_to_pixel_perfect(input_manager->screen);
                 }
                 return;
             case SDLK_i:
-                if (ctrl && !meta && !shift && !repeat
-                        && event->type == SDL_KEYDOWN) {
+                if (ctrl && !meta && !shift && !repeat && down) {
                     switch_fps_counter_state(input_manager->video_buffer);
                 }
                 return;
             case SDLK_n:
-                if (control && ctrl && !meta
-                        && !repeat && event->type == SDL_KEYDOWN) {
+                if (control && ctrl && !meta && !repeat && down) {
                     if (shift) {
-                        collapse_notification_panel(input_manager->controller);
+                        collapse_notification_panel(controller);
                     } else {
-                        expand_notification_panel(input_manager->controller);
+                        expand_notification_panel(controller);
                     }
                 }
                 return;
@@ -366,7 +365,7 @@ input_manager_process_key(struct input_manager *input_manager,
 
     struct control_msg msg;
     if (input_key_from_sdl_to_android(event, &msg)) {
-        if (!controller_push_msg(input_manager->controller, &msg)) {
+        if (!controller_push_msg(controller, &msg)) {
             LOGW("Cannot request 'inject keycode'");
         }
     }
