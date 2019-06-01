@@ -246,6 +246,8 @@ input_manager_process_key(struct input_manager *input_manager,
     }
 
     struct controller *controller = input_manager->controller;
+    struct video_buffer *video_buffer = input_manager->video_buffer;
+    struct screen *screen = input_manager->screen;
 
     // capture all Ctrl events
     if (ctrl | meta) {
