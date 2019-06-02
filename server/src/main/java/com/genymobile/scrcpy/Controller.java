@@ -54,8 +54,8 @@ public class Controller {
     }
 
     public void control() throws IOException {
-        // on start, turn screen on
-        turnScreenOn();
+        // on start, power on the device
+        powerOn();
 
         while (true) {
             handleEvent();
@@ -182,7 +182,7 @@ public class Controller {
         return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    private boolean turnScreenOn() {
+    private boolean powerOn() {
         return device.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
     }
 
