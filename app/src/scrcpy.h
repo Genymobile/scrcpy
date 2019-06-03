@@ -18,6 +18,7 @@ struct scrcpy_options {
     bool always_on_top;
     bool no_control;
     bool no_display;
+    bool window_serial;
 };
 
 bool

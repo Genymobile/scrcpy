@@ -365,8 +365,8 @@ scrcpy(const struct scrcpy_options *options) {
             }
         }
 
-        if (!screen_init_rendering(&screen, device_name, frame_size,
-                                   options->always_on_top)) {
+        if (!screen_init_rendering(&screen, ((options->serial && options->window_serial) ? options->serial : device_name),
+                                   frame_size, options->always_on_top)) {
             ret = false;
             goto finally_stop_and_join_controller;
         }

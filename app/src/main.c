@@ -28,6 +28,7 @@ struct args {
     uint16_t max_size;
     uint32_t bit_rate;
     bool always_on_top;
+    bool window_serial;
 };
 
 static void usage(const char *arg0) {
@@ -91,6 +92,9 @@ static void usage(const char *arg0) {
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
+        "\n"
+        "    -w, --window-serial\n"
+        "        Set the Window Title with the serial number.\n"
         "\n"
         "Shortcuts:\n"
         "\n"
@@ -291,10 +295,11 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"serial",        required_argument, NULL, 's'},
         {"show-touches",  no_argument,       NULL, 't'},
         {"version",       no_argument,       NULL, 'v'},
+        {"window-serial", no_argument,       NULL, 'w'},
         {NULL,            0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv:w", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -346,6 +351,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'v':
                 args->version = true;
+                break;
+            case 'w':
+                args->window_serial = true;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -448,6 +456,7 @@ main(int argc, char *argv[]) {
         .always_on_top = args.always_on_top,
         .no_control = args.no_control,
         .no_display = args.no_display,
+        .window_serial = args.window_serial,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
