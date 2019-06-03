@@ -286,7 +286,6 @@ you are interested, see [issue 14].
  | click on `POWER`                       | `Ctrl`+`p`                    |
  | power on                               | _Right-click²_                |
  | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
- | turn device screen on                  | `Ctrl`+`Shift`+`o`            |
  | expand notification panel              | `Ctrl`+`n`                    |
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
  | copy device clipboard to computer      | `Ctrl`+`c`                    |

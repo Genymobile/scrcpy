@@ -282,11 +282,8 @@ input_manager_process_key(struct input_manager *input_manager,
                 }
                 return;
             case SDLK_o:
-                if (control && ctrl && !meta && down) {
-                    enum screen_power_mode mode = shift
-                                                ? SCREEN_POWER_MODE_NORMAL
-                                                : SCREEN_POWER_MODE_OFF;
-                    set_screen_power_mode(controller, mode);
+                if (control && ctrl && !shift && !meta && down) {
+                    set_screen_power_mode(controller, SCREEN_POWER_MODE_OFF);
                 }
                 return;
             case SDLK_DOWN:
