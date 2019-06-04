@@ -294,10 +294,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
 
-    bool display = !options->no_display;
-    bool control = !options->no_control;
-
-    if (!sdl_init_and_configure(display)) {
+    if (!sdl_init_and_configure(options->display)) {
         goto end;
     }
 
@@ -316,13 +313,13 @@ scrcpy(const struct scrcpy_options *options) {
     }
 
     struct decoder *dec = NULL;
-    if (display) {
+    if (options->display) {
         if (!video_buffer_init(&video_buffer)) {
             goto end;
         }
         video_buffer_initialized = true;
 
-        if (control) {
+        if (options->control) {
             if (!file_handler_init(&file_handler, server.serial)) {
                 goto end;
             }
@@ -356,8 +353,8 @@ scrcpy(const struct scrcpy_options *options) {
     }
     stream_started = true;
 
-    if (display) {
-        if (control) {
+    if (options->display) {
+        if (options->control) {
             if (!controller_init(&controller, server.control_socket)) {
                 goto end;
             }
@@ -382,7 +379,7 @@ scrcpy(const struct scrcpy_options *options) {
         show_touches_waited = true;
     }
 
-    ret = event_loop(display, control);
+    ret = event_loop(options->display, options->control);
     LOGD("quit...");
 
     screen_destroy(&screen);

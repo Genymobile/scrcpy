@@ -455,8 +455,8 @@ main(int argc, char *argv[]) {
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
-        .no_control = args.no_control,
-        .no_display = args.no_display,
+        .control = !args.no_control,
+        .display = !args.no_display,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
