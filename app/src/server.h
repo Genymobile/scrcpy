@@ -29,6 +29,14 @@ struct server {
     .tunnel_forward = false,          \
 }
 
+struct server_params {
+    const char *crop;
+    uint16_t local_port;
+    uint16_t max_size;
+    uint32_t bit_rate;
+    bool send_frame_meta;
+};
+
 // init default values
 void
 server_init(struct server *server);
@@ -36,8 +44,7 @@ server_init(struct server *server);
 // push, enable tunnel et start the server
 bool
 server_start(struct server *server, const char *serial,
-             uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
-             const char *crop, bool send_frame_meta);
+             const struct server_params *params);
 
 // block until the communication with the server is established
 bool

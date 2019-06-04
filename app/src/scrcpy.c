@@ -271,9 +271,14 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 bool
 scrcpy(const struct scrcpy_options *options) {
     bool record = !!options->record_filename;
-    if (!server_start(&server, options->serial, options->port,
-                      options->max_size, options->bit_rate, options->crop,
-                      record)) {
+    struct server_params params = {
+        .crop = options->crop,
+        .local_port = options->port,
+        .max_size = options->max_size,
+        .bit_rate = options->bit_rate,
+        .send_frame_meta = record,
+    };
+    if (!server_start(&server, options->serial, &params)) {
         return false;
     }
 

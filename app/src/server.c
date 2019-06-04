@@ -79,14 +79,11 @@ disable_tunnel(struct server *server) {
 }
 
 static process_t
-execute_server(const char *serial,
-               uint16_t max_size, uint32_t bit_rate,
-               bool tunnel_forward, const char *crop,
-               bool send_frame_meta) {
+execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
-    sprintf(max_size_string, "%"PRIu16, max_size);
-    sprintf(bit_rate_string, "%"PRIu32, bit_rate);
+    sprintf(max_size_string, "%"PRIu16, params->max_size);
+    sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
@@ -95,11 +92,11 @@ execute_server(const char *serial,
         "com.genymobile.scrcpy.Server",
         max_size_string,
         bit_rate_string,
-        tunnel_forward ? "true" : "false",
-        crop ? crop : "-",
-        send_frame_meta ? "true" : "false",
+        server->tunnel_forward ? "true" : "false",
+        params->crop ? params->crop : "-",
+        params->send_frame_meta ? "true" : "false",
     };
-    return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 
 #define IPV4_LOCALHOST 0x7F000001
@@ -160,9 +157,8 @@ server_init(struct server *server) {
 
 bool
 server_start(struct server *server, const char *serial,
-             uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
-             const char *crop, bool send_frame_meta) {
-    server->local_port = local_port;
+             const struct server_params *params) {
+    server->local_port = params->local_port;
 
     if (serial) {
         server->serial = SDL_strdup(serial);
@@ -191,9 +187,9 @@ server_start(struct server *server, const char *serial,
         // need to try to connect until the server socket is listening on the
         // device.
 
-        server->server_socket = listen_on_port(local_port);
+        server->server_socket = listen_on_port(params->local_port);
         if (server->server_socket == INVALID_SOCKET) {
-            LOGE("Could not listen on port %" PRIu16, local_port);
+            LOGE("Could not listen on port %" PRIu16, params->local_port);
             disable_tunnel(server);
             SDL_free(server->serial);
             return false;
@@ -201,9 +197,7 @@ server_start(struct server *server, const char *serial,
     }
 
     // server will connect to our server socket
-    server->process = execute_server(serial, max_size, bit_rate,
-                                     server->tunnel_forward, crop,
-                                     send_frame_meta);
+    server->process = execute_server(server, params);
 
     if (server->process == PROCESS_NONE) {
         if (!server->tunnel_forward) {
