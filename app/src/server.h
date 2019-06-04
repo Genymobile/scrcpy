@@ -16,7 +16,6 @@ struct server {
     uint16_t local_port;
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
-    bool send_frame_meta; // request frame PTS to be able to record properly
 };
 
 #define SERVER_INITIALIZER {          \
@@ -28,7 +27,6 @@ struct server {
     .local_port = 0,                  \
     .tunnel_enabled = false,          \
     .tunnel_forward = false,          \
-    .send_frame_meta = false,         \
 }
 
 // init default values
