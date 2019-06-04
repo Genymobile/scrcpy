@@ -19,11 +19,13 @@ public final class Server {
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
 
-            Controller controller = new Controller(device, connection);
+            if (options.getControl()) {
+                Controller controller = new Controller(device, connection);
 
-            // asynchronous
-            startController(controller);
-            startDeviceMessageSender(controller.getSender());
+                // asynchronous
+                startController(controller);
+                startDeviceMessageSender(controller.getSender());
+            }
 
             try {
                 // synchronous
@@ -65,7 +67,7 @@ public final class Server {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
-        if (args.length != 5) {
+        if (args.length != 6) {
             throw new IllegalArgumentException("Expecting 5 parameters");
         }
 
@@ -86,6 +88,9 @@ public final class Server {
 
         boolean sendFrameMeta = Boolean.parseBoolean(args[4]);
         options.setSendFrameMeta(sendFrameMeta);
+
+        boolean control = Boolean.parseBoolean(args[5]);
+        options.setControl(control);
 
         return options;
     }

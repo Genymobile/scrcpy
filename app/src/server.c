@@ -95,6 +95,7 @@ execute_server(struct server *server, const struct server_params *params) {
         server->tunnel_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         params->send_frame_meta ? "true" : "false",
+        params->control ? "true" : "false",
     };
     return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
