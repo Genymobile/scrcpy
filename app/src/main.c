@@ -28,6 +28,7 @@ struct args {
     uint16_t max_size;
     uint32_t bit_rate;
     bool always_on_top;
+    bool turn_screen_off;
 };
 
 static void usage(const char *arg0) {
@@ -81,6 +82,9 @@ static void usage(const char *arg0) {
         "    -s, --serial\n"
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
+        "\n"
+        "    -S, --turn-screen-off\n"
+        "        Turn the device screen off immediately.\n"
         "\n"
         "    -t, --show-touches\n"
         "        Enable \"show touches\" on start, disable on quit.\n"
@@ -299,11 +303,12 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"record-format",   required_argument, NULL, 'f'},
         {"serial",          required_argument, NULL, 's'},
         {"show-touches",    no_argument,       NULL, 't'},
+        {"turn-screen-off", no_argument,       NULL, 'S'},
         {"version",         no_argument,       NULL, 'v'},
         {NULL,              0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -346,6 +351,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 's':
                 args->serial = optarg;
+                break;
+            case 'S':
+                args->turn_screen_off = true;
                 break;
             case 't':
                 args->show_touches = true;
@@ -417,6 +425,7 @@ main(int argc, char *argv[]) {
         .always_on_top = false,
         .no_control = false,
         .no_display = false,
+        .turn_screen_off = false,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -457,6 +466,7 @@ main(int argc, char *argv[]) {
         .always_on_top = args.always_on_top,
         .control = !args.no_control,
         .display = !args.no_display,
+        .turn_screen_off = args.turn_screen_off,
     };
     int res = scrcpy(&options) ? 0 : 1;
 

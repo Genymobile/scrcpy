@@ -375,6 +375,16 @@ scrcpy(const struct scrcpy_options *options) {
             goto end;
         }
 
+        if (options->turn_screen_off) {
+            struct control_msg msg;
+            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
+
+            if (!controller_push_msg(&controller, &msg)) {
+                LOGW("Cannot request 'set screen power mode'");
+            }
+        }
+
         if (options->fullscreen) {
             screen_switch_fullscreen(&screen);
         }

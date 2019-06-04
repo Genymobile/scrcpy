@@ -53,9 +53,21 @@ public class Controller {
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     public void control() throws IOException {
         // on start, power on the device
-        powerOn();
+        if (!device.isScreenOn()) {
+            injectKeycode(KeyEvent.KEYCODE_POWER);
+
+            // dirty hack
+            // After POWER is injected, the device is powered on asynchronously.
+            // To turn the device screen off while mirroring, the client will send a message that
+            // would be handled before the device is actually powered on, so its effect would
+            // be "canceled" once the device is turned back on.
+            // Adding this delay prevents to handle the message before the device is actually
+            // powered on.
+            SystemClock.sleep(500);
+        }
 
         while (true) {
             handleEvent();
@@ -180,10 +192,6 @@ public class Controller {
 
     private boolean injectEvent(InputEvent event) {
         return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
-    }
-
-    private boolean powerOn() {
-        return device.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
     }
 
     private boolean pressBackOrTurnScreenOn() {
