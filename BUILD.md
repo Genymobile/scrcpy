@@ -12,7 +12,7 @@ case, use the [prebuilt server] (so you will not need Java or the Android SDK).
 ## Requirements
 
 You need [adb]. It is available in the [Android SDK platform
-tools][platform-tools], or packaged in your distribution (`android-tools-adb`).
+tools][platform-tools], or packaged in your distribution (`adb`).
 
 On Windows, download the [platform-tools][platform-tools-windows] and extract
 the following files to a directory accessible from your `PATH`:
