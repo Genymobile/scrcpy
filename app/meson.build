@@ -122,11 +122,6 @@ conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
-# whether the app should always display the most recent available frame, even
-# if the previous one has not been displayed
-# SKIP_FRAMES improves latency at the cost of framerate
-conf.set('SKIP_FRAMES', get_option('skip_frames'))
-
 # enable High DPI support
 conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 

@@ -320,7 +320,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     struct decoder *dec = NULL;
     if (options->display) {
-        if (!video_buffer_init(&video_buffer)) {
+        if (!video_buffer_init(&video_buffer, options->render_expired_frames)) {
             goto end;
         }
         video_buffer_initialized = true;

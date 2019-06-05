@@ -19,6 +19,7 @@ struct scrcpy_options {
     bool control;
     bool display;
     bool turn_screen_off;
+    bool render_expired_frames;
 };
 
 bool

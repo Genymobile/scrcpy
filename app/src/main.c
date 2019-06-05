@@ -29,6 +29,7 @@ struct args {
     uint32_t bit_rate;
     bool always_on_top;
     bool turn_screen_off;
+    bool render_expired_frames;
 };
 
 static void usage(const char *arg0) {
@@ -78,6 +79,12 @@ static void usage(const char *arg0) {
         "        Record screen to file.\n"
         "        The format is determined by the -F/--record-format option if\n"
         "        set, or by the file extension (.mp4 or .mkv).\n"
+        "\n"
+        "    --render-expired-frames\n"
+        "        By default, to minimize latency, scrcpy always renders the\n"
+        "        last available decoded frame, and drops any previous ones.\n"
+        "        This flag forces to render all frames, at a cost of a\n"
+        "        possible increased latency.\n"
         "\n"
         "    -s, --serial\n"
         "        The device serial number. Mandatory only if several devices\n"
@@ -287,6 +294,8 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+#define OPT_RENDER_EXPIRED_FRAMES 1000
+
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
@@ -301,6 +310,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"port",                  required_argument, NULL, 'p'},
         {"record",                required_argument, NULL, 'r'},
         {"record-format",         required_argument, NULL, 'f'},
+        {"render-expired-frames", no_argument,       NULL,
+                                                 OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                required_argument, NULL, 's'},
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
@@ -364,6 +375,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
             case 'v':
                 args->version = true;
                 break;
+            case OPT_RENDER_EXPIRED_FRAMES:
+                args->render_expired_frames = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -426,6 +440,7 @@ main(int argc, char *argv[]) {
         .no_control = false,
         .no_display = false,
         .turn_screen_off = false,
+        .render_expired_frames = false,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -467,6 +482,7 @@ main(int argc, char *argv[]) {
         .control = !args.no_control,
         .display = !args.no_display,
         .turn_screen_off = args.turn_screen_off,
+        .render_expired_frames = args.render_expired_frames,
     };
     int res = scrcpy(&options) ? 0 : 1;
 

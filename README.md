@@ -271,6 +271,19 @@ Or by pressing `Ctrl`+`o` at any time.
 To turn it back on, press `POWER` (or `Ctrl`+`p`).
 
 
+### Render expired frames
+
+By default, to minimize latency, _scrcpy_ always renders the last decoded frame
+available, and drops any previous one.
+
+To force the rendering of all frames (at a cost of a possible increased
+latency), use:
+
+```bash
+scrcpy --render-expired-frames
+```
+
+
 ### Forward audio
 
 Audio is not forwarded by _scrcpy_.
