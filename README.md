@@ -256,6 +256,20 @@ scrcpy --no-control
 scrcpy -n
 ```
 
+### Turn screen off
+
+It is possible to turn the device screen off while mirroring on start with a
+command-line option:
+
+```bash
+scrcpy --turn-screen-off
+scrcpy -S
+```
+
+Or by pressing `Ctrl`+`o` at any time.
+
+To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
 
 ### Forward audio
 
