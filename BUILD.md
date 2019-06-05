@@ -12,7 +12,7 @@ case, use the [prebuilt server] (so you will not need Java or the Android SDK).
 ## Requirements
 
 You need [adb]. It is available in the [Android SDK platform
-tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
+tools][platform-tools], or packaged in your distribution (`android-tools-adb`).
 
 On Windows, download the [platform-tools][platform-tools-windows] and extract
 the following files to a directory accessible from your `PATH`:
@@ -40,10 +40,10 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0.0
+sudo apt install ffmpeg libsdl2-2.0-0
 
 # client build dependencies
-sudo apt install make gcc pkg-config meson ninja-build \
+sudo apt install make gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
 
