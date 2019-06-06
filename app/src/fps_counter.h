@@ -3,22 +3,40 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <SDL2/SDL_atomic.h>
+#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_thread.h>
 
 struct fps_counter {
+    SDL_Thread *thread;
+    SDL_mutex *mutex;
+    SDL_cond *state_cond;
     bool started;
-    uint32_t slice_start; // initialized by SDL_GetTicks()
-    int nr_rendered;
-    int nr_skipped;
+    bool interrupted;
+    unsigned nr_rendered;
+    unsigned nr_skipped;
+    uint32_t next_timestamp;
 };
 
-void
+bool
 fps_counter_init(struct fps_counter *counter);
 
 void
+fps_counter_destroy(struct fps_counter *counter);
+
+bool
 fps_counter_start(struct fps_counter *counter);
 
 void
 fps_counter_stop(struct fps_counter *counter);
+
+// request to stop the thread (on quit)
+// must be called before fps_counter_join()
+void
+fps_counter_interrupt(struct fps_counter *counter);
+
+void
+fps_counter_join(struct fps_counter *counter);
 
 void
 fps_counter_add_rendered_frame(struct fps_counter *counter);

@@ -17,11 +17,12 @@ struct video_buffer {
     bool interrupted;
     SDL_cond *rendering_frame_consumed_cond;
     bool rendering_frame_consumed;
-    struct fps_counter fps_counter;
+    struct fps_counter *fps_counter;
 };
 
 bool
-video_buffer_init(struct video_buffer *vb, bool render_expired_frames);
+video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
+                  bool render_expired_frames);
 
 void
 video_buffer_destroy(struct video_buffer *vb);

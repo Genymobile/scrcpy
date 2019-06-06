@@ -28,6 +28,16 @@ cond_wait(SDL_cond *cond, SDL_mutex *mutex) {
     }
 }
 
+int
+cond_wait_timeout(SDL_cond *cond, SDL_mutex *mutex, uint32_t ms) {
+    int r = SDL_CondWaitTimeout(cond, mutex, ms);
+    if (r < 0) {
+        LOGC("Could not wait on condition with timeout");
+        abort();
+    }
+    return r;
+}
+
 void
 cond_signal(SDL_cond *cond) {
     if (SDL_CondSignal(cond)) {
