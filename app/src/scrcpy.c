@@ -364,10 +364,12 @@ scrcpy(const struct scrcpy_options *options) {
             if (!controller_init(&controller, server.control_socket)) {
                 goto end;
             }
+            controller_initialized = true;
 
             if (!controller_start(&controller)) {
                 goto end;
             }
+            controller_started = true;
         }
 
         if (!screen_init_rendering(&screen, device_name, frame_size,
