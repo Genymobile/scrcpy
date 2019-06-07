@@ -172,16 +172,19 @@ set_screen_power_mode(struct controller *controller,
 }
 
 static void
-switch_fps_counter_state(struct video_buffer *vb) {
-    mutex_lock(vb->mutex);
-    if (vb->fps_counter.started) {
+switch_fps_counter_state(struct fps_counter *fps_counter) {
+    // the started state can only be written from the current thread, so there
+    // is no ToCToU issue
+    if (fps_counter_is_started(fps_counter)) {
+        fps_counter_stop(fps_counter);
         LOGI("FPS counter stopped");
-        fps_counter_stop(&vb->fps_counter);
     } else {
-        LOGI("FPS counter started");
-        fps_counter_start(&vb->fps_counter);
+        if (fps_counter_start(fps_counter)) {
+            LOGI("FPS counter started");
+        } else {
+            LOGE("FPS counter starting failed");
+        }
     }
-    mutex_unlock(vb->mutex);
 }
 
 static void
@@ -339,7 +342,9 @@ input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_i:
                 if (ctrl && !meta && !shift && !repeat && down) {
-                    switch_fps_counter_state(input_manager->video_buffer);
+                    struct fps_counter *fps_counter =
+                        input_manager->video_buffer->fps_counter;
+                    switch_fps_counter_state(fps_counter);
                 }
                 return;
             case SDLK_n:

@@ -10,7 +10,10 @@
 #include "log.h"
 
 bool
-video_buffer_init(struct video_buffer *vb, bool render_expired_frames) {
+video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
+                  bool render_expired_frames) {
+    vb->fps_counter = fps_counter;
+
     if (!(vb->decoding_frame = av_frame_alloc())) {
         goto error_0;
     }
@@ -37,7 +40,6 @@ video_buffer_init(struct video_buffer *vb, bool render_expired_frames) {
     // there is initially no rendering frame, so consider it has already been
     // consumed
     vb->rendering_frame_consumed = true;
-    fps_counter_init(&vb->fps_counter);
 
     return true;
 
@@ -75,10 +77,8 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb,
         while (!vb->rendering_frame_consumed && !vb->interrupted) {
             cond_wait(vb->rendering_frame_consumed_cond, vb->mutex);
         }
-    } else {
-        if (vb->fps_counter.started && !vb->rendering_frame_consumed) {
-            fps_counter_add_skipped_frame(&vb->fps_counter);
-        }
+    } else if (!vb->rendering_frame_consumed) {
+        fps_counter_add_skipped_frame(vb->fps_counter);
     }
 
     video_buffer_swap_frames(vb);
@@ -93,9 +93,7 @@ const AVFrame *
 video_buffer_consume_rendered_frame(struct video_buffer *vb) {
     SDL_assert(!vb->rendering_frame_consumed);
     vb->rendering_frame_consumed = true;
-    if (vb->fps_counter.started) {
-        fps_counter_add_rendered_frame(&vb->fps_counter);
-    }
+    fps_counter_add_rendered_frame(vb->fps_counter);
     if (vb->render_expired_frames) {
         // unblock video_buffer_offer_decoded_frame()
         cond_signal(vb->rendering_frame_consumed_cond);

@@ -29,6 +29,7 @@
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;
+static struct fps_counter fps_counter;
 static struct video_buffer video_buffer;
 static struct stream stream;
 static struct decoder decoder;
@@ -293,6 +294,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     bool ret = false;
 
+    bool fps_counter_initialized = false;
     bool video_buffer_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
@@ -320,7 +322,13 @@ scrcpy(const struct scrcpy_options *options) {
 
     struct decoder *dec = NULL;
     if (options->display) {
-        if (!video_buffer_init(&video_buffer, options->render_expired_frames)) {
+        if (!fps_counter_init(&fps_counter)) {
+            goto end;
+        }
+        fps_counter_initialized = true;
+
+        if (!video_buffer_init(&video_buffer, &fps_counter,
+                               options->render_expired_frames)) {
             goto end;
         }
         video_buffer_initialized = true;
@@ -414,6 +422,9 @@ end:
     if (file_handler_initialized) {
         file_handler_stop(&file_handler);
     }
+    if (fps_counter_initialized) {
+        fps_counter_interrupt(&fps_counter);
+    }
 
     // shutdown the sockets and kill the server
     server_stop(&server);
@@ -441,6 +452,11 @@ end:
 
     if (video_buffer_initialized) {
         video_buffer_destroy(&video_buffer);
+    }
+
+    if (fps_counter_initialized) {
+        fps_counter_join(&fps_counter);
+        fps_counter_destroy(&fps_counter);
     }
 
     if (options->show_touches) {
