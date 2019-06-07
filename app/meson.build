@@ -10,7 +10,6 @@ src = [
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
-    'src/lock_util.c',
     'src/net.c',
     'src/receiver.c',
     'src/recorder.c',
