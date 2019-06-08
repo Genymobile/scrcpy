@@ -93,16 +93,9 @@ conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
 
-# the path of the server to be used "as is"
-# this is useful for building a "portable" version (with the server in the same
-# directory as the client)
-override_server_path = get_option('override_server_path')
-if override_server_path != ''
-    conf.set_quoted('OVERRIDE_SERVER_PATH', override_server_path)
-else
-    # undefine it
-    conf.set('OVERRIDE_SERVER_PATH', false)
-endif
+# build a "portable" version (with scrcpy-server.jar accessible from the
+# current directory)
+conf.set('PORTABLE', get_option('portable'))
 
 # the default client TCP port for the "adb reverse" tunnel
 # overridden by option --port
