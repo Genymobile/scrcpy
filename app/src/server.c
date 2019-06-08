@@ -15,7 +15,7 @@
 #ifdef OVERRIDE_SERVER_PATH
 # define DEFAULT_SERVER_PATH OVERRIDE_SERVER_PATH
 #else
-# define DEFAULT_SERVER_PATH PREFIX PREFIXED_SERVER_PATH
+# define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/scrcpy-server.jar"
 #endif
 
 #define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
