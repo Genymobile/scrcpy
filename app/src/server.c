@@ -12,8 +12,8 @@
 
 #define SOCKET_NAME "scrcpy"
 
-#ifdef OVERRIDE_SERVER_PATH
-# define DEFAULT_SERVER_PATH OVERRIDE_SERVER_PATH
+#ifdef PORTABLE
+# define DEFAULT_SERVER_PATH "scrcpy-server.jar"
 #else
 # define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/scrcpy-server.jar"
 #endif

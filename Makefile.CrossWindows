@@ -57,7 +57,7 @@ build-win32: prepare-deps-win32
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
 
 build-win32-noconsole: prepare-deps-win32
@@ -68,7 +68,7 @@ build-win32-noconsole: prepare-deps-win32
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
 			-Dwindows_noconsole=true \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN32_NOCONSOLE_BUILD_DIR)"
 
 prepare-deps-win64:
@@ -81,7 +81,7 @@ build-win64: prepare-deps-win64
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN64_BUILD_DIR)"
 
 build-win64-noconsole: prepare-deps-win64
@@ -92,7 +92,7 @@ build-win64-noconsole: prepare-deps-win64
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
 			-Dwindows_noconsole=true \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN64_NOCONSOLE_BUILD_DIR)"
 
 dist-win32: build-server build-win32 build-win32-noconsole
