@@ -32,6 +32,9 @@ utf8_truncation_index(const char *utf8, size_t max_len);
 // returns the new allocated string, to be freed by the caller
 wchar_t *
 utf8_to_wide_char(const char *utf8);
+
+char *
+utf8_from_wide_char(const wchar_t *s);
 #endif
 
 #endif
