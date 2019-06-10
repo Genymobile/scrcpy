@@ -92,4 +92,20 @@ utf8_to_wide_char(const char *utf8) {
     return wide;
 }
 
+char *
+utf8_from_wide_char(const wchar_t *ws) {
+    int len = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+    if (!len) {
+        return NULL;
+    }
+
+    char *utf8 = SDL_malloc(len);
+    if (!utf8) {
+        return NULL;
+    }
+
+    WideCharToMultiByte(CP_UTF8, 0, ws, -1, utf8, len, NULL, NULL);
+    return utf8;
+}
+
 #endif
