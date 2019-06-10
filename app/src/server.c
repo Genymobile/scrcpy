@@ -11,14 +11,15 @@
 #include "net.h"
 
 #define SOCKET_NAME "scrcpy"
+#define SERVER_FILENAME "scrcpy-server.jar"
 
 #ifdef PORTABLE
-# define DEFAULT_SERVER_PATH "scrcpy-server.jar"
+# define DEFAULT_SERVER_PATH SERVER_FILENAME
 #else
-# define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/scrcpy-server.jar"
+# define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
 #endif
 
-#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
 
 static const char *
 get_server_path(void) {
@@ -86,7 +87,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
+        "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
         "app_process",
         "/", // unused
         "com.genymobile.scrcpy.Server",
