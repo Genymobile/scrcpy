@@ -2,32 +2,67 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
+#include "command.h"
 #include "log.h"
 #include "net.h"
 
 #define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server.jar"
 
-#ifdef PORTABLE
-# define DEFAULT_SERVER_PATH SERVER_FILENAME
-#else
-# define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
-#endif
-
+#define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FLENAME
 #define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
 
 static const char *
 get_server_path(void) {
-    const char *server_path = getenv("SCRCPY_SERVER_PATH");
-    if (!server_path) {
-        server_path = DEFAULT_SERVER_PATH;
+    const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
+    if (server_path_env) {
+        LOGD("Using SCRCPY_SERVER_PATH: %s", server_path_env);
+        // if the envvar is set, use it
+        return server_path_env;
     }
+
+#ifndef PORTABLE
+    LOGD("Using server: " DEFAULT_SERVER_PATH);
+    // the absolute path is hardcoded
+    return DEFAULT_SERVER_PATH;
+#else
+    // use scrcpy-server.jar in the same directory as the executable
+    char *executable_path = get_executable_path();
+    if (!executable_path) {
+        LOGE("Cannot get executable path, "
+             "using " SERVER_FILENAME " from current directory");
+        // not found, use current directory
+        return SERVER_FILENAME;
+    }
+    char *dir = dirname(executable_path);
+    size_t dirlen = strlen(dir);
+
+    // sizeof(SERVER_FILENAME) gives statically the size including the null byte
+    size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
+    char *server_path = SDL_malloc(len);
+    if (!server_path) {
+        LOGE("Cannot alloc server path string, "
+             "using " SERVER_FILENAME " from current directory");
+        SDL_free(executable_path);
+        return SERVER_FILENAME;
+    }
+
+    memcpy(server_path, dir, dirlen);
+    server_path[dirlen] = PATH_SEPARATOR;
+    memcpy(&server_path[dirlen + 1], SERVER_FILENAME, sizeof(SERVER_FILENAME));
+    // the final null byte has been copied with SERVER_FILENAME
+
+    SDL_free(executable_path);
+
+    LOGD("Using server (portable): %s", server_path);
     return server_path;
+#endif
 }
 
 static bool

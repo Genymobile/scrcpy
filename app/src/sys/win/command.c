@@ -75,3 +75,18 @@ cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
     }
     return !code;
 }
+
+char *
+get_executable_path(void) {
+    HMODULE hModule = GetModuleHandleW(NULL);
+    if (!hModule) {
+        return NULL;
+    }
+    WCHAR buf[MAX_PATH + 1]; // +1 for the null byte
+    int len = GetModuleFileNameW(hModule, buf, MAX_PATH);
+    if (!len) {
+        return NULL;
+    }
+    buf[len] = '\0';
+    return utf8_from_wide_char(buf);
+}
