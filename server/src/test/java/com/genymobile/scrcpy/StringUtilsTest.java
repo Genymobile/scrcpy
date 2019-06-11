@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy;
 
-import junit.framework.Assert;
-
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
