@@ -19,10 +19,6 @@ Windows may need some [drivers] to detect your device.
 
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
 
-If you still encounter problems, please see [issue 9].
-
-[issue 9]: https://github.com/Genymobile/scrcpy/issues/9
-
 
 ### Mouse clicks do not work
 
