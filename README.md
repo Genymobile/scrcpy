@@ -29,6 +29,12 @@ control it using keyboard and mouse.
 On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
 it's not that hard.
 
+A [Snap] package is available: [`scrcpy`][snap-link].
+
+[snap-link]: https://snapstats.org/snaps/scrcpy
+
+[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+
 For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
