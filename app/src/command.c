@@ -69,7 +69,7 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
                  "path in the ADB environment variable)");
             break;
         case PROCESS_SUCCESS:
-            /* do nothing */
+            // do nothing
             break;
     }
 }
@@ -147,7 +147,7 @@ adb_push(const char *serial, const char *local, const char *remote) {
     }
     remote = strquote(remote);
     if (!remote) {
-        free((void *) local);
+        SDL_free((void *) local);
         return PROCESS_NONE;
     }
 #endif
@@ -156,8 +156,8 @@ adb_push(const char *serial, const char *local, const char *remote) {
     process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
-    free((void *) remote);
-    free((void *) local);
+    SDL_free((void *) remote);
+    SDL_free((void *) local);
 #endif
 
     return proc;
@@ -178,7 +178,7 @@ adb_install(const char *serial, const char *local) {
     process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
-    free((void *) local);
+    SDL_free((void *) local);
 #endif
 
     return proc;

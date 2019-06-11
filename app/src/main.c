@@ -28,6 +28,8 @@ struct args {
     uint16_t max_size;
     uint32_t bit_rate;
     bool always_on_top;
+    bool turn_screen_off;
+    bool render_expired_frames;
 };
 
 static void usage(const char *arg0) {
@@ -78,9 +80,18 @@ static void usage(const char *arg0) {
         "        The format is determined by the -F/--record-format option if\n"
         "        set, or by the file extension (.mp4 or .mkv).\n"
         "\n"
+        "    --render-expired-frames\n"
+        "        By default, to minimize latency, scrcpy always renders the\n"
+        "        last available decoded frame, and drops any previous ones.\n"
+        "        This flag forces to render all frames, at a cost of a\n"
+        "        possible increased latency.\n"
+        "\n"
         "    -s, --serial\n"
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
+        "\n"
+        "    -S, --turn-screen-off\n"
+        "        Turn the device screen off immediately.\n"
         "\n"
         "    -t, --show-touches\n"
         "        Enable \"show touches\" on start, disable on quit.\n"
@@ -129,7 +140,10 @@ static void usage(const char *arg0) {
         "        click on POWER (turn screen on/off)\n"
         "\n"
         "    Right-click (when screen is off)\n"
-        "        turn screen on\n"
+        "        power on\n"
+        "\n"
+        "    Ctrl+o\n"
+        "        turn device screen off (keep mirroring)\n"
         "\n"
         "    Ctrl+n\n"
         "       expand notification panel\n"
@@ -137,8 +151,14 @@ static void usage(const char *arg0) {
         "    Ctrl+Shift+n\n"
         "       collapse notification panel\n"
         "\n"
+        "    Ctrl+c\n"
+        "        copy device clipboard to computer\n"
+        "\n"
         "    Ctrl+v\n"
         "        paste computer clipboard to device\n"
+        "\n"
+        "    Ctrl+Shift+v\n"
+        "        copy computer clipboard to device\n"
         "\n"
         "    Ctrl+i\n"
         "        enable/disable FPS counter (print frames/second in logs)\n"
@@ -274,27 +294,32 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+#define OPT_RENDER_EXPIRED_FRAMES 1000
+
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"always-on-top", no_argument,       NULL, 'T'},
-        {"bit-rate",      required_argument, NULL, 'b'},
-        {"crop",          required_argument, NULL, 'c'},
-        {"fullscreen",    no_argument,       NULL, 'f'},
-        {"help",          no_argument,       NULL, 'h'},
-        {"max-size",      required_argument, NULL, 'm'},
-        {"no-control",    no_argument,       NULL, 'n'},
-        {"no-display",    no_argument,       NULL, 'N'},
-        {"port",          required_argument, NULL, 'p'},
-        {"record",        required_argument, NULL, 'r'},
-        {"record-format", required_argument, NULL, 'f'},
-        {"serial",        required_argument, NULL, 's'},
-        {"show-touches",  no_argument,       NULL, 't'},
-        {"version",       no_argument,       NULL, 'v'},
-        {NULL,            0,                 NULL, 0  },
+        {"always-on-top",         no_argument,       NULL, 'T'},
+        {"bit-rate",              required_argument, NULL, 'b'},
+        {"crop",                  required_argument, NULL, 'c'},
+        {"fullscreen",            no_argument,       NULL, 'f'},
+        {"help",                  no_argument,       NULL, 'h'},
+        {"max-size",              required_argument, NULL, 'm'},
+        {"no-control",            no_argument,       NULL, 'n'},
+        {"no-display",            no_argument,       NULL, 'N'},
+        {"port",                  required_argument, NULL, 'p'},
+        {"record",                required_argument, NULL, 'r'},
+        {"record-format",         required_argument, NULL, 'f'},
+        {"render-expired-frames", no_argument,       NULL,
+                                                 OPT_RENDER_EXPIRED_FRAMES},
+        {"serial",                required_argument, NULL, 's'},
+        {"show-touches",          no_argument,       NULL, 't'},
+        {"turn-screen-off",       no_argument,       NULL, 'S'},
+        {"version",               no_argument,       NULL, 'v'},
+        {NULL,                    0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:tTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -338,6 +363,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
             case 's':
                 args->serial = optarg;
                 break;
+            case 'S':
+                args->turn_screen_off = true;
+                break;
             case 't':
                 args->show_touches = true;
                 break;
@@ -346,6 +374,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'v':
                 args->version = true;
+                break;
+            case OPT_RENDER_EXPIRED_FRAMES:
+                args->render_expired_frames = true;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -408,6 +439,8 @@ main(int argc, char *argv[]) {
         .always_on_top = false,
         .no_control = false,
         .no_display = false,
+        .turn_screen_off = false,
+        .render_expired_frames = false,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -446,8 +479,10 @@ main(int argc, char *argv[]) {
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
-        .no_control = args.no_control,
-        .no_display = args.no_display,
+        .control = !args.no_control,
+        .display = !args.no_display,
+        .turn_screen_off = args.turn_screen_off,
+        .render_expired_frames = args.render_expired_frames,
     };
     int res = scrcpy(&options) ? 0 : 1;
 

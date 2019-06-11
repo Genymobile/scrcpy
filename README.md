@@ -256,6 +256,33 @@ scrcpy --no-control
 scrcpy -n
 ```
 
+### Turn screen off
+
+It is possible to turn the device screen off while mirroring on start with a
+command-line option:
+
+```bash
+scrcpy --turn-screen-off
+scrcpy -S
+```
+
+Or by pressing `Ctrl`+`o` at any time.
+
+To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
+
+### Render expired frames
+
+By default, to minimize latency, _scrcpy_ always renders the last decoded frame
+available, and drops any previous one.
+
+To force the rendering of all frames (at a cost of a possible increased
+latency), use:
+
+```bash
+scrcpy --render-expired-frames
+```
+
 
 ### Forward audio
 
@@ -284,10 +311,13 @@ you are interested, see [issue 14].
  | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
- | turn screen on                         | _Right-click²_                |
+ | power on                               | _Right-click²_                |
+ | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
  | expand notification panel              | `Ctrl`+`n`                    |
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
+ | copy device clipboard to computer      | `Ctrl`+`c`                    |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
+ | copy computer clipboard to device      | `Ctrl`+`Shift+`v`             |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 
 _¹Double-click on black borders to remove them._  
@@ -301,8 +331,8 @@ To use a specific _adb_ binary, configure its path in the environment variable
 
     ADB=/path/to/adb scrcpy
 
-To override the path of the `scrcpy-server.jar` file (it can be [useful] on
-Windows), configure its path in `SCRCPY_SERVER_PATH`.
+To override the path of the `scrcpy-server.jar` file, configure its path in
+`SCRCPY_SERVER_PATH`.
 
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 

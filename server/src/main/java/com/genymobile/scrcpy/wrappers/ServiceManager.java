@@ -15,6 +15,7 @@ public final class ServiceManager {
     private InputManager inputManager;
     private PowerManager powerManager;
     private StatusBarManager statusBarManager;
+    private ClipboardManager clipboardManager;
 
     public ServiceManager() {
         try {
@@ -67,5 +68,12 @@ public final class ServiceManager {
             statusBarManager = new StatusBarManager(getService("statusbar", "com.android.internal.statusbar.IStatusBarService"));
         }
         return statusBarManager;
+    }
+
+    public ClipboardManager getClipboardManager() {
+        if (clipboardManager == null) {
+            clipboardManager = new ClipboardManager(getService("clipboard", "android.content.IClipboard"));
+        }
+        return clipboardManager;
     }
 }

@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 
-#include "config.h"
 #include "fps_counter.h"
 
 // forward declarations
@@ -14,16 +13,16 @@ struct video_buffer {
     AVFrame *decoding_frame;
     AVFrame *rendering_frame;
     SDL_mutex *mutex;
-#ifndef SKIP_FRAMES
+    bool render_expired_frames;
     bool interrupted;
     SDL_cond *rendering_frame_consumed_cond;
-#endif
     bool rendering_frame_consumed;
-    struct fps_counter fps_counter;
+    struct fps_counter *fps_counter;
 };
 
 bool
-video_buffer_init(struct video_buffer *vb);
+video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
+                  bool render_expired_frames);
 
 void
 video_buffer_destroy(struct video_buffer *vb);

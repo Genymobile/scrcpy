@@ -3,33 +3,53 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "config.h"
+#include <SDL2/SDL_atomic.h>
+#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_thread.h>
 
 struct fps_counter {
-    bool started;
-    uint32_t slice_start; // initialized by SDL_GetTicks()
-    int nr_rendered;
-#ifdef SKIP_FRAMES
-    int nr_skipped;
-#endif
+    SDL_Thread *thread;
+    SDL_mutex *mutex;
+    SDL_cond *state_cond;
+
+    // atomic so that we can check without locking the mutex
+    // if the FPS counter is disabled, we don't want to lock unnecessarily
+    SDL_atomic_t started;
+
+    // the following fields are protected by the mutex
+    bool interrupted;
+    unsigned nr_rendered;
+    unsigned nr_skipped;
+    uint32_t next_timestamp;
 };
 
-void
+bool
 fps_counter_init(struct fps_counter *counter);
 
 void
+fps_counter_destroy(struct fps_counter *counter);
+
+bool
 fps_counter_start(struct fps_counter *counter);
 
 void
 fps_counter_stop(struct fps_counter *counter);
 
+bool
+fps_counter_is_started(struct fps_counter *counter);
+
+// request to stop the thread (on quit)
+// must be called before fps_counter_join()
+void
+fps_counter_interrupt(struct fps_counter *counter);
+
+void
+fps_counter_join(struct fps_counter *counter);
+
 void
 fps_counter_add_rendered_frame(struct fps_counter *counter);
 
-#ifdef SKIP_FRAMES
 void
 fps_counter_add_skipped_frame(struct fps_counter *counter);
-#endif
 
 #endif

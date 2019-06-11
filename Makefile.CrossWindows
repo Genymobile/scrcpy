@@ -57,7 +57,7 @@ build-win32: prepare-deps-win32
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
 
 build-win32-noconsole: prepare-deps-win32
@@ -68,7 +68,7 @@ build-win32-noconsole: prepare-deps-win32
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
 			-Dwindows_noconsole=true \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN32_NOCONSOLE_BUILD_DIR)"
 
 prepare-deps-win64:
@@ -81,7 +81,7 @@ build-win64: prepare-deps-win64
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN64_BUILD_DIR)"
 
 build-win64-noconsole: prepare-deps-win64
@@ -92,7 +92,7 @@ build-win64-noconsole: prepare-deps-win64
 			-Dcrossbuild_windows=true \
 			-Dbuild_server=false \
 			-Dwindows_noconsole=true \
-			-Doverride_server_path=scrcpy-server.jar )
+			-Dportable=true )
 	ninja -C "$(WIN64_NOCONSOLE_BUILD_DIR)"
 
 dist-win32: build-server build-win32 build-win32-noconsole
@@ -100,28 +100,29 @@ dist-win32: build-server build-win32 build-win32-noconsole
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/scrcpy-noconsole.exe"
-	cp prebuilt-deps/ffmpeg-4.1-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win32-shared/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win32-shared/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.9/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.8/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64 build-win64-noconsole
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/scrcpy-noconsole.exe"
-	cp prebuilt-deps/ffmpeg-4.1-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1-win64-shared/bin/swresample-3.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win64-shared/bin/swresample-3.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.1.3-win64-shared/bin/swscale-5.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.9/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.8/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)"; \

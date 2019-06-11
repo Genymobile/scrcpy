@@ -19,12 +19,17 @@ public final class Server {
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
 
-            // asynchronous
-            startEventController(device, connection);
+            if (options.getControl()) {
+                Controller controller = new Controller(device, connection);
+
+                // asynchronous
+                startController(controller);
+                startDeviceMessageSender(controller.getSender());
+            }
 
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, connection.getFd());
+                screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
@@ -32,15 +37,29 @@ public final class Server {
         }
     }
 
-    private static void startEventController(final Device device, final DesktopConnection connection) {
+    private static void startController(final Controller controller) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    new EventController(device, connection).control();
+                    controller.control();
                 } catch (IOException e) {
                     // this is expected on close
-                    Ln.d("Event controller stopped");
+                    Ln.d("Controller stopped");
+                }
+            }
+        }).start();
+    }
+
+    private static void startDeviceMessageSender(final DeviceMessageSender sender) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    sender.loop();
+                } catch (IOException | InterruptedException e) {
+                    // this is expected on close
+                    Ln.d("Device message sender stopped");
                 }
             }
         }).start();
@@ -48,7 +67,7 @@ public final class Server {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
-        if (args.length != 5) {
+        if (args.length != 6) {
             throw new IllegalArgumentException("Expecting 5 parameters");
         }
 
@@ -69,6 +88,9 @@ public final class Server {
 
         boolean sendFrameMeta = Boolean.parseBoolean(args[4]);
         options.setSendFrameMeta(sendFrameMeta);
+
+        boolean control = Boolean.parseBoolean(args[5]);
+        options.setControl(control);
 
         return options;
     }

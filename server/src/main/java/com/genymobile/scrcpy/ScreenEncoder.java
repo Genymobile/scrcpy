@@ -70,8 +70,9 @@ public class ScreenEncoder implements Device.RotationListener {
                 codec.start();
                 try {
                     alive = encode(codec, fd);
-                } finally {
+                    // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
+                } finally {
                     destroyDisplay(display);
                     codec.release();
                     surface.release();

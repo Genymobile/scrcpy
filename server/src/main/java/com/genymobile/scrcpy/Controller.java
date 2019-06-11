@@ -2,7 +2,6 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
 
-import android.graphics.Point;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -12,11 +11,11 @@ import android.view.MotionEvent;
 
 import java.io.IOException;
 
-
-public class EventController {
+public class Controller {
 
     private final Device device;
     private final DesktopConnection connection;
+    private final DeviceMessageSender sender;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -24,10 +23,11 @@ public class EventController {
     private final MotionEvent.PointerProperties[] pointerProperties = {new MotionEvent.PointerProperties()};
     private final MotionEvent.PointerCoords[] pointerCoords = {new MotionEvent.PointerCoords()};
 
-    public EventController(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
         initPointer();
+        sender = new DeviceMessageSender(connection);
     }
 
     private void initPointer() {
@@ -43,8 +43,8 @@ public class EventController {
 
     private void setPointerCoords(Point point) {
         MotionEvent.PointerCoords coords = pointerCoords[0];
-        coords.x = point.x;
-        coords.y = point.y;
+        coords.x = point.getX();
+        coords.y = point.getY();
     }
 
     private void setScroll(int hScroll, int vScroll) {
@@ -53,32 +53,64 @@ public class EventController {
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     public void control() throws IOException {
-        // on start, turn screen on
-        turnScreenOn();
+        // on start, power on the device
+        if (!device.isScreenOn()) {
+            injectKeycode(KeyEvent.KEYCODE_POWER);
+
+            // dirty hack
+            // After POWER is injected, the device is powered on asynchronously.
+            // To turn the device screen off while mirroring, the client will send a message that
+            // would be handled before the device is actually powered on, so its effect would
+            // be "canceled" once the device is turned back on.
+            // Adding this delay prevents to handle the message before the device is actually
+            // powered on.
+            SystemClock.sleep(500);
+        }
 
         while (true) {
             handleEvent();
         }
     }
 
+    public DeviceMessageSender getSender() {
+        return sender;
+    }
+
     private void handleEvent() throws IOException {
-        ControlEvent controlEvent = connection.receiveControlEvent();
-        switch (controlEvent.getType()) {
-            case ControlEvent.TYPE_KEYCODE:
-                injectKeycode(controlEvent.getAction(), controlEvent.getKeycode(), controlEvent.getMetaState());
+        ControlMessage msg = connection.receiveControlMessage();
+        switch (msg.getType()) {
+            case ControlMessage.TYPE_INJECT_KEYCODE:
+                injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
                 break;
-            case ControlEvent.TYPE_TEXT:
-                injectText(controlEvent.getText());
+            case ControlMessage.TYPE_INJECT_TEXT:
+                injectText(msg.getText());
                 break;
-            case ControlEvent.TYPE_MOUSE:
-                injectMouse(controlEvent.getAction(), controlEvent.getButtons(), controlEvent.getPosition());
+            case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
+                injectMouse(msg.getAction(), msg.getButtons(), msg.getPosition());
                 break;
-            case ControlEvent.TYPE_SCROLL:
-                injectScroll(controlEvent.getPosition(), controlEvent.getHScroll(), controlEvent.getVScroll());
+            case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
+                injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
                 break;
-            case ControlEvent.TYPE_COMMAND:
-                executeCommand(controlEvent.getAction());
+            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
+                pressBackOrTurnScreenOn();
+                break;
+            case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
+                device.expandNotificationPanel();
+                break;
+            case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+                device.collapsePanels();
+                break;
+            case ControlMessage.TYPE_GET_CLIPBOARD:
+                String clipboardText = device.getClipboardText();
+                sender.pushClipboardText(clipboardText);
+                break;
+            case ControlMessage.TYPE_SET_CLIPBOARD:
+                device.setClipboardText(msg.getText());
+                break;
+            case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
+                device.setScreenPowerMode(msg.getAction());
                 break;
             default:
                 // do nothing
@@ -91,7 +123,7 @@ public class EventController {
 
     private boolean injectChar(char c) {
         String decomposed = KeyComposition.decompose(c);
-        char[] chars = decomposed != null ? decomposed.toCharArray() : new char[] {c};
+        char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
         KeyEvent[] events = charMap.getEvents(chars);
         if (events == null) {
             return false;
@@ -104,13 +136,16 @@ public class EventController {
         return true;
     }
 
-    private boolean injectText(String text) {
+    private int injectText(String text) {
+        int successCount = 0;
         for (char c : text.toCharArray()) {
             if (!injectChar(c)) {
-                return false;
+                Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
+                continue;
             }
+            successCount++;
         }
-        return true;
+        return successCount;
     }
 
     private boolean injectMouse(int action, int buttons, Position position) {
@@ -159,28 +194,8 @@ public class EventController {
         return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    private boolean turnScreenOn() {
-        return device.isScreenOn() || injectKeycode(KeyEvent.KEYCODE_POWER);
-    }
-
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
         return injectKeycode(keycode);
-    }
-
-    private boolean executeCommand(int action) {
-        switch (action) {
-            case ControlEvent.COMMAND_BACK_OR_SCREEN_ON:
-                return pressBackOrTurnScreenOn();
-            case ControlEvent.COMMAND_EXPAND_NOTIFICATION_PANEL:
-                device.expandNotificationPanel();
-                return true;
-            case ControlEvent.COMMAND_COLLAPSE_NOTIFICATION_PANEL:
-                device.collapsePanels();
-                return true;
-            default:
-                Ln.w("Unsupported command: " + action);
-        }
-        return false;
     }
 }

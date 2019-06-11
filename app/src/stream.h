@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_thread.h>
 
 #include "net.h"
@@ -18,6 +19,7 @@ struct stream {
     socket_t socket;
     struct video_buffer *video_buffer;
     SDL_Thread *thread;
+    SDL_atomic_t stopped;
     struct decoder *decoder;
     struct recorder *recorder;
     struct receiver_state {

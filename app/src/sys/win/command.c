@@ -44,7 +44,7 @@ cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
 #endif
     if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, flags, NULL, NULL, &si,
                         &pi)) {
-        free(wide);
+        SDL_free(wide);
         *handle = NULL;
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             return PROCESS_ERROR_MISSING_BINARY;
@@ -52,7 +52,7 @@ cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
         return PROCESS_ERROR_GENERIC;
     }
 
-    free(wide);
+    SDL_free(wide);
     *handle = pi.hProcess;
     return PROCESS_SUCCESS;
 }
@@ -74,4 +74,19 @@ cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
         *exit_code = code;
     }
     return !code;
+}
+
+char *
+get_executable_path(void) {
+    HMODULE hModule = GetModuleHandleW(NULL);
+    if (!hModule) {
+        return NULL;
+    }
+    WCHAR buf[MAX_PATH + 1]; // +1 for the null byte
+    int len = GetModuleFileNameW(hModule, buf, MAX_PATH);
+    if (!len) {
+        return NULL;
+    }
+    buf[len] = '\0';
+    return utf8_from_wide_char(buf);
 }

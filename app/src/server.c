@@ -2,31 +2,67 @@
 
 #include <errno.h>
 #include <inttypes.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
+#include "command.h"
 #include "log.h"
 #include "net.h"
 
 #define SOCKET_NAME "scrcpy"
+#define SERVER_FILENAME "scrcpy-server.jar"
 
-#ifdef OVERRIDE_SERVER_PATH
-# define DEFAULT_SERVER_PATH OVERRIDE_SERVER_PATH
-#else
-# define DEFAULT_SERVER_PATH PREFIX PREFIXED_SERVER_PATH
-#endif
-
-#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FLENAME
+#define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
 
 static const char *
 get_server_path(void) {
-    const char *server_path = getenv("SCRCPY_SERVER_PATH");
-    if (!server_path) {
-        server_path = DEFAULT_SERVER_PATH;
+    const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
+    if (server_path_env) {
+        LOGD("Using SCRCPY_SERVER_PATH: %s", server_path_env);
+        // if the envvar is set, use it
+        return server_path_env;
     }
+
+#ifndef PORTABLE
+    LOGD("Using server: " DEFAULT_SERVER_PATH);
+    // the absolute path is hardcoded
+    return DEFAULT_SERVER_PATH;
+#else
+    // use scrcpy-server.jar in the same directory as the executable
+    char *executable_path = get_executable_path();
+    if (!executable_path) {
+        LOGE("Cannot get executable path, "
+             "using " SERVER_FILENAME " from current directory");
+        // not found, use current directory
+        return SERVER_FILENAME;
+    }
+    char *dir = dirname(executable_path);
+    size_t dirlen = strlen(dir);
+
+    // sizeof(SERVER_FILENAME) gives statically the size including the null byte
+    size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
+    char *server_path = SDL_malloc(len);
+    if (!server_path) {
+        LOGE("Cannot alloc server path string, "
+             "using " SERVER_FILENAME " from current directory");
+        SDL_free(executable_path);
+        return SERVER_FILENAME;
+    }
+
+    memcpy(server_path, dir, dirlen);
+    server_path[dirlen] = PATH_SEPARATOR;
+    memcpy(&server_path[dirlen + 1], SERVER_FILENAME, sizeof(SERVER_FILENAME));
+    // the final null byte has been copied with SERVER_FILENAME
+
+    SDL_free(executable_path);
+
+    LOGD("Using server (portable): %s", server_path);
     return server_path;
+#endif
 }
 
 static bool
@@ -79,27 +115,25 @@ disable_tunnel(struct server *server) {
 }
 
 static process_t
-execute_server(const char *serial,
-               uint16_t max_size, uint32_t bit_rate,
-               bool tunnel_forward, const char *crop,
-               bool send_frame_meta) {
+execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
-    sprintf(max_size_string, "%"PRIu16, max_size);
-    sprintf(bit_rate_string, "%"PRIu32, bit_rate);
+    sprintf(max_size_string, "%"PRIu16, params->max_size);
+    sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=/data/local/tmp/scrcpy-server.jar",
+        "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
         "app_process",
         "/", // unused
         "com.genymobile.scrcpy.Server",
         max_size_string,
         bit_rate_string,
-        tunnel_forward ? "true" : "false",
-        crop ? crop : "-",
-        send_frame_meta ? "true" : "false",
+        server->tunnel_forward ? "true" : "false",
+        params->crop ? params->crop : "-",
+        params->send_frame_meta ? "true" : "false",
+        params->control ? "true" : "false",
     };
-    return adb_execute(serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 
 #define IPV4_LOCALHOST 0x7F000001
@@ -119,7 +153,7 @@ connect_and_read_byte(uint16_t port) {
     char byte;
     // the connection may succeed even if the server behind the "adb tunnel"
     // is not listening, so read one byte to detect a working connection
-    if (net_recv_all(socket, &byte, 1) != 1) {
+    if (net_recv(socket, &byte, 1) != 1) {
         // the server is not listening yet behind the adb tunnel
         return INVALID_SOCKET;
     }
@@ -160,9 +194,8 @@ server_init(struct server *server) {
 
 bool
 server_start(struct server *server, const char *serial,
-             uint16_t local_port, uint16_t max_size, uint32_t bit_rate,
-             const char *crop, bool send_frame_meta) {
-    server->local_port = local_port;
+             const struct server_params *params) {
+    server->local_port = params->local_port;
 
     if (serial) {
         server->serial = SDL_strdup(serial);
@@ -191,9 +224,9 @@ server_start(struct server *server, const char *serial,
         // need to try to connect until the server socket is listening on the
         // device.
 
-        server->server_socket = listen_on_port(local_port);
+        server->server_socket = listen_on_port(params->local_port);
         if (server->server_socket == INVALID_SOCKET) {
-            LOGE("Could not listen on port %" PRIu16, local_port);
+            LOGE("Could not listen on port %" PRIu16, params->local_port);
             disable_tunnel(server);
             SDL_free(server->serial);
             return false;
@@ -201,9 +234,7 @@ server_start(struct server *server, const char *serial,
     }
 
     // server will connect to our server socket
-    server->process = execute_server(serial, max_size, bit_rate,
-                                     server->tunnel_forward, crop,
-                                     send_frame_meta);
+    server->process = execute_server(server, params);
 
     if (server->process == PROCESS_NONE) {
         if (!server->tunnel_forward) {
@@ -219,35 +250,58 @@ server_start(struct server *server, const char *serial,
     return true;
 }
 
-socket_t
+bool
 server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
-        server->device_socket = net_accept(server->server_socket);
+        server->video_socket = net_accept(server->server_socket);
+        if (server->video_socket == INVALID_SOCKET) {
+            return false;
+        }
+
+        server->control_socket = net_accept(server->server_socket);
+        if (server->control_socket == INVALID_SOCKET) {
+            // the video_socket will be clean up on destroy
+            return false;
+        }
+
+        // we don't need the server socket anymore
+        close_socket(&server->server_socket);
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
-        server->device_socket = connect_to_server(server->local_port, attempts,
-                                                  delay);
-    }
+        server->video_socket =
+            connect_to_server(server->local_port, attempts, delay);
+        if (server->video_socket == INVALID_SOCKET) {
+            return false;
+        }
 
-    if (server->device_socket == INVALID_SOCKET) {
-        return INVALID_SOCKET;
-    }
-
-    if (!server->tunnel_forward) {
-        // we don't need the server socket anymore
-        close_socket(&server->server_socket);
+        // we know that the device is listening, we don't need several attempts
+        server->control_socket =
+            net_connect(IPV4_LOCALHOST, server->local_port);
+        if (server->control_socket == INVALID_SOCKET) {
+            return false;
+        }
     }
 
     // we don't need the adb tunnel anymore
     disable_tunnel(server); // ignore failure
     server->tunnel_enabled = false;
 
-    return server->device_socket;
+    return true;
 }
 
 void
 server_stop(struct server *server) {
+    if (server->server_socket != INVALID_SOCKET) {
+        close_socket(&server->server_socket);
+    }
+    if (server->video_socket != INVALID_SOCKET) {
+        close_socket(&server->video_socket);
+    }
+    if (server->control_socket != INVALID_SOCKET) {
+        close_socket(&server->control_socket);
+    }
+
     SDL_assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
@@ -265,11 +319,5 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
-    if (server->server_socket != INVALID_SOCKET) {
-        close_socket(&server->server_socket);
-    }
-    if (server->device_socket != INVALID_SOCKET) {
-        close_socket(&server->device_socket);
-    }
     SDL_free(server->serial);
 }

@@ -23,11 +23,18 @@ xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
 char *
 strquote(const char *src);
 
+// return the index to truncate a UTF-8 string at a valid position
+size_t
+utf8_truncation_index(const char *utf8, size_t max_len);
+
 #ifdef _WIN32
 // convert a UTF-8 string to a wchar_t string
 // returns the new allocated string, to be freed by the caller
 wchar_t *
 utf8_to_wide_char(const char *utf8);
+
+char *
+utf8_from_wide_char(const wchar_t *s);
 #endif
 
 #endif

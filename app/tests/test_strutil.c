@@ -126,6 +126,37 @@ static void test_xstrjoin_truncated_after_sep(void) {
     assert(!strcmp("abc de ", s));
 }
 
+static void test_utf8_truncate(void) {
+    const char *s = "aÉbÔc";
+    assert(strlen(s) == 7); // É and Ô are 2 bytes-wide
+
+    size_t count;
+
+    count = utf8_truncation_index(s, 1);
+    assert(count == 1);
+
+    count = utf8_truncation_index(s, 2);
+    assert(count == 1); // É is 2 bytes-wide
+
+    count = utf8_truncation_index(s, 3);
+    assert(count == 3);
+
+    count = utf8_truncation_index(s, 4);
+    assert(count == 4);
+
+    count = utf8_truncation_index(s, 5);
+    assert(count == 4); // Ô is 2 bytes-wide
+
+    count = utf8_truncation_index(s, 6);
+    assert(count == 6);
+
+    count = utf8_truncation_index(s, 7);
+    assert(count == 7);
+
+    count = utf8_truncation_index(s, 8);
+    assert(count == 7); // no more chars
+}
+
 int main(void) {
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
@@ -135,5 +166,6 @@ int main(void) {
     test_xstrjoin_truncated_in_token();
     test_xstrjoin_truncated_before_sep();
     test_xstrjoin_truncated_after_sep();
+    test_utf8_truncate();
     return 0;
 }

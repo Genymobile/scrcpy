@@ -9,6 +9,7 @@
  // not needed here, but winsock2.h must never be included AFTER windows.h
 # include <winsock2.h>
 # include <windows.h>
+# define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
 # ifdef _WIN64
@@ -23,6 +24,7 @@
 #else
 
 # include <sys/types.h>
+# define PATH_SEPARATOR '/'
 # define PRIsizet "zu"
 # define PRIexitcode "d"
 # define PROCESS_NONE -1
@@ -74,6 +76,11 @@ adb_install(const char *serial, const char *local);
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 bool
-process_check_success(process_t process, const char *name);
+process_check_success(process_t proc, const char *name);
+
+// return the absolute path of the executable (the scrcpy binary)
+// may be NULL on error; to be freed by SDL_free
+char *
+get_executable_path(void);
 
 #endif

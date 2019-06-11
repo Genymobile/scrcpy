@@ -5,20 +5,20 @@
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
+#include "cbuf.h"
 #include "command.h"
-
-#define REQUEST_QUEUE_SIZE 16
 
 typedef enum {
     ACTION_INSTALL_APK,
     ACTION_PUSH_FILE,
 } file_handler_action_t;
 
-struct request_queue {
-    struct request *reqs[REQUEST_QUEUE_SIZE];
-    int tail;
-    int head;
+struct file_handler_request {
+    file_handler_action_t action;
+    char *file;
 };
+
+struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 
 struct file_handler {
     char *serial;
@@ -28,7 +28,7 @@ struct file_handler {
     bool stopped;
     bool initialized;
     process_t current_process;
-    struct request_queue queue;
+    struct file_handler_request_queue queue;
 };
 
 bool
