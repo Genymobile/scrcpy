@@ -113,7 +113,7 @@ read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
 
     ssize_t r = net_recv(stream->socket, buf, buf_size);
     if (r == -1) {
-        return AVERROR(errno);
+        return errno ? AVERROR(errno) : AVERROR_EOF;
     }
     if (r == 0) {
         return AVERROR_EOF;
@@ -130,7 +130,7 @@ read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct stream *stream = opaque;
     ssize_t r = net_recv(stream->socket, buf, buf_size);
     if (r == -1) {
-        return AVERROR(errno);
+        return errno ? AVERROR(errno) : AVERROR_EOF;
     }
     if (r == 0) {
         return AVERROR_EOF;
