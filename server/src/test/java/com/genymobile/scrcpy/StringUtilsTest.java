@@ -10,7 +10,7 @@ public class StringUtilsTest {
 
     @Test
     @SuppressWarnings("checkstyle:MagicNumber")
-    public void testUtf8Trucate() {
+    public void testUtf8Truncate() {
         String s = "aÉbÔc";
         byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);
         Assert.assertEquals(7, utf8.length);
