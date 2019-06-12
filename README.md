@@ -1,4 +1,4 @@
-# scrcpy (v1.8)
+# scrcpy (v1.9)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -29,6 +29,12 @@ control it using keyboard and mouse.
 On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
 it's not that hard.
 
+A [Snap] package is available: [`scrcpy`][snap-link].
+
+[snap-link]: https://snapstats.org/snaps/scrcpy
+
+[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+
 For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
@@ -45,13 +51,13 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.8.zip`][direct-win32]  
-   _(SHA-256: c0c29ed1c66deaa73bdadacd09e598aafb3a117929cf7a314cce1cc45e34de53)_
- - [`scrcpy-win64-v1.8.zip`][direct-win64]  
-   _(SHA-256: 9cc980d07bd8f036ae4e91d0bc6fc3281d7fa8f9752d4913b643c0fb72a19fb7)_
+ - [`scrcpy-win32-v1.9.zip`][direct-win32]  
+   _(SHA-256: 3234f7fbcc26b9e399f50b5ca9ed085708954c87fda1b0dd32719d6e7dd861ef)_
+ - [`scrcpy-win64-v1.9.zip`][direct-win64]  
+   _(SHA-256: 0088eca1811ea7c7ac350d636c8465b266e6c830bb268770ff88fddbb493077e)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-win32-v1.8.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-win64-v1.8.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-win32-v1.9.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-win64-v1.9.zip
 
 You can also [build the app manually][BUILD].
 
@@ -256,6 +262,33 @@ scrcpy --no-control
 scrcpy -n
 ```
 
+### Turn screen off
+
+It is possible to turn the device screen off while mirroring on start with a
+command-line option:
+
+```bash
+scrcpy --turn-screen-off
+scrcpy -S
+```
+
+Or by pressing `Ctrl`+`o` at any time.
+
+To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
+
+### Render expired frames
+
+By default, to minimize latency, _scrcpy_ always renders the last decoded frame
+available, and drops any previous one.
+
+To force the rendering of all frames (at a cost of a possible increased
+latency), use:
+
+```bash
+scrcpy --render-expired-frames
+```
+
 
 ### Forward audio
 
@@ -284,14 +317,30 @@ you are interested, see [issue 14].
  | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
  | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
  | click on `POWER`                       | `Ctrl`+`p`                    |
- | turn screen on                         | _Right-click²_                |
+ | power on                               | _Right-click²_                |
+ | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
  | expand notification panel              | `Ctrl`+`n`                    |
  | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
+ | copy device clipboard to computer      | `Ctrl`+`c`                    |
  | paste computer clipboard to device     | `Ctrl`+`v`                    |
+ | copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            |
  | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
+
+
+## Custom paths
+
+To use a specific _adb_ binary, configure its path in the environment variable
+`ADB`:
+
+    ADB=/path/to/adb scrcpy
+
+To override the path of the `scrcpy-server.jar` file, configure its path in
+`SCRCPY_SERVER_PATH`.
+
+[useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 
 
 ## Why _scrcpy_?

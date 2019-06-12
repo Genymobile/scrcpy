@@ -1,15 +1,19 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
-import android.graphics.Point;
 import android.graphics.Rect;
 import android.os.Build;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.view.IRotationWatcher;
 import android.view.InputEvent;
 
 public final class Device {
+
+    public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
+    public static final int POWER_MODE_NORMAL = SurfaceControl.POWER_MODE_NORMAL;
 
     public interface RotationListener {
         void onRotationChanged(int rotation);
@@ -107,8 +111,8 @@ public final class Device {
         }
         Rect contentRect = screenInfo.getContentRect();
         Point point = position.getPoint();
-        int scaledX = contentRect.left + point.x * contentRect.width() / videoSize.getWidth();
-        int scaledY = contentRect.top + point.y * contentRect.height() / videoSize.getHeight();
+        int scaledX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
+        int scaledY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
         return new Point(scaledX, scaledY);
     }
 
@@ -138,6 +142,28 @@ public final class Device {
 
     public void collapsePanels() {
         serviceManager.getStatusBarManager().collapsePanels();
+    }
+
+    public String getClipboardText() {
+        CharSequence s = serviceManager.getClipboardManager().getText();
+        if (s == null) {
+            return null;
+        }
+        return s.toString();
+    }
+
+    public void setClipboardText(String text) {
+        serviceManager.getClipboardManager().setText(text);
+        Ln.i("Device clipboard set");
+    }
+
+    /**
+     * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
+     */
+    public void setScreenPowerMode(int mode) {
+        IBinder d = SurfaceControl.getBuiltInDisplay(0);
+        SurfaceControl.setDisplayPowerMode(d, mode);
+        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
     }
 
     static Rect flipRect(Rect crop) {

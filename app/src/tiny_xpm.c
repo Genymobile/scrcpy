@@ -105,6 +105,10 @@ read_xpm(char *xpm[]) {
                                                     width, height,
                                                     32, 4 * width,
                                                     rmask, gmask, bmask, amask);
+    if (!surface) {
+        LOGE("Could not create icon surface");
+        return NULL;
+    }
     // make the surface own the raw pixels
     surface->flags &= ~SDL_PREALLOC;
     return surface;

@@ -12,7 +12,7 @@ case, use the [prebuilt server] (so you will not need Java or the Android SDK).
 ## Requirements
 
 You need [adb]. It is available in the [Android SDK platform
-tools][platform-tools], or packaged in your distribution (`android-adb-tools`).
+tools][platform-tools], or packaged in your distribution (`adb`).
 
 On Windows, download the [platform-tools][platform-tools-windows] and extract
 the following files to a directory accessible from your `PATH`:
@@ -40,10 +40,10 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0.0
+sudo apt install ffmpeg libsdl2-2.0-0
 
 # client build dependencies
-sudo apt install make gcc pkg-config meson ninja-build \
+sudo apt install make gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
 
@@ -234,10 +234,10 @@ You can then [run](README.md#run) _scrcpy_.
 
 ## Prebuilt server
 
- - [`scrcpy-server-v1.8.jar`][direct-scrcpy-server]  
-   _(SHA-256: 839055ef905903bf98ead1b9b8a127fe402b39ad657a81f9a914b2dbcb2ce5c0)_
+ - [`scrcpy-server-v1.9.jar`][direct-scrcpy-server]  
+   _(SHA-256: ad7e539f100e48259b646f26982bc63e0a60a81ac87ae135e242855bef69bd1a)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.8/scrcpy-server-v1.8.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-server-v1.9.jar
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:

@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
         minSdkVersion 21
-        targetSdkVersion 27
-        versionCode 9
-        versionName "1.8"
+        targetSdkVersion 29
+        versionCode 10
+        versionName "1.9"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

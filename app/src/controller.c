@@ -7,21 +7,25 @@
 #include "log.h"
 
 bool
-controller_init(struct controller *controller, socket_t video_socket) {
-    if (!control_event_queue_init(&controller->queue)) {
+controller_init(struct controller *controller, socket_t control_socket) {
+    cbuf_init(&controller->queue);
+
+    if (!receiver_init(&controller->receiver, control_socket)) {
         return false;
     }
 
     if (!(controller->mutex = SDL_CreateMutex())) {
+        receiver_destroy(&controller->receiver);
         return false;
     }
 
-    if (!(controller->event_cond = SDL_CreateCond())) {
+    if (!(controller->msg_cond = SDL_CreateCond())) {
+        receiver_destroy(&controller->receiver);
         SDL_DestroyMutex(controller->mutex);
         return false;
     }
 
-    controller->video_socket = video_socket;
+    controller->control_socket = control_socket;
     controller->stopped = false;
 
     return true;
@@ -29,34 +33,39 @@ controller_init(struct controller *controller, socket_t video_socket) {
 
 void
 controller_destroy(struct controller *controller) {
-    SDL_DestroyCond(controller->event_cond);
+    SDL_DestroyCond(controller->msg_cond);
     SDL_DestroyMutex(controller->mutex);
-    control_event_queue_destroy(&controller->queue);
+
+    struct control_msg msg;
+    while (cbuf_take(&controller->queue, &msg)) {
+        control_msg_destroy(&msg);
+    }
+
+    receiver_destroy(&controller->receiver);
 }
 
 bool
-controller_push_event(struct controller *controller,
-                      const struct control_event *event) {
-    bool res;
+controller_push_msg(struct controller *controller,
+                      const struct control_msg *msg) {
     mutex_lock(controller->mutex);
-    bool was_empty = control_event_queue_is_empty(&controller->queue);
-    res = control_event_queue_push(&controller->queue, event);
+    bool was_empty = cbuf_is_empty(&controller->queue);
+    bool res = cbuf_push(&controller->queue, *msg);
     if (was_empty) {
-        cond_signal(controller->event_cond);
+        cond_signal(controller->msg_cond);
     }
     mutex_unlock(controller->mutex);
     return res;
 }
 
 static bool
-process_event(struct controller *controller,
-              const struct control_event *event) {
-    unsigned char serialized_event[SERIALIZED_EVENT_MAX_SIZE];
-    int length = control_event_serialize(event, serialized_event);
+process_msg(struct controller *controller,
+              const struct control_msg *msg) {
+    unsigned char serialized_msg[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    int length = control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
     }
-    int w = net_send_all(controller->video_socket, serialized_event, length);
+    int w = net_send_all(controller->control_socket, serialized_msg, length);
     return w == length;
 }
 
@@ -66,25 +75,23 @@ run_controller(void *data) {
 
     for (;;) {
         mutex_lock(controller->mutex);
-        while (!controller->stopped
-                && control_event_queue_is_empty(&controller->queue)) {
-            cond_wait(controller->event_cond, controller->mutex);
+        while (!controller->stopped && cbuf_is_empty(&controller->queue)) {
+            cond_wait(controller->msg_cond, controller->mutex);
         }
         if (controller->stopped) {
-            // stop immediately, do not process further events
+            // stop immediately, do not process further msgs
             mutex_unlock(controller->mutex);
             break;
         }
-        struct control_event event;
-        bool non_empty = control_event_queue_take(&controller->queue,
-                                                      &event);
+        struct control_msg msg;
+        bool non_empty = cbuf_take(&controller->queue, &msg);
         SDL_assert(non_empty);
         mutex_unlock(controller->mutex);
 
-        bool ok = process_event(controller, &event);
-        control_event_destroy(&event);
+        bool ok = process_msg(controller, &msg);
+        control_msg_destroy(&msg);
         if (!ok) {
-            LOGD("Cannot write event to socket");
+            LOGD("Cannot write msg to socket");
             break;
         }
     }
@@ -102,6 +109,12 @@ controller_start(struct controller *controller) {
         return false;
     }
 
+    if (!receiver_start(&controller->receiver)) {
+        controller_stop(controller);
+        SDL_WaitThread(controller->thread, NULL);
+        return false;
+    }
+
     return true;
 }
 
@@ -109,11 +122,12 @@ void
 controller_stop(struct controller *controller) {
     mutex_lock(controller->mutex);
     controller->stopped = true;
-    cond_signal(controller->event_cond);
+    cond_signal(controller->msg_cond);
     mutex_unlock(controller->mutex);
 }
 
 void
 controller_join(struct controller *controller) {
     SDL_WaitThread(controller->thread, NULL);
+    receiver_join(&controller->receiver);
 }

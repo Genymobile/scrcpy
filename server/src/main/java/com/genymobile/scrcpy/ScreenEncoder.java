@@ -3,7 +3,6 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
-import android.media.MediaMuxer;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
@@ -71,8 +70,9 @@ public class ScreenEncoder implements Device.RotationListener {
                 codec.start();
                 try {
                     alive = encode(codec, fd);
-                } finally {
+                    // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
+                } finally {
                     destroyDisplay(display);
                     codec.release();
                     surface.release();

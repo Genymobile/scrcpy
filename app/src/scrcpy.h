@@ -16,8 +16,10 @@ struct scrcpy_options {
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
-    bool no_control;
-    bool no_display;
+    bool control;
+    bool display;
+    bool turn_screen_off;
+    bool render_expired_frames;
 };
 
 bool

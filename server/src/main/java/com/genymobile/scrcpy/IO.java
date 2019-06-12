@@ -8,7 +8,7 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class IO {
+public final class IO {
     private IO() {
         // not instantiable
     }

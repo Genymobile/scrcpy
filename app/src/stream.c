@@ -24,7 +24,7 @@
 
 static struct frame_meta *
 frame_meta_new(uint64_t pts) {
-    struct frame_meta *meta = malloc(sizeof(*meta));
+    struct frame_meta *meta = SDL_malloc(sizeof(*meta));
     if (!meta) {
         return meta;
     }
@@ -35,7 +35,7 @@ frame_meta_new(uint64_t pts) {
 
 static void
 frame_meta_delete(struct frame_meta *frame_meta) {
-    free(frame_meta);
+    SDL_free(frame_meta);
 }
 
 static bool
@@ -113,7 +113,7 @@ read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
 
     ssize_t r = net_recv(stream->socket, buf, buf_size);
     if (r == -1) {
-        return AVERROR(errno);
+        return errno ? AVERROR(errno) : AVERROR_EOF;
     }
     if (r == 0) {
         return AVERROR_EOF;
@@ -130,7 +130,7 @@ read_raw_packet(void *opaque, uint8_t *buf, int buf_size) {
     struct stream *stream = opaque;
     ssize_t r = net_recv(stream->socket, buf, buf_size);
     if (r == -1) {
-        return AVERROR(errno);
+        return errno ? AVERROR(errno) : AVERROR_EOF;
     }
     if (r == 0) {
         return AVERROR_EOF;
@@ -207,6 +207,13 @@ run_stream(void *data) {
     packet.size = 0;
 
     while (!av_read_frame(format_ctx, &packet)) {
+        if (SDL_AtomicGet(&stream->stopped)) {
+            // if the stream is stopped, the socket had been shutdown, so the
+            // last packet is probably corrupted (but not detected as such by
+            // FFmpeg) and will not be decoded correctly
+            av_packet_unref(&packet);
+            goto quit;
+        }
         if (stream->decoder && !decoder_push(stream->decoder, &packet)) {
             av_packet_unref(&packet);
             goto quit;
@@ -259,6 +266,7 @@ stream_init(struct stream *stream, socket_t socket,
     stream->socket = socket;
     stream->decoder = decoder,
     stream->recorder = recorder;
+    SDL_AtomicSet(&stream->stopped, 0);
 }
 
 bool
@@ -275,6 +283,7 @@ stream_start(struct stream *stream) {
 
 void
 stream_stop(struct stream *stream) {
+    SDL_AtomicSet(&stream->stopped, 1);
     if (stream->decoder) {
         decoder_interrupt(stream->decoder);
     }
