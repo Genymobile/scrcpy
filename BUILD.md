@@ -70,7 +70,7 @@ sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-rele
 sudo dnf install SDL2-devel ffms2-devel meson gcc make
 
 # server build dependencies
-sudo dnf install java
+sudo dnf install java-devel
 ```
 
 
