@@ -82,9 +82,8 @@ public final class SurfaceControl {
             // <https://github.com/Genymobile/scrcpy/issues/586>
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 return (IBinder) CLASS.getMethod("getBuiltInDisplay", int.class).invoke(null, builtInDisplayId);
-            } else {
-                return (IBinder) CLASS.getMethod("getPhysicalDisplayToken", long.class).invoke(null, builtInDisplayId);
             }
+            return (IBinder) CLASS.getMethod("getPhysicalDisplayToken", long.class).invoke(null, builtInDisplayId);
         } catch (Exception e) {
             throw new AssertionError(e);
         }
