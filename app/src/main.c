@@ -86,7 +86,7 @@ static void usage(const char *arg0) {
         "        This flag forces to render all frames, at a cost of a\n"
         "        possible increased latency.\n"
         "\n"
-        "    -s, --serial\n"
+        "    -s, --serial serial\n"
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
         "\n"
