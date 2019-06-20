@@ -18,6 +18,11 @@ xstrncpy(char *dest, const char *src, size_t n);
 size_t
 xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
 
+// search for a string find within a string src and replace with rep
+// returns a new string if a replacement is done
+const char *
+strrep(const char *src, const char *find, const char *rep);
+
 // quote a string
 // returns the new allocated string, to be freed by the caller
 char *

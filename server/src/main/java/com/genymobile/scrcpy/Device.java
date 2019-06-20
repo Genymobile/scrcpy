@@ -120,6 +120,9 @@ public final class Device {
         return Build.MODEL;
     }
 
+    public static String getDeviceSerial() {
+        return ( Build.VERSION.SDK_INT >= 26 ? Build.getSerial() : Build.SERIAL );
+    }
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }

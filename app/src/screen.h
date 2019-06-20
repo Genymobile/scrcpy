@@ -44,7 +44,7 @@ screen_init(struct screen *screen);
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init_rendering(struct screen *screen, const char *device_name,
+screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top);
 
 // show the window

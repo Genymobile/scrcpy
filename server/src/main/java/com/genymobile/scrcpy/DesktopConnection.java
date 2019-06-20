@@ -13,7 +13,8 @@ import java.nio.charset.StandardCharsets;
 
 public final class DesktopConnection implements Closeable {
 
-    private static final int DEVICE_NAME_FIELD_LENGTH = 64;
+    private static final int DEVICE_INFO_FIELD_LENGTH = 64;
+    private static final int DEVICE_INFO_FIELD_COUNT = 2;
 
     private static final String SOCKET_NAME = "scrcpy";
 
@@ -71,7 +72,7 @@ public final class DesktopConnection implements Closeable {
 
         DesktopConnection connection = new DesktopConnection(videoSocket, controlSocket);
         Size videoSize = device.getScreenInfo().getVideoSize();
-        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+        connection.send(Device.getDeviceName(), Device.getDeviceSerial(), videoSize.getWidth(), videoSize.getHeight());
         return connection;
     }
 
@@ -85,18 +86,22 @@ public final class DesktopConnection implements Closeable {
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
-    private void send(String deviceName, int width, int height) throws IOException {
-        byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
+    private void send(String deviceName, String deviceSerial, int width, int height) throws IOException {
+        byte[] buffer = new byte[DEVICE_INFO_FIELD_LENGTH*DEVICE_INFO_FIELD_COUNT + 4];
 
         byte[] deviceNameBytes = deviceName.getBytes(StandardCharsets.UTF_8);
-        int len = StringUtils.getUtf8TruncationIndex(deviceNameBytes, DEVICE_NAME_FIELD_LENGTH - 1);
-        System.arraycopy(deviceNameBytes, 0, buffer, 0, len);
+        int lenName = StringUtils.getUtf8TruncationIndex(deviceNameBytes, DEVICE_INFO_FIELD_LENGTH - 1);
+        System.arraycopy(deviceNameBytes, 0, buffer, 0, lenName);
         // byte[] are always 0-initialized in java, no need to set '\0' explicitly
 
-        buffer[DEVICE_NAME_FIELD_LENGTH] = (byte) (width >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
-        buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
+        byte[] deviceSerialBytes = deviceSerial.getBytes(StandardCharsets.UTF_8);
+        int lenSerial = StringUtils.getUtf8TruncationIndex(deviceSerialBytes, DEVICE_INFO_FIELD_LENGTH - 1);
+        System.arraycopy(deviceSerialBytes, 0, buffer, DEVICE_INFO_FIELD_LENGTH, lenSerial);
+
+        buffer[DEVICE_INFO_FIELD_LENGTH*DEVICE_INFO_FIELD_COUNT] = (byte) (width >> 8);
+        buffer[DEVICE_INFO_FIELD_LENGTH*DEVICE_INFO_FIELD_COUNT + 1] = (byte) width;
+        buffer[DEVICE_INFO_FIELD_LENGTH*DEVICE_INFO_FIELD_COUNT + 2] = (byte) (height >> 8);
+        buffer[DEVICE_INFO_FIELD_LENGTH*DEVICE_INFO_FIELD_COUNT + 3] = (byte) height;
         IO.writeFully(videoFd, buffer, 0, buffer.length);
     }
 

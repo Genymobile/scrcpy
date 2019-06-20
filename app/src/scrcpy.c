@@ -24,6 +24,7 @@
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
+#include "str_util.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 
@@ -310,13 +311,14 @@ scrcpy(const struct scrcpy_options *options) {
         goto end;
     }
 
-    char device_name[DEVICE_NAME_FIELD_LENGTH];
+    char device_name[DEVICE_INFO_FIELD_LENGTH];
+    char device_serial[DEVICE_INFO_FIELD_LENGTH];
     struct size frame_size;
 
     // screenrecord does not send frames when the screen content does not
     // change therefore, we transmit the screen size before the video stream,
     // to be able to init the window immediately
-    if (!device_read_info(server.video_socket, device_name, &frame_size)) {
+    if (!device_read_info(server.video_socket, device_name, device_serial, &frame_size)) {
         goto end;
     }
 
@@ -380,7 +382,14 @@ scrcpy(const struct scrcpy_options *options) {
             controller_started = true;
         }
 
-        if (!screen_init_rendering(&screen, device_name, frame_size,
+        const char *window_title = device_name;
+        if (options->window_title) {
+            window_title = options->window_title;
+            window_title = strrep(window_title, "%M", device_name);
+            window_title = strrep(window_title, "%S", device_serial);
+        }
+
+        if (!screen_init_rendering(&screen, window_title, frame_size,
                                    options->always_on_top)) {
             goto end;
         }

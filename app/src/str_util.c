@@ -44,6 +44,24 @@ truncated:
     return n;
 }
 
+const char *
+strrep(const char *src, const char *find, const char *rep) {
+    char *cmp = strstr(src, find);
+    if (!cmp) return src;
+
+    size_t len_src = strlen(src);
+    size_t len_find = strlen(find);
+    size_t len_rep = strlen(rep);
+    char *tmp = SDL_malloc(len_src - len_find + len_rep + 1);
+
+    size_t i = cmp - src;
+    strncpy(tmp, src, i);
+    tmp[i]='\0';
+    strcat(tmp, rep);
+    strcat(tmp, cmp+len_find);
+    return tmp;
+}
+
 char *
 strquote(const char *src) {
     size_t len = strlen(src);
