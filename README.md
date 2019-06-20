@@ -292,15 +292,12 @@ scrcpy --render-expired-frames
 
 ### Forward audio
 
-Audio is not forwarded by _scrcpy_.
+Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
 
-There is a limited solution using [AOA], implemented in the [`audio`] branch. If
-you are interested, see [issue 14].
+Also see [issue #14].
 
-
-[AOA]: https://source.android.com/devices/accessories/aoa2
-[`audio`]: https://github.com/Genymobile/scrcpy/commits/audio
-[issue 14]: https://github.com/Genymobile/scrcpy/issues/14
+[USBaudio]: https://github.com/rom1v/usbaudio
+[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
