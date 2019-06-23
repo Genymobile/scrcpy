@@ -29,7 +29,7 @@ public class StatusBarManager {
         try {
             expandNotificationsPanelMethod.invoke(manager);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Cannot invoke ServiceBarManager.expandNotificationsPanel()", e);
+            Ln.e("Could not invoke ServiceBarManager.expandNotificationsPanel()", e);
         }
     }
 
@@ -45,7 +45,7 @@ public class StatusBarManager {
         try {
             collapsePanelsMethod.invoke(manager);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Cannot invoke ServiceBarManager.collapsePanels()", e);
+            Ln.e("Could not invoke ServiceBarManager.collapsePanels()", e);
         }
     }
 }

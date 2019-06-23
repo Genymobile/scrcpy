@@ -100,7 +100,7 @@ read_packet_with_meta(void *opaque, uint8_t *buf, int buf_size) {
 
         if (pts != NO_PTS && !receiver_state_push_meta(state, pts)) {
             LOGE("Could not store PTS for recording");
-            // we cannot save the PTS, the recording would be broken
+            // we could not save the PTS, the recording would be broken
             return AVERROR(ENOMEM);
         }
     }

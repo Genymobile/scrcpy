@@ -85,7 +85,7 @@ get_optimal_size(struct size current_size, struct size frame_size) {
     uint32_t h;
 
     if (!get_preferred_display_bounds(&display_size)) {
-        // cannot get display bounds, do not constraint the size
+        // could not get display bounds, do not constraint the size
         w = current_size.width;
         h = current_size.height;
     } else {

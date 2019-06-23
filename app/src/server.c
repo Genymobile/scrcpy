@@ -35,7 +35,7 @@ get_server_path(void) {
     // use scrcpy-server.jar in the same directory as the executable
     char *executable_path = get_executable_path();
     if (!executable_path) {
-        LOGE("Cannot get executable path, "
+        LOGE("Could not get executable path, "
              "using " SERVER_FILENAME " from current directory");
         // not found, use current directory
         return SERVER_FILENAME;
@@ -47,7 +47,7 @@ get_server_path(void) {
     size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
     char *server_path = SDL_malloc(len);
     if (!server_path) {
-        LOGE("Cannot alloc server path string, "
+        LOGE("Could not alloc server path string, "
              "using " SERVER_FILENAME " from current directory");
         SDL_free(executable_path);
         return SERVER_FILENAME;
@@ -182,7 +182,7 @@ close_socket(socket_t *socket) {
     SDL_assert(*socket != INVALID_SOCKET);
     net_shutdown(*socket, SHUT_RDWR);
     if (!net_close(*socket)) {
-        LOGW("Cannot close socket");
+        LOGW("Could not close socket");
         return;
     }
     *socket = INVALID_SOCKET;
@@ -306,7 +306,7 @@ server_stop(struct server *server) {
     SDL_assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
-        LOGW("Cannot terminate server");
+        LOGW("Could not terminate server");
     }
 
     cmd_simple_wait(server->process, NULL); // ignore exit code

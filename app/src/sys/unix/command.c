@@ -94,7 +94,7 @@ cmd_simple_wait(pid_t pid, int *exit_code) {
     int status;
     int code;
     if (waitpid(pid, &status, 0) == -1 || !WIFEXITED(status)) {
-        // cannot wait, or exited unexpectedly, probably by a signal
+        // could not wait, or exited unexpectedly, probably by a signal
         code = -1;
     } else {
         code = WEXITSTATUS(status);

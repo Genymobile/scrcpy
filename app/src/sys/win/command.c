@@ -33,7 +33,7 @@ cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
 
     wchar_t *wide = utf8_to_wide_char(cmd);
     if (!wide) {
-        LOGC("Cannot allocate wide char string");
+        LOGC("Could not allocate wide char string");
         return PROCESS_ERROR_GENERIC;
     }
 
@@ -67,7 +67,7 @@ cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
-        // cannot wait or retrieve the exit code
+        // could not wait or retrieve the exit code
         code = -1; // max value, it's unsigned
     }
     if (exit_code) {

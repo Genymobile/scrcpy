@@ -33,7 +33,7 @@ recorder_init(struct recorder *recorder,
               struct size declared_frame_size) {
     recorder->filename = SDL_strdup(filename);
     if (!recorder->filename) {
-        LOGE("Cannot strdup filename");
+        LOGE("Could not strdup filename");
         return false;
     }
 
@@ -133,7 +133,7 @@ recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
 
     uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));
     if (!extradata) {
-        LOGC("Cannot allocate extradata");
+        LOGC("Could not allocate extradata");
         return false;
     }
 

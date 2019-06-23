@@ -259,7 +259,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     }
     char *local_fmt = SDL_malloc(strlen(fmt) + 10);
     if (!local_fmt) {
-        LOGC("Cannot allocate string");
+        LOGC("Could not allocate string");
         return;
     }
     // strcpy is safe here, the destination is large enough
@@ -391,7 +391,7 @@ scrcpy(const struct scrcpy_options *options) {
             msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
 
             if (!controller_push_msg(&controller, &msg)) {
-                LOGW("Cannot request 'set screen power mode'");
+                LOGW("Could not request 'set screen power mode'");
             }
         }
 

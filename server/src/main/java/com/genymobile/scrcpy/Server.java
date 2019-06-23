@@ -116,7 +116,7 @@ public final class Server {
         try {
             new File(SERVER_PATH).delete();
         } catch (Exception e) {
-            Ln.e("Cannot unlink server", e);
+            Ln.e("Could not unlink server", e);
         }
     }
 

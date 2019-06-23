@@ -415,7 +415,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
     }
 
     if (args->no_control && args->turn_screen_off) {
-        LOGE("Cannot request to turn screen off if control is disabled");
+        LOGE("Could not request to turn screen off if control is disabled");
         return false;
     }
 

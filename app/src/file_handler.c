@@ -31,7 +31,7 @@ file_handler_init(struct file_handler *file_handler, const char *serial) {
     if (serial) {
         file_handler->serial = SDL_strdup(serial);
         if (!file_handler->serial) {
-            LOGW("Cannot strdup serial");
+            LOGW("Could not strdup serial");
             SDL_DestroyCond(file_handler->event_cond);
             SDL_DestroyMutex(file_handler->mutex);
             return false;
@@ -169,7 +169,7 @@ file_handler_stop(struct file_handler *file_handler) {
     cond_signal(file_handler->event_cond);
     if (file_handler->current_process != PROCESS_NONE) {
         if (!cmd_terminate(file_handler->current_process)) {
-            LOGW("Cannot terminate install process");
+            LOGW("Could not terminate install process");
         }
         cmd_simple_wait(file_handler->current_process, NULL);
         file_handler->current_process = PROCESS_NONE;
