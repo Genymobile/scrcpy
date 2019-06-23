@@ -380,7 +380,11 @@ scrcpy(const struct scrcpy_options *options) {
             controller_started = true;
         }
 
-        if (!screen_init_rendering(&screen, device_name, frame_size,
+        const char* window_title = device_name;
+        if (options->window_title)
+            window_title = options->window_title;
+
+        if (!screen_init_rendering(&screen, window_title, frame_size,
                                    options->always_on_top)) {
             goto end;
         }
