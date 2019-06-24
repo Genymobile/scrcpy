@@ -289,6 +289,14 @@ latency), use:
 scrcpy --render-expired-frames
 ```
 
+### Custom window title
+
+By default, the window title is the device model. It can be changed:
+
+```bash
+scrcpy --window-title 'My device'
+```
+
 
 ### Forward audio
 
