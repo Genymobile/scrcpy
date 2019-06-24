@@ -17,6 +17,7 @@ struct args {
     const char *serial;
     const char *crop;
     const char *record_filename;
+    const char *window_title;
     enum recorder_format record_format;
     bool fullscreen;
     bool no_control;
@@ -102,6 +103,9 @@ static void usage(const char *arg0) {
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
+        "\n"
+        "    --window-title text\n"
+        "        Set a custom window title.\n"
         "\n"
         "Shortcuts:\n"
         "\n"
@@ -295,6 +299,7 @@ guess_record_format(const char *filename) {
 }
 
 #define OPT_RENDER_EXPIRED_FRAMES 1000
+#define OPT_WINDOW_TITLE          1001
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -316,6 +321,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"version",               no_argument,       NULL, 'v'},
+        {"window-title",          required_argument, NULL,
+                                                 OPT_WINDOW_TITLE},
         {NULL,                    0,                 NULL, 0  },
     };
     int c;
@@ -378,6 +385,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
             case OPT_RENDER_EXPIRED_FRAMES:
                 args->render_expired_frames = true;
                 break;
+            case OPT_WINDOW_TITLE:
+                args->window_title = optarg;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -434,6 +444,7 @@ main(int argc, char *argv[]) {
         .serial = NULL,
         .crop = NULL,
         .record_filename = NULL,
+        .window_title = NULL,
         .record_format = 0,
         .help = false,
         .version = false,
@@ -478,6 +489,7 @@ main(int argc, char *argv[]) {
         .crop = args.crop,
         .port = args.port,
         .record_filename = args.record_filename,
+        .window_title = args.window_title,
         .record_format = args.record_format,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
