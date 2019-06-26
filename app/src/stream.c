@@ -198,7 +198,7 @@ run_stream(void *data) {
 
     if (stream->recorder && !recorder_open(stream->recorder, codec)) {
         LOGE("Could not open recorder");
-        goto finally_close_input;
+        goto finally_close_decoder;
     }
 
     AVPacket packet;
@@ -247,6 +247,10 @@ run_stream(void *data) {
 quit:
     if (stream->recorder) {
         recorder_close(stream->recorder);
+    }
+finally_close_decoder:
+    if (stream->decoder) {
+        decoder_close(stream->decoder);
     }
 finally_close_input:
     avformat_close_input(&format_ctx);
