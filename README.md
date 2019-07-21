@@ -2,14 +2,14 @@
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
-It works on _GNU/Linux_, _Windows_ and _MacOS_.
+It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 
 ## Requirements
 
-The Android part requires at least API 21 (Android 5.0).
+The Android device requires at least API 21 (Android 5.0).
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
@@ -62,7 +62,7 @@ For Windows, for simplicity, prebuilt archives with all the dependencies
 You can also [build the app manually][BUILD].
 
 
-### Mac OS
+### macOS
 
 The application is available in [Homebrew]. Just install it:
 
@@ -101,22 +101,22 @@ scrcpy --help
 ### Reduce size
 
 Sometimes, it is useful to mirror an Android device at a lower definition to
-increase performances.
+increase performance.
 
-To limit both width and height to some value (e.g. 1024):
+To limit both the width and height to some value (e.g. 1024):
 
 ```bash
 scrcpy --max-size 1024
 scrcpy -m 1024  # short version
 ```
 
-The other dimension is computed to that the device aspect-ratio is preserved.
+The other dimension is computed to that the device aspect ratio is preserved.
 That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
 ### Change bit-rate
 
-The default bit-rate is 8Mbps. To change the video bitrate (e.g. to 2Mbps):
+The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
 
 ```bash
 scrcpy --bit-rate 2M
@@ -128,7 +128,7 @@ scrcpy -b 2M  # short version
 
 The device screen may be cropped to mirror only part of the screen.
 
-This is useful for example to mirror only 1 eye of the Oculus Go:
+This is useful for example to mirror only one eye of the Oculus Go:
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
@@ -304,24 +304,24 @@ Also see [issue #14].
 
  | Action                                 |   Shortcut                    |
  | -------------------------------------- |:----------------------------  |
- | switch fullscreen mode                 | `Ctrl`+`f`                    |
- | resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    |
- | resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ |
- | click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
- | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
- | click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
- | click on `MENU`                        | `Ctrl`+`m`                    |
- | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
- | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
- | click on `POWER`                       | `Ctrl`+`p`                    |
- | power on                               | _Right-click²_                |
- | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
- | expand notification panel              | `Ctrl`+`n`                    |
- | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
- | copy device clipboard to computer      | `Ctrl`+`c`                    |
- | paste computer clipboard to device     | `Ctrl`+`v`                    |
- | copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            |
- | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
+ | Switch fullscreen mode                 | `Ctrl`+`f`                    |
+ | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    |
+ | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ |
+ | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
+ | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
+ | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
+ | Click on `MENU`                        | `Ctrl`+`m`                    |
+ | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on macOS) |
+ | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on macOS) |
+ | Click on `POWER`                       | `Ctrl`+`p`                    |
+ | Power on                               | _Right-click²_                |
+ | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
+ | Expand notification panel              | `Ctrl`+`n`                    |
+ | Collapse notification panel            | `Ctrl`+`Shift`+`n`            |
+ | Copy device clipboard to computer      | `Ctrl`+`c`                    |
+ | Paste computer clipboard to device     | `Ctrl`+`v`                    |
+ | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            |
+ | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
