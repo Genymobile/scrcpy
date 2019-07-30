@@ -166,11 +166,21 @@ recorder_rescale_packet(struct recorder *recorder, AVPacket *packet) {
 bool
 recorder_write(struct recorder *recorder, AVPacket *packet) {
     if (!recorder->header_written) {
+        if (packet->pts != AV_NOPTS_VALUE) {
+            LOGE("The first packet is not a config packet");
+            return false;
+        }
         bool ok = recorder_write_header(recorder, packet);
         if (!ok) {
             return false;
         }
         recorder->header_written = true;
+        return true;
+    }
+
+    if (packet->pts == AV_NOPTS_VALUE) {
+        // ignore config packets
+        return true;
     }
 
     recorder_rescale_packet(recorder, packet);

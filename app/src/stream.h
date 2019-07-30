@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <libavformat/avformat.h>
 #include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_thread.h>
 
@@ -10,23 +11,18 @@
 
 struct video_buffer;
 
-struct frame_meta {
-    uint64_t pts;
-    struct frame_meta *next;
-};
-
 struct stream {
     socket_t socket;
     struct video_buffer *video_buffer;
     SDL_Thread *thread;
-    SDL_atomic_t stopped;
     struct decoder *decoder;
     struct recorder *recorder;
-    struct receiver_state {
-        // meta (in order) for frames not consumed yet
-        struct frame_meta *frame_meta_queue;
-        size_t remaining; // remaining bytes to receive for the current frame
-    } receiver_state;
+    AVCodecContext *codec_ctx;
+    AVCodecParserContext *parser;
+    // successive packets may need to be concatenated, until a non-config
+    // packet is available
+    bool has_pending;
+    AVPacket pending;
 };
 
 void
