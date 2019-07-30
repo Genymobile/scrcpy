@@ -71,7 +71,7 @@ notify_stopped(void) {
 
 static bool
 process_config_packet(struct stream *stream, AVPacket *packet) {
-    if (stream->recorder && !recorder_write(stream->recorder, packet)) {
+    if (stream->recorder && !recorder_push(stream->recorder, packet)) {
         LOGE("Could not send config packet to recorder");
         return false;
     }
@@ -87,8 +87,8 @@ process_frame(struct stream *stream, AVPacket *packet) {
     if (stream->recorder) {
         packet->dts = packet->pts;
 
-        if (!recorder_write(stream->recorder, packet)) {
-            LOGE("Could not write frame to output file");
+        if (!recorder_push(stream->recorder, packet)) {
+            LOGE("Could not send packet to recorder");
             return false;
         }
     }
@@ -201,15 +201,22 @@ run_stream(void *data) {
         goto finally_free_codec_ctx;
     }
 
-    if (stream->recorder && !recorder_open(stream->recorder, codec)) {
-        LOGE("Could not open recorder");
-        goto finally_close_decoder;
+    if (stream->recorder) {
+        if (!recorder_open(stream->recorder, codec)) {
+            LOGE("Could not open recorder");
+            goto finally_close_decoder;
+        }
+
+        if (!recorder_start(stream->recorder)) {
+            LOGE("Could not start recorder");
+            goto finally_close_recorder;
+        }
     }
 
     stream->parser = av_parser_init(AV_CODEC_ID_H264);
     if (!stream->parser) {
         LOGE("Could not initialize parser");
-        goto finally_close_recorder;
+        goto finally_stop_and_join_recorder;
     }
 
     // We must only pass complete frames to av_parser_parse2()!
@@ -239,6 +246,12 @@ run_stream(void *data) {
     }
 
     av_parser_close(stream->parser);
+finally_stop_and_join_recorder:
+    if (stream->recorder) {
+        recorder_stop(stream->recorder);
+        LOGI("Finishing recording...");
+        recorder_join(stream->recorder);
+    }
 finally_close_recorder:
     if (stream->recorder) {
         recorder_close(stream->recorder);
