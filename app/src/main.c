@@ -485,6 +485,8 @@ main(int argc, char *argv[]) {
         return 0;
     }
 
+    LOGI("scrcpy " SCRCPY_VERSION " <https://github.com/Genymobile/scrcpy>");
+
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
 #endif
