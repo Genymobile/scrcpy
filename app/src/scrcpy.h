@@ -10,6 +10,7 @@ struct scrcpy_options {
     const char *crop;
     const char *record_filename;
     const char *window_title;
+    const char *push_target;
     enum recorder_format record_format;
     uint16_t port;
     uint16_t max_size;

@@ -22,6 +22,7 @@ struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 
 struct file_handler {
     char *serial;
+    const char *push_target;
     SDL_Thread *thread;
     SDL_mutex *mutex;
     SDL_cond *event_cond;
@@ -32,7 +33,8 @@ struct file_handler {
 };
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial);
+file_handler_init(struct file_handler *file_handler, const char *serial,
+                  const char *push_target);
 
 void
 file_handler_destroy(struct file_handler *file_handler);

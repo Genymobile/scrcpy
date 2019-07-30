@@ -5,9 +5,10 @@
 
 #include "config.h"
 #include "command.h"
-#include "device.h"
 #include "lock_util.h"
 #include "log.h"
+
+#define DEFAULT_PUSH_TARGET "/sdcard/"
 
 static void
 file_handler_request_destroy(struct file_handler_request *req) {
@@ -15,7 +16,8 @@ file_handler_request_destroy(struct file_handler_request *req) {
 }
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial) {
+file_handler_init(struct file_handler *file_handler, const char *serial,
+                  const char *push_target) {
 
     cbuf_init(&file_handler->queue);
 
@@ -46,6 +48,8 @@ file_handler_init(struct file_handler *file_handler, const char *serial) {
     file_handler->stopped = false;
     file_handler->current_process = PROCESS_NONE;
 
+    file_handler->push_target = push_target ? push_target : DEFAULT_PUSH_TARGET;
+
     return true;
 }
 
@@ -67,8 +71,8 @@ install_apk(const char *serial, const char *file) {
 }
 
 static process_t
-push_file(const char *serial, const char *file) {
-    return adb_push(serial, file, DEVICE_SDCARD_PATH);
+push_file(const char *serial, const char *file, const char *push_target) {
+    return adb_push(serial, file, push_target);
 }
 
 bool
@@ -124,7 +128,8 @@ run_file_handler(void *data) {
             process = install_apk(file_handler->serial, req.file);
         } else {
             LOGI("Pushing %s...", req.file);
-            process = push_file(file_handler->serial, req.file);
+            process = push_file(file_handler->serial, req.file,
+                                file_handler->push_target);
         }
         file_handler->current_process = process;
         mutex_unlock(file_handler->mutex);
@@ -137,9 +142,11 @@ run_file_handler(void *data) {
             }
         } else {
             if (process_check_success(process, "adb push")) {
-                LOGI("%s successfully pushed to /sdcard/", req.file);
+                LOGI("%s successfully pushed to %s", req.file,
+                                                     file_handler->push_target);
             } else {
-                LOGE("Failed to push %s to /sdcard/", req.file);
+                LOGE("Failed to push %s to %s", req.file,
+                                                file_handler->push_target);
             }
         }
 

@@ -18,6 +18,7 @@ struct args {
     const char *crop;
     const char *record_filename;
     const char *window_title;
+    const char *push_target;
     enum recorder_format record_format;
     bool fullscreen;
     bool no_control;
@@ -75,6 +76,11 @@ static void usage(const char *arg0) {
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
+        "\n"
+        "    --push-target path\n"
+        "        Set the target directory for pushing files to the device by\n"
+        "        drag & drop. It is passed as-is to \"adb push\".\n"
+        "        Default is \"/sdcard/\".\n"
         "\n"
         "    -r, --record file.mp4\n"
         "        Record screen to file.\n"
@@ -300,6 +306,7 @@ guess_record_format(const char *filename) {
 
 #define OPT_RENDER_EXPIRED_FRAMES 1000
 #define OPT_WINDOW_TITLE          1001
+#define OPT_PUSH_TARGET           1002
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -313,6 +320,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
         {"port",                  required_argument, NULL, 'p'},
+        {"push-target",           required_argument, NULL,
+                                                 OPT_PUSH_TARGET},
         {"record",                required_argument, NULL, 'r'},
         {"record-format",         required_argument, NULL, 'f'},
         {"render-expired-frames", no_argument,       NULL,
@@ -388,6 +397,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
             case OPT_WINDOW_TITLE:
                 args->window_title = optarg;
                 break;
+            case OPT_PUSH_TARGET:
+                args->push_target = optarg;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -445,6 +457,7 @@ main(int argc, char *argv[]) {
         .crop = NULL,
         .record_filename = NULL,
         .window_title = NULL,
+        .push_target = NULL,
         .record_format = 0,
         .help = false,
         .version = false,
@@ -490,6 +503,7 @@ main(int argc, char *argv[]) {
         .port = args.port,
         .record_filename = args.record_filename,
         .window_title = args.window_title,
+        .push_target = args.push_target,
         .record_format = args.record_format,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,

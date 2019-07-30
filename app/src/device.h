@@ -7,7 +7,6 @@
 #include "net.h"
 
 #define DEVICE_NAME_FIELD_LENGTH 64
-#define DEVICE_SDCARD_PATH "/sdcard/"
 
 // name must be at least DEVICE_NAME_FIELD_LENGTH bytes
 bool

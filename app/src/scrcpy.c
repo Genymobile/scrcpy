@@ -334,7 +334,8 @@ scrcpy(const struct scrcpy_options *options) {
         video_buffer_initialized = true;
 
         if (options->control) {
-            if (!file_handler_init(&file_handler, server.serial)) {
+            if (!file_handler_init(&file_handler, server.serial,
+                                   options->push_target)) {
                 goto end;
             }
             file_handler_initialized = true;
