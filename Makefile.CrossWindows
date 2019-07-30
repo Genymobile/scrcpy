@@ -44,7 +44,7 @@ clean:
 build-server:
 	[ -d "$(SERVER_BUILD_DIR)" ] || ( mkdir "$(SERVER_BUILD_DIR)" && \
 		meson "$(SERVER_BUILD_DIR)" \
-			--buildtype release -Dbuild_app=false )
+			--buildtype release -Dcompile_app=false )
 		ninja -C "$(SERVER_BUILD_DIR)"
 
 prepare-deps-win32:
@@ -56,7 +56,7 @@ build-win32: prepare-deps-win32
 			--cross-file cross_win32.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
-			-Dbuild_server=false \
+			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
 
@@ -66,7 +66,7 @@ build-win32-noconsole: prepare-deps-win32
 			--cross-file cross_win32.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
-			-Dbuild_server=false \
+			-Dcompile_server=false \
 			-Dwindows_noconsole=true \
 			-Dportable=true )
 	ninja -C "$(WIN32_NOCONSOLE_BUILD_DIR)"
@@ -80,7 +80,7 @@ build-win64: prepare-deps-win64
 			--cross-file cross_win64.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
-			-Dbuild_server=false \
+			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN64_BUILD_DIR)"
 
@@ -90,7 +90,7 @@ build-win64-noconsole: prepare-deps-win64
 			--cross-file cross_win64.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcrossbuild_windows=true \
-			-Dbuild_server=false \
+			-Dcompile_server=false \
 			-Dwindows_noconsole=true \
 			-Dportable=true )
 	ninja -C "$(WIN64_NOCONSOLE_BUILD_DIR)"

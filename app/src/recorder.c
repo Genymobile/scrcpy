@@ -151,9 +151,6 @@ recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
     int ret = avformat_write_header(recorder->ctx, NULL);
     if (ret < 0) {
         LOGE("Failed to write header to %s", recorder->filename);
-        SDL_free(extradata);
-        avio_closep(&recorder->ctx->pb);
-        avformat_free_context(recorder->ctx);
         return false;
     }
 
