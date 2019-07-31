@@ -216,12 +216,17 @@ recorder_close(struct recorder *recorder) {
     int ret = av_write_trailer(recorder->ctx);
     if (ret < 0) {
         LOGE("Failed to write trailer to %s", recorder->filename);
+        recorder->failed = true;
     }
     avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
 
-    const char *format_name = recorder_get_format_name(recorder->format);
-    LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
+    if (recorder->failed) {
+        LOGE("Recording failed to %s", recorder->filename);
+    } else {
+        const char *format_name = recorder_get_format_name(recorder->format);
+        LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
+    }
 }
 
 static bool
