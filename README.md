@@ -315,26 +315,26 @@ Also see [issue #14].
 
 ## Shortcuts
 
- | Action                                 |   Shortcut                    |
- | -------------------------------------- |:----------------------------  |
- | Switch fullscreen mode                 | `Ctrl`+`f`                    |
- | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    |
- | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ |
- | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
- | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
- | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
- | Click on `MENU`                        | `Ctrl`+`m`                    |
- | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on macOS) |
- | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on macOS) |
- | Click on `POWER`                       | `Ctrl`+`p`                    |
- | Power on                               | _Right-click²_                |
- | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
- | Expand notification panel              | `Ctrl`+`n`                    |
- | Collapse notification panel            | `Ctrl`+`Shift`+`n`            |
- | Copy device clipboard to computer      | `Ctrl`+`c`                    |
- | Paste computer clipboard to device     | `Ctrl`+`v`                    |
- | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            |
- | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
+ | Action                                 |   Shortcut                    |   Shortcut (macOS)
+ | -------------------------------------- |:----------------------------- |:-----------------------------
+ | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
+ | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
+ | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
+ | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
+ | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    | `Cmd`+`s`
+ | Click on `MENU`                        | `Ctrl`+`m`                    | `Ctrl`+`m`
+ | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
+ | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
+ | Power on                               | _Right-click²_                | _Right-click²_
+ | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
+ | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
+ | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
+ | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
+ | Paste computer clipboard to device     | `Ctrl`+`v`                    | `Cmd`+`v`
+ | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    | `Cmd`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
