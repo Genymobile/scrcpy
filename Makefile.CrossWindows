@@ -125,12 +125,12 @@ dist-win64: build-server build-win64 build-win64-noconsole
 	cp prebuilt-deps/SDL2-2.0.8/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
-	cd "$(DIST)"; \
-		zip -r "$(WIN32_TARGET)" "$(WIN32_TARGET_DIR)"
+	cd "$(DIST)/$(WIN32_TARGET_DIR)"; \
+		zip -r "../$(WIN32_TARGET)" .
 
 zip-win64: dist-win64
-	cd "$(DIST)"; \
-		zip -r "$(WIN64_TARGET)" "$(WIN64_TARGET_DIR)"
+	cd "$(DIST)/$(WIN64_TARGET_DIR)"; \
+		zip -r "../$(WIN64_TARGET)" .
 
 sums:
 	cd "$(DIST)"; \
