@@ -17,7 +17,7 @@
 #include "log.h"
 #include "recorder.h"
 
-#define BUFSIZE 0x10000
+#define STREAM_BUFSIZE 0x10000
 
 #define HEADER_SIZE 12
 #define NO_PTS UINT64_C(-1)
@@ -37,7 +37,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     // It is followed by <packet_size> bytes containing the packet/frame.
 
     uint8_t header[HEADER_SIZE];
-    ssize_t r = net_recv_all(stream->socket, header, HEADER_SIZE);
+    ssize_t r =
+        buffered_reader_recv_all(&stream->buffered_reader, header, HEADER_SIZE);
     if (r < HEADER_SIZE) {
         return false;
     }
@@ -51,7 +52,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
         return false;
     }
 
-    r = net_recv_all(stream->socket, packet->data, len);
+    r = buffered_reader_recv_all(&stream->buffered_reader, packet->data, len);
     if (r < len) {
         av_packet_unref(packet);
         return false;
@@ -267,13 +268,23 @@ end:
     return 0;
 }
 
-void
+bool
 stream_init(struct stream *stream, socket_t socket,
             struct decoder *decoder, struct recorder *recorder) {
+    if (!buffered_reader_init(&stream->buffered_reader, socket,
+                              STREAM_BUFSIZE)) {
+        return false;
+    }
     stream->socket = socket;
     stream->decoder = decoder,
     stream->recorder = recorder;
     stream->has_pending = false;
+    return true;
+}
+
+void
+stream_destroy(struct stream *stream) {
+    buffered_reader_destroy(&stream->buffered_reader);
 }
 
 bool

@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/buffered_reader.c',
     'src/command.c',
     'src/control_msg.c',
     'src/controller.c',

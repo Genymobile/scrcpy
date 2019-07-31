@@ -297,6 +297,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool video_buffer_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
+    bool stream_initialized = false;
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
@@ -358,7 +359,10 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    if (!stream_init(&stream, server.video_socket, dec, rec)) {
+        goto end;
+    }
+    stream_initialized = true;
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
@@ -436,6 +440,9 @@ end:
     // interrupted, we can join them
     if (stream_started) {
         stream_join(&stream);
+    }
+    if (stream_initialized) {
+        stream_destroy(&stream);
     }
     if (controller_started) {
         controller_join(&controller);

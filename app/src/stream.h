@@ -7,12 +7,14 @@
 #include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_thread.h>
 
+#include "buffered_reader.h"
 #include "net.h"
 
 struct video_buffer;
 
 struct stream {
     socket_t socket;
+    struct buffered_reader buffered_reader;
     struct video_buffer *video_buffer;
     SDL_Thread *thread;
     struct decoder *decoder;
@@ -25,9 +27,12 @@ struct stream {
     AVPacket pending;
 };
 
-void
+bool
 stream_init(struct stream *stream, socket_t socket,
             struct decoder *decoder, struct recorder *recorder);
+
+void
+stream_destroy(struct stream *stream);
 
 bool
 stream_start(struct stream *stream);
