@@ -35,7 +35,7 @@
             (PCBUF)->head = ((PCBUF)->head + 1) % cbuf_size_(PCBUF); \
         } \
         ok; \
-    }) \
+    })
 
 #define cbuf_take(PCBUF, PITEM) \
     ({ \
