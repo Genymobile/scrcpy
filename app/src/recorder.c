@@ -37,7 +37,6 @@ record_packet_new(const AVPacket *packet) {
         SDL_free(rec);
         return NULL;
     }
-    rec->next = NULL;
     return rec;
 }
 
@@ -48,59 +47,12 @@ record_packet_delete(struct record_packet *rec) {
 }
 
 static void
-recorder_queue_init(struct recorder_queue *queue) {
-    queue->first = NULL;
-    // queue->last is undefined if queue->first == NULL
-}
-
-static inline bool
-recorder_queue_is_empty(struct recorder_queue *queue) {
-    return !queue->first;
-}
-
-static bool
-recorder_queue_push(struct recorder_queue *queue, const AVPacket *packet) {
-    struct record_packet *rec = record_packet_new(packet);
-    if (!rec) {
-        LOGC("Could not allocate record packet");
-        return false;
-    }
-    rec->next = NULL;
-
-    if (recorder_queue_is_empty(queue)) {
-        queue->first = queue->last = rec;
-    } else {
-        // chain rec after the (current) last packet
-        queue->last->next = rec;
-        // the last packet is now rec
-        queue->last = rec;
-    }
-    return true;
-}
-
-static inline struct record_packet *
-recorder_queue_take(struct recorder_queue *queue) {
-    SDL_assert(!recorder_queue_is_empty(queue));
-
-    struct record_packet *rec = queue->first;
-    SDL_assert(rec);
-
-    queue->first = rec->next;
-    // no need to update queue->last if the queue is left empty:
-    // queue->last is undefined if queue->first == NULL
-
-    return rec;
-}
-
-static void
 recorder_queue_clear(struct recorder_queue *queue) {
-    struct record_packet *rec = queue->first;
-    while (rec) {
-        struct record_packet *current = rec;
-        rec = rec->next;
-        record_packet_delete(current);
+    while (!queue_is_empty(queue)) {
+        struct record_packet *rec;
+        queue_take(queue, next, &rec);
+        record_packet_delete(rec);
     }
-    queue->first = NULL;
 }
 
 bool
@@ -129,7 +81,7 @@ recorder_init(struct recorder *recorder,
         return false;
     }
 
-    recorder_queue_init(&recorder->queue);
+    queue_init(&recorder->queue);
     recorder->stopped = false;
     recorder->failed = false;
     recorder->format = format;
@@ -296,20 +248,20 @@ run_recorder(void *data) {
     for (;;) {
         mutex_lock(recorder->mutex);
 
-        while (!recorder->stopped &&
-                recorder_queue_is_empty(&recorder->queue)) {
+        while (!recorder->stopped && queue_is_empty(&recorder->queue)) {
             cond_wait(recorder->queue_cond, recorder->mutex);
         }
 
         // if stopped is set, continue to process the remaining events (to
         // finish the recording) before actually stopping
 
-        if (recorder->stopped && recorder_queue_is_empty(&recorder->queue)) {
+        if (recorder->stopped && queue_is_empty(&recorder->queue)) {
             mutex_unlock(recorder->mutex);
             break;
         }
 
-        struct record_packet *rec = recorder_queue_take(&recorder->queue);
+        struct record_packet *rec;
+        queue_take(&recorder->queue, next, &rec);
 
         mutex_unlock(recorder->mutex);
 
@@ -369,9 +321,15 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
         return false;
     }
 
-    bool ok = recorder_queue_push(&recorder->queue, packet);
+    struct record_packet *rec = record_packet_new(packet);
+    if (!rec) {
+        LOGC("Could not allocate record packet");
+        return false;
+    }
+
+    queue_push(&recorder->queue, next, rec);
     cond_signal(recorder->queue_cond);
 
     mutex_unlock(recorder->mutex);
-    return ok;
+    return true;
 }

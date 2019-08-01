@@ -7,6 +7,7 @@
 #include <SDL2/SDL_thread.h>
 
 #include "common.h"
+#include "queue.h"
 
 enum recorder_format {
     RECORDER_FORMAT_MP4 = 1,
@@ -18,10 +19,7 @@ struct record_packet {
     struct record_packet *next;
 };
 
-struct recorder_queue {
-    struct record_packet *first;
-    struct record_packet *last; // undefined if first is NULL
-};
+struct recorder_queue QUEUE(struct record_packet);
 
 struct recorder {
     char *filename;
