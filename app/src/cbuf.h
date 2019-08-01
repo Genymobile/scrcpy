@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 // To define a circular buffer type of 20 ints:
-//     typedef CBUF(int, 20) my_cbuf_t;
+//     struct cbuf_int CBUF(int, 20);
 //
 // data has length CAP + 1 to distinguish empty vs full.
 #define CBUF(TYPE, CAP) { \
