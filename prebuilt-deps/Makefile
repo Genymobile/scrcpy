@@ -10,24 +10,24 @@ prepare-win32: prepare-sdl2 prepare-ffmpeg-shared-win32 prepare-ffmpeg-dev-win32
 prepare-win64: prepare-sdl2 prepare-ffmpeg-shared-win64 prepare-ffmpeg-dev-win64 prepare-adb
 
 prepare-ffmpeg-shared-win32:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.1.3-win32-shared.zip \
-		8ea472d673370d5e87517a75587abfa6f189ee4f82e8da21fdbc49d0db0c1a89 \
-		ffmpeg-4.1.3-win32-shared
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.1.4-win32-shared.zip \
+		596608277f6b937c3dea7c46e854665d75b3de56790bae07f655ca331440f003 \
+		ffmpeg-4.1.4-win32-shared
 
 prepare-ffmpeg-dev-win32:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/dev/ffmpeg-4.1.3-win32-dev.zip \
-		e16d3150b6ccf0b71908f5b964cb8c051d79053c8f5cd6d777d617ab4f03613a \
-		ffmpeg-4.1.3-win32-dev
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/dev/ffmpeg-4.1.4-win32-dev.zip \
+		a80c86e263cfad26e202edfa5e6e939a2c88843ae26f031d3e0d981a39fd03fb \
+		ffmpeg-4.1.4-win32-dev
 
 prepare-ffmpeg-shared-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.1.3-win64-shared.zip \
-		0b974578e07d974c4bafb36c7ed0b46e46b001d38b149455089c13b57ddefe5d \
-		ffmpeg-4.1.3-win64-shared
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.1.4-win64-shared.zip \
+		a90889871de2cab8a79b392591313a188189a353f69dde1db98aebe20b280989 \
+		ffmpeg-4.1.4-win64-shared
 
 prepare-ffmpeg-dev-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-4.1.3-win64-dev.zip \
-		334b473467db096a5b74242743592a73e120a137232794508e4fc55593696a5b \
-		ffmpeg-4.1.3-win64-dev
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-4.1.4-win64-dev.zip \
+		6c9d53f9e94ce1821e975ec668e5b9d6e9deb4a45d0d7e30264685d3dfbbb068 \
+		ffmpeg-4.1.4-win64-dev
 
 prepare-sdl2:
 	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.8-mingw.tar.gz \
