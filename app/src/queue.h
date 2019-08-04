@@ -13,7 +13,7 @@
 }
 
 #define queue_init(PQ) \
-    (void) ((PQ)->first = NULL)
+    (void) ((PQ)->first = (PQ)->last = NULL)
 
 #define queue_is_empty(PQ) \
     !(PQ)->first
