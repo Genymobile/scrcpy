@@ -3,6 +3,7 @@
 #define QUEUE_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <SDL2/SDL_assert.h>
 
 // To define a queue type of "struct foo":
