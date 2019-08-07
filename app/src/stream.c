@@ -70,15 +70,6 @@ notify_stopped(void) {
 }
 
 static bool
-process_config_packet(struct stream *stream, AVPacket *packet) {
-    if (stream->recorder && !recorder_push(stream->recorder, packet)) {
-        LOGE("Could not send config packet to recorder");
-        return false;
-    }
-    return true;
-}
-
-static bool
 process_frame(struct stream *stream, AVPacket *packet) {
     if (stream->decoder && !decoder_push(stream->decoder, packet)) {
         return false;
@@ -157,13 +148,7 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
         }
     }
 
-    if (is_config) {
-        // config packet
-        bool ok = process_config_packet(stream, packet);
-        if (!ok) {
-            return false;
-        }
-    } else {
+    if (!is_config) {
         // data packet
         bool ok = stream_parse(stream, packet);
 
