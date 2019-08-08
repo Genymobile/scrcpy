@@ -87,6 +87,7 @@ recorder_init(struct recorder *recorder,
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
     recorder->header_written = false;
+    recorder->previous = NULL;
 
     return true;
 }
@@ -257,6 +258,19 @@ run_recorder(void *data) {
 
         if (recorder->stopped && queue_is_empty(&recorder->queue)) {
             mutex_unlock(recorder->mutex);
+            struct record_packet *last = recorder->previous;
+            if (last) {
+                // assign an arbitrary duration to the last packet
+                last->packet.duration = 100000;
+                bool ok = recorder_write(recorder, &last->packet);
+                if (!ok) {
+                    // failing to write the last frame is not very serious, no
+                    // future frame may depend on it, so the resulting file
+                    // will still be valid
+                    LOGW("Could not record last packet");
+                }
+                record_packet_delete(last);
+            }
             break;
         }
 
@@ -265,8 +279,20 @@ run_recorder(void *data) {
 
         mutex_unlock(recorder->mutex);
 
-        bool ok = recorder_write(recorder, &rec->packet);
-        record_packet_delete(rec);
+        // recorder->previous is only written from this thread, no need to lock
+        struct record_packet *previous = recorder->previous;
+        recorder->previous = rec;
+
+        if (!previous) {
+            // we just received the first packet
+            continue;
+        }
+
+        // we now know the duration of the previous packet
+        previous->packet.duration = rec->packet.pts - previous->packet.pts;
+
+        bool ok = recorder_write(recorder, &previous->packet);
+        record_packet_delete(previous);
         if (!ok) {
             LOGE("Could not record packet");
 
