@@ -14,7 +14,7 @@ public final class WindowManager {
         try {
             Class<?> cls = manager.getClass();
             try {
-                return (Integer) manager.getClass().getMethod("getRotation").invoke(manager);
+                return (Integer) cls.getMethod("getRotation").invoke(manager);
             } catch (NoSuchMethodException e) {
                 // method changed since this commit:
                 // https://android.googlesource.com/platform/frameworks/base/+/8ee7285128c3843401d4c4d0412cd66e86ba49e3%5E%21/#F2
