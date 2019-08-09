@@ -6,6 +6,7 @@ if prebuilt_server == ''
                   build_always: true,  # gradle is responsible for tracking source changes
                   output: 'scrcpy-server.jar',
                   command: [find_program('./scripts/build-wrapper.sh'), meson.current_source_dir(), '@OUTPUT@', get_option('buildtype')],
+                  console: true,
                   install: true,
                   install_dir: 'share/scrcpy')
 else
