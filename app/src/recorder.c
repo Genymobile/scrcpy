@@ -33,6 +33,11 @@ record_packet_new(const AVPacket *packet) {
     if (!rec) {
         return NULL;
     }
+
+    // av_packet_ref() does not initialize all fields in old FFmpeg versions
+    // See <https://github.com/Genymobile/scrcpy/issues/707>
+    av_init_packet(&rec->packet);
+
     if (av_packet_ref(&rec->packet, packet)) {
         SDL_free(rec);
         return NULL;
