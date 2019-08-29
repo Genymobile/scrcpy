@@ -141,7 +141,8 @@ create_texture(SDL_Renderer *renderer, struct size frame_size) {
 
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top) {
+                      struct size frame_size, bool always_on_top,
+                      int16_t window_x, int16_t window_y) {
     screen->frame_size = frame_size;
 
     struct size window_size = get_initial_optimal_size(frame_size);
@@ -158,8 +159,9 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 #endif
     }
 
-    screen->window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED,
-                                      SDL_WINDOWPOS_UNDEFINED,
+    int x = window_x != -1 ? window_x : SDL_WINDOWPOS_UNDEFINED;
+    int y = window_y != -1 ? window_y : SDL_WINDOWPOS_UNDEFINED;
+    screen->window = SDL_CreateWindow(window_title, x, y,
                                       window_size.width, window_size.height,
                                       window_flags);
     if (!screen->window) {

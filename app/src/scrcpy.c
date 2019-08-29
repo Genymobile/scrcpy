@@ -387,7 +387,8 @@ scrcpy(const struct scrcpy_options *options) {
             options->window_title ? options->window_title : device_name;
 
         if (!screen_init_rendering(&screen, window_title, frame_size,
-                                   options->always_on_top)) {
+                                   options->always_on_top, options->window_x,
+                                   options->window_y)) {
             goto end;
         }
 

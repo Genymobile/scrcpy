@@ -55,7 +55,8 @@ screen_init(struct screen *screen);
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top);
+                      struct size frame_size, bool always_on_top,
+                      int16_t window_x, int16_t window_y);
 
 // show the window
 void

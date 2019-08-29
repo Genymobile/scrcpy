@@ -110,6 +110,14 @@ static void usage(const char *arg0) {
         "    --window-title text\n"
         "        Set a custom window title.\n"
         "\n"
+        "    --window-x value\n"
+        "        Set the initial window horizontal position.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
+        "    --window-y value\n"
+        "        Set the initial window vertical position.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
         "Shortcuts:\n"
         "\n"
         "    " CTRL_OR_CMD "+f\n"
@@ -251,6 +259,27 @@ parse_max_size(char *optarg, uint16_t *max_size) {
 }
 
 static bool
+parse_window_position(char *optarg, int16_t *position) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Window position parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid window position: %s", optarg);
+        return false;
+    }
+    if (value < -1 || value > 0x7fff) {
+        LOGE("Window position must be between -1 and 32767: %ld", value);
+        return false;
+    }
+
+    *position = (int16_t) value;
+    return true;
+}
+
+static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
@@ -308,6 +337,8 @@ guess_record_format(const char *filename) {
 #define OPT_CROP                  1004
 #define OPT_RECORD_FORMAT         1005
 #define OPT_PREFER_TEXT           1006
+#define OPT_WINDOW_X              1007
+#define OPT_WINDOW_Y              1008
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -331,8 +362,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"prefer-text",           no_argument,       NULL, OPT_PREFER_TEXT},
         {"version",               no_argument,       NULL, 'v'},
-        {"window-title",          required_argument, NULL,
-                                                     OPT_WINDOW_TITLE},
+        {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
+        {"window-x",              required_argument, NULL, OPT_WINDOW_X},
+        {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
         {NULL,                    0,                 NULL, 0  },
     };
 
@@ -409,6 +441,16 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
+                break;
+            case OPT_WINDOW_X:
+                if (!parse_window_position(optarg, &opts->window_x)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_Y:
+                if (!parse_window_position(optarg, &opts->window_y)) {
+                    return false;
+                }
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
