@@ -36,6 +36,7 @@ struct args {
     bool always_on_top;
     bool turn_screen_off;
     bool render_expired_frames;
+    bool window_borderless;
 };
 
 static void usage(const char *arg0) {
@@ -118,6 +119,9 @@ static void usage(const char *arg0) {
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
+        "\n"
+        "    --window_borderless\n"
+        "        Disable window decorations (display borderless window).\n"
         "\n"
         "    --window-title text\n"
         "        Set a custom window title.\n"
@@ -378,6 +382,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_Y              1004
 #define OPT_WINDOW_WIDTH          1005
 #define OPT_WINDOW_HEIGHT         1006
+#define OPT_WINDOW_BORDERLESS     1007
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -390,6 +395,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"max-size",              required_argument, NULL, 'm'},
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
+        {"window-borderless",     no_argument,       NULL,
+                                                 OPT_WINDOW_BORDERLESS},
         {"port",                  required_argument, NULL, 'p'},
         {"push-target",           required_argument, NULL,
                                                  OPT_PUSH_TARGET},
@@ -491,6 +498,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
+            case OPT_WINDOW_BORDERLESS:
+                args->window_borderless = true;
+                break;
             case OPT_PUSH_TARGET:
                 args->push_target = optarg;
                 break;
@@ -568,6 +578,7 @@ main(int argc, char *argv[]) {
         .no_display = false,
         .turn_screen_off = false,
         .render_expired_frames = false,
+        .window_borderless = false,
     };
     if (!parse_args(&args, argc, argv)) {
         return 1;
@@ -618,6 +629,7 @@ main(int argc, char *argv[]) {
         .display = !args.no_display,
         .turn_screen_off = args.turn_screen_off,
         .render_expired_frames = args.render_expired_frames,
+        .window_borderless = args.window_borderless,
     };
     int res = scrcpy(&options) ? 0 : 1;
 
