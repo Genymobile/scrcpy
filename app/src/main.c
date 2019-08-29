@@ -29,6 +29,8 @@ struct args {
     uint16_t port;
     uint16_t max_size;
     uint32_t bit_rate;
+    int16_t window_x;
+    int16_t window_y;
     bool always_on_top;
     bool turn_screen_off;
     bool render_expired_frames;
@@ -117,6 +119,14 @@ static void usage(const char *arg0) {
         "\n"
         "    --window-title text\n"
         "        Set a custom window title.\n"
+        "\n"
+        "    --window-x value\n"
+        "        Set the initial window horizontal position.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
+        "    --window-y value\n"
+        "        Set the initial window vertical position.\n"
+        "        Default is -1 (automatic).\n"
         "\n"
         "Shortcuts:\n"
         "\n"
@@ -259,6 +269,27 @@ parse_max_size(char *optarg, uint16_t *max_size) {
 }
 
 static bool
+parse_window_position(char *optarg, int16_t *position) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Window position parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid window position: %s", optarg);
+        return false;
+    }
+    if (value < -1 || value > 0x7fff) {
+        LOGE("Window position must be between -1 and 32767: %ld", value);
+        return false;
+    }
+
+    *position = (int16_t) value;
+    return true;
+}
+
+static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
@@ -310,8 +341,10 @@ guess_record_format(const char *filename) {
 }
 
 #define OPT_RENDER_EXPIRED_FRAMES 1000
-#define OPT_WINDOW_TITLE          1001
-#define OPT_PUSH_TARGET           1002
+#define OPT_PUSH_TARGET           1001
+#define OPT_WINDOW_TITLE          1002
+#define OPT_WINDOW_X              1003
+#define OPT_WINDOW_Y              1004
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -335,8 +368,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"version",               no_argument,       NULL, 'v'},
-        {"window-title",          required_argument, NULL,
-                                                 OPT_WINDOW_TITLE},
+        {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
+        {"window-x",              required_argument, NULL, OPT_WINDOW_X},
+        {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
         {NULL,                    0,                 NULL, 0  },
     };
     int c;
@@ -401,6 +435,16 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case OPT_WINDOW_TITLE:
                 args->window_title = optarg;
+                break;
+            case OPT_WINDOW_X:
+                if (!parse_window_position(optarg, &args->window_x)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_Y:
+                if (!parse_window_position(optarg, &args->window_y)) {
+                    return false;
+                }
                 break;
             case OPT_PUSH_TARGET:
                 args->push_target = optarg;
@@ -470,6 +514,8 @@ main(int argc, char *argv[]) {
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
         .bit_rate = DEFAULT_BIT_RATE,
+        .window_x = -1,
+        .window_y = -1,
         .always_on_top = false,
         .no_control = false,
         .no_display = false,
@@ -514,6 +560,8 @@ main(int argc, char *argv[]) {
         .record_format = args.record_format,
         .max_size = args.max_size,
         .bit_rate = args.bit_rate,
+        .window_x = args.window_x,
+        .window_y = args.window_y,
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,

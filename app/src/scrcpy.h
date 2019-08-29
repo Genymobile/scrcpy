@@ -17,6 +17,8 @@ struct scrcpy_options {
     uint16_t port;
     uint16_t max_size;
     uint32_t bit_rate;
+    int16_t window_x;
+    int16_t window_y;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
