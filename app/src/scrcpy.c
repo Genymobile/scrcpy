@@ -383,8 +383,14 @@ scrcpy(const struct scrcpy_options *options) {
         const char *window_title =
             options->window_title ? options->window_title : device_name;
 
-        if (!screen_init_rendering(&screen, window_title, frame_size,
-                                   options->always_on_top)) {
+
+        struct window_position window_position;
+
+             window_position.x = options->x;
+             window_position.y = options->y;            
+
+        if (!screen_init_rendering(&screen, window_title, frame_size, window_position,
+                                   options->always_on_top, options->borderless)) {
             goto end;
         }
 

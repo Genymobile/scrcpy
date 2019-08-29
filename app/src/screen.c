@@ -135,8 +135,9 @@ create_texture(SDL_Renderer *renderer, struct size frame_size) {
 
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top) {
+                      struct size frame_size, struct window_position window_position ,bool always_on_top, bool borderless) {
     screen->frame_size = frame_size;
+    screen->window_position = window_position;
 
     struct size window_size = get_initial_optimal_size(frame_size);
     uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
@@ -152,8 +153,13 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 #endif
     }
 
-    screen->window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED,
-                                      SDL_WINDOWPOS_UNDEFINED,
+    if (borderless) {
+        window_flags |= SDL_WINDOW_BORDERLESS;
+    }
+
+    screen->window = SDL_CreateWindow(window_title,
+                                      screen->window_position.x == -1? SDL_WINDOWPOS_UNDEFINED:screen->window_position.x,
+                                      screen->window_position.y == -1? SDL_WINDOWPOS_UNDEFINED:screen->window_position.y,
                                       window_size.width, window_size.height,
                                       window_flags);
     if (!screen->window) {

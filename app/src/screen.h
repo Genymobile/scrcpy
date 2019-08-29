@@ -13,6 +13,7 @@ struct screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+    struct window_position window_position;
     struct size frame_size;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
@@ -25,6 +26,10 @@ struct screen {
     .window = NULL,           \
     .renderer = NULL,         \
     .texture = NULL,          \
+    .window_position = {           \
+        .x = -1,           \
+        .y = -1,          \
+    },                        \
     .frame_size = {           \
         .width = 0,           \
         .height = 0,          \
@@ -45,7 +50,7 @@ screen_init(struct screen *screen);
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top);
+                      struct size frame_size,  struct window_position window_position, bool always_on_top, bool borderless);
 
 // show the window
 void

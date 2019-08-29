@@ -14,10 +14,13 @@ struct scrcpy_options {
     enum recorder_format record_format;
     uint16_t port;
     uint16_t max_size;
+    int16_t x;
+    int16_t y;
     uint32_t bit_rate;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
+    bool borderless;
     bool control;
     bool display;
     bool turn_screen_off;

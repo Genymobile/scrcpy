@@ -17,6 +17,11 @@ struct point {
     int32_t y;
 };
 
+struct window_position {
+    int16_t x;
+    int16_t y;
+};
+
 struct position {
     // The video screen size may be different from the real device screen size,
     // so store to which size the absolute position apply, to scale it

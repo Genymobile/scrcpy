@@ -28,8 +28,11 @@ struct args {
     bool show_touches;
     uint16_t port;
     uint16_t max_size;
+    int16_t x;
+    int16_t y;
     uint32_t bit_rate;
     bool always_on_top;
+    bool borderless;
     bool turn_screen_off;
     bool render_expired_frames;
 };
@@ -49,6 +52,8 @@ static void usage(const char *arg0) {
         "        Encode the video at the given bit-rate, expressed in bits/s.\n"
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
         "        Default is %d.\n"
+        "    -B, --borderless\n"
+        "        Make scrcpy window borderless.\n"
         "\n"
         "    -c, --crop width:height:x:y\n"
         "        Crop the device screen on the server.\n"
@@ -114,6 +119,13 @@ static void usage(const char *arg0) {
         "\n"
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
+        "\n"
+        "    -x, --pos-x value\n"
+        "        Set the window horizontal position.\n"
+        "        Default is automatic\n"
+        "    -y, --pos-y value\n"
+        "        Set the window vertical position.\n"
+        "        Default is automatic.\n"
         "\n"
         "    --window-title text\n"
         "        Set a custom window title.\n"
@@ -259,6 +271,28 @@ parse_max_size(char *optarg, uint16_t *max_size) {
 }
 
 static bool
+parse_position(char *optarg, int16_t *position) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Position (x,y) parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid position (x,y): %s", optarg);
+        return false;
+    }
+    if (value & ~0x7fff) {
+        LOGE("Position (x,y) must be between -32767 and 32767: %ld", value);
+        return false;
+    }
+
+    *position = (int16_t) value;
+    return true;
+}
+
+
+static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
@@ -317,6 +351,7 @@ static bool
 parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top",         no_argument,       NULL, 'T'},
+        {"borderless",            no_argument,       NULL, 'B'},
         {"bit-rate",              required_argument, NULL, 'b'},
         {"crop",                  required_argument, NULL, 'c'},
         {"fullscreen",            no_argument,       NULL, 'f'},
@@ -335,18 +370,25 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"version",               no_argument,       NULL, 'v'},
+
+        {"pos-x",               required_argument,       NULL, 'x'},
+        {"pos-y",               required_argument,       NULL, 'y'},
+
         {"window-title",          required_argument, NULL,
                                                  OPT_WINDOW_TITLE},
         {NULL,                    0,                 NULL, 0  },
     };
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTBvx:y:", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &args->bit_rate)) {
                     return false;
                 }
+                break;
+            case 'B':
+                args->borderless = true;
                 break;
             case 'c':
                 args->crop = optarg;
@@ -395,6 +437,16 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'v':
                 args->version = true;
+                break;
+            case 'x':
+                if (!parse_position(optarg, &args->x)) {
+                    return false;
+                }
+                break;
+            case 'y':
+                if (!parse_position(optarg, &args->y)) {
+                    return false;
+                }
                 break;
             case OPT_RENDER_EXPIRED_FRAMES:
                 args->render_expired_frames = true;
@@ -469,8 +521,11 @@ main(int argc, char *argv[]) {
         .show_touches = false,
         .port = DEFAULT_LOCAL_PORT,
         .max_size = DEFAULT_MAX_SIZE,
+        .x = -1,
+        .y = -1,
         .bit_rate = DEFAULT_BIT_RATE,
         .always_on_top = false,
+        .borderless = false,
         .no_control = false,
         .no_display = false,
         .turn_screen_off = false,
@@ -513,10 +568,13 @@ main(int argc, char *argv[]) {
         .push_target = args.push_target,
         .record_format = args.record_format,
         .max_size = args.max_size,
+        .x = args.x,
+        .y = args.y,
         .bit_rate = args.bit_rate,
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,
+        .borderless = args.borderless,
         .control = !args.no_control,
         .display = !args.no_display,
         .turn_screen_off = args.turn_screen_off,
