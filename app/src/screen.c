@@ -164,7 +164,7 @@ bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height) {
+                      uint16_t window_height, bool window_borderless) {
     screen->frame_size = frame_size;
 
     struct size window_size =
@@ -180,6 +180,9 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         LOGW("The 'always on top' flag is not available "
              "(compile with SDL >= 2.0.5 to enable it)");
 #endif
+    }
+    if (window_borderless) {
+        window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
     int x = window_x != -1 ? window_x : SDL_WINDOWPOS_UNDEFINED;

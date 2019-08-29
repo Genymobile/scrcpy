@@ -107,6 +107,9 @@ static void usage(const char *arg0) {
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
         "\n"
+        "    --window-borderless\n"
+        "        Disable window decorations (display borderless window).\n"
+        "\n"
         "    --window-title text\n"
         "        Set a custom window title.\n"
         "\n"
@@ -370,6 +373,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_Y              1008
 #define OPT_WINDOW_WIDTH          1009
 #define OPT_WINDOW_HEIGHT         1010
+#define OPT_WINDOW_BORDERLESS     1011
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -398,6 +402,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
         {"window-width",          required_argument, NULL, OPT_WINDOW_WIDTH},
         {"window-height",         required_argument, NULL, OPT_WINDOW_HEIGHT},
+        {"window-borderless",     no_argument,       NULL,
+                                                     OPT_WINDOW_BORDERLESS},
         {NULL,                    0,                 NULL, 0  },
     };
 
@@ -494,6 +500,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 if (!parse_window_dimension(optarg, &opts->window_height)) {
                     return false;
                 }
+                break;
+            case OPT_WINDOW_BORDERLESS:
+                opts->window_borderless = true;
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
