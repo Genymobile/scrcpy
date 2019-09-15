@@ -107,6 +107,37 @@ public class ControlMessageReaderTest {
 
     @Test
     @SuppressWarnings("checkstyle:MagicNumber")
+    public void testParseTouchEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_INJECT_TOUCH_EVENT);
+        dos.writeByte(MotionEvent.ACTION_DOWN);
+        dos.writeLong(-42); // pointerId
+        dos.writeInt(100);
+        dos.writeInt(200);
+        dos.writeShort(1080);
+        dos.writeShort(1920);
+        dos.writeShort(0xffff); // pressure
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_INJECT_TOUCH_EVENT, event.getType());
+        Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
+        Assert.assertEquals(-42, event.getPointerId());
+        Assert.assertEquals(100, event.getPosition().getPoint().getX());
+        Assert.assertEquals(200, event.getPosition().getPoint().getY());
+        Assert.assertEquals(1080, event.getPosition().getScreenSize().getWidth());
+        Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
+        Assert.assertEquals(1f, event.getPressure(), 0f); // must be exact
+    }
+
+    @Test
+    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseScrollEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 

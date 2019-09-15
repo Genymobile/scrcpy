@@ -10,6 +10,7 @@ public class ControlMessageReader {
 
     private static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
     private static final int INJECT_MOUSE_EVENT_PAYLOAD_LENGTH = 17;
+    private static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 21;
     private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
 
@@ -61,6 +62,9 @@ public class ControlMessageReader {
                 break;
             case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
                 msg = parseInjectMouseEvent();
+                break;
+            case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
+                msg = parseInjectTouchEvent();
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 msg = parseInjectScrollEvent();
@@ -128,6 +132,21 @@ public class ControlMessageReader {
         int buttons = buffer.getInt();
         Position position = readPosition(buffer);
         return ControlMessage.createInjectMouseEvent(action, buttons, position);
+    }
+
+    @SuppressWarnings("checkstyle:MagicNumber")
+    private ControlMessage parseInjectTouchEvent() {
+        if (buffer.remaining() < INJECT_TOUCH_EVENT_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        long pointerId = buffer.getLong();
+        Position position = readPosition(buffer);
+        // 16 bits fixed-point
+        int pressureInt = toUnsigned(buffer.getShort());
+        // convert it to a float between 0 and 1 (0x1p16f is 2^16 as float)
+        float pressure = pressureInt == 0xffff ? 1f : (pressureInt / 0x1p16f);
+        return ControlMessage.createInjectTouchEvent(action, pointerId, position, pressure);
     }
 
     private ControlMessage parseInjectScrollEvent() {

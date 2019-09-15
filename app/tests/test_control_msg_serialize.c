@@ -100,6 +100,41 @@ static void test_serialize_inject_mouse_event(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_inject_touch_event(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        .inject_touch_event = {
+            .action = AMOTION_EVENT_ACTION_DOWN,
+            .pointer_id = 0x1234567887654321L,
+            .position = {
+                .point = {
+                    .x = 100,
+                    .y = 200,
+                },
+                .screen_size = {
+                    .width = 1080,
+                    .height = 1920,
+                },
+            },
+            .pressure = 1.0f,
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    int size = control_msg_serialize(&msg, buf);
+    assert(size == 24);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        0x00, // AKEY_EVENT_ACTION_DOWN
+        0x12, 0x34, 0x56, 0x78, 0x87, 0x65, 0x43, 0x21, // pointer id
+        0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0xc8, // 100 200
+        0x04, 0x38, 0x07, 0x80, // 1080 1920
+        0xff, 0xff, // pressure
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 static void test_serialize_inject_scroll_event(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
@@ -237,6 +272,7 @@ int main(void) {
     test_serialize_inject_text();
     test_serialize_inject_text_long();
     test_serialize_inject_mouse_event();
+    test_serialize_inject_touch_event();
     test_serialize_inject_scroll_event();
     test_serialize_back_or_screen_on();
     test_serialize_expand_notification_panel();
