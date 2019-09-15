@@ -31,7 +31,6 @@ autocomplete_metastate(enum android_metastate metastate) {
     return metastate;
 }
 
-
 static enum android_metastate
 convert_meta_state(SDL_Keymod mod) {
     enum android_metastate metastate = 0;
@@ -158,8 +157,7 @@ convert_mouse_buttons(uint32_t state) {
 }
 
 bool
-input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
-                              struct control_msg *to) {
+convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -177,9 +175,8 @@ input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
 }
 
 bool
-mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
-                                 struct size screen_size,
-                                 struct control_msg *to) {
+convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
+                     struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT;
 
     if (!convert_mouse_action(from->type, &to->inject_mouse_event.action)) {
@@ -196,9 +193,8 @@ mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
 }
 
 bool
-mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
-                                 struct size screen_size,
-                                 struct control_msg *to) {
+convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
+                     struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT;
     to->inject_mouse_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_mouse_event.buttons = convert_mouse_buttons(from->state);
@@ -210,9 +206,8 @@ mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
 }
 
 bool
-mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
-                                struct position position,
-                                struct control_msg *to) {
+convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
+                    struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
     to->inject_scroll_event.position = position;

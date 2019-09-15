@@ -17,25 +17,21 @@ struct complete_mouse_wheel_event {
 };
 
 bool
-input_key_from_sdl_to_android(const SDL_KeyboardEvent *from,
-                              struct control_msg *to);
+convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to);
 
 bool
-mouse_button_from_sdl_to_android(const SDL_MouseButtonEvent *from,
-                                 struct size screen_size,
-                                 struct control_msg *to);
+convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
+                     struct control_msg *to);
 
 // the video size may be different from the real device size, so we need the
 // size to which the absolute position apply, to scale it accordingly
 bool
-mouse_motion_from_sdl_to_android(const SDL_MouseMotionEvent *from,
-                                 struct size screen_size,
-                                 struct control_msg *to);
+convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
+                     struct control_msg *to);
 
 // on Android, a scroll event requires the current mouse position
 bool
-mouse_wheel_from_sdl_to_android(const SDL_MouseWheelEvent *from,
-                                struct position position,
-                                struct control_msg *to);
+convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
+                    struct control_msg *to);
 
 #endif
