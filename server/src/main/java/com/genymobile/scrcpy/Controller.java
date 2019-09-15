@@ -23,10 +23,18 @@ public class Controller {
     private final MotionEvent.PointerProperties[] mousePointerProperties = {new MotionEvent.PointerProperties()};
     private final MotionEvent.PointerCoords[] mousePointerCoords = {new MotionEvent.PointerCoords()};
 
+    private long lastTouchDown;
+    private final PointersState pointersState = new PointersState();
+    private final MotionEvent.PointerProperties[] touchPointerProperties =
+            new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
+    private final MotionEvent.PointerCoords[] touchPointerCoords =
+            new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
+
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
         initMousePointer();
+        initTouchPointers();
         sender = new DeviceMessageSender(connection);
     }
 
@@ -39,6 +47,20 @@ public class Controller {
         coords.orientation = 0;
         coords.pressure = 1;
         coords.size = 1;
+    }
+
+    private void initTouchPointers() {
+        for (int i = 0; i < PointersState.MAX_POINTERS; ++i) {
+            MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
+            props.toolType = MotionEvent.TOOL_TYPE_FINGER;
+
+            MotionEvent.PointerCoords coords = new MotionEvent.PointerCoords();
+            coords.orientation = 0;
+            coords.size = 1;
+
+            touchPointerProperties[i] = props;
+            touchPointerCoords[i] = coords;
+        }
     }
 
     private void setMousePointerCoords(Point point) {
@@ -89,6 +111,9 @@ public class Controller {
                 break;
             case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
                 injectMouse(msg.getAction(), msg.getButtons(), msg.getPosition());
+                break;
+            case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
+                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure());
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
@@ -161,6 +186,45 @@ public class Controller {
         setMousePointerCoords(point);
         MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, mousePointerProperties,
                 mousePointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+        return injectEvent(event);
+    }
+
+    private boolean injectTouch(int action, long pointerId, Position position, float pressure) {
+        long now = SystemClock.uptimeMillis();
+
+        Point point = device.getPhysicalPoint(position);
+        if (point == null) {
+            // ignore event
+            return false;
+        }
+
+        int pointerIndex = pointersState.getPointerIndex(pointerId);
+        if (pointerIndex == -1) {
+            Ln.w("Too many pointers for touch event");
+            return false;
+        }
+        Pointer pointer = pointersState.get(pointerIndex);
+        pointer.setPoint(point);
+        pointer.setPressure(pressure);
+        pointer.setUp(action == MotionEvent.ACTION_UP);
+
+        int pointerCount = pointersState.update(touchPointerProperties, touchPointerCoords);
+
+        if (pointerCount == 1) {
+            if (action == MotionEvent.ACTION_DOWN) {
+                lastTouchDown = now;
+            }
+        } else {
+            // secondary pointers must use ACTION_POINTER_* ORed with the pointerIndex
+            if (action == MotionEvent.ACTION_UP) {
+                action = MotionEvent.ACTION_POINTER_UP | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+            } else if (action == MotionEvent.ACTION_DOWN) {
+                action = MotionEvent.ACTION_POINTER_DOWN | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+            }
+        }
+
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, touchPointerProperties,
+                touchPointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
