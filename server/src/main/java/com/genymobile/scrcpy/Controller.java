@@ -13,6 +13,8 @@ import java.io.IOException;
 
 public class Controller {
 
+    private static final int MAX_FINGERS = 10;
+
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
@@ -23,10 +25,16 @@ public class Controller {
     private final MotionEvent.PointerProperties[] mousePointerProperties = {new MotionEvent.PointerProperties()};
     private final MotionEvent.PointerCoords[] mousePointerCoords = {new MotionEvent.PointerCoords()};
 
+    private long lastTouchDown;
+    private final FingersState fingersState = new FingersState(MAX_FINGERS);
+    private final MotionEvent.PointerProperties[] touchPointerProperties = new MotionEvent.PointerProperties[MAX_FINGERS];
+    private final MotionEvent.PointerCoords[] touchPointerCoords = new MotionEvent.PointerCoords[MAX_FINGERS];
+
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
         initMousePointer();
+        initTouchPointers();
         sender = new DeviceMessageSender(connection);
     }
 
@@ -39,6 +47,17 @@ public class Controller {
         coords.orientation = 0;
         coords.pressure = 1;
         coords.size = 1;
+    }
+
+    private void initTouchPointers() {
+        for (int i = 0; i < MAX_FINGERS; ++i) {
+            MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
+            props.toolType = MotionEvent.TOOL_TYPE_FINGER;
+
+            MotionEvent.PointerCoords coords = new MotionEvent.PointerCoords();
+            coords.orientation = 0;
+            coords.size = 1;
+        }
     }
 
     private void setMousePointerCoords(Point point) {
@@ -160,6 +179,34 @@ public class Controller {
         }
         setMousePointerCoords(point);
         MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, mousePointerProperties, mousePointerCoords, 0, buttons, 1f, 1f, 0, 0,
+                InputDevice.SOURCE_TOUCHSCREEN, 0);
+        return injectEvent(event);
+    }
+
+    private boolean injectTouch(int action, int fingerId, Position position, float pressure) {
+        long now = SystemClock.uptimeMillis();
+        if (action == MotionEvent.ACTION_DOWN) {
+            lastTouchDown = now;
+        }
+        Point point = device.getPhysicalPoint(position);
+        if (point == null) {
+            // ignore event
+            return false;
+        }
+        if (action == MotionEvent.ACTION_UP) {
+            if (!fingersState.unset(fingerId)) {
+                Ln.w("Unexpected ACTION_UP on unknown finger");
+                return false;
+            }
+        } else {
+            // ACTION_DOWN or ACTION_MOVE
+            if (!fingersState.set(fingerId, point, pressure)) {
+                Ln.w("Too many fingers for touch event");
+                return false;
+            }
+        }
+        int pointerCount = fingersState.update(touchPointerProperties, touchPointerCoords);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0,
                 InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
