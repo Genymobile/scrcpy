@@ -18,6 +18,7 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_INJECT_KEYCODE,
     CONTROL_MSG_TYPE_INJECT_TEXT,
     CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT,
+    CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
     CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
     CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
     CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
@@ -49,6 +50,12 @@ struct control_msg {
             enum android_motionevent_buttons buttons;
             struct position position;
         } inject_mouse_event;
+        struct {
+            enum android_motionevent_action action;
+            uint64_t finger_id;
+            struct position position;
+            float pressure;
+        } inject_touch_event;
         struct {
             struct position position;
             int32_t hscroll;
