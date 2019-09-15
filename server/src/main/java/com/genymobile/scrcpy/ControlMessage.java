@@ -8,13 +8,14 @@ public final class ControlMessage {
     public static final int TYPE_INJECT_KEYCODE = 0;
     public static final int TYPE_INJECT_TEXT = 1;
     public static final int TYPE_INJECT_MOUSE_EVENT = 2;
-    public static final int TYPE_INJECT_SCROLL_EVENT = 3;
-    public static final int TYPE_BACK_OR_SCREEN_ON = 4;
-    public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 5;
-    public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 6;
-    public static final int TYPE_GET_CLIPBOARD = 7;
-    public static final int TYPE_SET_CLIPBOARD = 8;
-    public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
+    public static final int TYPE_INJECT_TOUCH_EVENT = 3;
+    public static final int TYPE_INJECT_SCROLL_EVENT = 4;
+    public static final int TYPE_BACK_OR_SCREEN_ON = 5;
+    public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 6;
+    public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 7;
+    public static final int TYPE_GET_CLIPBOARD = 8;
+    public static final int TYPE_SET_CLIPBOARD = 9;
+    public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
 
     private int type;
     private String text;
@@ -22,6 +23,8 @@ public final class ControlMessage {
     private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_*
     private int keycode; // KeyEvent.KEYCODE_*
     private int buttons; // MotionEvent.BUTTON_*
+    private long pointerId;
+    private float pressure;
     private Position position;
     private int hScroll;
     private int vScroll;
@@ -50,6 +53,16 @@ public final class ControlMessage {
         msg.type = TYPE_INJECT_MOUSE_EVENT;
         msg.action = action;
         msg.buttons = buttons;
+        msg.position = position;
+        return msg;
+    }
+
+    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_TOUCH_EVENT;
+        msg.action = action;
+        msg.pointerId = pointerId;
+        msg.pressure = pressure;
         msg.position = position;
         return msg;
     }
@@ -108,6 +121,14 @@ public final class ControlMessage {
 
     public int getButtons() {
         return buttons;
+    }
+
+    public long getPointerId() {
+        return pointerId;
+    }
+
+    public float getPressure() {
+        return pressure;
     }
 
     public Position getPosition() {
