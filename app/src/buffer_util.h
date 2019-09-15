@@ -20,6 +20,12 @@ buffer_write32be(uint8_t *buf, uint32_t value) {
     buf[3] = value;
 }
 
+static inline void
+buffer_write64be(uint8_t *buf, uint64_t value) {
+    buffer_write32be(buf, value >> 32);
+    buffer_write32be(&buf[4], (uint32_t) value);
+}
+
 static inline uint16_t
 buffer_read16be(const uint8_t *buf) {
     return (buf[0] << 8) | buf[1];
