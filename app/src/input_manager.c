@@ -389,6 +389,10 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
         // do not send motion events when no button is pressed
         return;
     }
+    if (event->which == SDL_TOUCH_MOUSEID) {
+        // simulated from touch events, so it's a duplicate
+        return;
+    }
     struct control_msg msg;
     if (convert_mouse_motion(event, input_manager->screen->frame_size, &msg)) {
         if (!controller_push_msg(input_manager->controller, &msg)) {
