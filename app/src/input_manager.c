@@ -397,6 +397,17 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
     }
 }
 
+void
+input_manager_process_touch(struct input_manager *input_manager,
+                            const SDL_TouchFingerEvent *event) {
+    struct control_msg msg;
+    if (convert_touch(event, input_manager->screen->frame_size, &msg)) {
+        if (!controller_push_msg(input_manager->controller, &msg)) {
+            LOGW("Could not request 'inject touch event'");
+        }
+    }
+}
+
 static bool
 is_outside_device_screen(struct input_manager *input_manager, int x, int y)
 {

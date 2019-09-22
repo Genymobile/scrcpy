@@ -30,6 +30,10 @@ bool
 convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
                      struct control_msg *to);
 
+bool
+convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,
+              struct control_msg *to);
+
 // on Android, a scroll event requires the current mouse position
 bool
 convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
