@@ -389,6 +389,10 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
         // do not send motion events when no button is pressed
         return;
     }
+    if (event->which == SDL_TOUCH_MOUSEID) {
+        // simulated from touch events, so it's a duplicate
+        return;
+    }
     struct control_msg msg;
     if (convert_mouse_motion(event, input_manager->screen->frame_size, &msg)) {
         if (!controller_push_msg(input_manager->controller, &msg)) {
@@ -419,6 +423,10 @@ void
 input_manager_process_mouse_button(struct input_manager *input_manager,
                                    const SDL_MouseButtonEvent *event,
                                    bool control) {
+    if (event->which == SDL_TOUCH_MOUSEID) {
+        // simulated from touch events, so it's a duplicate
+        return;
+    }
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(input_manager->controller);
