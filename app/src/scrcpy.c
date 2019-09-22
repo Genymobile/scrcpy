@@ -181,6 +181,11 @@ handle_event(SDL_Event *event, bool control) {
             input_manager_process_mouse_button(&input_manager, &event->button,
                                                control);
             break;
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+            input_manager_process_touch(&input_manager, &event->tfinger);
+            break;
         case SDL_DROPFILE: {
             if (!control) {
                 break;

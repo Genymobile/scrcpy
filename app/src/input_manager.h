@@ -30,6 +30,10 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
                                    const SDL_MouseMotionEvent *event);
 
 void
+input_manager_process_touch(struct input_manager *input_manager,
+                            const SDL_TouchFingerEvent *event);
+
+void
 input_manager_process_mouse_button(struct input_manager *input_manager,
                                    const SDL_MouseButtonEvent *event,
                                    bool control);
