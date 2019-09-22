@@ -207,6 +207,34 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
     return true;
 }
 
+static bool
+convert_touch_action(SDL_EventType from, enum android_motionevent_action *to) {
+    switch (from) {
+        MAP(SDL_FINGERMOTION, AMOTION_EVENT_ACTION_MOVE);
+        MAP(SDL_FINGERDOWN,   AMOTION_EVENT_ACTION_DOWN);
+        MAP(SDL_FINGERUP,     AMOTION_EVENT_ACTION_UP);
+        FAIL;
+    }
+}
+
+bool
+convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,
+              struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+
+    if (!convert_touch_action(from->type, &to->inject_touch_event.action)) {
+        return false;
+    }
+
+    to->inject_touch_event.pointer_id = from->fingerId;
+    to->inject_touch_event.position.screen_size = screen_size;
+    // SDL touch event coordinates are normalized in the range [0; 1]
+    to->inject_touch_event.position.point.x = from->x * screen_size.width;
+    to->inject_touch_event.position.point.y = from->y * screen_size.height;
+    to->inject_touch_event.pressure = from->pressure;
+    return true;
+}
+
 bool
 convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
                     struct control_msg *to) {
