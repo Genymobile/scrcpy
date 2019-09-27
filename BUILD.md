@@ -182,6 +182,12 @@ and set `ANDROID_HOME` to its directory. For example:
 export ANDROID_HOME=~/android/sdk
 ```
 
+And you need to set `PKG_CONFIG_PATH` for `pkg-config` to find `ffmpeg` libraries:
+
+```bash
+export PKG_CONFIG_PATH=/usr/local/opt/ffmpeg/lib/pkgconfig
+```
+
 If you don't want to build the server, use the [prebuilt server].
 
 Clone the project:
