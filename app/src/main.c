@@ -328,7 +328,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"push-target",           required_argument, NULL,
                                                  OPT_PUSH_TARGET},
         {"record",                required_argument, NULL, 'r'},
-        {"record-format",         required_argument, NULL, 'f'},
+        {"record-format",         required_argument, NULL, 'F'},
         {"render-expired-frames", no_argument,       NULL,
                                                  OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                required_argument, NULL, 's'},
