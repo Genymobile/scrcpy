@@ -77,6 +77,7 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseMouseEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
