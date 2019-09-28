@@ -102,7 +102,7 @@ press_back_or_turn_screen_on(struct controller *controller) {
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
 
     if (!controller_push_msg(controller, &msg)) {
-        LOGW("Could not request 'turn screen on'");
+        LOGW("Could not request 'press back or turn screen on'");
     }
 }
 
