@@ -3,6 +3,7 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
+#include "config.h"
 #include "common.h"
 #include "compat.h"
 #include "icon.xpm"
