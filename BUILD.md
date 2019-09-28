@@ -43,7 +43,7 @@ Install the required packages from your package manager.
 sudo apt install ffmpeg libsdl2-2.0-0
 
 # client build dependencies
-sudo apt install make gcc git pkg-config meson ninja-build \
+sudo apt install gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
 
