@@ -199,24 +199,35 @@ public class Controller {
             // ignore event
             return false;
         }
-        Finger finger = fingersState.get(fingerId);
-        if (finger == null) {
+
+        int fingerIndex = fingersState.getFingerIndex(fingerId);
+        if (fingerIndex == -1) {
             Ln.w("Too many fingers for touch event");
             return false;
         }
+        Finger finger = fingersState.get(fingerIndex);
         finger.setPoint(point);
         finger.setPressure(pressure);
         finger.setUp(action == MotionEvent.ACTION_UP);
 
         // FAIL: action_up will always remove the finger, and the event will not be written!
         int pointerCount = fingersState.update(touchPointerProperties, touchPointerCoords);
+        fingersState.cleanUp();
 
         Ln.d("pointerCount = " + pointerCount);
         for (int i = 0; i < pointerCount; ++i) {
             Ln.d("props = " + touchPointerProperties[i].id);
             Ln.d("coords = " + touchPointerCoords[i].x + "," + touchPointerCoords[i].y);
         }
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action | (finger.getLocalId() << 8), pointerCount, touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0,
+
+        if (pointerCount > 1) {
+            if (action == MotionEvent.ACTION_UP) {
+                action = MotionEvent.ACTION_POINTER_UP | (fingerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+            } else if (action == MotionEvent.ACTION_DOWN) {
+                action = MotionEvent.ACTION_POINTER_DOWN | (fingerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
+            }
+        }
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0,
                 InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
