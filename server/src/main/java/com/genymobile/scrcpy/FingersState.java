@@ -36,48 +36,22 @@ public class FingersState {
         return -1;
     }
 
-    private Finger create(long id) {
+    public Finger get(long id) {
         int index = indexOf(id);
         if (index != -1) {
             // already exists, return it
             return fingers[index];
         }
-        int firstEmpty = indexOfFirstEmpty();
-        if (firstEmpty == -1) {
+        index = indexOfFirstEmpty();
+        if (index == -1) {
             // it's full
             return null;
         }
-        Finger finger = new Finger(id);
-        fingers[firstEmpty] = finger;
+        // id 0 is reserved for mouse events
+        int localId = index;// + 1;
+        Finger finger = new Finger(id, localId);
+        fingers[index] = finger;
         return finger;
-    }
-
-    public boolean unset(long id) {
-        int index = indexOf(id);
-        if (index == -1) {
-            return false;
-        }
-        fingers[index] = null;
-        return true;
-    }
-
-    public boolean set(long id, Point point, float pressure, boolean up) {
-        Finger finger = create(id);
-        if (finger == null) {
-            return false;
-        }
-        finger.setPoint(point);
-        finger.setPressure(pressure);
-        finger.setUp(up);
-        return true;
-    }
-
-    public void cleanUp() {
-        for (int i = 0; i < fingers.length; ++i) {
-            if (fingers[i] != null && fingers[i].isUp()) {
-                fingers[i] = null;
-            }
-        }
     }
 
     /**
@@ -93,12 +67,18 @@ public class FingersState {
             Finger finger = fingers[i];
             if (finger != null) {
                 // id 0 is reserved for mouse events
-                props[count].id = i + 1;
+                props[count].id = finger.getLocalId();
+                Ln.d("update id = " + finger.getLocalId());
 
                 Point point = finger.getPoint();
-                coords[i].x = point.getX();
-                coords[i].y = point.getY();
-                coords[i].pressure = finger.getPressure();
+                coords[count].x = point.getX();
+                coords[count].y = point.getY();
+                coords[count].pressure = finger.getPressure();
+
+                if (finger.isUp()) {
+                    // remove it
+                    fingers[i] = null;
+                }
 
                 ++count;
             }
