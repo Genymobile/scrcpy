@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "config.h"
 #include "command.h"
 #include "net.h"
 

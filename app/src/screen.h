@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
+#include "config.h"
 #include "common.h"
 
 struct video_buffer;

@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <libavformat/avformat.h>
 
+#include "config.h"
+
 struct video_buffer;
 
 struct decoder {

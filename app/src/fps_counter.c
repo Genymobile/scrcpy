@@ -3,6 +3,7 @@
 #include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
+#include "config.h"
 #include "lock_util.h"
 #include "log.h"
 

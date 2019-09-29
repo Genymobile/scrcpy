@@ -2,6 +2,7 @@
 
 #include <string.h>
 
+#include "config.h"
 #include "buffer_util.h"
 #include "log.h"
 #include "str_util.h"

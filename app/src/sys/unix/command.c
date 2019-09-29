@@ -7,6 +7,8 @@
 
 #include "command.h"
 
+#include "config.h"
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>

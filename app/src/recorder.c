@@ -3,8 +3,8 @@
 #include <libavutil/time.h>
 #include <SDL2/SDL_assert.h>
 
-#include "compat.h"
 #include "config.h"
+#include "compat.h"
 #include "lock_util.h"
 #include "log.h"
 

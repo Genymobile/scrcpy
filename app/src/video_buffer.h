@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 
+#include "config.h"
 #include "fps_counter.h"
 
 // forward declarations

@@ -5,6 +5,7 @@
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
+#include "config.h"
 #include "net.h"
 
 // receive events from the device

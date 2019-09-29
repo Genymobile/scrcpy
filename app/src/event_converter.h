@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL_events.h>
 
+#include "config.h"
 #include "control_msg.h"
 
 struct complete_mouse_motion_event {

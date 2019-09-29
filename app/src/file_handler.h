@@ -5,6 +5,7 @@
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
+#include "config.h"
 #include "cbuf.h"
 #include "command.h"
 

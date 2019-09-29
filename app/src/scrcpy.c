@@ -7,6 +7,7 @@
 #include <sys/time.h>
 #include <SDL2/SDL.h>
 
+#include "config.h"
 #include "command.h"
 #include "common.h"
 #include "compat.h"

@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "config.h"
 #include "common.h"
 #include "net.h"
 

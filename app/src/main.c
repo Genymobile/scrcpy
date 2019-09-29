@@ -8,8 +8,8 @@
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
-#include "compat.h"
 #include "config.h"
+#include "compat.h"
 #include "log.h"
 #include "recorder.h"
 

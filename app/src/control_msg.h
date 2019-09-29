@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "config.h"
 #include "android/input.h"
 #include "android/keycodes.h"
 #include "common.h"

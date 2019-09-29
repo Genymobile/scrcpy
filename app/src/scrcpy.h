@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <recorder.h>
 
+#include "config.h"
+
 struct scrcpy_options {
     const char *serial;
     const char *crop;
