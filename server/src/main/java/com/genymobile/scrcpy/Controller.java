@@ -191,9 +191,7 @@ public class Controller {
 
     private boolean injectTouch(int action, long fingerId, Position position, float pressure) {
         long now = SystemClock.uptimeMillis();
-        if (action == MotionEvent.ACTION_DOWN) {
-            lastTouchDown = now;
-        }
+
         Point point = device.getPhysicalPoint(position);
         if (point == null) {
             // ignore event
@@ -226,7 +224,10 @@ public class Controller {
             } else if (action == MotionEvent.ACTION_DOWN) {
                 action = MotionEvent.ACTION_POINTER_DOWN | (fingerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
             }
+        } else if (action == MotionEvent.ACTION_DOWN) {
+            lastTouchDown = now;
         }
+
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0,
                 InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
