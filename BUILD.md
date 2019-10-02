@@ -197,6 +197,7 @@ Then, build:
 meson x --buildtype release --strip -Db_lto=true
 cd x
 ninja
+cd ..
 ```
 
 _Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
