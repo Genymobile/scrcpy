@@ -19,10 +19,6 @@ public class Controller {
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
-    private long lastMouseDown;
-    private final MotionEvent.PointerProperties[] mousePointerProperties = {new MotionEvent.PointerProperties()};
-    private final MotionEvent.PointerCoords[] mousePointerCoords = {new MotionEvent.PointerCoords()};
-
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] touchPointerProperties =
@@ -33,20 +29,8 @@ public class Controller {
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
-        initMousePointer();
         initTouchPointers();
         sender = new DeviceMessageSender(connection);
-    }
-
-    private void initMousePointer() {
-        MotionEvent.PointerProperties props = mousePointerProperties[0];
-        props.id = 0;
-        props.toolType = MotionEvent.TOOL_TYPE_FINGER;
-
-        MotionEvent.PointerCoords coords = mousePointerCoords[0];
-        coords.orientation = 0;
-        coords.pressure = 1;
-        coords.size = 1;
     }
 
     private void initTouchPointers() {
@@ -61,18 +45,6 @@ public class Controller {
             touchPointerProperties[i] = props;
             touchPointerCoords[i] = coords;
         }
-    }
-
-    private void setMousePointerCoords(Point point) {
-        MotionEvent.PointerCoords coords = mousePointerCoords[0];
-        coords.x = point.getX();
-        coords.y = point.getY();
-    }
-
-    private void setScroll(int hScroll, int vScroll) {
-        MotionEvent.PointerCoords coords = mousePointerCoords[0];
-        coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
-        coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
@@ -110,10 +82,10 @@ public class Controller {
                 injectText(msg.getText());
                 break;
             case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
-                injectMouse(msg.getAction(), msg.getButtons(), msg.getPosition());
+                injectTouch(msg.getAction(), PointersState.POINTER_ID_MOUSE, msg.getPosition(), 1, msg.getButtons());
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure());
+                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), 0);
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
@@ -173,23 +145,7 @@ public class Controller {
         return successCount;
     }
 
-    private boolean injectMouse(int action, int buttons, Position position) {
-        long now = SystemClock.uptimeMillis();
-        if (action == MotionEvent.ACTION_DOWN) {
-            lastMouseDown = now;
-        }
-        Point point = device.getPhysicalPoint(position);
-        if (point == null) {
-            // ignore event
-            return false;
-        }
-        setMousePointerCoords(point);
-        MotionEvent event = MotionEvent.obtain(lastMouseDown, now, action, 1, mousePointerProperties,
-                mousePointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
-        return injectEvent(event);
-    }
-
-    private boolean injectTouch(int action, long pointerId, Position position, float pressure) {
+    private boolean injectTouch(int action, long pointerId, Position position, float pressure, int buttons) {
         long now = SystemClock.uptimeMillis();
 
         Point point = device.getPhysicalPoint(position);
@@ -235,10 +191,18 @@ public class Controller {
             // ignore event
             return false;
         }
-        setMousePointerCoords(point);
-        setScroll(hScroll, vScroll);
-        MotionEvent event = MotionEvent.obtain(lastMouseDown, now, MotionEvent.ACTION_SCROLL, 1,
-                mousePointerProperties, mousePointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+
+        MotionEvent.PointerProperties props = touchPointerProperties[0];
+        props.id = 0;
+
+        MotionEvent.PointerCoords coords = touchPointerCoords[0];
+        coords.x = point.getX();
+        coords.y = point.getY();
+        coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
+        coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
+
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1,
+                touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);
     }
 
