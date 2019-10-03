@@ -21,19 +21,19 @@ public class Controller {
 
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
-    private final MotionEvent.PointerProperties[] touchPointerProperties =
+    private final MotionEvent.PointerProperties[] pointerProperties =
             new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
-    private final MotionEvent.PointerCoords[] touchPointerCoords =
+    private final MotionEvent.PointerCoords[] pointerCoords =
             new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
-        initTouchPointers();
+        initPointers();
         sender = new DeviceMessageSender(connection);
     }
 
-    private void initTouchPointers() {
+    private void initPointers() {
         for (int i = 0; i < PointersState.MAX_POINTERS; ++i) {
             MotionEvent.PointerProperties props = new MotionEvent.PointerProperties();
             props.toolType = MotionEvent.TOOL_TYPE_FINGER;
@@ -42,8 +42,8 @@ public class Controller {
             coords.orientation = 0;
             coords.size = 1;
 
-            touchPointerProperties[i] = props;
-            touchPointerCoords[i] = coords;
+            pointerProperties[i] = props;
+            pointerCoords[i] = coords;
         }
     }
 
@@ -164,7 +164,7 @@ public class Controller {
         pointer.setPressure(pressure);
         pointer.setUp(action == MotionEvent.ACTION_UP);
 
-        int pointerCount = pointersState.update(touchPointerProperties, touchPointerCoords);
+        int pointerCount = pointersState.update(pointerProperties, pointerCoords);
 
         if (pointerCount == 1) {
             if (action == MotionEvent.ACTION_DOWN) {
@@ -179,8 +179,8 @@ public class Controller {
             }
         }
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, touchPointerProperties,
-                touchPointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties,
+                pointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
@@ -192,17 +192,17 @@ public class Controller {
             return false;
         }
 
-        MotionEvent.PointerProperties props = touchPointerProperties[0];
+        MotionEvent.PointerProperties props = pointerProperties[0];
         props.id = 0;
 
-        MotionEvent.PointerCoords coords = touchPointerCoords[0];
+        MotionEvent.PointerCoords coords = pointerCoords[0];
         coords.x = point.getX();
         coords.y = point.getY();
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1,
-                touchPointerProperties, touchPointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties,
+                pointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);
     }
 
