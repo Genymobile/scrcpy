@@ -8,7 +8,6 @@ import java.util.List;
 public class PointersState {
 
     public static final int MAX_POINTERS = 10;
-    public static final long POINTER_ID_MOUSE = -1;
 
     private final List<Pointer> pointers = new ArrayList<>();
 

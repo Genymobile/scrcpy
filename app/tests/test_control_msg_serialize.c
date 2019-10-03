@@ -67,39 +67,6 @@ static void test_serialize_inject_text_long(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_inject_mouse_event(void) {
-    struct control_msg msg = {
-        .type = CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT,
-        .inject_mouse_event = {
-            .action = AMOTION_EVENT_ACTION_DOWN,
-            .buttons = AMOTION_EVENT_BUTTON_PRIMARY,
-            .position = {
-                .point = {
-                    .x = 260,
-                    .y = 1026,
-                },
-                .screen_size = {
-                    .width = 1080,
-                    .height = 1920,
-                },
-            },
-        },
-    };
-
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
-    assert(size == 18);
-
-    const unsigned char expected[] = {
-        CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT,
-        0x00, // AKEY_EVENT_ACTION_DOWN
-        0x00, 0x00, 0x00, 0x01, // AMOTION_EVENT_BUTTON_PRIMARY
-        0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
-        0x04, 0x38, 0x07, 0x80, // 1080 1920
-    };
-    assert(!memcmp(buf, expected, sizeof(expected)));
-}
-
 static void test_serialize_inject_touch_event(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -117,12 +84,13 @@ static void test_serialize_inject_touch_event(void) {
                 },
             },
             .pressure = 1.0f,
+            .buttons = AMOTION_EVENT_BUTTON_PRIMARY,
         },
     };
 
     unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 24);
+    assert(size == 28);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -131,6 +99,7 @@ static void test_serialize_inject_touch_event(void) {
         0x00, 0x00, 0x00, 0x64, 0x00, 0x00, 0x00, 0xc8, // 100 200
         0x04, 0x38, 0x07, 0x80, // 1080 1920
         0xff, 0xff, // pressure
+        0x00, 0x00, 0x00, 0x01 // AMOTION_EVENT_BUTTON_PRIMARY
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -271,7 +240,6 @@ int main(void) {
     test_serialize_inject_keycode();
     test_serialize_inject_text();
     test_serialize_inject_text_long();
-    test_serialize_inject_mouse_event();
     test_serialize_inject_touch_event();
     test_serialize_inject_scroll_event();
     test_serialize_back_or_screen_on();

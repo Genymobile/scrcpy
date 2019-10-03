@@ -81,9 +81,6 @@ public class Controller {
             case ControlMessage.TYPE_INJECT_TEXT:
                 injectText(msg.getText());
                 break;
-            case ControlMessage.TYPE_INJECT_MOUSE_EVENT:
-                injectTouch(msg.getAction(), PointersState.POINTER_ID_MOUSE, msg.getPosition(), 1, msg.getButtons());
-                break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
                 injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), 0);
                 break;

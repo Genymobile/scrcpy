@@ -78,35 +78,6 @@ public class ControlMessageReaderTest {
 
     @Test
     @SuppressWarnings("checkstyle:MagicNumber")
-    public void testParseMouseEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        DataOutputStream dos = new DataOutputStream(bos);
-        dos.writeByte(ControlMessage.TYPE_INJECT_MOUSE_EVENT);
-        dos.writeByte(MotionEvent.ACTION_DOWN);
-        dos.writeInt(MotionEvent.BUTTON_PRIMARY);
-        dos.writeInt(100);
-        dos.writeInt(200);
-        dos.writeShort(1080);
-        dos.writeShort(1920);
-
-        byte[] packet = bos.toByteArray();
-
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
-
-        Assert.assertEquals(ControlMessage.TYPE_INJECT_MOUSE_EVENT, event.getType());
-        Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
-        Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getButtons());
-        Assert.assertEquals(100, event.getPosition().getPoint().getX());
-        Assert.assertEquals(200, event.getPosition().getPoint().getY());
-        Assert.assertEquals(1080, event.getPosition().getScreenSize().getWidth());
-        Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
-    }
-
-    @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseTouchEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
@@ -120,6 +91,7 @@ public class ControlMessageReaderTest {
         dos.writeShort(1080);
         dos.writeShort(1920);
         dos.writeShort(0xffff); // pressure
+        dos.writeInt(MotionEvent.BUTTON_PRIMARY);
 
         byte[] packet = bos.toByteArray();
 
@@ -134,6 +106,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(1080, event.getPosition().getScreenSize().getWidth());
         Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
         Assert.assertEquals(1f, event.getPressure(), 0f); // must be exact
+        Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getButtons());
     }
 
     @Test

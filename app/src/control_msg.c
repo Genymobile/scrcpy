@@ -49,11 +49,6 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
                                       CONTROL_MSG_TEXT_MAX_LENGTH, &buf[1]);
             return 1 + len;
         }
-        case CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT:
-            buf[1] = msg->inject_mouse_event.action;
-            buffer_write32be(&buf[2], msg->inject_mouse_event.buttons);
-            write_position(&buf[6], &msg->inject_mouse_event.position);
-            return 18;
         case CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
             buf[1] = msg->inject_touch_event.action;
             buffer_write64be(&buf[2], msg->inject_touch_event.pointer_id);
@@ -61,7 +56,8 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
             uint16_t pressure =
                 to_fixed_point_16(msg->inject_touch_event.pressure);
             buffer_write16be(&buf[22], pressure);
-            return 24;
+            buffer_write32be(&buf[24], msg->inject_touch_event.buttons);
+            return 28;
         case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
             buffer_write32be(&buf[13],
