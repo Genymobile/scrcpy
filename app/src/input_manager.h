@@ -17,6 +17,12 @@ struct input_manager {
 };
 
 void
+input_manager_init(struct input_manager *input_manager,
+                   struct controller *controller,
+                   struct video_buffer *video_buffer,
+                   struct screen *screen);
+
+void
 input_manager_process_text_input(struct input_manager *input_manager,
                                  const SDL_TextInputEvent *event);
 

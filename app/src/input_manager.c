@@ -7,6 +7,16 @@
 #include "lock_util.h"
 #include "log.h"
 
+void
+input_manager_init(struct input_manager *input_manager,
+                   struct controller *controller,
+                   struct video_buffer *video_buffer,
+                   struct screen *screen) {
+    input_manager->controller = controller;
+    input_manager->video_buffer = video_buffer;
+    input_manager->screen = screen;
+}
+
 // Convert window coordinates (as provided by SDL_GetMouseState() to renderer
 // coordinates (as provided in SDL mouse events)
 //

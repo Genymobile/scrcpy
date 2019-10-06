@@ -37,12 +37,7 @@ static struct decoder decoder;
 static struct recorder recorder;
 static struct controller controller;
 static struct file_handler file_handler;
-
-static struct input_manager input_manager = {
-    .controller = &controller,
-    .video_buffer = &video_buffer,
-    .screen = &screen,
-};
+static struct input_manager input_manager;
 
 // init SDL and set appropriate hints
 static bool
@@ -310,6 +305,8 @@ scrcpy(const struct scrcpy_options *options) {
     if (!sdl_init_and_configure(options->display)) {
         goto end;
     }
+
+    input_manager_init(&input_manager, &controller, &video_buffer, &screen);
 
     if (!server_connect_to(&server)) {
         goto end;
