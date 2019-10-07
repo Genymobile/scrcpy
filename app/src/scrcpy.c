@@ -144,8 +144,13 @@ handle_event(SDL_Event *event, bool control) {
             break;
         case SDL_WINDOWEVENT:
             switch (event->window.event) {
-                case SDL_WINDOWEVENT_EXPOSED:
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
+#ifdef HIDPI_SUPPORT
+                    LOGD("Reinitializing renderer");
+                    screen_init_renderer_and_texture(&screen);
+#endif
+                    // fall-through no break
+                case SDL_WINDOWEVENT_EXPOSED:
                     screen_render(&screen);
                     break;
             }

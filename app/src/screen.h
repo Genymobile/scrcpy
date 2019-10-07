@@ -48,6 +48,11 @@ bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top);
 
+// reinitialize the renderer (only used in some configurations
+// if necessary to workaround SDL bugs)
+bool
+screen_init_renderer_and_texture(struct screen *screen);
+
 // show the window
 void
 screen_show_window(struct screen *screen);
