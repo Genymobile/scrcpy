@@ -134,6 +134,44 @@ create_texture(SDL_Renderer *renderer, struct size frame_size) {
                              frame_size.width, frame_size.height);
 }
 
+static void
+screen_get_sizes(struct screen *screen, struct screen_sizes *out) {
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+    out->window.width = ww;
+    out->window.height = wh;
+    out->window.width = dw;
+    out->window.height = dh;
+}
+
+// This may be called more than once to work around SDL bugs
+static bool
+screen_init_renderer_and_texture(struct screen *screen) {
+    screen->renderer = SDL_CreateRenderer(screen->window, -1,
+                                          SDL_RENDERER_ACCELERATED);
+    if (!screen->renderer) {
+        LOGC("Could not create renderer: %s", SDL_GetError());
+        return false;
+    }
+
+    if (SDL_RenderSetLogicalSize(screen->renderer, screen->frame_size.width,
+                                 screen->frame_size.height)) {
+        LOGE("Could not set renderer logical size: %s", SDL_GetError());
+        return false;
+    }
+
+    screen->texture = create_texture(screen->renderer, screen->frame_size);
+    if (!screen->texture) {
+        LOGC("Could not create texture: %s", SDL_GetError());
+        return false;
+    }
+
+    screen_get_sizes(screen, &screen->sizes);
+
+    return true;
+}
+
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top) {
@@ -161,21 +199,6 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
-    screen->renderer = SDL_CreateRenderer(screen->window, -1,
-                                          SDL_RENDERER_ACCELERATED);
-    if (!screen->renderer) {
-        LOGC("Could not create renderer: %s", SDL_GetError());
-        screen_destroy(screen);
-        return false;
-    }
-
-    if (SDL_RenderSetLogicalSize(screen->renderer, frame_size.width,
-                                 frame_size.height)) {
-        LOGE("Could not set renderer logical size: %s", SDL_GetError());
-        screen_destroy(screen);
-        return false;
-    }
-
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
@@ -186,9 +209,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width,
                                                   frame_size.height);
-    screen->texture = create_texture(screen->renderer, frame_size);
-    if (!screen->texture) {
-        LOGC("Could not create texture: %s", SDL_GetError());
+    if (!screen_init_renderer_and_texture(screen)) {
         screen_destroy(screen);
         return false;
     }
@@ -277,8 +298,34 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     return true;
 }
 
+// workaround for <https://github.com/Genymobile/scrcpy/issues/15>
+static inline bool
+screen_fix_hidpi(struct screen *screen) {
+    struct screen_sizes cur;
+    screen_get_sizes(screen, &cur);
+
+    struct screen_sizes *prev = &screen->sizes;
+
+    bool width_ratio_changed = cur.window.width * prev->drawable.width !=
+                               cur.drawable.width * prev->window.width;
+    bool height_ratio_changed = cur.window.height * prev->drawable.height !=
+                                cur.drawable.height * prev->window.height;
+    if (width_ratio_changed || height_ratio_changed) {
+        SDL_DestroyTexture(screen->texture);
+        SDL_DestroyRenderer(screen->renderer);
+        if (!screen_init_renderer_and_texture(screen)) {
+            screen->texture = NULL;
+            screen->renderer = NULL;
+            return false;
+        }
+    }
+
+    return true;
+}
+
 void
 screen_window_resized(struct screen *screen) {
+    screen_fix_hidpi(screen);
     screen_render(screen);
 }
 

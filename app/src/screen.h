@@ -20,6 +20,10 @@ struct screen {
     bool has_frame;
     bool fullscreen;
     bool no_window;
+    struct screen_sizes {
+        struct size window;
+        struct size drawable;
+    } sizes;
 };
 
 #define SCREEN_INITIALIZER {  \
