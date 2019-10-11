@@ -153,6 +153,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 #endif
     }
 
+    window_flags |= SDL_WINDOW_BORDERLESS;
+
     screen->window = SDL_CreateWindow(window_title, SDL_WINDOWPOS_UNDEFINED,
                                       SDL_WINDOWPOS_UNDEFINED,
                                       window_size.width, window_size.height,
