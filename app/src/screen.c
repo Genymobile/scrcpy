@@ -47,7 +47,10 @@ set_window_size(struct screen *screen, struct size new_size) {
     } else {
         SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
 #ifdef HIDPI_SUPPORT
-        screen_init_renderer_and_texture(screen);
+        if (!screen_test_correct_hidpi_ratio(screen)) {
+            LOGW("Reinitializing renderer due to incorrect hidpi ratio");
+            screen_init_renderer_and_texture(screen);
+        }
 #endif
     }
 }
@@ -164,6 +167,14 @@ screen_init_renderer_and_texture(struct screen *screen) {
         return false;
     }
 
+#ifdef HIDPI_SUPPORT
+    int window_w, window_h, renderer_w, renderer_h;
+    SDL_GetWindowSize(screen->window, &window_w, &window_h);
+    SDL_GetRendererOutputSize(screen->renderer, &renderer_w, &renderer_h);
+    screen->expected_hidpi_w_factor = renderer_w * 1000 / window_w;
+    screen->expected_hidpi_h_factor = renderer_h * 1000 / window_h;
+#endif
+
     screen->texture = create_texture(screen->renderer, screen->frame_size);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
@@ -213,6 +224,19 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                                                   frame_size.height);
     return screen_init_renderer_and_texture(screen);
 }
+
+#ifdef HIDPI_SUPPORT
+bool
+screen_test_correct_hidpi_ratio(struct screen *screen) {
+  int window_w, window_h, renderer_w, renderer_h;
+  SDL_GetWindowSize(screen->window, &window_w, &window_h);
+  SDL_GetRendererOutputSize(screen->renderer, &renderer_w, &renderer_h);
+  int current_hidpi_w_factor = renderer_w * 1000 / window_w;
+  int current_hidpi_h_factor = renderer_h * 1000 / window_h;
+  return current_hidpi_w_factor == screen->expected_hidpi_w_factor &&
+         current_hidpi_h_factor == screen->expected_hidpi_h_factor;
+}
+#endif
 
 void
 screen_show_window(struct screen *screen) {

@@ -20,6 +20,15 @@ struct screen {
     bool has_frame;
     bool fullscreen;
     bool no_window;
+#ifdef HIDPI_SUPPORT
+    // these values store the ratio between renderer pixel size and window size
+    // in most configurations these ratios would be 1.0 (1000), but on MacOS with
+    // a Retina/HIDPI monitor connected they are 2.0 (2000) because that's how
+    // Apple chose to maintain compatibility with legacy apps, by pretending that
+    // that the screen has half of its real resolution.
+    int expected_hidpi_w_factor; // multiplied by 1000 to avoid float
+    int expected_hidpi_h_factor; // multiplied by 1000 to avoid float
+#endif
 };
 
 #define SCREEN_INITIALIZER {  \
@@ -47,6 +56,15 @@ screen_init(struct screen *screen);
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top);
+
+#ifdef HIDPI_SUPPORT
+// test if the expected renderer to window ratio is correct
+// used to work around SDL bugs
+// returns true if correct.
+// If it returns false the renderer state needs to be fixed
+bool
+screen_test_correct_hidpi_ratio(struct screen *screen);
+#endif
 
 // reinitialize the renderer (only used in some configurations
 // if necessary to workaround SDL bugs)
