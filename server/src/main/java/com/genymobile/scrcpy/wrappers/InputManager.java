@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.Ln;
+
 import android.os.IInterface;
 import android.view.InputEvent;
 
@@ -13,22 +15,33 @@ public final class InputManager {
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2;
 
     private final IInterface manager;
-    private final Method injectInputEventMethod;
+    private Method injectInputEventMethod;
 
     public InputManager(IInterface manager) {
         this.manager = manager;
-        try {
-            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
-        } catch (NoSuchMethodException e) {
-            throw new AssertionError(e);
+    }
+
+    private Method getInjectInputEventMethod() {
+        if (injectInputEventMethod == null) {
+            try {
+                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            } catch (NoSuchMethodException e) {
+                Ln.e("Could not find method", e);
+            }
         }
+        return injectInputEventMethod;
     }
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        Method method = getInjectInputEventMethod();
+        if (method == null) {
+            return false;
+        }
         try {
-            return (Boolean) injectInputEventMethod.invoke(manager, inputEvent, mode);
+            return (Boolean) method.invoke(manager, inputEvent, mode);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new AssertionError(e);
+            Ln.e("Could not invoke " + method.getName(), e);
+            return false;
         }
     }
 }

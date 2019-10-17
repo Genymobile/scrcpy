@@ -17,35 +17,49 @@ public class StatusBarManager {
         this.manager = manager;
     }
 
-    public void expandNotificationsPanel() {
+    private Method getExpandNotificationsPanelMethod() {
         if (expandNotificationsPanelMethod == null) {
             try {
                 expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
             } catch (NoSuchMethodException e) {
-                Ln.e("ServiceBarManager.expandNotificationsPanel() is not available on this device");
-                return;
+                Ln.e("Could not find method", e);
             }
         }
-        try {
-            expandNotificationsPanelMethod.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke ServiceBarManager.expandNotificationsPanel()", e);
-        }
+        return expandNotificationsPanelMethod;
     }
 
-    public void collapsePanels() {
+    private Method getCollapsePanelsMethod() {
         if (collapsePanelsMethod == null) {
             try {
                 collapsePanelsMethod = manager.getClass().getMethod("collapsePanels");
             } catch (NoSuchMethodException e) {
-                Ln.e("ServiceBarManager.collapsePanels() is not available on this device");
-                return;
+                Ln.e("Could not find method", e);
             }
         }
+        return collapsePanelsMethod;
+    }
+
+    public void expandNotificationsPanel() {
+        Method method = getExpandNotificationsPanelMethod();
+        if (method == null) {
+            return;
+        }
         try {
-            collapsePanelsMethod.invoke(manager);
+            method.invoke(manager);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke ServiceBarManager.collapsePanels()", e);
+            Ln.e("Could not invoke " + method.getName(), e);
+        }
+    }
+
+    public void collapsePanels() {
+        Method method = getCollapsePanelsMethod();
+        if (method == null) {
+            return;
+        }
+        try {
+            method.invoke(manager);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            Ln.e("Could not invoke " + method.getName(), e);
         }
     }
 }
