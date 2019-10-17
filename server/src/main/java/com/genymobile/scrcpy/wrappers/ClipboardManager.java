@@ -9,6 +9,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class ClipboardManager {
+
+    private static final String PACKAGE_NAME = "com.android.shell";
+
     private final IInterface manager;
     private Method getPrimaryClipMethod;
     private Method setPrimaryClipMethod;
@@ -45,7 +48,7 @@ public class ClipboardManager {
             return null;
         }
         try {
-            ClipData clipData = (ClipData) method.invoke(manager, "com.android.shell");
+            ClipData clipData = (ClipData) method.invoke(manager, PACKAGE_NAME);
             if (clipData == null || clipData.getItemCount() == 0) {
                 return null;
             }
@@ -63,7 +66,7 @@ public class ClipboardManager {
         }
         ClipData clipData = ClipData.newPlainText(null, text);
         try {
-            method.invoke(manager, clipData, "com.android.shell");
+            method.invoke(manager, clipData, PACKAGE_NAME);
         } catch (InvocationTargetException | IllegalAccessException e) {
             Ln.e("Could not invoke " + method.getName(), e);
         }
