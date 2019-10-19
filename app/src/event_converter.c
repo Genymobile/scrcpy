@@ -176,19 +176,30 @@ convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
     }
 }
 
+static inline void
+map_coords(int32_t *x, int32_t *y, const SDL_Rect *rect,
+           struct size frame_size) {
+    *x = (*x - rect->x) * frame_size.width / rect->w;
+    *y = (*y - rect->y) * frame_size.height / rect->h;
+}
+
 bool
-convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
-                     struct control_msg *to) {
+convert_mouse_button(const SDL_MouseButtonEvent *from, const SDL_Rect *rect,
+                     struct size frame_size, struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
 
     if (!convert_mouse_action(from->type, &to->inject_touch_event.action)) {
         return false;
     }
 
+    int32_t x = from->x;
+    int32_t y = from->y;
+    map_coords(&x, &y, rect, frame_size);
+
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.screen_size = frame_size;
+    to->inject_touch_event.position.point.x = x;
+    to->inject_touch_event.position.point.y = y;
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));
@@ -197,14 +208,18 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
 }
 
 bool
-convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
-                     struct control_msg *to) {
+convert_mouse_motion(const SDL_MouseMotionEvent *from, const SDL_Rect *rect,
+                     struct size frame_size, struct control_msg *to) {
+    int32_t x = from->x;
+    int32_t y = from->y;
+    map_coords(&x, &y, rect, frame_size);
+
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.screen_size = frame_size;
+    to->inject_touch_event.position.point.x = x;
+    to->inject_touch_event.position.point.y = y;
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
 
@@ -245,6 +260,7 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
                     struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
+    // TODO map coords
     to->inject_scroll_event.position = position;
 
     int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;

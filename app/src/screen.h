@@ -17,6 +17,7 @@ struct screen {
     struct size frame_size;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
+    struct SDL_Rect rect; // frame location and size inside the window
     bool has_frame;
     bool fullscreen;
     bool no_window;
@@ -34,9 +35,15 @@ struct screen {
         .width = 0,           \
         .height = 0,          \
     },                        \
-    .has_frame = false,   \
-    .fullscreen = false,  \
-    .no_window = false,   \
+    .rect = {                 \
+        .x = 0,               \
+        .y = 0,               \
+        .w = 0,               \
+        .h = 0,               \
+    },                        \
+    .has_frame = false,       \
+    .fullscreen = false,      \
+    .no_window = false,       \
 }
 
 // initialize default values
@@ -59,6 +66,9 @@ screen_destroy(struct screen *screen);
 // resize if necessary and write the rendered frame into the texture
 bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb);
+
+void
+screen_resized(struct screen *screen);
 
 // render the texture to the renderer
 void

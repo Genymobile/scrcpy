@@ -21,14 +21,14 @@ bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to);
 
 bool
-convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
-                     struct control_msg *to);
+convert_mouse_button(const SDL_MouseButtonEvent *from, const SDL_Rect *rect,
+                     struct size frame_size, struct control_msg *to);
 
 // the video size may be different from the real device size, so we need the
 // size to which the absolute position apply, to scale it accordingly
 bool
-convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
-                     struct control_msg *to);
+convert_mouse_motion(const SDL_MouseMotionEvent *from, const SDL_Rect *rect,
+                     struct size frame_size, struct control_msg *to);
 
 bool
 convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,

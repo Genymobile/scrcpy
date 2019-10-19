@@ -394,7 +394,7 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
         return;
     }
     struct control_msg msg;
-    if (convert_mouse_motion(event, input_manager->screen->frame_size, &msg)) {
+    if (convert_mouse_motion(event, &input_manager->screen->rect, input_manager->screen->frame_size, &msg)) {
         if (!controller_push_msg(input_manager->controller, &msg)) {
             LOGW("Could not request 'inject mouse motion event'");
         }
@@ -453,7 +453,7 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
     }
 
     struct control_msg msg;
-    if (convert_mouse_button(event, input_manager->screen->frame_size, &msg)) {
+    if (convert_mouse_button(event, &input_manager->screen->rect, input_manager->screen->frame_size, &msg)) {
         if (!controller_push_msg(input_manager->controller, &msg)) {
             LOGW("Could not request 'inject mouse button event'");
         }

@@ -145,8 +145,10 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_WINDOWEVENT:
             switch (event->window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
                     screen_render(&screen);
+                    break;
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    screen_resized(&screen);
                     break;
             }
             break;
