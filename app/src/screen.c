@@ -327,3 +327,14 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
         LOGD("Resized to pixel-perfect");
     }
 }
+
+void
+screen_handle_window_event(struct screen *screen,
+                           const SDL_WindowEvent *event) {
+    switch (event->event) {
+        case SDL_WINDOWEVENT_EXPOSED:
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            screen_render(screen);
+            break;
+    }
+}

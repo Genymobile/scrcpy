@@ -76,4 +76,8 @@ screen_resize_to_fit(struct screen *screen);
 void
 screen_resize_to_pixel_perfect(struct screen *screen);
 
+// react to window events
+void
+screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
+
 #endif
