@@ -233,6 +233,24 @@ input_manager_process_text_input(struct input_manager *im,
     }
 }
 
+static bool
+convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+
+    if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
+        return false;
+    }
+
+    uint16_t mod = from->keysym.mod;
+    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod)) {
+        return false;
+    }
+
+    to->inject_keycode.metastate = convert_meta_state(mod);
+
+    return true;
+}
+
 void
 input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event,
@@ -382,6 +400,21 @@ input_manager_process_key(struct input_manager *im,
     }
 }
 
+static bool
+convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
+                     struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
+    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
+    to->inject_touch_event.position.screen_size = screen_size;
+    to->inject_touch_event.position.point.x = from->x;
+    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.pressure = 1.f;
+    to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
+
+    return true;
+}
+
 void
 input_manager_process_mouse_motion(struct input_manager *im,
                                    const SDL_MouseMotionEvent *event) {
@@ -401,6 +434,25 @@ input_manager_process_mouse_motion(struct input_manager *im,
     }
 }
 
+static bool
+convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,
+              struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+
+    if (!convert_touch_action(from->type, &to->inject_touch_event.action)) {
+        return false;
+    }
+
+    to->inject_touch_event.pointer_id = from->fingerId;
+    to->inject_touch_event.position.screen_size = screen_size;
+    // SDL touch event coordinates are normalized in the range [0; 1]
+    to->inject_touch_event.position.point.x = from->x * screen_size.width;
+    to->inject_touch_event.position.point.y = from->y * screen_size.height;
+    to->inject_touch_event.pressure = from->pressure;
+    to->inject_touch_event.buttons = 0;
+    return true;
+}
+
 void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
@@ -417,6 +469,26 @@ is_outside_device_screen(struct input_manager *im, int x, int y)
 {
     return x < 0 || x >= im->screen->frame_size.width ||
            y < 0 || y >= im->screen->frame_size.height;
+}
+
+static bool
+convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
+                     struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+
+    if (!convert_mouse_action(from->type, &to->inject_touch_event.action)) {
+        return false;
+    }
+
+    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
+    to->inject_touch_event.position.screen_size = screen_size;
+    to->inject_touch_event.position.point.x = from->x;
+    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.pressure = 1.f;
+    to->inject_touch_event.buttons =
+        convert_mouse_buttons(SDL_BUTTON(from->button));
+
+    return true;
 }
 
 void
@@ -458,6 +530,23 @@ input_manager_process_mouse_button(struct input_manager *im,
             LOGW("Could not request 'inject mouse button event'");
         }
     }
+}
+
+static bool
+convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
+                    struct control_msg *to) {
+    to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
+
+    to->inject_scroll_event.position = position;
+
+    int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
+    // SDL behavior seems inconsistent between horizontal and vertical scrolling
+    // so reverse the horizontal
+    // <https://wiki.libsdl.org/SDL_MouseWheelEvent#Remarks>
+    to->inject_scroll_event.hscroll = -mul * from->x;
+    to->inject_scroll_event.vscroll = mul * from->y;
+
+    return true;
 }
 
 void
