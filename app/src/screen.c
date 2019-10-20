@@ -435,6 +435,11 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
 }
 
 void
+screen_window_resized(struct screen *screen) {
+    screen_render(screen);
+}
+
+void
 screen_render(struct screen *screen) {
     SDL_RenderClear(screen->renderer);
     if (screen->rotation == 0) {
@@ -532,7 +537,7 @@ screen_handle_window_event(struct screen *screen,
                 // window is maximized or fullscreen is enabled.
                 screen->windowed_window_size = get_window_size(screen->window);
             }
-            screen_render(screen);
+            screen_window_resized(screen);
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
             // The backup size must be non-nul.
