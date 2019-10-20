@@ -149,6 +149,32 @@ get_initial_optimal_size(struct size frame_size, uint16_t req_width,
     return window_size;
 }
 
+static void
+update_frame_rect(struct screen *screen) {
+    int ww;
+    int wh;
+    SDL_GL_GetDrawableSize(screen->window, &ww, &wh);
+
+    // 32 bits because we need to multiply two 16 bits values
+    uint32_t fw = screen->frame_size.width;
+    uint32_t fh = screen->frame_size.height;
+
+    SDL_Rect *rect = &screen->rect;
+
+    bool keep_width = fw * wh > fh * ww;
+    if (keep_width) {
+        rect->x = 0;
+        rect->w = ww;
+        rect->h = ww * fh / fw;
+        rect->y = (wh - rect->h) / 2;
+    } else {
+        rect->y = 0;
+        rect->h = wh;
+        rect->w = wh * fw / fh;
+        rect->x = (ww - rect->w) / 2;
+    }
+}
+
 void
 screen_init(struct screen *screen) {
     *screen = (struct screen) SCREEN_INITIALIZER;
@@ -206,13 +232,6 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
-    if (SDL_RenderSetLogicalSize(screen->renderer, frame_size.width,
-                                 frame_size.height)) {
-        LOGE("Could not set renderer logical size: %s", SDL_GetError());
-        screen_destroy(screen);
-        return false;
-    }
-
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
@@ -258,12 +277,6 @@ static bool
 prepare_for_frame(struct screen *screen, struct size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
-        if (SDL_RenderSetLogicalSize(screen->renderer, new_frame_size.width,
-                                     new_frame_size.height)) {
-            LOGE("Could not set renderer logical size: %s", SDL_GetError());
-            return false;
-        }
-
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
@@ -309,6 +322,7 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
         mutex_unlock(vb->mutex);
         return false;
     }
+    update_frame_rect(screen);
     update_texture(screen, frame);
     mutex_unlock(vb->mutex);
 
@@ -318,13 +332,14 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
 
 void
 screen_window_resized(struct screen *screen) {
+    update_frame_rect(screen);
     screen_render(screen);
 }
 
 void
 screen_render(struct screen *screen) {
     SDL_RenderClear(screen->renderer);
-    SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+    SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
     SDL_RenderPresent(screen->renderer);
 }
 
@@ -416,4 +431,12 @@ screen_handle_window_event(struct screen *screen,
             apply_windowed_size(screen);
             break;
     }
+}
+
+struct point
+screen_convert_to_frame_coords(struct screen *screen, float x, float y) {
+    struct point out;
+    out.x = (x - screen->rect.x) * screen->frame_size.width / screen->rect.w;
+    out.y = (y - screen->rect.y) * screen->frame_size.height / screen->rect.h;
+    return out;
 }

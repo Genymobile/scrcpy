@@ -22,6 +22,7 @@ struct screen {
     // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
     // able to revert the size to its non-maximized value.
     struct size windowed_window_size_backup;
+    struct SDL_Rect rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -43,6 +44,12 @@ struct screen {
     .windowed_window_size_backup = { \
         .width = 0, \
         .height = 0, \
+    }, \
+    .rect = { \
+        .x = 0, \
+        .y = 0, \
+        .w = 0, \
+        .h = 0, \
     }, \
     .has_frame = false, \
     .fullscreen = false, \
@@ -97,5 +104,10 @@ screen_resize_to_pixel_perfect(struct screen *screen);
 // react to window events
 void
 screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
+
+// convert point from window coordinates to frame coordinates
+// x and y are expressed in pixels (float to allow partial pixels)
+struct point
+screen_convert_to_frame_coords(struct screen *screen, float x, float y);
 
 #endif
