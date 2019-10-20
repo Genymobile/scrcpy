@@ -16,7 +16,7 @@
 
 // get the window size in a struct size
 static struct size
-get_native_window_size(SDL_Window *window) {
+get_window_size(SDL_Window *window) {
     int width;
     int height;
     SDL_GetWindowSize(window, &width, &height);
@@ -29,11 +29,11 @@ get_native_window_size(SDL_Window *window) {
 
 // get the windowed window size
 static struct size
-get_window_size(const struct screen *screen) {
+get_windowed_window_size(const struct screen *screen) {
     if (screen->fullscreen) {
         return screen->windowed_window_size;
     }
-    return get_native_window_size(screen->window);
+    return get_window_size(screen->window);
 }
 
 // set the window size to be applied when fullscreen is disabled
@@ -112,8 +112,8 @@ get_optimal_size(struct size current_size, struct size frame_size) {
 // same as get_optimal_size(), but read the current size from the window
 static inline struct size
 get_optimal_window_size(const struct screen *screen, struct size frame_size) {
-    struct size current_size = get_window_size(screen);
-    return get_optimal_size(current_size, frame_size);
+    struct size windowed_size = get_windowed_window_size(screen);
+    return get_optimal_size(windowed_size, frame_size);
 }
 
 // initially, there is no current size, so use the frame size as current size
@@ -229,11 +229,11 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
-        struct size current_size = get_window_size(screen);
+        struct size windowed_size = get_windowed_window_size(screen);
         struct size target_size = {
-            (uint32_t) current_size.width * new_frame_size.width
+            (uint32_t) windowed_size.width * new_frame_size.width
                     / screen->frame_size.width,
-            (uint32_t) current_size.height * new_frame_size.height
+            (uint32_t) windowed_size.height * new_frame_size.height
                     / screen->frame_size.height,
         };
         target_size = get_optimal_size(target_size, new_frame_size);
@@ -289,7 +289,7 @@ void
 screen_switch_fullscreen(struct screen *screen) {
     if (!screen->fullscreen) {
         // going to fullscreen, store the current windowed window size
-        screen->windowed_window_size = get_native_window_size(screen->window);
+        screen->windowed_window_size = get_window_size(screen->window);
     }
     uint32_t new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
     if (SDL_SetWindowFullscreen(screen->window, new_mode)) {
