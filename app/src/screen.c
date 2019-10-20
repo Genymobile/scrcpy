@@ -279,6 +279,11 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
 }
 
 void
+screen_window_resized(struct screen *screen) {
+    screen_render(screen);
+}
+
+void
 screen_render(struct screen *screen) {
     SDL_RenderClear(screen->renderer);
     SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);

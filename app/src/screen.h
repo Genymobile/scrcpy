@@ -60,6 +60,10 @@ screen_destroy(struct screen *screen);
 bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb);
 
+// update content after window resizing
+void
+screen_window_resized(struct screen *screen);
+
 // render the texture to the renderer
 void
 screen_render(struct screen *screen);
