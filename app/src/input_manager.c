@@ -212,7 +212,7 @@ clipboard_paste(struct controller *controller) {
 }
 
 void
-input_manager_process_text_input(struct input_manager *input_manager,
+input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
     char c = event->text[0];
     if (isalpha(c) || c == ' ') {
@@ -227,14 +227,14 @@ input_manager_process_text_input(struct input_manager *input_manager,
         LOGW("Could not strdup input text");
         return;
     }
-    if (!controller_push_msg(input_manager->controller, &msg)) {
+    if (!controller_push_msg(im->controller, &msg)) {
         SDL_free(msg.inject_text.text);
         LOGW("Could not request 'inject text'");
     }
 }
 
 void
-input_manager_process_key(struct input_manager *input_manager,
+input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event,
                           bool control) {
     // control: indicates the state of the command-line option --no-control
@@ -261,7 +261,7 @@ input_manager_process_key(struct input_manager *input_manager,
         return;
     }
 
-    struct controller *controller = input_manager->controller;
+    struct controller *controller = im->controller;
 
     // capture all Ctrl events
     if (ctrl || cmd) {
@@ -336,23 +336,23 @@ input_manager_process_key(struct input_manager *input_manager,
                 return;
             case SDLK_f:
                 if (!shift && cmd && !repeat && down) {
-                    screen_switch_fullscreen(input_manager->screen);
+                    screen_switch_fullscreen(im->screen);
                 }
                 return;
             case SDLK_x:
                 if (!shift && cmd && !repeat && down) {
-                    screen_resize_to_fit(input_manager->screen);
+                    screen_resize_to_fit(im->screen);
                 }
                 return;
             case SDLK_g:
                 if (!shift && cmd && !repeat && down) {
-                    screen_resize_to_pixel_perfect(input_manager->screen);
+                    screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
             case SDLK_i:
                 if (!shift && cmd && !repeat && down) {
                     struct fps_counter *fps_counter =
-                        input_manager->video_buffer->fps_counter;
+                        im->video_buffer->fps_counter;
                     switch_fps_counter_state(fps_counter);
                 }
                 return;
@@ -383,7 +383,7 @@ input_manager_process_key(struct input_manager *input_manager,
 }
 
 void
-input_manager_process_mouse_motion(struct input_manager *input_manager,
+input_manager_process_mouse_motion(struct input_manager *im,
                                    const SDL_MouseMotionEvent *event) {
     if (!event->state) {
         // do not send motion events when no button is pressed
@@ -394,33 +394,33 @@ input_manager_process_mouse_motion(struct input_manager *input_manager,
         return;
     }
     struct control_msg msg;
-    if (convert_mouse_motion(event, input_manager->screen->frame_size, &msg)) {
-        if (!controller_push_msg(input_manager->controller, &msg)) {
+    if (convert_mouse_motion(event, im->screen->frame_size, &msg)) {
+        if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse motion event'");
         }
     }
 }
 
 void
-input_manager_process_touch(struct input_manager *input_manager,
+input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
     struct control_msg msg;
-    if (convert_touch(event, input_manager->screen->frame_size, &msg)) {
-        if (!controller_push_msg(input_manager->controller, &msg)) {
+    if (convert_touch(event, im->screen->frame_size, &msg)) {
+        if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject touch event'");
         }
     }
 }
 
 static bool
-is_outside_device_screen(struct input_manager *input_manager, int x, int y)
+is_outside_device_screen(struct input_manager *im, int x, int y)
 {
-    return x < 0 || x >= input_manager->screen->frame_size.width ||
-           y < 0 || y >= input_manager->screen->frame_size.height;
+    return x < 0 || x >= im->screen->frame_size.width ||
+           y < 0 || y >= im->screen->frame_size.height;
 }
 
 void
-input_manager_process_mouse_button(struct input_manager *input_manager,
+input_manager_process_mouse_button(struct input_manager *im,
                                    const SDL_MouseButtonEvent *event,
                                    bool control) {
     if (event->which == SDL_TOUCH_MOUSEID) {
@@ -429,19 +429,19 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
     }
     if (event->type == SDL_MOUSEBUTTONDOWN) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(input_manager->controller);
+            press_back_or_turn_screen_on(im->controller);
             return;
         }
         if (control && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(input_manager->controller, ACTION_DOWN | ACTION_UP);
+            action_home(im->controller, ACTION_DOWN | ACTION_UP);
             return;
         }
         // double-click on black borders resize to fit the device screen
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
             bool outside =
-                is_outside_device_screen(input_manager, event->x, event->y);
+                is_outside_device_screen(im, event->x, event->y);
             if (outside) {
-                screen_resize_to_fit(input_manager->screen);
+                screen_resize_to_fit(im->screen);
                 return;
             }
         }
@@ -453,23 +453,23 @@ input_manager_process_mouse_button(struct input_manager *input_manager,
     }
 
     struct control_msg msg;
-    if (convert_mouse_button(event, input_manager->screen->frame_size, &msg)) {
-        if (!controller_push_msg(input_manager->controller, &msg)) {
+    if (convert_mouse_button(event, im->screen->frame_size, &msg)) {
+        if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse button event'");
         }
     }
 }
 
 void
-input_manager_process_mouse_wheel(struct input_manager *input_manager,
+input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
     struct position position = {
-        .screen_size = input_manager->screen->frame_size,
-        .point = get_mouse_point(input_manager->screen),
+        .screen_size = im->screen->frame_size,
+        .point = get_mouse_point(im->screen),
     };
     struct control_msg msg;
     if (convert_mouse_wheel(event, position, &msg)) {
-        if (!controller_push_msg(input_manager->controller, &msg)) {
+        if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse wheel event'");
         }
     }
