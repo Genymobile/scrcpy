@@ -401,12 +401,12 @@ input_manager_process_key(struct input_manager *im,
 }
 
 static bool
-convert_mouse_motion(const SDL_MouseMotionEvent *from, struct size screen_size,
+convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
                      struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen_size;
+    to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point.x = from->x;
     to->inject_touch_event.position.point.y = from->y;
     to->inject_touch_event.pressure = 1.f;
@@ -427,7 +427,7 @@ input_manager_process_mouse_motion(struct input_manager *im,
         return;
     }
     struct control_msg msg;
-    if (convert_mouse_motion(event, im->screen->frame_size, &msg)) {
+    if (convert_mouse_motion(event, im->screen, &msg)) {
         if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse motion event'");
         }
@@ -435,7 +435,7 @@ input_manager_process_mouse_motion(struct input_manager *im,
 }
 
 static bool
-convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,
+convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
               struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
 
@@ -443,11 +443,13 @@ convert_touch(const SDL_TouchFingerEvent *from, struct size screen_size,
         return false;
     }
 
+    struct size frame_size = screen->frame_size;
+
     to->inject_touch_event.pointer_id = from->fingerId;
-    to->inject_touch_event.position.screen_size = screen_size;
+    to->inject_touch_event.position.screen_size = frame_size;
     // SDL touch event coordinates are normalized in the range [0; 1]
-    to->inject_touch_event.position.point.x = from->x * screen_size.width;
-    to->inject_touch_event.position.point.y = from->y * screen_size.height;
+    to->inject_touch_event.position.point.x = from->x * frame_size.width;
+    to->inject_touch_event.position.point.y = from->y * frame_size.height;
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
     return true;
@@ -457,7 +459,7 @@ void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
     struct control_msg msg;
-    if (convert_touch(event, im->screen->frame_size, &msg)) {
+    if (convert_touch(event, im->screen, &msg)) {
         if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject touch event'");
         }
@@ -472,7 +474,7 @@ is_outside_device_screen(struct input_manager *im, int x, int y)
 }
 
 static bool
-convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
+convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
                      struct control_msg *to) {
     to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
 
@@ -481,7 +483,7 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct size screen_size,
     }
 
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen_size;
+    to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point.x = from->x;
     to->inject_touch_event.position.point.y = from->y;
     to->inject_touch_event.pressure = 1.f;
@@ -525,7 +527,7 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 
     struct control_msg msg;
-    if (convert_mouse_button(event, im->screen->frame_size, &msg)) {
+    if (convert_mouse_button(event, im->screen, &msg)) {
         if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse button event'");
         }
@@ -533,8 +535,13 @@ input_manager_process_mouse_button(struct input_manager *im,
 }
 
 static bool
-convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
+convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
                     struct control_msg *to) {
+    struct position position = {
+        .screen_size = screen->frame_size,
+        .point = get_mouse_point(screen),
+    };
+
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
     to->inject_scroll_event.position = position;
@@ -552,12 +559,8 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct position position,
 void
 input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
-    struct position position = {
-        .screen_size = im->screen->frame_size,
-        .point = get_mouse_point(im->screen),
-    };
     struct control_msg msg;
-    if (convert_mouse_wheel(event, position, &msg)) {
+    if (convert_mouse_wheel(event, im->screen, &msg)) {
         if (!controller_push_msg(im->controller, &msg)) {
             LOGW("Could not request 'inject mouse wheel event'");
         }
