@@ -7,33 +7,6 @@
 #include "lock_util.h"
 #include "log.h"
 
-// Convert window coordinates (as provided by SDL_GetMouseState() to renderer
-// coordinates (as provided in SDL mouse events)
-//
-// See my question:
-// <https://stackoverflow.com/questions/49111054/how-to-get-mouse-position-on-mouse-wheel-event>
-static void
-convert_to_renderer_coordinates(SDL_Renderer *renderer, int *x, int *y) {
-    SDL_Rect viewport;
-    float scale_x, scale_y;
-    SDL_RenderGetViewport(renderer, &viewport);
-    SDL_RenderGetScale(renderer, &scale_x, &scale_y);
-    *x = (int) (*x / scale_x) - viewport.x;
-    *y = (int) (*y / scale_y) - viewport.y;
-}
-
-static struct point
-get_mouse_point(struct screen *screen) {
-    int x;
-    int y;
-    SDL_GetMouseState(&x, &y);
-    convert_to_renderer_coordinates(screen->renderer, &x, &y);
-    return (struct point) {
-        .x = x,
-        .y = y,
-    };
-}
-
 static const int ACTION_DOWN = 1;
 static const int ACTION_UP = 1 << 1;
 
@@ -407,8 +380,8 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
 
@@ -444,12 +417,14 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
     }
 
     struct size frame_size = screen->frame_size;
+    // SDL touch event coordinates are normalized in the range [0; 1]
+    float x = from->x * frame_size.width;
+    float y = from->y * frame_size.height;
 
     to->inject_touch_event.pointer_id = from->fingerId;
     to->inject_touch_event.position.screen_size = frame_size;
-    // SDL touch event coordinates are normalized in the range [0; 1]
-    to->inject_touch_event.position.point.x = from->x * frame_size.width;
-    to->inject_touch_event.position.point.y = from->y * frame_size.height;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, x, y);
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
     return true;
@@ -484,8 +459,8 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
 
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));
@@ -537,9 +512,15 @@ input_manager_process_mouse_button(struct input_manager *im,
 static bool
 convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
                     struct control_msg *to) {
+
+    // mouse_x and mouse_y are expressed in pixels relatice to the window
+    int mouse_x;
+    int mouse_y;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+
     struct position position = {
         .screen_size = screen->frame_size,
-        .point = get_mouse_point(screen),
+        .point = screen_convert_to_frame_coords(screen, mouse_x, mouse_y),
     };
 
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;

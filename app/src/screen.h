@@ -17,6 +17,7 @@ struct screen {
     struct size frame_size;
     //used only in fullscreen mode to know the windowed window size
     struct size windowed_window_size;
+    struct SDL_Rect rect;
     bool has_frame;
     bool fullscreen;
     bool no_window;
@@ -34,9 +35,15 @@ struct screen {
         .width = 0,           \
         .height = 0,          \
     },                        \
-    .has_frame = false,   \
-    .fullscreen = false,  \
-    .no_window = false,   \
+    .rect = {                 \
+        .x = 0,               \
+        .y = 0,               \
+        .w = 0,               \
+        .h = 0,               \
+    },                        \
+    .has_frame = false,       \
+    .fullscreen = false,      \
+    .no_window = false,       \
 }
 
 // initialize default values
@@ -79,5 +86,10 @@ screen_resize_to_fit(struct screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void
 screen_resize_to_pixel_perfect(struct screen *screen);
+
+// convert point from window coordinates to frame coordinates
+// x and y are expressed in pixels (float to allow partial pixels)
+struct point
+screen_convert_to_frame_coords(struct screen *screen, float x, float y);
 
 #endif
