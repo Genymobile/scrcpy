@@ -149,10 +149,10 @@ convert_mouse_buttons(uint32_t state) {
     if (state & SDL_BUTTON_MMASK) {
         buttons |= AMOTION_EVENT_BUTTON_TERTIARY;
     }
-    if (state & SDL_BUTTON_X1) {
+    if (state & SDL_BUTTON_X1MASK) {
         buttons |= AMOTION_EVENT_BUTTON_BACK;
     }
-    if (state & SDL_BUTTON_X2) {
+    if (state & SDL_BUTTON_X2MASK) {
         buttons |= AMOTION_EVENT_BUTTON_FORWARD;
     }
     return buttons;
