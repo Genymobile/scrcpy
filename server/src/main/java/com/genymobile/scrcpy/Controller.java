@@ -82,7 +82,7 @@ public class Controller {
                 injectText(msg.getText());
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), 0);
+                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), msg.getButtons());
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
@@ -177,7 +177,7 @@ public class Controller {
         }
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties,
-                pointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+                pointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
