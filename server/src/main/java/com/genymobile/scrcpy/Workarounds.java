@@ -1,6 +1,11 @@
 package com.genymobile.scrcpy;
 
+import android.annotation.SuppressLint;
+import android.content.pm.ApplicationInfo;
 import android.os.Looper;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 
 public final class Workarounds {
     private Workarounds() {
@@ -17,5 +22,43 @@ public final class Workarounds {
         //    on a null object reference"
         // <https://github.com/Genymobile/scrcpy/issues/921>
         Looper.prepareMainLooper();
+    }
+
+    @SuppressLint("PrivateApi")
+    public static void fillAppInfo() {
+        try {
+            // ActivityThread activityThread = new ActivityThread();
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
+            activityThreadConstructor.setAccessible(true);
+            Object activityThread = activityThreadConstructor.newInstance();
+
+            // ActivityThread.sCurrentActivityThread = activityThread;
+            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
+            sCurrentActivityThreadField.setAccessible(true);
+            sCurrentActivityThreadField.set(null, activityThread);
+
+            // ActivityThread.AppBindData appBindData = new ActivityThread.AppBindData();
+            Class<?> appBindDataClass = Class.forName("android.app.ActivityThread$AppBindData");
+            Constructor<?> appBindDataConstructor = appBindDataClass.getDeclaredConstructor();
+            appBindDataConstructor.setAccessible(true);
+            Object appBindData = appBindDataConstructor.newInstance();
+
+            ApplicationInfo applicationInfo = new ApplicationInfo();
+            applicationInfo.packageName = "com.genymobile.scrcpy";
+
+            // appBindData.appInfo = applicationInfo;
+            Field appInfo = appBindDataClass.getDeclaredField("appInfo");
+            appInfo.setAccessible(true);
+            appInfo.set(appBindData, applicationInfo);
+
+            // activityThread.mBoundApplication = appBindData;
+            Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
+            mBoundApplicationField.setAccessible(true);
+            mBoundApplicationField.set(activityThread, appBindData);
+        } catch (Throwable throwable) {
+            // this is a workaround, so failing is not an error
+            Ln.w("Could not fill app info: " + throwable.getMessage());
+        }
     }
 }

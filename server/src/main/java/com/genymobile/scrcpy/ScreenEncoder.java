@@ -55,6 +55,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         Workarounds.prepareMainLooper();
+        Workarounds.fillAppInfo();
 
         MediaFormat format = createFormat(bitRate, frameRate, iFrameInterval);
         device.setRotationListener(this);
