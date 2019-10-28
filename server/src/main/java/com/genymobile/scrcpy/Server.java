@@ -1,9 +1,16 @@
 package com.genymobile.scrcpy;
 
+import android.content.pm.ApplicationInfo;
 import android.graphics.Rect;
+import android.os.Build;
+import android.os.Looper;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 public final class Server {
 
@@ -128,8 +135,52 @@ public final class Server {
             }
         });
 
+        Ln.i("args = " + Arrays.asList(args));
+
+        if (Build.PRODUCT.contains("meizu_16th")) {
+            workaroundFor16th();
+        }
+
         unlinkSelf();
         Options options = createOptions(args);
         scrcpy(options);
+
+    }
+
+    private static void workaroundFor16th() {
+        Ln.d("workaroundFor16th in");
+        Looper.prepareMainLooper();
+
+        // mock to new a ActivityThread instance
+        try {
+            Class<?> ActivityThreadClass = Class.forName("android.app.ActivityThread");
+            Method currentPackageName = ActivityThreadClass.getMethod("currentPackageName");
+            currentPackageName.setAccessible(true);
+
+            Field sCurrentActivityThreadField = ActivityThreadClass.getDeclaredField("sCurrentActivityThread");
+            Field mBoundApplicationField = ActivityThreadClass.getDeclaredField("mBoundApplication");
+
+            sCurrentActivityThreadField.setAccessible(true);
+            mBoundApplicationField.setAccessible(true);
+
+            Constructor<?> activityThreadConstructor = ActivityThreadClass.getDeclaredConstructor();
+            activityThreadConstructor.setAccessible(true);
+            sCurrentActivityThreadField.set(null, activityThreadConstructor.newInstance());
+            Object sCurrentActivityThreadObject = sCurrentActivityThreadField.get(null);
+
+            Class<?> AppBindDataClass = Class.forName("android.app.ActivityThread$AppBindData");
+            Field appInfo = AppBindDataClass.getDeclaredField("appInfo");
+            appInfo.setAccessible(true);
+            Constructor<?> appBindDataConstructor = AppBindDataClass.getDeclaredConstructor();
+            appBindDataConstructor.setAccessible(true);
+            Object appBindDataObject = appBindDataConstructor.newInstance();
+            ApplicationInfo applicationInfo = new ApplicationInfo();
+            applicationInfo.packageName = "mock.pkg";
+            appInfo.set(appBindDataObject, applicationInfo);
+            mBoundApplicationField.setAccessible(true);
+            mBoundApplicationField.set(sCurrentActivityThreadObject, appBindDataObject);
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+        }
     }
 }
