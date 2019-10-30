@@ -59,7 +59,7 @@ static void usage(const char *arg0) {
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
-        "    -F, --record-format\n"
+        "    -F, --record-format format\n"
         "        Force recording format (either mp4 or mkv).\n"
         "\n"
         "    -h, --help\n"
