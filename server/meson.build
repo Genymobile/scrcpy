@@ -4,7 +4,7 @@ prebuilt_server = get_option('prebuilt_server')
 if prebuilt_server == ''
     custom_target('scrcpy-server',
                   build_always: true,  # gradle is responsible for tracking source changes
-                  output: 'scrcpy-server.jar',
+                  output: 'scrcpy-server',
                   command: [find_program('./scripts/build-wrapper.sh'), meson.current_source_dir(), '@OUTPUT@', get_option('buildtype')],
                   console: true,
                   install: true,
@@ -16,7 +16,7 @@ else
     endif
     custom_target('scrcpy-server-prebuilt',
                   input: prebuilt_server,
-                  output: 'scrcpy-server.jar',
+                  output: 'scrcpy-server',
                   command: ['cp', '@INPUT@', '@OUTPUT@'],
                   install: true,
                   install_dir: 'share/scrcpy')

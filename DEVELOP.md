@@ -3,7 +3,7 @@
 ## Overview
 
 This application is composed of two parts:
- - the server (`scrcpy-server.jar`), to be executed on the device,
+ - the server (`scrcpy-server`), to be executed on the device,
  - the client (the `scrcpy` binary), executed on the host computer.
 
 The client is responsible to push the server to the device and start its
@@ -49,7 +49,7 @@ application may not replace the server just before the client executes it._
 Instead of a raw _dex_ file, `app_process` accepts a _jar_ containing
 `classes.dex` (e.g. an [APK]). For simplicity, and to benefit from the gradle
 build system, the server is built to an (unsigned) APK (renamed to
-`scrcpy-server.jar`).
+`scrcpy-server`).
 
 [dex]: https://en.wikipedia.org/wiki/Dalvik_(software)
 [apk]: https://en.wikipedia.org/wiki/Android_application_package

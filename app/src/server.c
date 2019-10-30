@@ -13,7 +13,7 @@
 #include "net.h"
 
 #define SOCKET_NAME "scrcpy"
-#define SERVER_FILENAME "scrcpy-server.jar"
+#define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
 #define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
@@ -32,7 +32,7 @@ get_server_path(void) {
     // the absolute path is hardcoded
     return DEFAULT_SERVER_PATH;
 #else
-    // use scrcpy-server.jar in the same directory as the executable
+    // use scrcpy-server in the same directory as the executable
     char *executable_path = get_executable_path();
     if (!executable_path) {
         LOGE("Could not get executable path, "

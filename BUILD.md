@@ -225,7 +225,7 @@ sudo ninja install    # without sudo on Windows
 This installs two files:
 
  - `/usr/local/bin/scrcpy`
- - `/usr/local/share/scrcpy/scrcpy-server.jar`
+ - `/usr/local/share/scrcpy/scrcpy-server`
 
 Just remove them to "uninstall" the application.
 
@@ -244,7 +244,7 @@ configuration:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
-    -Dprebuilt_server=/path/to/scrcpy-server.jar
+    -Dprebuilt_server=/path/to/scrcpy-server
 cd x
 ninja
 sudo ninja install

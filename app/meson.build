@@ -93,7 +93,7 @@ conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
 
-# build a "portable" version (with scrcpy-server.jar accessible from the same
+# build a "portable" version (with scrcpy-server accessible from the same
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 

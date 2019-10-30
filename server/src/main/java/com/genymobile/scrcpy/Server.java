@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public final class Server {
 
-    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
+    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server";
 
     private Server() {
         // not instantiable
