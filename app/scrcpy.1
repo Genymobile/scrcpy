@@ -1,0 +1,231 @@
+.TH "scrcpy" "1"
+.SH NAME
+scrcpy \- Display and control your Android device
+
+
+.SH SYNOPSIS
+.B scrcpy
+.RI [ options ]
+
+
+.SH DESCRIPTION
+.B scrcpy
+provides display and control of Android devices connected on USB (or over TCP/IP). It does not require any root access.
+
+
+.SH OPTIONS
+
+.TP
+.BI "\-b, \-\-bit\-rate " value
+Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
+
+Default is 8000000.
+
+.TP
+.BI "\-c, \-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
+Crop the device screen on the server.
+
+The values are expressed in the device natural orientation (typically, portrait for a phone, landscape for a tablet). Any
+.B \-\-max\-size
+value is computed on the cropped size.
+
+.TP
+.B \-f, \-\-fullscreen
+Start in fullscreen.
+
+.TP
+.BI "\-F, \-\-record\-format " format
+Force recording format (either mp4 or mkv).
+
+.TP
+.B \-h, \-\-help
+Print this help.
+
+.TP
+.BI "\-m, \-\-max\-size " value
+Limit both the width and height of the video to \fIvalue\fR. The other dimension is computed so that the device aspect\-ratio is preserved.
+
+Default is 0 (unlimited).
+
+.TP
+.B \-n, \-\-no\-control
+Disable device control (mirror the device in read\-only).
+
+.TP
+.B \-N, \-\-no\-display
+Do not display device (only when screen recording is enabled).
+
+.TP
+.BI "\-p, \-\-port " port
+Set the TCP port the client listens on.
+
+Default is 27183.
+
+.TP
+.BI "\-\-push\-target " path
+Set the target directory for pushing files to the device by drag & drop. It is passed as\-is to "adb push".
+
+Default is "/sdcard/".
+
+.TP
+.BI "\-r, \-\-record " file
+Record screen to
+.IR file .
+
+The format is determined by the
+.B \-F/\-\-record\-format
+option if set, or by the file extension (.mp4 or .mkv).
+
+.TP
+.B \-\-render\-expired\-frames
+By default, to minimize latency, scrcpy always renders the last available decoded frame, and drops any previous ones. This flag forces to render all frames, at a cost of a possible increased latency.
+
+.TP
+.BI "\-s, \-\-serial " number
+The device serial number. Mandatory only if several devices are connected to adb.
+
+.TP
+.B \-S, \-\-turn\-screen\-off
+Turn the device screen off immediately.
+
+.TP
+.B \-t, \-\-show\-touches
+Enable "show touches" on start, disable on quit.
+
+It only shows physical touches (not clicks from scrcpy).
+
+.TP
+.B \-T, \-\-always\-on\-top
+Make scrcpy window always on top (above other windows).
+
+.TP
+.B \-v, \-\-version
+Print the version of scrcpy.
+
+.TP
+.B \-\-window\-title text
+Set a custom window title.
+
+
+.SH SHORTCUTS
+
+.TP
+.B Ctrl+f
+switch fullscreen mode
+
+.TP
+.B Ctrl+g
+resize window to 1:1 (pixel\-perfect)
+
+.TP
+.B Ctrl+x, Double\-click on black borders
+resize window to remove black borders
+
+.TP
+.B Ctrl+h, Home, Middle\-click
+Click on HOME
+
+.TP
+.B Ctrl+b, Ctrl+Backspace, Right\-click (when screen is on)
+Click on BACK
+
+.TP
+.B Ctrl+s
+Click on APP_SWITCH
+
+.TP
+.B Ctrl+m
+Click on MENU
+
+.TP
+.B Ctrl+Up
+Click on VOLUME_UP
+
+.TP
+.B Ctrl+Down
+Click on VOLUME_DOWN
+
+.TP
+.B Ctrl+p
+Click on POWER (turn screen on/off)
+
+.TP
+.B Right\-click (when screen is off)
+turn screen on
+
+.TP
+.B Ctrl+o
+turn device screen off (keep mirroring)
+
+.TP
+.B Ctrl+n
+expand notification panel
+
+.TP
+.B Ctrl+Shift+n
+collapse notification panel
+
+.TP
+.B Ctrl+c
+copy device clipboard to computer
+
+.TP
+.B Ctrl+v
+paste computer clipboard to device
+
+.TP
+.B Ctrl+Shift+v
+copy computer clipboard to device
+
+.TP
+.B Ctrl+i
+enable/disable FPS counter (print frames/second in logs)
+
+.TP
+.B Drag & drop APK file
+install APK from computer
+
+
+.SH Environment variables
+
+.TP
+.B ADB
+Specify the path to adb.
+
+.TP
+.B SCRCPY_SERVER_PATH
+Specify the path to server binary.
+
+
+.SH AUTHORS
+.B scrcpy
+is written by Romain Vimont.
+
+This manual page was written by
+.MT mmyangfl@gmail.com
+Yangfl
+.ME
+for the Debian Project (and may be used by others).
+
+
+.SH "REPORTING BUGS"
+Report bugs to
+.UR https://github.com/Genymobile/scrcpy/issues
+.UE .
+
+.SH COPYRIGHT
+Copyright \(co 2018 Genymobile
+.UR https://www.genymobile.com
+Genymobile
+.UE
+
+Copyright \(co 2018\-2019
+.MT rom@rom1v.com
+Romain Vimont
+.ME
+
+Licensed under the Apache License, Version 2.0.
+
+.SH WWW
+.UR https://github.com/Genymobile/scrcpy
+.UE
