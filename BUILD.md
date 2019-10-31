@@ -195,8 +195,7 @@ Then, build:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true
-cd x
-ninja
+ninja -Cx
 ```
 
 _Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
@@ -219,7 +218,7 @@ To run without installing:
 After a successful build, you can install _scrcpy_ on the system:
 
 ```bash
-sudo ninja install    # without sudo on Windows
+sudo ninja -Cx install    # without sudo on Windows
 ```
 
 This installs two files:
@@ -245,7 +244,6 @@ configuration:
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
     -Dprebuilt_server=/path/to/scrcpy-server.jar
-cd x
-ninja
-sudo ninja install
+ninja -Cx
+sudo ninja -Cx install
 ```
