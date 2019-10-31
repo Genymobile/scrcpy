@@ -135,6 +135,9 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
     recorder->ctx->oformat = (AVOutputFormat *) format;
 
+    av_dict_set(&recorder->ctx->metadata, "comment",
+                "Recorded by scrcpy " SCRCPY_VERSION, 0);
+
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
         avformat_free_context(recorder->ctx);
