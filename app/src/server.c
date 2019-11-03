@@ -124,6 +124,11 @@ execute_server(struct server *server, const struct server_params *params) {
         "shell",
         "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
         "app_process",
+#ifdef SERVER_DEBUGGER
+# define SERVER_DEBUGGER_PORT "5005"
+        "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
+            SERVER_DEBUGGER_PORT,
+#endif
         "/", // unused
         "com.genymobile.scrcpy.Server",
         max_size_string,
@@ -133,6 +138,17 @@ execute_server(struct server *server, const struct server_params *params) {
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
     };
+#ifdef SERVER_DEBUGGER
+    LOGI("Server debugger waiting for a client on device port "
+         SERVER_DEBUGGER_PORT "...");
+    // From the computer, run
+    //     adb forward tcp:5005 tcp:5005
+    // Then, from Android Studio: Run > Debug > Edit configurations...
+    // On the left, click on '+', "Remote", with:
+    //     Host: localhost
+    //     Port: 5005
+    // Then click on "Debug"
+#endif
     return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 

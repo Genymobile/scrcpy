@@ -115,6 +115,9 @@ conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 # disable console on Windows
 conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
+# run a server debugger and wait for a client to be attached
+conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')

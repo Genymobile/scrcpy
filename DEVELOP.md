@@ -268,3 +268,33 @@ For more details, go read the code!
 
 If you find a bug, or have an awesome idea to implement, please discuss and
 contribute ;-)
+
+
+### Debug the server
+
+The server is pushed to the device by the client on startup.
+
+To debug it, enable the server debugger during configuration:
+
+```bash
+meson x -Dserver_debugger=true
+# or, if x is already configured
+meson configure x -Dserver_debugger=true
+```
+
+Then recompile.
+
+When you start scrcpy, it will start a debugger on port 5005 on the device.
+Redirect that port to the computer:
+
+```bash
+adb forward tcp:5005 tcp:5005
+```
+
+In Android Studio, _Run_ > _Debug_ > _Edit configurations..._ On the left, click on
+`+`, _Remote_, and fill the form:
+
+ - Host: `localhost`
+ - Port: `5005`
+
+Then click on _Debug_.
