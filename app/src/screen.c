@@ -122,9 +122,30 @@ get_optimal_window_size(const struct screen *screen, struct size frame_size) {
 }
 
 // initially, there is no current size, so use the frame size as current size
+// req_width and req_height, if not 0, are the sizes requested by the user
 static inline struct size
-get_initial_optimal_size(struct size frame_size) {
-    return get_optimal_size(frame_size, frame_size);
+get_initial_optimal_size(struct size frame_size, uint16_t req_width,
+                         uint16_t req_height) {
+    struct size window_size;
+    if (!req_width && !req_height) {
+        window_size = get_optimal_size(frame_size, frame_size);
+    } else {
+        if (req_width) {
+            window_size.width = req_width;
+        } else {
+            // compute from the requested height
+            window_size.width = (uint32_t) req_height * frame_size.width
+                              / frame_size.height;
+        }
+        if (req_height) {
+            window_size.height = req_height;
+        } else {
+            // compute from the requested width
+            window_size.height = (uint32_t) req_width * frame_size.height
+                               / frame_size.width;
+        }
+    }
+    return window_size;
 }
 
 void
@@ -142,10 +163,12 @@ create_texture(SDL_Renderer *renderer, struct size frame_size) {
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
-                      int16_t window_x, int16_t window_y) {
+                      int16_t window_x, int16_t window_y, uint16_t window_width,
+                      uint16_t window_height) {
     screen->frame_size = frame_size;
 
-    struct size window_size = get_initial_optimal_size(frame_size);
+    struct size window_size =
+        get_initial_optimal_size(frame_size, window_width, window_height);
     uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
 #ifdef HIDPI_SUPPORT
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;

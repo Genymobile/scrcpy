@@ -388,7 +388,8 @@ scrcpy(const struct scrcpy_options *options) {
 
         if (!screen_init_rendering(&screen, window_title, frame_size,
                                    options->always_on_top, options->window_x,
-                                   options->window_y)) {
+                                   options->window_y, options->window_width,
+                                   options->window_height)) {
             goto end;
         }
 

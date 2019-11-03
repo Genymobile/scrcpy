@@ -118,6 +118,14 @@ static void usage(const char *arg0) {
         "        Set the initial window vertical position.\n"
         "        Default is -1 (automatic).\n"
         "\n"
+        "    --window-width value\n"
+        "        Set the initial window width.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
+        "    --window-height value\n"
+        "        Set the initial window width.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
         "Shortcuts:\n"
         "\n"
         "    " CTRL_OR_CMD "+f\n"
@@ -280,6 +288,27 @@ parse_window_position(char *optarg, int16_t *position) {
 }
 
 static bool
+parse_window_dimension(char *optarg, uint16_t *dimension) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Window dimension parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid window dimension: %s", optarg);
+        return false;
+    }
+    if (value & ~0xffff) {
+        LOGE("Window position must be between 0 and 65535: %ld", value);
+        return false;
+    }
+
+    *dimension = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
@@ -339,6 +368,8 @@ guess_record_format(const char *filename) {
 #define OPT_PREFER_TEXT           1006
 #define OPT_WINDOW_X              1007
 #define OPT_WINDOW_Y              1008
+#define OPT_WINDOW_WIDTH          1009
+#define OPT_WINDOW_HEIGHT         1010
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -365,6 +396,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
         {"window-x",              required_argument, NULL, OPT_WINDOW_X},
         {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
+        {"window-width",          required_argument, NULL, OPT_WINDOW_WIDTH},
+        {"window-height",         required_argument, NULL, OPT_WINDOW_HEIGHT},
         {NULL,                    0,                 NULL, 0  },
     };
 
@@ -449,6 +482,16 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case OPT_WINDOW_Y:
                 if (!parse_window_position(optarg, &opts->window_y)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_WIDTH:
+                if (!parse_window_dimension(optarg, &opts->window_width)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_HEIGHT:
+                if (!parse_window_dimension(optarg, &opts->window_height)) {
                     return false;
                 }
                 break;

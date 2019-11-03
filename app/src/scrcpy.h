@@ -20,6 +20,8 @@ struct scrcpy_options {
     uint32_t bit_rate;
     int16_t window_x;
     int16_t window_y;
+    uint16_t window_width;
+    uint16_t window_height;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
@@ -42,6 +44,8 @@ struct scrcpy_options {
     .bit_rate = DEFAULT_BIT_RATE, \
     .window_x = -1, \
     .window_y = -1, \
+    .window_width = 0, \
+    .window_height = 0, \
     .show_touches = false, \
     .fullscreen = false, \
     .always_on_top = false, \
