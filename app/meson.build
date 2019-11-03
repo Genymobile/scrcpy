@@ -134,6 +134,8 @@ executable('scrcpy', src,
            c_args: c_args,
            link_args: link_args)
 
+install_man('scrcpy.1')
+
 
 ### TESTS
 
