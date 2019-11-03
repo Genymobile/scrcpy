@@ -31,6 +31,8 @@ struct args {
     uint32_t bit_rate;
     int16_t window_x;
     int16_t window_y;
+    uint16_t window_width;
+    uint16_t window_height;
     bool always_on_top;
     bool turn_screen_off;
     bool render_expired_frames;
@@ -126,6 +128,14 @@ static void usage(const char *arg0) {
         "\n"
         "    --window-y value\n"
         "        Set the initial window vertical position.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
+        "    --window-width value\n"
+        "        Set the initial window width.\n"
+        "        Default is -1 (automatic).\n"
+        "\n"
+        "    --window-height value\n"
+        "        Set the initial window width.\n"
         "        Default is -1 (automatic).\n"
         "\n"
         "Shortcuts:\n"
@@ -290,6 +300,27 @@ parse_window_position(char *optarg, int16_t *position) {
 }
 
 static bool
+parse_window_dimension(char *optarg, uint16_t *dimension) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Window dimension parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid window dimension: %s", optarg);
+        return false;
+    }
+    if (value & ~0xffff) {
+        LOGE("Window position must be between 0 and 65535: %ld", value);
+        return false;
+    }
+
+    *dimension = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
@@ -345,6 +376,8 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_TITLE          1002
 #define OPT_WINDOW_X              1003
 #define OPT_WINDOW_Y              1004
+#define OPT_WINDOW_WIDTH          1005
+#define OPT_WINDOW_HEIGHT         1006
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -371,6 +404,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
         {"window-x",              required_argument, NULL, OPT_WINDOW_X},
         {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
+        {"window-width",          required_argument, NULL, OPT_WINDOW_WIDTH},
+        {"window-height",         required_argument, NULL, OPT_WINDOW_HEIGHT},
         {NULL,                    0,                 NULL, 0  },
     };
     int c;
@@ -446,6 +481,16 @@ parse_args(struct args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
+            case OPT_WINDOW_WIDTH:
+                if (!parse_window_dimension(optarg, &args->window_width)) {
+                    return false;
+                }
+                break;
+            case OPT_WINDOW_HEIGHT:
+                if (!parse_window_dimension(optarg, &args->window_height)) {
+                    return false;
+                }
+                break;
             case OPT_PUSH_TARGET:
                 args->push_target = optarg;
                 break;
@@ -516,6 +561,8 @@ main(int argc, char *argv[]) {
         .bit_rate = DEFAULT_BIT_RATE,
         .window_x = -1,
         .window_y = -1,
+        .window_width = 0,
+        .window_height = 0,
         .always_on_top = false,
         .no_control = false,
         .no_display = false,
@@ -562,6 +609,8 @@ main(int argc, char *argv[]) {
         .bit_rate = args.bit_rate,
         .window_x = args.window_x,
         .window_y = args.window_y,
+        .window_width = args.window_width,
+        .window_height = args.window_height,
         .show_touches = args.show_touches,
         .fullscreen = args.fullscreen,
         .always_on_top = args.always_on_top,

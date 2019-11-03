@@ -19,6 +19,8 @@ struct scrcpy_options {
     uint32_t bit_rate;
     int16_t window_x;
     int16_t window_y;
+    uint16_t window_width;
+    uint16_t window_height;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
