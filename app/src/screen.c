@@ -134,6 +134,7 @@ create_texture(SDL_Renderer *renderer, struct size frame_size) {
                              frame_size.width, frame_size.height);
 }
 
+#ifdef HIDPI_WORKAROUND
 static void
 screen_get_sizes(struct screen *screen, struct screen_sizes *out) {
     int ww, wh, dw, dh;
@@ -144,6 +145,7 @@ screen_get_sizes(struct screen *screen, struct screen_sizes *out) {
     out->window.width = dw;
     out->window.height = dh;
 }
+#endif
 
 // This may be called more than once to work around SDL bugs
 static bool
@@ -167,7 +169,9 @@ screen_init_renderer_and_texture(struct screen *screen) {
         return false;
     }
 
+#ifdef HIDPI_WORKAROUND
     screen_get_sizes(screen, &screen->sizes);
+#endif
 
     return true;
 }
@@ -298,6 +302,7 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     return true;
 }
 
+#ifdef HIDPI_WORKAROUND
 // workaround for <https://github.com/Genymobile/scrcpy/issues/15>
 static inline bool
 screen_fix_hidpi(struct screen *screen) {
@@ -318,14 +323,19 @@ screen_fix_hidpi(struct screen *screen) {
             screen->renderer = NULL;
             return false;
         }
+
+        LOGI("Renderer reset after hidpi scaling changed");
     }
 
     return true;
 }
+#endif
 
 void
 screen_window_resized(struct screen *screen) {
+#ifdef HIDPI_WORKAROUND
     screen_fix_hidpi(screen);
+#endif
     screen_render(screen);
 }
 
