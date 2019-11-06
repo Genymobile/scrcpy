@@ -140,10 +140,9 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     screen->frame_size = frame_size;
 
     struct size window_size = get_initial_optimal_size(frame_size);
-    uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-#ifdef HIDPI_SUPPORT
-    window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-#endif
+    uint32_t window_flags = SDL_WINDOW_HIDDEN
+                          | SDL_WINDOW_RESIZABLE
+                          | SDL_WINDOW_ALLOW_HIGHDPI;
     if (always_on_top) {
 #ifdef SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
