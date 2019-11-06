@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <recorder.h>
 
 #include "config.h"
+#include "recorder.h"
 
 struct scrcpy_options {
     const char *serial;
