@@ -109,9 +109,6 @@ conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
-# enable High DPI support
-conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
-
 # disable console on Windows
 conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
