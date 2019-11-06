@@ -20,10 +20,12 @@ struct screen {
     bool has_frame;
     bool fullscreen;
     bool no_window;
+#ifdef HIDPI_WORKAROUND
     struct screen_sizes {
         struct size window;
         struct size drawable;
     } sizes;
+#endif
 };
 
 #define SCREEN_INITIALIZER {  \

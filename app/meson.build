@@ -115,6 +115,9 @@ conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
+# enable a workaround for bug #15
+conf.set('HIDPI_WORKAROUND', get_option('hidpi_workaround'))
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
