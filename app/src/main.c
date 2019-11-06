@@ -11,6 +11,7 @@
 #include "config.h"
 #include "compat.h"
 #include "log.h"
+#include "input_manager.h"
 #include "recorder.h"
 
 struct args {
@@ -66,6 +67,18 @@ static void usage(const char *arg0) {
         "    -p, --port port\n"
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
+        "\n"
+        "    --prefer-text-events mode\n"
+        "        Configure how key/text events are forwarded to the Android\n"
+        "        device.\n"
+        "        Possible values are:\n"
+        "          always:\n"
+        "            Every text is sent as text.\n"
+        "          non-alpha:\n"
+        "            Only letters are sent as a sequence of key events, other\n"
+        "            characters are sent as text. (default)\n"
+        "          never:\n"
+        "            Every text is sent as a sequence of key events.\n"
         "\n"
         "    --push-target path\n"
         "        Set the target directory for pushing files to the device by\n"
@@ -294,9 +307,33 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+static bool
+parse_prefer_text_events(const char *optarg,
+                         enum text_events_pref *pref) {
+    if (!strcmp(optarg, "always")) {
+        *pref = PREFER_TEXT_EVENTS_ALWAYS;
+        return true;
+    }
+
+    if (!strcmp(optarg, "non-alpha")) {
+        *pref = PREFER_TEXT_EVENTS_NON_ALPHA;
+        return true;
+    }
+
+    if (!strcmp(optarg, "never")) {
+        *pref = PREFER_TEXT_EVENTS_NEVER;
+        return true;
+    }
+
+    LOGE("Unsupported text events preference: %s"
+         "(expected 'always', 'non-alpha' or 'never')", optarg);
+    return false;
+}
+
 #define OPT_RENDER_EXPIRED_FRAMES 1000
 #define OPT_WINDOW_TITLE          1001
 #define OPT_PUSH_TARGET           1002
+#define OPT_PREFER_TEXT_EVENTS    1003
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -319,6 +356,8 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"serial",                required_argument, NULL, 's'},
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
+        {"prefer-text-events",    required_argument, NULL,
+                                                 OPT_PREFER_TEXT_EVENTS},
         {"version",               no_argument,       NULL, 'v'},
         {"window-title",          required_argument, NULL,
                                                  OPT_WINDOW_TITLE},
@@ -392,6 +431,12 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
+                break;
+            case OPT_PREFER_TEXT_EVENTS:
+                if (!parse_prefer_text_events(optarg,
+                                              &opts->text_events_pref)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr

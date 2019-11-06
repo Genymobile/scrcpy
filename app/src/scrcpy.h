@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "input_manager.h"
 #include "recorder.h"
 
 struct scrcpy_options {
@@ -14,6 +15,7 @@ struct scrcpy_options {
     const char *window_title;
     const char *push_target;
     enum recorder_format record_format;
+    enum text_events_pref text_events_pref;
     uint16_t port;
     uint16_t max_size;
     uint32_t bit_rate;
@@ -33,6 +35,7 @@ struct scrcpy_options {
     .window_title = NULL, \
     .push_target = NULL, \
     .record_format = RECORDER_FORMAT_AUTO, \
+    .text_events_pref = PREFER_TEXT_EVENTS_NON_ALPHA, \
     .port = DEFAULT_LOCAL_PORT, \
     .max_size = DEFAULT_LOCAL_PORT, \
     .bit_rate = DEFAULT_BIT_RATE, \

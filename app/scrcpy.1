@@ -62,6 +62,16 @@ Set the TCP port the client listens on.
 Default is 27183.
 
 .TP
+.BI \-\-prefer\-text\-events " mode
+Configure how key/text events are forwarded to the Android device.
+
+Possible \fImode\fRs are "always" (every text is sent as text), "non-alpha"
+(only letters are sent as a sequence of key events, other characters are sent
+as text) and "never" (every text is sent as a sequence of key events).
+
+Default is "non-alpha".
+
+.TP
 .BI "\-\-push\-target " path
 Set the target directory for pushing files to the device by drag & drop. It is passed as\-is to "adb push".
 

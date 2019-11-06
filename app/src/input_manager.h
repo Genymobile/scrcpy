@@ -10,10 +10,17 @@
 #include "video_buffer.h"
 #include "screen.h"
 
+enum text_events_pref {
+    PREFER_TEXT_EVENTS_ALWAYS,
+    PREFER_TEXT_EVENTS_NON_ALPHA,
+    PREFER_TEXT_EVENTS_NEVER,
+};
+
 struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
+    enum text_events_pref text_events_pref;
 };
 
 void
