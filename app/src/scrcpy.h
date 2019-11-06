@@ -26,6 +26,25 @@ struct scrcpy_options {
     bool render_expired_frames;
 };
 
+#define SCRCPY_OPTIONS_DEFAULT { \
+    .serial = NULL, \
+    .crop = NULL, \
+    .record_filename = NULL, \
+    .window_title = NULL, \
+    .push_target = NULL, \
+    .record_format = RECORDER_FORMAT_AUTO, \
+    .port = DEFAULT_LOCAL_PORT, \
+    .max_size = DEFAULT_LOCAL_PORT, \
+    .bit_rate = DEFAULT_BIT_RATE, \
+    .show_touches = false, \
+    .fullscreen = false, \
+    .always_on_top = false, \
+    .control = true, \
+    .display = true, \
+    .turn_screen_off = false, \
+    .render_expired_frames = false, \
+}
+
 bool
 scrcpy(const struct scrcpy_options *options);
 

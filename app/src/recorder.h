@@ -11,7 +11,8 @@
 #include "queue.h"
 
 enum recorder_format {
-    RECORDER_FORMAT_MP4 = 1,
+    RECORDER_FORMAT_AUTO,
+    RECORDER_FORMAT_MP4,
     RECORDER_FORMAT_MKV,
 };
 

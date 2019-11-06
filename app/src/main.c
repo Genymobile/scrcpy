@@ -14,24 +14,9 @@
 #include "recorder.h"
 
 struct args {
-    const char *serial;
-    const char *crop;
-    const char *record_filename;
-    const char *window_title;
-    const char *push_target;
-    enum recorder_format record_format;
-    bool fullscreen;
-    bool no_control;
-    bool no_display;
+    struct scrcpy_options opts;
     bool help;
     bool version;
-    bool show_touches;
-    uint16_t port;
-    uint16_t max_size;
-    uint32_t bit_rate;
-    bool always_on_top;
-    bool turn_screen_off;
-    bool render_expired_frames;
 };
 
 static void usage(const char *arg0) {
@@ -339,23 +324,26 @@ parse_args(struct args *args, int argc, char *argv[]) {
                                                  OPT_WINDOW_TITLE},
         {NULL,                    0,                 NULL, 0  },
     };
+
+    struct scrcpy_options *opts = &args->opts;
+
     int c;
     while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
-                if (!parse_bit_rate(optarg, &args->bit_rate)) {
+                if (!parse_bit_rate(optarg, &opts->bit_rate)) {
                     return false;
                 }
                 break;
             case 'c':
-                args->crop = optarg;
+                opts->crop = optarg;
                 break;
             case 'f':
-                args->fullscreen = true;
+                opts->fullscreen = true;
                 break;
             case 'F':
-                if (!parse_record_format(optarg, &args->record_format)) {
+                if (!parse_record_format(optarg, &opts->record_format)) {
                     return false;
                 }
                 break;
@@ -363,47 +351,47 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 args->help = true;
                 break;
             case 'm':
-                if (!parse_max_size(optarg, &args->max_size)) {
+                if (!parse_max_size(optarg, &opts->max_size)) {
                     return false;
                 }
                 break;
             case 'n':
-                args->no_control = true;
+                opts->control = false;
                 break;
             case 'N':
-                args->no_display = true;
+                opts->display = false;
                 break;
             case 'p':
-                if (!parse_port(optarg, &args->port)) {
+                if (!parse_port(optarg, &opts->port)) {
                     return false;
                 }
                 break;
             case 'r':
-                args->record_filename = optarg;
+                opts->record_filename = optarg;
                 break;
             case 's':
-                args->serial = optarg;
+                opts->serial = optarg;
                 break;
             case 'S':
-                args->turn_screen_off = true;
+                opts->turn_screen_off = true;
                 break;
             case 't':
-                args->show_touches = true;
+                opts->show_touches = true;
                 break;
             case 'T':
-                args->always_on_top = true;
+                opts->always_on_top = true;
                 break;
             case 'v':
                 args->version = true;
                 break;
             case OPT_RENDER_EXPIRED_FRAMES:
-                args->render_expired_frames = true;
+                opts->render_expired_frames = true;
                 break;
             case OPT_WINDOW_TITLE:
-                args->window_title = optarg;
+                opts->window_title = optarg;
                 break;
             case OPT_PUSH_TARGET:
-                args->push_target = optarg;
+                opts->push_target = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -411,12 +399,12 @@ parse_args(struct args *args, int argc, char *argv[]) {
         }
     }
 
-    if (args->no_display && !args->record_filename) {
+    if (!opts->display && !opts->record_filename) {
         LOGE("-N/--no-display requires screen recording (-r/--record)");
         return false;
     }
 
-    if (args->no_display && args->fullscreen) {
+    if (!opts->display && opts->fullscreen) {
         LOGE("-f/--fullscreen-window is incompatible with -N/--no-display");
         return false;
     }
@@ -427,21 +415,21 @@ parse_args(struct args *args, int argc, char *argv[]) {
         return false;
     }
 
-    if (args->record_format && !args->record_filename) {
+    if (opts->record_format && !opts->record_filename) {
         LOGE("Record format specified without recording");
         return false;
     }
 
-    if (args->record_filename && !args->record_format) {
-        args->record_format = guess_record_format(args->record_filename);
-        if (!args->record_format) {
+    if (opts->record_filename && !opts->record_format) {
+        opts->record_format = guess_record_format(opts->record_filename);
+        if (!opts->record_format) {
             LOGE("No format specified for \"%s\" (try with -F mkv)",
-                 args->record_filename);
+                 opts->record_filename);
             return false;
         }
     }
 
-    if (args->no_control && args->turn_screen_off) {
+    if (!opts->control && opts->turn_screen_off) {
         LOGE("Could not request to turn screen off if control is disabled");
         return false;
     }
@@ -458,24 +446,11 @@ main(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
     struct args args = {
-        .serial = NULL,
-        .crop = NULL,
-        .record_filename = NULL,
-        .window_title = NULL,
-        .push_target = NULL,
-        .record_format = 0,
+        .opts = SCRCPY_OPTIONS_DEFAULT,
         .help = false,
         .version = false,
-        .show_touches = false,
-        .port = DEFAULT_LOCAL_PORT,
-        .max_size = DEFAULT_MAX_SIZE,
-        .bit_rate = DEFAULT_BIT_RATE,
-        .always_on_top = false,
-        .no_control = false,
-        .no_display = false,
-        .turn_screen_off = false,
-        .render_expired_frames = false,
     };
+
     if (!parse_args(&args, argc, argv)) {
         return 1;
     }
@@ -504,25 +479,7 @@ main(int argc, char *argv[]) {
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 #endif
 
-    struct scrcpy_options options = {
-        .serial = args.serial,
-        .crop = args.crop,
-        .port = args.port,
-        .record_filename = args.record_filename,
-        .window_title = args.window_title,
-        .push_target = args.push_target,
-        .record_format = args.record_format,
-        .max_size = args.max_size,
-        .bit_rate = args.bit_rate,
-        .show_touches = args.show_touches,
-        .fullscreen = args.fullscreen,
-        .always_on_top = args.always_on_top,
-        .control = !args.no_control,
-        .display = !args.no_display,
-        .turn_screen_off = args.turn_screen_off,
-        .render_expired_frames = args.render_expired_frames,
-    };
-    int res = scrcpy(&options) ? 0 : 1;
+    int res = scrcpy(&args.opts) ? 0 : 1;
 
     avformat_network_deinit(); // ignore failure
 
