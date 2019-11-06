@@ -35,7 +35,7 @@ struct scrcpy_options {
     .window_title = NULL, \
     .push_target = NULL, \
     .record_format = RECORDER_FORMAT_AUTO, \
-    .text_events_pref = PREFER_TEXT_EVENTS_NON_ALPHA, \
+    .text_events_pref = PREFER_TEXT_EVENTS_ALWAYS, \
     .port = DEFAULT_LOCAL_PORT, \
     .max_size = DEFAULT_LOCAL_PORT, \
     .bit_rate = DEFAULT_BIT_RATE, \
