@@ -297,13 +297,16 @@ guess_record_format(const char *filename) {
 #define OPT_RENDER_EXPIRED_FRAMES 1000
 #define OPT_WINDOW_TITLE          1001
 #define OPT_PUSH_TARGET           1002
+#define OPT_ALWAYS_ON_TOP         1003
+#define OPT_CROP                  1004
+#define OPT_RECORD_FORMAT         1005
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"always-on-top",         no_argument,       NULL, 'T'},
+        {"always-on-top",         no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",              required_argument, NULL, 'b'},
-        {"crop",                  required_argument, NULL, 'c'},
+        {"crop",                  required_argument, NULL, OPT_CROP},
         {"fullscreen",            no_argument,       NULL, 'f'},
         {"help",                  no_argument,       NULL, 'h'},
         {"max-size",              required_argument, NULL, 'm'},
@@ -312,7 +315,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"port",                  required_argument, NULL, 'p'},
         {"push-target",           required_argument, NULL, OPT_PUSH_TARGET},
         {"record",                required_argument, NULL, 'r'},
-        {"record-format",         required_argument, NULL, 'F'},
+        {"record-format",         required_argument, NULL, OPT_RECORD_FORMAT},
         {"render-expired-frames", no_argument,       NULL,
                                                      OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                required_argument, NULL, 's'},
@@ -336,12 +339,18 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 }
                 break;
             case 'c':
+                LOGW("Deprecated option -c. Use --crop instead.");
+                // fall through
+            case OPT_CROP:
                 opts->crop = optarg;
                 break;
             case 'f':
                 opts->fullscreen = true;
                 break;
             case 'F':
+                LOGW("Deprecated option -F. Use --record-format instead.");
+                // fall through
+            case OPT_RECORD_FORMAT:
                 if (!parse_record_format(optarg, &opts->record_format)) {
                     return false;
                 }
@@ -378,6 +387,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 opts->show_touches = true;
                 break;
             case 'T':
+                LOGW("Deprecated option -T. Use --always-on-top instead.");
+                // fall through
+            case OPT_ALWAYS_ON_TOP:
                 opts->always_on_top = true;
                 break;
             case 'v':

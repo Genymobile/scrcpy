@@ -143,7 +143,6 @@ This is useful for example to mirror only one eye of the Oculus Go:
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
-scrcpy -c 1224:1440:0:0       # short version
 ```
 
 If `--max-size` is also specified, resizing is applied after cropping.
@@ -226,7 +225,6 @@ The window of app can always be above others by:
 
 ```bash
 scrcpy --always-on-top
-scrcpy -T  # short version
 ```
 
 
