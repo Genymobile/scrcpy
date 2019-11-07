@@ -174,9 +174,14 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
 void
 recorder_close(struct recorder *recorder) {
-    int ret = av_write_trailer(recorder->ctx);
-    if (ret < 0) {
-        LOGE("Failed to write trailer to %s", recorder->filename);
+    if (recorder->header_written) {
+        int ret = av_write_trailer(recorder->ctx);
+        if (ret < 0) {
+            LOGE("Failed to write trailer to %s", recorder->filename);
+            recorder->failed = true;
+        }
+    } else {
+        // the recorded file is empty
         recorder->failed = true;
     }
     avio_close(recorder->ctx->pb);
