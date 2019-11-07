@@ -42,6 +42,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
+    .prefer_text = false, // initialized later
 };
 
 // init SDL and set appropriate hints
@@ -413,6 +414,8 @@ scrcpy(const struct scrcpy_options *options) {
         wait_show_touches(proc_show_touches);
         show_touches_waited = true;
     }
+
+    input_manager.prefer_text = options->prefer_text;
 
     ret = event_loop(options->display, options->control);
     LOGD("quit...");

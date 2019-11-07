@@ -14,7 +14,8 @@ enum android_metastate
 convert_meta_state(SDL_Keymod mod);
 
 bool
-convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod);
+convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
+                bool prefer_text);
 
 enum android_motionevent_buttons
 convert_mouse_buttons(uint32_t state);

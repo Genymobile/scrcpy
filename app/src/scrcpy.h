@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "input_manager.h"
 #include "recorder.h"
 
 struct scrcpy_options {
@@ -24,6 +25,7 @@ struct scrcpy_options {
     bool display;
     bool turn_screen_off;
     bool render_expired_frames;
+    bool prefer_text;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -43,6 +45,7 @@ struct scrcpy_options {
     .display = true, \
     .turn_screen_off = false, \
     .render_expired_frames = false, \
+    .prefer_text = false, \
 }
 
 bool

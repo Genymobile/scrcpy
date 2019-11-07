@@ -62,6 +62,13 @@ Set the TCP port the client listens on.
 Default is 27183.
 
 .TP
+.B \-\-prefer\-text
+Inject alpha characters and space as text events instead of key events.
+
+This avoids issues when combining multiple keys to enter special characters,
+but breaks the expected behavior of alpha keys in games (typically WASD).
+
+.TP
 .BI "\-\-push\-target " path
 Set the target directory for pushing files to the device by drag & drop. It is passed as\-is to "adb push".
 

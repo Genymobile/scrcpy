@@ -67,6 +67,13 @@ static void usage(const char *arg0) {
         "        Set the TCP port the client listens on.\n"
         "        Default is %d.\n"
         "\n"
+        "    --prefer-text\n"
+        "        Inject alpha characters and space as text events instead of\n"
+        "        key events.\n"
+        "        This avoids issues when combining multiple keys to enter a\n"
+        "        special character, but breaks the expected behavior of alpha\n"
+        "        keys in games (typically WASD).\n"
+        "\n"
         "    --push-target path\n"
         "        Set the target directory for pushing files to the device by\n"
         "        drag & drop. It is passed as-is to \"adb push\".\n"
@@ -300,6 +307,7 @@ guess_record_format(const char *filename) {
 #define OPT_ALWAYS_ON_TOP         1003
 #define OPT_CROP                  1004
 #define OPT_RECORD_FORMAT         1005
+#define OPT_PREFER_TEXT           1006
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -321,6 +329,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"serial",                required_argument, NULL, 's'},
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
+        {"prefer-text",           no_argument,       NULL, OPT_PREFER_TEXT},
         {"version",               no_argument,       NULL, 'v'},
         {"window-title",          required_argument, NULL,
                                                      OPT_WINDOW_TITLE},
@@ -403,6 +412,9 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case OPT_PUSH_TARGET:
                 opts->push_target = optarg;
+                break;
+            case OPT_PREFER_TEXT:
+                opts->prefer_text = true;
                 break;
             default:
                 // getopt prints the error message on stderr

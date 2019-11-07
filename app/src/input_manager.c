@@ -214,12 +214,15 @@ clipboard_paste(struct controller *controller) {
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
-    char c = event->text[0];
-    if (isalpha(c) || c == ' ') {
-        SDL_assert(event->text[1] == '\0');
-        // letters and space are handled as raw key event
-        return;
+    if (!im->prefer_text) {
+        char c = event->text[0];
+        if (isalpha(c) || c == ' ') {
+            SDL_assert(event->text[1] == '\0');
+            // letters and space are handled as raw key event
+            return;
+        }
     }
+
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = SDL_strdup(event->text);
@@ -234,7 +237,8 @@ input_manager_process_text_input(struct input_manager *im,
 }
 
 static bool
-convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to) {
+convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
+                  bool prefer_text) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -242,7 +246,8 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to) {
     }
 
     uint16_t mod = from->keysym.mod;
-    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod)) {
+    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod,
+                         prefer_text)) {
         return false;
     }
 
@@ -393,7 +398,7 @@ input_manager_process_key(struct input_manager *im,
     }
 
     struct control_msg msg;
-    if (convert_input_key(event, &msg)) {
+    if (convert_input_key(event, &msg, im->prefer_text)) {
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }

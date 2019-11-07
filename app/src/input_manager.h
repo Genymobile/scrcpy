@@ -14,6 +14,7 @@ struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
+    bool prefer_text;
 };
 
 void

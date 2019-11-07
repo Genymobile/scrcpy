@@ -75,7 +75,8 @@ convert_meta_state(SDL_Keymod mod) {
 }
 
 bool
-convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod) {
+convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
+                bool prefer_text) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
         MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
@@ -92,6 +93,12 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod) {
         MAP(SDLK_DOWN,         AKEYCODE_DPAD_DOWN);
         MAP(SDLK_UP,           AKEYCODE_DPAD_UP);
     }
+
+    if (prefer_text) {
+        // do not forward alpha and space key events
+        return false;
+    }
+
     if (mod & (KMOD_LALT | KMOD_RALT | KMOD_LGUI | KMOD_RGUI)) {
         return false;
     }
