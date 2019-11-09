@@ -218,6 +218,7 @@ event_loop(bool display, bool control) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
             case EVENT_RESULT_STOPPED_BY_EOS:
+                LOGW("Device disconnected");
                 return false;
             case EVENT_RESULT_CONTINUE:
                 break;
