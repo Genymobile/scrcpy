@@ -67,29 +67,39 @@ public final class Server {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
-        if (args.length != 6) {
-            throw new IllegalArgumentException("Expecting 6 parameters");
+        if (args.length < 1) {
+            throw new IllegalArgumentException("Missing client version");
+        }
+
+        String clientVersion = args[0];
+        if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
+            throw new IllegalArgumentException("The server version (" + clientVersion + ") does not match the client "
+                    + "(" + BuildConfig.VERSION_NAME + ")");
+        }
+
+        if (args.length != 7) {
+            throw new IllegalArgumentException("Expecting 7 parameters");
         }
 
         Options options = new Options();
 
-        int maxSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
+        int maxSize = Integer.parseInt(args[1]) & ~7; // multiple of 8
         options.setMaxSize(maxSize);
 
-        int bitRate = Integer.parseInt(args[1]);
+        int bitRate = Integer.parseInt(args[2]);
         options.setBitRate(bitRate);
 
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[2]);
+        boolean tunnelForward = Boolean.parseBoolean(args[3]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[3]);
+        Rect crop = parseCrop(args[4]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[4]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[5]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[5]);
+        boolean control = Boolean.parseBoolean(args[6]);
         options.setControl(control);
 
         return options;
