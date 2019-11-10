@@ -131,6 +131,7 @@ execute_server(struct server *server, const struct server_params *params) {
 #endif
         "/", // unused
         "com.genymobile.scrcpy.Server",
+        SCRCPY_VERSION,
         max_size_string,
         bit_rate_string,
         server->tunnel_forward ? "true" : "false",
