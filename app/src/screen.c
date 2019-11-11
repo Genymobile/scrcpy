@@ -30,10 +30,19 @@ get_window_size(SDL_Window *window) {
 // get the windowed window size
 static struct size
 get_windowed_window_size(const struct screen *screen) {
-    if (screen->fullscreen) {
+    if (screen->fullscreen || screen->maximized) {
         return screen->windowed_window_size;
     }
     return get_window_size(screen->window);
+}
+
+// apply the windowed window size if fullscreen and maximized are disabled
+static void
+apply_windowed_size(struct screen *screen) {
+    if (!screen->fullscreen && !screen->maximized) {
+        SDL_SetWindowSize(screen->window, screen->windowed_window_size.width,
+                                          screen->windowed_window_size.height);
+    }
 }
 
 // set the window size to be applied when fullscreen is disabled
@@ -41,12 +50,8 @@ static void
 set_window_size(struct screen *screen, struct size new_size) {
     // setting the window size during fullscreen is implementation defined,
     // so apply the resize only after fullscreen is disabled
-    if (screen->fullscreen) {
-        // SDL_SetWindowSize will be called when fullscreen will be disabled
-        screen->windowed_window_size = new_size;
-    } else {
-        SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
-    }
+    screen->windowed_window_size = new_size;
+    apply_windowed_size(screen);
 }
 
 // get the preferred display bounds (i.e. the screen bounds with some margins)
@@ -194,6 +199,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    screen->windowed_window_size = window_size;
+
     return true;
 }
 
@@ -287,10 +294,6 @@ screen_render(struct screen *screen) {
 
 void
 screen_switch_fullscreen(struct screen *screen) {
-    if (!screen->fullscreen) {
-        // going to fullscreen, store the current windowed window size
-        screen->windowed_window_size = get_window_size(screen->window);
-    }
     uint32_t new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
     if (SDL_SetWindowFullscreen(screen->window, new_mode)) {
         LOGW("Could not switch fullscreen mode: %s", SDL_GetError());
@@ -298,11 +301,7 @@ screen_switch_fullscreen(struct screen *screen) {
     }
 
     screen->fullscreen = !screen->fullscreen;
-    if (!screen->fullscreen) {
-        // fullscreen disabled, restore expected windowed window size
-        SDL_SetWindowSize(screen->window, screen->windowed_window_size.width,
-                          screen->windowed_window_size.height);
-    }
+    apply_windowed_size(screen);
 
     LOGD("Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
     screen_render(screen);
@@ -310,7 +309,7 @@ screen_switch_fullscreen(struct screen *screen) {
 
 void
 screen_resize_to_fit(struct screen *screen) {
-    if (!screen->fullscreen) {
+    if (!screen->fullscreen && !screen->maximized) {
         struct size optimal_size = get_optimal_window_size(screen,
                                                            screen->frame_size);
         SDL_SetWindowSize(screen->window, optimal_size.width,
@@ -321,7 +320,7 @@ screen_resize_to_fit(struct screen *screen) {
 
 void
 screen_resize_to_pixel_perfect(struct screen *screen) {
-    if (!screen->fullscreen) {
+    if (!screen->fullscreen && !screen->maximized) {
         SDL_SetWindowSize(screen->window, screen->frame_size.width,
                           screen->frame_size.height);
         LOGD("Resized to pixel-perfect");
@@ -333,8 +332,39 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
             screen_render(screen);
+            break;
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            if (!screen->fullscreen && !screen->maximized) {
+                // Backup the previous size: if we receive the MAXIMIZED event,
+                // then the new size must be ignored (it's the maximized size).
+                // We could not rely on the window flags due to race conditions
+                // (they could be updated asynchronously, at least on X11).
+                screen->windowed_window_size_backup =
+                    screen->windowed_window_size;
+
+                // Save the windowed size, so that it is available once the
+                // window is maximized or fullscreen is enabled.
+                screen->windowed_window_size = get_window_size(screen->window);
+            }
+            screen_render(screen);
+            break;
+        case SDL_WINDOWEVENT_MAXIMIZED:
+            // The backup size must be non-nul.
+            SDL_assert(screen->windowed_window_size_backup.width);
+            SDL_assert(screen->windowed_window_size_backup.height);
+            // Revert the last size, it was updated while screen was maximized.
+            screen->windowed_window_size = screen->windowed_window_size_backup;
+#ifdef DEBUG
+            // Reset the backup to invalid values to detect unexpected usage
+            screen->windowed_window_size_backup.width = 0;
+            screen->windowed_window_size_backup.height = 0;
+#endif
+            screen->maximized = true;
+            break;
+        case SDL_WINDOWEVENT_RESTORED:
+            screen->maximized = false;
+            apply_windowed_size(screen);
             break;
     }
 }

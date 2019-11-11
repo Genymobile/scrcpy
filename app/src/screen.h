@@ -15,28 +15,37 @@ struct screen {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     struct size frame_size;
-    //used only in fullscreen mode to know the windowed window size
+    // The window size the last time it was not maximized or fullscreen.
     struct size windowed_window_size;
+    // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
+    // able to revert the size to its non-maximized value.
+    struct size windowed_window_size_backup;
     bool has_frame;
     bool fullscreen;
+    bool maximized;
     bool no_window;
 };
 
-#define SCREEN_INITIALIZER {  \
-    .window = NULL,           \
-    .renderer = NULL,         \
-    .texture = NULL,          \
-    .frame_size = {           \
-        .width = 0,           \
-        .height = 0,          \
-    },                        \
+#define SCREEN_INITIALIZER { \
+    .window = NULL, \
+    .renderer = NULL, \
+    .texture = NULL, \
+    .frame_size = { \
+        .width = 0,  \
+        .height = 0, \
+    }, \
     .windowed_window_size = { \
-        .width = 0,           \
-        .height = 0,          \
-    },                        \
-    .has_frame = false,   \
-    .fullscreen = false,  \
-    .no_window = false,   \
+        .width = 0, \
+        .height = 0, \
+    }, \
+    .windowed_window_size_backup = { \
+        .width = 0, \
+        .height = 0, \
+    }, \
+    .has_frame = false, \
+    .fullscreen = false, \
+    .maximized = false, \
+    .no_window = false, \
 }
 
 // initialize default values
