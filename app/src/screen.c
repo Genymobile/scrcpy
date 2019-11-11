@@ -309,22 +309,35 @@ screen_switch_fullscreen(struct screen *screen) {
 
 void
 screen_resize_to_fit(struct screen *screen) {
-    if (!screen->fullscreen && !screen->maximized) {
-        struct size optimal_size = get_optimal_window_size(screen,
-                                                           screen->frame_size);
-        SDL_SetWindowSize(screen->window, optimal_size.width,
-                          optimal_size.height);
-        LOGD("Resized to optimal size");
+    if (screen->fullscreen) {
+        return;
     }
+
+    if (screen->maximized) {
+        SDL_RestoreWindow(screen->window);
+        screen->maximized = false;
+    }
+
+    struct size optimal_size =
+        get_optimal_window_size(screen, screen->frame_size);
+    SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
+    LOGD("Resized to optimal size");
 }
 
 void
 screen_resize_to_pixel_perfect(struct screen *screen) {
-    if (!screen->fullscreen && !screen->maximized) {
-        SDL_SetWindowSize(screen->window, screen->frame_size.width,
-                          screen->frame_size.height);
-        LOGD("Resized to pixel-perfect");
+    if (screen->fullscreen) {
+        return;
     }
+
+    if (screen->maximized) {
+        SDL_RestoreWindow(screen->window);
+        screen->maximized = false;
+    }
+
+    SDL_SetWindowSize(screen->window, screen->frame_size.width,
+                      screen->frame_size.height);
+    LOGD("Resized to pixel-perfect");
 }
 
 void
