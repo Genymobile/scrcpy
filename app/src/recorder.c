@@ -301,8 +301,12 @@ run_recorder(void *data) {
             continue;
         }
 
-        // we now know the duration of the previous packet
-        previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        // config packets have no PTS, we must ignore them
+        if (rec->packet.pts != AV_NOPTS_VALUE
+            && previous->packet.pts != AV_NOPTS_VALUE) {
+            // we now know the duration of the previous packet
+            previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        }
 
         bool ok = recorder_write(recorder, &previous->packet);
         record_packet_delete(previous);
