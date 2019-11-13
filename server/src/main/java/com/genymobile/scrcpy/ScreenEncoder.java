@@ -8,7 +8,6 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.Looper;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
@@ -53,15 +52,7 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
-        // Some devices internally create a Handler when creating an input Surface, causing an exception:
-        //   "Can't create handler inside thread that has not called Looper.prepare()"
-        // <https://github.com/Genymobile/scrcpy/issues/240>
-        //
-        // Use Looper.prepareMainLooper() instead of Looper.prepare() to avoid a NullPointerException:
-        //   "Attempt to read from field 'android.os.MessageQueue android.os.Looper.mQueue'
-        //    on a null object reference"
-        // <https://github.com/Genymobile/scrcpy/issues/921>
-        Looper.prepareMainLooper();
+        Workarounds.prepareMainLooper();
 
         MediaFormat format = createFormat(bitRate, maxFps, iFrameInterval);
         device.setRotationListener(this);
