@@ -7,7 +7,7 @@
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
-    // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
+    // <https://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
     // only make it work for this very specific program
     // (don't handle escaping nor quotes)
     size_t ret = xstrjoin(cmd, argv, ' ', len);
