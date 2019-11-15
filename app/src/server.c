@@ -281,7 +281,7 @@ server_connect_to(struct server *server) {
 
         server->control_socket = net_accept(server->server_socket);
         if (server->control_socket == INVALID_SOCKET) {
-            // the video_socket will be clean up on destroy
+            // the video_socket will be cleaned up on destroy
             return false;
         }
 
