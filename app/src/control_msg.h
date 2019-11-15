@@ -28,12 +28,18 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_GET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+    CONTROL_MSG_TYPE_SET_INJECT_TEXT_MODE,
 };
 
 enum screen_power_mode {
     // see <https://android.googlesource.com/platform/frameworks/base.git/+/pie-release-2/core/java/android/view/SurfaceControl.java#305>
     SCREEN_POWER_MODE_OFF = 0,
     SCREEN_POWER_MODE_NORMAL = 2,
+};
+
+enum inject_text_mode {
+    USE_INPUT_MANAGER = 0,
+    USE_SCRCPY_IME = 1,
 };
 
 struct control_msg {
@@ -65,6 +71,9 @@ struct control_msg {
         struct {
             enum screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            enum inject_text_mode mode;
+        } set_inject_text_mode;
     };
 };
 

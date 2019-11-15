@@ -146,11 +146,15 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_WINDOWEVENT:
             screen_handle_window_event(&screen, &event->window);
             break;
+        case SDL_TEXTEDITING:
+            break;
         case SDL_TEXTINPUT:
             if (!control) {
                 break;
             }
             input_manager_process_text_input(&input_manager, &event->text);
+            break;
+        case SDL_KEYMAPCHANGED:
             break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
@@ -195,6 +199,8 @@ handle_event(SDL_Event *event, bool control) {
             file_handler_request(&file_handler, action, event->drop.file);
             break;
         }
+        default:
+            LOGD("Unknow event type:%d", event->type);
     }
     return EVENT_RESULT_CONTINUE;
 }

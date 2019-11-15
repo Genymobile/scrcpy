@@ -1,15 +1,15 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.InputManager;
+import java.io.IOException;
 
+import android.content.Intent;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
-
-import java.io.IOException;
+import com.genymobile.scrcpy.wrappers.InputManager;
 
 public class Controller {
 
@@ -25,6 +25,9 @@ public class Controller {
             new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords =
             new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
+
+    private static final String COMMIT_TEXT_ACTION = "com.genymobile.scrcpy.ime.COMMIT_TEXT_ACTION";
+    private boolean useIME = true;
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
@@ -76,7 +79,7 @@ public class Controller {
         ControlMessage msg = connection.receiveControlMessage();
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
-                injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
+                injectKeyEvent(msg.getAction(), msg.getKeycode(), 0, msg.getMetaState());
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
                 injectText(msg.getText());
@@ -106,13 +109,13 @@ public class Controller {
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 device.setScreenPowerMode(msg.getAction());
                 break;
+            case ControlMessage.TYPE_SET_INJECT_TEXT_MODE:
+                useIME = msg.getAction() == 1;
+                device.setInjectTextMode(useIME);
+                break;
             default:
                 // do nothing
         }
-    }
-
-    private boolean injectKeycode(int action, int keycode, int metaState) {
-        return injectKeyEvent(action, keycode, 0, metaState);
     }
 
     private boolean injectChar(char c) {
@@ -130,16 +133,14 @@ public class Controller {
         return true;
     }
 
-    private int injectText(String text) {
-        int successCount = 0;
-        for (char c : text.toCharArray()) {
-            if (!injectChar(c)) {
-                Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
-                continue;
-            }
-            successCount++;
+    private void injectText(String text) {
+        if(!useIME) {
+            return;
         }
-        return successCount;
+        Intent intent = new Intent();
+        intent.setAction(COMMIT_TEXT_ACTION);
+        intent.putExtra("text", text);
+        device.sendBroadcast(intent);
     }
 
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int buttons) {
@@ -204,6 +205,11 @@ public class Controller {
     }
 
     private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
+        char keyChar = (char)charMap.get(keyCode,metaState);
+        if(useIME
+            && (Character.isLetterOrDigit(keyChar) || ' ' == keyChar)) {
+            return true;
+        }
         long now = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD,
                 0, 0, InputDevice.SOURCE_KEYBOARD);

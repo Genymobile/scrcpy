@@ -174,6 +174,18 @@ set_screen_power_mode(struct controller *controller,
 }
 
 static void
+set_inject_text_mode(struct controller *controller,
+                      enum inject_text_mode mode) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_SET_INJECT_TEXT_MODE;
+    msg.set_inject_text_mode.mode = mode;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'set screen power mode'");
+    }
+}
+
+static void
 switch_fps_counter_state(struct fps_counter *fps_counter) {
     // the started state can only be written from the current thread, so there
     // is no ToCToU issue
@@ -385,6 +397,15 @@ input_manager_process_key(struct input_manager *im,
                         collapse_notification_panel(controller);
                     } else {
                         expand_notification_panel(controller);
+                    }
+                }
+                return;
+            case SDLK_e:
+                if (control && cmd && !repeat && down) {
+                    if (shift) {
+                        set_inject_text_mode(controller, USE_INPUT_MANAGER);
+                    } else {
+                        set_inject_text_mode(controller, USE_SCRCPY_IME);
                     }
                 }
                 return;

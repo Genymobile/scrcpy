@@ -15,6 +15,7 @@ public final class ControlMessage {
     public static final int TYPE_GET_CLIPBOARD = 7;
     public static final int TYPE_SET_CLIPBOARD = 8;
     public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
+    public static final int TYPE_SET_INJECT_TEXT_MODE = 10;
 
     private int type;
     private String text;
@@ -81,6 +82,13 @@ public final class ControlMessage {
     public static ControlMessage createSetScreenPowerMode(int mode) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_SCREEN_POWER_MODE;
+        msg.action = mode;
+        return msg;
+    }
+
+    public static ControlMessage createSetInjectTextMode(int mode) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_INJECT_TEXT_MODE;
         msg.action = mode;
         return msg;
     }

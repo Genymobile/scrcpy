@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.wrappers;
 import android.annotation.SuppressLint;
 import android.os.IBinder;
 import android.os.IInterface;
+import com.genymobile.scrcpy.Ln;
 
 import java.lang.reflect.Method;
 
@@ -16,6 +17,8 @@ public final class ServiceManager {
     private PowerManager powerManager;
     private StatusBarManager statusBarManager;
     private ClipboardManager clipboardManager;
+    private InputMethodManager inputMethodManager;
+    private ActivityManager activityManager;
 
     public ServiceManager() {
         try {
@@ -75,5 +78,19 @@ public final class ServiceManager {
             clipboardManager = new ClipboardManager(getService("clipboard", "android.content.IClipboard"));
         }
         return clipboardManager;
+    }
+
+    public InputMethodManager getInputMethodManager() {
+        if(inputMethodManager == null) {
+            inputMethodManager = new InputMethodManager(getService("input_method", "com.android.internal.view.IInputMethodManager"));
+        }
+        return inputMethodManager;
+    }
+
+    public ActivityManager getActivityManager() {
+        if(activityManager == null) {
+            activityManager = new ActivityManager(getService("activity", "android.app.IActivityManager"));
+        }
+        return activityManager;
     }
 }
