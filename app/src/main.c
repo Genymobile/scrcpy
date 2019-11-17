@@ -315,7 +315,7 @@ static bool
 parse_port(char *optarg, uint16_t *port) {
     char *endptr;
     if (*optarg == '\0') {
-        LOGE("Invalid port parameter is empty");
+        LOGE("Port parameter is empty");
         return false;
     }
     long value = strtol(optarg, &endptr, 0);
