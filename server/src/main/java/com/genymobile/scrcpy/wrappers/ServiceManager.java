@@ -16,6 +16,7 @@ public final class ServiceManager {
     private PowerManager powerManager;
     private StatusBarManager statusBarManager;
     private ClipboardManager clipboardManager;
+    private ActivityManager activityManager;
 
     public ServiceManager() {
         try {
@@ -75,5 +76,22 @@ public final class ServiceManager {
             clipboardManager = new ClipboardManager(getService("clipboard", "android.content.IClipboard"));
         }
         return clipboardManager;
+    }
+
+    public ActivityManager getActivityManager() {
+        if (activityManager == null) {
+            try {
+                // On old Android versions, the ActivityManager is not exposed via AIDL,
+                // so use ActivityManagerNative.getDefault()
+                Class<?> cls = Class.forName("android.app.ActivityManagerNative");
+                Method getDefaultMethod = cls.getDeclaredMethod("getDefault");
+                IInterface am = (IInterface) getDefaultMethod.invoke(null);
+                activityManager = new ActivityManager(am);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        return activityManager;
     }
 }

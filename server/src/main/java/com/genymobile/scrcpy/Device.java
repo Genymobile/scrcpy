@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
@@ -198,5 +199,9 @@ public final class Device {
         if (accelerometerRotation) {
             wm.thawRotation();
         }
+    }
+
+    public ContentProvider createSettingsProvider() {
+        return serviceManager.getActivityManager().createSettingsProvider();
     }
 }
