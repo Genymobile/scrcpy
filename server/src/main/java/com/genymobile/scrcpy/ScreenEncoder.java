@@ -17,32 +17,27 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenEncoder implements Device.RotationListener {
 
-    private static final int DEFAULT_FRAME_RATE = 60; // fps
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
+    private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
 
-    private static final int REPEAT_FRAME_DELAY = 6; // repeat after 6 frames
-
-    private static final int MICROSECONDS_IN_ONE_SECOND = 1_000_000;
     private static final int NO_PTS = -1;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
     private int bitRate;
-    private int frameRate;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int frameRate, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
-        this.frameRate = frameRate;
         this.iFrameInterval = iFrameInterval;
     }
 
     public ScreenEncoder(boolean sendFrameMeta, int bitRate) {
-        this(sendFrameMeta, bitRate, DEFAULT_FRAME_RATE, DEFAULT_I_FRAME_INTERVAL);
+        this(sendFrameMeta, bitRate, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -65,7 +60,7 @@ public class ScreenEncoder implements Device.RotationListener {
         // <https://github.com/Genymobile/scrcpy/issues/921>
         Looper.prepareMainLooper();
 
-        MediaFormat format = createFormat(bitRate, frameRate, iFrameInterval);
+        MediaFormat format = createFormat(bitRate, iFrameInterval);
         device.setRotationListener(this);
         boolean alive;
         try {
@@ -148,15 +143,16 @@ public class ScreenEncoder implements Device.RotationListener {
         return MediaCodec.createEncoderByType("video/avc");
     }
 
-    private static MediaFormat createFormat(int bitRate, int frameRate, int iFrameInterval) throws IOException {
+    private static MediaFormat createFormat(int bitRate, int iFrameInterval) throws IOException {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, "video/avc");
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
-        format.setInteger(MediaFormat.KEY_FRAME_RATE, frameRate);
+        // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
+        format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval);
         // display the very first frame, and recover from bad quality when no new frames
-        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, MICROSECONDS_IN_ONE_SECOND * REPEAT_FRAME_DELAY / frameRate); // µs
+        format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
         return format;
     }
 
