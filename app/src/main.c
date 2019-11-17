@@ -50,6 +50,10 @@ static void usage(const char *arg0) {
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
+        "    --max-fps value\n"
+        "        Limit the frame rate of screen capture (only supported on\n"
+        "        devices with Android >= 10).\n"
+        "\n"
         "    -m, --max-size value\n"
         "        Limit both the width and height of the video to value. The\n"
         "        other dimension is computed so that the device aspect-ratio\n"
@@ -270,6 +274,28 @@ parse_max_size(char *optarg, uint16_t *max_size) {
 }
 
 static bool
+parse_max_fps(const char *optarg, uint16_t *max_fps) {
+    char *endptr;
+    if (*optarg == '\0') {
+        LOGE("Max FPS parameter is empty");
+        return false;
+    }
+    long value = strtol(optarg, &endptr, 0);
+    if (*endptr != '\0') {
+        LOGE("Invalid max FPS: %s", optarg);
+        return false;
+    }
+    if (value & ~0xffff) {
+        // in practice, it should not be higher than 60
+        LOGE("Max FPS value is invalid: %ld", value);
+        return false;
+    }
+
+    *max_fps = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_window_position(char *optarg, int16_t *position) {
     char *endptr;
     if (*optarg == '\0') {
@@ -374,6 +400,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_WIDTH          1009
 #define OPT_WINDOW_HEIGHT         1010
 #define OPT_WINDOW_BORDERLESS     1011
+#define OPT_MAX_FPS               1012
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -383,6 +410,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"crop",                  required_argument, NULL, OPT_CROP},
         {"fullscreen",            no_argument,       NULL, 'f'},
         {"help",                  no_argument,       NULL, 'h'},
+        {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
         {"max-size",              required_argument, NULL, 'm'},
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
@@ -437,6 +465,11 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 break;
             case 'h':
                 args->help = true;
+                break;
+            case OPT_MAX_FPS:
+                if (!parse_max_fps(optarg, &opts->max_fps)) {
+                    return false;
+                }
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {

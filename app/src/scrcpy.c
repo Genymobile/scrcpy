@@ -280,6 +280,7 @@ scrcpy(const struct scrcpy_options *options) {
         .local_port = options->port,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
+        .max_fps = options->max_fps,
         .control = options->control,
     };
     if (!server_start(&server, options->serial, &params)) {

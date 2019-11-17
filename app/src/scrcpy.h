@@ -18,6 +18,7 @@ struct scrcpy_options {
     uint16_t port;
     uint16_t max_size;
     uint32_t bit_rate;
+    uint16_t max_fps;
     int16_t window_x;
     int16_t window_y;
     uint16_t window_width;
@@ -43,6 +44,7 @@ struct scrcpy_options {
     .port = DEFAULT_LOCAL_PORT, \
     .max_size = DEFAULT_LOCAL_PORT, \
     .bit_rate = DEFAULT_BIT_RATE, \
+    .max_fps = 0, \
     .window_x = -1, \
     .window_y = -1, \
     .window_width = 0, \

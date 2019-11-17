@@ -118,8 +118,10 @@ static process_t
 execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
+    char max_fps_string[6];
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
+    sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
@@ -134,6 +136,7 @@ execute_server(struct server *server, const struct server_params *params) {
         SCRCPY_VERSION,
         max_size_string,
         bit_rate_string,
+        max_fps_string,
         server->tunnel_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)

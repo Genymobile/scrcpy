@@ -17,7 +17,7 @@ public final class Server {
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps());
 
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
@@ -77,8 +77,8 @@ public final class Server {
                     + "(" + BuildConfig.VERSION_NAME + ")");
         }
 
-        if (args.length != 7) {
-            throw new IllegalArgumentException("Expecting 7 parameters");
+        if (args.length != 8) {
+            throw new IllegalArgumentException("Expecting 8 parameters");
         }
 
         Options options = new Options();
@@ -89,17 +89,20 @@ public final class Server {
         int bitRate = Integer.parseInt(args[2]);
         options.setBitRate(bitRate);
 
+        int maxFps = Integer.parseInt(args[3]);
+        options.setMaxFps(maxFps);
+
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[3]);
+        boolean tunnelForward = Boolean.parseBoolean(args[4]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[4]);
+        Rect crop = parseCrop(args[5]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[5]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[6]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[6]);
+        boolean control = Boolean.parseBoolean(args[7]);
         options.setControl(control);
 
         return options;

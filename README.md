@@ -134,6 +134,14 @@ scrcpy --bit-rate 2M
 scrcpy -b 2M  # short version
 ```
 
+### Limit capture frame rate
+
+On device with Android >= 10, the capture frame rate can be limited:
+
+```bash
+scrcpy --max-fps 15
+```
+
 
 ### Crop
 

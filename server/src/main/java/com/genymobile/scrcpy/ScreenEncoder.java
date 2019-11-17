@@ -6,6 +6,7 @@ import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.Looper;
 import android.view.Surface;
@@ -26,18 +27,20 @@ public class ScreenEncoder implements Device.RotationListener {
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
     private int bitRate;
+    private int maxFps;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
+        this.maxFps = maxFps;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate) {
-        this(sendFrameMeta, bitRate, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
+        this(sendFrameMeta, bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -60,7 +63,7 @@ public class ScreenEncoder implements Device.RotationListener {
         // <https://github.com/Genymobile/scrcpy/issues/921>
         Looper.prepareMainLooper();
 
-        MediaFormat format = createFormat(bitRate, iFrameInterval);
+        MediaFormat format = createFormat(bitRate, maxFps, iFrameInterval);
         device.setRotationListener(this);
         boolean alive;
         try {
@@ -143,7 +146,8 @@ public class ScreenEncoder implements Device.RotationListener {
         return MediaCodec.createEncoderByType("video/avc");
     }
 
-    private static MediaFormat createFormat(int bitRate, int iFrameInterval) throws IOException {
+    @SuppressWarnings("checkstyle:MagicNumber")
+    private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, "video/avc");
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
@@ -153,6 +157,13 @@ public class ScreenEncoder implements Device.RotationListener {
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval);
         // display the very first frame, and recover from bad quality when no new frames
         format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
+        if (maxFps > 0) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                format.setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, maxFps);
+            } else {
+                Ln.w("Max FPS is only supported since Android 10, the option has been ignored");
+            }
+        }
         return format;
     }
 
