@@ -11,6 +11,8 @@
 
 set -e
 
+SCRCPY_VERSION_NAME=1.10
+
 PLATFORM=${ANDROID_PLATFORM:-29}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-29.0.2}
 
@@ -31,6 +33,7 @@ package com.genymobile.scrcpy;
 
 public final class BuildConfig {
   public static final boolean DEBUG = false;
+  public static final String VERSION_NAME = "$SCRCPY_VERSION_NAME";
 }
 EOF
 
