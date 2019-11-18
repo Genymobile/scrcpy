@@ -1,5 +1,8 @@
 # scrcpy (v1.10)
 
+This document will be updated frequently along with the original Readme file
+이 문서는 원어 리드미 파일의 업데이트에 따라 종종 업데이트 될 것입니다
+
  이 어플리케이션은 UBS ( 혹은 [TCP/IP][article-tcpip] ) 로 연결된 Android 디바이스를 화면에 보여주고 관리하는 것을 제공합니다.
  _GNU/Linux_, _Windows_ 와 _macOS_ 상에서 작동합니다.
  (아래 설명에서 디바이스는 안드로이드 핸드폰을 의미합니다.)
