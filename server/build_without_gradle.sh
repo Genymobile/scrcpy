@@ -11,6 +11,7 @@
 
 set -e
 
+SCRCPY_DEBUG=false
 SCRCPY_VERSION_NAME=1.10
 
 PLATFORM=${ANDROID_PLATFORM:-29}
@@ -32,7 +33,7 @@ mkdir -p "$CLASSES_DIR/com/genymobile/scrcpy"
 package com.genymobile.scrcpy;
 
 public final class BuildConfig {
-  public static final boolean DEBUG = false;
+  public static final boolean DEBUG = $SCRCPY_DEBUG;
   public static final String VERSION_NAME = "$SCRCPY_VERSION_NAME";
 }
 EOF
