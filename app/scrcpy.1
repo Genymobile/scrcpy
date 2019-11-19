@@ -16,13 +16,17 @@ provides display and control of Android devices connected on USB (or over TCP/IP
 .SH OPTIONS
 
 .TP
+.B \-\-always\-on\-top
+Make scrcpy window always on top (above other windows).
+
+.TP
 .BI "\-b, \-\-bit\-rate " value
 Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
 
 Default is 8000000.
 
 .TP
-.BI "\-c, \-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
+.BI \-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
 The values are expressed in the device natural orientation (typically, portrait for a phone, landscape for a tablet). Any
@@ -32,10 +36,6 @@ value is computed on the cropped size.
 .TP
 .B \-f, \-\-fullscreen
 Start in fullscreen.
-
-.TP
-.BI "\-F, \-\-record\-format " format
-Force recording format (either mp4 or mkv).
 
 .TP
 .B \-h, \-\-help
@@ -84,8 +84,12 @@ Record screen to
 .IR file .
 
 The format is determined by the
-.B \-F/\-\-record\-format
+.B \-\-record\-format
 option if set, or by the file extension (.mp4 or .mkv).
+
+.TP
+.BI \-\-record\-format " format
+Force recording format (either mp4 or mkv).
 
 .TP
 .B \-\-render\-expired\-frames
@@ -104,10 +108,6 @@ Turn the device screen off immediately.
 Enable "show touches" on start, disable on quit.
 
 It only shows physical touches (not clicks from scrcpy).
-
-.TP
-.B \-T, \-\-always\-on\-top
-Make scrcpy window always on top (above other windows).
 
 .TP
 .B \-v, \-\-version
