@@ -216,6 +216,29 @@ scrcpy -s 0123456789abcdef  # short version
 
 You can start several instances of _scrcpy_ for several devices.
 
+#### SSH tunnel
+
+To connect to a remote device, it is possible to connect a local `adb` client to
+a remote `adb` server (provided they use the same version of the _adb_
+protocol):
+
+```bash
+adb kill-server    # kill the local adb server on 5037
+ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# keep this open
+```
+
+From another terminal:
+
+```bash
+scrcpy
+```
+
+Like for wireless connections, it may be useful to reduce quality:
+
+```
+scrcpy -b2M -m800 --max-fps 15
+```
 
 ### Window configuration
 
