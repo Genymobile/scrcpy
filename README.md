@@ -1,4 +1,4 @@
-# scrcpy (v1.10)
+# scrcpy (v1.11)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -62,13 +62,13 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.10.zip`][direct-win32]  
-   _(SHA-256: f98b400b3764404b33b212e9762dd6f1593ddb766c1480fc2609c94768e4a8e1)_
- - [`scrcpy-win64-v1.10.zip`][direct-win64]  
-   _(SHA-256: 95de34575d873c7e95dfcfb5e74d0f6af4f70b2a5bc6fde0f48d1a05480e3a44)_
+ - [`scrcpy-win32-v1.11.zip`][direct-win32]  
+   _(SHA-256: f25ed46e6f3e81e0ff9b9b4df7fe1a4bbd13f8396b7391be0a488b64c675b41e)_
+ - [`scrcpy-win64-v1.11.zip`][direct-win64]  
+   _(SHA-256: 3802c9ea0307d437947ff150ec65e53990b0beaacd0c8d0bed19c7650ce141bd)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.10/scrcpy-win32-v1.10.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.10/scrcpy-win64-v1.10.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win32-v1.11.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win64-v1.11.zip
 
 You can also [build the app manually][BUILD].
 
