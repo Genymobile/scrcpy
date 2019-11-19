@@ -108,8 +108,9 @@ scrcpy --help
 
 ## Features
 
+### Capture configuration
 
-### Reduce size
+#### Reduce size
 
 Sometimes, it is useful to mirror an Android device at a lower definition to
 increase performance.
@@ -125,7 +126,7 @@ The other dimension is computed to that the device aspect ratio is preserved.
 That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
-### Change bit-rate
+#### Change bit-rate
 
 The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
 
@@ -134,16 +135,15 @@ scrcpy --bit-rate 2M
 scrcpy -b 2M  # short version
 ```
 
-### Limit capture frame rate
+#### Limit frame rate
 
-On device with Android >= 10, the capture frame rate can be limited:
+On devices with Android >= 10, the capture frame rate can be limited:
 
 ```bash
 scrcpy --max-fps 15
 ```
 
-
-### Crop
+#### Crop
 
 The device screen may be cropped to mirror only part of the screen.
 
@@ -156,29 +156,7 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 If `--max-size` is also specified, resizing is applied after cropping.
 
 
-### Wireless
-
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP:
-
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
-
-It may be useful to decrease the bit-rate and the definition:
-
-```bash
-scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # short version
-```
-
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
-
-
-### Record screen
+### Recording
 
 It is possible to record the screen while mirroring:
 
@@ -203,7 +181,31 @@ variation] does not impact the recorded file.
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
-### Multi-devices
+### Connection
+
+#### Wireless
+
+_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+device over TCP/IP:
+
+1. Connect the device to the same Wi-Fi as your computer.
+2. Get your device IP address (in Settings → About phone → Status).
+3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+4. Unplug your device.
+5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
+6. Run `scrcpy` as usual.
+
+It may be useful to decrease the bit-rate and the definition:
+
+```bash
+scrcpy --bit-rate 2M --max-size 800
+scrcpy -b2M -m800  # short version
+```
+
+[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+
+
+#### Multi-devices
 
 If several devices are listed in `adb devices`, you must specify the _serial_:
 
@@ -215,7 +217,41 @@ scrcpy -s 0123456789abcdef  # short version
 You can start several instances of _scrcpy_ for several devices.
 
 
-### Fullscreen
+### Window configuration
+
+#### Title
+
+By default, the window title is the device model. It can be changed:
+
+```bash
+scrcpy --window-title 'My device'
+```
+
+#### Position and size
+
+The initial window position and size may be specified:
+
+```bash
+scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
+```
+
+#### Borderless
+
+To disable window decorations:
+
+```bash
+scrcpy --window-borderless
+```
+
+#### Always on top
+
+To keep the scrcpy window always on top:
+
+```bash
+scrcpy --always-on-top
+```
+
+#### Fullscreen
 
 The app may be started directly in fullscreen:
 
@@ -227,16 +263,45 @@ scrcpy -f  # short version
 Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
 
 
-### Always on top
+### Other mirroring options
 
-The window of app can always be above others by:
+#### Read-only
+
+To disable controls (everything which can interact with the device: input keys,
+mouse events, drag&drop files):
 
 ```bash
-scrcpy --always-on-top
+scrcpy --no-control
+scrcpy -n
 ```
 
+#### Turn screen off
 
-### Show touches
+It is possible to turn the device screen off while mirroring on start with a
+command-line option:
+
+```bash
+scrcpy --turn-screen-off
+scrcpy -S
+```
+
+Or by pressing `Ctrl`+`o` at any time.
+
+To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
+#### Render expired frames
+
+By default, to minimize latency, _scrcpy_ always renders the last decoded frame
+available, and drops any previous one.
+
+To force the rendering of all frames (at a cost of a possible increased
+latency), use:
+
+```bash
+scrcpy --render-expired-frames
+```
+
+#### Show touches
 
 For presentations, it may be useful to show physical touches (on the physical
 device).
@@ -253,7 +318,9 @@ scrcpy -t
 Note that it only shows _physical_ touches (with the finger on the device).
 
 
-### Install APK
+### File drop
+
+#### Install APK
 
 To install an APK, drag & drop an APK file (ending with `.apk`) to the _scrcpy_
 window.
@@ -261,7 +328,7 @@ window.
 There is no visual feedback, a log is printed to the console.
 
 
-### Push file to device
+#### Push file to device
 
 To push a file to `/sdcard/` on the device, drag & drop a (non-APK) file to the
 _scrcpy_ window.
@@ -274,53 +341,9 @@ The target directory can be changed on start:
 scrcpy --push-target /sdcard/foo/bar/
 ```
 
-### Read-only
-
-To disable controls (everything which can interact with the device: input keys,
-mouse events, drag&drop files):
-
-```bash
-scrcpy --no-control
-scrcpy -n
-```
-
-### Turn screen off
-
-It is possible to turn the device screen off while mirroring on start with a
-command-line option:
-
-```bash
-scrcpy --turn-screen-off
-scrcpy -S
-```
-
-Or by pressing `Ctrl`+`o` at any time.
-
-To turn it back on, press `POWER` (or `Ctrl`+`p`).
 
 
-### Render expired frames
-
-By default, to minimize latency, _scrcpy_ always renders the last decoded frame
-available, and drops any previous one.
-
-To force the rendering of all frames (at a cost of a possible increased
-latency), use:
-
-```bash
-scrcpy --render-expired-frames
-```
-
-### Custom window title
-
-By default, the window title is the device model. It can be changed:
-
-```bash
-scrcpy --window-title 'My device'
-```
-
-
-### Forward audio
+### Audio forwarding
 
 Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
 
