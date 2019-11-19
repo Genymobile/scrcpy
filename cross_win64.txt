@@ -15,6 +15,6 @@ cpu = 'x86_64'
 endian = 'little'
 
 [properties]
-prebuilt_ffmpeg_shared = 'ffmpeg-4.1.4-win64-shared'
-prebuilt_ffmpeg_dev = 'ffmpeg-4.1.4-win64-dev'
+prebuilt_ffmpeg_shared = 'ffmpeg-4.2.1-win64-shared'
+prebuilt_ffmpeg_dev = 'ffmpeg-4.2.1-win64-dev'
 prebuilt_sdl2 = 'SDL2-2.0.10/x86_64-w64-mingw32'
