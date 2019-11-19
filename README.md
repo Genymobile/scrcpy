@@ -318,6 +318,40 @@ scrcpy -t
 Note that it only shows _physical_ touches (with the finger on the device).
 
 
+### Input control
+
+#### Copy-paste
+
+It is possible to synchronize clipboards between the computer and the device, in
+both directions:
+
+ - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
+ - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard;
+ - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
+   breaks non-ASCII characters).
+
+#### Text injection preference
+
+There are two kinds of [events][textevents] generated when typing text:
+ - _key events_, signaling that a key is pressed or released;
+ - _text events_, signaling that a text has been entered.
+
+By default, letters are injected using key events, so that the keyboard behaves
+as expected in games (typically for WASD keys).
+
+But this may [cause issues][prefertext]. If you encounter such a problem, you
+can avoid it by:
+
+```bash
+scrcpy --prefer-text
+```
+
+(but this will break keyboard behavior in games)
+
+[textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
+[prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+
+
 ### File drop
 
 #### Install APK
@@ -340,7 +374,6 @@ The target directory can be changed on start:
 ```bash
 scrcpy --push-target /sdcard/foo/bar/
 ```
-
 
 
 ### Audio forwarding
