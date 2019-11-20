@@ -65,14 +65,11 @@ Gentoo에서 ,[Ebuild] 가 가능합니다 : [`scrcpy/`][ebuild-link].
 ### Windows (윈도우)
 
 윈도우 상에서, 간단하게 설치하기 위해 종속성이 있는 사전 구축된 아카이브가 제공됩니다 (`adb` 포함) :
+해당 파일은 Readme원본 링크를 통해서 다운로드가 가능합니다.
+ - [`scrcpy-win`][direct-win]  
+ 
+[direct-win]: https://github.com/Genymobile/scrcpy/blob/master/README.md#windows
 
- - [`scrcpy-win32-v1.10.zip`][direct-win32]  
-   _(SHA-256: f98b400b3764404b33b212e9762dd6f1593ddb766c1480fc2609c94768e4a8e1)_
- - [`scrcpy-win64-v1.10.zip`][direct-win64]  
-   _(SHA-256: 95de34575d873c7e95dfcfb5e74d0f6af4f70b2a5bc6fde0f48d1a05480e3a44)_
-
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.10/scrcpy-win32-v1.10.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.10/scrcpy-win64-v1.10.zip
 
 [어플을 직접 설치][BUILD] 할 수도 있습니다.
 
