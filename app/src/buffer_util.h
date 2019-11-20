@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "config.h"
+
 static inline void
 buffer_write16be(uint8_t *buf, uint16_t value) {
     buf[0] = value >> 8;
@@ -16,6 +18,12 @@ buffer_write32be(uint8_t *buf, uint32_t value) {
     buf[1] = value >> 16;
     buf[2] = value >> 8;
     buf[3] = value;
+}
+
+static inline void
+buffer_write64be(uint8_t *buf, uint64_t value) {
+    buffer_write32be(buf, value >> 32);
+    buffer_write32be(&buf[4], (uint32_t) value);
 }
 
 static inline uint16_t

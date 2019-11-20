@@ -5,6 +5,7 @@ import android.graphics.Rect;
 public class Options {
     private int maxSize;
     private int bitRate;
+    private int maxFps;
     private boolean tunnelForward;
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
@@ -24,6 +25,14 @@ public class Options {
 
     public void setBitRate(int bitRate) {
         this.bitRate = bitRate;
+    }
+
+    public int getMaxFps() {
+        return maxFps;
+    }
+
+    public void setMaxFps(int maxFps) {
+        this.maxFps = maxFps;
     }
 
     public boolean isTunnelForward() {

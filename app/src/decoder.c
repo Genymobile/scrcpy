@@ -8,8 +8,8 @@
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
-#include "compat.h"
 #include "config.h"
+#include "compat.h"
 #include "buffer_util.h"
 #include "events.h"
 #include "lock_util.h"

@@ -23,21 +23,21 @@ cd -
 make -f Makefile.CrossWindows
 
 # the generated server must be the same everywhere
-cmp "$BUILDDIR/server/scrcpy-server.jar" dist/scrcpy-win32/scrcpy-server.jar
-cmp "$BUILDDIR/server/scrcpy-server.jar" dist/scrcpy-win64/scrcpy-server.jar
+cmp "$BUILDDIR/server/scrcpy-server" dist/scrcpy-win32/scrcpy-server
+cmp "$BUILDDIR/server/scrcpy-server" dist/scrcpy-win64/scrcpy-server
 
 # get version name
 TAG=$(git describe --tags --always)
 
 # create release directory
 mkdir -p "release-$TAG"
-cp "$BUILDDIR/server/scrcpy-server.jar" "release-$TAG/scrcpy-server-$TAG.jar"
+cp "$BUILDDIR/server/scrcpy-server" "release-$TAG/scrcpy-server-$TAG"
 cp "dist/scrcpy-win32-$TAG.zip" "release-$TAG/"
 cp "dist/scrcpy-win64-$TAG.zip" "release-$TAG/"
 
 # generate checksums
 cd "release-$TAG"
-sha256sum "scrcpy-server-$TAG.jar" \
+sha256sum "scrcpy-server-$TAG" \
           "scrcpy-win32-$TAG.zip" \
           "scrcpy-win64-$TAG.zip" > SHA256SUMS.txt
 

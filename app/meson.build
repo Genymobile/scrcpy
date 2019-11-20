@@ -3,10 +3,10 @@ src = [
     'src/command.c',
     'src/control_msg.c',
     'src/controller.c',
-    'src/convert.c',
     'src/decoder.c',
     'src/device.c',
     'src/device_msg.c',
+    'src/event_converter.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
@@ -93,7 +93,7 @@ conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 # the prefix used during configuration (meson --prefix=PREFIX)
 conf.set_quoted('PREFIX', get_option('prefix'))
 
-# build a "portable" version (with scrcpy-server.jar accessible from the same
+# build a "portable" version (with scrcpy-server accessible from the same
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
@@ -115,15 +115,16 @@ conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 # disable console on Windows
 conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
+# run a server debugger and wait for a client to be attached
+conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
 if get_option('windows_noconsole')
-    c_args = [ '-mwindows' ]
-    link_args = [ '-mwindows' ]
+    link_args = [ '-Wl,--subsystem,windows' ]
 else
-    c_args = []
     link_args = []
 endif
 
@@ -131,8 +132,10 @@ executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
-           c_args: c_args,
+           c_args: [],
            link_args: link_args)
+
+install_man('scrcpy.1')
 
 
 ### TESTS
@@ -149,6 +152,9 @@ tests = [
     ['test_device_event_deserialize', [
         'tests/test_device_msg_deserialize.c',
         'src/device_msg.c'
+    ]],
+    ['test_queue', [
+        'tests/test_queue.c',
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',

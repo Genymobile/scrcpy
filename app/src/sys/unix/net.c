@@ -2,6 +2,8 @@
 
 #include <unistd.h>
 
+#include "config.h"
+
 bool
 net_init(void) {
     // do nothing

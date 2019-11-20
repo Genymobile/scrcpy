@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "config.h"
 #include "log.h"
 
 #ifdef __WINDOWS__

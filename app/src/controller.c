@@ -91,7 +91,7 @@ run_controller(void *data) {
         bool ok = process_msg(controller, &msg);
         control_msg_destroy(&msg);
         if (!ok) {
-            LOGD("Cannot write msg to socket");
+            LOGD("Could not write msg to socket");
             break;
         }
     }

@@ -1,15 +1,26 @@
-# scrcpy (v1.9)
+# scrcpy (v1.11)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
-It works on _GNU/Linux_, _Windows_ and _MacOS_.
+It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
+
+It focuses on:
+
+ - **lightness** (native, displays only the device screen)
+ - **performance** (30~60fps)
+ - **quality** (1920×1080 or above)
+ - **low latency** ([35~70ms][lowlatency])
+ - **low startup time** (~1 second to display the first image)
+ - **non-intrusiveness** (nothing is left installed on the device)
+
+[lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
 
 ## Requirements
 
-The Android part requires at least API 21 (Android 5.0).
+The Android device requires at least API 21 (Android 5.0).
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
@@ -51,18 +62,18 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.9.zip`][direct-win32]  
-   _(SHA-256: 3234f7fbcc26b9e399f50b5ca9ed085708954c87fda1b0dd32719d6e7dd861ef)_
- - [`scrcpy-win64-v1.9.zip`][direct-win64]  
-   _(SHA-256: 0088eca1811ea7c7ac350d636c8465b266e6c830bb268770ff88fddbb493077e)_
+ - [`scrcpy-win32-v1.11.zip`][direct-win32]  
+   _(SHA-256: f25ed46e6f3e81e0ff9b9b4df7fe1a4bbd13f8396b7391be0a488b64c675b41e)_
+ - [`scrcpy-win64-v1.11.zip`][direct-win64]  
+   _(SHA-256: 3802c9ea0307d437947ff150ec65e53990b0beaacd0c8d0bed19c7650ce141bd)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-win32-v1.9.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-win64-v1.9.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win32-v1.11.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win64-v1.11.zip
 
 You can also [build the app manually][BUILD].
 
 
-### Mac OS
+### macOS
 
 The application is available in [Homebrew]. Just install it:
 
@@ -97,70 +108,55 @@ scrcpy --help
 
 ## Features
 
+### Capture configuration
 
-### Reduce size
+#### Reduce size
 
 Sometimes, it is useful to mirror an Android device at a lower definition to
-increase performances.
+increase performance.
 
-To limit both width and height to some value (e.g. 1024):
+To limit both the width and height to some value (e.g. 1024):
 
 ```bash
 scrcpy --max-size 1024
 scrcpy -m 1024  # short version
 ```
 
-The other dimension is computed to that the device aspect-ratio is preserved.
+The other dimension is computed to that the device aspect ratio is preserved.
 That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
-### Change bit-rate
+#### Change bit-rate
 
-The default bit-rate is 8Mbps. To change the video bitrate (e.g. to 2Mbps):
+The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
 
 ```bash
 scrcpy --bit-rate 2M
 scrcpy -b 2M  # short version
 ```
 
+#### Limit frame rate
 
-### Crop
+On devices with Android >= 10, the capture frame rate can be limited:
+
+```bash
+scrcpy --max-fps 15
+```
+
+#### Crop
 
 The device screen may be cropped to mirror only part of the screen.
 
-This is useful for example to mirror only 1 eye of the Oculus Go:
+This is useful for example to mirror only one eye of the Oculus Go:
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
-scrcpy -c 1224:1440:0:0       # short version
 ```
 
 If `--max-size` is also specified, resizing is applied after cropping.
 
 
-### Wireless
-
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP:
-
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
-
-It may be useful to decrease the bit-rate and the definition:
-
-```bash
-scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # short version
-```
-
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
-
-
-### Record screen
+### Recording
 
 It is possible to record the screen while mirroring:
 
@@ -185,7 +181,31 @@ variation] does not impact the recorded file.
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
-### Multi-devices
+### Connection
+
+#### Wireless
+
+_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+device over TCP/IP:
+
+1. Connect the device to the same Wi-Fi as your computer.
+2. Get your device IP address (in Settings → About phone → Status).
+3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+4. Unplug your device.
+5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
+6. Run `scrcpy` as usual.
+
+It may be useful to decrease the bit-rate and the definition:
+
+```bash
+scrcpy --bit-rate 2M --max-size 800
+scrcpy -b2M -m800  # short version
+```
+
+[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+
+
+#### Multi-devices
 
 If several devices are listed in `adb devices`, you must specify the _serial_:
 
@@ -196,8 +216,65 @@ scrcpy -s 0123456789abcdef  # short version
 
 You can start several instances of _scrcpy_ for several devices.
 
+#### SSH tunnel
 
-### Fullscreen
+To connect to a remote device, it is possible to connect a local `adb` client to
+a remote `adb` server (provided they use the same version of the _adb_
+protocol):
+
+```bash
+adb kill-server    # kill the local adb server on 5037
+ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# keep this open
+```
+
+From another terminal:
+
+```bash
+scrcpy
+```
+
+Like for wireless connections, it may be useful to reduce quality:
+
+```
+scrcpy -b2M -m800 --max-fps 15
+```
+
+### Window configuration
+
+#### Title
+
+By default, the window title is the device model. It can be changed:
+
+```bash
+scrcpy --window-title 'My device'
+```
+
+#### Position and size
+
+The initial window position and size may be specified:
+
+```bash
+scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
+```
+
+#### Borderless
+
+To disable window decorations:
+
+```bash
+scrcpy --window-borderless
+```
+
+#### Always on top
+
+To keep the scrcpy window always on top:
+
+```bash
+scrcpy --always-on-top
+```
+
+#### Fullscreen
 
 The app may be started directly in fullscreen:
 
@@ -209,17 +286,45 @@ scrcpy -f  # short version
 Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
 
 
-### Always on top
+### Other mirroring options
 
-The window of app can always be above others by:
+#### Read-only
+
+To disable controls (everything which can interact with the device: input keys,
+mouse events, drag&drop files):
 
 ```bash
-scrcpy --always-on-top
-scrcpy -T  # short version
+scrcpy --no-control
+scrcpy -n
 ```
 
+#### Turn screen off
 
-### Show touches
+It is possible to turn the device screen off while mirroring on start with a
+command-line option:
+
+```bash
+scrcpy --turn-screen-off
+scrcpy -S
+```
+
+Or by pressing `Ctrl`+`o` at any time.
+
+To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
+#### Render expired frames
+
+By default, to minimize latency, _scrcpy_ always renders the last decoded frame
+available, and drops any previous one.
+
+To force the rendering of all frames (at a cost of a possible increased
+latency), use:
+
+```bash
+scrcpy --render-expired-frames
+```
+
+#### Show touches
 
 For presentations, it may be useful to show physical touches (on the physical
 device).
@@ -236,7 +341,43 @@ scrcpy -t
 Note that it only shows _physical_ touches (with the finger on the device).
 
 
-### Install APK
+### Input control
+
+#### Copy-paste
+
+It is possible to synchronize clipboards between the computer and the device, in
+both directions:
+
+ - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
+ - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard;
+ - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
+   breaks non-ASCII characters).
+
+#### Text injection preference
+
+There are two kinds of [events][textevents] generated when typing text:
+ - _key events_, signaling that a key is pressed or released;
+ - _text events_, signaling that a text has been entered.
+
+By default, letters are injected using key events, so that the keyboard behaves
+as expected in games (typically for WASD keys).
+
+But this may [cause issues][prefertext]. If you encounter such a problem, you
+can avoid it by:
+
+```bash
+scrcpy --prefer-text
+```
+
+(but this will break keyboard behavior in games)
+
+[textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
+[prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+
+
+### File drop
+
+#### Install APK
 
 To install an APK, drag & drop an APK file (ending with `.apk`) to the _scrcpy_
 window.
@@ -244,87 +385,52 @@ window.
 There is no visual feedback, a log is printed to the console.
 
 
-### Push file to device
+#### Push file to device
 
 To push a file to `/sdcard/` on the device, drag & drop a (non-APK) file to the
 _scrcpy_ window.
 
 There is no visual feedback, a log is printed to the console.
 
-
-### Read-only
-
-To disable controls (everything which can interact with the device: input keys,
-mouse events, drag&drop files):
+The target directory can be changed on start:
 
 ```bash
-scrcpy --no-control
-scrcpy -n
-```
-
-### Turn screen off
-
-It is possible to turn the device screen off while mirroring on start with a
-command-line option:
-
-```bash
-scrcpy --turn-screen-off
-scrcpy -S
-```
-
-Or by pressing `Ctrl`+`o` at any time.
-
-To turn it back on, press `POWER` (or `Ctrl`+`p`).
-
-
-### Render expired frames
-
-By default, to minimize latency, _scrcpy_ always renders the last decoded frame
-available, and drops any previous one.
-
-To force the rendering of all frames (at a cost of a possible increased
-latency), use:
-
-```bash
-scrcpy --render-expired-frames
+scrcpy --push-target /sdcard/foo/bar/
 ```
 
 
-### Forward audio
+### Audio forwarding
 
-Audio is not forwarded by _scrcpy_.
+Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
 
-There is a limited solution using [AOA], implemented in the [`audio`] branch. If
-you are interested, see [issue 14].
+Also see [issue #14].
 
-
-[AOA]: https://source.android.com/devices/accessories/aoa2
-[`audio`]: https://github.com/Genymobile/scrcpy/commits/audio
-[issue 14]: https://github.com/Genymobile/scrcpy/issues/14
+[USBaudio]: https://github.com/rom1v/usbaudio
+[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
 
- | Action                                 |   Shortcut                    |
- | -------------------------------------- |:----------------------------  |
- | switch fullscreen mode                 | `Ctrl`+`f`                    |
- | resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    |
- | resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ |
- | click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  |
- | click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  |
- | click on `APP_SWITCH`                  | `Ctrl`+`s`                    |
- | click on `MENU`                        | `Ctrl`+`m`                    |
- | click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_   (`Cmd`+`↑` on MacOS) |
- | click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_ (`Cmd`+`↓` on MacOS) |
- | click on `POWER`                       | `Ctrl`+`p`                    |
- | power on                               | _Right-click²_                |
- | turn device screen off (keep mirroring)| `Ctrl`+`o`                    |
- | expand notification panel              | `Ctrl`+`n`                    |
- | collapse notification panel            | `Ctrl`+`Shift`+`n`            |
- | copy device clipboard to computer      | `Ctrl`+`c`                    |
- | paste computer clipboard to device     | `Ctrl`+`v`                    |
- | copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            |
- | enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    |
+ | Action                                 |   Shortcut                    |   Shortcut (macOS)
+ | -------------------------------------- |:----------------------------- |:-----------------------------
+ | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
+ | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
+ | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
+ | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
+ | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    | `Cmd`+`s`
+ | Click on `MENU`                        | `Ctrl`+`m`                    | `Ctrl`+`m`
+ | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
+ | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
+ | Power on                               | _Right-click²_                | _Right-click²_
+ | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
+ | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
+ | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
+ | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
+ | Paste computer clipboard to device     | `Ctrl`+`v`                    | `Cmd`+`v`
+ | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    | `Cmd`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
@@ -337,7 +443,7 @@ To use a specific _adb_ binary, configure its path in the environment variable
 
     ADB=/path/to/adb scrcpy
 
-To override the path of the `scrcpy-server.jar` file, configure its path in
+To override the path of the `scrcpy-server` file, configure its path in
 `SCRCPY_SERVER_PATH`.
 
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
@@ -375,6 +481,7 @@ Read the [developers page].
 ## Licence
 
     Copyright (C) 2018 Genymobile
+    Copyright (C) 2018-2019 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

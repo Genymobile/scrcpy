@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+#include "config.h"
+
 // like strncpy, except:
 //  - it copies at most n-1 chars
 //  - the dest string is nul-terminated

@@ -1,5 +1,6 @@
 #include "net.h"
 
+#include "config.h"
 #include "log.h"
 
 bool

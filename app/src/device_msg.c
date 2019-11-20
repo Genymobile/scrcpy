@@ -3,6 +3,7 @@
 #include <string.h>
 #include <SDL2/SDL_assert.h>
 
+#include "config.h"
 #include "buffer_util.h"
 #include "log.h"
 

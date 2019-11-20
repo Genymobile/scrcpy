@@ -43,7 +43,7 @@ Install the required packages from your package manager.
 sudo apt install ffmpeg libsdl2-2.0-0
 
 # client build dependencies
-sudo apt install make gcc git pkg-config meson ninja-build \
+sudo apt install gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
                  libsdl2-dev
 
@@ -70,7 +70,7 @@ sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-rele
 sudo dnf install SDL2-devel ffms2-devel meson gcc make
 
 # server build dependencies
-sudo dnf install java
+sudo dnf install java-devel
 ```
 
 
@@ -195,8 +195,7 @@ Then, build:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true
-cd x
-ninja
+ninja -Cx
 ```
 
 _Note: `ninja` [must][ninja-user] be run as a non-root user (only `ninja
@@ -219,13 +218,13 @@ To run without installing:
 After a successful build, you can install _scrcpy_ on the system:
 
 ```bash
-sudo ninja install    # without sudo on Windows
+sudo ninja -Cx install    # without sudo on Windows
 ```
 
 This installs two files:
 
  - `/usr/local/bin/scrcpy`
- - `/usr/local/share/scrcpy/scrcpy-server.jar`
+ - `/usr/local/share/scrcpy/scrcpy-server`
 
 Just remove them to "uninstall" the application.
 
@@ -234,18 +233,17 @@ You can then [run](README.md#run) _scrcpy_.
 
 ## Prebuilt server
 
- - [`scrcpy-server-v1.9.jar`][direct-scrcpy-server]  
-   _(SHA-256: ad7e539f100e48259b646f26982bc63e0a60a81ac87ae135e242855bef69bd1a)_
+ - [`scrcpy-server-v1.11`][direct-scrcpy-server]  
+   _(SHA-256: ff3a454012e91d9185cfe8ca7691cea16c43a7dcc08e92fa47ab9f0ea675abd1)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.9/scrcpy-server-v1.9.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
-    -Dprebuilt_server=/path/to/scrcpy-server.jar
-cd x
-ninja
-sudo ninja install
+    -Dprebuilt_server=/path/to/scrcpy-server
+ninja -Cx
+sudo ninja -Cx install
 ```

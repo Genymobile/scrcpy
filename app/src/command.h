@@ -33,6 +33,8 @@
 
 #endif
 
+#include "config.h"
+
 # define NO_EXIT_CODE -1
 
 enum process_result {

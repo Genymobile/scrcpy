@@ -20,4 +20,4 @@ then
     exit 1
 fi
 
-SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server.jar" "$BUILDDIR/app/scrcpy" "$@"
+SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server" "$BUILDDIR/app/scrcpy" "$@"

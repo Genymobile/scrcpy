@@ -5,8 +5,10 @@
 #include <stdbool.h>
 #include <unistd.h>
 
+#include "config.h"
+
 // To define a circular buffer type of 20 ints:
-//     typedef CBUF(int, 20) my_cbuf_t;
+//     struct cbuf_int CBUF(int, 20);
 //
 // data has length CAP + 1 to distinguish empty vs full.
 #define CBUF(TYPE, CAP) { \
@@ -35,7 +37,7 @@
             (PCBUF)->head = ((PCBUF)->head + 1) % cbuf_size_(PCBUF); \
         } \
         ok; \
-    }) \
+    })
 
 #define cbuf_take(PCBUF, PITEM) \
     ({ \
