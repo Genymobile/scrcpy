@@ -40,7 +40,7 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o "$CLASSES_DIR" \
+"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
     android/view/IRotationWatcher.aidl
 
 echo "Compiling java sources..."
