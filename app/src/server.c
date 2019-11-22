@@ -124,7 +124,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
+        "CLASSPATH=" DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
