@@ -16,7 +16,7 @@
 #define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
-#define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
+#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
 
 static const char *
 get_server_path(void) {
