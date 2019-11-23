@@ -1,4 +1,4 @@
-# scrcpy (v1.10)
+# scrcpy (v1.11)
 
 This document will be updated frequently along with the original Readme file
 이 문서는 원어 리드미 파일의 업데이트에 따라 종종 업데이트 될 것입니다
@@ -66,8 +66,8 @@ Gentoo에서 ,[Ebuild] 가 가능합니다 : [`scrcpy/`][ebuild-link].
 
 윈도우 상에서, 간단하게 설치하기 위해 종속성이 있는 사전 구축된 아카이브가 제공됩니다 (`adb` 포함) :
 해당 파일은 Readme원본 링크를 통해서 다운로드가 가능합니다.
- - [`scrcpy-win`][direct-win]  
- 
+ - [`scrcpy-win`][direct-win]
+
 [direct-win]: https://github.com/Genymobile/scrcpy/blob/master/README.md#windows
 
 
@@ -109,8 +109,10 @@ scrcpy --help
 
 ## 기능
 
+### 캡쳐 환경 설정
 
-### 사이즈 재정의
+
+###사이즈 재정의
 
 가끔씩 성능을 향상시키기위해 안드로이드 디바이스를 낮은 해상도에서 미러링하는 것이 유용할 때도 있습니다.
 
@@ -134,6 +136,14 @@ scrcpy --bit-rate 2M
 scrcpy -b 2M  # 축약 버전
 ```
 
+###프레임 비율 제한
+
+안드로이드 버전 10이상의 디바이스에서는, 다음의 명령어로 캡쳐 화면의 프레임 비율을 제한할 수 있습니다:
+
+```bash
+scrcpy --max-fps 15
+```
+
 
 ### Crop (잘라내기)
 
@@ -148,6 +158,31 @@ scrcpy -c 1224:1440:0:0       # 축약 버전
 
 만약 `--max-size` 도 지정하는 경우, 잘라낸 다음에 재정의된 크기가 적용될 것입니다.
 
+
+### 화면 녹화
+
+미러링하는 동안 화면 녹화를 할 수 있습니다 :
+
+```bash
+scrcpy --record file.mp4
+scrcpy -r file.mkv
+```
+
+녹화하는 동안 미러링을 멈출 수 있습니다 :
+
+```bash
+scrcpy --no-display --record file.mp4
+scrcpy -Nr file.mkv
+# Ctrl+C 로 녹화를 중단할 수 있습니다.
+# 윈도우 상에서 Ctrl+C 는 정상정으로 종료되지 않을 수 있으므로, 디바이스 연결을 해제하십시오.
+```
+
+"skipped frames" 은 모니터 화면에 보여지지 않았지만 녹화되었습니다 ( 성능 문제로 인해 ). 프레임은 디바이스 상에서 _타임 스탬프 ( 어느 시점에 데이터가 존재했다는 사실을 증명하기 위해 특정 위치에 시각을 표시 )_ 되었으므로, [packet delay
+variation] 은 녹화된 파일에 영향을 끼치지 않습니다.
+
+[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+
+## 연결
 
 ### 무선연결
 
@@ -170,29 +205,6 @@ scrcpy -b2M -m800  # 축약 버전
 [connect]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 
-### 화면 녹화
-
-미러링하는 동안 화면 녹화를 할 수 있습니다 :
-
-```bash
-scrcpy --record file.mp4
-scrcpy -r file.mkv
-```
-
-녹화하는 동안 미러링을 멈출 수 있습니다 :
-
-```bash
-scrcpy --no-display --record file.mp4
-scrcpy -Nr file.mkv
-# Ctrl+C 로 녹화를 중단할 수 있습니다.
-# 윈도우 상에서 Ctrl+C 는 정상정으로 종료되지 않을 수 있으므로, 디바이스 연결을 해제하십시오.
-```
-
-"skipeed frames" 은 모니터 화면에 보여지지 않았지만 녹화되었습니다 ( 성능 문제로 인해 ). 프레임은 디바이스 상에서 _타임 스탬프 ( 어느 시점에 데이터가 존재했다는 사실을 증명하기 위해 특정 위치에 시각을 표시 )_ 되었으므로, [packet delay
-variation] 은 녹화된 파일에 영향을 끼치지 않습니다.
-
-[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
-
 
 ### 여러 디바이스 사용 가능
 
@@ -206,6 +218,65 @@ scrcpy -s 0123456789abcdef  # 축약 버전
 _scrcpy_ 로 여러 디바이스를 연결해 사용할 수 있습니다.
 
 
+#### SSH tunnel
+
+떨어져 있는 디바이스와 연결하기 위해서는, 로컬 `adb` client와 떨어져 있는 `adb` 서버를 연결해야 합니다.  (디바이스와 클라이언트가 동일한 버전의 _adb_ protocol을 사용할 경우에 제공됩니다.):
+
+```bash
+adb kill-server    # 5037의 로컬 local adb server를 중단
+ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# 실행 유지
+```
+
+다른 터미널에서는 :
+
+```bash
+scrcpy
+```
+
+무선 연결과 동일하게, 화질을 줄이는 것이 나을 수 있습니다:
+
+```
+scrcpy -b2M -m800 --max-fps 15
+```
+
+## Window에서의 배치
+
+### 맞춤형 window 제목
+
+기본적으로, window의 이름은 디바이스의 모델명 입니다.
+다음의 명령어를 통해 변경하세요.
+
+```bash
+scrcpy --window-title 'My device'
+```
+
+
+### 배치와 크기
+
+초기 window창의 배치와 크기는 다음과 같이 설정할 수 있습니다:
+
+```bash
+scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
+```
+
+
+### 경계 없애기
+
+윈도우 장식(경계선 등)을 다음과 같이 제거할 수 있습니다:
+
+```bash
+scrcpy --window-borderless
+```
+
+### 항상 모든 윈도우 위에 실행창 고정
+
+이 어플리케이션의 윈도우 창은 다음의 명령어로 다른 window 위에 디스플레이 할 수 있습니다:
+
+```bash
+scrcpy --always-on-top
+scrcpy -T  # 축약 버전
+```
 
 ### 전체 화면
 
@@ -219,52 +290,7 @@ scrcpy -f  # short version
 전체 화면은  `Ctrl`+`f`키로 끄거나 켤 수 있습니다.
 
 
-### 항상 위에 화면 고정
-
-이 어플리케이션의 윈도우 창은 다음의 명령어로 다른 window 위에 디스플레이 할 수 있습니다:
-
-```bash
-scrcpy --always-on-top
-scrcpy -T  # 축약 버전
-```
-
-
-### 터치 화면에 나타내기
-
-발표를 할 때, 물리적인 기기에 한 물리적 터치를 나타내는 것이 유용할 수 있습니다.
-
-
-안드로이드 운영체제는 이런 기능을 _Developers options_에서 제공합니다.
-
-_Scrcpy_ 는 이런 기능을 시작할 때와 종료할 때 옵션으로 제공합니다.
-
-```bash
-scrcpy --show-touches
-scrcpy -t
-```
-
-화면에 _물리적인 터치만_ 나타나는 것에 유의하세요 (손가락을 디바이스에 대는 행위).
-
-
-### APK 실행하기
-
-APK를 실행하기 위해서는, APK file(파일명이`.apk`로 끝나는 파일)을  드래그하고 _scrcpy_ window에 드랍하세요 (drag and drop)
-
-시각적인 피드백은 없고,log 하나가 콘솔에 출력될 것입니다.
-
-
-### 디바이스에 파일 push하기
-
-디바이스의`/sdcard/`에 파일을 push하기 위해서는,
-APK파일이 아닌 파일을_scrcpy_ window에 드래그하고 드랍하세요.(drag and drop).
-
-시각적인 피드백은 없고,log 하나가 콘솔에 출력될 것입니다.
-
-해당 디렉토리는 시작할 때 변경이 가능합니다:
-
-```bash
-scrcpy --push-target /sdcard/foo/bar/
-```
+## 다른 미러링 옵션
 
 ### 읽기 전용(Read-only)
 
@@ -302,15 +328,73 @@ scrcpy -S
 scrcpy --render-expired-frames
 ```
 
-### 맞춤형 window 제목
 
-기본적으로, window의 이름은 디바이스의 모델명 입니다.
-다음의 명령어를 통해 변경하세요.
+### 화면에 터치 나타내기
+
+발표를 할 때, 물리적인 기기에 한 물리적 터치를 나타내는 것이 유용할 수 있습니다.
+
+안드로이드 운영체제는 이런 기능을 _Developers options_에서 제공합니다.
+
+_Scrcpy_ 는 이런 기능을 시작할 때와 종료할 때 옵션으로 제공합니다.
 
 ```bash
-scrcpy --window-title 'My device'
+scrcpy --show-touches
+scrcpy -t
 ```
 
+화면에 _물리적인 터치만_ 나타나는 것에 유의하세요 (손가락을 디바이스에 대는 행위).
+
+
+### 입력 제어
+
+#### 복사-붙여넣기
+
+컴퓨터와 디바이스 양방향으로 클립보드를 복사하는 것이 가능합니다:
+
+ - `Ctrl`+`c` 디바이스의 클립보드를 컴퓨터로 복사합니다;
+ - `Ctrl`+`Shift`+`v` 컴퓨터의 클립보드를 디바이스로 복사합니다;
+ - `Ctrl`+`v` 컴퓨터의 클립보드를 text event 로써 _붙여넣습니다_  ( 그러나, ASCII 코드가 아닌 경우 실행되지 않습니다 )
+
+#### 텍스트 삽입 우선 순위
+
+텍스트를 입력할 때 생성되는 두 가지의 [events][textevents] 가 있습니다:
+ - _key events_, 키가 눌려있는 지에 대한 신호;
+ - _text events_, 텍스트가 입력되었는지에 대한 신호.
+
+기본적으로, 글자들은 key event 를 이용해 입력되기 때문에, 키보드는 게임에서처럼 처리합니다 ( 보통 WASD 키에 대해서 ).
+
+그러나 이는 [issues 를 발생][prefertext]시킵니다. 이와 관련된 문제를 접할 경우, 아래와 같이 피할 수 있습니다:
+
+```bash
+scrcpy --prefer-text
+```
+
+( 그러나 이는 게임에서의 처리를 중단할 수 있습니다 )
+
+[textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
+[prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+
+
+### 파일 드랍
+
+### APK 실행하기
+
+APK를 실행하기 위해서는, APK file(파일명이`.apk`로 끝나는 파일)을  드래그하고 _scrcpy_ window에 드랍하세요 (drag and drop)
+
+시각적인 피드백은 없고,log 하나가 콘솔에 출력될 것입니다.
+
+### 디바이스에 파일 push하기
+
+디바이스의`/sdcard/`에 파일을 push하기 위해서는,
+APK파일이 아닌 파일을_scrcpy_ window에 드래그하고 드랍하세요.(drag and drop).
+
+시각적인 피드백은 없고,log 하나가 콘솔에 출력될 것입니다.
+
+해당 디렉토리는 시작할 때 변경이 가능합니다:
+
+```bash
+scrcpy --push-target /sdcard/foo/bar/
+```
 
 ### 오디오의 전달
 
@@ -320,7 +404,6 @@ _scrcpy_는 오디오를 직접 전달해주지 않습니다. [USBaudio] (Linux-
 
 [USBaudio]: https://github.com/rom1v/usbaudio
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
-
 
 ## 단축키
 
@@ -348,7 +431,6 @@ _scrcpy_는 오디오를 직접 전달해주지 않습니다. [USBaudio] (Linux-
 _¹검은 공백을 제거하기 위해서는 그 부분을 더블 클릭하세요_
 _²화면이 꺼진 상태에서 우클릭 시 다시 켜지며, 그 외의 상태에서는 뒤로 돌아갑니다.
 
-
 ## 맞춤 경로 (custom path)
 
 특정한 _adb_ binary를 사용하기 위해서는, 그것의 경로를 환경변수로 설정하세요.
@@ -361,7 +443,7 @@ _²화면이 꺼진 상태에서 우클릭 시 다시 켜지며, 그 외의 상�
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 
 
-## _scrcpy_인 이유?
+## _scrcpy_ 인 이유?
 
 한 동료가 [gnirehtet]와 같이 발음하기 어려운 이름을 찾을 수 있는지 도발했습니다.
 
@@ -371,12 +453,12 @@ _²화면이 꺼진 상태에서 우클릭 시 다시 켜지며, 그 외의 상�
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
 
 
+
 ## 빌드하는 방법?
 
 [BUILD]을 참고하세요.
 
 [BUILD]: BUILD.md
-
 
 ## 흔한 issue
 
