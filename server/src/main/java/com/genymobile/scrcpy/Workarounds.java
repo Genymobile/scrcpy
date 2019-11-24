@@ -48,9 +48,9 @@ public final class Workarounds {
             applicationInfo.packageName = "com.genymobile.scrcpy";
 
             // appBindData.appInfo = applicationInfo;
-            Field appInfo = appBindDataClass.getDeclaredField("appInfo");
-            appInfo.setAccessible(true);
-            appInfo.set(appBindData, applicationInfo);
+            Field appInfoField = appBindDataClass.getDeclaredField("appInfo");
+            appInfoField.setAccessible(true);
+            appInfoField.set(appBindData, applicationInfo);
 
             // activityThread.mBoundApplication = appBindData;
             Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
