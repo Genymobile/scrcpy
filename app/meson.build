@@ -10,16 +10,16 @@ src = [
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
-    'src/net.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
-    'src/str_util.c',
-    'src/tiny_xpm.c',
     'src/stream.c',
+    'src/tiny_xpm.c',
     'src/video_buffer.c',
+    'src/util/net.c',
+    'src/util/str_util.c'
 ]
 
 if not get_option('crossbuild_windows')
@@ -147,7 +147,7 @@ tests = [
     ['test_control_event_serialize', [
         'tests/test_control_msg_serialize.c',
         'src/control_msg.c',
-        'src/str_util.c'
+        'src/util/str_util.c'
     ]],
     ['test_device_event_deserialize', [
         'tests/test_device_msg_deserialize.c',
@@ -158,7 +158,7 @@ tests = [
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',
-        'src/str_util.c'
+        'src/util/str_util.c'
     ]],
 ]
 

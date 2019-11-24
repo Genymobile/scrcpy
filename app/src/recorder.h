@@ -8,7 +8,7 @@
 
 #include "config.h"
 #include "common.h"
-#include "queue.h"
+#include "util/queue.h"
 
 enum recorder_format {
     RECORDER_FORMAT_AUTO,

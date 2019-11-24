@@ -4,8 +4,8 @@
 
 #include "config.h"
 #include "event_converter.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 // Convert window coordinates (as provided by SDL_GetMouseState() to renderer
 // coordinates (as provided in SDL mouse events)

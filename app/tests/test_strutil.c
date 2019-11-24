@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "str_util.h"
+#include "util/str_util.h"
 
 static void test_xstrncpy_simple(void) {
     char s[] = "xxxxxxxxxx";

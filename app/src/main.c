@@ -10,8 +10,8 @@
 
 #include "config.h"
 #include "compat.h"
-#include "log.h"
 #include "recorder.h"
+#include "util/log.h"
 
 struct args {
     struct scrcpy_options opts;

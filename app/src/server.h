@@ -6,7 +6,7 @@
 
 #include "config.h"
 #include "command.h"
-#include "net.h"
+#include "util/net.h"
 
 struct server {
     char *serial;

@@ -5,8 +5,8 @@
 
 #include "config.h"
 #include "device_msg.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 bool
 receiver_init(struct receiver *receiver, socket_t control_socket) {

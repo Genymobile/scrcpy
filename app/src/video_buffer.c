@@ -6,8 +6,8 @@
 #include <libavformat/avformat.h>
 
 #include "config.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 bool
 video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,

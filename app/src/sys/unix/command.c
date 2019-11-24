@@ -17,7 +17,8 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "log.h"
+
+#include "util/log.h"
 
 enum process_result
 cmd_execute(const char *path, const char *const argv[], pid_t *pid) {

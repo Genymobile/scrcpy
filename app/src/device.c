@@ -1,7 +1,7 @@
 #include "device.h"
 
 #include "config.h"
-#include "log.h"
+#include "util/log.h"
 
 bool
 device_read_info(socket_t device_socket, char *device_name, struct size *size) {

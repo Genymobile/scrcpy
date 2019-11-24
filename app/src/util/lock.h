@@ -1,5 +1,5 @@
-#ifndef LOCKUTIL_H
-#define LOCKUTIL_H
+#ifndef LOCK_H
+#define LOCK_H
 
 #include <stdint.h>
 #include <SDL2/SDL_mutex.h>

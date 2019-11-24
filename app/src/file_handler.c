@@ -5,8 +5,8 @@
 
 #include "config.h"
 #include "command.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/"
 

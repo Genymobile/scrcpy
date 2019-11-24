@@ -3,8 +3,8 @@
 #include <SDL2/SDL_assert.h>
 
 #include "config.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 bool
 controller_init(struct controller *controller, socket_t control_socket) {

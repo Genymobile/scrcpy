@@ -18,15 +18,15 @@
 #include "file_handler.h"
 #include "fps_counter.h"
 #include "input_manager.h"
-#include "log.h"
-#include "lock_util.h"
-#include "net.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
+#include "util/lock.h"
+#include "util/log.h"
+#include "util/net.h"
 
 static struct server server = SERVER_INITIALIZER;
 static struct screen screen = SCREEN_INITIALIZER;

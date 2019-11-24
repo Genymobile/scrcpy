@@ -4,8 +4,8 @@
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 #define FPS_COUNTER_INTERVAL_MS 1000
 

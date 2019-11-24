@@ -7,10 +7,10 @@
 #include "common.h"
 #include "compat.h"
 #include "icon.xpm"
-#include "lock_util.h"
-#include "log.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 #define DISPLAY_MARGINS 96
 

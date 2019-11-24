@@ -10,12 +10,12 @@
 
 #include "config.h"
 #include "compat.h"
-#include "buffer_util.h"
 #include "events.h"
-#include "lock_util.h"
-#include "log.h"
 #include "recorder.h"
 #include "video_buffer.h"
+#include "util/buffer_util.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 // set the decoded frame as ready for rendering, and notify
 static void

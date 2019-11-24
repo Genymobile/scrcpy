@@ -4,9 +4,9 @@
 #include <SDL2/SDL_assert.h>
 
 #include "config.h"
-#include "buffer_util.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/buffer_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static void
 write_position(uint8_t *buf, const struct position *position) {

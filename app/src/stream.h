@@ -8,7 +8,7 @@
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
-#include "net.h"
+#include "util/net.h"
 
 struct video_buffer;
 

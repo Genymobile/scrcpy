@@ -5,8 +5,8 @@
 
 #include "config.h"
 #include "compat.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 

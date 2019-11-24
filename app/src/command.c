@@ -7,8 +7,8 @@
 
 #include "config.h"
 #include "common.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static const char *adb_command;
 

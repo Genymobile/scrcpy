@@ -4,8 +4,8 @@
 #include <SDL2/SDL_assert.h>
 
 #include "config.h"
-#include "buffer_util.h"
-#include "log.h"
+#include "util/buffer_util.h"
+#include "util/log.h"
 
 ssize_t
 device_msg_deserialize(const unsigned char *buf, size_t len,

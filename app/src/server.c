@@ -9,8 +9,8 @@
 
 #include "config.h"
 #include "command.h"
-#include "log.h"
-#include "net.h"
+#include "util/log.h"
+#include "util/net.h"
 
 #define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
