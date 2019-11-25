@@ -21,10 +21,8 @@ public class Controller {
 
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
-    private final MotionEvent.PointerProperties[] pointerProperties =
-            new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
-    private final MotionEvent.PointerCoords[] pointerCoords =
-            new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
+    private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
+    private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
@@ -176,8 +174,8 @@ public class Controller {
             }
         }
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties,
-                pointerCoords, 0, buttons, 1f, 1f, 0, 0, InputDevice.SOURCE_TOUCHSCREEN, 0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, 0, 0,
+                InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
@@ -198,15 +196,15 @@ public class Controller {
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties,
-                pointerCoords, 0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, 0, 0,
+                InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);
     }
 
     private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
         long now = SystemClock.uptimeMillis();
-        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD,
-                0, 0, InputDevice.SOURCE_KEYBOARD);
+        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
+                InputDevice.SOURCE_KEYBOARD);
         return injectEvent(event);
     }
 

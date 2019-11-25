@@ -43,8 +43,7 @@ public class ClipboardManager {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                     setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
                 } else {
-                    setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class,
-                            String.class, int.class);
+                    setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
                 }
             } catch (NoSuchMethodException e) {
                 Ln.e("Could not find method", e);
@@ -53,16 +52,15 @@ public class ClipboardManager {
         return setPrimaryClipMethod;
     }
 
-    private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException,
-            IllegalAccessException {
+    private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return (ClipData) method.invoke(manager, PACKAGE_NAME);
         }
         return (ClipData) method.invoke(manager, PACKAGE_NAME, USER_ID);
     }
 
-    private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData) throws InvocationTargetException,
-            IllegalAccessException {
+    private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData)
+            throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, PACKAGE_NAME);
         } else {

@@ -47,8 +47,7 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure,
-            int buttons) {
+    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure, int buttons) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_TOUCH_EVENT;
         msg.action = action;

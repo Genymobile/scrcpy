@@ -73,8 +73,8 @@ public final class Server {
 
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
-            throw new IllegalArgumentException("The server version (" + clientVersion + ") does not match the client "
-                    + "(" + BuildConfig.VERSION_NAME + ")");
+            throw new IllegalArgumentException(
+                    "The server version (" + clientVersion + ") does not match the client " + "(" + BuildConfig.VERSION_NAME + ")");
         }
 
         if (args.length != 8) {

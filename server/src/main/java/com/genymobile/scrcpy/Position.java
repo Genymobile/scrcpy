@@ -32,8 +32,7 @@ public class Position {
             return false;
         }
         Position position = (Position) o;
-        return Objects.equals(point, position.point)
-                && Objects.equals(screenSize, position.screenSize);
+        return Objects.equals(point, position.point) && Objects.equals(screenSize, position.screenSize);
     }
 
     @Override
@@ -43,10 +42,7 @@ public class Position {
 
     @Override
     public String toString() {
-        return "Position{"
-                + "point=" + point
-                + ", screenSize=" + screenSize
-                + '}';
+        return "Position{" + "point=" + point + ", screenSize=" + screenSize + '}';
     }
 
 }
