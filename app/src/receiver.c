@@ -23,7 +23,7 @@ receiver_destroy(struct receiver *receiver) {
 }
 
 static void
-process_msg(struct receiver *receiver, struct device_msg *msg) {
+process_msg(struct device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD:
             LOGI("Device clipboard copied");
@@ -33,7 +33,7 @@ process_msg(struct receiver *receiver, struct device_msg *msg) {
 }
 
 static ssize_t
-process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
+process_msgs(const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -45,7 +45,7 @@ process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
             return head;
         }
 
-        process_msg(receiver, &msg);
+        process_msg(&msg);
         device_msg_destroy(&msg);
 
         head += r;
@@ -72,7 +72,7 @@ run_receiver(void *data) {
             break;
         }
 
-        ssize_t consumed = process_msgs(receiver, buf, r);
+        ssize_t consumed = process_msgs(buf, r);
         if (consumed == -1) {
             // an error occurred
             break;

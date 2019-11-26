@@ -201,6 +201,7 @@ handle_event(SDL_Event *event, bool control) {
 
 static bool
 event_loop(bool display, bool control) {
+    (void) display;
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (display) {
         SDL_AddEventWatch(event_watcher, NULL);
@@ -256,6 +257,7 @@ sdl_priority_from_av_level(int level) {
 
 static void
 av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
+    (void) avcl;
     SDL_LogPriority priority = sdl_priority_from_av_level(level);
     if (priority == 0) {
         return;
