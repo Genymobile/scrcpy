@@ -625,7 +625,7 @@ main(int argc, char *argv[]) {
         return 1;
     }
 
-#ifdef BUILD_DEBUG
+#ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 #endif
 

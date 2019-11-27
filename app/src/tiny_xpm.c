@@ -36,7 +36,7 @@ find_color(struct index *index, int len, char c, uint32_t *color) {
 // (non-const) "char *"
 SDL_Surface *
 read_xpm(char *xpm[]) {
-#if SDL_ASSERT_LEVEL >= 2
+#ifndef NDEBUG
     // patch the XPM to change the icon color in debug mode
     xpm[2] = ".	c #CC00CC";
 #endif

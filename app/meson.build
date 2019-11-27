@@ -85,7 +85,7 @@ endif
 conf = configuration_data()
 
 # expose the build type
-conf.set('BUILD_DEBUG', get_option('buildtype') == 'debug')
+conf.set('NDEBUG', get_option('buildtype') != 'debug')
 
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
