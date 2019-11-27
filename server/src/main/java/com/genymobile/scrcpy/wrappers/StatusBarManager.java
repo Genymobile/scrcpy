@@ -17,49 +17,35 @@ public class StatusBarManager {
         this.manager = manager;
     }
 
-    private Method getExpandNotificationsPanelMethod() {
+    private Method getExpandNotificationsPanelMethod() throws NoSuchMethodException {
         if (expandNotificationsPanelMethod == null) {
-            try {
-                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
-            }
+            expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
         }
         return expandNotificationsPanelMethod;
     }
 
-    private Method getCollapsePanelsMethod() {
+    private Method getCollapsePanelsMethod() throws NoSuchMethodException {
         if (collapsePanelsMethod == null) {
-            try {
-                collapsePanelsMethod = manager.getClass().getMethod("collapsePanels");
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
-            }
+            collapsePanelsMethod = manager.getClass().getMethod("collapsePanels");
         }
         return collapsePanelsMethod;
     }
 
     public void expandNotificationsPanel() {
-        Method method = getExpandNotificationsPanelMethod();
-        if (method == null) {
-            return;
-        }
         try {
+            Method method = getExpandNotificationsPanelMethod();
             method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 
     public void collapsePanels() {
-        Method method = getCollapsePanelsMethod();
-        if (method == null) {
-            return;
-        }
         try {
+            Method method = getCollapsePanelsMethod();
             method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 }

@@ -17,28 +17,21 @@ public final class PowerManager {
         this.manager = manager;
     }
 
-    private Method getIsScreenOnMethod() {
+    private Method getIsScreenOnMethod() throws NoSuchMethodException {
         if (isScreenOnMethod == null) {
-            try {
-                @SuppressLint("ObsoleteSdkInt") // we may lower minSdkVersion in the future
-                        String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
-                isScreenOnMethod = manager.getClass().getMethod(methodName);
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
-            }
+            @SuppressLint("ObsoleteSdkInt") // we may lower minSdkVersion in the future
+                    String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
+            isScreenOnMethod = manager.getClass().getMethod(methodName);
         }
         return isScreenOnMethod;
     }
 
     public boolean isScreenOn() {
-        Method method = getIsScreenOnMethod();
-        if (method == null) {
-            return false;
-        }
         try {
-            return (Boolean) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+            Method method = getIsScreenOnMethod();
+            return (boolean) method.invoke(manager);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
             return false;
         }
     }

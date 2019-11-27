@@ -21,26 +21,19 @@ public final class InputManager {
         this.manager = manager;
     }
 
-    private Method getInjectInputEventMethod() {
+    private Method getInjectInputEventMethod() throws NoSuchMethodException {
         if (injectInputEventMethod == null) {
-            try {
-                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
-            }
+            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
         }
         return injectInputEventMethod;
     }
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
-        Method method = getInjectInputEventMethod();
-        if (method == null) {
-            return false;
-        }
         try {
-            return (Boolean) method.invoke(manager, inputEvent, mode);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+            Method method = getInjectInputEventMethod();
+            return (boolean) method.invoke(manager, inputEvent, mode);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
             return false;
         }
     }
