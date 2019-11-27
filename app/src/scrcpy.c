@@ -103,6 +103,7 @@ sdl_init_and_configure(bool display) {
 // <https://stackoverflow.com/a/40693139/1987178>
 static int
 event_watcher(void *data, SDL_Event *event) {
+    (void) data;
     if (event->type == SDL_WINDOWEVENT
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
         // called from another thread, not very safe, but it's a workaround!

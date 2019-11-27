@@ -20,6 +20,7 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
 
 enum process_result
 cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
+    (void) path;
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));

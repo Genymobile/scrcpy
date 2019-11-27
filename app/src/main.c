@@ -243,7 +243,7 @@ parse_bit_rate(char *optarg, uint32_t *bit_rate) {
             return false;
         }
     }
-    if (value < 0 || ((uint32_t) -1) / mul < value) {
+    if (value < 0 || ((uint32_t) -1) / mul < (unsigned long) value) {
         LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
         return false;
     }

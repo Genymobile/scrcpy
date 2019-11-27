@@ -18,6 +18,7 @@
 #   define PRIsizet PRIu32
 # endif
 # define PROCESS_NONE NULL
+# define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
   typedef DWORD exit_code_t;
 
@@ -28,14 +29,13 @@
 # define PRIsizet "zu"
 # define PRIexitcode "d"
 # define PROCESS_NONE -1
+# define NO_EXIT_CODE -1
   typedef pid_t process_t;
   typedef int exit_code_t;
 
 #endif
 
 #include "config.h"
-
-# define NO_EXIT_CODE -1
 
 enum process_result {
     PROCESS_SUCCESS,

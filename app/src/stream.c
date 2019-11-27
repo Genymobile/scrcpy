@@ -44,6 +44,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     uint64_t pts = buffer_read64be(header);
     uint32_t len = buffer_read32be(&header[8]);
+    SDL_assert(pts == NO_PTS || (pts & 0x8000000000000000) == 0);
     SDL_assert(len);
 
     if (av_new_packet(packet, len)) {
@@ -52,12 +53,12 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     }
 
     r = net_recv_all(stream->socket, packet->data, len);
-    if (r < len) {
+    if (r < 0 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
     }
 
-    packet->pts = pts != NO_PTS ? pts : AV_NOPTS_VALUE;
+    packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
     return true;
 }
