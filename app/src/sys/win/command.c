@@ -1,8 +1,8 @@
 #include "command.h"
 
 #include "config.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
