@@ -1,7 +1,7 @@
 #include "recorder.h"
 
+#include <assert.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "compat.h"
@@ -116,7 +116,7 @@ recorder_get_format_name(enum recorder_format format) {
 bool
 recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const char *format_name = recorder_get_format_name(recorder->format);
-    SDL_assert(format_name);
+    assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
@@ -357,7 +357,7 @@ recorder_join(struct recorder *recorder) {
 bool
 recorder_push(struct recorder *recorder, const AVPacket *packet) {
     mutex_lock(recorder->mutex);
-    SDL_assert(!recorder->stopped);
+    assert(!recorder->stopped);
 
     if (recorder->failed) {
         // reject any new packet (this will stop the stream)

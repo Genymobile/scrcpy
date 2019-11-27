@@ -1,8 +1,8 @@
 #include "stream.h"
 
+#include <assert.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
@@ -44,8 +44,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     uint64_t pts = buffer_read64be(header);
     uint32_t len = buffer_read32be(&header[8]);
-    SDL_assert(pts == NO_PTS || (pts & 0x8000000000000000) == 0);
-    SDL_assert(len);
+    assert(pts == NO_PTS || (pts & 0x8000000000000000) == 0);
+    assert(len);
 
     if (av_new_packet(packet, len)) {
         LOGE("Could not allocate packet");
@@ -108,8 +108,9 @@ stream_parse(struct stream *stream, AVPacket *packet) {
                              AV_NOPTS_VALUE, AV_NOPTS_VALUE, -1);
 
     // PARSER_FLAG_COMPLETE_FRAMES is set
-    SDL_assert(r == in_len);
-    SDL_assert(out_len == in_len);
+    assert(r == in_len);
+    (void) r;
+    assert(out_len == in_len);
 
     if (stream->parser->key_frame == 1) {
         packet->flags |= AV_PKT_FLAG_KEY;

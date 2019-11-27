@@ -1,6 +1,6 @@
 #include "video_buffer.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 #include <SDL2/SDL_mutex.h>
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
@@ -91,7 +91,7 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb,
 
 const AVFrame *
 video_buffer_consume_rendered_frame(struct video_buffer *vb) {
-    SDL_assert(!vb->rendering_frame_consumed);
+    assert(!vb->rendering_frame_consumed);
     vb->rendering_frame_consumed = true;
     fps_counter_add_rendered_frame(vb->fps_counter);
     if (vb->render_expired_frames) {

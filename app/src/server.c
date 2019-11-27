@@ -1,10 +1,10 @@
 #include "server.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
-#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
@@ -199,7 +199,7 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 
 static void
 close_socket(socket_t *socket) {
-    SDL_assert(*socket != INVALID_SOCKET);
+    assert(*socket != INVALID_SOCKET);
     net_shutdown(*socket, SHUT_RDWR);
     if (!net_close(*socket)) {
         LOGW("Could not close socket");
@@ -323,7 +323,7 @@ server_stop(struct server *server) {
         close_socket(&server->control_socket);
     }
 
-    SDL_assert(server->process != PROCESS_NONE);
+    assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
         LOGW("Could not terminate server");

@@ -1,6 +1,6 @@
 #include "controller.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 
 #include "config.h"
 #include "util/lock.h"
@@ -85,7 +85,8 @@ run_controller(void *data) {
         }
         struct control_msg msg;
         bool non_empty = cbuf_take(&controller->queue, &msg);
-        SDL_assert(non_empty);
+        assert(non_empty);
+        (void) non_empty;
         mutex_unlock(controller->mutex);
 
         bool ok = process_msg(controller, &msg);

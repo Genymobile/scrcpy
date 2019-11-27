@@ -1,7 +1,6 @@
 #include "device_msg.h"
 
 #include <string.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "util/buffer_util.h"

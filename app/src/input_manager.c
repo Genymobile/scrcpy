@@ -1,6 +1,6 @@
 #include "input_manager.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 
 #include "config.h"
 #include "event_converter.h"
@@ -217,7 +217,7 @@ input_manager_process_text_input(struct input_manager *im,
     if (!im->prefer_text) {
         char c = event->text[0];
         if (isalpha(c) || c == ' ') {
-            SDL_assert(event->text[1] == '\0');
+            assert(event->text[1] == '\0');
             // letters and space are handled as raw key event
             return;
         }

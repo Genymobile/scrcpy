@@ -1,6 +1,6 @@
 #include "fps_counter.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
@@ -77,7 +77,7 @@ run_fps_counter(void *data) {
             uint32_t now = SDL_GetTicks();
             check_interval_expired(counter, now);
 
-            SDL_assert(counter->next_timestamp > now);
+            assert(counter->next_timestamp > now);
             uint32_t remaining = counter->next_timestamp - now;
 
             // ignore the reason (timeout or signaled), we just loop anyway

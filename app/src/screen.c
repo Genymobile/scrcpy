@@ -1,5 +1,6 @@
 #include "screen.h"
 
+#include <assert.h>
 #include <string.h>
 #include <SDL2/SDL.h>
 
@@ -110,7 +111,7 @@ get_optimal_size(struct size current_size, struct size frame_size) {
     }
 
     // w and h must fit into 16 bits
-    SDL_assert_release(w < 0x10000 && h < 0x10000);
+    assert(w < 0x10000 && h < 0x10000);
     return (struct size) {w, h};
 }
 
@@ -392,8 +393,8 @@ screen_handle_window_event(struct screen *screen,
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
             // The backup size must be non-nul.
-            SDL_assert(screen->windowed_window_size_backup.width);
-            SDL_assert(screen->windowed_window_size_backup.height);
+            assert(screen->windowed_window_size_backup.width);
+            assert(screen->windowed_window_size_backup.height);
             // Revert the last size, it was updated while screen was maximized.
             screen->windowed_window_size = screen->windowed_window_size_backup;
 #ifdef DEBUG

@@ -1,6 +1,6 @@
 #include "receiver.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 #include <SDL2/SDL_clipboard.h>
 
 #include "config.h"
@@ -49,7 +49,7 @@ process_msgs(const unsigned char *buf, size_t len) {
         device_msg_destroy(&msg);
 
         head += r;
-        SDL_assert(head <= len);
+        assert(head <= len);
         if (head == len) {
             return head;
         }
@@ -64,7 +64,7 @@ run_receiver(void *data) {
     size_t head = 0;
 
     for (;;) {
-        SDL_assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
+        assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
         ssize_t r = net_recv(receiver->control_socket, buf,
                              DEVICE_MSG_SERIALIZED_MAX_SIZE - head);
         if (r <= 0) {

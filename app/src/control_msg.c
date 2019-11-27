@@ -1,7 +1,7 @@
 #include "control_msg.h"
 
+#include <assert.h>
 #include <string.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "util/buffer_util.h"
@@ -27,7 +27,7 @@ write_string(const char *utf8, size_t max_len, unsigned char *buf) {
 
 static uint16_t
 to_fixed_point_16(float f) {
-    SDL_assert(f >= 0.0f && f <= 1.0f);
+    assert(f >= 0.0f && f <= 1.0f);
     uint32_t u = f * 0x1p16f; // 2^16
     if (u >= 0xffff) {
         u = 0xffff;

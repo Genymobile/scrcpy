@@ -2,7 +2,6 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
