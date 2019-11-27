@@ -91,7 +91,7 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    enum process_result r = cmd_execute(cmd[0], cmd, &process);
+    enum process_result r = cmd_execute(cmd, &process);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, cmd);
         return PROCESS_NONE;

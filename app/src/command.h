@@ -44,7 +44,7 @@ enum process_result {
 };
 
 enum process_result
-cmd_execute(const char *path, const char *const argv[], process_t *process);
+cmd_execute(const char *const argv[], process_t *process);
 
 bool
 cmd_terminate(process_t pid);
