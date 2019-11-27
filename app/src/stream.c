@@ -14,7 +14,6 @@
 #include "events.h"
 #include "recorder.h"
 #include "util/buffer_util.h"
-#include "util/lock.h"
 #include "util/log.h"
 
 #define BUFSIZE 0x10000
