@@ -161,7 +161,11 @@ public final class Device {
      * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
      */
     public void setScreenPowerMode(int mode) {
-        IBinder d = SurfaceControl.getBuiltInDisplay(0);
+        IBinder d = SurfaceControl.getBuiltInDisplay();
+        if (d == null) {
+            Ln.e("Could not get built-in display");
+            return;
+        }
         SurfaceControl.setDisplayPowerMode(d, mode);
         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
     }

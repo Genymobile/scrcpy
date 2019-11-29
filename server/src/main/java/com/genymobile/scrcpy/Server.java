@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public final class Server {
 
-    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
+    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server";
 
     private Server() {
         // not instantiable
@@ -17,7 +17,7 @@ public final class Server {
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps());
 
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
@@ -67,29 +67,42 @@ public final class Server {
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
-        if (args.length != 6) {
-            throw new IllegalArgumentException("Expecting 6 parameters");
+        if (args.length < 1) {
+            throw new IllegalArgumentException("Missing client version");
+        }
+
+        String clientVersion = args[0];
+        if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
+            throw new IllegalArgumentException("The server version (" + clientVersion + ") does not match the client "
+                    + "(" + BuildConfig.VERSION_NAME + ")");
+        }
+
+        if (args.length != 8) {
+            throw new IllegalArgumentException("Expecting 8 parameters");
         }
 
         Options options = new Options();
 
-        int maxSize = Integer.parseInt(args[0]) & ~7; // multiple of 8
+        int maxSize = Integer.parseInt(args[1]) & ~7; // multiple of 8
         options.setMaxSize(maxSize);
 
-        int bitRate = Integer.parseInt(args[1]);
+        int bitRate = Integer.parseInt(args[2]);
         options.setBitRate(bitRate);
 
+        int maxFps = Integer.parseInt(args[3]);
+        options.setMaxFps(maxFps);
+
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[2]);
+        boolean tunnelForward = Boolean.parseBoolean(args[4]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[3]);
+        Rect crop = parseCrop(args[5]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[4]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[6]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[5]);
+        boolean control = Boolean.parseBoolean(args[7]);
         options.setControl(control);
 
         return options;

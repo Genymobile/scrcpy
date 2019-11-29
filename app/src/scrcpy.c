@@ -42,6 +42,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
+    .prefer_text = false, // initialized later
 };
 
 // init SDL and set appropriate hints
@@ -143,12 +144,7 @@ handle_event(SDL_Event *event, bool control) {
             }
             break;
         case SDL_WINDOWEVENT:
-            switch (event->window.event) {
-                case SDL_WINDOWEVENT_EXPOSED:
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    screen_render(&screen);
-                    break;
-            }
+            screen_handle_window_event(&screen, &event->window);
             break;
         case SDL_TEXTINPUT:
             if (!control) {
@@ -181,6 +177,11 @@ handle_event(SDL_Event *event, bool control) {
             input_manager_process_mouse_button(&input_manager, &event->button,
                                                control);
             break;
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+            input_manager_process_touch(&input_manager, &event->tfinger);
+            break;
         case SDL_DROPFILE: {
             if (!control) {
                 break;
@@ -212,6 +213,7 @@ event_loop(bool display, bool control) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
             case EVENT_RESULT_STOPPED_BY_EOS:
+                LOGW("Device disconnected");
                 return false;
             case EVENT_RESULT_CONTINUE:
                 break;
@@ -278,6 +280,7 @@ scrcpy(const struct scrcpy_options *options) {
         .local_port = options->port,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
+        .max_fps = options->max_fps,
         .control = options->control,
     };
     if (!server_start(&server, options->serial, &params)) {
@@ -385,7 +388,10 @@ scrcpy(const struct scrcpy_options *options) {
             options->window_title ? options->window_title : device_name;
 
         if (!screen_init_rendering(&screen, window_title, frame_size,
-                                   options->always_on_top)) {
+                                   options->always_on_top, options->window_x,
+                                   options->window_y, options->window_width,
+                                   options->window_height,
+                                   options->window_borderless)) {
             goto end;
         }
 
@@ -408,6 +414,8 @@ scrcpy(const struct scrcpy_options *options) {
         wait_show_touches(proc_show_touches);
         show_touches_waited = true;
     }
+
+    input_manager.prefer_text = options->prefer_text;
 
     ret = event_loop(options->display, options->control);
     LOGD("quit...");

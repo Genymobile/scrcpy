@@ -3,5 +3,6 @@ option('compile_server', type: 'boolean', value: true, description: 'Build the s
 option('crossbuild_windows', type: 'boolean', value: false, description: 'Build for Windows from Linux')
 option('windows_noconsole', type: 'boolean', value: false, description: 'Disable console on Windows (pass -mwindows flag)')
 option('prebuilt_server', type: 'string', description: 'Path of the prebuilt server')
-option('portable', type: 'boolean', value: false, description: 'Use scrcpy-server.jar from the same directory as the scrcpy executable')
+option('portable', type: 'boolean', value: false, description: 'Use scrcpy-server from the same directory as the scrcpy executable')
 option('hidpi_support', type: 'boolean', value: true, description: 'Enable High DPI support')
+option('server_debugger', type: 'boolean', value: false, description: 'Run a server debugger and wait for a client to be attached')

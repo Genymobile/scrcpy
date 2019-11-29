@@ -54,7 +54,7 @@ page at http://checkstyle.sourceforge.net/config.html -->
     <module name="SuppressWarningsHolder"/>
 
     <!-- Checks for imports                              -->
-    <!-- See http://checkstyle.sf.net/config_import.html -->
+    <!-- See http://checkstyle.sf.net/config_imports.html -->
     <module name="AvoidStarImport">
       <property name="allowStaticMemberImports" value="true" />
     </module>
@@ -99,7 +99,7 @@ page at http://checkstyle.sourceforge.net/config.html -->
     <module name="WhitespaceAround" />
 
     <!-- Modifier Checks                                    -->
-    <!-- See http://checkstyle.sf.net/config_modifiers.html -->
+    <!-- See http://checkstyle.sf.net/config_modifier.html -->
     <module name="ModifierOrder" />
     <module name="RedundantModifier" />
 

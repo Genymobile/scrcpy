@@ -224,7 +224,7 @@ sudo ninja -Cx install    # without sudo on Windows
 This installs two files:
 
  - `/usr/local/bin/scrcpy`
- - `/usr/local/share/scrcpy/scrcpy-server.jar`
+ - `/usr/local/share/scrcpy/scrcpy-server`
 
 Just remove them to "uninstall" the application.
 
@@ -233,17 +233,17 @@ You can then [run](README.md#run) _scrcpy_.
 
 ## Prebuilt server
 
- - [`scrcpy-server-v1.10.jar`][direct-scrcpy-server]  
-   _(SHA-256: cbeb1a4e046f1392c1dc73c3ccffd7f86dec4636b505556ea20929687a119390)_
+ - [`scrcpy-server-v1.11`][direct-scrcpy-server]  
+   _(SHA-256: ff3a454012e91d9185cfe8ca7691cea16c43a7dcc08e92fa47ab9f0ea675abd1)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.10/scrcpy-server-v1.10.jar
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
-    -Dprebuilt_server=/path/to/scrcpy-server.jar
+    -Dprebuilt_server=/path/to/scrcpy-server
 ninja -Cx
 sudo ninja -Cx install
 ```

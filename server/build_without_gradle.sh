@@ -11,13 +11,16 @@
 
 set -e
 
+SCRCPY_DEBUG=false
+SCRCPY_VERSION_NAME=1.11
+
 PLATFORM=${ANDROID_PLATFORM:-29}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-29.0.2}
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 SERVER_DIR=$(dirname "$0")
-SERVER_BINARY=scrcpy-server.jar
+SERVER_BINARY=scrcpy-server
 
 echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
@@ -30,7 +33,8 @@ mkdir -p "$CLASSES_DIR/com/genymobile/scrcpy"
 package com.genymobile.scrcpy;
 
 public final class BuildConfig {
-  public static final boolean DEBUG = false;
+  public static final boolean DEBUG = $SCRCPY_DEBUG;
+  public static final String VERSION_NAME = "$SCRCPY_VERSION_NAME";
 }
 EOF
 
@@ -59,4 +63,4 @@ cd "$BUILD_DIR"
 jar cvf "$SERVER_BINARY" classes.dex
 rm -rf classes.dex classes
 
-echo "Server generated in $BUILD_DIR/scrcpy-server.jar"
+echo "Server generated in $BUILD_DIR/$SERVER_BINARY"

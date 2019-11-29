@@ -3,7 +3,7 @@
 #
 # Here, "portable" means that the client and server binaries are expected to be
 # anywhere, but in the same directory, instead of well-defined separate
-# locations (e.g. /usr/bin/scrcpy and /usr/share/scrcpy/scrcpy-server.jar).
+# locations (e.g. /usr/bin/scrcpy and /usr/share/scrcpy/scrcpy-server).
 #
 # In particular, this implies to change the location from where the client push
 # the server to the device.
@@ -97,14 +97,14 @@ build-win64-noconsole: prepare-deps-win64
 
 dist-win32: build-server build-win32 build-win32-noconsole
 	mkdir -p "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/scrcpy-noconsole.exe"
-	cp prebuilt-deps/ffmpeg-4.1.4-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win32-shared/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win32-shared/bin/swscale-5.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win32-shared/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win32-shared/bin/swscale-5.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
@@ -112,14 +112,14 @@ dist-win32: build-server build-win32 build-win32-noconsole
 
 dist-win64: build-server build-win64 build-win64-noconsole
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server.jar "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_NOCONSOLE_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/scrcpy-noconsole.exe"
-	cp prebuilt-deps/ffmpeg-4.1.4-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win64-shared/bin/swresample-3.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/ffmpeg-4.1.4-win64-shared/bin/swscale-5.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win64-shared/bin/swresample-3.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/ffmpeg-4.2.1-win64-shared/bin/swscale-5.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"

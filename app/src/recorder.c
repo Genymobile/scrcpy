@@ -135,6 +135,9 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
     recorder->ctx->oformat = (AVOutputFormat *) format;
 
+    av_dict_set(&recorder->ctx->metadata, "comment",
+                "Recorded by scrcpy " SCRCPY_VERSION, 0);
+
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
         avformat_free_context(recorder->ctx);
@@ -171,9 +174,14 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
 void
 recorder_close(struct recorder *recorder) {
-    int ret = av_write_trailer(recorder->ctx);
-    if (ret < 0) {
-        LOGE("Failed to write trailer to %s", recorder->filename);
+    if (recorder->header_written) {
+        int ret = av_write_trailer(recorder->ctx);
+        if (ret < 0) {
+            LOGE("Failed to write trailer to %s", recorder->filename);
+            recorder->failed = true;
+        }
+    } else {
+        // the recorded file is empty
         recorder->failed = true;
     }
     avio_close(recorder->ctx->pb);
@@ -293,8 +301,12 @@ run_recorder(void *data) {
             continue;
         }
 
-        // we now know the duration of the previous packet
-        previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        // config packets have no PTS, we must ignore them
+        if (rec->packet.pts != AV_NOPTS_VALUE
+            && previous->packet.pts != AV_NOPTS_VALUE) {
+            // we now know the duration of the previous packet
+            previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        }
 
         bool ok = recorder_write(recorder, &previous->packet);
         record_packet_delete(previous);

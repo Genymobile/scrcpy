@@ -15,10 +15,12 @@
 #define CONTROL_MSG_SERIALIZED_MAX_SIZE \
     (3 + CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH)
 
+#define POINTER_ID_MOUSE UINT64_C(-1);
+
 enum control_msg_type {
     CONTROL_MSG_TYPE_INJECT_KEYCODE,
     CONTROL_MSG_TYPE_INJECT_TEXT,
-    CONTROL_MSG_TYPE_INJECT_MOUSE_EVENT,
+    CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
     CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
     CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
     CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
@@ -48,8 +50,10 @@ struct control_msg {
         struct {
             enum android_motionevent_action action;
             enum android_motionevent_buttons buttons;
+            uint64_t pointer_id;
             struct position position;
-        } inject_mouse_event;
+            float pressure;
+        } inject_touch_event;
         struct {
             struct position position;
             int32_t hscroll;

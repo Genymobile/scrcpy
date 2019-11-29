@@ -10,24 +10,24 @@ prepare-win32: prepare-sdl2 prepare-ffmpeg-shared-win32 prepare-ffmpeg-dev-win32
 prepare-win64: prepare-sdl2 prepare-ffmpeg-shared-win64 prepare-ffmpeg-dev-win64 prepare-adb
 
 prepare-ffmpeg-shared-win32:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.1.4-win32-shared.zip \
-		596608277f6b937c3dea7c46e854665d75b3de56790bae07f655ca331440f003 \
-		ffmpeg-4.1.4-win32-shared
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/shared/ffmpeg-4.2.1-win32-shared.zip \
+		9208255f409410d95147151d7e829b5699bf8d91bfe1e81c3f470f47c2fa66d2 \
+		ffmpeg-4.2.1-win32-shared
 
 prepare-ffmpeg-dev-win32:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/dev/ffmpeg-4.1.4-win32-dev.zip \
-		a80c86e263cfad26e202edfa5e6e939a2c88843ae26f031d3e0d981a39fd03fb \
-		ffmpeg-4.1.4-win32-dev
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win32/dev/ffmpeg-4.2.1-win32-dev.zip \
+		c3469e6c5f031cbcc8cba88dee92d6548c5c6b6ff14f4097f18f72a92d0d70c4 \
+		ffmpeg-4.2.1-win32-dev
 
 prepare-ffmpeg-shared-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.1.4-win64-shared.zip \
-		a90889871de2cab8a79b392591313a188189a353f69dde1db98aebe20b280989 \
-		ffmpeg-4.1.4-win64-shared
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.2.1-win64-shared.zip \
+		55063d3cf750a75485c7bf196031773d81a1b25d0980c7db48ecfc7701a42331 \
+		ffmpeg-4.2.1-win64-shared
 
 prepare-ffmpeg-dev-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-4.1.4-win64-dev.zip \
-		6c9d53f9e94ce1821e975ec668e5b9d6e9deb4a45d0d7e30264685d3dfbbb068 \
-		ffmpeg-4.1.4-win64-dev
+	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-4.2.1-win64-dev.zip \
+		5af393be5f25c0a71aa29efce768e477c35347f7f8e0d9696767d5b9d405b74e \
+		ffmpeg-4.2.1-win64-dev
 
 prepare-sdl2:
 	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.10-mingw.tar.gz \
@@ -35,6 +35,6 @@ prepare-sdl2:
 		SDL2-2.0.10
 
 prepare-adb:
-	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r29.0.2-windows.zip \
-		d78f02e5e2c9c4c1d046dcd4e6fbdf586e5f57ef66eb0da5c2b49d745d85d5ee \
+	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r29.0.5-windows.zip \
+		2df06160056ec9a84c7334af2a1e42740befbb1a2e34370e7af544a2cc78152c \
 		platform-tools
