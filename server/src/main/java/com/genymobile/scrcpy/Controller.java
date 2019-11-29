@@ -13,6 +13,8 @@ import java.io.IOException;
 
 public class Controller {
 
+    private static final int DEVICE_ID_VIRTUAL = -1;
+
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
@@ -174,8 +176,9 @@ public class Controller {
             }
         }
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, 0, 0,
-                InputDevice.SOURCE_TOUCHSCREEN, 0);
+        MotionEvent event = MotionEvent
+                .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
+                        InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
@@ -196,8 +199,9 @@ public class Controller {
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
-        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, 0, 0,
-                InputDevice.SOURCE_MOUSE, 0);
+        MotionEvent event = MotionEvent
+                .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
+                        InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event);
     }
 
