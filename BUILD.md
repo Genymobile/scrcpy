@@ -40,7 +40,7 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0
+sudo apt install ffmpeg libsdl2-2.0-0 adb
 
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build \
