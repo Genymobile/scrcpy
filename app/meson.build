@@ -141,6 +141,9 @@ install_man('scrcpy.1')
 ### TESTS
 
 tests = [
+    ['test_buffer_util', [
+        'tests/test_buffer_util.c'
+    ]],
     ['test_cbuf', [
         'tests/test_cbuf.c',
     ]],
