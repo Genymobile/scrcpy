@@ -40,12 +40,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0
+sudo apt install ffmpeg libsdl2-2.0-0 adb
 
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
-                 libsdl2-dev adb
+                 libsdl2-dev
 
 # server build dependencies
 sudo apt install openjdk-8-jdk
