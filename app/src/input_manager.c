@@ -550,13 +550,8 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
     to->inject_scroll_event.position = position;
-
-    int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
-    // SDL behavior seems inconsistent between horizontal and vertical scrolling
-    // so reverse the horizontal
-    // <https://wiki.libsdl.org/SDL_MouseWheelEvent#Remarks>
-    to->inject_scroll_event.hscroll = -mul * from->x;
-    to->inject_scroll_event.vscroll = mul * from->y;
+    to->inject_scroll_event.hscroll = from->x;
+    to->inject_scroll_event.vscroll = from->y;
 
     return true;
 }
