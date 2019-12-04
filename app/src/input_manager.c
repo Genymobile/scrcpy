@@ -211,6 +211,16 @@ clipboard_paste(struct controller *controller) {
     }
 }
 
+static void
+rotate_device(struct controller *controller) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_ROTATE_DEVICE;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request device rotation");
+    }
+}
+
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
@@ -386,6 +396,11 @@ input_manager_process_key(struct input_manager *im,
                     } else {
                         expand_notification_panel(controller);
                     }
+                }
+                return;
+            case SDLK_r:
+                if (control && cmd && !shift && !repeat && down) {
+                    rotate_device(controller);
                 }
                 return;
         }

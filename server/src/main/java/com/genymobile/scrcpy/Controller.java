@@ -106,6 +106,9 @@ public class Controller {
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 device.setScreenPowerMode(msg.getAction());
                 break;
+            case ControlMessage.TYPE_ROTATE_DEVICE:
+                device.rotateDevice();
+                break;
             default:
                 // do nothing
         }
