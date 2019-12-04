@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <string.h>
+#include <SDL2/SDL.h>
 
 #include "util/str_util.h"
 
@@ -126,6 +127,16 @@ static void test_xstrjoin_truncated_after_sep(void) {
     assert(!strcmp("abc de ", s));
 }
 
+static void test_strquote(void) {
+    const char *s = "abcde";
+    char *out = strquote(s);
+
+    // add '"' at the beginning and the end
+    assert(!strcmp("\"abcde\"", out));
+
+    SDL_free(out);
+}
+
 static void test_utf8_truncate(void) {
     const char *s = "aÉbÔc";
     assert(strlen(s) == 7); // É and Ô are 2 bytes-wide
@@ -166,6 +177,7 @@ int main(void) {
     test_xstrjoin_truncated_in_token();
     test_xstrjoin_truncated_before_sep();
     test_xstrjoin_truncated_after_sep();
+    test_strquote();
     test_utf8_truncate();
     return 0;
 }
