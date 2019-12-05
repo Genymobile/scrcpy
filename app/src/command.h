@@ -85,4 +85,8 @@ process_check_success(process_t proc, const char *name);
 char *
 get_executable_path(void);
 
+// returns true if the file exists and is not a directory
+bool
+is_regular_file(const char *path);
+
 #endif

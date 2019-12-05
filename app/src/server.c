@@ -67,7 +67,12 @@ get_server_path(void) {
 
 static bool
 push_server(const char *serial) {
-    process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
+    const char *server_path = get_server_path();
+    if (!is_regular_file(server_path)) {
+        LOGE("'%s' does not exist or is not a regular file\n", server_path);
+        return false;
+    }
+    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
 }
 
