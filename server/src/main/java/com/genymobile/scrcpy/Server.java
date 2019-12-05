@@ -135,6 +135,7 @@ public final class Server {
         }
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
     private static void suggestFix(Throwable e) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (e instanceof MediaCodec.CodecException) {
