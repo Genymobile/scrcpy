@@ -12,6 +12,7 @@
 #include "compat.h"
 #include "recorder.h"
 #include "util/log.h"
+#include "util/str_util.h"
 
 struct args {
     struct scrcpy_options opts;
@@ -224,51 +225,47 @@ print_version(void) {
 }
 
 static bool
-parse_bit_rate(char *optarg, uint32_t *bit_rate) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Bit-rate parameter is empty");
-        return false;
+parse_integer_arg(const char *s, long *out, bool accept_suffix, long min,
+                  long max, const char *name) {
+    long value;
+    bool ok;
+    if (accept_suffix) {
+        ok = parse_integer_with_suffix(s, &value);
+    } else {
+        ok = parse_integer(s, &value);
     }
-    long value = strtol(optarg, &endptr, 0);
-    int mul = 1;
-    if (*endptr != '\0') {
-        if (optarg == endptr) {
-            LOGE("Invalid bit-rate: %s", optarg);
-            return false;
-        }
-        if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
-            mul = 1000000;
-        } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
-            mul = 1000;
-        } else {
-            LOGE("Invalid bit-rate unit: %s", optarg);
-            return false;
-        }
-    }
-    if (value < 0 || ((uint32_t) -1) / mul < (unsigned long) value) {
-        LOGE("Bitrate must be positive and less than 2^32: %s", optarg);
+    if (!ok) {
+        LOGE("Could not parse %s: %s", name, s);
         return false;
     }
 
-    *bit_rate = (uint32_t) value * mul;
+    if (value < min || value > max) {
+        LOGE("Could not parse %s: value (%ld) out-of-range (%ld; %ld)",
+             name, value, min, max);
+        return false;
+    }
+
+    *out = value;
     return true;
 }
 
 static bool
-parse_max_size(char *optarg, uint16_t *max_size) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Max size parameter is empty");
+parse_bit_rate(const char *s, uint32_t *bit_rate) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, true, 0, 0xFFFF, "bit-rate");
+    if (!ok) {
         return false;
     }
-    long value = strtol(optarg, &endptr, 0);
-    if (*endptr != '\0') {
-        LOGE("Invalid max size: %s", optarg);
-        return false;
-    }
-    if (value & ~0xffff) {
-        LOGE("Max size must be between 0 and 65535: %ld", value);
+
+    *bit_rate = (uint32_t) value;
+    return true;
+}
+
+static bool
+parse_max_size(char *s, uint16_t *max_size) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "max size");
+    if (!ok) {
         return false;
     }
 
@@ -277,20 +274,10 @@ parse_max_size(char *optarg, uint16_t *max_size) {
 }
 
 static bool
-parse_max_fps(const char *optarg, uint16_t *max_fps) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Max FPS parameter is empty");
-        return false;
-    }
-    long value = strtol(optarg, &endptr, 0);
-    if (*endptr != '\0') {
-        LOGE("Invalid max FPS: %s", optarg);
-        return false;
-    }
-    if (value & ~0xffff) {
-        // in practice, it should not be higher than 60
-        LOGE("Max FPS value is invalid: %ld", value);
+parse_max_fps(const char *s, uint16_t *max_fps) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 1000, "max fps");
+    if (!ok) {
         return false;
     }
 
@@ -299,19 +286,11 @@ parse_max_fps(const char *optarg, uint16_t *max_fps) {
 }
 
 static bool
-parse_window_position(char *optarg, int16_t *position) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Window position parameter is empty");
-        return false;
-    }
-    long value = strtol(optarg, &endptr, 0);
-    if (*endptr != '\0') {
-        LOGE("Invalid window position: %s", optarg);
-        return false;
-    }
-    if (value < -1 || value > 0x7fff) {
-        LOGE("Window position must be between -1 and 32767: %ld", value);
+parse_window_position(char *s, int16_t *position) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, -1, 0x7FFF,
+                                "window position");
+    if (!ok) {
         return false;
     }
 
@@ -320,19 +299,11 @@ parse_window_position(char *optarg, int16_t *position) {
 }
 
 static bool
-parse_window_dimension(char *optarg, uint16_t *dimension) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Window dimension parameter is empty");
-        return false;
-    }
-    long value = strtol(optarg, &endptr, 0);
-    if (*endptr != '\0') {
-        LOGE("Invalid window dimension: %s", optarg);
-        return false;
-    }
-    if (value & ~0xffff) {
-        LOGE("Window position must be between 0 and 65535: %ld", value);
+parse_window_dimension(char *s, uint16_t *dimension) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF,
+                                "window dimension");
+    if (!ok) {
         return false;
     }
 
@@ -341,19 +312,10 @@ parse_window_dimension(char *optarg, uint16_t *dimension) {
 }
 
 static bool
-parse_port(char *optarg, uint16_t *port) {
-    char *endptr;
-    if (*optarg == '\0') {
-        LOGE("Port parameter is empty");
-        return false;
-    }
-    long value = strtol(optarg, &endptr, 0);
-    if (*endptr != '\0') {
-        LOGE("Invalid port: %s", optarg);
-        return false;
-    }
-    if (value & ~0xffff) {
-        LOGE("Port out of range: %ld", value);
+parse_port(char *s, uint16_t *port) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "port");
+    if (!ok) {
         return false;
     }
 

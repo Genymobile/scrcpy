@@ -1,5 +1,7 @@
 #include "str_util.h"
 
+#include <errno.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -58,6 +60,59 @@ strquote(const char *src) {
     quoted[len + 1] = '"';
     quoted[len + 2] = '\0';
     return quoted;
+}
+
+bool
+parse_integer(const char *s, long *out) {
+    char *endptr;
+    if (*s == '\0') {
+        return false;
+    }
+    errno = 0;
+    long value = strtol(s, &endptr, 0);
+    if (errno == ERANGE) {
+        return false;
+    }
+    if (*endptr != '\0') {
+        return false;
+    }
+
+    *out = value;
+    return true;
+}
+
+bool
+parse_integer_with_suffix(const char *s, long *out) {
+    char *endptr;
+    if (*s == '\0') {
+        return false;
+    }
+    errno = 0;
+    long value = strtol(s, &endptr, 0);
+    if (errno == ERANGE) {
+        return false;
+    }
+    int mul = 1;
+    if (*endptr != '\0') {
+        if (s == endptr) {
+            return false;
+        }
+        if ((*endptr == 'M' || *endptr == 'm') && endptr[1] == '\0') {
+            mul = 1000000;
+        } else if ((*endptr == 'K' || *endptr == 'k') && endptr[1] == '\0') {
+            mul = 1000;
+        } else {
+            return false;
+        }
+    }
+
+    if ((value < 0 && LONG_MIN / mul > value) ||
+        (value > 0 && LONG_MAX / mul < value)) {
+        return false;
+    }
+
+    *out = value * mul;
+    return true;
 }
 
 size_t

@@ -1,4 +1,6 @@
 #include <assert.h>
+#include <limits.h>
+#include <stdio.h>
 #include <string.h>
 #define SDL_MAIN_HANDLED // avoid to redefine main to SDL_main
 #include <SDL2/SDL.h>
@@ -169,6 +171,73 @@ static void test_utf8_truncate(void) {
     assert(count == 7); // no more chars
 }
 
+static void test_parse_integer(void) {
+    long value;
+    bool ok = parse_integer("1234", &value);
+    assert(ok);
+    assert(value == 1234);
+
+    ok = parse_integer("-1234", &value);
+    assert(ok);
+    assert(value == -1234);
+
+    ok = parse_integer("1234k", &value);
+    assert(!ok);
+
+    ok = parse_integer("123456789876543212345678987654321", &value);
+    assert(!ok); // out-of-range
+}
+
+static void test_parse_integer_with_suffix(void) {
+    long value;
+    bool ok = parse_integer_with_suffix("1234", &value);
+    assert(ok);
+    assert(value == 1234);
+
+    ok = parse_integer_with_suffix("-1234", &value);
+    assert(ok);
+    assert(value == -1234);
+
+    ok = parse_integer_with_suffix("1234k", &value);
+    assert(ok);
+    assert(value == 1234000);
+
+    ok = parse_integer_with_suffix("1234m", &value);
+    assert(ok);
+    assert(value == 1234000000);
+
+    ok = parse_integer_with_suffix("-1234k", &value);
+    assert(ok);
+    assert(value == -1234000);
+
+    ok = parse_integer_with_suffix("-1234m", &value);
+    assert(ok);
+    assert(value == -1234000000);
+
+    ok = parse_integer_with_suffix("123456789876543212345678987654321", &value);
+    assert(!ok); // out-of-range
+
+    char buf[32];
+
+    sprintf(buf, "%ldk", LONG_MAX / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(ok);
+    assert(value == LONG_MAX / 2000 * 1000);
+
+    sprintf(buf, "%ldm", LONG_MAX / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(!ok);
+
+    sprintf(buf, "%ldk", LONG_MIN / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(ok);
+    assert(value == LONG_MIN / 2000 * 1000);
+
+    sprintf(buf, "%ldm", LONG_MIN / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(!ok);
+}
+
 int main(void) {
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
@@ -180,5 +249,7 @@ int main(void) {
     test_xstrjoin_truncated_after_sep();
     test_strquote();
     test_utf8_truncate();
+    test_parse_integer();
+    test_parse_integer_with_suffix();
     return 0;
 }
