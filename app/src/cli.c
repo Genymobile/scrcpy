@@ -374,6 +374,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
 
     struct scrcpy_options *opts = &args->opts;
 
+    optind = 0; // reset to start from the first argument in tests
+
     int c;
     while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {

@@ -148,6 +148,11 @@ tests = [
     ['test_cbuf', [
         'tests/test_cbuf.c',
     ]],
+    ['test_cli', [
+        'tests/test_cli.c',
+        'src/cli.c',
+        'src/util/str_util.c',
+    ]],
     ['test_control_event_serialize', [
         'tests/test_control_msg_serialize.c',
         'src/control_msg.c',
