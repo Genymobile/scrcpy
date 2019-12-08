@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/cli.c',
     'src/command.c',
     'src/control_msg.c',
     'src/controller.c',
