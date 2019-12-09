@@ -60,10 +60,10 @@ Disable device control (mirror the device in read\-only).
 Do not display device (only when screen recording is enabled).
 
 .TP
-.BI "\-p, \-\-port " port
-Set the TCP port the client listens on.
+.BI "\-p, \-\-port " port[:port]
+Set the TCP port (range) used by the client to listen.
 
-Default is 27183.
+Default is 27183:27199.
 
 .TP
 .B \-\-prefer\-text

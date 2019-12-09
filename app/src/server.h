@@ -6,6 +6,7 @@
 
 #include "config.h"
 #include "command.h"
+#include "common.h"
 #include "util/net.h"
 
 struct server {
@@ -14,25 +15,30 @@ struct server {
     socket_t server_socket; // only used if !tunnel_forward
     socket_t video_socket;
     socket_t control_socket;
-    uint16_t local_port;
+    struct port_range port_range;
+    uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 };
 
-#define SERVER_INITIALIZER {          \
-    .serial = NULL,                   \
-    .process = PROCESS_NONE,          \
-    .server_socket = INVALID_SOCKET,  \
-    .video_socket = INVALID_SOCKET,   \
+#define SERVER_INITIALIZER { \
+    .serial = NULL, \
+    .process = PROCESS_NONE, \
+    .server_socket = INVALID_SOCKET, \
+    .video_socket = INVALID_SOCKET, \
     .control_socket = INVALID_SOCKET, \
-    .local_port = 0,                  \
-    .tunnel_enabled = false,          \
-    .tunnel_forward = false,          \
+    .port_range = { \
+        .first = 0, \
+        .last = 0, \
+    }, \
+    .local_port = 0, \
+    .tunnel_enabled = false, \
+    .tunnel_forward = false, \
 }
 
 struct server_params {
     const char *crop;
-    uint16_t local_port;
+    struct port_range port_range;
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;

@@ -141,29 +141,91 @@ listen_on_port(uint16_t port) {
 }
 
 static bool
-enable_tunnel(struct server *server) {
-    if (enable_tunnel_reverse(server->serial, server->local_port)) {
+enable_tunnel_reverse_any_port(struct server *server,
+                               struct port_range port_range) {
+    uint16_t port = port_range.first;
+    for (;;) {
+        if (!enable_tunnel_reverse(server->serial, port)) {
+            // the command itself failed, it will fail on any port
+            return false;
+        }
+
         // At the application level, the device part is "the server" because it
         // serves video stream and control. However, at the network level, the
         // client listens and the server connects to the client. That way, the
         // client can listen before starting the server app, so there is no
         // need to try to connect until the server socket is listening on the
         // device.
-        server->server_socket = listen_on_port(server->local_port);
-        if (server->server_socket == INVALID_SOCKET) {
-            LOGE("Could not listen on port %" PRIu16, server->local_port);
-            disable_tunnel(server);
-            return false;
+        server->server_socket = listen_on_port(port);
+        if (server->server_socket != INVALID_SOCKET) {
+            // success
+            server->local_port = port;
+            return true;
         }
 
+        // failure, disable tunnel and try another port
+        if (!disable_tunnel_reverse(server->serial)) {
+            LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
+        }
+
+        // check before incrementing to avoid overflow on port 65535
+        if (port < port_range.last) {
+            LOGW("Could not listen on port %" PRIu16", retrying on %" PRIu16,
+                 port, port + 1);
+            port++;
+            continue;
+        }
+
+        if (port_range.first == port_range.last) {
+            LOGE("Could not listen on port %" PRIu16, port_range.first);
+        } else {
+            LOGE("Could not listen on any port in range %" PRIu16 ":%" PRIu16,
+                 port_range.first, port_range.last);
+        }
+        return false;
+    }
+}
+
+static bool
+enable_tunnel_forward_any_port(struct server *server,
+                               struct port_range port_range) {
+    server->tunnel_forward = true;
+    uint16_t port = port_range.first;
+    for (;;) {
+        if (enable_tunnel_forward(server->serial, port)) {
+            // success
+            server->local_port = port;
+            return true;
+        }
+
+        if (port < port_range.last) {
+            LOGW("Could not forward port %" PRIu16", retrying on %" PRIu16,
+                 port, port + 1);
+            port++;
+            continue;
+        }
+
+        if (port_range.first == port_range.last) {
+            LOGE("Could not forward port %" PRIu16, port_range.first);
+        } else {
+            LOGE("Could not forward any port in range %" PRIu16 ":%" PRIu16,
+                 port_range.first, port_range.last);
+        }
+        return false;
+    }
+}
+
+static bool
+enable_tunnel_any_port(struct server *server, struct port_range port_range) {
+    if (enable_tunnel_reverse_any_port(server, port_range)) {
         return true;
     }
 
     // if "adb reverse" does not work (e.g. over "adb connect"), it fallbacks to
     // "adb forward", so the app socket is the client
+
     LOGW("'adb reverse' failed, fallback to 'adb forward'");
-    server->tunnel_forward = true;
-    return enable_tunnel_forward(server->serial, server->local_port);
+    return enable_tunnel_forward_any_port(server, port_range);
 }
 
 static process_t
@@ -261,7 +323,7 @@ server_init(struct server *server) {
 bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
-    server->local_port = params->local_port;
+    server->port_range = params->port_range;
 
     if (serial) {
         server->serial = SDL_strdup(serial);
@@ -275,7 +337,7 @@ server_start(struct server *server, const char *serial,
         return false;
     }
 
-    if (!enable_tunnel(server)) {
+    if (!enable_tunnel_any_port(server, params->port_range)) {
         SDL_free(server->serial);
         return false;
     }
