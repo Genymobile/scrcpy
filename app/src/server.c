@@ -143,9 +143,24 @@ listen_on_port(uint16_t port) {
 static bool
 enable_tunnel(struct server *server) {
     if (enable_tunnel_reverse(server->serial, server->local_port)) {
+        // At the application level, the device part is "the server" because it
+        // serves video stream and control. However, at the network level, the
+        // client listens and the server connects to the client. That way, the
+        // client can listen before starting the server app, so there is no
+        // need to try to connect until the server socket is listening on the
+        // device.
+        server->server_socket = listen_on_port(server->local_port);
+        if (server->server_socket == INVALID_SOCKET) {
+            LOGE("Could not listen on port %" PRIu16, server->local_port);
+            disable_tunnel(server);
+            return false;
+        }
+
         return true;
     }
 
+    // if "adb reverse" does not work (e.g. over "adb connect"), it fallbacks to
+    // "adb forward", so the app socket is the client
     LOGW("'adb reverse' failed, fallback to 'adb forward'");
     server->tunnel_forward = true;
     return enable_tunnel_forward(server->serial, server->local_port);
@@ -263,25 +278,6 @@ server_start(struct server *server, const char *serial,
     if (!enable_tunnel(server)) {
         SDL_free(server->serial);
         return false;
-    }
-
-    // if "adb reverse" does not work (e.g. over "adb connect"), it fallbacks to
-    // "adb forward", so the app socket is the client
-    if (!server->tunnel_forward) {
-        // At the application level, the device part is "the server" because it
-        // serves video stream and control. However, at the network level, the
-        // client listens and the server connects to the client. That way, the
-        // client can listen before starting the server app, so there is no
-        // need to try to connect until the server socket is listening on the
-        // device.
-
-        server->server_socket = listen_on_port(params->local_port);
-        if (server->server_socket == INVALID_SOCKET) {
-            LOGE("Could not listen on port %" PRIu16, params->local_port);
-            disable_tunnel(server);
-            SDL_free(server->serial);
-            return false;
-        }
     }
 
     // server will connect to our server socket
