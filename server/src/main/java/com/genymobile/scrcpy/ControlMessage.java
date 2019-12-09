@@ -15,11 +15,12 @@ public final class ControlMessage {
     public static final int TYPE_GET_CLIPBOARD = 7;
     public static final int TYPE_SET_CLIPBOARD = 8;
     public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
+    public static final int TYPE_SWITCH_KEY_MAPPING_GROUP = 10;
 
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
-    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_*
+    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_* or the direction of switching
     private int keycode; // KeyEvent.KEYCODE_*
     private int buttons; // MotionEvent.BUTTON_*
     private long pointerId;
@@ -71,6 +72,13 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
         msg.text = text;
+        return msg;
+    }
+
+    public static ControlMessage createSwitchKeyMappingGroup(int direction) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SWITCH_KEY_MAPPING_GROUP;
+        msg.action = direction;
         return msg;
     }
 

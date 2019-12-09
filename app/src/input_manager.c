@@ -97,6 +97,17 @@ action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
+static void
+switch_key_mapping_group(struct controller *controller, bool isForward) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_SWITCH_KEY_MAPPING_GROUP;
+    msg.key_mapping_group_switch.direction = (int32_t) isForward;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'switch key mapping group forwards/backwards'");
+    }
+}
+
 // turn the screen on if it was off, press BACK otherwise
 static void
 press_back_or_turn_screen_on(struct controller *controller) {
@@ -214,13 +225,22 @@ clipboard_paste(struct controller *controller) {
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
-    if (!im->prefer_text) {
-        char c = event->text[0];
-        if (isalpha(c) || c == ' ') {
-            assert(event->text[1] == '\0');
-            // letters and space are handled as raw key event
-            return;
-        }
+    switch (im->_key_input_mode)
+    {
+      case KEY_EVENT_ONLY:
+        return;
+      case KEY_COMBINED:
+      {
+          char c = event->text[0];
+          if (isalpha(c) || c == ' ') {
+              SDL_assert(event->text[1] == '\0');
+              // letters and space are handled as raw key event
+              return;
+          }
+          break;
+      }
+      default:
+        break;
     }
 
     struct control_msg msg;
@@ -238,7 +258,7 @@ input_manager_process_text_input(struct input_manager *im,
 
 static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
-                  bool prefer_text) {
+                  enum key_input_mode mode) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -247,7 +267,7 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 
     uint16_t mod = from->keysym.mod;
     if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod,
-                         prefer_text)) {
+                         mode)) {
         return false;
     }
 
@@ -388,6 +408,16 @@ input_manager_process_key(struct input_manager *im,
                     }
                 }
                 return;
+            case SDLK_COMMA:
+                if (control && cmd && shift && !repeat && down) {
+                  switch_key_mapping_group(controller, false);
+                }
+                return;
+            case SDLK_PERIOD:
+                if (control && cmd && shift && !repeat && down) {
+                  switch_key_mapping_group(controller, true);
+                }
+                return;
         }
 
         return;
@@ -398,7 +428,7 @@ input_manager_process_key(struct input_manager *im,
     }
 
     struct control_msg msg;
-    if (convert_input_key(event, &msg, im->prefer_text)) {
+    if (convert_input_key(event, &msg, im->_key_input_mode)) {
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }

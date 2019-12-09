@@ -13,6 +13,7 @@ public class ControlMessageReader {
     private static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 21;
     private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    private static final int SWITCH_KEY_MAPPING_GROUP_PAYLOAD_LENGTH = 1;
 
     public static final int TEXT_MAX_LENGTH = 300;
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
@@ -71,6 +72,9 @@ public class ControlMessageReader {
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 msg = parseSetScreenPowerMode();
+                break;
+            case ControlMessage.TYPE_SWITCH_KEY_MAPPING_GROUP:
+                msg = parseSwitchKeyMappingGroup();
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
@@ -153,6 +157,14 @@ public class ControlMessageReader {
             return null;
         }
         return ControlMessage.createSetClipboard(text);
+    }
+
+    private ControlMessage parseSwitchKeyMappingGroup() {
+        if (buffer.remaining() < SWITCH_KEY_MAPPING_GROUP_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int direction = buffer.get();
+        return ControlMessage.createSwitchKeyMappingGroup(direction);
     }
 
     private ControlMessage parseSetScreenPowerMode() {

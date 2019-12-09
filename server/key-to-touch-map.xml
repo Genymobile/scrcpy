@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<KeyToTouch>
+<!--
+The following two groups are only for demonstration. 
+Users can design their own mappings and add more groups for meeting their needs.
+
+The "x" and "y" refer to the physical coordinates of the display of the connected device.
+Such information can be shown by turning on the option "System"->"Developer options"->"Pointer location"
+-->
+<Group name="Portrait_English">
+	
+	<Mapping key="\u0009" x="589" y="1114" repeating="false" /> <!--tab-->
+	
+	
+	<Mapping key="\u0020" x="350" y="1110" repeating="false" /> <!--space-->	
+	<Mapping key="\u002C" x="198" y="1114" repeating="false" /> <!--,-->
+	<Mapping key="\u002E" x="508" y="1114" repeating="false" /> <!--.-->
+		
+	
+	<Mapping key="\u0043" x="52" y="1000" repeating="false" /> <!--C-->
+
+	<Mapping key="\u0061" x="68" y="880" repeating="false" /> <!--a-->
+	<Mapping key="\u0062" x="426" y="1005" repeating="false" /> <!--b-->
+	<Mapping key="\u0063" x="293" y="1006" repeating="false" /> <!--c-->
+	<Mapping key="\u0064" x="214" y="885" repeating="false" /> <!--d-->
+	<Mapping key="\u0065" x="176" y="771" repeating="false" /> <!--e-->
+	<Mapping key="\u0066" x="286" y="890" repeating="false" /> <!--f-->
+	<Mapping key="\u0067" x="355" y="890" repeating="false" /> <!--g-->
+	<Mapping key="\u0068" x="431" y="892" repeating="false" /> <!--h-->	
+	<Mapping key="\u0069" x="543" y="778" repeating="false" /> <!--i-->
+	<Mapping key="\u006A" x="505" y="896" repeating="false" /> <!--j-->
+	<Mapping key="\u006B" x="579" y="894" repeating="false" /> <!--k-->
+	<Mapping key="\u006C" x="650" y="890" repeating="false" /> <!--l-->	
+	<Mapping key="\u006D" x="555" y="1001" repeating="false" /> <!--m-->
+	<Mapping key="\u006E" x="491" y="990" repeating="false" /> <!--n-->
+	<Mapping key="\u006F" x="610" y="774" repeating="false" /> <!--o-->
+	<Mapping key="\u0070" x="684" y="781" repeating="false" /> <!--p-->
+	<Mapping key="\u0071" x="35" y="778" repeating="false" /> <!--q-->
+	<Mapping key="\u0072" x="248" y="779" repeating="false" /> <!--r-->
+	<Mapping key="\u0073" x="142" y="885" repeating="false" /> <!--s-->
+	<Mapping key="\u0074" x="322" y="785" repeating="false" /> <!--t-->
+	<Mapping key="\u0075" x="470" y="776" repeating="false" /> <!--u-->
+	<Mapping key="\u0076" x="360" y="1006" repeating="false" /> <!--v-->
+	<Mapping key="\u0077" x="107" y="783" repeating="false" /> <!--w-->
+	<Mapping key="\u0078" x="227" y="1006" repeating="false" /> <!--x-->
+	<Mapping key="\u0079" x="396" y="781" repeating="false" /> <!--y-->	
+	<Mapping key="\u007A" x="163" y="1005" repeating="false" /> <!--z-->
+		
+	
+</Group>	
+
+<Group name="Landscape_English">
+	
+	<Mapping key="\u0009" x="1062" y="665" repeating="false" /> <!--tab-->
+	
+	
+	<Mapping key="\u0020" x="675" y="660" repeating="false" /> <!--space-->	
+	<Mapping key="\u002C" x="423" y="663" repeating="false" /> <!--,-->
+	<Mapping key="\u002E" x="935" y="661" repeating="false" /> <!--.-->	
+	
+	<Mapping key="\u0043" x="182" y="562" repeating="false" /> <!--C-->
+
+	<Mapping key="\u0061" x="211" y="472" repeating="false" /> <!--a-->
+	<Mapping key="\u0062" x="793" y="568" repeating="false" /> <!--b-->
+	<Mapping key="\u0063" x="580" y="570" repeating="false" /> <!--c-->
+	<Mapping key="\u0064" x="449" y="472" repeating="false" /> <!--d-->
+	<Mapping key="\u0065" x="387" y="384" repeating="false" /> <!--e-->
+	<Mapping key="\u0066" x="567" y="472" repeating="false" /> <!--f-->
+	<Mapping key="\u0067" x="686" y="472" repeating="false" /> <!--g-->
+	<Mapping key="\u0068" x="807" y="474" repeating="false" /> <!--h-->	
+	<Mapping key="\u0069" x="984" y="382" repeating="false" /> <!--i-->
+	<Mapping key="\u006A" x="926" y="474" repeating="false" /> <!--j-->
+	<Mapping key="\u006B" x="1045" y="474" repeating="false" /> <!--k-->
+	<Mapping key="\u006C" x="1157" y="471" repeating="false" /> <!--l-->	
+	<Mapping key="\u006D" x="1007" y="568" repeating="false" /> <!--m-->
+	<Mapping key="\u006E" x="905" y="568" repeating="false" /> <!--n-->
+	<Mapping key="\u006F" x="1102" y="384" repeating="false" /> <!--o-->
+	<Mapping key="\u0070" x="1224" y="387" repeating="false" /> <!--p-->
+	<Mapping key="\u0071" x="155" y="378" repeating="false" /> <!--q-->
+	<Mapping key="\u0072" x="512" y="384" repeating="false" /> <!--r-->
+	<Mapping key="\u0073" x="330" y="476" repeating="false" /> <!--s-->
+	<Mapping key="\u0074" x="629" y="385" repeating="false" /> <!--t-->
+	<Mapping key="\u0075" x="865" y="382" repeating="false" /> <!--u-->
+	<Mapping key="\u0076" x="686" y="570" repeating="false" /> <!--v-->
+	<Mapping key="\u0077" x="272" y="384" repeating="false" /> <!--w-->
+	<Mapping key="\u0078" x="471" y="570" repeating="false" /> <!--x-->
+	<Mapping key="\u0079" x="744" y="382" repeating="false" /> <!--y-->	
+	<Mapping key="\u007A" x="368" y="568" repeating="false" /> <!--z-->	
+	
+</Group>		
+	
+			
+</KeyToTouch>

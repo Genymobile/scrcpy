@@ -21,3 +21,10 @@ else
                   install: true,
                   install_dir: 'share/scrcpy')
 endif
+
+custom_target('copy_xml',
+		input: 'key-to-touch-map.xml',
+		output: 'key-to-touch-map.xml',
+		command: ['cp', '@INPUT@', '@OUTPUT@'],
+		install: true,
+		install_dir: 'share/scrcpy')

@@ -10,11 +10,17 @@
 #include "video_buffer.h"
 #include "screen.h"
 
+enum key_input_mode {
+  KEY_COMBINED = 0,
+  KEY_TEXT_PREFERRED = 1,
+  KEY_EVENT_ONLY = 2,
+};
+
 struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
-    bool prefer_text;
+    enum key_input_mode _key_input_mode;
 };
 
 void

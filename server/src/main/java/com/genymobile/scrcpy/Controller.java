@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.key2touch.TouchEvent;
 import com.genymobile.scrcpy.wrappers.InputManager;
 
 import android.os.SystemClock;
@@ -20,6 +21,10 @@ public class Controller {
     private final DeviceMessageSender sender;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
+
+    private int lastKeyCodeAction = -1;
+    private int lastKeyCode = -1;
+    private long lastKeyCodeTimestamp = 0;
 
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
@@ -106,13 +111,68 @@ public class Controller {
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 device.setScreenPowerMode(msg.getAction());
                 break;
+            case ControlMessage.TYPE_SWITCH_KEY_MAPPING_GROUP:
+                if(msg.getAction() == 0)
+                    KeyToTouchMap.instance.previousGroup();
+                else
+                    KeyToTouchMap.instance.nextGroup();
+                break;
             default:
                 // do nothing
         }
     }
 
+
     private boolean injectKeycode(int action, int keycode, int metaState) {
-        return injectKeyEvent(action, keycode, 0, metaState);
+        int key = charMap.get(keycode, metaState);
+        boolean keyRepeating = false;
+        if(lastKeyCode == key && lastKeyCodeAction == action && action == KeyEvent.ACTION_DOWN)
+            keyRepeating = true;
+
+        lastKeyCode = key;
+        lastKeyCodeAction = action;
+
+        TouchEvent touchEvent = KeyToTouchMap.instance.lookup(key);
+        if(touchEvent == null) {
+            lastKeyCodeTimestamp = SystemClock.uptimeMillis();
+            return injectKeyEvent(action, keycode, 0, metaState);
+        }
+        else
+        {
+            if(keyRepeating)
+            {
+                if(!touchEvent.repeating)
+                    return false;
+                else
+                {
+                    if(SystemClock.uptimeMillis() < lastKeyCodeTimestamp + touchEvent.repeatingInterval)
+                        return false;
+                }
+
+
+            }
+
+
+            switch (action) {
+                case KeyEvent.ACTION_DOWN: {
+                    action = MotionEvent.ACTION_DOWN;
+                    break;
+                }
+                case KeyEvent.ACTION_UP: {
+                    action = MotionEvent.ACTION_UP;
+                    break;
+                }
+                default:
+                    return false;
+            }
+
+
+            if(keyRepeating)
+                injectTouch(MotionEvent.ACTION_UP, touchEvent.pointerId, touchEvent.point, touchEvent.pressure, touchEvent.buttons, lastKeyCodeTimestamp+1);
+
+            lastKeyCodeTimestamp = SystemClock.uptimeMillis();
+            return injectTouch(action, touchEvent.pointerId, touchEvent.point, touchEvent.pressure, touchEvent.buttons, lastKeyCodeTimestamp);
+        }
     }
 
     private boolean injectChar(char c) {
@@ -137,25 +197,33 @@ public class Controller {
                 Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
                 continue;
             }
+
             successCount++;
         }
         return successCount;
     }
 
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int buttons) {
-        long now = SystemClock.uptimeMillis();
 
         Point point = device.getPhysicalPoint(position);
         if (point == null) {
             // ignore event
             return false;
         }
+        long now = SystemClock.uptimeMillis();
+
+        return injectTouch(action, pointerId, point, pressure, buttons, now);
+    }
+
+    private boolean injectTouch(int action, long pointerId, Point point, float pressure, int buttons, long now) {
+
 
         int pointerIndex = pointersState.getPointerIndex(pointerId);
         if (pointerIndex == -1) {
             Ln.w("Too many pointers for touch event");
             return false;
         }
+
         Pointer pointer = pointersState.get(pointerIndex);
         pointer.setPoint(point);
         pointer.setPressure(pressure);

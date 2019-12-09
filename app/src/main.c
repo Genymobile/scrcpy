@@ -78,6 +78,11 @@ static void usage(const char *arg0) {
         "        special character, but breaks the expected behavior of alpha\n"
         "        keys in games (typically WASD).\n"
         "\n"
+        "    --key-event-only\n"
+        "        Typing only generates key events rather than text events.\n"
+        "        The resulting behaviour is opposite to the one induced by\n"
+        "        --prefer-text.\n"
+        "\n"
         "    --push-target path\n"
         "        Set the target directory for pushing files to the device by\n"
         "        drag & drop. It is passed as-is to \"adb push\".\n"
@@ -192,6 +197,14 @@ static void usage(const char *arg0) {
         "\n"
         "    " CTRL_OR_CMD "+i\n"
         "        enable/disable FPS counter (print frames/second in logs)\n"
+        "\n"
+        "    " CTRL_OR_CMD "+Shfit+.\n"
+        "        switching to the next key mapping group defined in the xml\n"
+        "        (if provided).\n"
+        "\n"
+        "    " CTRL_OR_CMD "+Shfit+,\n"
+        "        switching to the previous key mapping group defined in the xml\n"
+        "        (if provided).\n"
         "\n"
         "    Drag & drop APK file\n"
         "        install APK from computer\n"
@@ -401,6 +414,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_HEIGHT         1010
 #define OPT_WINDOW_BORDERLESS     1011
 #define OPT_MAX_FPS               1012
+#define OPT_KEY_EVENT_ONLY        1013
 
 static bool
 parse_args(struct args *args, int argc, char *argv[]) {
@@ -424,6 +438,7 @@ parse_args(struct args *args, int argc, char *argv[]) {
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"prefer-text",           no_argument,       NULL, OPT_PREFER_TEXT},
+        {"key-event-only",        no_argument,       NULL, OPT_KEY_EVENT_ONLY},
         {"version",               no_argument,       NULL, 'v'},
         {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
         {"window-x",              required_argument, NULL, OPT_WINDOW_X},
@@ -541,7 +556,10 @@ parse_args(struct args *args, int argc, char *argv[]) {
                 opts->push_target = optarg;
                 break;
             case OPT_PREFER_TEXT:
-                opts->prefer_text = true;
+                opts->_key_input_mode = KEY_TEXT_PREFERRED;
+                break;
+            case OPT_KEY_EVENT_ONLY:
+                opts->_key_input_mode = KEY_EVENT_ONLY;
                 break;
             default:
                 // getopt prints the error message on stderr

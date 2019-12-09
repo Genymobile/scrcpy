@@ -76,7 +76,7 @@ convert_meta_state(SDL_Keymod mod) {
 
 bool
 convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
-                bool prefer_text) {
+                enum key_input_mode mode) {
     switch (from) {
         MAP(SDLK_RETURN,       AKEYCODE_ENTER);
         MAP(SDLK_KP_ENTER,     AKEYCODE_NUMPAD_ENTER);
@@ -94,7 +94,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         MAP(SDLK_UP,           AKEYCODE_DPAD_UP);
     }
 
-    if (prefer_text) {
+    if (mode == KEY_TEXT_PREFERRED) {
         // do not forward alpha and space key events
         return false;
     }
@@ -131,6 +131,33 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         MAP(SDLK_y,            AKEYCODE_Y);
         MAP(SDLK_z,            AKEYCODE_Z);
         MAP(SDLK_SPACE,        AKEYCODE_SPACE);
+    }
+
+    if(mode != KEY_EVENT_ONLY)
+      return false;
+
+    switch (from) {
+        MAP(SDLK_SLASH,            AKEYCODE_SLASH);
+        MAP(SDLK_PERIOD,            AKEYCODE_PERIOD);
+        MAP(SDLK_COMMA,            AKEYCODE_COMMA);
+        MAP(SDLK_SEMICOLON,            AKEYCODE_SEMICOLON);
+        MAP(SDLK_QUOTE,           AKEYCODE_APOSTROPHE);
+        MAP(SDLK_LEFTBRACKET,            AKEYCODE_LEFT_BRACKET);
+        MAP(SDLK_RIGHTBRACKET,             AKEYCODE_RIGHT_BRACKET);
+        MAP(SDLK_BACKSLASH,            AKEYCODE_BACKSLASH);
+        MAP(SDLK_MINUS,            AKEYCODE_MINUS);
+        MAP(SDLK_EQUALS,            AKEYCODE_EQUALS);
+        MAP(SDLK_0,            AKEYCODE_0);
+        MAP(SDLK_1,            AKEYCODE_1);
+        MAP(SDLK_2,            AKEYCODE_2);
+        MAP(SDLK_3,            AKEYCODE_3);
+        MAP(SDLK_4,            AKEYCODE_4);
+        MAP(SDLK_5,            AKEYCODE_5);
+        MAP(SDLK_6,            AKEYCODE_6);
+        MAP(SDLK_7,            AKEYCODE_7);
+        MAP(SDLK_8,            AKEYCODE_8);
+        MAP(SDLK_9,            AKEYCODE_9);
+        MAP(SDLK_BACKQUOTE,            AKEYCODE_GRAVE);
         FAIL;
     }
 }

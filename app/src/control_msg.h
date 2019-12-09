@@ -28,6 +28,7 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_GET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+    CONTROL_MSG_TYPE_SWITCH_KEY_MAPPING_GROUP,
 };
 
 enum screen_power_mode {
@@ -65,6 +66,9 @@ struct control_msg {
         struct {
             enum screen_power_mode mode;
         } set_screen_power_mode;
+         struct {
+            int32_t direction;
+        } key_mapping_group_switch;
     };
 };
 

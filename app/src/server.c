@@ -13,24 +13,30 @@
 #include "util/net.h"
 
 #define SOCKET_NAME "scrcpy"
-#define SERVER_FILENAME "scrcpy-server"
+#define SERVER_FILENAME "scrcpy-server.jar"
+#define KEY_TO_TOUCH_MAP_FILENAME "key-to-touch-map.xml"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
-#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define DEVICE_PATH_PREFIX "/data/local/tmp/"
+#define DEVICE_SERVER_PATH DEVICE_PATH_PREFIX SERVER_FILENAME
+#define DEVICE_XML_PATH DEVICE_PATH_PREFIX KEY_TO_TOUCH_MAP_FILENAME
 
-static const char *
-get_server_path(void) {
+// the returned bool is used to indicate whether callers should be responsible for freeing the memory holding the path string
+static bool
+get_server_path(const char **ptr) {
     const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
     if (server_path_env) {
         LOGD("Using SCRCPY_SERVER_PATH: %s", server_path_env);
         // if the envvar is set, use it
-        return server_path_env;
+        *ptr = server_path_env;
+        return false;
     }
 
 #ifndef PORTABLE
     LOGD("Using server: " DEFAULT_SERVER_PATH);
     // the absolute path is hardcoded
-    return DEFAULT_SERVER_PATH;
+    *ptr = DEFAULT_SERVER_PATH;
+    return false;
 #else
     // use scrcpy-server in the same directory as the executable
     char *executable_path = get_executable_path();
@@ -38,7 +44,8 @@ get_server_path(void) {
         LOGE("Could not get executable path, "
              "using " SERVER_FILENAME " from current directory");
         // not found, use current directory
-        return SERVER_FILENAME;
+        *ptr = SERVER_FILENAME;
+        return false;
     }
     char *dir = dirname(executable_path);
     size_t dirlen = strlen(dir);
@@ -50,7 +57,8 @@ get_server_path(void) {
         LOGE("Could not alloc server path string, "
              "using " SERVER_FILENAME " from current directory");
         SDL_free(executable_path);
-        return SERVER_FILENAME;
+        *ptr = SERVER_FILENAME;
+        return false;
     }
 
     memcpy(server_path, dir, dirlen);
@@ -61,13 +69,47 @@ get_server_path(void) {
     SDL_free(executable_path);
 
     LOGD("Using server (portable): %s", server_path);
-    return server_path;
+    *ptr = server_path;
+    return true;
 #endif
 }
 
 static bool
 push_server(const char *serial) {
-    process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
+
+    const char *server_path = NULL;
+    bool is_allocated = get_server_path(&server_path);
+    const char *beginningOfFilename = strrchr(server_path, '/');
+    if(beginningOfFilename == NULL)
+      beginningOfFilename = strrchr(server_path, '\\');
+
+    size_t prefix_len = 0;
+    size_t xml_path_len = strlen(KEY_TO_TOUCH_MAP_FILENAME) + 1; // extra one for storing a null character
+    char *xml_path = NULL;
+    if(beginningOfFilename != NULL)
+    {
+      prefix_len = beginningOfFilename - server_path + 1;
+      xml_path_len = prefix_len + xml_path_len;
+    }
+
+    xml_path = SDL_malloc(xml_path_len);
+    if(xml_path == NULL)
+      LOGE("Fail to allocate buffer for \"%s\". Skipping the push of it", KEY_TO_TOUCH_MAP_FILENAME);
+    else
+    {
+      strcpy(strncpy(xml_path, server_path, prefix_len) + prefix_len, KEY_TO_TOUCH_MAP_FILENAME);
+
+      process_t process = adb_push(serial, xml_path, DEVICE_XML_PATH);
+      process_check_success(process, "adb push");
+
+      SDL_free(xml_path);
+    }
+
+
+    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    if(is_allocated && server_path != NULL)
+      SDL_free(server_path);
+
     return process_check_success(process, "adb push");
 }
 

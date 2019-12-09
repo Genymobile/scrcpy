@@ -74,6 +74,9 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
             return 2;
+        case CONTROL_MSG_TYPE_SWITCH_KEY_MAPPING_GROUP:
+            buf[1] = msg->key_mapping_group_switch.direction;
+            return 2;
         case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
         case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL:

@@ -30,7 +30,7 @@ struct scrcpy_options {
     bool display;
     bool turn_screen_off;
     bool render_expired_frames;
-    bool prefer_text;
+    enum key_input_mode _key_input_mode;
     bool window_borderless;
 };
 
@@ -56,7 +56,7 @@ struct scrcpy_options {
     .display = true, \
     .turn_screen_off = false, \
     .render_expired_frames = false, \
-    .prefer_text = false, \
+    ._key_input_mode = KEY_COMBINED, \
     .window_borderless = false, \
 }
 
