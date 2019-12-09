@@ -58,9 +58,9 @@ scrcpy_print_usage(const char *arg0) {
         "        Do not display device (only when screen recording is\n"
         "        enabled).\n"
         "\n"
-        "    -p, --port port\n"
-        "        Set the TCP port the client listens on.\n"
-        "        Default is %d.\n"
+        "    -p, --port port[:port]\n"
+        "        Set the TCP port (range) used by the client to listen.\n"
+        "        Default is %d:%d.\n"
         "\n"
         "    --prefer-text\n"
         "        Inject alpha characters and space as text events instead of\n"
@@ -193,7 +193,7 @@ scrcpy_print_usage(const char *arg0) {
         arg0,
         DEFAULT_BIT_RATE,
         DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
-        DEFAULT_LOCAL_PORT);
+        DEFAULT_LOCAL_PORT_RANGE_FIRST, DEFAULT_LOCAL_PORT_RANGE_LAST);
 }
 
 static bool
@@ -219,6 +219,27 @@ parse_integer_arg(const char *s, long *out, bool accept_suffix, long min,
 
     *out = value;
     return true;
+}
+
+static size_t
+parse_integers_arg(const char *s, size_t max_items, long *out, long min,
+                   long max, const char *name) {
+    size_t count = parse_integers(s, ':', max_items, out);
+    if (!count) {
+        LOGE("Could not parse %s: %s", name, s);
+        return 0;
+    }
+
+    for (size_t i = 0; i < count; ++i) {
+        long value = out[i];
+        if (value < min || value > max) {
+            LOGE("Could not parse %s: value (%ld) out-of-range (%ld; %ld)",
+                 name, value, min, max);
+            return 0;
+        }
+    }
+
+    return count;
 }
 
 static bool
@@ -286,14 +307,30 @@ parse_window_dimension(const char *s, uint16_t *dimension) {
 }
 
 static bool
-parse_port(const char *s, uint16_t *port) {
-    long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "port");
-    if (!ok) {
+parse_port_range(const char *s, struct port_range *port_range) {
+    long values[2];
+    size_t count = parse_integers_arg(s, 2, values, 0, 0xFFFF, "port");
+    if (!count) {
         return false;
     }
 
-    *port = (uint16_t) value;
+    uint16_t v0 = (uint16_t) values[0];
+    if (count == 1) {
+        port_range->first = v0;
+        port_range->last = v0;
+        return true;
+    }
+
+    assert(count == 2);
+    uint16_t v1 = (uint16_t) values[1];
+    if (v0 < v1) {
+        port_range->first = v0;
+        port_range->last = v1;
+    } else {
+        port_range->first = v1;
+        port_range->last = v0;
+    }
+
     return true;
 }
 
@@ -424,7 +461,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->display = false;
                 break;
             case 'p':
-                if (!parse_port(optarg, &opts->port)) {
+                if (!parse_port_range(optarg, &opts->port_range)) {
                     return false;
                 }
                 break;

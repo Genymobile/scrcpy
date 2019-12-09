@@ -96,9 +96,10 @@ conf.set_quoted('PREFIX', get_option('prefix'))
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
-# the default client TCP port for the "adb reverse" tunnel
+# the default client TCP port range for the "adb reverse" tunnel
 # overridden by option --port
-conf.set('DEFAULT_LOCAL_PORT', '27183')
+conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
+conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
 # the default max video size for both dimensions, in pixels
 # overridden by option --max-size
