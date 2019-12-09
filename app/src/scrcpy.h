@@ -42,7 +42,7 @@ struct scrcpy_options {
     .push_target = NULL, \
     .record_format = RECORDER_FORMAT_AUTO, \
     .port = DEFAULT_LOCAL_PORT, \
-    .max_size = DEFAULT_LOCAL_PORT, \
+    .max_size = DEFAULT_MAX_SIZE, \
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
     .window_x = -1, \
