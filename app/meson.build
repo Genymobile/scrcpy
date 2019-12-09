@@ -156,18 +156,18 @@ tests = [
     ['test_control_event_serialize', [
         'tests/test_control_msg_serialize.c',
         'src/control_msg.c',
-        'src/util/str_util.c'
+        'src/util/str_util.c',
     ]],
     ['test_device_event_deserialize', [
         'tests/test_device_msg_deserialize.c',
-        'src/device_msg.c'
+        'src/device_msg.c',
     ]],
     ['test_queue', [
         'tests/test_queue.c',
     ]],
     ['test_strutil', [
         'tests/test_strutil.c',
-        'src/util/str_util.c'
+        'src/util/str_util.c',
     ]],
 ]
 
