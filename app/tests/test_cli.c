@@ -1,6 +1,7 @@
 #include <assert.h>
 
 #include "cli.h"
+#include "common.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
@@ -66,7 +67,7 @@ static void test_options(void) {
         "--window-borderless",
     };
 
-    bool ok = scrcpy_parse_args(&args, sizeof(argv) / sizeof(*argv), argv);
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
     assert(ok);
 
     const struct scrcpy_options *opts = &args.opts;
@@ -108,7 +109,7 @@ static void test_options2(void) {
         "--record", "file.mp4", // cannot enable --no-display without recording
     };
 
-    bool ok = scrcpy_parse_args(&args, sizeof(argv) / sizeof(*argv), argv);
+    bool ok = scrcpy_parse_args(&args, ARRAY_LEN(argv), argv);
     assert(ok);
 
     const struct scrcpy_options *opts = &args.opts;
