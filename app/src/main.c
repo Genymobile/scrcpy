@@ -37,6 +37,11 @@ main(int argc, char *argv[]) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 #endif
+
+#ifndef NDEBUG
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
+#endif
+
     struct scrcpy_cli_args args = {
         .opts = SCRCPY_OPTIONS_DEFAULT,
         .help = false,
@@ -66,10 +71,6 @@ main(int argc, char *argv[]) {
     if (avformat_network_init()) {
         return 1;
     }
-
-#ifndef NDEBUG
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
-#endif
 
     int res = scrcpy(&args.opts) ? 0 : 1;
 
