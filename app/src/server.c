@@ -127,6 +127,20 @@ disable_tunnel_forward(const char *serial, uint16_t local_port) {
 }
 
 static bool
+disable_tunnel(struct server *server) {
+    if (server->tunnel_forward) {
+        return disable_tunnel_forward(server->serial, server->local_port);
+    }
+    return disable_tunnel_reverse(server->serial);
+}
+
+static socket_t
+listen_on_port(uint16_t port) {
+#define IPV4_LOCALHOST 0x7F000001
+    return net_listen(IPV4_LOCALHOST, port, 1);
+}
+
+static bool
 enable_tunnel(struct server *server) {
     if (enable_tunnel_reverse(server->serial, server->local_port)) {
         return true;
@@ -135,14 +149,6 @@ enable_tunnel(struct server *server) {
     LOGW("'adb reverse' failed, fallback to 'adb forward'");
     server->tunnel_forward = true;
     return enable_tunnel_forward(server->serial, server->local_port);
-}
-
-static bool
-disable_tunnel(struct server *server) {
-    if (server->tunnel_forward) {
-        return disable_tunnel_forward(server->serial, server->local_port);
-    }
-    return disable_tunnel_reverse(server->serial);
 }
 
 static process_t
@@ -185,13 +191,6 @@ execute_server(struct server *server, const struct server_params *params) {
     // Then click on "Debug"
 #endif
     return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
-}
-
-#define IPV4_LOCALHOST 0x7F000001
-
-static socket_t
-listen_on_port(uint16_t port) {
-    return net_listen(IPV4_LOCALHOST, port, 1);
 }
 
 static socket_t
