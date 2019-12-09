@@ -234,7 +234,7 @@ parse_bit_rate(const char *s, uint32_t *bit_rate) {
 }
 
 static bool
-parse_max_size(char *s, uint16_t *max_size) {
+parse_max_size(const char *s, uint16_t *max_size) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "max size");
     if (!ok) {
@@ -258,7 +258,7 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 }
 
 static bool
-parse_window_position(char *s, int16_t *position) {
+parse_window_position(const char *s, int16_t *position) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, -1, 0x7FFF,
                                 "window position");
@@ -271,7 +271,7 @@ parse_window_position(char *s, int16_t *position) {
 }
 
 static bool
-parse_window_dimension(char *s, uint16_t *dimension) {
+parse_window_dimension(const char *s, uint16_t *dimension) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF,
                                 "window dimension");
@@ -284,7 +284,7 @@ parse_window_dimension(char *s, uint16_t *dimension) {
 }
 
 static bool
-parse_port(char *s, uint16_t *port) {
+parse_port(const char *s, uint16_t *port) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "port");
     if (!ok) {
