@@ -343,6 +343,13 @@ Note that it only shows _physical_ touches (with the finger on the device).
 
 ### Input control
 
+#### Rotate device screen
+
+Press `Ctrl`+`r` to switch between portrait and landscape modes.
+
+Note that it rotates only if the application in foreground supports the
+requested orientation.
+
 #### Copy-paste
 
 It is possible to synchronize clipboards between the computer and the device, in
