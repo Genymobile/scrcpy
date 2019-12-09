@@ -2,7 +2,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#define SDL_MAIN_HANDLED // avoid to redefine main to SDL_main
 #include <SDL2/SDL.h>
 
 #include "util/str_util.h"

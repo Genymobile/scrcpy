@@ -174,6 +174,7 @@ tests = [
 foreach t : tests
     exe = executable(t[0], t[1],
                      include_directories: src_dir,
-                     dependencies: dependencies)
+                     dependencies: dependencies,
+                     c_args: ['-DSDL_MAIN_HANDLED'])
     test(t[0], exe)
 endforeach
