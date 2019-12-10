@@ -4,38 +4,8 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#ifdef _WIN32
-
- // not needed here, but winsock2.h must never be included AFTER windows.h
-# include <winsock2.h>
-# include <windows.h>
-# define PATH_SEPARATOR '\\'
-# define PRIexitcode "lu"
-// <https://stackoverflow.com/a/44383330/1987178>
-# ifdef _WIN64
-#   define PRIsizet PRIu64
-# else
-#   define PRIsizet PRIu32
-# endif
-# define PROCESS_NONE NULL
-# define NO_EXIT_CODE -1u // max value as unsigned
-  typedef HANDLE process_t;
-  typedef DWORD exit_code_t;
-
-#else
-
-# include <sys/types.h>
-# define PATH_SEPARATOR '/'
-# define PRIsizet "zu"
-# define PRIexitcode "d"
-# define PROCESS_NONE -1
-# define NO_EXIT_CODE -1
-  typedef pid_t process_t;
-  typedef int exit_code_t;
-
-#endif
-
 #include "config.h"
+#include "common.h"
 
 enum process_result {
     PROCESS_SUCCESS,
