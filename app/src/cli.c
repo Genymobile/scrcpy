@@ -224,7 +224,9 @@ parse_integer_arg(const char *s, long *out, bool accept_suffix, long min,
 static bool
 parse_bit_rate(const char *s, uint32_t *bit_rate) {
     long value;
-    bool ok = parse_integer_arg(s, &value, true, 0, 0xFFFFFFFF, "bit-rate");
+    // long may be 32 bits (it is the case on mingw), so do not use more than
+    // 31 bits (long is signed)
+    bool ok = parse_integer_arg(s, &value, true, 0, 0x7FFFFFFF, "bit-rate");
     if (!ok) {
         return false;
     }
