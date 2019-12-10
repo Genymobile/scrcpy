@@ -36,6 +36,13 @@
 
 #endif
 
+// in MinGW, "%ll" is not supported as printf format for long long
+# ifdef __MINGW32__
+#   define PRIlld "I64d"
+# else
+#   define PRIlld "lld"
+# endif
+
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))
 #define MIN(X,Y) (X) < (Y) ? (X) : (Y)
 #define MAX(X,Y) (X) > (Y) ? (X) : (Y)

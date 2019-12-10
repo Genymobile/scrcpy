@@ -171,7 +171,7 @@ static void test_utf8_truncate(void) {
 }
 
 static void test_parse_integer(void) {
-    long value;
+    long long value;
     bool ok = parse_integer("1234", &value);
     assert(ok);
     assert(value == 1234);
@@ -188,7 +188,7 @@ static void test_parse_integer(void) {
 }
 
 static void test_parse_integer_with_suffix(void) {
-    long value;
+    long long value;
     bool ok = parse_integer_with_suffix("1234", &value);
     assert(ok);
     assert(value == 1234);

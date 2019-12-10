@@ -29,14 +29,14 @@ strquote(const char *src);
 // parse s as an integer into value
 // returns true if the conversion succeeded, false otherwise
 bool
-parse_integer(const char *s, long *out);
+parse_integer(const char *s, long long *out);
 
 // parse s as an integer into value
 // like parse_integer(), but accept 'k'/'K' (x1000) and 'm'/'M' (x1000000) as
 // suffix
 // returns true if the conversion succeeded, false otherwise
 bool
-parse_integer_with_suffix(const char *s, long *out);
+parse_integer_with_suffix(const char *s, long long *out);
 
 // return the index to truncate a UTF-8 string at a valid position
 size_t

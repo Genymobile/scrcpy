@@ -63,13 +63,13 @@ strquote(const char *src) {
 }
 
 bool
-parse_integer(const char *s, long *out) {
+parse_integer(const char *s, long long *out) {
     char *endptr;
     if (*s == '\0') {
         return false;
     }
     errno = 0;
-    long value = strtol(s, &endptr, 0);
+    long long value = strtol(s, &endptr, 0);
     if (errno == ERANGE) {
         return false;
     }
@@ -82,13 +82,13 @@ parse_integer(const char *s, long *out) {
 }
 
 bool
-parse_integer_with_suffix(const char *s, long *out) {
+parse_integer_with_suffix(const char *s, long long *out) {
     char *endptr;
     if (*s == '\0') {
         return false;
     }
     errno = 0;
-    long value = strtol(s, &endptr, 0);
+    long long value = strtoll(s, &endptr, 0);
     if (errno == ERANGE) {
         return false;
     }
@@ -106,8 +106,8 @@ parse_integer_with_suffix(const char *s, long *out) {
         }
     }
 
-    if ((value < 0 && LONG_MIN / mul > value) ||
-        (value > 0 && LONG_MAX / mul < value)) {
+    if ((value < 0 && LLONG_MIN / mul > value) ||
+        (value > 0 && LLONG_MAX / mul < value)) {
         return false;
     }
 
