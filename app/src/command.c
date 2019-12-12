@@ -4,9 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "config.h"
 #include "common.h"
@@ -204,15 +201,4 @@ process_check_success(process_t proc, const char *name) {
         return false;
     }
     return true;
-}
-
-bool
-is_regular_file(const char *path) {
-    struct stat path_stat;
-    int r = stat(path, &path_stat);
-    if (r) {
-        perror("stat");
-        return false;
-    }
-    return S_ISREG(path_stat.st_mode);
 }
