@@ -75,13 +75,13 @@ push_server(const char *serial) {
     process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
 }
-
+/*
 static bool
 enable_tunnel_reverse(const char *serial, uint16_t local_port) {
     process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
     return process_check_success(process, "adb reverse");
 }
-
+*/
 static bool
 disable_tunnel_reverse(const char *serial) {
     process_t process = adb_reverse_remove(serial, SOCKET_NAME);
@@ -102,10 +102,11 @@ disable_tunnel_forward(const char *serial, uint16_t local_port) {
 
 static bool
 enable_tunnel(struct server *server) {
+/*
     if (enable_tunnel_reverse(server->serial, server->local_port)) {
         return true;
     }
-
+*/
     LOGW("'adb reverse' failed, fallback to 'adb forward'");
     server->tunnel_forward = true;
     return enable_tunnel_forward(server->serial, server->local_port);
@@ -129,6 +130,8 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     const char *const cmd[] = {
         "shell",
+        //nativeLibraryDirectories=[/system/lib64, /vendor/lib64, /system/lib64, /vendor/lib64]]]
+        "LD_LIBRARY_PATH=/system/lib:/vendor/lib:/system/lib64:/vendor/lib64:/data/local/tmp",
         "CLASSPATH=" DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
@@ -142,10 +145,11 @@ execute_server(struct server *server, const struct server_params *params) {
         max_size_string,
         bit_rate_string,
         max_fps_string,
-        server->tunnel_forward ? "true" : "false",
+        "true",//server->tunnel_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
+        "true",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
@@ -293,7 +297,7 @@ server_connect_to(struct server *server) {
         // we don't need the server socket anymore
         close_socket(&server->server_socket);
     } else {
-        uint32_t attempts = 100;
+        uint32_t attempts = 10;
         uint32_t delay = 100; // ms
         server->video_socket =
             connect_to_server(server->local_port, attempts, delay);

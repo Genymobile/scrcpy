@@ -49,7 +49,7 @@ public final class DesktopConnection implements Closeable {
             try {
                 videoSocket = localServerSocket.accept();
                 // send one byte so the client may read() to detect a connection error
-                videoSocket.getOutputStream().write(0);
+//                videoSocket.getOutputStream().write(0);//wen disable
                 try {
                     controlSocket = localServerSocket.accept();
                 } catch (IOException | RuntimeException e) {
@@ -71,7 +71,7 @@ public final class DesktopConnection implements Closeable {
 
         DesktopConnection connection = new DesktopConnection(videoSocket, controlSocket);
         Size videoSize = device.getScreenInfo().getVideoSize();
-        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+//        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());//wen disable
         return connection;
     }
 

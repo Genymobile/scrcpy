@@ -9,6 +9,11 @@ android {
         versionCode 14
         versionName "1.12.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        externalNativeBuild {
+            cmake {
+                abiFilters 'arm64-v8a', 'armeabi-v7a'
+            }
+        }
     }
     buildTypes {
         release {
@@ -16,11 +21,23 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }
+    sourceSets {
+        main {
+            java.srcDirs 'src/java'
+            jniLibs.srcDirs 'libs/libturbojpeg/prebuilt'
+        }
+    }
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar', '*.so'])
     testImplementation 'junit:junit:4.12'
+    implementation 'commons-cli:commons-cli:1.4'
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"

@@ -11,6 +11,10 @@ public class Options {
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
 
+    //wen add
+    private int quality;
+    private int scale;
+
     public int getMaxSize() {
         return maxSize;
     }
@@ -66,4 +70,21 @@ public class Options {
     public void setControl(boolean control) {
         this.control = control;
     }
+
+    public int getQuality() {
+        return quality;
+    }
+
+    public void setQuality(int quality) {
+        this.quality = quality;
+    }
+
+    public int getScale() {
+        return scale;
+    }
+
+    public void setScale(int scale) {
+        this.scale = scale;
+    }
+
 }
