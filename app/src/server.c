@@ -11,6 +11,7 @@
 #include "command.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/str_util.h"
 
 #define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
@@ -20,7 +21,12 @@
 
 static const char *
 get_server_path(void) {
+#ifndef _WIN32
     const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
+#else
+    const wchar_t *wide_server_path_env = _wgetenv(L"SCRCPY_SERVER_PATH");
+    char *server_path_env = utf8_from_wide_char(wide_server_path_env);
+#endif
     if (server_path_env) {
         LOGD("Using SCRCPY_SERVER_PATH: %s", server_path_env);
         // if the envvar is set, use it
