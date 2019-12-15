@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -126,4 +127,15 @@ get_executable_path(void) {
     // (it's useful to have a working version on Linux for debugging though)
     return NULL;
 #endif
+}
+
+bool
+is_regular_file(const char *path) {
+    struct stat path_stat;
+
+    if (stat(path, &path_stat)) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }

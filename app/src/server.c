@@ -6,11 +6,13 @@
 #include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_timer.h>
+#include <SDL2/SDL_platform.h>
 
 #include "config.h"
 #include "command.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/str_util.h"
 
 #define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
@@ -20,10 +22,18 @@
 
 static char *
 get_server_path(void) {
+#ifdef __WINDOWS__
+    const wchar_t *server_path_env = _wgetenv(L"SCRCPY_SERVER_PATH");
+#else
     const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
+#endif
     if (server_path_env) {
         // if the envvar is set, use it
+#ifdef __WINDOWS__
+        char *server_path = utf8_from_wide_char(server_path_env);
+#else
         char *server_path = SDL_strdup(server_path_env);
+#endif
         if (!server_path) {
             LOGE("Could not allocate memory");
             return NULL;
