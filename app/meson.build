@@ -76,11 +76,9 @@ cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
     src += [ 'src/sys/win/command.c' ]
-    src += [ 'src/sys/win/net.c' ]
     dependencies += cc.find_library('ws2_32')
 else
     src += [ 'src/sys/unix/command.c' ]
-    src += [ 'src/sys/unix/net.c' ]
 endif
 
 conf = configuration_data()
