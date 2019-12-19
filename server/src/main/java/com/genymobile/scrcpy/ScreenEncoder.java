@@ -19,6 +19,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
+    private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
 
     private static final int NO_PTS = -1;
 
@@ -150,11 +151,10 @@ public class ScreenEncoder implements Device.RotationListener {
         // display the very first frame, and recover from bad quality when no new frames
         format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
         if (maxFps > 0) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                format.setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, maxFps);
-            } else {
-                Ln.w("Max FPS is only supported since Android 10, the option has been ignored");
-            }
+            // The key existed privately before Android 10:
+            // <https://android.googlesource.com/platform/frameworks/base/+/625f0aad9f7a259b6881006ad8710adce57d1384%5E%21/>
+            // <https://github.com/Genymobile/scrcpy/issues/488#issuecomment-567321437>
+            format.setFloat(KEY_MAX_FPS_TO_ENCODER, maxFps);
         }
         return format;
     }

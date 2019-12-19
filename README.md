@@ -137,11 +137,13 @@ scrcpy -b 2M  # short version
 
 #### Limit frame rate
 
-On devices with Android >= 10, the capture frame rate can be limited:
+The capture frame rate can be limited:
 
 ```bash
 scrcpy --max-fps 15
 ```
+
+This is officially supported since Android 10, but may work on earlier versions.
 
 #### Crop
 
