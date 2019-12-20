@@ -237,13 +237,17 @@ You can then [run](README.md#run) _scrcpy_.
    _(SHA-256: ff3a454012e91d9185cfe8ca7691cea16c43a7dcc08e92fa47ab9f0ea675abd1)_
 
 [direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11
+Create a new directory inside the [scrcpy] folder, called [prebuiltServer] using:
+```bash
+mkdir prebuiltServer
+```
 
-Download the prebuilt server somewhere, and specify its path during the Meson
+Download the prebuilt server into the [prebuilitServer] folder you just created, and specify its path during the Meson
 configuration:
 
 ```bash
 meson x --buildtype release --strip -Db_lto=true \
-    -Dprebuilt_server=/path/to/scrcpy-server
+    -Dprebuilt_server=prebuiltServer/name-of-scrcpy-server
 ninja -Cx
 sudo ninja -Cx install
-```
+``` 
