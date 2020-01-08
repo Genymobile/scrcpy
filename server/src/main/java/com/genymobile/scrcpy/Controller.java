@@ -26,6 +26,9 @@ public class Controller {
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
+    private boolean backPressed;
+    private boolean powerPressed;
+
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
         this.connection = connection;
@@ -88,7 +91,7 @@ public class Controller {
                 injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
-                pressBackOrTurnScreenOn();
+                pressBackOrTurnScreenOn(msg.getAction());
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
                 device.expandNotificationPanel();
@@ -223,8 +226,33 @@ public class Controller {
         return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    private boolean pressBackOrTurnScreenOn() {
-        int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
-        return injectKeycode(keycode);
+    private boolean pressBackOrTurnScreenOn(int action) {
+        int keycode = -1;
+        if (action == KeyEvent.ACTION_UP) {
+            // if BACK or POWER were pressed, this action is the corresponding release event (regardless of the screen state)
+            if (backPressed) {
+                keycode = KeyEvent.KEYCODE_BACK;
+                backPressed = false;
+            } else if (powerPressed) {
+                keycode = KeyEvent.KEYCODE_POWER;
+                powerPressed = false;
+            }
+        }
+
+        if (keycode == -1) {
+            keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
+        }
+
+        if (action == KeyEvent.ACTION_DOWN) {
+            if (keycode == KeyEvent.KEYCODE_BACK) {
+                backPressed = true;
+                powerPressed = false;
+            } else {
+                backPressed = false;
+                powerPressed = true;
+            }
+        }
+
+        return injectKeyEvent(action, keycode, 0, 0);
     }
 }

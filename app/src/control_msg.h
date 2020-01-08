@@ -66,6 +66,9 @@ struct control_msg {
         struct {
             enum screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            enum android_keyevent_action action;
+        } back_or_screen_on;
     };
 };
 

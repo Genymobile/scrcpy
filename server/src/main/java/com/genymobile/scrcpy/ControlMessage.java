@@ -85,6 +85,13 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createBackOrScreenOn(int action) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_BACK_OR_SCREEN_ON;
+        msg.action = action;
+        return msg;
+    }
+
     public static ControlMessage createEmpty(int type) {
         ControlMessage msg = new ControlMessage();
         msg.type = type;

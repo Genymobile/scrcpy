@@ -99,9 +99,14 @@ action_menu(struct controller *controller, int actions) {
 
 // turn the screen on if it was off, press BACK otherwise
 static void
-press_back_or_turn_screen_on(struct controller *controller) {
+press_back_or_turn_screen_on(struct controller *controller, int action) {
+    assert(action == ACTION_DOWN || action == ACTION_UP);
+
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
+    msg.back_or_screen_on.action = action == ACTION_DOWN
+                                 ? AKEY_EVENT_ACTION_DOWN
+                                 : AKEY_EVENT_ACTION_UP;
 
     if (!controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'press back or turn screen on'");
@@ -545,9 +550,9 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 
     if (event->button == SDL_BUTTON_RIGHT) {
-        if (event->type == SDL_MOUSEBUTTONDOWN) {
-            press_back_or_turn_screen_on(im->controller);
-        }
+        int action = event->type == SDL_MOUSEBUTTONDOWN ? ACTION_DOWN
+                                                        : ACTION_UP;
+        press_back_or_turn_screen_on(im->controller, action);
         return;
     }
 

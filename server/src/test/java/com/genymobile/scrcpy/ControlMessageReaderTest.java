@@ -145,6 +145,7 @@ public class ControlMessageReaderTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_BACK_OR_SCREEN_ON);
+        dos.writeByte(KeyEvent.ACTION_UP);
 
         byte[] packet = bos.toByteArray();
 
@@ -152,6 +153,7 @@ public class ControlMessageReaderTest {
         ControlMessage event = reader.next();
 
         Assert.assertEquals(ControlMessage.TYPE_BACK_OR_SCREEN_ON, event.getType());
+        Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
     }
 
     @Test
