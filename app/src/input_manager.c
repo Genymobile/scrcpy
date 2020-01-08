@@ -521,28 +521,33 @@ input_manager_process_mouse_button(struct input_manager *im,
         // simulated from touch events, so it's a duplicate
         return;
     }
-    if (event->type == SDL_MOUSEBUTTONDOWN) {
-        if (control && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(im->controller);
+
+    // double-click on black borders resize to fit the device screen
+    if (event->type == SDL_MOUSEBUTTONDOWN
+            && event->button == SDL_BUTTON_LEFT
+            && event->clicks == 2) {
+        bool outside = is_outside_device_screen(im, event->x, event->y);
+        if (outside) {
+            screen_resize_to_fit(im->screen);
             return;
         }
-        if (control && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(im->controller, ACTION_DOWN | ACTION_UP);
-            return;
-        }
-        // double-click on black borders resize to fit the device screen
-        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            bool outside =
-                is_outside_device_screen(im, event->x, event->y);
-            if (outside) {
-                screen_resize_to_fit(im->screen);
-                return;
-            }
-        }
-        // otherwise, send the click event to the device
     }
 
     if (!control) {
+        return;
+    }
+
+    if (event->button == SDL_BUTTON_MIDDLE) {
+        int action = event->type == SDL_MOUSEBUTTONDOWN ? ACTION_DOWN
+                                                        : ACTION_UP;
+        action_home(im->controller, action);
+        return;
+    }
+
+    if (event->button == SDL_BUTTON_RIGHT) {
+        if (event->type == SDL_MOUSEBUTTONDOWN) {
+            press_back_or_turn_screen_on(im->controller);
+        }
         return;
     }
 
