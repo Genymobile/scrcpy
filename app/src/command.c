@@ -56,6 +56,32 @@ argv_to_string(const char *const *argv, char *buf, size_t bufsize) {
 }
 
 static void
+show_adb_installation_msg() {
+#ifndef __WINDOWS__
+    static const struct {
+        const char *binary;
+        const char *command;
+    } pkg_managers[] = {
+        {"apt", "apt install adb"},
+        {"apt-get", "apt-get install adb"},
+        {"brew", "brew cask install android-platform-tools"},
+        {"dnf", "dnf install android-tools"},
+        {"emerge", "emerge dev-util/android-tools"},
+        {"pacman", "pacman -S android-tools"},
+    };
+    for (size_t i = 0; i < ARRAY_LEN(pkg_managers); ++i) {
+        if (cmd_search(pkg_managers[i].binary)) {
+            LOGI("You may install 'adb' by \"%s\"", pkg_managers[i].command);
+            return;
+        }
+    }
+#endif
+
+    LOGI("You may download and install 'adb' from "
+         "https://developer.android.com/studio/releases/platform-tools");
+}
+
+static void
 show_adb_err_msg(enum process_result err, const char *const argv[]) {
     char buf[512];
     switch (err) {
@@ -68,6 +94,7 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
             LOGE("Command not found: %s", buf);
             LOGE("(make 'adb' accessible from your PATH or define its full"
                  "path in the ADB environment variable)");
+            show_adb_installation_msg();
             break;
         case PROCESS_SUCCESS:
             // do nothing
