@@ -6,6 +6,12 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+bool
+cmd_search(const char *file) {
+    // :/
+    return false;
+}
+
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
