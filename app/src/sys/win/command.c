@@ -1,10 +1,10 @@
 #include "command.h"
 
+#include <sys/stat.h>
+
 #include "config.h"
 #include "util/log.h"
 #include "util/str_util.h"
-
-#include <sys/stat.h>
 
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
