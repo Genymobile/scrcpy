@@ -71,6 +71,9 @@ public final class Workarounds {
             Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
             mInitialApplicationField.setAccessible(true);
             mInitialApplicationField.set(activityThread, app);
+        } catch (java.io.FileNotFoundException exception) {
+            // this is a workaround, so do not show error when file is not exist
+            // when file not exist, it means this workaround is not needed
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.w("Could not fill app info: " + throwable.getMessage());
