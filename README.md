@@ -37,8 +37,11 @@ control it using keyboard and mouse.
 
 ### Linux
 
-On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
-it's not that hard.
+In Debian (_testing_ and _sid_ for now):
+
+```
+apt install scrcpy
+```
 
 A [Snap] package is available: [`scrcpy`][snap-link].
 
@@ -55,6 +58,10 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
+
+You could also [build the app manually][BUILD] (don't worry, it's not that
+hard).
+
 
 
 ### Windows
