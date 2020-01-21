@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "config.h"
 #include "common.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static const char *adb_command;
 
@@ -91,7 +94,7 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    enum process_result r = cmd_execute(cmd[0], cmd, &process);
+    enum process_result r = cmd_execute(cmd, &process);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, cmd);
         return PROCESS_NONE;
@@ -201,4 +204,15 @@ process_check_success(process_t proc, const char *name) {
         return false;
     }
     return true;
+}
+
+bool
+is_regular_file(const char *path) {
+    struct stat path_stat;
+    int r = stat(path, &path_stat);
+    if (r) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }

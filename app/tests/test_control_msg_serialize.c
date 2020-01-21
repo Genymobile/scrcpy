@@ -236,6 +236,21 @@ static void test_serialize_set_screen_power_mode(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_rotate_device(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    };
+
+    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    int size = control_msg_serialize(&msg, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(void) {
     test_serialize_inject_keycode();
     test_serialize_inject_text();
@@ -248,5 +263,6 @@ int main(void) {
     test_serialize_get_clipboard();
     test_serialize_set_clipboard();
     test_serialize_set_screen_power_mode();
+    test_serialize_rotate_device();
     return 0;
 }

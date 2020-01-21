@@ -1,5 +1,6 @@
 #include "screen.h"
 
+#include <assert.h>
 #include <string.h>
 #include <SDL2/SDL.h>
 
@@ -7,10 +8,10 @@
 #include "common.h"
 #include "compat.h"
 #include "icon.xpm"
-#include "lock_util.h"
-#include "log.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 #define DISPLAY_MARGINS 96
 
@@ -110,7 +111,7 @@ get_optimal_size(struct size current_size, struct size frame_size) {
     }
 
     // w and h must fit into 16 bits
-    SDL_assert_release(w < 0x10000 && h < 0x10000);
+    assert(w < 0x10000 && h < 0x10000);
     return (struct size) {w, h};
 }
 
@@ -185,8 +186,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = window_x != -1 ? window_x : SDL_WINDOWPOS_UNDEFINED;
-    int y = window_y != -1 ? window_y : SDL_WINDOWPOS_UNDEFINED;
+    int x = window_x != -1 ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
+    int y = window_y != -1 ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
     screen->window = SDL_CreateWindow(window_title, x, y,
                                       window_size.width, window_size.height,
                                       window_flags);
@@ -392,8 +393,8 @@ screen_handle_window_event(struct screen *screen,
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
             // The backup size must be non-nul.
-            SDL_assert(screen->windowed_window_size_backup.width);
-            SDL_assert(screen->windowed_window_size_backup.height);
+            assert(screen->windowed_window_size_backup.width);
+            assert(screen->windowed_window_size_backup.height);
             // Revert the last size, it was updated while screen was maximized.
             screen->windowed_window_size = screen->windowed_window_size_backup;
 #ifdef DEBUG

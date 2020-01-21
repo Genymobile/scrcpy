@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "cbuf.h"
+#include "util/cbuf.h"
 
 struct int_queue CBUF(int, 32);
 

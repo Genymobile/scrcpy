@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include <queue.h>
+#include "util/queue.h"
 
 struct foo {
     int value;

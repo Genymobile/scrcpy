@@ -1,4 +1,4 @@
-# scrcpy (v1.11)
+# scrcpy (v1.12.1)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -37,8 +37,11 @@ control it using keyboard and mouse.
 
 ### Linux
 
-On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
-it's not that hard.
+In Debian (_testing_ and _sid_ for now):
+
+```
+apt install scrcpy
+```
 
 A [Snap] package is available: [`scrcpy`][snap-link].
 
@@ -56,19 +59,23 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
+You could also [build the app manually][BUILD] (don't worry, it's not that
+hard).
+
+
 
 ### Windows
 
 For Windows, for simplicity, prebuilt archives with all the dependencies
 (including `adb`) are available:
 
- - [`scrcpy-win32-v1.11.zip`][direct-win32]  
-   _(SHA-256: f25ed46e6f3e81e0ff9b9b4df7fe1a4bbd13f8396b7391be0a488b64c675b41e)_
- - [`scrcpy-win64-v1.11.zip`][direct-win64]  
-   _(SHA-256: 3802c9ea0307d437947ff150ec65e53990b0beaacd0c8d0bed19c7650ce141bd)_
+ - [`scrcpy-win32-v1.12.1.zip`][direct-win32]  
+   _(SHA-256: 0f4b3b063536b50a2df05dc42c760f9cc0093a9a26dbdf02d8232c74dab43480)_
+ - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
+   _(SHA-256: 57d34b6d16cfd9fe169bc37c4df58ebd256d05c1ea3febc63d9cb0a027ab47c9)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win32-v1.11.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-win64-v1.11.zip
+[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win32-v1.12.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
 
 You can also [build the app manually][BUILD].
 
@@ -343,6 +350,13 @@ Note that it only shows _physical_ touches (with the finger on the device).
 
 ### Input control
 
+#### Rotate device screen
+
+Press `Ctrl`+`r` to switch between portrait and landscape modes.
+
+Note that it rotates only if the application in foreground supports the
+requested orientation.
+
 #### Copy-paste
 
 It is possible to synchronize clipboards between the computer and the device, in
@@ -425,6 +439,7 @@ Also see [issue #14].
  | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
  | Power on                               | _Right-click²_                | _Right-click²_
  | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
+ | Rotate device screen                   | `Ctrl`+`r`                    | `Cmd`+`r`
  | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
  | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
  | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
@@ -481,7 +496,7 @@ Read the [developers page].
 ## Licence
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2019 Romain Vimont
+    Copyright (C) 2018-2020 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

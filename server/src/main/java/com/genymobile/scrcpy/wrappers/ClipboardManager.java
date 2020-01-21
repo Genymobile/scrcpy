@@ -22,47 +22,37 @@ public class ClipboardManager {
         this.manager = manager;
     }
 
-    private Method getGetPrimaryClipMethod() {
+    private Method getGetPrimaryClipMethod() throws NoSuchMethodException {
         if (getPrimaryClipMethod == null) {
-            try {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                    getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
-                } else {
-                    getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
-                }
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
+            } else {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
             }
         }
         return getPrimaryClipMethod;
     }
 
-    private Method getSetPrimaryClipMethod() {
+    private Method getSetPrimaryClipMethod() throws NoSuchMethodException {
         if (setPrimaryClipMethod == null) {
-            try {
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-                    setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
-                } else {
-                    setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class,
-                            String.class, int.class);
-                }
-            } catch (NoSuchMethodException e) {
-                Ln.e("Could not find method", e);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
+            } else {
+                setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
             }
         }
         return setPrimaryClipMethod;
     }
 
-    private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException,
-            IllegalAccessException {
+    private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return (ClipData) method.invoke(manager, PACKAGE_NAME);
         }
         return (ClipData) method.invoke(manager, PACKAGE_NAME, USER_ID);
     }
 
-    private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData) throws InvocationTargetException,
-            IllegalAccessException {
+    private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData)
+            throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, PACKAGE_NAME);
         } else {
@@ -71,32 +61,26 @@ public class ClipboardManager {
     }
 
     public CharSequence getText() {
-        Method method = getGetPrimaryClipMethod();
-        if (method == null) {
-            return null;
-        }
         try {
+            Method method = getGetPrimaryClipMethod();
             ClipData clipData = getPrimaryClip(method, manager);
             if (clipData == null || clipData.getItemCount() == 0) {
                 return null;
             }
             return clipData.getItemAt(0).getText();
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
             return null;
         }
     }
 
     public void setText(CharSequence text) {
-        Method method = getSetPrimaryClipMethod();
-        if (method == null) {
-            return;
-        }
-        ClipData clipData = ClipData.newPlainText(null, text);
         try {
+            Method method = getSetPrimaryClipMethod();
+            ClipData clipData = ClipData.newPlainText(null, text);
             setPrimaryClip(method, manager, clipData);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke " + method.getName(), e);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 }

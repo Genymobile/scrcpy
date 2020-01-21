@@ -1,7 +1,10 @@
 #include <assert.h>
+#include <limits.h>
+#include <stdio.h>
 #include <string.h>
+#include <SDL2/SDL.h>
 
-#include "str_util.h"
+#include "util/str_util.h"
 
 static void test_xstrncpy_simple(void) {
     char s[] = "xxxxxxxxxx";
@@ -126,6 +129,16 @@ static void test_xstrjoin_truncated_after_sep(void) {
     assert(!strcmp("abc de ", s));
 }
 
+static void test_strquote(void) {
+    const char *s = "abcde";
+    char *out = strquote(s);
+
+    // add '"' at the beginning and the end
+    assert(!strcmp("\"abcde\"", out));
+
+    SDL_free(out);
+}
+
 static void test_utf8_truncate(void) {
     const char *s = "aÉbÔc";
     assert(strlen(s) == 7); // É and Ô are 2 bytes-wide
@@ -157,6 +170,73 @@ static void test_utf8_truncate(void) {
     assert(count == 7); // no more chars
 }
 
+static void test_parse_integer(void) {
+    long value;
+    bool ok = parse_integer("1234", &value);
+    assert(ok);
+    assert(value == 1234);
+
+    ok = parse_integer("-1234", &value);
+    assert(ok);
+    assert(value == -1234);
+
+    ok = parse_integer("1234k", &value);
+    assert(!ok);
+
+    ok = parse_integer("123456789876543212345678987654321", &value);
+    assert(!ok); // out-of-range
+}
+
+static void test_parse_integer_with_suffix(void) {
+    long value;
+    bool ok = parse_integer_with_suffix("1234", &value);
+    assert(ok);
+    assert(value == 1234);
+
+    ok = parse_integer_with_suffix("-1234", &value);
+    assert(ok);
+    assert(value == -1234);
+
+    ok = parse_integer_with_suffix("1234k", &value);
+    assert(ok);
+    assert(value == 1234000);
+
+    ok = parse_integer_with_suffix("1234m", &value);
+    assert(ok);
+    assert(value == 1234000000);
+
+    ok = parse_integer_with_suffix("-1234k", &value);
+    assert(ok);
+    assert(value == -1234000);
+
+    ok = parse_integer_with_suffix("-1234m", &value);
+    assert(ok);
+    assert(value == -1234000000);
+
+    ok = parse_integer_with_suffix("123456789876543212345678987654321", &value);
+    assert(!ok); // out-of-range
+
+    char buf[32];
+
+    sprintf(buf, "%ldk", LONG_MAX / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(ok);
+    assert(value == LONG_MAX / 2000 * 1000);
+
+    sprintf(buf, "%ldm", LONG_MAX / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(!ok);
+
+    sprintf(buf, "%ldk", LONG_MIN / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(ok);
+    assert(value == LONG_MIN / 2000 * 1000);
+
+    sprintf(buf, "%ldm", LONG_MIN / 2000);
+    ok = parse_integer_with_suffix(buf, &value);
+    assert(!ok);
+}
+
 int main(void) {
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
@@ -166,6 +246,9 @@ int main(void) {
     test_xstrjoin_truncated_in_token();
     test_xstrjoin_truncated_before_sep();
     test_xstrjoin_truncated_after_sep();
+    test_strquote();
     test_utf8_truncate();
+    test_parse_integer();
+    test_parse_integer_with_suffix();
     return 0;
 }

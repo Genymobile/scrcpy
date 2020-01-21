@@ -1,12 +1,12 @@
 #include "control_msg.h"
 
+#include <assert.h>
 #include <string.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
-#include "buffer_util.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/buffer_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static void
 write_position(uint8_t *buf, const struct position *position) {
@@ -27,7 +27,7 @@ write_string(const char *utf8, size_t max_len, unsigned char *buf) {
 
 static uint16_t
 to_fixed_point_16(float f) {
-    SDL_assert(f >= 0.0f && f <= 1.0f);
+    assert(f >= 0.0f && f <= 1.0f);
     uint32_t u = f * 0x1p16f; // 2^16
     if (u >= 0xffff) {
         u = 0xffff;
@@ -78,6 +78,7 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+        case CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;
         default:

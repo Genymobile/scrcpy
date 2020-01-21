@@ -6,10 +6,10 @@
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
-#include "cbuf.h"
 #include "control_msg.h"
-#include "net.h"
 #include "receiver.h"
+#include "util/cbuf.h"
+#include "util/net.h"
 
 struct control_msg_queue CBUF(struct control_msg, 64);
 

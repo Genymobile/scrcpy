@@ -1,22 +1,22 @@
 #include "server.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
-#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_timer.h>
 
 #include "config.h"
 #include "command.h"
-#include "log.h"
-#include "net.h"
+#include "util/log.h"
+#include "util/net.h"
 
 #define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
-#define DEVICE_SERVER_PATH "/data/local/tmp/" SERVER_FILENAME
+#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
 
 static const char *
 get_server_path(void) {
@@ -67,7 +67,12 @@ get_server_path(void) {
 
 static bool
 push_server(const char *serial) {
-    process_t process = adb_push(serial, get_server_path(), DEVICE_SERVER_PATH);
+    const char *server_path = get_server_path();
+    if (!is_regular_file(server_path)) {
+        LOGE("'%s' does not exist or is not a regular file\n", server_path);
+        return false;
+    }
+    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     return process_check_success(process, "adb push");
 }
 
@@ -124,7 +129,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=/data/local/tmp/" SERVER_FILENAME,
+        "CLASSPATH=" DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
@@ -199,7 +204,7 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 
 static void
 close_socket(socket_t *socket) {
-    SDL_assert(*socket != INVALID_SOCKET);
+    assert(*socket != INVALID_SOCKET);
     net_shutdown(*socket, SHUT_RDWR);
     if (!net_close(*socket)) {
         LOGW("Could not close socket");
@@ -323,7 +328,7 @@ server_stop(struct server *server) {
         close_socket(&server->control_socket);
     }
 
-    SDL_assert(server->process != PROCESS_NONE);
+    assert(server->process != PROCESS_NONE);
 
     if (!cmd_terminate(server->process)) {
         LOGW("Could not terminate server");

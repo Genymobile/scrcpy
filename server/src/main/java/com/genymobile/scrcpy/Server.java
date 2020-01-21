@@ -1,13 +1,15 @@
 package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
+import android.media.MediaCodec;
+import android.os.Build;
 
 import java.io.File;
 import java.io.IOException;
 
 public final class Server {
 
-    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server";
+    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
 
     private Server() {
         // not instantiable
@@ -73,8 +75,8 @@ public final class Server {
 
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
-            throw new IllegalArgumentException("The server version (" + clientVersion + ") does not match the client "
-                    + "(" + BuildConfig.VERSION_NAME + ")");
+            throw new IllegalArgumentException(
+                    "The server version (" + clientVersion + ") does not match the client " + "(" + BuildConfig.VERSION_NAME + ")");
         }
 
         if (args.length != 8) {
@@ -133,11 +135,26 @@ public final class Server {
         }
     }
 
+    @SuppressWarnings("checkstyle:MagicNumber")
+    private static void suggestFix(Throwable e) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (e instanceof MediaCodec.CodecException) {
+                MediaCodec.CodecException mce = (MediaCodec.CodecException) e;
+                if (mce.getErrorCode() == 0xfffffc0e) {
+                    Ln.e("The hardware encoder is not able to encode at the given definition.");
+                    Ln.e("Try with a lower definition:");
+                    Ln.e("    scrcpy -m 1024");
+                }
+            }
+        }
+    }
+
     public static void main(String... args) throws Exception {
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {
                 Ln.e("Exception on thread " + t, e);
+                suggestFix(e);
             }
         });
 

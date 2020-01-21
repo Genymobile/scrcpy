@@ -1,8 +1,8 @@
 #include "command.h"
 
 #include "config.h"
-#include "log.h"
-#include "str_util.h"
+#include "util/log.h"
+#include "util/str_util.h"
 
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
@@ -19,7 +19,7 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
 }
 
 enum process_result
-cmd_execute(const char *path, const char *const argv[], HANDLE *handle) {
+cmd_execute(const char *const argv[], HANDLE *handle) {
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));

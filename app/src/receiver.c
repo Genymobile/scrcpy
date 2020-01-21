@@ -1,12 +1,12 @@
 #include "receiver.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 #include <SDL2/SDL_clipboard.h>
 
 #include "config.h"
 #include "device_msg.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 bool
 receiver_init(struct receiver *receiver, socket_t control_socket) {
@@ -23,7 +23,7 @@ receiver_destroy(struct receiver *receiver) {
 }
 
 static void
-process_msg(struct receiver *receiver, struct device_msg *msg) {
+process_msg(struct device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD:
             LOGI("Device clipboard copied");
@@ -33,7 +33,7 @@ process_msg(struct receiver *receiver, struct device_msg *msg) {
 }
 
 static ssize_t
-process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
+process_msgs(const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -45,11 +45,11 @@ process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
             return head;
         }
 
-        process_msg(receiver, &msg);
+        process_msg(&msg);
         device_msg_destroy(&msg);
 
         head += r;
-        SDL_assert(head <= len);
+        assert(head <= len);
         if (head == len) {
             return head;
         }
@@ -64,7 +64,7 @@ run_receiver(void *data) {
     size_t head = 0;
 
     for (;;) {
-        SDL_assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
+        assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
         ssize_t r = net_recv(receiver->control_socket, buf,
                              DEVICE_MSG_SERIALIZED_MAX_SIZE - head);
         if (r <= 0) {
@@ -72,7 +72,7 @@ run_receiver(void *data) {
             break;
         }
 
-        ssize_t consumed = process_msgs(receiver, buf, r);
+        ssize_t consumed = process_msgs(buf, r);
         if (consumed == -1) {
             // an error occurred
             break;

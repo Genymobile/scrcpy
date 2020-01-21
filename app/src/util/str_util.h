@@ -1,6 +1,7 @@
 #ifndef STRUTIL_H
 #define STRUTIL_H
 
+#include <stdbool.h>
 #include <stddef.h>
 
 #include "config.h"
@@ -24,6 +25,18 @@ xstrjoin(char *dst, const char *const tokens[], char sep, size_t n);
 // returns the new allocated string, to be freed by the caller
 char *
 strquote(const char *src);
+
+// parse s as an integer into value
+// returns true if the conversion succeeded, false otherwise
+bool
+parse_integer(const char *s, long *out);
+
+// parse s as an integer into value
+// like parse_integer(), but accept 'k'/'K' (x1000) and 'm'/'M' (x1000000) as
+// suffix
+// returns true if the conversion succeeded, false otherwise
+bool
+parse_integer_with_suffix(const char *s, long *out);
 
 // return the index to truncate a UTF-8 string at a valid position
 size_t

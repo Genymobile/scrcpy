@@ -1,12 +1,13 @@
 #include "tiny_xpm.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "config.h"
-#include "log.h"
+#include "util/log.h"
 
 struct index {
     char c;
@@ -36,7 +37,7 @@ find_color(struct index *index, int len, char c, uint32_t *color) {
 // (non-const) "char *"
 SDL_Surface *
 read_xpm(char *xpm[]) {
-#if SDL_ASSERT_LEVEL >= 2
+#ifndef NDEBUG
     // patch the XPM to change the icon color in debug mode
     xpm[2] = ".	c #CC00CC";
 #endif
@@ -51,24 +52,26 @@ read_xpm(char *xpm[]) {
     int chars = strtol(endptr + 1, &endptr, 10);
 
     // sanity checks
-    SDL_assert(0 <= width && width < 256);
-    SDL_assert(0 <= height && height < 256);
-    SDL_assert(0 <= colors && colors < 256);
-    SDL_assert(chars == 1); // this implementation does not support more
+    assert(0 <= width && width < 256);
+    assert(0 <= height && height < 256);
+    assert(0 <= colors && colors < 256);
+    assert(chars == 1); // this implementation does not support more
+
+    (void) chars;
 
     // init index
     struct index index[colors];
     for (int i = 0; i < colors; ++i) {
         const char *line = xpm[1+i];
         index[i].c = line[0];
-        SDL_assert(line[1] == '\t');
-        SDL_assert(line[2] == 'c');
-        SDL_assert(line[3] == ' ');
+        assert(line[1] == '\t');
+        assert(line[2] == 'c');
+        assert(line[3] == ' ');
         if (line[4] == '#') {
             index[i].color = 0xff000000 | strtol(&line[5], &endptr, 0x10);
-            SDL_assert(*endptr == '\0');
+            assert(*endptr == '\0');
         } else {
-            SDL_assert(!strcmp("None", &line[4]));
+            assert(!strcmp("None", &line[4]));
             index[i].color = 0;
         }
     }
@@ -85,7 +88,8 @@ read_xpm(char *xpm[]) {
             char c = line[x];
             uint32_t color;
             bool color_found = find_color(index, colors, c, &color);
-            SDL_assert(color_found);
+            assert(color_found);
+            (void) color_found;
             pixels[y * width + x] = color;
         }
     }

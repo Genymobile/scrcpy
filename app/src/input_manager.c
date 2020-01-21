@@ -1,11 +1,11 @@
 #include "input_manager.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 
 #include "config.h"
 #include "event_converter.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 // Convert window coordinates (as provided by SDL_GetMouseState() to renderer
 // coordinates (as provided in SDL mouse events)
@@ -211,13 +211,23 @@ clipboard_paste(struct controller *controller) {
     }
 }
 
+static void
+rotate_device(struct controller *controller) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_ROTATE_DEVICE;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request device rotation");
+    }
+}
+
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
     if (!im->prefer_text) {
         char c = event->text[0];
         if (isalpha(c) || c == ' ') {
-            SDL_assert(event->text[1] == '\0');
+            assert(event->text[1] == '\0');
             // letters and space are handled as raw key event
             return;
         }
@@ -388,6 +398,11 @@ input_manager_process_key(struct input_manager *im,
                     }
                 }
                 return;
+            case SDLK_r:
+                if (control && cmd && !shift && !repeat && down) {
+                    rotate_device(controller);
+                }
+                return;
         }
 
         return;
@@ -550,13 +565,8 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
 
     to->inject_scroll_event.position = position;
-
-    int mul = from->direction == SDL_MOUSEWHEEL_NORMAL ? 1 : -1;
-    // SDL behavior seems inconsistent between horizontal and vertical scrolling
-    // so reverse the horizontal
-    // <https://wiki.libsdl.org/SDL_MouseWheelEvent#Remarks>
-    to->inject_scroll_event.hscroll = -mul * from->x;
-    to->inject_scroll_event.vscroll = mul * from->y;
+    to->inject_scroll_event.hscroll = from->x;
+    to->inject_scroll_event.vscroll = from->y;
 
     return true;
 }

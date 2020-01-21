@@ -12,7 +12,7 @@
 set -e
 
 SCRCPY_DEBUG=false
-SCRCPY_VERSION_NAME=1.11
+SCRCPY_VERSION_NAME=1.12.1
 
 PLATFORM=${ANDROID_PLATFORM:-29}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-29.0.2}
@@ -40,7 +40,7 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o "$CLASSES_DIR" \
+"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
     android/view/IRotationWatcher.aidl
 
 echo "Compiling java sources..."

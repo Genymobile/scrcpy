@@ -17,10 +17,11 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "log.h"
+
+#include "util/log.h"
 
 enum process_result
-cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
+cmd_execute(const char *const argv[], pid_t *pid) {
     int fd[2];
 
     if (pipe(fd) == -1) {
@@ -51,7 +52,7 @@ cmd_execute(const char *path, const char *const argv[], pid_t *pid) {
         // child close read side
         close(fd[0]);
         if (fcntl(fd[1], F_SETFD, FD_CLOEXEC) == 0) {
-            execvp(path, (char *const *)argv);
+            execvp(argv[0], (char *const *)argv);
             if (errno == ENOENT) {
                 ret = PROCESS_ERROR_MISSING_BINARY;
             } else {

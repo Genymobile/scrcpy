@@ -28,8 +28,7 @@ public class Point {
             return false;
         }
         Point point = (Point) o;
-        return x == point.x
-                && y == point.y;
+        return x == point.x && y == point.y;
     }
 
     @Override
@@ -39,9 +38,6 @@ public class Point {
 
     @Override
     public String toString() {
-        return "Point{"
-                + "x=" + x
-                + ", y=" + y
-                + '}';
+        return "Point{" + "x=" + x + ", y=" + y + '}';
     }
 }

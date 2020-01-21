@@ -1,12 +1,12 @@
 #include "file_handler.h"
 
+#include <assert.h>
 #include <string.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "command.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/"
 
@@ -120,7 +120,8 @@ run_file_handler(void *data) {
         }
         struct file_handler_request req;
         bool non_empty = cbuf_take(&file_handler->queue, &req);
-        SDL_assert(non_empty);
+        assert(non_empty);
+        (void) non_empty;
 
         process_t process;
         if (req.action == ACTION_INSTALL_APK) {

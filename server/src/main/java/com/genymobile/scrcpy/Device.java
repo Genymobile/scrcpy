@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
+import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.graphics.Rect;
 import android.os.Build;
@@ -168,6 +169,27 @@ public final class Device {
         }
         SurfaceControl.setDisplayPowerMode(d, mode);
         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+    }
+
+    /**
+     * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
+     */
+    public void rotateDevice() {
+        WindowManager wm = serviceManager.getWindowManager();
+
+        boolean accelerometerRotation = !wm.isRotationFrozen();
+
+        int currentRotation = wm.getRotation();
+        int newRotation = (currentRotation & 1) ^ 1; // 0->1, 1->0, 2->1, 3->0
+        String newRotationString = newRotation == 0 ? "portrait" : "landscape";
+
+        Ln.i("Device rotation requested: " + newRotationString);
+        wm.freezeRotation(newRotation);
+
+        // restore auto-rotate if necessary
+        if (accelerometerRotation) {
+            wm.thawRotation();
+        }
     }
 
     static Rect flipRect(Rect crop) {
