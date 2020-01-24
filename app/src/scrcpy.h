@@ -11,6 +11,7 @@
 struct scrcpy_options {
     const char *serial;
     const char *crop;
+    const char *capture_filename;
     const char *record_filename;
     const char *window_title;
     const char *push_target;
@@ -37,6 +38,7 @@ struct scrcpy_options {
 #define SCRCPY_OPTIONS_DEFAULT { \
     .serial = NULL, \
     .crop = NULL, \
+    .capture_filename = NULL, \
     .record_filename = NULL, \
     .window_title = NULL, \
     .push_target = NULL, \

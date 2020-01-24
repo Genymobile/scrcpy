@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
@@ -27,6 +28,9 @@ print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
                                                LIBAVUTIL_VERSION_MINOR,
                                                LIBAVUTIL_VERSION_MICRO);
+    fprintf(stderr, " - libswscale %d.%d.%d\n", LIBSWSCALE_VERSION_MAJOR,
+                                               LIBSWSCALE_VERSION_MINOR,
+                                               LIBSWSCALE_VERSION_MICRO);
 }
 
 int

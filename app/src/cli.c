@@ -363,6 +363,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"record-format",         required_argument, NULL, OPT_RECORD_FORMAT},
         {"render-expired-frames", no_argument,       NULL,
                                                      OPT_RENDER_EXPIRED_FRAMES},
+        {"screen-capture",        required_argument, NULL, 'C'},
         {"serial",                required_argument, NULL, 's'},
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
@@ -383,13 +384,16 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:cC:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->bit_rate)) {
                     return false;
                 }
+                break;
+            case 'C':
+                opts->capture_filename = optarg;
                 break;
             case 'c':
                 LOGW("Deprecated option -c. Use --crop instead.");
@@ -494,8 +498,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         }
     }
 
-    if (!opts->display && !opts->record_filename) {
-        LOGE("-N/--no-display requires screen recording (-r/--record)");
+    if (!opts->display && !opts->record_filename && !opts->capture_filename) {
+        LOGE("-N/--no-display requires screen recording (-r/--record) or screen capture (-C/--screen-capture)");
         return false;
     }
 

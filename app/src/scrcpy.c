@@ -18,6 +18,7 @@
 #include "file_handler.h"
 #include "fps_counter.h"
 #include "input_manager.h"
+#include "capture.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
@@ -35,6 +36,7 @@ static struct video_buffer video_buffer;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
+static struct capture capture;
 static struct controller controller;
 static struct file_handler file_handler;
 
@@ -131,6 +133,9 @@ handle_event(SDL_Event *event, bool control) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
             return EVENT_RESULT_STOPPED_BY_EOS;
+        case EVENT_SCREEN_CAPTURE_COMPLETE:
+            LOGD("Screen capture completed");
+            return EVENT_RESULT_STOPPED_BY_USER;
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
@@ -277,6 +282,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 
 bool
 scrcpy(const struct scrcpy_options *options) {
+    bool captures = !!options->capture_filename;
     bool record = !!options->record_filename;
     struct server_params params = {
         .crop = options->crop,
@@ -304,6 +310,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool video_buffer_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
+    bool capture_initialized = false;
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
@@ -363,9 +370,19 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
+    struct capture *cap = NULL;
+    if (captures) {
+        if (!capture_init(&capture,
+                           options->capture_filename)) {
+            goto end;
+        }
+        cap = &capture;
+        capture_initialized = true;
+    }
+
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    stream_init(&stream, server.video_socket, dec, rec, cap);
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
@@ -460,6 +477,9 @@ end:
         recorder_destroy(&recorder);
     }
 
+    if (capture_initialized) {
+        capture_destroy(&capture);
+    }
     if (file_handler_initialized) {
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);

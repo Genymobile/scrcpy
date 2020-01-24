@@ -12,6 +12,7 @@
 #include "compat.h"
 #include "decoder.h"
 #include "events.h"
+#include "capture.h"
 #include "recorder.h"
 #include "util/buffer_util.h"
 #include "util/log.h"
@@ -71,6 +72,10 @@ notify_stopped(void) {
 
 static bool
 process_config_packet(struct stream *stream, AVPacket *packet) {
+    if (stream->capture && !capture_push(stream->capture, packet)) {
+        LOGW("Could not send config packet to capture");
+        return true;  // We're Ok. Keep sending packets.
+    }
     if (stream->recorder && !recorder_push(stream->recorder, packet)) {
         LOGE("Could not send config packet to recorder");
         return false;
@@ -89,6 +94,15 @@ process_frame(struct stream *stream, AVPacket *packet) {
 
         if (!recorder_push(stream->recorder, packet)) {
             LOGE("Could not send packet to recorder");
+            return false;
+        }
+    }
+
+    if (stream->capture) {
+        packet->dts = packet->pts;
+
+        if (!capture_push(stream->capture, packet)) {
+            LOGE("Could not send packet to capture");
             return false;
         }
     }
@@ -270,9 +284,11 @@ end:
 
 void
 stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder) {
+            struct decoder *decoder, struct recorder *recorder,
+            struct capture *capture) {
     stream->socket = socket;
     stream->decoder = decoder,
+    stream->capture = capture;
     stream->recorder = recorder;
     stream->has_pending = false;
 }
