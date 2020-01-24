@@ -307,6 +307,10 @@ parse_record_format(const char *optarg, enum recorder_format *format) {
         *format = RECORDER_FORMAT_MKV;
         return true;
     }
+    if (!strcmp(optarg, "h264")) {
+        *format = RECORDER_FORMAT_H264;
+        return true;
+    }
     LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
     return false;
 }
