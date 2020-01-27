@@ -40,6 +40,7 @@
 #include <SDL2/SDL_events.h>
 
 #include "events.h"
+#include "util/lock.h"
 #include "util/log.h"
 
 static const char *string_error(int err) {
@@ -200,6 +201,25 @@ bool capture_init(struct capture *capture, const char *filename) {
     return false;
   }
 
+  capture->mutex = SDL_CreateMutex();
+  if (!capture->mutex) {
+    LOGC("Could not create mutex");
+    SDL_free(capture->filename);
+    return false;
+  }
+
+  capture->queue_cond = SDL_CreateCond();
+  if (!capture->queue_cond) {
+    LOGC("Could not create capture cond");
+    SDL_DestroyMutex(capture->mutex);
+    SDL_free(capture->filename);
+    return false;
+  }
+
+  queue_init(&capture->queue);
+  capture->stopped = false;
+  capture->finished = false;
+
   int ret = avio_open(&capture->file_context, capture->filename,
                         AVIO_FLAG_WRITE);
   if (ret < 0) {
@@ -245,10 +265,123 @@ void capture_destroy(struct capture *capture) {
   avio_close(capture->file_context);
 }
 
-bool capture_push(struct capture *capture, const AVPacket *packet) {
-  if (decode_packet_to_png(capture->file_context, capture->context, packet, capture->working_frame)) {
-    LOGI("Parsed PNG from incoming packets.");
-    return true;
+static bool capture_process(struct capture *capture, const AVPacket *packet) {
+  if (capture->finished) {
+    LOGV("Skipping redundant call to capture_push");
+  } else {
+    bool found_png = decode_packet_to_png(capture->file_context, capture->context, packet, capture->working_frame);
+    if (found_png) {
+      LOGI("Parsed PNG from incoming packets.");
+      capture->finished = found_png;
+    }
   }
-  return false;
+  return capture->finished;
+}
+
+static struct capture_packet *
+capture_packet_new(const AVPacket *packet) {
+    struct capture_packet *rec = SDL_malloc(sizeof(*rec));
+    if (!rec) {
+        return NULL;
+    }
+
+    // av_packet_ref() does not initialize all fields in old FFmpeg versions
+    // See <https://github.com/Genymobile/scrcpy/issues/707>
+    av_init_packet(&rec->packet);
+
+    if (av_packet_ref(&rec->packet, packet)) {
+        SDL_free(rec);
+        return NULL;
+    }
+    return rec;
+}
+
+static void
+capture_packet_delete(struct capture_packet *rec) {
+    av_packet_unref(&rec->packet);
+    SDL_free(rec);
+}
+
+static int
+run_capture(void *data) {
+    struct capture *capture = data;
+
+    for (;;) {
+        mutex_lock(capture->mutex);
+
+        while (!capture->stopped && queue_is_empty(&capture->queue)) {
+            cond_wait(capture->queue_cond, capture->mutex);
+        }
+
+        // if stopped is set, continue to process the remaining events (to
+        // finish the capture) before actually stopping
+
+        if (capture->stopped && queue_is_empty(&capture->queue)) {
+            mutex_unlock(capture->mutex);
+            break;
+        }
+
+        struct capture_packet *rec;
+        queue_take(&capture->queue, next, &rec);
+
+        mutex_unlock(capture->mutex);
+
+        bool ok = capture_process(capture, &rec->packet);
+        capture_packet_delete(rec);
+        if (ok) {
+            break;
+        }
+    }
+
+    LOGD("capture thread ended");
+
+    return 0;
+}
+
+bool
+capture_start(struct capture *capture) {
+
+    capture->thread = SDL_CreateThread(run_capture, "capture", capture);
+    if (!capture->thread) {
+        LOGC("Could not start capture thread");
+        return false;
+    }
+
+    return true;
+}
+
+void
+capture_stop(struct capture *capture) {
+    mutex_lock(capture->mutex);
+    capture->stopped = true;
+    cond_signal(capture->queue_cond);
+    mutex_unlock(capture->mutex);
+}
+
+void
+capture_join(struct capture *capture) {
+    SDL_WaitThread(capture->thread, NULL);
+}
+
+bool
+capture_push(struct capture *capture, const AVPacket *packet) {
+    mutex_lock(capture->mutex);
+    assert(!capture->stopped);
+
+    if (capture->finished) {
+        // reject any new packet (this will stop the stream)
+        return false;
+    }
+
+    struct capture_packet *rec = capture_packet_new(packet);
+    if (!rec) {
+        LOGC("Could not allocate capture packet");
+        return false;
+    }
+
+    queue_push(&capture->queue, next, rec);
+    cond_signal(capture->queue_cond);
+
+    mutex_unlock(capture->mutex);
+    return true;
 }
