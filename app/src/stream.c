@@ -60,6 +60,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
+    log_timestamp("Received packet via socket stream");
+
     return true;
 }
 
@@ -308,7 +310,7 @@ stream_init(struct stream *stream, socket_t socket,
 
 bool
 stream_start(struct stream *stream) {
-    LOGD("Starting stream thread");
+    log_timestamp("Starting stream thread");
 
     stream->thread = SDL_CreateThread(run_stream, "stream", stream);
     if (!stream->thread) {

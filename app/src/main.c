@@ -45,6 +45,7 @@ main(int argc, char *argv[]) {
 #ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 #endif
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
     struct scrcpy_cli_args args = {
         .opts = SCRCPY_OPTIONS_DEFAULT,

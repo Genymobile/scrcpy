@@ -10,4 +10,7 @@
 #define LOGE(...) SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LOGC(...) SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 
+#include <time.h>
+uint64_t get_timestamp();
+void log_timestamp(const char *tag);
 #endif

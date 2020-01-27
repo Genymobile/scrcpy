@@ -81,6 +81,7 @@ static void notify_complete() {
 static bool in_frame_to_png(
   AVIOContext *output_context,
   AVCodecContext *codecCtx, AVFrame *inframe) {
+  uint64_t start = get_timestamp();
   int targetHeight = codecCtx->height;
   int targetWidth = codecCtx->width;
   struct SwsContext * swCtx = sws_getContext(codecCtx->width,
@@ -102,6 +103,8 @@ static bool in_frame_to_png(
     swCtx, inframe->data, inframe->linesize, 0,
     inframe->height, rgbFrame->data, rgbFrame->linesize);
 
+  LOGV("Scaling image: %llu", get_timestamp() - start);
+
   AVCodec *outCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
   if (!outCodec) {
     LOGE("Failed to find PNG codec");
@@ -122,7 +125,7 @@ static bool in_frame_to_png(
     outCodecCtx->time_base.den = codecCtx->time_base.den;
   } else {
     outCodecCtx->time_base.num = 1;
-    outCodecCtx->time_base.den = 30;  // FPS
+    outCodecCtx->time_base.den = 10;  // FPS
   }
 
   int ret = avcodec_open2(outCodecCtx, outCodec, NULL);
@@ -145,11 +148,14 @@ static bool in_frame_to_png(
   ret = avcodec_receive_packet(outCodecCtx, &outPacket);
   avcodec_close(outCodecCtx);
   av_free(outCodecCtx);
+  LOGV("Converted to PNG: %llu", get_timestamp() - start);
   if (ret >= 0) {
     // Dump packet
     avio_write(output_context, outPacket.data, outPacket.size);
     notify_complete();
     av_packet_unref(&outPacket);
+    LOGV("Wrote file: %llu", get_timestamp() - start);
+    log_timestamp("Capture written");
     return true;
   } else {
     LOGE("Failed to receive packet");
@@ -267,6 +273,9 @@ void capture_destroy(struct capture *capture) {
 }
 
 static bool capture_process(struct capture *capture, const AVPacket *packet) {
+  log_timestamp("Processing packet");
+  static uint64_t total = 0;
+  uint64_t start = get_timestamp();
   if (capture->finished) {
     LOGV("Skipping redundant call to capture_push");
   } else {
@@ -276,6 +285,9 @@ static bool capture_process(struct capture *capture, const AVPacket *packet) {
       capture->finished = found_png;
     }
   }
+  uint64_t duration = get_timestamp() - start;
+  total += duration;
+  LOGV("Capture step microseconds: %llu total:  %llu", duration, total);
   return capture->finished;
 }
 
@@ -305,6 +317,7 @@ capture_packet_delete(struct capture_packet *rec) {
 
 static int
 run_capture(void *data) {
+    log_timestamp("Running capture thread");
     struct capture *capture = data;
 
     for (;;) {
@@ -341,6 +354,7 @@ run_capture(void *data) {
 
 bool
 capture_start(struct capture *capture) {
+    log_timestamp("Starting capture thread");
 
     capture->thread = SDL_CreateThread(run_capture, "capture", capture);
     if (!capture->thread) {
@@ -366,6 +380,7 @@ capture_join(struct capture *capture) {
 
 bool
 capture_push(struct capture *capture, const AVPacket *packet) {
+    log_timestamp("Received packet");
     mutex_lock(capture->mutex);
     assert(!capture->stopped);
 

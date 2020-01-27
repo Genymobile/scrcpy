@@ -282,6 +282,8 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 
 bool
 scrcpy(const struct scrcpy_options *options) {
+    log_timestamp("scrcpy Started");
+
     bool captures = !!options->capture_filename;
     bool record = !!options->record_filename;
     struct server_params params = {
@@ -315,10 +317,12 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
 
+    log_timestamp("sdl_init_and_configure");
     if (!sdl_init_and_configure(options->display)) {
         goto end;
     }
 
+    log_timestamp("server_connect_to");
     if (!server_connect_to(&server)) {
         goto end;
     }
@@ -329,12 +333,14 @@ scrcpy(const struct scrcpy_options *options) {
     // screenrecord does not send frames when the screen content does not
     // change therefore, we transmit the screen size before the video stream,
     // to be able to init the window immediately
+    log_timestamp("device_read_info");
     if (!device_read_info(server.video_socket, device_name, &frame_size)) {
         goto end;
     }
 
     struct decoder *dec = NULL;
     if (options->display) {
+        log_timestamp("Display and fps_counter_init");
         if (!fps_counter_init(&fps_counter)) {
             goto end;
         }
@@ -380,6 +386,7 @@ scrcpy(const struct scrcpy_options *options) {
         capture_initialized = true;
     }
 
+    log_timestamp("stream_init");
     av_log_set_callback(av_log_callback);
 
     stream_init(&stream, server.video_socket, dec, rec, cap);
@@ -437,9 +444,12 @@ scrcpy(const struct scrcpy_options *options) {
 
     input_manager.prefer_text = options->prefer_text;
 
+    log_timestamp("Starting event_loop");
     ret = event_loop(options->display, options->control);
+    log_timestamp("Terminated event_loop");
     LOGD("quit...");
 
+    log_timestamp("stream_init");
     screen_destroy(&screen);
 
 end:
