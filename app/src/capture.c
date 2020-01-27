@@ -81,22 +81,23 @@ static void notify_complete() {
 static bool in_frame_to_png(
   AVIOContext *output_context,
   AVCodecContext *codecCtx, AVFrame *inframe) {
+  int targetHeight = codecCtx->height;
+  int targetWidth = codecCtx->width;
   struct SwsContext * swCtx = sws_getContext(codecCtx->width,
     codecCtx->height,
     codecCtx->pix_fmt,
-    codecCtx->width,
-    codecCtx->height,
+    targetWidth,
+    targetHeight,
     AV_PIX_FMT_RGB24,
     SWS_FAST_BILINEAR, 0, 0, 0);
 
   AVFrame * rgbFrame = av_frame_alloc();
-  LOGV("Image frame width: %d height: %d", codecCtx->width, codecCtx->height);
-  rgbFrame->width = codecCtx->width;
-  rgbFrame->height = codecCtx->height;
+  LOGV("Image frame width: %d height: %d scaling to %d x %d", codecCtx->width, codecCtx->height, targetWidth, targetHeight);
+  rgbFrame->width = targetWidth;
+  rgbFrame->height = targetHeight;
   rgbFrame->format = AV_PIX_FMT_RGB24;
   av_image_alloc(
-    rgbFrame->data, rgbFrame->linesize, codecCtx->width,
-    codecCtx->height, AV_PIX_FMT_RGB24, 1);
+    rgbFrame->data, rgbFrame->linesize, targetWidth, targetHeight, AV_PIX_FMT_RGB24, 1);
   sws_scale(
     swCtx, inframe->data, inframe->linesize, 0,
     inframe->height, rgbFrame->data, rgbFrame->linesize);
@@ -112,8 +113,8 @@ static bool in_frame_to_png(
     return false;
   }
 
-  outCodecCtx->width = codecCtx->width;
-  outCodecCtx->height = codecCtx->height;
+  outCodecCtx->width = targetWidth;
+  outCodecCtx->height = targetHeight;
   outCodecCtx->pix_fmt = AV_PIX_FMT_RGB24;
   outCodecCtx->codec_type = AVMEDIA_TYPE_VIDEO;
   if (codecCtx->time_base.num && codecCtx->time_base.num) {
