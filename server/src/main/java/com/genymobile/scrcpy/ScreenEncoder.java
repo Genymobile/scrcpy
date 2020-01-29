@@ -51,7 +51,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, FileDescriptor fd) throws IOException {
+    public void streamScreen(Device device, FileDescriptor fd, int layerStack) throws IOException {
         Workarounds.prepareMainLooper();
         Workarounds.fillAppInfo();
 
@@ -67,7 +67,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, contentRect, videoRect);
+                setDisplaySurface(display, surface, contentRect, videoRect, layerStack);
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -172,12 +172,12 @@ public class ScreenEncoder implements Device.RotationListener {
         format.setInteger(MediaFormat.KEY_HEIGHT, height);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect) {
+    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect, int layerStack) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
             SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
-            SurfaceControl.setDisplayLayerStack(display, 0);
+            SurfaceControl.setDisplayLayerStack(display, layerStack);
         } finally {
             SurfaceControl.closeTransaction();
         }

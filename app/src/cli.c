@@ -41,6 +41,10 @@ scrcpy_print_usage(const char *arg0) {
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
+        "    --layer-stack value\n"
+        "        Specifies the Android layer stack to mirror\n"
+        "        Default is 0\n"
+        "\n"
         "    --max-fps value\n"
         "        Limit the frame rate of screen capture (only supported on\n"
         "        devices with Android >= 10).\n"
@@ -260,6 +264,18 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 }
 
 static bool
+parse_layer_stack(const char *s, uint16_t *layer_stack) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 1000, "layer stack");
+    if (!ok) {
+        return false;
+    }
+
+    *layer_stack = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_window_position(const char *s, int16_t *position) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, -1, 0x7FFF,
@@ -340,6 +356,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_HEIGHT         1010
 #define OPT_WINDOW_BORDERLESS     1011
 #define OPT_MAX_FPS               1012
+#define OPT_LAYER_STACK           1013
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -350,6 +367,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"fullscreen",            no_argument,       NULL, 'f'},
         {"help",                  no_argument,       NULL, 'h'},
         {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
+        {"layer-stack",           required_argument, NULL, OPT_LAYER_STACK},
         {"max-size",              required_argument, NULL, 'm'},
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
@@ -409,6 +427,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
+                    return false;
+                }
+                break;
+            case OPT_LAYER_STACK:
+                if (!parse_layer_stack(optarg, &opts->layer_stack)) {
                     return false;
                 }
                 break;

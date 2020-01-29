@@ -10,6 +10,7 @@ public class Options {
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
+    private int layerStack;
 
     public int getMaxSize() {
         return maxSize;
@@ -65,5 +66,13 @@ public class Options {
 
     public void setControl(boolean control) {
         this.control = control;
+    }
+
+    public int getLayerStack() {
+        return layerStack;
+    }
+
+    public void setLayerStack(int layerStack) {
+        this.layerStack = layerStack;
     }
 }
