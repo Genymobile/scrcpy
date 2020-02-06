@@ -221,6 +221,13 @@ scrcpy --serial 0123456789abcdef
 scrcpy -s 0123456789abcdef  # short version
 ```
 
+If the device is connected over TCP/IP:
+
+```bash
+scrcpy --serial 192.168.0.1:5555
+scrcpy -s 192.168.0.1:5555  # short version
+```
+
 You can start several instances of _scrcpy_ for several devices.
 
 #### SSH tunnel
