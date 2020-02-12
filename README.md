@@ -77,8 +77,21 @@ For Windows, for simplicity, prebuilt archives with all the dependencies
 [direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win32-v1.12.1.zip
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
 
-You can also [build the app manually][BUILD].
+Also available in [Chocolatey]. Just install it:
 
+[Chocolatey]: https://chocolatey.org/
+
+```bash
+choco install scrcpy
+```
+
+You need `adb`, accessible from your `PATH`. If you don't have it yet:
+
+```bash
+https://chocolatey.org/packages/adb
+```
+
+You can also [build the app manually][BUILD].
 
 ### macOS
 
