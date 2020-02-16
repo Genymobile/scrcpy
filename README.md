@@ -179,6 +179,21 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 If `--max-size` is also specified, resizing is applied after cropping.
 
 
+#### Lock video orientation
+
+
+To lock the orientation of the mirroring:
+
+```bash
+scrcpy --lock-video-orientation 0   # natural orientation
+scrcpy --lock-video-orientation 1   # 90° counterclockwise
+scrcpy --lock-video-orientation 2   # 180°
+scrcpy --lock-video-orientation 3   # 90° clockwise
+```
+
+This affects recording orientation.
+
+
 ### Recording
 
 It is possible to record the screen while mirroring:

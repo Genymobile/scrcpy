@@ -22,10 +22,12 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
+    private final int lockedVideoOrientation;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
     public Device(Options options) {
+        lockedVideoOrientation = options.getLockedVideoOrientation();
         screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
@@ -48,11 +50,11 @@ public final class Device {
 
     private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
+        int rotation = displayInfo.getRotation();
         Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
         if (crop != null) {
-            if (rotated) {
+            if (rotation % 2 != 0) { // 180s preserve dimensions
                 // the crop (provided by the user) is expressed in the natural orientation
                 crop = flipRect(crop);
             }
@@ -64,7 +66,7 @@ public final class Device {
         }
 
         Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotated);
+        return new ScreenInfo(contentRect, videoSize, rotation);
     }
 
     private static String formatCrop(Rect rect) {
@@ -99,22 +101,56 @@ public final class Device {
         return new Size(w, h);
     }
 
+    /**
+     * Return the rotation to apply to the device rotation to get the requested locked video orientation
+     *
+     * @param deviceRotation the device rotation
+     * @return the rotation offset
+     */
+    public int getVideoRotation(int deviceRotation) {
+        if (lockedVideoOrientation == -1) {
+            // no offset
+            return 0;
+        }
+        return (deviceRotation + 4 - lockedVideoOrientation) % 4;
+    }
+
+    /**
+     * Return the rotation to apply to the requested locked video orientation to get the device rotation
+     *
+     * @param deviceRotation the device rotation
+     * @return the (reverse) rotation offset
+     */
+    private int getReverseVideoRotation(int deviceRotation) {
+        if (lockedVideoOrientation == -1) {
+            // no offset
+            return 0;
+        }
+        return (lockedVideoOrientation + 4 - deviceRotation) % 4;
+    }
+
     public Point getPhysicalPoint(Position position) {
         // it hides the field on purpose, to read it with a lock
         @SuppressWarnings("checkstyle:HiddenField")
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
-        Size clientVideoSize = position.getScreenSize();
+
+        int deviceRotation = screenInfo.getRotation();
+        int reverseVideoRotation = getReverseVideoRotation(deviceRotation);
+        // reverse the video rotation to apply the events
+        Position devicePosition = position.rotate(reverseVideoRotation);
+
+        Size clientVideoSize = devicePosition.getScreenSize();
         if (!videoSize.equals(clientVideoSize)) {
             // The client sends a click relative to a video with wrong dimensions,
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
         }
         Rect contentRect = screenInfo.getContentRect();
-        Point point = position.getPoint();
-        int scaledX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
-        int scaledY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
-        return new Point(scaledX, scaledY);
+        Point point = devicePosition.getPoint();
+        int convertedX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
+        int convertedY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
+        return new Point(convertedX, convertedY);
     }
 
     public static String getDeviceName() {

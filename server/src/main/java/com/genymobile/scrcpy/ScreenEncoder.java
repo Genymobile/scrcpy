@@ -28,19 +28,21 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private int bitRate;
     private int maxFps;
+    private int lockedVideoOrientation;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
+        this.lockedVideoOrientation = lockedVideoOrientation;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
-        this(sendFrameMeta, bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation) {
+        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -66,10 +68,11 @@ public class ScreenEncoder implements Device.RotationListener {
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
                 Rect videoRect = screenInfo.getVideoSize().toRect();
-                setSize(format, videoRect.width(), videoRect.height());
+                int videoRotation = device.getVideoRotation(screenInfo.getRotation());
+                setSize(format, videoRotation, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, contentRect, videoRect);
+                setDisplaySurface(display, surface, videoRotation, contentRect, videoRect);
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -168,16 +171,21 @@ public class ScreenEncoder implements Device.RotationListener {
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
     }
 
-    private static void setSize(MediaFormat format, int width, int height) {
-        format.setInteger(MediaFormat.KEY_WIDTH, width);
-        format.setInteger(MediaFormat.KEY_HEIGHT, height);
+    private static void setSize(MediaFormat format, int orientation, int width, int height) {
+        if (orientation % 2 == 0) {
+            format.setInteger(MediaFormat.KEY_WIDTH, width);
+            format.setInteger(MediaFormat.KEY_HEIGHT, height);
+            return;
+        }
+        format.setInteger(MediaFormat.KEY_WIDTH, height);
+        format.setInteger(MediaFormat.KEY_HEIGHT, width);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect) {
+    private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
-            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
+            SurfaceControl.setDisplayProjection(display, orientation, deviceRect, displayRect);
             SurfaceControl.setDisplayLayerStack(display, 0);
         } finally {
             SurfaceControl.closeTransaction();

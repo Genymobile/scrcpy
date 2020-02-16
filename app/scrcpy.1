@@ -42,6 +42,12 @@ Start in fullscreen.
 Print this help.
 
 .TP
+.BI "\-\-lock\-video\-orientation " value
+Lock video orientation to \fIvalue\fR. Values are integers in the range [-1..3]. Natural device orientation is 0 and each increment adds 90 degrees counterclockwise.
+
+Default is -1 (unlocked).
+
+.TP
 .BI "\-\-max\-fps " value
 Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
