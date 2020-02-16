@@ -51,6 +51,12 @@ scrcpy_print_usage(const char *arg0) {
         "        is preserved.\n"
         "        Default is %d%s.\n"
         "\n"
+        "    -o, --orientation value\n"
+        "        Lock client orientation to value. Values are integers in the\n"
+        "        range [0..3]. Natural device orientation is 0 and each\n"
+        "        increment adds 90 degrees.\n"
+        "        Default is %d%s.\n"
+        "\n"
         "    -n, --no-control\n"
         "        Disable device control (mirror the device in read-only).\n"
         "\n"
@@ -193,6 +199,7 @@ scrcpy_print_usage(const char *arg0) {
         arg0,
         DEFAULT_BIT_RATE,
         DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
+        DEFAULT_ORIENTATION, DEFAULT_ORIENTATION >= 0 ? "" : " (unlocked)",
         DEFAULT_LOCAL_PORT);
 }
 
@@ -256,6 +263,19 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
     }
 
     *max_fps = (uint16_t) value;
+    return true;
+}
+
+static bool
+parse_orientation(const char *s, int8_t *orientation) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, -1, 3,
+                                "orientation");
+    if (!ok) {
+        return false;
+    }
+
+    *orientation = (int8_t) value;
     return true;
 }
 
@@ -351,6 +371,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"help",                  no_argument,       NULL, 'h'},
         {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
         {"max-size",              required_argument, NULL, 'm'},
+        {"orientation",           required_argument, NULL, 'o'},
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
         {"port",                  required_argument, NULL, 'p'},
@@ -379,7 +400,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:o:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -414,6 +435,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {
+                    return false;
+                }
+                break;
+            case 'o':
+                if(!parse_orientation(optarg, &opts->orientation)) {
                     return false;
                 }
                 break;

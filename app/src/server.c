@@ -124,9 +124,11 @@ execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
     char max_fps_string[6];
+    char orientation_string[4];
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
+    sprintf(orientation_string, "%"PRIi8, params->orientation);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,
@@ -142,6 +144,7 @@ execute_server(struct server *server, const struct server_params *params) {
         max_size_string,
         bit_rate_string,
         max_fps_string,
+        orientation_string,
         server->tunnel_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)

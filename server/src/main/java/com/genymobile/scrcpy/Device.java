@@ -48,11 +48,11 @@ public final class Device {
 
     private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
+        int rotation = displayInfo.getRotation();
         Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
         if (crop != null) {
-            if (rotated) {
+            if (rotation % 2 != 0 ) { // 180s preserve dimensions
                 // the crop (provided by the user) is expressed in the natural orientation
                 crop = flipRect(crop);
             }
@@ -64,7 +64,7 @@ public final class Device {
         }
 
         Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotated);
+        return new ScreenInfo(contentRect, videoSize, rotation);
     }
 
     private static String formatCrop(Rect rect) {
@@ -192,7 +192,9 @@ public final class Device {
         }
     }
 
+    @SuppressWarnings("SuspiciousNameCombination")
     static Rect flipRect(Rect crop) {
-        return new Rect(crop.top, crop.left, crop.bottom, crop.right);
+        crop.set(crop.top, crop.left, crop.bottom, crop.right);
+        return crop;
     }
 }

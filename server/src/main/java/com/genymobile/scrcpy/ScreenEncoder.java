@@ -27,23 +27,27 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private int bitRate;
     private int maxFps;
+    private int clientOrientation;
+    private int rotationOffset = 0;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int clientOrientation, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
+        this.clientOrientation = clientOrientation;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
-        this(sendFrameMeta, bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int clientOrientation) {
+        this(sendFrameMeta, bitRate, maxFps, clientOrientation, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
     public void onRotationChanged(int rotation) {
+        setRotationOffset(rotation);
         rotationChanged.set(true);
     }
 
@@ -57,6 +61,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
         MediaFormat format = createFormat(bitRate, maxFps, iFrameInterval);
         device.setRotationListener(this);
+        setRotationOffset(device.getScreenInfo().getRotation());
         boolean alive;
         try {
             do {
@@ -64,10 +69,10 @@ public class ScreenEncoder implements Device.RotationListener {
                 IBinder display = createDisplay();
                 Rect contentRect = device.getScreenInfo().getContentRect();
                 Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
-                setSize(format, videoRect.width(), videoRect.height());
+                setSize(format, rotationOffset, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, contentRect, videoRect);
+                setDisplaySurface(display, surface, rotationOffset, contentRect, videoRect);
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -134,6 +139,13 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
+    private void setRotationOffset(int rotation) {
+        if(clientOrientation != -1) {// user has requested orientation
+            rotationOffset = rotation + clientOrientation % 4;
+            ControlMessageReader.setRotationOffset(rotationOffset);
+        }
+    }
+
     private static MediaCodec createCodec() throws IOException {
         return MediaCodec.createEncoderByType("video/avc");
     }
@@ -167,16 +179,21 @@ public class ScreenEncoder implements Device.RotationListener {
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
     }
 
-    private static void setSize(MediaFormat format, int width, int height) {
-        format.setInteger(MediaFormat.KEY_WIDTH, width);
-        format.setInteger(MediaFormat.KEY_HEIGHT, height);
+    private static void setSize(MediaFormat format, int orientation, int width, int height) {
+        if(orientation % 2 == 0) {
+            format.setInteger(MediaFormat.KEY_WIDTH, width);
+            format.setInteger(MediaFormat.KEY_HEIGHT, height);
+            return;
+        }
+        format.setInteger(MediaFormat.KEY_WIDTH, height);
+        format.setInteger(MediaFormat.KEY_HEIGHT, width);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect) {
+    private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
-            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
+            SurfaceControl.setDisplayProjection(display, orientation, deviceRect, displayRect);
             SurfaceControl.setDisplayLayerStack(display, 0);
         } finally {
             SurfaceControl.closeTransaction();

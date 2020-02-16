@@ -19,6 +19,7 @@ struct scrcpy_options {
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
+    int8_t orientation;
     int16_t window_x;
     int16_t window_y;
     uint16_t window_width;
@@ -45,6 +46,7 @@ struct scrcpy_options {
     .max_size = DEFAULT_MAX_SIZE, \
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
+    .orientation = DEFAULT_ORIENTATION, \
     .window_x = -1, \
     .window_y = -1, \
     .window_width = 0, \

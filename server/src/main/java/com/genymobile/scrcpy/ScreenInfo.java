@@ -5,12 +5,12 @@ import android.graphics.Rect;
 public final class ScreenInfo {
     private final Rect contentRect; // device size, possibly cropped
     private final Size videoSize;
-    private final boolean rotated;
+    private final int rotation;
 
-    public ScreenInfo(Rect contentRect, Size videoSize, boolean rotated) {
+    public ScreenInfo(Rect contentRect, Size videoSize, int rotation) {
         this.contentRect = contentRect;
         this.videoSize = videoSize;
-        this.rotated = rotated;
+        this.rotation = rotation;
     }
 
     public Rect getContentRect() {
@@ -21,11 +21,14 @@ public final class ScreenInfo {
         return videoSize;
     }
 
-    public ScreenInfo withRotation(int rotation) {
-        boolean newRotated = (rotation & 1) != 0;
-        if (rotated == newRotated) {
+    public int getRotation() {
+        return rotation;
+    }
+
+    public ScreenInfo withRotation(int newRotation) {
+        if ((rotation + newRotation) % 2 == 0) { // 180s don't need flipping
             return this;
         }
-        return new ScreenInfo(Device.flipRect(contentRect), videoSize.rotate(), newRotated);
+        return new ScreenInfo(Device.flipRect(contentRect), videoSize.rotate(), newRotation);
     }
 }

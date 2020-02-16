@@ -106,6 +106,11 @@ conf.set('DEFAULT_LOCAL_PORT', '27183')
 # overridden by option --max-size
 conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 
+# the default client orientation
+# natural device orientation is 0 and each increment adds 90 degrees
+# overridden by option --orientation
+conf.set('DEFAULT_ORIENTATION', '-1')  # -1: unlocked
+
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps

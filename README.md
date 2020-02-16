@@ -286,6 +286,14 @@ The initial window position and size may be specified:
 scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
 ```
 
+#### Lock orientation
+
+Keep the window in landscape orientation:
+
+```bash
+scrcpy --orientation 3
+```
+
 #### Borderless
 
 To disable window decorations:

@@ -284,6 +284,7 @@ scrcpy(const struct scrcpy_options *options) {
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
         .max_fps = options->max_fps,
+        .orientation = options->orientation,
         .control = options->control,
     };
     if (!server_start(&server, options->serial, &params)) {

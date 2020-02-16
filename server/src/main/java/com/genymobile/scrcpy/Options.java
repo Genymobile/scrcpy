@@ -6,6 +6,7 @@ public class Options {
     private int maxSize;
     private int bitRate;
     private int maxFps;
+    private int clientOrientation;
     private boolean tunnelForward;
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
@@ -33,6 +34,14 @@ public class Options {
 
     public void setMaxFps(int maxFps) {
         this.maxFps = maxFps;
+    }
+
+    public int getClientOrientation() {
+        return clientOrientation;
+    }
+
+    public void setClientOrientation(int clientOrientation) {
+        this.clientOrientation = clientOrientation;
     }
 
     public boolean isTunnelForward() {
