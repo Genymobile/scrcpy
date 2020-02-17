@@ -27,22 +27,23 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private int bitRate;
     private int maxFps;
-    private int clientOrientation;
-    private int rotationOffset = 0;
+    private int lockedVideoOrientation;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int clientOrientation, int iFrameInterval) {
+    static int rotationOffset;
+
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
-        this.clientOrientation = clientOrientation;
+        this.lockedVideoOrientation = lockedVideoOrientation;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int clientOrientation) {
-        this(sendFrameMeta, bitRate, maxFps, clientOrientation, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation) {
+        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -140,9 +141,8 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private void setRotationOffset(int rotation) {
-        if(clientOrientation != -1) {// user has requested orientation
-            rotationOffset = rotation + clientOrientation % 4;
-            ControlMessageReader.setRotationOffset(rotationOffset);
+        if (lockedVideoOrientation != -1) { // user has requested orientation
+            rotationOffset = (rotation + lockedVideoOrientation) % 4;
         }
     }
 
@@ -180,7 +180,7 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private static void setSize(MediaFormat format, int orientation, int width, int height) {
-        if(orientation % 2 == 0) {
+        if (orientation % 2 == 0) {
             format.setInteger(MediaFormat.KEY_WIDTH, width);
             format.setInteger(MediaFormat.KEY_HEIGHT, height);
             return;

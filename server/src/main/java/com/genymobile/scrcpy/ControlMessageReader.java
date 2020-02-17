@@ -18,8 +18,6 @@ public class ControlMessageReader {
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
     private static final int RAW_BUFFER_SIZE = 1024;
 
-    private static int rotationOffset = 0;
-
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
     private final byte[] textBuffer = new byte[CLIPBOARD_TEXT_MAX_LENGTH];
@@ -172,30 +170,7 @@ public class ControlMessageReader {
         int y = buffer.getInt();
         int screenWidth = toUnsigned(buffer.getShort());
         int screenHeight = toUnsigned(buffer.getShort());
-        return rotatePosition(x, y, screenWidth, screenHeight);
-    }
-
-    @SuppressWarnings("SuspiciousNameCombination")
-    private static Position rotatePosition(int x, int y, int screenWidth, int screenHeight) {
-        Position position;
-        switch (rotationOffset) {
-            case 1:
-                position = new Position(y, screenWidth - x, screenHeight, screenWidth);
-                break;
-            case 2:
-                position = new Position(screenWidth - x, screenHeight - y, screenWidth, screenHeight);
-                break;
-            case 3:
-                position = new Position(screenHeight - y, x, screenHeight, screenWidth);
-                break;
-            default:
-                position = new Position(x, y, screenWidth, screenHeight);
-        }
-        return position;
-    }
-
-    static void setRotationOffset(int newRotationOffset) {
-        rotationOffset = newRotationOffset;
+        return new Position(x, y, screenWidth, screenHeight);
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")

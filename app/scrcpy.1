@@ -29,9 +29,7 @@ Default is 8000000.
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
-The values are expressed in the device natural clientOrientation (typically, portrait for a phone, landscape for a tablet) unless
-.B \-\-orientation
-is specified. Any
+The values are expressed in the device natural orientation (typically, portrait for a phone, landscape for a tablet). Any
 .B \-\-max\-size
 value is computed on the cropped size.
 
@@ -54,8 +52,8 @@ Limit both the width and height of the video to \fIvalue\fR. The other dimension
 Default is 0 (unlimited).
 
 .TP
-.BI "\-o, \-\-orientation " value
-Lock client orientation to \fIvalue\fR. Values are integers in the range [0..3]. Natural device orientation is 0 and each increment adds 90 degrees.
+.BI "\-\-lock\-video\-orientation " value
+Lock video orientation to \fIvalue\fR. Values are integers in the range [0..3]. Natural device orientation is 0 and each increment adds 90 degrees.
 
 Default is -1 (unlocked).
 

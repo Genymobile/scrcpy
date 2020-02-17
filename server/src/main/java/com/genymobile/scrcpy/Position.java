@@ -23,6 +23,24 @@ public class Position {
         return screenSize;
     }
 
+    public Position rotate(int rotation) {
+        Position position;
+        switch (rotation) {
+            case 1:
+                position = new Position(new Point(point.getY(), screenSize.getWidth() - point.getX()), screenSize.rotate());
+                break;
+            case 2:
+                position = new Position(new Point(screenSize.getWidth() - point.getX(), screenSize.getHeight() - point.getY()), screenSize);
+                break;
+            case 3:
+                position = new Position(new Point(screenSize.getHeight() - point.getY(), point.getX()), screenSize.rotate());
+                break;
+            default:
+                position = this;
+        }
+        return position;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {

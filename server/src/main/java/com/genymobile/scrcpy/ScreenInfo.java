@@ -26,9 +26,6 @@ public final class ScreenInfo {
     }
 
     public ScreenInfo withRotation(int newRotation) {
-        if ((rotation + newRotation) % 2 == 0) { // 180s don't need flipping
-            return this;
-        }
         return new ScreenInfo(Device.flipRect(contentRect), videoSize.rotate(), newRotation);
     }
 }

@@ -51,8 +51,8 @@ scrcpy_print_usage(const char *arg0) {
         "        is preserved.\n"
         "        Default is %d%s.\n"
         "\n"
-        "    -o, --orientation value\n"
-        "        Lock client orientation to value. Values are integers in the\n"
+        "    --lock-video-orientation value\n"
+        "        Lock video orientation to value. Values are integers in the\n"
         "        range [0..3]. Natural device orientation is 0 and each\n"
         "        increment adds 90 degrees.\n"
         "        Default is %d%s.\n"
@@ -199,7 +199,7 @@ scrcpy_print_usage(const char *arg0) {
         arg0,
         DEFAULT_BIT_RATE,
         DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
-        DEFAULT_ORIENTATION, DEFAULT_ORIENTATION >= 0 ? "" : " (unlocked)",
+        DEFAULT_LOCK_VIDEO_ORIENTATION, DEFAULT_LOCK_VIDEO_ORIENTATION >= 0 ? "" : " (unlocked)",
         DEFAULT_LOCAL_PORT);
 }
 
@@ -267,15 +267,15 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 }
 
 static bool
-parse_orientation(const char *s, int8_t *orientation) {
+parse_lock_video_orientation(const char *s, int8_t *lock_video_orientation) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, -1, 3,
-                                "orientation");
+                                "lock_video_orientation");
     if (!ok) {
         return false;
     }
 
-    *orientation = (int8_t) value;
+    *lock_video_orientation = (int8_t) value;
     return true;
 }
 
@@ -347,52 +347,53 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
-#define OPT_RENDER_EXPIRED_FRAMES 1000
-#define OPT_WINDOW_TITLE          1001
-#define OPT_PUSH_TARGET           1002
-#define OPT_ALWAYS_ON_TOP         1003
-#define OPT_CROP                  1004
-#define OPT_RECORD_FORMAT         1005
-#define OPT_PREFER_TEXT           1006
-#define OPT_WINDOW_X              1007
-#define OPT_WINDOW_Y              1008
-#define OPT_WINDOW_WIDTH          1009
-#define OPT_WINDOW_HEIGHT         1010
-#define OPT_WINDOW_BORDERLESS     1011
-#define OPT_MAX_FPS               1012
+#define OPT_RENDER_EXPIRED_FRAMES  1000
+#define OPT_WINDOW_TITLE           1001
+#define OPT_PUSH_TARGET            1002
+#define OPT_ALWAYS_ON_TOP          1003
+#define OPT_CROP                   1004
+#define OPT_RECORD_FORMAT          1005
+#define OPT_PREFER_TEXT            1006
+#define OPT_WINDOW_X               1007
+#define OPT_WINDOW_Y               1008
+#define OPT_WINDOW_WIDTH           1009
+#define OPT_WINDOW_HEIGHT          1010
+#define OPT_WINDOW_BORDERLESS      1011
+#define OPT_MAX_FPS                1012
+#define OPT_LOCK_VIDEO_ORIENTATION 1013
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
-        {"always-on-top",         no_argument,       NULL, OPT_ALWAYS_ON_TOP},
-        {"bit-rate",              required_argument, NULL, 'b'},
-        {"crop",                  required_argument, NULL, OPT_CROP},
-        {"fullscreen",            no_argument,       NULL, 'f'},
-        {"help",                  no_argument,       NULL, 'h'},
-        {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
-        {"max-size",              required_argument, NULL, 'm'},
-        {"orientation",           required_argument, NULL, 'o'},
-        {"no-control",            no_argument,       NULL, 'n'},
-        {"no-display",            no_argument,       NULL, 'N'},
-        {"port",                  required_argument, NULL, 'p'},
-        {"push-target",           required_argument, NULL, OPT_PUSH_TARGET},
-        {"record",                required_argument, NULL, 'r'},
-        {"record-format",         required_argument, NULL, OPT_RECORD_FORMAT},
-        {"render-expired-frames", no_argument,       NULL,
-                                                     OPT_RENDER_EXPIRED_FRAMES},
-        {"serial",                required_argument, NULL, 's'},
-        {"show-touches",          no_argument,       NULL, 't'},
-        {"turn-screen-off",       no_argument,       NULL, 'S'},
-        {"prefer-text",           no_argument,       NULL, OPT_PREFER_TEXT},
-        {"version",               no_argument,       NULL, 'v'},
-        {"window-title",          required_argument, NULL, OPT_WINDOW_TITLE},
-        {"window-x",              required_argument, NULL, OPT_WINDOW_X},
-        {"window-y",              required_argument, NULL, OPT_WINDOW_Y},
-        {"window-width",          required_argument, NULL, OPT_WINDOW_WIDTH},
-        {"window-height",         required_argument, NULL, OPT_WINDOW_HEIGHT},
-        {"window-borderless",     no_argument,       NULL,
-                                                     OPT_WINDOW_BORDERLESS},
-        {NULL,                    0,                 NULL, 0  },
+        {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
+        {"bit-rate",               required_argument, NULL, 'b'},
+        {"crop",                   required_argument, NULL, OPT_CROP},
+        {"fullscreen",             no_argument,       NULL, 'f'},
+        {"help",                   no_argument,       NULL, 'h'},
+        {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
+        {"max-size",               required_argument, NULL, 'm'},
+        {"lock-video-orientation", required_argument, NULL, OPT_LOCK_VIDEO_ORIENTATION},
+        {"no-control",             no_argument,       NULL, 'n'},
+        {"no-display",             no_argument,       NULL, 'N'},
+        {"port",                   required_argument, NULL, 'p'},
+        {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
+        {"record",                 required_argument, NULL, 'r'},
+        {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
+        {"render-expired-frames",  no_argument,       NULL,
+                                                      OPT_RENDER_EXPIRED_FRAMES},
+        {"serial",                 required_argument, NULL, 's'},
+        {"show-touches",           no_argument,       NULL, 't'},
+        {"turn-screen-off",        no_argument,       NULL, 'S'},
+        {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},
+        {"version",                no_argument,       NULL, 'v'},
+        {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
+        {"window-x",               required_argument, NULL, OPT_WINDOW_X},
+        {"window-y",               required_argument, NULL, OPT_WINDOW_Y},
+        {"window-width",           required_argument, NULL, OPT_WINDOW_WIDTH},
+        {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
+        {"window-borderless",      no_argument,       NULL,
+                                                      OPT_WINDOW_BORDERLESS},
+        {NULL,                     0,                 NULL, 0  },
     };
 
     struct scrcpy_options *opts = &args->opts;
@@ -400,7 +401,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:o:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -438,8 +439,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
-            case 'o':
-                if(!parse_orientation(optarg, &opts->orientation)) {
+            case OPT_LOCK_VIDEO_ORIENTATION:
+                if (!parse_lock_video_orientation(optarg, &opts->lock_video_orientation)) {
                     return false;
                 }
                 break;

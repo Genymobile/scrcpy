@@ -104,6 +104,7 @@ public final class Device {
         @SuppressWarnings("checkstyle:HiddenField")
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
+        position = position.rotate(ScreenEncoder.rotationOffset);
         Size clientVideoSize = position.getScreenSize();
         if (!videoSize.equals(clientVideoSize)) {
             // The client sends a click relative to a video with wrong dimensions,
@@ -112,9 +113,9 @@ public final class Device {
         }
         Rect contentRect = screenInfo.getContentRect();
         Point point = position.getPoint();
-        int scaledX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
-        int scaledY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
-        return new Point(scaledX, scaledY);
+        int convertedX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
+        int convertedY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
+        return new Point(convertedX, convertedY);
     }
 
     public static String getDeviceName() {
@@ -194,7 +195,6 @@ public final class Device {
 
     @SuppressWarnings("SuspiciousNameCombination")
     static Rect flipRect(Rect crop) {
-        crop.set(crop.top, crop.left, crop.bottom, crop.right);
-        return crop;
+        return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }
 }

@@ -36,7 +36,7 @@ struct server_params {
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
-    int8_t orientation;
+    int8_t lock_video_orientation;
     bool control;
 };
 

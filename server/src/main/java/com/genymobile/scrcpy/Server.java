@@ -19,7 +19,7 @@ public final class Server {
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), options.getClientOrientation());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), options.getLockedVideoOrientation());
 
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
@@ -94,8 +94,8 @@ public final class Server {
         int maxFps = Integer.parseInt(args[3]);
         options.setMaxFps(maxFps);
 
-        int clientOrientation = Integer.parseInt(args[4]);
-        options.setClientOrientation(clientOrientation);
+        int lockedVideoOrientation = Integer.parseInt(args[4]);
+        options.setLockedVideoOrientation(lockedVideoOrientation);
 
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
         boolean tunnelForward = Boolean.parseBoolean(args[5]);
