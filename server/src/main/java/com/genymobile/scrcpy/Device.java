@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
@@ -25,9 +26,35 @@ public final class Device {
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
+    /**
+     * Logical display identifier
+     */
+    private final int displayId;
+
+    /**
+     * The surface flinger layer stack associated with this logical display
+     */
+    private final int layerStack;
+
+    /**
+     * The FLAG_PRESENTATION from the DisplayInfo
+     */
+    private final boolean isPresentationDisplay;
+
     public Device(Options options) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        displayId = options.getDisplayId();
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo(displayId);
+        if (displayInfo == null) {
+            int[] displayIds = serviceManager.getDisplayManager().getDisplayIds();
+            throw new InvalidDisplayIdException(displayId, displayIds);
+        }
+
+        int displayInfoFlags = displayInfo.getFlags();
+
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
+        layerStack = displayInfo.getLayerStack();
+        isPresentationDisplay = (displayInfoFlags & DisplayInfo.FLAG_PRESENTATION) != 0;
+
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -41,10 +68,22 @@ public final class Device {
                 }
             }
         });
+
+        if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
+            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
+        }
+
+        if (!supportsInputEvents()) {
+            Ln.w("Input events are not supported for displays with FLAG_PRESENTATION enabled for devices with API lower than 29");
+        }
     }
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
+    }
+
+    public int getLayerStack() {
+        return layerStack;
     }
 
     public Point getPhysicalPoint(Position position) {
@@ -76,7 +115,22 @@ public final class Device {
         return Build.MODEL;
     }
 
+    public boolean supportsInputEvents() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return true;
+        }
+        return !isPresentationDisplay;
+    }
+
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        if (!supportsInputEvents()) {
+            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
+        }
+
+        if (displayId != 0 && !InputManager.setDisplayId(inputEvent, displayId)) {
+            return false;
+        }
+
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }
 

@@ -34,6 +34,15 @@ The values are expressed in the device natural orientation (typically, portrait 
 value is computed on the cropped size.
 
 .TP
+.BI "\-\-display " id
+Specify the display id to mirror.
+
+The list of possible display ids can be listed by "adb shell dumpsys display"
+(search "mDisplayId=" in the output).
+
+Default is 0.
+
+.TP
 .B \-f, \-\-fullscreen
 Start in fullscreen.
 
