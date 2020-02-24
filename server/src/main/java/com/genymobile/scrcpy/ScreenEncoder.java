@@ -67,7 +67,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, contentRect, videoRect);
+                setDisplaySurface(display, surface, contentRect, videoRect, device.getScreenInfo().getLayerStack());
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -172,12 +172,12 @@ public class ScreenEncoder implements Device.RotationListener {
         format.setInteger(MediaFormat.KEY_HEIGHT, height);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect) {
+    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect, int layerStack) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
             SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
-            SurfaceControl.setDisplayLayerStack(display, 0);
+            SurfaceControl.setDisplayLayerStack(display, layerStack);
         } finally {
             SurfaceControl.closeTransaction();
         }
