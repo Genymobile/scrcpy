@@ -15,6 +15,7 @@ src = [
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
+    'src/serve.c',
     'src/server.c',
     'src/stream.c',
     'src/tiny_xpm.c',

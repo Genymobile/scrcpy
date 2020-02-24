@@ -213,8 +213,8 @@ To disable mirroring while forwarding the stream:
 
 ```bash
 scrcpy --no-display --serve tcp:localhost:1234
-scrcpy -Nr --serve tcp:localhost:1234
-# interrupt recording with Ctrl+C
+scrcpy -N --serve tcp:localhost:1234
+# interrupt serve with Ctrl+C
 # Ctrl+C does not terminate properly on Windows, so disconnect the device
 ```
 

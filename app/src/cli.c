@@ -6,8 +6,11 @@
 
 #include "config.h"
 #include "recorder.h"
+#include "serve.h"
 #include "util/log.h"
 #include "util/str_util.h"
+
+#define IPV4_LOCALHOST 0x7F000001
 
 void
 scrcpy_print_usage(const char *arg0) {
@@ -78,6 +81,11 @@ scrcpy_print_usage(const char *arg0) {
         "        Record screen to file.\n"
         "        The format is determined by the --record-format option if\n"
         "        set, or by the file extension (.mp4 or .mkv).\n"
+        "\n"
+        "    --serve tcp:localhost:1234\n"
+        "        Open a socket to redirect video stream.\n"
+        "        It will Wait for a client to connect before starting the mirroring,\n" 
+        "        then it would forward the video stream.\n"
         "\n"
         "    --record-format format\n"
         "        Force recording format (either mp4 or mkv).\n"
@@ -297,6 +305,7 @@ parse_port(const char *s, uint16_t *port) {
     return true;
 }
 
+
 static bool
 parse_record_format(const char *optarg, enum recorder_format *format) {
     if (!strcmp(optarg, "mp4")) {
@@ -309,6 +318,154 @@ parse_record_format(const char *optarg, enum recorder_format *format) {
     }
     LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
     return false;
+}
+
+char** 
+str_split(const char* a_str, const char a_delim)
+{
+    char** result = 0;
+    size_t count = 0;
+    char* tmp = (char*)a_str;
+    char str[100];
+    strncpy(str, a_str, sizeof(str));
+    char* last_comma = 0;
+    char delim[2];
+    delim[0] = a_delim;
+    delim[1] = 0;
+
+    /* Count how many elements will be extracted. */
+    while (*tmp)
+    {
+        if (a_delim == *tmp)
+        {
+            count++;
+            last_comma = tmp;
+        }
+        tmp++;
+    }
+
+    /* Add space for trailing token. */
+    count += last_comma < (str + strlen(str) - 1);
+
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
+    count++;
+
+    result = malloc(sizeof(char*) * count);
+
+    if (result)
+    {
+        size_t idx = 0;
+        char* token = strtok(str, delim);
+
+        while (token)
+        {
+            assert(idx < count);
+            *(result + idx++) = strdup(token);
+            token = strtok(0, delim);
+        }
+        assert(idx == count - 1);
+        *(result + idx) = 0;
+    }
+
+    return result;
+}
+
+int 
+validate_ip(char* ip) { //check whether the IP is valid or not
+    int num, dots = 0;
+    char* ptr;
+    if (ip == NULL)
+        return 0;
+    ptr = strtok(ip, "."); //cut the string using dor delimiter
+    if (ptr == NULL)
+        return 0;
+    while (ptr) {
+        long value;
+        if (!parse_integer(ptr, &value)) //check whether the sub string is holding only number or not
+            return 0;
+        num = atoi(ptr); //convert substring to number
+        if (num >= 0 && num <= 255) {
+            ptr = strtok(NULL, "."); //cut the next part of the string
+            if (ptr != NULL)
+                dots++; //increase the dot count
+        }
+        else
+            return 0;
+    }
+    if (dots != 3) //if the number of dots are not 3, return false
+        return 0;
+    return 1;
+}
+
+static bool
+parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
+    bool protocol_valid = false;
+    bool ip_valid = false;
+    bool port_valid = false;
+
+    char* protocol = NULL;
+    char* ip = NULL;
+    uint32_t ip_value;
+    char* port = NULL;
+    char** values;
+
+    values = str_split(optarg, ':');
+
+    if (values)
+    {
+        protocol = *values;
+        ip = *(values + 1);
+        port = *(values + 2);
+    }
+
+    free(values);
+
+    if (!strcmp(protocol, "tcp"))
+    {
+        //protocol = "tcp";
+        protocol_valid = true;
+    } else if (!strcmp(protocol, "udp"))
+    {
+        //protocol = "udp";
+        protocol_valid = true;
+    }
+    else {
+        LOGE("Unexpected protocol: %s (expected tcp or udp)", protocol);
+        return false;
+    }
+
+    //Allowing to write localhost or the IP address
+    if (!strcmp(ip, "localhost"))
+    {
+        ip_value = IPV4_LOCALHOST;
+        ip_valid = true;
+    } else if (validate_ip(ip)) {
+        ip_valid = true;
+    }
+    else {
+        LOGE("Unexpected ip address (expected \"localhost\" or 255.255.255.255)");
+        return false;
+    }
+
+    long port_value = 0;
+    port_valid = parse_integer_arg(port, &port_value, false, 0, 0xFFFF, "port");
+    
+    //Check if everything is valid
+    if (!protocol_valid || !ip_valid || !port_valid) {
+        LOGE("Unexpected argument format: %s (expected [tcp/udp]:[ip or \"localhost\"]:[port])", optarg);
+        return false;
+    }
+
+    /*LOGI("%s", protocol);
+    LOGI("%d", ip_value);
+    LOGI("%ld", port_value);*/
+
+    *s_protocol = protocol;
+    *s_ip = (uint32_t)ip_value;
+    *s_port = (uint16_t)port_value;
+
+    return true;
 }
 
 static enum recorder_format
@@ -340,6 +497,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_HEIGHT         1010
 #define OPT_WINDOW_BORDERLESS     1011
 #define OPT_MAX_FPS               1012
+#define OPT_SERVE                 1013
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -360,6 +518,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"render-expired-frames", no_argument,       NULL,
                                                      OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                required_argument, NULL, 's'},
+        {"serve",                 required_argument, NULL, OPT_SERVE},
         {"show-touches",          no_argument,       NULL, 't'},
         {"turn-screen-off",       no_argument,       NULL, 'S'},
         {"prefer-text",           no_argument,       NULL, OPT_PREFER_TEXT},
@@ -434,6 +593,16 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case 's':
                 opts->serial = optarg;
                 break;
+            case OPT_SERVE:
+                if (!parse_serve_args(optarg, &opts->serve_protocol, &opts->serve_ip, &opts->serve_port)) {
+                    return false;
+                } else {
+                    opts->serve = true;
+                }
+                /*LOGI("protocol is %s", opts->serve_protocol);
+                LOGI("ip value is %d", opts->serve_ip);
+                LOGI("port is %d", opts->serve_port);*/
+                break;
             case 'S':
                 opts->turn_screen_off = true;
                 break;
@@ -490,8 +659,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         }
     }
 
-    if (!opts->display && !opts->record_filename) {
-        LOGE("-N/--no-display requires screen recording (-r/--record)");
+    if (!opts->display && !opts->record_filename && !opts->serve) {
+        LOGE("-N/--no-display requires screen recording (-r/--record) or to serve to another client (--serve)");
         return false;
     }
 

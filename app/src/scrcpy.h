@@ -13,7 +13,7 @@ struct scrcpy_options {
     const char *crop;
     const char *record_filename;
     const char *window_title;
-    const char *push_target;
+    const char *push_target;  
     enum recorder_format record_format;
     uint16_t port;
     uint16_t max_size;
@@ -32,6 +32,10 @@ struct scrcpy_options {
     bool render_expired_frames;
     bool prefer_text;
     bool window_borderless;
+    char *serve_protocol;
+    uint32_t serve_ip;
+    uint16_t serve_port;
+    bool serve;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -58,6 +62,10 @@ struct scrcpy_options {
     .render_expired_frames = false, \
     .prefer_text = false, \
     .window_borderless = false, \
+    .serve_protocol = NULL, \
+    .serve_ip = 0, \
+    .serve_port = 0, \
+    .serve = false, \
 }
 
 bool
