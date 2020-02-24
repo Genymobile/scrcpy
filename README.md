@@ -201,6 +201,22 @@ variation] does not impact the recorded file.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
+### Serve
+
+It is possible to forward the video stream:
+
+```bash
+scrcpy --serve tcp:localhost:1234
+```
+
+To disable mirroring while forwarding the stream:
+
+```bash
+scrcpy --no-display --serve tcp:localhost:1234
+scrcpy -Nr --serve tcp:localhost:1234
+# interrupt recording with Ctrl+C
+# Ctrl+C does not terminate properly on Windows, so disconnect the device
+```
 
 ### Connection
 
