@@ -111,6 +111,9 @@ public final class Server {
         boolean control = Boolean.parseBoolean(args[8]);
         options.setControl(control);
 
+        int displayId = Integer.parseInt(args[8]);
+        options.setDisplayId(displayId);
+
         return options;
     }
 

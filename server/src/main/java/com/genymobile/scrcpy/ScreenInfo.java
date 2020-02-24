@@ -14,6 +14,7 @@ public final class ScreenInfo {
      * However, it does not include the locked video orientation.
      */
     private final Size unlockedVideoSize;
+    private final int layerStack;
 
     /**
      * Device rotation, related to the natural device orientation (0, 1, 2 or 3)
@@ -30,6 +31,7 @@ public final class ScreenInfo {
         this.unlockedVideoSize = unlockedVideoSize;
         this.deviceRotation = deviceRotation;
         this.lockedVideoOrientation = lockedVideoOrientation;
+        this.layerStack = layerStack;
     }
 
     public Rect getContentRect() {

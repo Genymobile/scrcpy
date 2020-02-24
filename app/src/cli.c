@@ -355,6 +355,18 @@ parse_port_range(const char *s, struct port_range *port_range) {
 }
 
 static bool
+parse_display_id(const char *s, uint16_t *display_id) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "display id");
+    if (!ok) {
+        return false;
+    }
+
+    *display_id = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_record_format(const char *optarg, enum recorder_format *format) {
     if (!strcmp(optarg, "mp4")) {
         *format = RECORDER_FORMAT_MP4;
@@ -439,7 +451,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNpd:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -490,6 +502,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'p':
                 if (!parse_port_range(optarg, &opts->port_range)) {
+                    return false;
+                }
+                break;
+            case 'd':
+                if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
                 }
                 break;

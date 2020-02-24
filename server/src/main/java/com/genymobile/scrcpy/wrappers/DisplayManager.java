@@ -12,15 +12,16 @@ public final class DisplayManager {
         this.manager = manager;
     }
 
-    public DisplayInfo getDisplayInfo() {
+    public DisplayInfo getDisplayInfo(int displayId) {
         try {
-            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, 0);
+            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
             Class<?> cls = displayInfo.getClass();
             // width and height already take the rotation into account
             int width = cls.getDeclaredField("logicalWidth").getInt(displayInfo);
             int height = cls.getDeclaredField("logicalHeight").getInt(displayInfo);
             int rotation = cls.getDeclaredField("rotation").getInt(displayInfo);
-            return new DisplayInfo(new Size(width, height), rotation);
+            int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
+            return new DisplayInfo(new Size(width, height), rotation, layerStack);
         } catch (Exception e) {
             throw new AssertionError(e);
         }

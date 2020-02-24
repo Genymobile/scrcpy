@@ -286,6 +286,7 @@ scrcpy(const struct scrcpy_options *options) {
         .max_fps = options->max_fps,
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
+        .display_id = options->display_id,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;
