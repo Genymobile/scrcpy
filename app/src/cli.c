@@ -36,6 +36,15 @@ scrcpy_print_usage(const char *arg0) {
         "        (typically, portrait for a phone, landscape for a tablet).\n"
         "        Any --max-size value is computed on the cropped size.\n"
         "\n"
+        "    --display id\n"
+        "        Specify the display id to mirror.\n"
+        "\n"
+        "        The list of possible display ids can be listed by:\n"
+        "            adb shell dumpsys display\n"
+        "        (search \"mDisplayId=\" in the output)\n"
+        "\n"
+        "        Default is 0.\n"
+        "\n"
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
@@ -364,6 +373,18 @@ parse_port_range(const char *s, struct port_range *port_range) {
 }
 
 static bool
+parse_display_id(const char *s, uint16_t *display_id) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "display id");
+    if (!ok) {
+        return false;
+    }
+
+    *display_id = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_record_format(const char *optarg, enum recorder_format *format) {
     if (!strcmp(optarg, "mp4")) {
         *format = RECORDER_FORMAT_MP4;
@@ -407,6 +428,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_BORDERLESS      1011
 #define OPT_MAX_FPS                1012
 #define OPT_LOCK_VIDEO_ORIENTATION 1013
+#define OPT_DISPLAY_ID             1014
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -414,6 +436,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",               required_argument, NULL, 'b'},
         {"crop",                   required_argument, NULL, OPT_CROP},
+        {"display",                required_argument, NULL, OPT_DISPLAY_ID},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
         {"lock-video-orientation", required_argument, NULL,
@@ -461,6 +484,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 // fall through
             case OPT_CROP:
                 opts->crop = optarg;
+                break;
+            case OPT_DISPLAY_ID:
+                if (!parse_display_id(optarg, &opts->display_id)) {
+                    return false;
+                }
                 break;
             case 'f':
                 opts->fullscreen = true;

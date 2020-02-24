@@ -80,8 +80,8 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        if (args.length != 9) {
-            throw new IllegalArgumentException("Expecting 9 parameters");
+        if (args.length != 10) {
+            throw new IllegalArgumentException("Expecting 10 parameters");
         }
 
         Options options = new Options();
@@ -110,6 +110,9 @@ public final class Server {
 
         boolean control = Boolean.parseBoolean(args[8]);
         options.setControl(control);
+
+        int displayId = Integer.parseInt(args[9]);
+        options.setDisplayId(displayId);
 
         return options;
     }
@@ -146,6 +149,16 @@ public final class Server {
                     Ln.e("The hardware encoder is not able to encode at the given definition.");
                     Ln.e("Try with a lower definition:");
                     Ln.e("    scrcpy -m 1024");
+                }
+            }
+        }
+        if (e instanceof InvalidDisplayIdException) {
+            InvalidDisplayIdException idie = (InvalidDisplayIdException) e;
+            int[] displayIds = idie.getAvailableDisplayIds();
+            if (displayIds != null && displayIds.length > 0) {
+                Ln.e("Try to use one of the available display ids:");
+                for (int id : displayIds) {
+                    Ln.e("    scrcpy --display " + id);
                 }
             }
         }

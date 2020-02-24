@@ -353,6 +353,21 @@ scrcpy --no-control
 scrcpy -n
 ```
 
+#### Display
+
+If several displays are available, it is possible to select the display to
+mirror:
+
+```bash
+scrcpy --display 1
+```
+
+The list of display ids can be retrieved by:
+
+```
+adb shell dumpsys display   # search "mDisplayId=" in the output
+```
+
 #### Turn screen off
 
 It is possible to turn the device screen off while mirroring on start with a
