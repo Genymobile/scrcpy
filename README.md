@@ -37,8 +37,11 @@ control it using keyboard and mouse.
 
 ### Linux
 
-On Linux, you typically need to [build the app manually][BUILD]. Don't worry,
-it's not that hard.
+In Debian (_testing_ and _sid_ for now):
+
+```
+apt install scrcpy
+```
 
 A [Snap] package is available: [`scrcpy`][snap-link].
 
@@ -56,6 +59,10 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
+You could also [build the app manually][BUILD] (don't worry, it's not that
+hard).
+
+
 
 ### Windows
 
@@ -69,6 +76,20 @@ For Windows, for simplicity, prebuilt archives with all the dependencies
 
 [direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win32-v1.12.1.zip
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
+
+It is also available in [Chocolatey]:
+
+[Chocolatey]: https://chocolatey.org/
+
+```bash
+choco install scrcpy
+```
+
+You need `adb`, accessible from your `PATH`. If you don't have it yet:
+
+```bash
+choco install adb
+```
 
 You can also [build the app manually][BUILD].
 
@@ -214,6 +235,13 @@ If several devices are listed in `adb devices`, you must specify the _serial_:
 ```bash
 scrcpy --serial 0123456789abcdef
 scrcpy -s 0123456789abcdef  # short version
+```
+
+If the device is connected over TCP/IP:
+
+```bash
+scrcpy --serial 192.168.0.1:5555
+scrcpy -s 192.168.0.1:5555  # short version
 ```
 
 You can start several instances of _scrcpy_ for several devices.
@@ -491,7 +519,7 @@ Read the [developers page].
 ## Licence
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2019 Romain Vimont
+    Copyright (C) 2018-2020 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
