@@ -102,6 +102,23 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
     if (mod & (KMOD_LALT | KMOD_RALT | KMOD_LGUI | KMOD_RGUI)) {
         return false;
     }
+
+    if (!(mod & (KMOD_NUM | KMOD_SHIFT))) {
+    	//	handling Numpad events when Num Lock is disabled
+        switch(from){
+			MAP(SDLK_KP_6,            AKEYCODE_DPAD_RIGHT);
+			MAP(SDLK_KP_4,            AKEYCODE_DPAD_LEFT);
+			MAP(SDLK_KP_2,            AKEYCODE_DPAD_DOWN);
+			MAP(SDLK_KP_8,            AKEYCODE_DPAD_UP);
+			MAP(SDLK_KP_7,            AKEYCODE_MOVE_HOME);
+			MAP(SDLK_KP_1,            AKEYCODE_MOVE_END);
+			MAP(SDLK_KP_3,            AKEYCODE_PAGE_DOWN);
+			MAP(SDLK_KP_9,            AKEYCODE_PAGE_UP);
+			MAP(SDLK_KP_0,            AKEYCODE_INSERT);
+			MAP(SDLK_KP_PERIOD,       AKEYCODE_FORWARD_DEL);
+        }
+	}
+
     // if ALT and META are not pressed, also handle letters and space
     switch (from) {
         MAP(SDLK_a,            AKEYCODE_A);
