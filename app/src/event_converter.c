@@ -105,7 +105,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
 
     if (!(mod & (KMOD_NUM | KMOD_SHIFT))) {
         // handling Numpad events when Num Lock is disabled
-        switch(from){
+        switch(from) {
             MAP(SDLK_KP_6,            AKEYCODE_DPAD_RIGHT);
             MAP(SDLK_KP_4,            AKEYCODE_DPAD_LEFT);
             MAP(SDLK_KP_2,            AKEYCODE_DPAD_DOWN);
