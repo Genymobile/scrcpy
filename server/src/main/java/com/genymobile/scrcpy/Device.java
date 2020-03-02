@@ -22,6 +22,7 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
+    private final int displayId;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
@@ -74,6 +75,10 @@ public final class Device {
 
     public static String getDeviceName() {
         return Build.MODEL;
+    }
+
+    public int getDisplayId() {
+        return displayId;
     }
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
