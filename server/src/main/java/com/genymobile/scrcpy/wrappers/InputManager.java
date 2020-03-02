@@ -37,4 +37,12 @@ public final class InputManager {
             return false;
         }
     }
+
+    public static void setDisplayId(InputEvent inputEvent, int displayId) {
+        try {
+            inputEvent.getClass().getMethod("setDisplayId", int.class).invoke(inputEvent, displayId);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
+        }
+    }
 }

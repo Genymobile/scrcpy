@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
 
+import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -10,6 +11,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 public class Controller {
 
@@ -178,7 +181,6 @@ public class Controller {
                 action = MotionEvent.ACTION_POINTER_DOWN | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
             }
         }
-
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
                         InputDevice.SOURCE_TOUCHSCREEN, 0);
@@ -220,6 +222,9 @@ public class Controller {
     }
 
     private boolean injectEvent(InputEvent event) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            InputManager.setDisplayId(event, device.getDisplayId());
+        }
         return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 

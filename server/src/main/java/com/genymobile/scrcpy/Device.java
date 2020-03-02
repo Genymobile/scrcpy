@@ -22,10 +22,12 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
+    private final int displayId;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
     public Device(Options options) {
+        displayId = options.getDisplayId();
         screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize(), options.getDisplayId());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
@@ -119,6 +121,10 @@ public final class Device {
 
     public static String getDeviceName() {
         return Build.MODEL;
+    }
+
+    public int getDisplayId() {
+        return displayId;
     }
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
