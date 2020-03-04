@@ -28,7 +28,8 @@ public final class Device {
 
     public Device(Options options) {
         lockedVideoOrientation = options.getLockedVideoOrientation();
-        screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize());
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -46,59 +47,6 @@ public final class Device {
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
-    }
-
-    private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        int rotation = displayInfo.getRotation();
-        Size deviceSize = displayInfo.getSize();
-        Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
-        if (crop != null) {
-            if (rotation % 2 != 0) { // 180s preserve dimensions
-                // the crop (provided by the user) is expressed in the natural orientation
-                crop = flipRect(crop);
-            }
-            if (!contentRect.intersect(crop)) {
-                // intersect() changes contentRect so that it is intersected with crop
-                Ln.w("Crop rectangle (" + formatCrop(crop) + ") does not intersect device screen (" + formatCrop(deviceSize.toRect()) + ")");
-                contentRect = new Rect(); // empty
-            }
-        }
-
-        Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotation);
-    }
-
-    private static String formatCrop(Rect rect) {
-        return rect.width() + ":" + rect.height() + ":" + rect.left + ":" + rect.top;
-    }
-
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private static Size computeVideoSize(int w, int h, int maxSize) {
-        // Compute the video size and the padding of the content inside this video.
-        // Principle:
-        // - scale down the great side of the screen to maxSize (if necessary);
-        // - scale down the other side so that the aspect ratio is preserved;
-        // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
-        w &= ~7; // in case it's not a multiple of 8
-        h &= ~7;
-        if (maxSize > 0) {
-            if (BuildConfig.DEBUG && maxSize % 8 != 0) {
-                throw new AssertionError("Max size must be a multiple of 8");
-            }
-            boolean portrait = h > w;
-            int major = portrait ? h : w;
-            int minor = portrait ? w : h;
-            if (major > maxSize) {
-                int minorExact = minor * maxSize / major;
-                // +4 to round the value to the nearest multiple of 8
-                minor = (minorExact + 4) & ~7;
-                major = maxSize;
-            }
-            w = portrait ? minor : major;
-            h = portrait ? major : minor;
-        }
-        return new Size(w, h);
     }
 
     /**
@@ -226,9 +174,5 @@ public final class Device {
         if (accelerometerRotation) {
             wm.thawRotation();
         }
-    }
-
-    static Rect flipRect(Rect crop) {
-        return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }
 }
