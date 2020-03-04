@@ -67,7 +67,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
                 Rect videoRect = screenInfo.getVideoSize().toRect();
-                int videoRotation = device.getVideoRotation(screenInfo.getRotation());
+                int videoRotation = device.getVideoRotation(screenInfo.getDeviceRotation());
                 setSize(format, videoRotation, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();

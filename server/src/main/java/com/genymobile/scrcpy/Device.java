@@ -34,7 +34,7 @@ public final class Device {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
                 synchronized (Device.this) {
-                    screenInfo = screenInfo.withRotation(rotation);
+                    screenInfo = screenInfo.withDeviceRotation(rotation);
 
                     // notify
                     if (rotationListener != null) {
@@ -83,7 +83,7 @@ public final class Device {
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
         Size videoSize = screenInfo.getVideoSize();
 
-        int deviceRotation = screenInfo.getRotation();
+        int deviceRotation = screenInfo.getDeviceRotation();
         int reverseVideoRotation = getReverseVideoRotation(deviceRotation);
         // reverse the video rotation to apply the events
         Position devicePosition = position.rotate(reverseVideoRotation);

@@ -16,12 +16,12 @@ public final class ScreenInfo {
     /**
      * Device rotation, related to the natural device orientation (0, 1, 2 or 3)
      */
-    private final int rotation;
+    private final int deviceRotation;
 
-    public ScreenInfo(Rect contentRect, Size videoSize, int rotation) {
+    public ScreenInfo(Rect contentRect, Size videoSize, int deviceRotation) {
         this.contentRect = contentRect;
         this.videoSize = videoSize;
-        this.rotation = rotation;
+        this.deviceRotation = deviceRotation;
     }
 
     public Rect getContentRect() {
@@ -32,16 +32,16 @@ public final class ScreenInfo {
         return videoSize;
     }
 
-    public int getRotation() {
-        return rotation;
+    public int getDeviceRotation() {
+        return deviceRotation;
     }
 
-    public ScreenInfo withRotation(int newRotation) {
-        if (newRotation == rotation) {
+    public ScreenInfo withDeviceRotation(int newDeviceRotation) {
+        if (newDeviceRotation == deviceRotation) {
             return this;
         }
         // true if changed between portrait and landscape
-        boolean orientationChanged = (rotation + newRotation) % 2 != 0;
+        boolean orientationChanged = (deviceRotation + newDeviceRotation) % 2 != 0;
         Rect newContentRect;
         Size newVideoSize;
         if (orientationChanged) {
@@ -51,7 +51,7 @@ public final class ScreenInfo {
             newContentRect = contentRect;
             newVideoSize = videoSize;
         }
-        return new ScreenInfo(newContentRect, newVideoSize, newRotation);
+        return new ScreenInfo(newContentRect, newVideoSize, newDeviceRotation);
     }
 
     public static ScreenInfo computeScreenInfo(DisplayInfo displayInfo, Rect crop, int maxSize) {
