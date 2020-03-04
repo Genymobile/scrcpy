@@ -6,7 +6,6 @@ import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
-import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
