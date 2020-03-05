@@ -9,27 +9,53 @@ public final class ScreenInfo {
     private final Rect contentRect; // device size, possibly cropped
 
     /**
-     * Video size, possibly smaller than the device size, already taking the device rotation and crop into account
+     * Video size, possibly smaller than the device size, already taking the device rotation and crop into account.
+     * <p>
+     * However, it does not include the locked video orientation.
      */
-    private final Size videoSize;
+    private final Size unlockedVideoSize;
 
     /**
      * Device rotation, related to the natural device orientation (0, 1, 2 or 3)
      */
     private final int deviceRotation;
 
-    public ScreenInfo(Rect contentRect, Size videoSize, int deviceRotation) {
+    /**
+     * The locked video orientation (-1: disabled, 0: normal, 1: 90° CCW, 2: 180°, 3: 90° CW)
+     */
+    private final int lockedVideoOrientation;
+
+    public ScreenInfo(Rect contentRect, Size unlockedVideoSize, int deviceRotation, int lockedVideoOrientation) {
         this.contentRect = contentRect;
-        this.videoSize = videoSize;
+        this.unlockedVideoSize = unlockedVideoSize;
         this.deviceRotation = deviceRotation;
+        this.lockedVideoOrientation = lockedVideoOrientation;
     }
 
     public Rect getContentRect() {
         return contentRect;
     }
 
+    /**
+     * Return the video size as if locked video orientation was not set.
+     *
+     * @return the unlocked video size
+     */
+    public Size getUnlockedVideoSize() {
+        return unlockedVideoSize;
+    }
+
+    /**
+     * Return the actual video size if locked video orientation is set.
+     *
+     * @return the actual video size
+     */
     public Size getVideoSize() {
-        return videoSize;
+        if (getVideoRotation() % 2 == 0) {
+            return unlockedVideoSize;
+        }
+
+        return unlockedVideoSize.rotate();
     }
 
     public int getDeviceRotation() {
@@ -43,18 +69,18 @@ public final class ScreenInfo {
         // true if changed between portrait and landscape
         boolean orientationChanged = (deviceRotation + newDeviceRotation) % 2 != 0;
         Rect newContentRect;
-        Size newVideoSize;
+        Size newUnlockedVideoSize;
         if (orientationChanged) {
             newContentRect = flipRect(contentRect);
-            newVideoSize = videoSize.rotate();
+            newUnlockedVideoSize = unlockedVideoSize.rotate();
         } else {
             newContentRect = contentRect;
-            newVideoSize = videoSize;
+            newUnlockedVideoSize = unlockedVideoSize;
         }
-        return new ScreenInfo(newContentRect, newVideoSize, newDeviceRotation);
+        return new ScreenInfo(newContentRect, newUnlockedVideoSize, newDeviceRotation, lockedVideoOrientation);
     }
 
-    public static ScreenInfo computeScreenInfo(DisplayInfo displayInfo, Rect crop, int maxSize) {
+    public static ScreenInfo computeScreenInfo(DisplayInfo displayInfo, Rect crop, int maxSize, int lockedVideoOrientation) {
         int rotation = displayInfo.getRotation();
         Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
@@ -71,7 +97,7 @@ public final class ScreenInfo {
         }
 
         Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotation);
+        return new ScreenInfo(contentRect, videoSize, rotation, lockedVideoOrientation);
     }
 
     private static String formatCrop(Rect rect) {
@@ -108,5 +134,31 @@ public final class ScreenInfo {
 
     private static Rect flipRect(Rect crop) {
         return new Rect(crop.top, crop.left, crop.bottom, crop.right);
+    }
+
+    /**
+     * Return the rotation to apply to the device rotation to get the requested locked video orientation
+     *
+     * @return the rotation offset
+     */
+    public int getVideoRotation() {
+        if (lockedVideoOrientation == -1) {
+            // no offset
+            return 0;
+        }
+        return (deviceRotation + 4 - lockedVideoOrientation) % 4;
+    }
+
+    /**
+     * Return the rotation to apply to the requested locked video orientation to get the device rotation
+     *
+     * @return the (reverse) rotation offset
+     */
+    public int getReverseVideoRotation() {
+        if (lockedVideoOrientation == -1) {
+            // no offset
+            return 0;
+        }
+        return (lockedVideoOrientation + 4 - deviceRotation) % 4;
     }
 }
