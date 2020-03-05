@@ -22,14 +22,12 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
-    private final int lockedVideoOrientation;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        lockedVideoOrientation = options.getLockedVideoOrientation();
         DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize());
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -49,55 +47,28 @@ public final class Device {
         return screenInfo;
     }
 
-    /**
-     * Return the rotation to apply to the device rotation to get the requested locked video orientation
-     *
-     * @param deviceRotation the device rotation
-     * @return the rotation offset
-     */
-    public int getVideoRotation(int deviceRotation) {
-        if (lockedVideoOrientation == -1) {
-            // no offset
-            return 0;
-        }
-        return (deviceRotation + 4 - lockedVideoOrientation) % 4;
-    }
-
-    /**
-     * Return the rotation to apply to the requested locked video orientation to get the device rotation
-     *
-     * @param deviceRotation the device rotation
-     * @return the (reverse) rotation offset
-     */
-    private int getReverseVideoRotation(int deviceRotation) {
-        if (lockedVideoOrientation == -1) {
-            // no offset
-            return 0;
-        }
-        return (lockedVideoOrientation + 4 - deviceRotation) % 4;
-    }
-
     public Point getPhysicalPoint(Position position) {
         // it hides the field on purpose, to read it with a lock
         @SuppressWarnings("checkstyle:HiddenField")
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
-        Size videoSize = screenInfo.getVideoSize();
 
-        int deviceRotation = screenInfo.getDeviceRotation();
-        int reverseVideoRotation = getReverseVideoRotation(deviceRotation);
+        // ignore the locked video orientation, the events will apply in coordinates considered in the physical device orientation
+        Size unlockedVideoSize = screenInfo.getUnlockedVideoSize();
+
+        int reverseVideoRotation = screenInfo.getReverseVideoRotation();
         // reverse the video rotation to apply the events
         Position devicePosition = position.rotate(reverseVideoRotation);
 
         Size clientVideoSize = devicePosition.getScreenSize();
-        if (!videoSize.equals(clientVideoSize)) {
+        if (!unlockedVideoSize.equals(clientVideoSize)) {
             // The client sends a click relative to a video with wrong dimensions,
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
         }
         Rect contentRect = screenInfo.getContentRect();
         Point point = devicePosition.getPoint();
-        int convertedX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
-        int convertedY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
+        int convertedX = contentRect.left + point.getX() * contentRect.width() / unlockedVideoSize.getWidth();
+        int convertedY = contentRect.top + point.getY() * contentRect.height() / unlockedVideoSize.getHeight();
         return new Point(convertedX, convertedY);
     }
 

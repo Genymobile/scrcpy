@@ -66,12 +66,15 @@ public class ScreenEncoder implements Device.RotationListener {
                 IBinder display = createDisplay();
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
+                // include the locked video orientation
                 Rect videoRect = screenInfo.getVideoSize().toRect();
-                int videoRotation = device.getVideoRotation(screenInfo.getDeviceRotation());
-                setSize(format, videoRotation, videoRect.width(), videoRect.height());
+                // does not include the locked video orientation
+                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
+                int videoRotation = screenInfo.getVideoRotation();
+                setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, videoRotation, contentRect, videoRect);
+                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect);
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -170,14 +173,9 @@ public class ScreenEncoder implements Device.RotationListener {
         codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
     }
 
-    private static void setSize(MediaFormat format, int orientation, int width, int height) {
-        if (orientation % 2 == 0) {
-            format.setInteger(MediaFormat.KEY_WIDTH, width);
-            format.setInteger(MediaFormat.KEY_HEIGHT, height);
-            return;
-        }
-        format.setInteger(MediaFormat.KEY_WIDTH, height);
-        format.setInteger(MediaFormat.KEY_HEIGHT, width);
+    private static void setSize(MediaFormat format, int width, int height) {
+        format.setInteger(MediaFormat.KEY_WIDTH, width);
+        format.setInteger(MediaFormat.KEY_HEIGHT, height);
     }
 
     private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect) {
