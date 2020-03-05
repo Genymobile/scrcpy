@@ -40,11 +40,11 @@ public class ControlMessageReader {
         int head = buffer.position();
         int r = input.read(rawBuffer, head, rawBuffer.length - head);
         if (r == -1) {
-            Ln.i("=========================================>>>");
-            Ln.i("head: " + head);
-            Ln.i("rawBuffer.length: " + rawBuffer.length);
-            Ln.i("rawBuffer: " + Arrays.toString(rawBuffer));
-            Ln.i("=========================================<<<");
+//            Ln.i("=========================================>>>");
+//            Ln.i("head: " + head);
+//            Ln.i("rawBuffer.length: " + rawBuffer.length);
+//            Ln.i("rawBuffer: " + Arrays.toString(rawBuffer));
+//            Ln.i("=========================================<<<");
             throw new EOFException("Controller socket closed");
         }
         buffer.position(head + r);

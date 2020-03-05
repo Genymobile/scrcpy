@@ -38,7 +38,8 @@ public final class Size {
             return false;
         }
         Size size = (Size) o;
-        return width == size.width && height == size.height;
+//        return width == size.width && height == size.height;
+        return width == size.width || height == size.height;
     }
 
     @Override

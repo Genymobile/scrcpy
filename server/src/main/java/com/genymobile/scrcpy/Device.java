@@ -106,6 +106,8 @@ public final class Device {
         Size videoSize = screenInfo.getVideoSize();
         Size clientVideoSize = position.getScreenSize();
         if (!videoSize.equals(clientVideoSize)) {
+            Ln.i("video width: " + videoSize.getWidth() + ", video height: " + videoSize.getHeight());
+            Ln.i("client width: " + clientVideoSize.getWidth() + ", client height: " + clientVideoSize.getHeight());
             // The client sends a click relative to a video with wrong dimensions,
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
@@ -194,5 +196,9 @@ public final class Device {
 
     static Rect flipRect(Rect crop) {
         return new Rect(crop.top, crop.left, crop.bottom, crop.right);
+    }
+
+    public int getRotation() {
+        return serviceManager.getWindowManager().getRotation();
     }
 }

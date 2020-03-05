@@ -14,6 +14,9 @@ public class Options {
     //wen add
     private int quality;
     private int scale;
+    private boolean controlOnly;
+    private boolean nalu;
+    private boolean dumpHierarchy;
 
     public int getMaxSize() {
         return maxSize;
@@ -87,4 +90,27 @@ public class Options {
         this.scale = scale;
     }
 
+    public boolean getControlOnly() {
+        return controlOnly;
+    }
+
+    public void setControlOnly(boolean controlOnly) {
+        this.controlOnly = controlOnly;
+    }
+
+    public boolean getNALU() {
+        return nalu;
+    }
+
+    public void setNALU(boolean nalu) {
+        this.nalu = nalu;
+    }
+
+    public boolean getDumpHierarchy() {
+        return dumpHierarchy;
+    }
+
+    public void setDumpHierarchy(boolean dumpHierarchy) {
+        this.dumpHierarchy = dumpHierarchy;
+    }
 }

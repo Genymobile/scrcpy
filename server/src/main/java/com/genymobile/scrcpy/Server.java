@@ -6,21 +6,30 @@ import android.os.Build;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.System;
+
+import java.io.ByteArrayOutputStream;
+import java.io.FileDescriptor;
+
+import android.os.Handler;
 
 public final class Server {
 
     private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
+    private static Handler handler;
 
     private Server() {
         // not instantiable
     }
 
     private static void scrcpy(Options options) throws IOException {
+        AccessibilityNodeInfoDumper dumper = null;
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getQuality(), options.getMaxFps(), options.getScale());
 
+        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
+            ScreenEncoder screenEncoder = new ScreenEncoder(options, device);
+            handler = screenEncoder.getHandler();
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
 
@@ -29,13 +38,26 @@ public final class Server {
                 startDeviceMessageSender(controller.getSender());
             }
 
+            if (options.getDumpHierarchy()) {
+                dumper = new AccessibilityNodeInfoDumper(handler, device, connection);
+                dumper.start();
+            }
+
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, connection.getVideoFd());
+                screenEncoder.streamScreen(device, connection.getVideoChannel());
             } catch (IOException e) {
+                Ln.i("exit: " + e.getMessage());
+                //do exit(0)
+            } finally {
+                if (options.getDumpHierarchy() && dumper != null) {
+                    dumper.stop();
+                }
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
+                System.exit(0);
             }
+
         }
     }
 
@@ -48,7 +70,7 @@ public final class Server {
                 } catch (IOException e) {
                     // this is expected on close
                     Ln.d("Controller stopped");
-                    Ln.d("E:" + e.getMessage());
+                    Common.stopScrcpy(handler, "control");
                 }
             }
         }).start();
@@ -118,7 +140,10 @@ public final class Server {
         org.apache.commons.cli.Options options = new org.apache.commons.cli.Options();
         options.addOption("Q", true, "JPEG quality (0-100)");
         options.addOption("r", true, "Frame rate (frames/s)");
-        options.addOption("P", true, "Display projection (scale 1,2,4...)");
+        options.addOption("P", true, "Display projection (1080, 720, 480...).");
+        options.addOption("c", false, "Control only");
+        options.addOption("L", false, "Library path");
+        options.addOption("D", false, "Dump window hierarchy");
         options.addOption("h", false, "Show help");
         try {
             commandLine = parser.parse(options, args);
@@ -129,25 +154,39 @@ public final class Server {
 
         if (commandLine.hasOption('h')) {
             System.out.println(
-                    "Usage: %s [-h]\n"
+                    "Usage: [-h]\n\n"
+                            + "jpeg:\n"
+                            + "  -r <value>:    Frame rate (frames/sec).\n"
+                            + "  -P <value>:    Display projection (1080, 720, 480, 360...).\n"
                             + "  -Q <value>:    JPEG quality (0-100).\n"
-                            + "  -r <value>:    Frame rate (frames/s).\n"
-                            + "  -P <value>:    Display projection (scale 1,2,4...).\n"
+                            + "\n"
+                            + "  -c:            Control only.\n"
+                            + "  -L:            Library path.\n"
+                            + "  -D:            Dump window hierarchy.\n"
                             + "  -h:            Show help.\n"
             );
             System.exit(0);
         }
-
+        if (commandLine.hasOption('L')) {
+            System.out.println(System.getProperty("java.library.path"));
+            System.exit(0);
+        }
         Options o = new Options();
         o.setMaxSize(0);
-        o.setBitRate(1000000);
         o.setTunnelForward(true);
         o.setCrop(null);
-        o.setSendFrameMeta(true);
         o.setControl(true);
+        // global
         o.setMaxFps(24);
-        o.setQuality(50);
-        o.setScale(2);
+        o.setScale(480);
+        // jpeg
+        o.setQuality(60);
+        o.setBitRate(1000000);
+        o.setSendFrameMeta(true);
+        // control
+        o.setControlOnly(false);
+        // dump
+        o.setDumpHierarchy(false);
         if (commandLine.hasOption('Q')) {
             int i = 0;
             try {
@@ -177,6 +216,12 @@ public final class Server {
             if (i > 0) {
                 o.setScale(i);
             }
+        }
+        if (commandLine.hasOption('c')) {
+            o.setControlOnly(true);
+        }
+        if (commandLine.hasOption('D')) {
+            o.setDumpHierarchy(true);
         }
         return o;
     }
@@ -209,14 +254,14 @@ public final class Server {
     @SuppressWarnings("checkstyle:MagicNumber")
     private static void suggestFix(Throwable e) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (e instanceof MediaCodec.CodecException) {
-                MediaCodec.CodecException mce = (MediaCodec.CodecException) e;
-                if (mce.getErrorCode() == 0xfffffc0e) {
-                    Ln.e("The hardware encoder is not able to encode at the given definition.");
-                    Ln.e("Try with a lower definition:");
-                    Ln.e("    scrcpy -m 1024");
-                }
-            }
+//            if (e instanceof MediaCodec.CodecException) {//api level 21
+//                MediaCodec.CodecException mce = (MediaCodec.CodecException) e;
+//                if (mce.getErrorCode() == 0xfffffc0e) {
+//                    Ln.e("The hardware encoder is not able to encode at the given definition.");
+//                    Ln.e("Try with a lower definition:");
+//                    Ln.e("    scrcpy -m 1024");
+//                }
+//            }
         }
     }
 
@@ -231,10 +276,11 @@ public final class Server {
 
 //        unlinkSelf();
 //        Options options = createOptions(args);
-        Options options = customOptions(args);
-        Ln.i("Options frame rate: " + options.getMaxFps() + " (1 ~ 100)");
+        final Options options = customOptions(args);
+        Ln.i("Options frame rate: " + options.getMaxFps() + " (1 ~ 60)");
         Ln.i("Options quality: " + options.getQuality() + " (1 ~ 100)");
-        Ln.i("Options scale: " + options.getScale() + " (1,2,4...)");
+        Ln.i("Options projection: " + options.getScale() + " (1080, 720, 480, 360...)");
+        Ln.i("Options control only: " + options.getControlOnly() + " (true / false)");
         scrcpy(options);
     }
 }
