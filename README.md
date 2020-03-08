@@ -82,6 +82,12 @@ It is also available in [Chocolatey]:
 choco install scrcpy
 ```
 
+And in [Scoop](https://scoop.sh):
+```bash
+scoop install scrcpy
+```
+
+
 You need `adb`, accessible from your `PATH`. If you don't have it yet:
 
 ```bash
