@@ -83,6 +83,15 @@ choco install scrcpy
 choco install adb    # if you don't have it yet
 ```
 
+And in [Scoop]:
+
+```bash
+scoop install scrcpy
+scoop install adb    # if you don't have it yet
+```
+
+[Scoop]: https://scoop.sh
+
 You can also [build the app manually][BUILD].
 
 
