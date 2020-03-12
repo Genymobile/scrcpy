@@ -20,7 +20,7 @@ public final class Server {
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(),
-                    options.getLockedVideoOrientation());
+                    options.getLockedVideoOrientation(), options.getCodecProfile());
 
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
