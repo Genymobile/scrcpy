@@ -30,19 +30,21 @@ public class ScreenEncoder implements Device.RotationListener {
     private int maxFps;
     private int lockedVideoOrientation;
     private int iFrameInterval;
+    private int codecProfile;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int codecProfile, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.lockedVideoOrientation = lockedVideoOrientation;
+        this.codecProfile = codecProfile;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation) {
-        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int codecProfile) {
+        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, codecProfile, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -64,6 +66,7 @@ public class ScreenEncoder implements Device.RotationListener {
         try {
             do {
                 MediaCodec codec = createCodec();
+                setCodecProfile(codec, format);
                 IBinder display = createDisplay();
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
@@ -137,6 +140,22 @@ public class ScreenEncoder implements Device.RotationListener {
         headerBuffer.putInt(packetSize);
         headerBuffer.flip();
         IO.writeFully(fd, headerBuffer);
+    }
+
+    private void setCodecProfile(MediaCodec codec, MediaFormat format) throws IOException {
+        if(codecProfile == 0) return;
+        int level = 0;
+        for (MediaCodecInfo.CodecProfileLevel profileLevel : codec.getCodecInfo().getCapabilitiesForType("video/avc").profileLevels) {
+            if(profileLevel.profile == codecProfile) {
+                level = Math.max(level, profileLevel.level);
+            }
+        }
+        if(level == 0) throw new IOException("Device doesn't support the requested codec profile.");
+        // Profile (SDK Level 21) and Level (SDK Level 23).
+        format.setInteger(MediaFormat.KEY_PROFILE, codecProfile);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            format.setInteger(MediaFormat.KEY_LEVEL, level);
+        }
     }
 
     private static MediaCodec createCodec() throws IOException {
