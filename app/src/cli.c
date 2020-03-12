@@ -431,6 +431,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
         {"window-borderless",      no_argument,       NULL,
                                                   OPT_WINDOW_BORDERLESS},
+        {"codec-profile",          required_argument, NULL, 'P'},
         {NULL,                     0,                 NULL, 0  },
     };
 
