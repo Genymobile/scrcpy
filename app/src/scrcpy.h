@@ -34,6 +34,7 @@ struct scrcpy_options {
     bool render_expired_frames;
     bool prefer_text;
     bool window_borderless;
+    uint32_t codec_profile;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -64,6 +65,7 @@ struct scrcpy_options {
     .render_expired_frames = false, \
     .prefer_text = false, \
     .window_borderless = false, \
+    .codec_profile = 0, \
 }
 
 bool

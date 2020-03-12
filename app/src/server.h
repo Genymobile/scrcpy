@@ -44,6 +44,7 @@ struct server_params {
     uint16_t max_fps;
     int8_t lock_video_orientation;
     bool control;
+    uint32_t codec_profile;
 };
 
 // init default values
