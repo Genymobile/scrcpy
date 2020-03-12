@@ -80,8 +80,8 @@ public final class Server {
                     "The server version (" + clientVersion + ") does not match the client " + "(" + BuildConfig.VERSION_NAME + ")");
         }
 
-        if (args.length != 9) {
-            throw new IllegalArgumentException("Expecting 9 parameters");
+        if (args.length != 10) {
+            throw new IllegalArgumentException("Expecting 10 parameters");
         }
 
         Options options = new Options();
@@ -98,17 +98,20 @@ public final class Server {
         int lockedVideoOrientation = Integer.parseInt(args[4]);
         options.setLockedVideoOrientation(lockedVideoOrientation);
 
+        int codecProfile = Integer.parseInt(args[5]);
+        options.setCodecProfile(codecProfile);
+
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[5]);
+        boolean tunnelForward = Boolean.parseBoolean(args[6]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[6]);
+        Rect crop = parseCrop(args[7]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[7]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[8]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[8]);
+        boolean control = Boolean.parseBoolean(args[9]);
         options.setControl(control);
 
         return options;
