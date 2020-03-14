@@ -80,12 +80,7 @@ It is also available in [Chocolatey]:
 
 ```bash
 choco install scrcpy
-```
-
-You need `adb`, accessible from your `PATH`. If you don't have it yet:
-
-```bash
-choco install adb
+choco install adb    # if you don't have it yet
 ```
 
 You can also [build the app manually][BUILD].
