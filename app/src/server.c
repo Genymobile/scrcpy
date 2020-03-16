@@ -124,9 +124,11 @@ execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
     char max_fps_string[6];
+    char codec_profile_string[11];
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
+    sprintf(codec_profile_string, "%"PRIu32, params->codec_profile);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,
@@ -146,6 +148,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
+        codec_profile_string,
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
@@ -222,6 +225,7 @@ bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
     server->local_port = params->local_port;
+    server->codec_profile = params->codec_profile;
 
     if (serial) {
         server->serial = SDL_strdup(serial);
