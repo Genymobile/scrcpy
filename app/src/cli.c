@@ -130,6 +130,12 @@ scrcpy_print_usage(const char *arg0) {
         "        Set the initial window width.\n"
         "        Default is 0 (automatic).\n"
         "\n"
+        "    -P, --codec-profile value\n"
+        "        Request specific encoding codec profile, see AVC profiles at:\n"
+        "        https://developer.android.com/reference/android/media/MediaCodecInfo.CodecProfileLevel\n"
+        "        for valid codec profile values.\n"
+        "        Default is 0 (automatic).\n"
+        "\n"
         "Shortcuts:\n"
         "\n"
         "    " CTRL_OR_CMD "+f\n"
@@ -368,6 +374,35 @@ parse_record_format(const char *optarg, enum recorder_format *format) {
     return false;
 }
 
+static bool
+parse_codec_profile(const char *optarg, uint32_t *codec_profile) {
+    long value;
+    // long may be 32 bits (it is the case on mingw), so do not use more than
+    // 31 bits (long is signed)
+    bool ok = parse_integer_arg(optarg, &value, true, 0, 0x7FFFFFFF, "codec-profile");
+    if (!ok) {
+        return false;
+    }
+
+    switch (value) {
+        case 0:         // Automatic
+        case 0x01:      // AVCProfileBaseline
+        case 0x02:      // AVCProfileMain
+        case 0x04:      // AVCProfileExtended
+        case 0x08:      // AVCProfileHigh
+        case 0x10:      // AVCProfileHigh10
+        case 0x20:      // AVCProfileHigh422
+        case 0x40:      // AVCProfileHigh444
+        case 0x10000:   // AVCProfileConstrainedBaseline
+        case 0x80000:   // AVCProfileConstrainedHigh
+            *codec_profile = (uint32_t) value;
+            return true;
+        default:
+            LOGE("Invalid codec-profile, Use -h for help");
+            return false;
+    }
+}
+
 static enum recorder_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
@@ -440,7 +475,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv:P:", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -549,6 +584,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_PREFER_TEXT:
                 opts->prefer_text = true;
+                break;
+            case 'P':
+                if (!parse_codec_profile(optarg, &opts->codec_profile)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr
