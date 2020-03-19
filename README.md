@@ -261,6 +261,16 @@ scrcpy -s 192.168.0.1:5555  # short version
 
 You can start several instances of _scrcpy_ for several devices.
 
+#### Autostart on device connection
+
+You could use [AutoAdb]:
+
+```bash
+autoadb scrcpy -s '{}'
+```
+
+[AutoAdb]: https://github.com/rom1v/usbaudio
+
 #### SSH tunnel
 
 To connect to a remote device, it is possible to connect a local `adb` client to
