@@ -51,7 +51,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, FileDescriptor fd, int layerStack) throws IOException {
+    public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         Workarounds.prepareMainLooper();
         Workarounds.fillAppInfo();
 
@@ -64,6 +64,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 IBinder display = createDisplay();
                 Rect contentRect = device.getScreenInfo().getContentRect();
                 Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
+                int layerStack = device.getScreenInfo().getLayerStack();
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();

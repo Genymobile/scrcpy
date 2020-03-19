@@ -10,7 +10,7 @@ public class Options {
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
-    private int layerStack;
+    private int displayId;
 
     public int getMaxSize() {
         return maxSize;
@@ -68,11 +68,11 @@ public class Options {
         this.control = control;
     }
 
-    public int getLayerStack() {
-        return layerStack;
+    public int getDisplayId() {
+        return displayId;
     }
 
-    public void setLayerStack(int layerStack) {
-        this.layerStack = layerStack;
+    public void setDisplayId(int displayId) {
+        this.displayId = displayId;
     }
 }

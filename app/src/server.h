@@ -37,7 +37,7 @@ struct server_params {
     uint32_t bit_rate;
     uint16_t max_fps;
     bool control;
-    uint16_t layer_stack;
+    uint16_t display_id;
 };
 
 // init default values

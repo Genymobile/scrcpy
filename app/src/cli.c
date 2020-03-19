@@ -41,8 +41,8 @@ scrcpy_print_usage(const char *arg0) {
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
-        "    --layer-stack value\n"
-        "        Specifies the Android layer stack to mirror\n"
+        "    --display-id value\n"
+        "        Specifies the Android display to mirror\n"
         "        Default is 0\n"
         "\n"
         "    --max-fps value\n"
@@ -264,14 +264,14 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 }
 
 static bool
-parse_layer_stack(const char *s, uint16_t *layer_stack) {
+parse_display_id(const char *s, uint16_t *display_id) {
     long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 1000, "layer stack");
+    bool ok = parse_integer_arg(s, &value, false, 0, 1000, "display id");
     if (!ok) {
         return false;
     }
 
-    *layer_stack = (uint16_t) value;
+    *display_id = (uint16_t) value;
     return true;
 }
 
@@ -356,7 +356,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_HEIGHT         1010
 #define OPT_WINDOW_BORDERLESS     1011
 #define OPT_MAX_FPS               1012
-#define OPT_LAYER_STACK           1013
+#define OPT_DISPLAY_ID            1013
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -367,7 +367,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"fullscreen",            no_argument,       NULL, 'f'},
         {"help",                  no_argument,       NULL, 'h'},
         {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
-        {"layer-stack",           required_argument, NULL, OPT_LAYER_STACK},
+        {"display-id",            required_argument, NULL, OPT_DISPLAY_ID},
         {"max-size",              required_argument, NULL, 'm'},
         {"no-control",            no_argument,       NULL, 'n'},
         {"no-display",            no_argument,       NULL, 'N'},
@@ -430,8 +430,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
-            case OPT_LAYER_STACK:
-                if (!parse_layer_stack(optarg, &opts->layer_stack)) {
+            case OPT_DISPLAY_ID:
+                if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
                 }
                 break;
