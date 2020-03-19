@@ -150,6 +150,7 @@ public final class Server {
     }
 
     public static void main(String... args) throws Exception {
+        System.out.println("service starting...");
         Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
             @Override
             public void uncaughtException(Thread t, Throwable e) {

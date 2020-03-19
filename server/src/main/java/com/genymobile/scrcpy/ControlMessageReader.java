@@ -50,8 +50,12 @@ public class ControlMessageReader {
             return null;
         }
         int savedPosition = buffer.position();
-
+        for (int i = 0; i < buffer.remaining(); i++) {
+            System.out.println("value====>" + i + buffer.get(i));
+        }
+        //
         int type = buffer.get();
+        System.out.println("type===>"+type);
         ControlMessage msg;
         switch (type) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
@@ -61,6 +65,7 @@ public class ControlMessageReader {
                 msg = parseInjectText();
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
+                System.out.println("Touch Event");
                 msg = parseInjectTouchEvent();
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:

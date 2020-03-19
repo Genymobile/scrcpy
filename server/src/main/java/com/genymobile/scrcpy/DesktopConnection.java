@@ -47,11 +47,17 @@ public final class DesktopConnection implements Closeable {
         if (tunnelForward) {
             LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
             try {
+                System.out.println("Waiting for video socket connection...");
                 videoSocket = localServerSocket.accept();
+                System.out.println("video socket is connected.");
                 // send one byte so the client may read() to detect a connection error
                 videoSocket.getOutputStream().write(0);
                 try {
+
+                    System.out.println("Waiting for input socket connection...");
                     controlSocket = localServerSocket.accept();
+
+                    System.out.println("input socket is connected.");
                 } catch (IOException | RuntimeException e) {
                     videoSocket.close();
                     throw e;
