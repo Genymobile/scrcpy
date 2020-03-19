@@ -12,7 +12,7 @@ public final class ScreenInfo {
         this.contentRect = contentRect;
         this.videoSize = videoSize;
         this.rotated = rotated;
-	this.layerStack = layerStack;
+        this.layerStack = layerStack;
     }
 
     public Rect getContentRect() {
