@@ -31,7 +31,7 @@ public final class Server {
 
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, connection.getVideoFd(), options.getLayerStack());
+                screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
@@ -107,8 +107,8 @@ public final class Server {
         boolean control = Boolean.parseBoolean(args[7]);
         options.setControl(control);
 
-        int layerStack = Integer.parseInt(args[8]);
-        options.setLayerStack(layerStack);
+        int displayId = Integer.parseInt(args[8]);
+        options.setDisplayId(displayId);
 
         return options;
     }
