@@ -244,7 +244,13 @@ execute_server(struct server *server, const struct server_params *params) {
         "app_process",
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
+# ifdef SERVER_DEBUGGER_METHOD_NEW
+        /* Android 9 and above */
+        "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,server=y,address="
+# else
+        /* Android 8 and below */
         "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
+# endif
             SERVER_DEBUGGER_PORT,
 #endif
         "/", // unused

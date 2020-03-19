@@ -124,6 +124,9 @@ conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
+# select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
+conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == 'new')
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
