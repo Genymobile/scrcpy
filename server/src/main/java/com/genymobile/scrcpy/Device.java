@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
@@ -22,7 +23,7 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
-    private final int displayId;
+    private final DisplayInfo displayInfo;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
@@ -42,6 +43,12 @@ public final class Device {
                 }
             }
         });
+        if (!displayInfo.isSupportProtectedBuffers()) {
+            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
+        }
+        if (!isSupportInputEvents()) {
+            Ln.w("Input events for display with flag FLAG_PRESENTATION, can be supported since API 29");
+        }
     }
 
     public synchronized ScreenInfo getScreenInfo() {
@@ -77,16 +84,24 @@ public final class Device {
         return Build.MODEL;
     }
 
-    public int getDisplayId() {
-        return displayId;
-    }
-
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            InputManager.setDisplayId(inputEvent, displayInfo.getDisplayId());
+        }
+
+
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }
 
     public boolean isScreenOn() {
         return serviceManager.getPowerManager().isScreenOn();
+    }
+
+    public boolean isSupportInputEvents(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            return true;
+        else
+            return !displayInfo.isPresentation();
     }
 
     public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
