@@ -2,7 +2,6 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
 
-import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.InputEvent;
@@ -11,8 +10,6 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 public class Controller {
 
@@ -222,10 +219,10 @@ public class Controller {
     }
 
     private boolean injectEvent(InputEvent event) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-            InputManager.setDisplayId(event, device.getDisplayId());
-        }
-        return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+        if (device.isSupportInputEvents())
+            return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+        else
+            return false;
     }
 
     private boolean pressBackOrTurnScreenOn() {

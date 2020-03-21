@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
@@ -22,13 +23,13 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
-    private final int displayId;
+    private final DisplayInfo displayInfo;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        displayId = options.getDisplayId();
-        screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize(), options.getDisplayId());
+        displayInfo = serviceManager.getDisplayManager().getDisplayInfo(options.getDisplayId());
+        screenInfo = computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -42,14 +43,19 @@ public final class Device {
                 }
             }
         });
+        if (!displayInfo.isSupportProtectedBuffers()) {
+            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
+        }
+        if (!isSupportInputEvents()) {
+            Ln.w("Input events for display with flag FLAG_PRESENTATION, can be supported since API 29");
+        }
     }
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(Rect crop, int maxSize, int displayId) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo(displayId);
+    private ScreenInfo computeScreenInfo(DisplayInfo displayInfo, Rect crop, int maxSize) {
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
@@ -123,16 +129,24 @@ public final class Device {
         return Build.MODEL;
     }
 
-    public int getDisplayId() {
-        return displayId;
-    }
-
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            InputManager.setDisplayId(inputEvent, displayInfo.getDisplayId());
+        }
+
+
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }
 
     public boolean isScreenOn() {
         return serviceManager.getPowerManager().isScreenOn();
+    }
+
+    public boolean isSupportInputEvents(){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
+            return true;
+        else
+            return !displayInfo.isPresentation();
     }
 
     public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
