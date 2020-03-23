@@ -7,11 +7,9 @@ public final class DisplayInfo {
     private final int layerStack;
     private final int flags;
 
-    public static final int DEFAULT_DISPLAY = 0x00000000;
+    public static final int FLAG_SUPPORTS_PROTECTED_BUFFERS = 0x00000001;
 
     public static final int FLAG_PRESENTATION = 0x00000008;
-
-    public static final int FLAG_SUPPORTS_PROTECTED_BUFFERS = 0x00000001;
 
     public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags) {
         this.displayId = displayId;
@@ -38,11 +36,11 @@ public final class DisplayInfo {
     }
 
     public boolean isPresentation() {
-        return (flags & FLAG_PRESENTATION) == FLAG_PRESENTATION;
+        return (flags & FLAG_PRESENTATION) != 0;
     }
 
     public boolean isSupportProtectedBuffers() {
-        return (flags & FLAG_SUPPORTS_PROTECTED_BUFFERS) == FLAG_SUPPORTS_PROTECTED_BUFFERS;
+        return (flags & FLAG_SUPPORTS_PROTECTED_BUFFERS) != 0;
     }
 }
 

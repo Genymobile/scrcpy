@@ -60,7 +60,7 @@ scrcpy_print_usage(const char *arg0) {
         "    -n, --no-control\n"
         "        Disable device control (mirror the device in read-only).\n"
         "\n"
-        "    -d, --display\n"
+        "    --display\n"
         "        Specify the display id to mirror, default 0\n"
         "\n"
         "    -N, --no-display\n"
@@ -413,6 +413,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_BORDERLESS      1011
 #define OPT_MAX_FPS                1012
 #define OPT_LOCK_VIDEO_ORIENTATION 1013
+#define OPT_DISPLAY_ID             1014
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -446,6 +447,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
         {"window-borderless",      no_argument,       NULL,
                                                   OPT_WINDOW_BORDERLESS},
+        {"display",                required_argument, NULL, OPT_DISPLAY_ID},   
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -454,7 +456,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNpd:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -508,7 +510,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
-            case 'd':
+            case OPT_DISPLAY_ID:
                 if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
                 }

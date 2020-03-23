@@ -74,7 +74,7 @@ public class ScreenEncoder implements Device.RotationListener {
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect);
+                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, device.getLayerStack());
                 codec.start();
                 try {
                     alive = encode(codec, fd);

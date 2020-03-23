@@ -23,13 +23,26 @@ public final class Device {
 
     private final ServiceManager serviceManager = new ServiceManager();
 
-    private final DisplayInfo displayInfo;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
+    /**
+     * The surface flinger layer stack associated with this logical display.
+     */
+    private final int layerStack;
+
+    /**
+     * Logical display identifier.
+     */
+    private final int displayId;
+    private final boolean isPresentationDisplay;
+
     public Device(Options options) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo(options.getDisplayId());
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
+        layerStack = displayInfo.getLayerStack();
+        displayId = displayInfo.getDisplayId();
+        isPresentationDisplay = displayInfo.isPresentation();
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -47,12 +60,16 @@ public final class Device {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
         }
         if (!isSupportInputEvents()) {
-            Ln.w("Input events for display with flag FLAG_PRESENTATION, can be supported since API 29");
+            Ln.w("Sorry, can't support input events for displays with FLAG_PRESENTATION flag for devices with API lower then 29");
         }
     }
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
+    }
+
+    public int getLayerStack() {
+        return layerStack;
     }
 
     public Point getPhysicalPoint(Position position) {
@@ -86,7 +103,8 @@ public final class Device {
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-            InputManager.setDisplayId(inputEvent, displayInfo.getDisplayId());
+            if (!InputManager.setDisplayId(inputEvent, displayId))
+                return false;
         }
 
 
@@ -101,7 +119,7 @@ public final class Device {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             return true;
         else
-            return !displayInfo.isPresentation();
+            return !isPresentationDisplay;
     }
 
     public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
