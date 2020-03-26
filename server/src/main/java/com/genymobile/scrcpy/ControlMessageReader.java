@@ -8,10 +8,10 @@ import java.nio.charset.StandardCharsets;
 
 public class ControlMessageReader {
 
-    private static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
-    private static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
-    private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
-    private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
+    static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
+    static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
 
     public static final int TEXT_MAX_LENGTH = 300;
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;

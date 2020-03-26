@@ -28,6 +28,9 @@ public class ControlMessageReaderTest {
         dos.writeInt(KeyEvent.META_CTRL_ON);
         byte[] packet = bos.toByteArray();
 
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_KEYCODE_PAYLOAD_LENGTH, packet.length - 1);
+
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
 
@@ -95,6 +98,9 @@ public class ControlMessageReaderTest {
 
         byte[] packet = bos.toByteArray();
 
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_TOUCH_EVENT_PAYLOAD_LENGTH, packet.length - 1);
+
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
 
@@ -125,6 +131,9 @@ public class ControlMessageReaderTest {
         dos.writeInt(-1);
 
         byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_SCROLL_EVENT_PAYLOAD_LENGTH, packet.length - 1);
 
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
@@ -232,6 +241,9 @@ public class ControlMessageReaderTest {
         dos.writeByte(Device.POWER_MODE_NORMAL);
 
         byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH, packet.length - 1);
 
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
