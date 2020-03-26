@@ -8,6 +8,8 @@
 #include "config.h"
 #include "common.h"
 
+#define WINDOW_POSITION_UNDEFINED (-0x8000)
+
 struct video_buffer;
 
 struct screen {
@@ -53,6 +55,7 @@ void
 screen_init(struct screen *screen);
 
 // initialize screen, create window, renderer and texture (window is hidden)
+// window_x and window_y accept WINDOW_POSITION_UNDEFINED
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,

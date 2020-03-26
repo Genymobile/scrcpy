@@ -1,5 +1,6 @@
 #include "cli.h"
 
+#include <assert.h>
 #include <getopt.h>
 #include <stdint.h>
 #include <unistd.h>
@@ -116,11 +117,11 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    --window-x value\n"
         "        Set the initial window horizontal position.\n"
-        "        Default is -1 (automatic).\n"
+        "        Default is \"auto\".\n"
         "\n"
         "    --window-y value\n"
         "        Set the initial window vertical position.\n"
-        "        Default is -1 (automatic).\n"
+        "        Default is \"auto\".\n"
         "\n"
         "    --window-width value\n"
         "        Set the initial window width.\n"
@@ -302,8 +303,16 @@ parse_lock_video_orientation(const char *s, int8_t *lock_video_orientation) {
 
 static bool
 parse_window_position(const char *s, int16_t *position) {
+    // special value for "auto"
+    static_assert(WINDOW_POSITION_UNDEFINED == -0x8000);
+
+    if (!strcmp(s, "auto")) {
+        *position = WINDOW_POSITION_UNDEFINED;
+        return true;
+    }
+
     long value;
-    bool ok = parse_integer_arg(s, &value, false, -1, 0x7FFF,
+    bool ok = parse_integer_arg(s, &value, false, -0x7FFF, 0x7FFF,
                                 "window position");
     if (!ok) {
         return false;
