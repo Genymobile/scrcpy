@@ -304,7 +304,7 @@ parse_lock_video_orientation(const char *s, int8_t *lock_video_orientation) {
 static bool
 parse_window_position(const char *s, int16_t *position) {
     // special value for "auto"
-    static_assert(WINDOW_POSITION_UNDEFINED == -0x8000);
+    static_assert(WINDOW_POSITION_UNDEFINED == -0x8000, "unexpected value");
 
     if (!strcmp(s, "auto")) {
         *position = WINDOW_POSITION_UNDEFINED;
