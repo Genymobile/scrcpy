@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
@@ -14,6 +15,7 @@ struct server {
     char *serial;
     process_t process;
     SDL_Thread *wait_server_thread;
+    SDL_atomic_t server_socket_closed;
     socket_t server_socket; // only used if !tunnel_forward
     socket_t video_socket;
     socket_t control_socket;
@@ -27,6 +29,7 @@ struct server {
     .serial = NULL, \
     .process = PROCESS_NONE, \
     .wait_server_thread = NULL, \
+    .server_socket_closed = {0}, \
     .server_socket = INVALID_SOCKET, \
     .video_socket = INVALID_SOCKET, \
     .control_socket = INVALID_SOCKET, \
