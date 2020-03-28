@@ -318,14 +318,12 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 }
 
 static void
-close_socket(socket_t *socket) {
-    assert(*socket != INVALID_SOCKET);
-    net_shutdown(*socket, SHUT_RDWR);
-    if (!net_close(*socket)) {
+close_socket(socket_t socket) {
+    assert(socket != INVALID_SOCKET);
+    net_shutdown(socket, SHUT_RDWR);
+    if (!net_close(socket)) {
         LOGW("Could not close socket");
-        return;
     }
-    *socket = INVALID_SOCKET;
 }
 
 void
@@ -337,6 +335,14 @@ static int
 run_wait_server(void *data) {
     struct server *server = data;
     cmd_simple_wait(server->process, NULL); // ignore exit code
+    // no need for synchronization, server_socket is initialized before this
+    // thread was created
+    if (server->server_socket != INVALID_SOCKET
+            && SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+        // On Linux, accept() is unblocked by shutdown(), but on Windows, it is
+        // unblocked by closesocket(). Therefore, call both (close_socket()).
+        close_socket(server->server_socket);
+    }
     LOGD("Server terminated");
     return 0;
 }
@@ -367,6 +373,12 @@ server_start(struct server *server, const char *serial,
         goto error2;
     }
 
+    // If the server process dies before connecting to the server socket, then
+    // the client will be stuck forever on accept(). To avoid the problem, we
+    // must be able to wake up the accept() call when the server dies. To keep
+    // things simple and multiplatform, just spawn a new thread waiting for the
+    // server process and calling shutdown()/close() on the server socket if
+    // necessary to wake up any accept() blocking call.
     server->wait_server_thread =
         SDL_CreateThread(run_wait_server, "wait-server", server);
     if (!server->wait_server_thread) {
@@ -383,7 +395,9 @@ server_start(struct server *server, const char *serial,
 
 error2:
     if (!server->tunnel_forward) {
-        close_socket(&server->server_socket);
+        // the wait server thread is not started, SDL_AtomicSet() is sufficient
+        SDL_AtomicSet(&server->server_socket_closed, 1);
+        close_socket(server->server_socket);
     }
     disable_tunnel(server);
 error1:
@@ -406,7 +420,11 @@ server_connect_to(struct server *server) {
         }
 
         // we don't need the server socket anymore
-        close_socket(&server->server_socket);
+        if (SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+            // close it from here
+            close_socket(server->server_socket);
+            // otherwise, it is closed by run_wait_server()
+        }
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
@@ -433,14 +451,15 @@ server_connect_to(struct server *server) {
 
 void
 server_stop(struct server *server) {
-    if (server->server_socket != INVALID_SOCKET) {
-        close_socket(&server->server_socket);
+    if (server->server_socket != INVALID_SOCKET
+            && SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+        close_socket(server->server_socket);
     }
     if (server->video_socket != INVALID_SOCKET) {
-        close_socket(&server->video_socket);
+        close_socket(server->video_socket);
     }
     if (server->control_socket != INVALID_SOCKET) {
-        close_socket(&server->control_socket);
+        close_socket(server->control_socket);
     }
 
     assert(server->process != PROCESS_NONE);
