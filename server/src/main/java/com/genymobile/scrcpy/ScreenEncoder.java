@@ -145,7 +145,6 @@ public class ScreenEncoder implements Device.RotationListener {
         return MediaCodec.createEncoderByType("video/avc");
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, "video/avc");

@@ -80,7 +80,6 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseTouchEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
@@ -116,7 +115,6 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseScrollEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 

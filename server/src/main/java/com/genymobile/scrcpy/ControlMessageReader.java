@@ -121,7 +121,6 @@ public class ControlMessageReader {
         return ControlMessage.createInjectText(text);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private ControlMessage parseInjectTouchEvent() {
         if (buffer.remaining() < INJECT_TOUCH_EVENT_PAYLOAD_LENGTH) {
             return null;
@@ -171,12 +170,10 @@ public class ControlMessageReader {
         return new Position(x, y, screenWidth, screenHeight);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(short value) {
         return value & 0xffff;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(byte value) {
         return value & 0xff;
     }

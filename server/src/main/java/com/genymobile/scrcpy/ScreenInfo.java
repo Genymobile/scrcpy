@@ -104,7 +104,6 @@ public final class ScreenInfo {
         return rect.width() + ":" + rect.height() + ":" + rect.left + ":" + rect.top;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static Size computeVideoSize(int w, int h, int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:

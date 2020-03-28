@@ -47,7 +47,6 @@ public class Controller {
         }
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void control() throws IOException {
         // on start, power on the device
         if (!device.isScreenOn()) {

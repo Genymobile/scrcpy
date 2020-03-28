@@ -69,7 +69,6 @@ public final class Server {
         }).start();
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
         if (args.length < 1) {
             throw new IllegalArgumentException("Missing client version");
@@ -115,7 +114,6 @@ public final class Server {
         return options;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static Rect parseCrop(String crop) {
         if ("-".equals(crop)) {
             return null;
@@ -140,7 +138,6 @@ public final class Server {
         }
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static void suggestFix(Throwable e) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (e instanceof MediaCodec.CodecException) {
