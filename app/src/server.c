@@ -382,9 +382,7 @@ server_start(struct server *server, const char *serial,
     server->wait_server_thread =
         SDL_CreateThread(run_wait_server, "wait-server", server);
     if (!server->wait_server_thread) {
-        if (!cmd_terminate(server->process)) {
-            LOGW("Could not terminate server");
-        }
+        cmd_terminate(server->process);
         cmd_simple_wait(server->process, NULL); // ignore exit code
         goto error2;
     }
@@ -464,9 +462,7 @@ server_stop(struct server *server) {
 
     assert(server->process != PROCESS_NONE);
 
-    if (!cmd_terminate(server->process)) {
-        LOGW("Could not terminate server");
-    }
+    cmd_terminate(server->process);
 
     if (server->tunnel_enabled) {
         // ignore failure
