@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
+#include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
 
@@ -332,6 +333,14 @@ server_init(struct server *server) {
     *server = (struct server) SERVER_INITIALIZER;
 }
 
+static int
+run_wait_server(void *data) {
+    struct server *server = data;
+    cmd_simple_wait(server->process, NULL); // ignore exit code
+    LOGD("Server terminated");
+    return 0;
+}
+
 bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
@@ -355,6 +364,16 @@ server_start(struct server *server, const char *serial,
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
+        goto error2;
+    }
+
+    server->wait_server_thread =
+        SDL_CreateThread(run_wait_server, "wait-server", server);
+    if (!server->wait_server_thread) {
+        if (!cmd_terminate(server->process)) {
+            LOGW("Could not terminate server");
+        }
+        cmd_simple_wait(server->process, NULL); // ignore exit code
         goto error2;
     }
 
@@ -430,13 +449,12 @@ server_stop(struct server *server) {
         LOGW("Could not terminate server");
     }
 
-    cmd_simple_wait(server->process, NULL); // ignore exit code
-    LOGD("Server terminated");
-
     if (server->tunnel_enabled) {
         // ignore failure
         disable_tunnel(server);
     }
+
+    SDL_WaitThread(server->wait_server_thread, NULL);
 }
 
 void
