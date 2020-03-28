@@ -345,30 +345,31 @@ server_start(struct server *server, const char *serial,
     }
 
     if (!push_server(serial)) {
-        SDL_free(server->serial);
-        return false;
+        goto error1;
     }
 
     if (!enable_tunnel_any_port(server, params->port_range)) {
-        SDL_free(server->serial);
-        return false;
+        goto error1;
     }
 
     // server will connect to our server socket
     server->process = execute_server(server, params);
-
     if (server->process == PROCESS_NONE) {
-        if (!server->tunnel_forward) {
-            close_socket(&server->server_socket);
-        }
-        disable_tunnel(server);
-        SDL_free(server->serial);
-        return false;
+        goto error2;
     }
 
     server->tunnel_enabled = true;
 
     return true;
+
+error2:
+    if (!server->tunnel_forward) {
+        close_socket(&server->server_socket);
+    }
+    disable_tunnel(server);
+error1:
+    SDL_free(server->serial);
+    return false;
 }
 
 bool
