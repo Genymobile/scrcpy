@@ -5,6 +5,7 @@
 #include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
@@ -337,6 +338,10 @@ static int
 run_wait_server(void *data) {
     struct server *server = data;
     cmd_simple_wait(server->process, NULL); // ignore exit code
+
+    // wake up any net_select_interruptible()
+    close(server->pipe_intr[1]);
+
     LOGD("Server terminated");
     return 0;
 }
@@ -361,10 +366,16 @@ server_start(struct server *server, const char *serial,
         goto error1;
     }
 
+    bool ok = net_pipe(server->pipe_intr);
+    if (!ok) {
+        perror("pipe");
+        goto error2;
+    }
+
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
-        goto error2;
+        goto error3;
     }
 
     server->wait_server_thread =
@@ -374,13 +385,16 @@ server_start(struct server *server, const char *serial,
             LOGW("Could not terminate server");
         }
         cmd_simple_wait(server->process, NULL); // ignore exit code
-        goto error2;
+        goto error3;
     }
 
     server->tunnel_enabled = true;
 
     return true;
 
+error3:
+    close(server->pipe_intr[0]);
+    close(server->pipe_intr[1]);
 error2:
     if (!server->tunnel_forward) {
         close_socket(&server->server_socket);
@@ -394,16 +408,31 @@ error1:
 bool
 server_connect_to(struct server *server) {
     if (!server->tunnel_forward) {
+        bool acceptable = net_select_interruptible(server->server_socket,
+                                                   server->pipe_intr[0]);
+        if (!acceptable) {
+            // the process died, accept() would never succeed
+            return false;
+        }
+
         server->video_socket = net_accept(server->server_socket);
         if (server->video_socket == INVALID_SOCKET) {
             return false;
         }
 
+        acceptable = net_select_interruptible(server->server_socket,
+                                              server->pipe_intr[0]);
+        if (!acceptable) {
+            // the process died, accept() would never succeed
+            return false;
+        }
         server->control_socket = net_accept(server->server_socket);
         if (server->control_socket == INVALID_SOCKET) {
             // the video_socket will be cleaned up on destroy
             return false;
         }
+
+        close(server->pipe_intr[0]);
 
         // we don't need the server socket anymore
         close_socket(&server->server_socket);

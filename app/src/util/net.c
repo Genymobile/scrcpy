@@ -1,16 +1,22 @@
 #include "net.h"
 
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <SDL2/SDL_platform.h>
 
 #include "config.h"
+#include "common.h"
 #include "log.h"
 
 #ifdef __WINDOWS__
+# include <io.h>
+# include <winsock2.h>
   typedef int socklen_t;
 #else
-# include <sys/types.h>
+# include <sys/select.h>
 # include <sys/socket.h>
+# include <sys/types.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <unistd.h>
@@ -143,5 +149,40 @@ net_close(socket_t socket) {
     return !closesocket(socket);
 #else
     return !close(socket);
+#endif
+}
+
+bool
+net_select_interruptible(int fd, int fd_intr) {
+    fd_set rfds;
+
+    FD_ZERO(&rfds);
+    FD_SET(fd, &rfds);
+    FD_SET(fd_intr, &rfds);
+
+    int nfds = MAX(fd, fd_intr) + 1;
+
+    // use select() because it's available on supported platforms
+    int r = select(nfds, &rfds, NULL, NULL, NULL);
+    if (r == -1) {
+        // failure
+        return false;
+    }
+    assert(r > 0);
+    if (FD_ISSET(fd_intr, &rfds)) {
+        // interrupted is set
+        return false;
+    }
+
+    assert(FD_ISSET(fd, &rfds));
+    return true;
+}
+
+bool
+net_pipe(int fds[static 2]) {
+#ifdef __WINDOWS__
+    return !_pipe(fds, 4096, 0);
+#else
+    return !pipe(fds);
 #endif
 }

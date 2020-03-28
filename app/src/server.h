@@ -14,6 +14,7 @@ struct server {
     char *serial;
     process_t process;
     SDL_Thread *wait_server_thread;
+    int pipe_intr[2]; // to wake up blocking accept() on process exit
     socket_t server_socket; // only used if !tunnel_forward
     socket_t video_socket;
     socket_t control_socket;

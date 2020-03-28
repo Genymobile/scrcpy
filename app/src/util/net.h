@@ -54,4 +54,12 @@ net_shutdown(socket_t socket, int how);
 bool
 net_close(socket_t socket);
 
+// wait for fd or fd_intr to be readable
+// return true if fd is readable and fd_intr is not
+bool
+net_select_interruptible(int fd, int fd_intr);
+
+bool
+net_pipe(int fd[static 2]);
+
 #endif
