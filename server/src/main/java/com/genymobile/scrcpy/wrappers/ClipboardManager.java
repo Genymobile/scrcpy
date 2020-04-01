@@ -74,13 +74,15 @@ public class ClipboardManager {
         }
     }
 
-    public void setText(CharSequence text) {
+    public boolean setText(CharSequence text) {
         try {
             Method method = getSetPrimaryClipMethod();
             ClipData clipData = ClipData.newPlainText(null, text);
             setPrimaryClip(method, manager, clipData);
+            return true;
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
+            return false;
         }
     }
 }

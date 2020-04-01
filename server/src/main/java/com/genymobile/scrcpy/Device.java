@@ -163,8 +163,10 @@ public final class Device {
     }
 
     public void setClipboardText(String text) {
-        serviceManager.getClipboardManager().setText(text);
-        Ln.i("Device clipboard set");
+        boolean ok = serviceManager.getClipboardManager().setText(text);
+        if (ok) {
+            Ln.i("Device clipboard set");
+        }
     }
 
     /**
@@ -176,8 +178,10 @@ public final class Device {
             Ln.e("Could not get built-in display");
             return;
         }
-        SurfaceControl.setDisplayPowerMode(d, mode);
-        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+        boolean ok = SurfaceControl.setDisplayPowerMode(d, mode);
+        if (ok) {
+            Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+        }
     }
 
     /**
