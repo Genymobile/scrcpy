@@ -338,7 +338,7 @@ run_wait_server(void *data) {
     // no need for synchronization, server_socket is initialized before this
     // thread was created
     if (server->server_socket != INVALID_SOCKET
-            && SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
         // On Linux, accept() is unblocked by shutdown(), but on Windows, it is
         // unblocked by closesocket(). Therefore, call both (close_socket()).
         close_socket(server->server_socket);
@@ -393,8 +393,11 @@ server_start(struct server *server, const char *serial,
 
 error2:
     if (!server->tunnel_forward) {
-        // the wait server thread is not started, SDL_AtomicSet() is sufficient
-        SDL_AtomicSet(&server->server_socket_closed, 1);
+        bool was_closed =
+            atomic_flag_test_and_set(&server->server_socket_closed);
+        // the thread is not started, the flag could not be already set
+        assert(!was_closed);
+        (void) was_closed;
         close_socket(server->server_socket);
     }
     disable_tunnel(server);
@@ -418,7 +421,7 @@ server_connect_to(struct server *server) {
         }
 
         // we don't need the server socket anymore
-        if (SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+        if (!atomic_flag_test_and_set(&server->server_socket_closed)) {
             // close it from here
             close_socket(server->server_socket);
             // otherwise, it is closed by run_wait_server()
@@ -450,7 +453,7 @@ server_connect_to(struct server *server) {
 void
 server_stop(struct server *server) {
     if (server->server_socket != INVALID_SOCKET
-            && SDL_AtomicCAS(&server->server_socket_closed, 0, 1)) {
+            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
         close_socket(server->server_socket);
     }
     if (server->video_socket != INVALID_SOCKET) {
