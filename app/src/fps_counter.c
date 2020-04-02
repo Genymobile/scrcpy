@@ -23,7 +23,7 @@ fps_counter_init(struct fps_counter *counter) {
     }
 
     counter->thread = NULL;
-    SDL_AtomicSet(&counter->started, 0);
+    atomic_init(&counter->started, 0);
     // no need to initialize the other fields, they are unused until started
 
     return true;
@@ -33,6 +33,16 @@ void
 fps_counter_destroy(struct fps_counter *counter) {
     SDL_DestroyCond(counter->state_cond);
     SDL_DestroyMutex(counter->mutex);
+}
+
+static inline bool
+is_started(struct fps_counter *counter) {
+    return atomic_load_explicit(&counter->started, memory_order_acquire);
+}
+
+static inline void
+set_started(struct fps_counter *counter, bool started) {
+    atomic_store_explicit(&counter->started, started, memory_order_release);
 }
 
 // must be called with mutex locked
@@ -70,10 +80,10 @@ run_fps_counter(void *data) {
 
     mutex_lock(counter->mutex);
     while (!counter->interrupted) {
-        while (!counter->interrupted && !SDL_AtomicGet(&counter->started)) {
+        while (!counter->interrupted && !is_started(counter)) {
             cond_wait(counter->state_cond, counter->mutex);
         }
-        while (!counter->interrupted && SDL_AtomicGet(&counter->started)) {
+        while (!counter->interrupted && is_started(counter)) {
             uint32_t now = SDL_GetTicks();
             check_interval_expired(counter, now);
 
@@ -96,7 +106,7 @@ fps_counter_start(struct fps_counter *counter) {
     counter->nr_skipped = 0;
     mutex_unlock(counter->mutex);
 
-    SDL_AtomicSet(&counter->started, 1);
+    set_started(counter, true);
     cond_signal(counter->state_cond);
 
     // counter->thread is always accessed from the same thread, no need to lock
@@ -114,13 +124,13 @@ fps_counter_start(struct fps_counter *counter) {
 
 void
 fps_counter_stop(struct fps_counter *counter) {
-    SDL_AtomicSet(&counter->started, 0);
+    set_started(counter, false);
     cond_signal(counter->state_cond);
 }
 
 bool
 fps_counter_is_started(struct fps_counter *counter) {
-    return SDL_AtomicGet(&counter->started);
+    return is_started(counter);
 }
 
 void
@@ -145,7 +155,7 @@ fps_counter_join(struct fps_counter *counter) {
 
 void
 fps_counter_add_rendered_frame(struct fps_counter *counter) {
-    if (!SDL_AtomicGet(&counter->started)) {
+    if (!is_started(counter)) {
         return;
     }
 
@@ -158,7 +168,7 @@ fps_counter_add_rendered_frame(struct fps_counter *counter) {
 
 void
 fps_counter_add_skipped_frame(struct fps_counter *counter) {
-    if (!SDL_AtomicGet(&counter->started)) {
+    if (!is_started(counter)) {
         return;
     }
 
