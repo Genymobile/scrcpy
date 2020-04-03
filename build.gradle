@@ -24,3 +24,9 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+tasks {
+    wrapper {
+        distributionType = Wrapper.DistributionType.ALL
+    }
+}
