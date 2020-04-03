@@ -14,6 +14,8 @@ assignees: ''
  - OS: [e.g. Debian, Windows, macOS...]
  - scrcpy version: [e.g. 1.12.1]
  - installation method: [e.g. manual build, apt, snap, brew, Windows release...]
+ - device model:
+ - Android version: [e.g. 10]
 
 **Describe the bug**
 A clear and concise description of what the bug is.
