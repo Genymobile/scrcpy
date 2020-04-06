@@ -12,9 +12,9 @@ public final class DisplayManager {
         this.manager = manager;
     }
 
-    public DisplayInfo getDisplayInfo() {
+    public DisplayInfo getDisplayInfo(int display) {
         try {
-            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, 0);
+            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, display);
             Class<?> cls = displayInfo.getClass();
             // width and height already take the rotation into account
             int width = cls.getDeclaredField("logicalWidth").getInt(displayInfo);

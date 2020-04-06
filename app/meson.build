@@ -110,6 +110,10 @@ conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
+# the default display number
+# overridden by option --display
+conf.set('DEFAULT_DISPLAY_ID', '0')  # Primary display
+
 # enable High DPI support
 conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 

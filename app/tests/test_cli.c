@@ -48,6 +48,7 @@ static void test_options(void) {
         "--fullscreen",
         "--max-fps", "30",
         "--max-size", "1024",
+        "--display", "1",
         // "--no-control" is not compatible with "--turn-screen-off"
         // "--no-display" is not compatible with "--fulscreen"
         "--port", "1234",
@@ -78,6 +79,7 @@ static void test_options(void) {
     assert(opts->fullscreen);
     assert(opts->max_fps == 30);
     assert(opts->max_size == 1024);
+    assert(opts->display_id == 1);
     assert(opts->port == 1234);
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));

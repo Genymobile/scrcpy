@@ -35,6 +35,10 @@ scrcpy_print_usage(const char *arg0) {
         "        (typically, portrait for a phone, landscape for a tablet).\n"
         "        Any --max-size value is computed on the cropped size.\n"
         "\n"
+        "    -d, --display value\n"
+        "        Use specified display in multi-display Android systems.\n"
+        "        Default is %d.\n"
+        "\n"
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
@@ -192,6 +196,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n",
         arg0,
         DEFAULT_BIT_RATE,
+        DEFAULT_DISPLAY_ID,
         DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
         DEFAULT_LOCAL_PORT);
 }
@@ -234,6 +239,19 @@ parse_bit_rate(const char *s, uint32_t *bit_rate) {
     *bit_rate = (uint32_t) value;
     return true;
 }
+
+static bool
+parse_display_id(const char *s, uint16_t *display_id) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "display");
+    if (!ok) {
+        return false;
+    }
+
+    *display_id = (uint16_t) value;
+    return true;
+}
+
 
 static bool
 parse_max_size(const char *s, uint16_t *max_size) {
@@ -347,6 +365,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"always-on-top",         no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",              required_argument, NULL, 'b'},
         {"crop",                  required_argument, NULL, OPT_CROP},
+        {"display",               required_argument, NULL, 'd'},
         {"fullscreen",            no_argument,       NULL, 'f'},
         {"help",                  no_argument,       NULL, 'h'},
         {"max-fps",               required_argument, NULL, OPT_MAX_FPS},
@@ -379,7 +398,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:d:fF:hm:nNp:r:s:StTv", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -390,6 +409,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case 'c':
                 LOGW("Deprecated option -c. Use --crop instead.");
                 // fall through
+            case 'd':
+                if (!parse_display_id(optarg, &opts->display_id)) {
+                    return false;
+                }
+                break;
             case OPT_CROP:
                 opts->crop = optarg;
                 break;

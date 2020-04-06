@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.MotionEventWrapper;
 
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -179,9 +180,10 @@ public class Controller {
             }
         }
 
-        MotionEvent event = MotionEvent
+        MotionEvent event = MotionEventWrapper
                 .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
-                        InputDevice.SOURCE_TOUCHSCREEN, 0);
+                        InputDevice.SOURCE_TOUCHSCREEN, device.getScreenInfo().getDisplayId(), 0);
+
         return injectEvent(event);
     }
 
@@ -202,9 +204,9 @@ public class Controller {
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
-        MotionEvent event = MotionEvent
+        MotionEvent event = MotionEventWrapper
                 .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
-                        InputDevice.SOURCE_MOUSE, 0);
+                        InputDevice.SOURCE_MOUSE, device.getScreenInfo().getDisplayId(), 0);
         return injectEvent(event);
     }
 

@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import android.graphics.Rect;
 
 public class Options {
+    private int displayId;
     private int maxSize;
     private int bitRate;
     private int maxFps;
@@ -10,6 +11,14 @@ public class Options {
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
+
+    public int getDisplayId() {
+        return displayId;
+    }
+
+    public void setDisplayId(int displayId) {
+        this.displayId = displayId;
+    }
 
     public int getMaxSize() {
         return maxSize;

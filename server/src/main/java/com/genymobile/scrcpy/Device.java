@@ -26,7 +26,8 @@ public final class Device {
     private RotationListener rotationListener;
 
     public Device(Options options) {
-        screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize());
+        int displayId = options.getDisplayId();
+        screenInfo = computeScreenInfo(displayId, options.getCrop(), options.getMaxSize());
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
@@ -39,15 +40,15 @@ public final class Device {
                     }
                 }
             }
-        });
+        }, displayId);
     }
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
+    private ScreenInfo computeScreenInfo(int displayId, Rect crop, int maxSize) {
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo(displayId);
         boolean rotated = (displayInfo.getRotation() & 1) != 0;
         Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
@@ -64,7 +65,7 @@ public final class Device {
         }
 
         Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotated);
+        return new ScreenInfo(displayId, contentRect, videoSize, rotated);
     }
 
     private static String formatCrop(Rect rect) {
@@ -129,8 +130,8 @@ public final class Device {
         return serviceManager.getPowerManager().isScreenOn();
     }
 
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
-        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher);
+    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
+        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
     }
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
