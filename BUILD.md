@@ -8,6 +8,22 @@ case, use the [prebuilt server] (so you will not need Java or the Android SDK).
 
 [prebuilt server]: #prebuilt-server
 
+## Branches
+
+### `master`
+
+The `master` branch concerns the latest release, and is the home page of the
+project on Github.
+
+
+### `dev`
+
+`dev` is the current development branch. Every commit present in `dev` will be
+in the next release.
+
+If you want to contribute code, please base your commits on the latest `dev`
+branch.
+
 
 ## Requirements
 
