@@ -263,3 +263,6 @@ meson x --buildtype release --strip -Db_lto=true \
 ninja -Cx
 sudo ninja -Cx install
 ```
+
+The server only works with a matching client version (this server works with the
+`master` branch).
