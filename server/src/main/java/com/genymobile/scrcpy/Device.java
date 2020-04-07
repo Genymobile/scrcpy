@@ -67,7 +67,7 @@ public final class Device {
                     }
                 }
             }
-        });
+        }, displayId);
 
         if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
@@ -138,8 +138,8 @@ public final class Device {
         return serviceManager.getPowerManager().isScreenOn();
     }
 
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
-        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher);
+    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
+        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
     }
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
