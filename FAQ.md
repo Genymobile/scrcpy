@@ -132,7 +132,7 @@ that's all. See [#37].
 
 ## Client issues
 
-### The quality is low on HiDPI display
+### The quality is low
 
 On Windows, you may need to configure the [scaling behavior].
 
@@ -141,8 +141,9 @@ On Windows, you may need to configure the [scaling behavior].
 
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
 
-If your computer definition is far smaller than your screen, then you'll get
-poor quality. See [#40].
+If the definition of your client window is far smaller than that of your device
+screen, then you'll get poor quality. This is especially visible on text. See
+[#40].
 
 [#40]: https://github.com/Genymobile/scrcpy/issues/40
 
