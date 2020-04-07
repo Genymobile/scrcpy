@@ -491,6 +491,8 @@ Also see [issue #14].
  | Action                                 |   Shortcut                    |   Shortcut (macOS)
  | -------------------------------------- |:----------------------------- |:-----------------------------
  | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Rotate display left                    | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
+ | Rotate display right                   | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
  | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
  | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
  | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_

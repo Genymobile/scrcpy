@@ -22,6 +22,8 @@ struct screen {
     // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
     // able to revert the size to its non-maximized value.
     struct size windowed_window_size_backup;
+    // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
+    unsigned rotation;
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -44,6 +46,7 @@ struct screen {
         .width = 0, \
         .height = 0, \
     }, \
+    .rotation = 0, \
     .has_frame = false, \
     .fullscreen = false, \
     .maximized = false, \
@@ -89,6 +92,10 @@ screen_resize_to_fit(struct screen *screen);
 // resize window to 1:1 (pixel-perfect)
 void
 screen_resize_to_pixel_perfect(struct screen *screen);
+
+// set the display rotation (0, 1, 2 or 3, x90 degrees counterclockwise)
+void
+screen_set_rotation(struct screen *screen, unsigned rotation);
 
 // react to window events
 void

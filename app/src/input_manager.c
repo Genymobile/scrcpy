@@ -221,6 +221,18 @@ rotate_device(struct controller *controller) {
     }
 }
 
+static void
+rotate_client_left(struct screen *screen) {
+    unsigned new_rotation = (screen->rotation + 1) % 4;
+    screen_set_rotation(screen, new_rotation);
+}
+
+static void
+rotate_client_right(struct screen *screen) {
+    unsigned new_rotation = (screen->rotation + 3) % 4;
+    screen_set_rotation(screen, new_rotation);
+}
+
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
@@ -349,6 +361,16 @@ input_manager_process_key(struct input_manager *im,
                 if (control && cmd && !shift) {
                     // forward repeated events
                     action_volume_up(controller, action);
+                }
+                return;
+            case SDLK_LEFT:
+                if (cmd && !shift && down) {
+                    rotate_client_left(im->screen);
+                }
+                return;
+            case SDLK_RIGHT:
+                if (cmd && !shift && down) {
+                    rotate_client_right(im->screen);
                 }
                 return;
             case SDLK_c:
