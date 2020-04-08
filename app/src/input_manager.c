@@ -543,8 +543,8 @@ input_manager_process_touch(struct input_manager *im,
 static bool
 is_outside_device_screen(struct input_manager *im, int x, int y)
 {
-    return x < 0 || x >= im->screen->frame_size.width ||
-           y < 0 || y >= im->screen->frame_size.height;
+    return x < 0 || x >= im->screen->content_size.width ||
+           y < 0 || y >= im->screen->content_size.height;
 }
 
 static bool
