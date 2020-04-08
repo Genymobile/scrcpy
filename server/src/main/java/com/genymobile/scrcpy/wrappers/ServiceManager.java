@@ -6,7 +6,7 @@ import android.os.IInterface;
 
 import java.lang.reflect.Method;
 
-@SuppressLint("PrivateApi")
+@SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ServiceManager {
     private final Method getServiceMethod;
 

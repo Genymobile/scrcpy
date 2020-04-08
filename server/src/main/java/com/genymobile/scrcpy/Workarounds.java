@@ -28,7 +28,7 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    @SuppressLint("PrivateApi")
+    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     public static void fillAppInfo() {
         try {
             // ActivityThread activityThread = new ActivityThread();
