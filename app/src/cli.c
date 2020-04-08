@@ -628,11 +628,6 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         return false;
     }
 
-    if (!opts->display && opts->fullscreen) {
-        LOGE("-f/--fullscreen-window is incompatible with -N/--no-display");
-        return false;
-    }
-
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
