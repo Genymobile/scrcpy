@@ -17,6 +17,7 @@ struct screen {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     struct size frame_size;
+    struct size content_size; // rotated frame_size
     // The window size the last time it was not maximized or fullscreen.
     struct size windowed_window_size;
     // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
@@ -35,7 +36,11 @@ struct screen {
     .renderer = NULL, \
     .texture = NULL, \
     .frame_size = { \
-        .width = 0,  \
+        .width = 0, \
+        .height = 0, \
+    }, \
+    .content_size = { \
+        .width = 0, \
         .height = 0, \
     }, \
     .windowed_window_size = { \

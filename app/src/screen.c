@@ -185,8 +185,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     if (rotation) {
         LOGI("Initial display rotation set to %u", rotation);
     }
-    struct size content_size =
-        get_rotated_size(frame_size, screen->rotation);
+    struct size content_size = get_rotated_size(frame_size, screen->rotation);
+    screen->content_size = content_size;
 
     struct size window_size =
         get_initial_optimal_size(content_size, window_width, window_height);
@@ -280,8 +280,7 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
         return;
     }
 
-    struct size old_content_size =
-        get_rotated_size(screen->frame_size, screen->rotation);
+    struct size old_content_size = screen->content_size;
     struct size new_content_size =
         get_rotated_size(screen->frame_size, rotation);
 
@@ -302,6 +301,7 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
     target_size = get_optimal_size(target_size, new_content_size);
     set_window_size(screen, target_size);
 
+    screen->content_size = new_content_size;
     screen->rotation = rotation;
     LOGI("Display rotation set to %u", rotation);
 
@@ -325,8 +325,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
-        struct size content_size =
-            get_rotated_size(screen->frame_size, screen->rotation);
+        struct size content_size = screen->content_size;
         struct size windowed_size = get_windowed_window_size(screen);
         struct size target_size = {
             (uint32_t) windowed_size.width * new_content_size.width
@@ -338,6 +337,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
         set_window_size(screen, target_size);
 
         screen->frame_size = new_frame_size;
+        screen->content_size = new_content_size;
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
@@ -390,8 +390,7 @@ screen_render(struct screen *screen) {
         SDL_Rect *dstrect = NULL;
         SDL_Rect rect;
         if (screen->rotation & 1) {
-            struct size size =
-                get_rotated_size(screen->frame_size, screen->rotation);
+            struct size size = screen->content_size;
             rect.x = (size.width - size.height) / 2;
             rect.y = (size.height - size.width) / 2;
             rect.w = size.height;
@@ -431,10 +430,8 @@ screen_resize_to_fit(struct screen *screen) {
         screen->maximized = false;
     }
 
-    struct size content_size =
-        get_rotated_size(screen->frame_size, screen->rotation);
     struct size optimal_size =
-        get_optimal_window_size(screen, content_size);
+        get_optimal_window_size(screen, screen->content_size);
     SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
     LOGD("Resized to optimal size");
 }
@@ -450,8 +447,7 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
         screen->maximized = false;
     }
 
-    struct size content_size =
-        get_rotated_size(screen->frame_size, screen->rotation);
+    struct size content_size = screen->content_size;
     SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
     LOGD("Resized to pixel-perfect");
 }
