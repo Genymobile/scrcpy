@@ -104,6 +104,11 @@ scrcpy_print_usage(const char *arg0) {
         "        This flag forces to render all frames, at a cost of a\n"
         "        possible increased latency.\n"
         "\n"
+        "    --rotation value\n"
+        "        Set the initial display rotation.\n"
+        "        Possibles values are 0, 1, 2 and 3. Each increment adds a 90\n"
+        "        degrees rotation counterclockwise.\n"
+        "\n"
         "    -s, --serial serial\n"
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
@@ -317,6 +322,18 @@ parse_lock_video_orientation(const char *s, int8_t *lock_video_orientation) {
 }
 
 static bool
+parse_rotation(const char *s, uint8_t *rotation) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 3, "rotation");
+    if (!ok) {
+        return false;
+    }
+
+    *rotation = (uint8_t) value;
+    return true;
+}
+
+static bool
 parse_window_position(const char *s, int16_t *position) {
     // special value for "auto"
     static_assert(WINDOW_POSITION_UNDEFINED == -0x8000, "unexpected value");
@@ -435,6 +452,7 @@ guess_record_format(const char *filename) {
 #define OPT_MAX_FPS                1012
 #define OPT_LOCK_VIDEO_ORIENTATION 1013
 #define OPT_DISPLAY_ID             1014
+#define OPT_ROTATION               1015
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -455,6 +473,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
         {"record",                 required_argument, NULL, 'r'},
         {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
+        {"rotation",               required_argument, NULL, OPT_ROTATION},
         {"render-expired-frames",  no_argument,       NULL,
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                 required_argument, NULL, 's'},
@@ -591,6 +610,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_PREFER_TEXT:
                 opts->prefer_text = true;
+                break;
+            case OPT_ROTATION:
+                if (!parse_rotation(optarg, &opts->rotation)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr

@@ -63,7 +63,8 @@ bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless);
+                      uint16_t window_height, bool window_borderless,
+                      uint8_t rotation);
 
 // show the window
 void

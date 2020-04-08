@@ -21,6 +21,7 @@ struct scrcpy_options {
     uint32_t bit_rate;
     uint16_t max_fps;
     int8_t lock_video_orientation;
+    uint8_t rotation;
     int16_t window_x; // WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;
@@ -52,6 +53,7 @@ struct scrcpy_options {
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
     .lock_video_orientation = DEFAULT_LOCK_VIDEO_ORIENTATION, \
+    .rotation = 0, \
     .window_x = WINDOW_POSITION_UNDEFINED, \
     .window_y = WINDOW_POSITION_UNDEFINED, \
     .window_width = 0, \

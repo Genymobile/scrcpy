@@ -178,8 +178,13 @@ bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless) {
+                      uint16_t window_height, bool window_borderless,
+                      uint8_t rotation) {
     screen->frame_size = frame_size;
+    screen->rotation = rotation;
+    if (rotation) {
+        LOGI("Initial display rotation set to %u", rotation);
+    }
     struct size content_size =
         get_rotated_size(frame_size, screen->rotation);
 

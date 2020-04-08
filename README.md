@@ -340,6 +340,33 @@ scrcpy -f  # short version
 
 Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
 
+#### Rotation
+
+The window may be rotated:
+
+```bash
+scrcpy --rotation 1
+```
+
+Possibles values are:
+ - `0`: no rotation
+ - `1`: 90 degrees counterclockwise
+ - `2`: 180 degrees
+ - `3`: 90 degrees clockwise
+
+The rotation can also be changed dynamically with `Ctrl`+`←` _(left)_ and
+`Ctrl`+`→` _(right)_.
+
+Note that _scrcpy_ manages 3 different rotations:
+ - `Ctrl`+`r` requests the device to switch between portrait and landscape (the
+   current running app may refuse, if it does support the requested
+   orientation).
+ - `--lock-video-orientation` changes the mirroring orientation (the orientation
+   of the video sent from the device to the computer. This affects the
+   recording.
+ - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
+   affects only the display, not the recording.
+
 
 ### Other mirroring options
 

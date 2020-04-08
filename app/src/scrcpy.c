@@ -396,7 +396,8 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->always_on_top, options->window_x,
                                    options->window_y, options->window_width,
                                    options->window_height,
-                                   options->window_borderless)) {
+                                   options->window_borderless,
+                                   options->rotation)) {
             goto end;
         }
 
