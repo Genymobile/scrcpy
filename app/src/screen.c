@@ -226,6 +226,11 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    SDL_RendererInfo renderer_info;
+    int r = SDL_GetRendererInfo(screen->renderer, &renderer_info);
+    const char *renderer_name = r ? NULL : renderer_info.name;
+    LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
+
     if (SDL_RenderSetLogicalSize(screen->renderer, content_size.width,
                                  content_size.height)) {
         LOGE("Could not set renderer logical size: %s", SDL_GetError());
