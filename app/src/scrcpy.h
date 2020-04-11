@@ -15,6 +15,7 @@ struct scrcpy_options {
     const char *record_filename;
     const char *window_title;
     const char *push_target;
+    const char *render_driver;
     enum recorder_format record_format;
     struct port_range port_range;
     uint16_t max_size;
@@ -44,6 +45,7 @@ struct scrcpy_options {
     .record_filename = NULL, \
     .window_title = NULL, \
     .push_target = NULL, \
+    .render_driver = NULL, \
     .record_format = RECORDER_FORMAT_AUTO, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \

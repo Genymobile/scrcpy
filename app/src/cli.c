@@ -99,6 +99,13 @@ scrcpy_print_usage(const char *arg0) {
         "    --record-format format\n"
         "        Force recording format (either mp4 or mkv).\n"
         "\n"
+        "    --render-driver name\n"
+        "        Request SDL to use the given render driver (this is just a\n"
+        "        hint).\n"
+        "        Supported names are currently \"direct3d\", \"opengl\",\n"
+        "        \"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
+        "        <https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>\n"
+        "\n"
         "    --render-expired-frames\n"
         "        By default, to minimize latency, scrcpy always renders the\n"
         "        last available decoded frame, and drops any previous ones.\n"
@@ -454,6 +461,7 @@ guess_record_format(const char *filename) {
 #define OPT_LOCK_VIDEO_ORIENTATION 1013
 #define OPT_DISPLAY_ID             1014
 #define OPT_ROTATION               1015
+#define OPT_RENDER_DRIVER          1016
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -474,6 +482,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
         {"record",                 required_argument, NULL, 'r'},
         {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
+        {"render-driver",          required_argument, NULL, OPT_RENDER_DRIVER},
         {"render-expired-frames",  no_argument,       NULL,
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
@@ -616,6 +625,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 if (!parse_rotation(optarg, &opts->rotation)) {
                     return false;
                 }
+                break;
+            case OPT_RENDER_DRIVER:
+                opts->render_driver = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr

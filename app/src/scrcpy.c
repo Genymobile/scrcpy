@@ -47,7 +47,7 @@ static struct input_manager input_manager = {
 
 // init SDL and set appropriate hints
 static bool
-sdl_init_and_configure(bool display) {
+sdl_init_and_configure(bool display, const char *render_driver) {
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
@@ -58,6 +58,10 @@ sdl_init_and_configure(bool display) {
 
     if (!display) {
         return true;
+    }
+
+    if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
+        LOGW("Could not set render driver");
     }
 
     // Linear filtering
@@ -310,7 +314,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
 
-    if (!sdl_init_and_configure(options->display)) {
+    if (!sdl_init_and_configure(options->display, options->render_driver)) {
         goto end;
     }
 
