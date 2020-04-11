@@ -75,6 +75,11 @@ scrcpy_print_usage(const char *arg0) {
         "        Do not display device (only when screen recording is\n"
         "        enabled).\n"
         "\n"
+        "    --no-mipmaps\n"
+        "        If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then\n"
+        "        mipmaps are automatically generated to improve downscaling\n"
+        "        quality. This option disables the generation of mipmaps.\n"
+        "\n"
         "    -p, --port port[:port]\n"
         "        Set the TCP port (range) used by the client to listen.\n"
         "        Default is %d:%d.\n"
@@ -462,6 +467,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISPLAY_ID             1014
 #define OPT_ROTATION               1015
 #define OPT_RENDER_DRIVER          1016
+#define OPT_NO_MIPMAPS             1017
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -478,6 +484,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"max-size",               required_argument, NULL, 'm'},
         {"no-control",             no_argument,       NULL, 'n'},
         {"no-display",             no_argument,       NULL, 'N'},
+        {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
         {"port",                   required_argument, NULL, 'p'},
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
         {"record",                 required_argument, NULL, 'r'},
@@ -628,6 +635,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_RENDER_DRIVER:
                 opts->render_driver = optarg;
+                break;
+            case OPT_NO_MIPMAPS:
+                opts->mipmaps = false;
                 break;
             default:
                 // getopt prints the error message on stderr

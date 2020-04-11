@@ -75,6 +75,10 @@ Disable device control (mirror the device in read\-only).
 Do not display device (only when screen recording is enabled).
 
 .TP
+.B \-\-no\-mipmaps
+If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
+
+.TP
 .BI "\-p, \-\-port " port[:port]
 Set the TCP port (range) used by the client to listen.
 

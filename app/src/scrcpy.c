@@ -401,7 +401,7 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->window_y, options->window_width,
                                    options->window_height,
                                    options->window_borderless,
-                                   options->rotation)) {
+                                   options->rotation, options-> mipmaps)) {
             goto end;
         }
 

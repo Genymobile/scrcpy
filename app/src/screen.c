@@ -199,7 +199,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
                       uint16_t window_height, bool window_borderless,
-                      uint8_t rotation) {
+                      uint8_t rotation, bool mipmaps) {
     screen->frame_size = frame_size;
     screen->rotation = rotation;
     if (rotation) {
@@ -266,15 +266,19 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
         LOGI("OpenGL version: %s", gl->version);
 
-        bool supports_mipmaps =
-            sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
-                                           2, 0  /* OpenGL ES 2.0+ */);
-        if (supports_mipmaps) {
-            LOGI("Trilinear filtering enabled");
-            screen->mipmaps = true;
+        if (mipmaps) {
+            bool supports_mipmaps =
+                sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
+                                               2, 0  /* OpenGL ES 2.0+ */);
+            if (supports_mipmaps) {
+                LOGI("Trilinear filtering enabled");
+                screen->mipmaps = true;
+            } else {
+                LOGW("Trilinear filtering disabled "
+                     "(OpenGL 3.0+ or ES 2.0+ required)");
+            }
         } else {
-            LOGW("Trilinear filtering disabled "
-                 "(OpenGL 3.0+ or ES 2.0+ required)");
+            LOGI("Trilinear filtering disabled");
         }
     } else {
         LOGW("Trilinear filtering disabled (not an OpenGL renderer)");
