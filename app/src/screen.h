@@ -7,6 +7,7 @@
 
 #include "config.h"
 #include "common.h"
+#include "opengl.h"
 
 #define WINDOW_POSITION_UNDEFINED (-0x8000)
 
@@ -16,6 +17,8 @@ struct screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+    bool use_opengl;
+    struct sc_opengl gl;
     struct size frame_size;
     struct size content_size; // rotated frame_size
     // The window size the last time it was not maximized or fullscreen.
@@ -29,12 +32,15 @@ struct screen {
     bool fullscreen;
     bool maximized;
     bool no_window;
+    bool mipmaps;
 };
 
 #define SCREEN_INITIALIZER { \
     .window = NULL, \
     .renderer = NULL, \
     .texture = NULL, \
+    .use_opengl = false, \
+    .gl = {0}, \
     .frame_size = { \
         .width = 0, \
         .height = 0, \
@@ -56,6 +62,7 @@ struct screen {
     .fullscreen = false, \
     .maximized = false, \
     .no_window = false, \
+    .mipmaps = false, \
 }
 
 // initialize default values

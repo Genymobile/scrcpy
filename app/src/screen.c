@@ -168,10 +168,30 @@ screen_init(struct screen *screen) {
 }
 
 static inline SDL_Texture *
-create_texture(SDL_Renderer *renderer, struct size frame_size) {
-    return SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
-                             SDL_TEXTUREACCESS_STREAMING,
-                             frame_size.width, frame_size.height);
+create_texture(struct screen *screen) {
+    SDL_Renderer *renderer = screen->renderer;
+    struct size size = screen->frame_size;
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
+                                             SDL_TEXTUREACCESS_STREAMING,
+                                             size.width, size.height);
+    if (!texture) {
+        return NULL;
+    }
+
+    if (screen->mipmaps) {
+        struct sc_opengl *gl = &screen->gl;
+
+        SDL_GL_BindTexture(texture, NULL, NULL);
+
+        // Enable trilinear filtering for downscaling
+        gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR);
+        gl->TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -.5f);
+
+        SDL_GL_UnbindTexture(texture);
+    }
+
+    return texture;
 }
 
 bool
@@ -238,6 +258,28 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    // stats with "opengl"
+    screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    if (screen->use_opengl) {
+        struct sc_opengl *gl = &screen->gl;
+        sc_opengl_init(gl);
+
+        LOGI("OpenGL version: %s", gl->version);
+
+        bool supports_mipmaps =
+            sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
+                                           2, 0  /* OpenGL ES 2.0+ */);
+        if (supports_mipmaps) {
+            LOGI("Trilinear filtering enabled");
+            screen->mipmaps = true;
+        } else {
+            LOGW("Trilinear filtering disabled "
+                 "(OpenGL 3.0+ or ES 2.0+ required)");
+        }
+    } else {
+        LOGW("Trilinear filtering disabled (not an OpenGL renderer)");
+    }
+
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
@@ -248,7 +290,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width,
                                                   frame_size.height);
-    screen->texture = create_texture(screen->renderer, frame_size);
+    screen->texture = create_texture(screen);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
         screen_destroy(screen);
@@ -346,7 +388,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
-        screen->texture = create_texture(screen->renderer, new_frame_size);
+        screen->texture = create_texture(screen);
         if (!screen->texture) {
             LOGC("Could not create texture: %s", SDL_GetError());
             return false;
@@ -363,6 +405,13 @@ update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[0], frame->linesize[0],
             frame->data[1], frame->linesize[1],
             frame->data[2], frame->linesize[2]);
+
+    if (screen->mipmaps) {
+        assert(screen->use_opengl);
+        SDL_GL_BindTexture(screen->texture, NULL, NULL);
+        screen->gl.GenerateMipmap(GL_TEXTURE_2D);
+        SDL_GL_UnbindTexture(screen->texture);
+    }
 }
 
 bool
