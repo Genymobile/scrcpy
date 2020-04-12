@@ -27,21 +27,19 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private int bitRate;
     private int maxFps;
-    private int lockedVideoOrientation;
     private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
-        this.lockedVideoOrientation = lockedVideoOrientation;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation) {
-        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
+        this(sendFrameMeta, bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
