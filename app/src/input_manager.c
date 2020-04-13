@@ -463,12 +463,11 @@ rotate_position(struct screen *screen, int32_t x, int32_t y) {
             result.x = w - x;
             result.y = h - y;
             break;
-        case 3:
+        default:
+            assert(rotation == 3);
             result.x = y;
             result.y = w - x;
             break;
-        default:
-            assert(!"Unreachable");
     }
     return result;
 }
