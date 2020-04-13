@@ -172,7 +172,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         // check before incrementing to avoid overflow on port 65535
         if (port < port_range.last) {
             LOGW("Could not listen on port %" PRIu16", retrying on %" PRIu16,
-                 port, port + 1);
+                 port, (uint16_t) (port + 1));
             port++;
             continue;
         }
