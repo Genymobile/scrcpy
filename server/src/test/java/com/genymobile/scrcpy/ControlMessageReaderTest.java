@@ -66,7 +66,7 @@ public class ControlMessageReaderTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
-        byte[] text = new byte[ControlMessageReader.TEXT_MAX_LENGTH];
+        byte[] text = new byte[ControlMessageReader.INJECT_TEXT_MAX_LENGTH];
         Arrays.fill(text, (byte) 'a');
         dos.writeShort(text.length);
         dos.write(text);

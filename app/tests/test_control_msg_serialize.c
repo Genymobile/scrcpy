@@ -49,20 +49,20 @@ static void test_serialize_inject_text(void) {
 static void test_serialize_inject_text_long(void) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
-    char text[CONTROL_MSG_TEXT_MAX_LENGTH + 1];
+    char text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH + 1];
     memset(text, 'a', sizeof(text));
-    text[CONTROL_MSG_TEXT_MAX_LENGTH] = '\0';
+    text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH] = '\0';
     msg.inject_text.text = text;
 
     unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 3 + CONTROL_MSG_TEXT_MAX_LENGTH);
+    assert(size == 3 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
-    unsigned char expected[3 + CONTROL_MSG_TEXT_MAX_LENGTH];
+    unsigned char expected[3 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
     expected[0] = CONTROL_MSG_TYPE_INJECT_TEXT;
     expected[1] = 0x01;
     expected[2] = 0x2c; // text length (16 bits)
-    memset(&expected[3], 'a', CONTROL_MSG_TEXT_MAX_LENGTH);
+    memset(&expected[3], 'a', CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
