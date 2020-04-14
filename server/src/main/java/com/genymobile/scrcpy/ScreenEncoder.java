@@ -68,13 +68,13 @@ public class ScreenEncoder implements Device.RotationListener {
         try {
             do {
                 MediaCodec codec = createCodec();
-                setCodecProfile(codec, format);
                 IBinder display = createDisplay();
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
                 Rect videoRect = screenInfo.getVideoSize().toRect();
                 int videoRotation = device.getVideoRotation(screenInfo.getRotation());
                 setSize(format, videoRotation, videoRect.width(), videoRect.height());
+                setCodecProfile(codec, format, videoRect);
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
                 setDisplaySurface(display, surface, videoRotation, contentRect, videoRect);
@@ -144,25 +144,42 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
-    private void setCodecProfile(MediaCodec codec, MediaFormat format) {
+    private void setCodecProfile(MediaCodec codec, MediaFormat format, Rect videoRect) {
         int profile = (int)codecOptions.parseValue(CodecOptions.PROFILE_OPTION);
         int level = (int)codecOptions.parseValue(CodecOptions.LEVEL_OPTION);
+        int suggestedLevel = CodecOptions.calculateLevel(videoRect.width(), videoRect.height(), bitRate);
+        boolean profileSupported = false;
+
         if(profile == 0) return;
-        for (MediaCodecInfo.CodecProfileLevel profileLevel : codec.getCodecInfo().getCapabilitiesForType(MIMETYPE_VIDEO_AVC).profileLevels) {
+        for (MediaCodecInfo.CodecProfileLevel profileLevel :
+                codec.getCodecInfo().getCapabilitiesForType(MIMETYPE_VIDEO_AVC).profileLevels) {
             if(profileLevel.profile == profile) {
-                level = Math.max(level, profileLevel.level);
+                profileSupported = true;
+                break;
             }
         }
-        if(level == 0)  {
+        if(profileSupported) {
+            // Profile (SDK Level 21).
+            format.setInteger(MediaFormat.KEY_PROFILE, profile);
+            if(level != 0) {
+                if(suggestedLevel != 0 && level != suggestedLevel)
+                    Ln.w("Requested codec profile level is different from the suggested level");
+            } else {
+                level = suggestedLevel; // If no level was given, use the pre calculated level.
+            }
+            // Level (SDK Level 23).
+            // We ask again because suggested level can be 0 and we cant set the level to 0,
+            // in that case we let the encoder choose the level.
+            if (level != 0) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    format.setInteger(MediaFormat.KEY_LEVEL, level);
+                }
+            }
+        } else {
             Ln.w("Device doesn't support the requested codec profile.\n" +
                     "Profile and level will be chosen automatically.");
-        } else {
-            // Profile (SDK Level 21) and Level (SDK Level 23).
-            format.setInteger(MediaFormat.KEY_PROFILE, profile);
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                format.setInteger(MediaFormat.KEY_LEVEL, level);
-            }
         }
+
     }
 
     private static MediaCodec createCodec() throws IOException {
