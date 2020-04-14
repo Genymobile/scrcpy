@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static android.media.MediaFormat.MIMETYPE_VIDEO_AVC;
+
 public class ScreenEncoder implements Device.RotationListener {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
@@ -30,21 +32,21 @@ public class ScreenEncoder implements Device.RotationListener {
     private int maxFps;
     private int lockedVideoOrientation;
     private int iFrameInterval;
-    private int codecProfile;
     private boolean sendFrameMeta;
     private long ptsOrigin;
+    private CodecOptions codecOptions;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int codecProfile, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, CodecOptions codecOptions, int iFrameInterval) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.lockedVideoOrientation = lockedVideoOrientation;
-        this.codecProfile = codecProfile;
+        this.codecOptions = codecOptions;
         this.iFrameInterval = iFrameInterval;
     }
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, int codecProfile) {
-        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, codecProfile, DEFAULT_I_FRAME_INTERVAL);
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int lockedVideoOrientation, CodecOptions codecOptions) {
+        this(sendFrameMeta, bitRate, maxFps, lockedVideoOrientation, codecOptions, DEFAULT_I_FRAME_INTERVAL);
     }
 
     @Override
@@ -142,30 +144,35 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
-    private void setCodecProfile(MediaCodec codec, MediaFormat format) throws IOException {
-        if(codecProfile == 0) return;
-        int level = 0;
-        for (MediaCodecInfo.CodecProfileLevel profileLevel : codec.getCodecInfo().getCapabilitiesForType("video/avc").profileLevels) {
-            if(profileLevel.profile == codecProfile) {
+    private void setCodecProfile(MediaCodec codec, MediaFormat format) {
+        int profile = (int)codecOptions.parseValue(CodecOptions.PROFILE_OPTION);
+        int level = (int)codecOptions.parseValue(CodecOptions.LEVEL_OPTION);
+        if(profile == 0) return;
+        for (MediaCodecInfo.CodecProfileLevel profileLevel : codec.getCodecInfo().getCapabilitiesForType(MIMETYPE_VIDEO_AVC).profileLevels) {
+            if(profileLevel.profile == profile) {
                 level = Math.max(level, profileLevel.level);
             }
         }
-        if(level == 0) throw new IOException("Device doesn't support the requested codec profile.");
-        // Profile (SDK Level 21) and Level (SDK Level 23).
-        format.setInteger(MediaFormat.KEY_PROFILE, codecProfile);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            format.setInteger(MediaFormat.KEY_LEVEL, level);
+        if(level == 0)  {
+            Ln.w("Device doesn't support the requested codec profile.\n" +
+                    "Profile and level will be chosen automatically.");
+        } else {
+            // Profile (SDK Level 21) and Level (SDK Level 23).
+            format.setInteger(MediaFormat.KEY_PROFILE, profile);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                format.setInteger(MediaFormat.KEY_LEVEL, level);
+            }
         }
     }
 
     private static MediaCodec createCodec() throws IOException {
-        return MediaCodec.createEncoderByType("video/avc");
+        return MediaCodec.createEncoderByType(MIMETYPE_VIDEO_AVC);
     }
 
     @SuppressWarnings("checkstyle:MagicNumber")
     private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval) {
         MediaFormat format = new MediaFormat();
-        format.setString(MediaFormat.KEY_MIME, "video/avc");
+        format.setString(MediaFormat.KEY_MIME, MIMETYPE_VIDEO_AVC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);

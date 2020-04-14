@@ -6,6 +6,7 @@ import android.os.Build;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 
 public final class Server {
 
@@ -20,7 +21,7 @@ public final class Server {
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(),
-                    options.getLockedVideoOrientation(), options.getCodecProfile());
+                    options.getLockedVideoOrientation(), options.getCodecOptions());
 
             if (options.getControl()) {
                 Controller controller = new Controller(device, connection);
@@ -98,8 +99,8 @@ public final class Server {
         int lockedVideoOrientation = Integer.parseInt(args[4]);
         options.setLockedVideoOrientation(lockedVideoOrientation);
 
-        int codecProfile = Integer.parseInt(args[5]);
-        options.setCodecProfile(codecProfile);
+        CodecOptions codecOptions = parseCodecOptions(args[5]);
+        options.setCodecOptions(codecOptions);
 
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
         boolean tunnelForward = Boolean.parseBoolean(args[6]);
@@ -132,6 +133,18 @@ public final class Server {
         int x = Integer.parseInt(tokens[2]);
         int y = Integer.parseInt(tokens[3]);
         return new Rect(x, y, x + width, y + height);
+    }
+
+    private static CodecOptions parseCodecOptions(String codecOptions) {
+        HashMap<String, String> codecOptionsMap = new HashMap<>();
+        if (!"-".equals(codecOptions)) {
+            String[] pairs = codecOptions.split(",");
+            for (String pair : pairs) {
+                String[] option = pair.split("=");
+                codecOptionsMap.put(option[0], option.length > 1 ? option[1] : null);
+            }
+        }
+        return new CodecOptions(codecOptionsMap);
     }
 
     private static void unlinkSelf() {

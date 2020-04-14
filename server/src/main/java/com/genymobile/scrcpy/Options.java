@@ -11,7 +11,7 @@ public class Options {
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
-    private int codecProfile;
+    private CodecOptions codecOptions;
 
     public int getMaxSize() {
         return maxSize;
@@ -77,11 +77,11 @@ public class Options {
         this.control = control;
     }
 
-    public int getCodecProfile() {
-        return codecProfile;
+    public CodecOptions getCodecOptions() {
+        return codecOptions;
     }
 
-    public void setCodecProfile(int codecProfile) {
-        this.codecProfile = codecProfile;
+    public void setCodecOptions(CodecOptions codecOptions) {
+        this.codecOptions = codecOptions;
     }
 }
