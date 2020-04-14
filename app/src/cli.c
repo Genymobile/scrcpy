@@ -130,11 +130,12 @@ scrcpy_print_usage(const char *arg0) {
         "        Set the initial window width.\n"
         "        Default is 0 (automatic).\n"
         "\n"
-        "    -P, --codec-profile value\n"
-        "        Request specific encoding codec profile, see AVC profiles at:\n"
-        "        https://developer.android.com/reference/android/media/MediaCodecInfo.CodecProfileLevel\n"
-        "        for valid codec profile values.\n"
-        "        Default is 0 (automatic).\n"
+        "    --codec-options 'options'\n"
+        "        'options' is a list of key=value pairs seperated by comma\n"
+        "        for the device encoder.\n"
+        "        For a list of possible codec options:\n"
+        "        https://developer.android.com/reference/android/media/MediaCodecInfo\n"
+        "        Currently supported keys: [profile, level].\n"
         "\n"
         "Shortcuts:\n"
         "\n"
@@ -374,35 +375,6 @@ parse_record_format(const char *optarg, enum recorder_format *format) {
     return false;
 }
 
-static bool
-parse_codec_profile(const char *optarg, uint32_t *codec_profile) {
-    long value;
-    // long may be 32 bits (it is the case on mingw), so do not use more than
-    // 31 bits (long is signed)
-    bool ok = parse_integer_arg(optarg, &value, true, 0, 0x7FFFFFFF, "codec-profile");
-    if (!ok) {
-        return false;
-    }
-
-    switch (value) {
-        case 0:         // Automatic
-        case 0x01:      // AVCProfileBaseline
-        case 0x02:      // AVCProfileMain
-        case 0x04:      // AVCProfileExtended
-        case 0x08:      // AVCProfileHigh
-        case 0x10:      // AVCProfileHigh10
-        case 0x20:      // AVCProfileHigh422
-        case 0x40:      // AVCProfileHigh444
-        case 0x10000:   // AVCProfileConstrainedBaseline
-        case 0x80000:   // AVCProfileConstrainedHigh
-            *codec_profile = (uint32_t) value;
-            return true;
-        default:
-            LOGE("Invalid codec-profile, Use -h for help");
-            return false;
-    }
-}
-
 static enum recorder_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
@@ -433,6 +405,7 @@ guess_record_format(const char *filename) {
 #define OPT_WINDOW_BORDERLESS      1011
 #define OPT_MAX_FPS                1012
 #define OPT_LOCK_VIDEO_ORIENTATION 1013
+#define OPT_CODEC_OPTIONS          1014
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -442,8 +415,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
-        {"lock-video-orientation", required_argument, NULL,
-                                                  OPT_LOCK_VIDEO_ORIENTATION},
+        {"lock-video-orientation", required_argument, NULL, OPT_LOCK_VIDEO_ORIENTATION},
         {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
         {"max-size",               required_argument, NULL, 'm'},
         {"no-control",             no_argument,       NULL, 'n'},
@@ -452,8 +424,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
         {"record",                 required_argument, NULL, 'r'},
         {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
-        {"render-expired-frames",  no_argument,       NULL,
-                                                  OPT_RENDER_EXPIRED_FRAMES},
+        {"render-expired-frames",  no_argument,       NULL, OPT_RENDER_EXPIRED_FRAMES},
         {"serial",                 required_argument, NULL, 's'},
         {"show-touches",           no_argument,       NULL, 't'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
@@ -464,9 +435,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-y",               required_argument, NULL, OPT_WINDOW_Y},
         {"window-width",           required_argument, NULL, OPT_WINDOW_WIDTH},
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
-        {"window-borderless",      no_argument,       NULL,
-                                                  OPT_WINDOW_BORDERLESS},
-        {"codec-profile",          required_argument, NULL, 'P'},
+        {"window-borderless",      no_argument,       NULL, OPT_WINDOW_BORDERLESS},
+        {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -475,11 +445,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-<<<<<<< HEAD
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv:P:", long_options,
-=======
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
->>>>>>> 1b12204... fixup! Added help and parsing of the codec-profile option
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv:", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -589,10 +555,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case OPT_PREFER_TEXT:
                 opts->prefer_text = true;
                 break;
-            case 'P':
-                if (!parse_codec_profile(optarg, &opts->codec_profile)) {
-                    return false;
-                }
+            case OPT_CODEC_OPTIONS:
+                opts->codec_options = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr

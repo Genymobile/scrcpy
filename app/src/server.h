@@ -19,7 +19,6 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
-    uint32_t codec_profile;
 };
 
 #define SERVER_INITIALIZER { \
@@ -35,7 +34,6 @@ struct server {
     .local_port = 0, \
     .tunnel_enabled = false, \
     .tunnel_forward = false, \
-    .codec_profile = 0, \
 }
 
 struct server_params {
@@ -46,7 +44,7 @@ struct server_params {
     uint16_t max_fps;
     int8_t lock_video_orientation;
     bool control;
-    uint32_t codec_profile;
+    char *codec_options;
 };
 
 // init default values

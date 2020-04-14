@@ -234,12 +234,10 @@ execute_server(struct server *server, const struct server_params *params) {
     char bit_rate_string[11];
     char max_fps_string[6];
     char lock_video_orientation_string[3];
-    char codec_profile_string[11];
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
-    sprintf(codec_profile_string, "%"PRIu32, params->codec_profile);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,
@@ -256,7 +254,7 @@ execute_server(struct server *server, const struct server_params *params) {
         bit_rate_string,
         max_fps_string,
         lock_video_orientation_string,
-        codec_profile_string,
+        params->codec_options ? params->codec_options : "-",
         server->tunnel_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
@@ -330,7 +328,6 @@ bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
     server->port_range = params->port_range;
-    server->codec_profile = params->codec_profile;
 
     if (serial) {
         server->serial = SDL_strdup(serial);

@@ -286,7 +286,7 @@ scrcpy(const struct scrcpy_options *options) {
         .max_fps = options->max_fps,
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
-        .codec_profile = options->codec_profile,
+        .codec_options = options->codec_options,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;

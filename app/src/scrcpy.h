@@ -15,6 +15,7 @@ struct scrcpy_options {
     const char *record_filename;
     const char *window_title;
     const char *push_target;
+    const char *codec_options;
     enum recorder_format record_format;
     struct port_range port_range;
     uint16_t max_size;
@@ -34,7 +35,6 @@ struct scrcpy_options {
     bool render_expired_frames;
     bool prefer_text;
     bool window_borderless;
-    uint32_t codec_profile;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -43,6 +43,7 @@ struct scrcpy_options {
     .record_filename = NULL, \
     .window_title = NULL, \
     .push_target = NULL, \
+    .codec_options = NULL, \
     .record_format = RECORDER_FORMAT_AUTO, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
@@ -65,7 +66,6 @@ struct scrcpy_options {
     .render_expired_frames = false, \
     .prefer_text = false, \
     .window_borderless = false, \
-    .codec_profile = 0, \
 }
 
 bool
