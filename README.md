@@ -363,7 +363,7 @@ Note that _scrcpy_ manages 3 different rotations:
    current running app may refuse, if it does support the requested
    orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
-   of the video sent from the device to the computer. This affects the
+   of the video sent from the device to the computer). This affects the
    recording.
  - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
    affects only the display, not the recording.
