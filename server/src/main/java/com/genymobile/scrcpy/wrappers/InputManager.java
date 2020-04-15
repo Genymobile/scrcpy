@@ -53,8 +53,7 @@ public final class InputManager {
             method.invoke(inputEvent, displayId);
             return true;
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-            // just a warning, it might happen on old devices
-            Ln.w("Cannot associate a display id to the input event");
+            Ln.e("Cannot associate a display id to the input event", e);
             return false;
         }
     }
