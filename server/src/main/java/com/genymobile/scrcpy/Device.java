@@ -36,10 +36,7 @@ public final class Device {
      */
     private final int layerStack;
 
-    /**
-     * The FLAG_PRESENTATION from the DisplayInfo
-     */
-    private final boolean isPresentationDisplay;
+    private final boolean supportsInputEvents;
 
     public Device(Options options) {
         displayId = options.getDisplayId();
@@ -53,7 +50,6 @@ public final class Device {
 
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
         layerStack = displayInfo.getLayerStack();
-        isPresentationDisplay = (displayInfoFlags & DisplayInfo.FLAG_PRESENTATION) != 0;
 
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
@@ -73,8 +69,10 @@ public final class Device {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
         }
 
-        if (!supportsInputEvents()) {
-            Ln.w("Input events are not supported for displays with FLAG_PRESENTATION enabled for devices with API lower than 29");
+        // main display or any display on Android >= Q
+        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        if (!supportsInputEvents) {
+            Ln.w("Input events are not supported for secondary displays before Android 10");
         }
     }
 
@@ -116,10 +114,7 @@ public final class Device {
     }
 
     public boolean supportsInputEvents() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            return true;
-        }
-        return !isPresentationDisplay;
+        return supportsInputEvents;
     }
 
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
