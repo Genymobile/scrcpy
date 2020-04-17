@@ -156,6 +156,43 @@ get_initial_optimal_size(struct size content_size, uint16_t req_width,
     return window_size;
 }
 
+static void
+screen_update_content_rect(struct screen *screen) {
+    int dw;
+    int dh;
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    struct size content_size = screen->content_size;
+    // The drawable size is the window size * the HiDPI scale
+    struct size drawable_size = {dw, dh};
+
+    SDL_Rect *rect = &screen->rect;
+
+    if (is_optimal_size(drawable_size, content_size)) {
+        rect->x = 0;
+        rect->y = 0;
+        rect->w = drawable_size.width;
+        rect->h = drawable_size.height;
+        return;
+    }
+
+    bool keep_width = content_size.width * drawable_size.height
+                    > content_size.height * drawable_size.width;
+    if (keep_width) {
+        rect->x = 0;
+        rect->w = drawable_size.width;
+        rect->h = drawable_size.width * content_size.height
+                                      / content_size.width;
+        rect->y = (drawable_size.height - rect->h) / 2;
+    } else {
+        rect->y = 0;
+        rect->h = drawable_size.height;
+        rect->w = drawable_size.height * content_size.width
+                                       / content_size.height;
+        rect->x = (drawable_size.width - rect->w) / 2;
+    }
+}
+
 void
 screen_init(struct screen *screen) {
     *screen = (struct screen) SCREEN_INITIALIZER;
@@ -245,13 +282,6 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     const char *renderer_name = r ? NULL : renderer_info.name;
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
-    if (SDL_RenderSetLogicalSize(screen->renderer, content_size.width,
-                                 content_size.height)) {
-        LOGE("Could not set renderer logical size: %s", SDL_GetError());
-        screen_destroy(screen);
-        return false;
-    }
-
     // starts with "opengl"
     screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (screen->use_opengl) {
@@ -294,6 +324,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         screen_destroy(screen);
         return false;
     }
+
+    screen_update_content_rect(screen);
 
     return true;
 }
@@ -365,18 +397,12 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
     struct size new_content_size =
         get_rotated_size(screen->frame_size, rotation);
 
-    if (SDL_RenderSetLogicalSize(screen->renderer,
-                                 new_content_size.width,
-                                 new_content_size.height)) {
-        LOGE("Could not set renderer logical size: %s", SDL_GetError());
-        return;
-    }
-
     set_content_size(screen, new_content_size);
+
     screen->rotation = rotation;
     LOGI("Display rotation set to %u", rotation);
 
-    screen_render(screen);
+    screen_render(screen, true);
 }
 
 // recreate the texture and resize the window if the frame size has changed
@@ -384,20 +410,16 @@ static bool
 prepare_for_frame(struct screen *screen, struct size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
-        struct size new_content_size =
-            get_rotated_size(new_frame_size, screen->rotation);
-        if (SDL_RenderSetLogicalSize(screen->renderer,
-                                     new_content_size.width,
-                                     new_content_size.height)) {
-            LOGE("Could not set renderer logical size: %s", SDL_GetError());
-            return false;
-        }
-
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
-        set_content_size(screen, new_content_size);
         screen->frame_size = new_frame_size;
+
+        struct size new_content_size =
+            get_rotated_size(new_frame_size, screen->rotation);
+        set_content_size(screen, new_content_size);
+
+        screen_update_content_rect(screen);
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
@@ -439,15 +461,19 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     update_texture(screen, frame);
     mutex_unlock(vb->mutex);
 
-    screen_render(screen);
+    screen_render(screen, false);
     return true;
 }
 
 void
-screen_render(struct screen *screen) {
+screen_render(struct screen *screen, bool update_content_rect) {
+    if (update_content_rect) {
+        screen_update_content_rect(screen);
+    }
+
     SDL_RenderClear(screen->renderer);
     if (screen->rotation == 0) {
-        SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+        SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
     } else {
         // rotation in RenderCopyEx() is clockwise, while screen->rotation is
         // counterclockwise (to be consistent with --lock-video-orientation)
@@ -457,12 +483,14 @@ screen_render(struct screen *screen) {
         SDL_Rect *dstrect = NULL;
         SDL_Rect rect;
         if (screen->rotation & 1) {
-            struct size size = screen->content_size;
-            rect.x = (size.width - size.height) / 2;
-            rect.y = (size.height - size.width) / 2;
-            rect.w = size.height;
-            rect.h = size.width;
+            rect.x = screen->rect.x + (screen->rect.w - screen->rect.h) / 2;
+            rect.y = screen->rect.y + (screen->rect.h - screen->rect.w) / 2;
+            rect.w = screen->rect.h;
+            rect.h = screen->rect.w;
             dstrect = &rect;
+        } else {
+            assert(screen->rotation == 2);
+            dstrect = &screen->rect;
         }
 
         SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
@@ -485,7 +513,7 @@ screen_switch_fullscreen(struct screen *screen) {
     }
 
     LOGD("Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
-    screen_render(screen);
+    screen_render(screen, true);
 }
 
 void
@@ -523,10 +551,10 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
-            screen_render(screen);
+            screen_render(screen, true);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
-            screen_render(screen);
+            screen_render(screen, true);
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
             screen->maximized = true;
@@ -552,6 +580,13 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
+
+    screen_hidpi_scale_coords(screen, &x, &y);
+
+    x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
+    y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
+
+    // rotate
     struct point result;
     switch (rotation) {
         case 0:
@@ -573,4 +608,16 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
             break;
     }
     return result;
+}
+
+void
+screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y) {
+    // take the HiDPI scaling (dw/ww and dh/wh) into account
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    // scale for HiDPI (64 bits for intermediate multiplications)
+    *x = (int64_t) *x * dw / ww;
+    *y = (int64_t) *y * dh / wh;
 }

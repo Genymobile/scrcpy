@@ -136,7 +136,7 @@ event_watcher(void *data, SDL_Event *event) {
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
         // In practice, it seems to always be called from the same thread in
         // that specific case. Anyway, it's just a workaround.
-        screen_render(&screen);
+        screen_render(&screen, true);
     }
     return 0;
 }
