@@ -491,7 +491,8 @@ screen_resize_to_fit(struct screen *screen) {
     struct size optimal_size =
         get_optimal_window_size(screen, screen->content_size);
     SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
-    LOGD("Resized to optimal size");
+    LOGD("Resized to optimal size: %ux%u", optimal_size.width,
+                                           optimal_size.height);
 }
 
 void
@@ -507,7 +508,8 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
 
     struct size content_size = screen->content_size;
     SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
-    LOGD("Resized to pixel-perfect");
+    LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
+                                            content_size.height);
 }
 
 void
