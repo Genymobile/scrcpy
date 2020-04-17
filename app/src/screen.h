@@ -28,6 +28,8 @@ struct screen {
     struct size windowed_window_size_backup;
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
     unsigned rotation;
+    // rectangle of the content (excluding black borders)
+    struct SDL_Rect rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -58,6 +60,12 @@ struct screen {
         .height = 0, \
     }, \
     .rotation = 0, \
+    .rect = { \
+        .x = 0, \
+        .y = 0, \
+        .w = 0, \
+        .h = 0, \
+    }, \
     .has_frame = false, \
     .fullscreen = false, \
     .maximized = false, \
