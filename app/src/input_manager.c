@@ -442,36 +442,6 @@ input_manager_process_key(struct input_manager *im,
     }
 }
 
-static struct point
-rotate_position(struct screen *screen, int32_t x, int32_t y) {
-    unsigned rotation = screen->rotation;
-    assert(rotation < 4);
-
-    int32_t w = screen->content_size.width;
-    int32_t h = screen->content_size.height;
-    struct point result;
-    switch (rotation) {
-        case 0:
-            result.x = x;
-            result.y = y;
-            break;
-        case 1:
-            result.x = h - y;
-            result.y = x;
-            break;
-        case 2:
-            result.x = w - x;
-            result.y = h - y;
-            break;
-        default:
-            assert(rotation == 3);
-            result.x = y;
-            result.y = w - x;
-            break;
-    }
-    return result;
-}
-
 static bool
 convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
                      struct control_msg *to) {
@@ -480,7 +450,7 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point =
-        rotate_position(screen, from->x, from->y);
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
 
@@ -520,7 +490,8 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
     // SDL touch event coordinates are normalized in the range [0; 1]
     float x = from->x * screen->content_size.width;
     float y = from->y * screen->content_size.height;
-    to->inject_touch_event.position.point = rotate_position(screen, x, y);
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, x, y);
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
     return true;
@@ -556,7 +527,7 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point =
-        rotate_position(screen, from->x, from->y);
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));

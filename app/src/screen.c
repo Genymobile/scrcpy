@@ -553,3 +553,33 @@ screen_handle_window_event(struct screen *screen,
             break;
     }
 }
+
+struct point
+screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
+    unsigned rotation = screen->rotation;
+    assert(rotation < 4);
+
+    int32_t w = screen->content_size.width;
+    int32_t h = screen->content_size.height;
+    struct point result;
+    switch (rotation) {
+        case 0:
+            result.x = x;
+            result.y = y;
+            break;
+        case 1:
+            result.x = h - y;
+            result.y = x;
+            break;
+        case 2:
+            result.x = w - x;
+            result.y = h - y;
+            break;
+        default:
+            assert(rotation == 3);
+            result.x = y;
+            result.y = w - x;
+            break;
+    }
+    return result;
+}

@@ -114,4 +114,9 @@ screen_set_rotation(struct screen *screen, unsigned rotation);
 void
 screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
 
+// convert point from window coordinates to frame coordinates
+// x and y are expressed in pixels
+struct point
+screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y);
+
 #endif
