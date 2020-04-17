@@ -515,13 +515,11 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
         return false;
     }
 
-    struct size frame_size = screen->frame_size;
-
     to->inject_touch_event.pointer_id = from->fingerId;
-    to->inject_touch_event.position.screen_size = frame_size;
+    to->inject_touch_event.position.screen_size = screen->frame_size;
     // SDL touch event coordinates are normalized in the range [0; 1]
-    float x = from->x * frame_size.width;
-    float y = from->y * frame_size.height;
+    float x = from->x * screen->content_size.width;
+    float y = from->y * screen->content_size.height;
     to->inject_touch_event.position.point = rotate_position(screen, x, y);
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
