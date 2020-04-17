@@ -29,6 +29,8 @@ struct screen {
 
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
     unsigned rotation;
+    // rectangle of the content (excluding black borders)
+    struct SDL_Rect rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;
@@ -56,6 +58,12 @@ struct screen {
         .height = 0, \
     }, \
     .rotation = 0, \
+    .rect = { \
+        .x = 0, \
+        .y = 0, \
+        .w = 0, \
+        .h = 0, \
+    }, \
     .has_frame = false, \
     .fullscreen = false, \
     .maximized = false, \
@@ -89,8 +97,11 @@ bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb);
 
 // render the texture to the renderer
+//
+// Set the update_content_rect flag if the window or content size may have
+// changed, so that the content rectangle is recomputed
 void
-screen_render(struct screen *screen);
+screen_render(struct screen *screen, bool update_content_rect);
 
 // switch the fullscreen mode
 void
@@ -116,5 +127,12 @@ screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
 // x and y are expressed in pixels
 struct point
 screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y);
+
+// Convert coordinates from window to drawable.
+// Events are expressed in window coordinates, but content is expressed in
+// drawable coordinates. They are the same if HiDPI scaling is 1, but differ
+// otherwise.
+void
+screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y);
 
 #endif
