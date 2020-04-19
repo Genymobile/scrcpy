@@ -601,9 +601,14 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
-    // scale
-    x = (x - screen->rect.x) * w / screen->rect.w;
-    y = (y - screen->rect.y) * h / screen->rect.h;
+    // take the HiDPI scaling (dw/ww and dh/wh) into account
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    // scale (64 bits for intermediate multiplications)
+    x = (int64_t) (x - screen->rect.x) * w * dw / (screen->rect.w * ww);
+    y = (int64_t) (y - screen->rect.y) * h * dh / (screen->rect.h * wh);
 
     // rotate
     struct point result;
