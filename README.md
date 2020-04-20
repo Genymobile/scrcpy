@@ -210,12 +210,47 @@ variation] does not impact the recorded file.
 _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
+1. Plug the device into a USB port on your computer.
+2. Connect the device to the same Wi-Fi as your computer.
+3. Get your device IP address (in Settings → About phone → Status).
+4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+5. Unplug your device.
+6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
+7. Run `scrcpy` as usual.
+
+_Scrcpy_ is also possible via hotspot or Bluetooth from the device:
+
+1. Plug the device into a USB port on your computer.
+2. Connect your computer to the device's hotspot or Bluetooth network.
+3. Find the **default gateway** IP address of the network from your computer.
+    - Windows:
+
+        GUI: Control Panel -> Network and Internet -> Network and Sharing
+        Center -> Change adapter settings -> Double-click wireless interface ->
+        Details button -> Locate field that says "Default Gateway"
+
+        Command Prompt: `ipconfig | findstr "Default Gateway"`
+
+    - macOS:
+
+        GUI: System Preferences -> Network -> Advanced button -> "Router" field
+        under "TCP/IP" tab
+
+        Command line: `netstat -r -n` (Look for the line with `UG` flags)
+
+    - Linux: `arp -a`, `ip route | grep default`, `route -n` (Look for the line
+        with `UG` flags)
+4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+5. Unplug your device.
+6. Connect to your device: `adb connect GATEWAY_IP:5555` _(replace
+    `GATEWAY_IP`)_.
+7. Run `scrcpy` as usual.
+
+If the connection randomly drops, run `scrcpy` to reconnect. If it says there
+are no devices/emulators found, try running
+`adb connect DEVICE/GATEWAY_IP:5555`, and then `scrcpy` as usual. If it still
+says there are none found, try running `adb kill-server` and then those two
+commands again.
 
 It may be useful to decrease the bit-rate and the definition:
 
