@@ -328,6 +328,7 @@ For example, you could capture the video within [OBS].
 _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
+0. Plug the device into a USB port on your computer.
 1. Connect the device to the same Wi-Fi as your computer.
 2. Get your device IP address, in Settings → About phone → Status, or by
    executing this command:
