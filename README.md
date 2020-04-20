@@ -405,7 +405,7 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
 `adb`:
 
 1. Plug the device into a USB port on your computer.
-2. Connect the device to the same Wi-Fi as your computer.
+2. Connect the device to the same Wi-Fi network as your computer.
 3. Get your device IP address, in Settings → About phone → Status, or by
    executing this command:
 
