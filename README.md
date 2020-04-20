@@ -415,7 +415,8 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
 
 4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
 5. Unplug your device.
-6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
+6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`
+with the device IP address you found)_.
 7. Run `scrcpy` as usual.
 
 If the connection randomly drops, run your `scrcpy` command to reconnect. If it
