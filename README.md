@@ -404,19 +404,19 @@ connect to the device before starting.
 Alternatively, it is possible to enable the TCP/IP connection manually using
 `adb`:
 
-0. Plug the device into a USB port on your computer.
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address, in Settings → About phone → Status, or by
+1. Plug the device into a USB port on your computer.
+2. Connect the device to the same Wi-Fi as your computer.
+3. Get your device IP address, in Settings → About phone → Status, or by
    executing this command:
 
     ```bash
     adb shell ip route | awk '{print $9}'
     ```
 
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
+4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+5. Unplug your device.
+6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
+7. Run `scrcpy` as usual.
 
 It may be useful to decrease the bit-rate and the definition:
 
