@@ -329,7 +329,7 @@ _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
 1. Plug the device into a USB port on your computer.
-2. Connect the device to the same Wi-Fi as your computer.
+2. Connect the device to the same Wi-Fi network as your computer.
 3. Get your device IP address, in Settings → About phone → Status, or by
    executing this command:
 
