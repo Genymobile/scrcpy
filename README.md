@@ -418,6 +418,11 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
 6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
 7. Run `scrcpy` as usual.
 
+If the connection randomly drops, run your `scrcpy` command to reconnect. If it
+says there are no devices/emulators found, try running `adb connect
+DEVICE_IP:5555` again, and then `scrcpy` as usual. If it still says there are
+none found, try running `adb disconnect` and then run those two commands again.
+
 It may be useful to decrease the bit-rate and the definition:
 
 ```bash
