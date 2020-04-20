@@ -419,6 +419,11 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
 with the device IP address you found)_.
 7. Run `scrcpy` as usual.
 
+Since Android 11, a [Wireless debugging option][adb-wireless] allows to bypass
+having to physically connect your device directly to your computer.
+
+[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
+
 If the connection randomly drops, run your `scrcpy` command to reconnect. If it
 says there are no devices/emulators found, try running `adb connect
 DEVICE_IP:5555` again, and then `scrcpy` as usual. If it still says there are
