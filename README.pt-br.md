@@ -83,7 +83,7 @@ choco install scrcpy
 choco install adb    # se você ainda não o tem
 ```
 
-And in [Scoop]:
+E no [Scoop]:
 
 ```bash
 scoop install scrcpy
@@ -92,8 +92,7 @@ scoop install adb    # se você ainda não o tem
 
 [Scoop]: https://scoop.sh
 
-Você também pode [bui]
-You can also [buildar a aplicação manualmente][BUILD].
+Você também pode [buildar a aplicação manualmente][BUILD].
 
 
 ### macOS
@@ -207,228 +206,218 @@ Frames tem seu _horário_ _carimbado_ no dispositivo, então [Variação de atra
 
 #### Wireless/Sem fio
 
-_Scrcpy_ usa `adb` para se comunicar com o dispositivo, e `adb` pode [connect] to a
-device over TCP/IP:
+_Scrcpy_ usa `adb` para se comunicar com o dispositivo, e `adb` pode [conectar-se] à um dispositivo via TCP/IP:
 
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
+1. Conecte o dispositivo a mesma rede Wi-Fi do seu computador.
+2. Pegue o endereço de IP do seu dispositivo (Em Configurações → Sobre o Telefone → Status).
+3. Ative o adb via TCP/IP no seu dispositivo: `adb tcpip 5555`.
+4. Desplugue seu dispositivo.
+5. Conecte-se ao seu dispositivo: `adb connect DEVICE_IP:5555` _(substitua o `DEVICE_IP`)_.
+6. Execute `scrcpy` como de costume.
 
-It may be useful to decrease the bit-rate and the definition:
+Pode ser útil diminuir o bit-rate e a resolução:
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # short version
+scrcpy -b2M -m800  # versão reduzida
 ```
 
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+[conectar-se]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 
-#### Multi-devices
+#### N-dispositivos
 
-If several devices are listed in `adb devices`, you must specify the _serial_:
+Se alguns dispositivos estão listados em `adb devices`, você precisa especificar o _serial_:
 
 ```bash
 scrcpy --serial 0123456789abcdef
-scrcpy -s 0123456789abcdef  # short version
+scrcpy -s 0123456789abcdef  # versão reduzida
 ```
 
-If the device is connected over TCP/IP:
+Se o dispositivo está conectado via TCP/IP:
 
 ```bash
 scrcpy --serial 192.168.0.1:5555
-scrcpy -s 192.168.0.1:5555  # short version
+scrcpy -s 192.168.0.1:5555  # versão reduzida
 ```
 
-You can start several instances of _scrcpy_ for several devices.
+Você pode iniciar algumas instâncias do _scrcpy_ para alguns dispositivos.
 
-#### SSH tunnel
+#### Conexão via SSH
 
-To connect to a remote device, it is possible to connect a local `adb` client to
-a remote `adb` server (provided they use the same version of the _adb_
-protocol):
+Para conectar-se à um dispositivo remoto, é possível se conectar um cliente local `adb`  à um servidor `adb` remoto (contanto que eles usem a mesma versão do protocolo _adb_):
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
+adb kill-server    # encerra o servidor local na 5037
 ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
-# keep this open
+# mantém isso aberto
 ```
 
-From another terminal:
+De outro terminal:
 
 ```bash
 scrcpy
 ```
 
-Like for wireless connections, it may be useful to reduce quality:
+Igual para conexões sem fio, pode ser útil reduzir a qualidade:
 
 ```
 scrcpy -b2M -m800 --max-fps 15
 ```
 
-### Window configuration
+### Configurações de Janela
 
-#### Title
+#### Título
 
-By default, the window title is the device model. It can be changed:
+Por padrão, o título da janela é o modelo do dispositivo. Isto pode ser mudado:
 
 ```bash
-scrcpy --window-title 'My device'
+scrcpy --window-title 'Meu dispositivo'
 ```
 
-#### Position and size
+#### Posição e tamanho
 
-The initial window position and size may be specified:
+A posição e tamanho iniciais da janela podem ser especificados:
 
 ```bash
 scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
 ```
 
-#### Borderless
+#### Sem bordas
 
-To disable window decorations:
+Para desativar decorações da janela:
 
 ```bash
 scrcpy --window-borderless
 ```
 
-#### Always on top
+#### Sempre visível
 
-To keep the scrcpy window always on top:
+Para manter a janela do scrcpy sempre visível:
 
 ```bash
 scrcpy --always-on-top
 ```
 
-#### Fullscreen
+#### Tela cheia
 
-The app may be started directly in fullscreen:
+A aplicação pode ser iniciada diretamente em tela cheia:
 
 ```bash
 scrcpy --fullscreen
-scrcpy -f  # short version
+scrcpy -f  # versão reduzida
 ```
 
-Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
+Tela cheia pode ser alternada dinamicamente com `Ctrl`+`f`.
 
 
-### Other mirroring options
+### Outras opções de espelhamento
 
-#### Read-only
+#### Apenas leitura
 
-To disable controls (everything which can interact with the device: input keys,
-mouse events, drag&drop files):
+Para desativar controles (tudo que possa interagir com o dispositivo: teclas de entrada, eventos de mouse, arrastar e soltar arquivos):
 
 ```bash
 scrcpy --no-control
 scrcpy -n
 ```
 
-#### Turn screen off
+#### Desligar a tela
 
-It is possible to turn the device screen off while mirroring on start with a
-command-line option:
+É possível desligar a tela do dispositivo durante o início do espelhamento com uma opção de linha de comando:
 
 ```bash
 scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing `Ctrl`+`o` at any time.
+Ou apertando `Ctrl`+`o` durante qualquer momento.
 
-To turn it back on, press `POWER` (or `Ctrl`+`p`).
+Para ligar novamente, pressione `POWER` (ou `Ctrl`+`p`).
 
-#### Render expired frames
+#### Frames expirados de renderização
 
-By default, to minimize latency, _scrcpy_ always renders the last decoded frame
-available, and drops any previous one.
+Por padrão, para minimizar a latência, _scrcpy_ sempre renderiza o último frame decodificado disponível e descarta o anterior.
 
-To force the rendering of all frames (at a cost of a possible increased
-latency), use:
+Para forçar a renderização de todos os frames ( com o custo de aumento de latência), use:
 
 ```bash
 scrcpy --render-expired-frames
 ```
 
-#### Show touches
+#### Mostrar toques
 
-For presentations, it may be useful to show physical touches (on the physical
-device).
+Para apresentações, pode ser útil mostrar toques físicos(dispositivo físico).
 
-Android provides this feature in _Developers options_.
+Android fornece esta funcionalidade nas _Opções do Desenvolvedor_.
 
-_Scrcpy_ provides an option to enable this feature on start and disable on exit:
+_Scrcpy_ fornece esta opção de ativar esta funcionalidade no início e desativar no encerramento:
 
 ```bash
 scrcpy --show-touches
 scrcpy -t
 ```
 
-Note that it only shows _physical_ touches (with the finger on the device).
+Note que isto mostra apenas toques _físicos_ (com o dedo no dispositivo).
 
 
-### Input control
+### Controle de entrada
 
-#### Rotate device screen
+#### Rotacionar a tela do dispositivo
 
-Press `Ctrl`+`r` to switch between portrait and landscape modes.
+Pressione `Ctrl`+`r` para mudar entre os modos Retrato e Paisagem.
 
-Note that it rotates only if the application in foreground supports the
-requested orientation.
+Note que só será rotacionado se a aplicação em primeiro plano tiver suporte para o modo requisitado.
 
-#### Copy-paste
+#### Copiar-Colar
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+É possível sincronizar áreas de transferência entre computador e o dispositivo, 
+para ambas direções:
 
- - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard;
- - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+ - `Ctrl`+`c` copia a área de transferência do dispositivo para a área de trasferência do computador;
+ - `Ctrl`+`Shift`+`v` copia a área de transferência do computador para a área de transferência do dispositivo;
+ - `Ctrl`+`v` _cola_ a área de transferência do computador como uma sequência de eventos de texto (mas
+   quebra caracteres não-ASCII).
 
-#### Text injection preference
+#### Preferências de injeção de texto
 
-There are two kinds of [events][textevents] generated when typing text:
- - _key events_, signaling that a key is pressed or released;
- - _text events_, signaling that a text has been entered.
+Existe dois tipos de [eventos][textevents] gerados ao digitar um texto:
+ - _eventos de teclas_, sinalizando que a tecla foi pressionada ou solta;
+ - _eventos de texto_, sinalizando que o texto foi inserido.
 
-By default, letters are injected using key events, so that the keyboard behaves
-as expected in games (typically for WASD keys).
+Por padrão, letras são injetadas usando eventos de teclas, assim teclados comportam-se 
+como esperado em jogos (normalmente para tecladas WASD)
 
-But this may [cause issues][prefertext]. If you encounter such a problem, you
-can avoid it by:
+Mas isto pode [causar problemas][prefertext]. Se você encontrar tal problema, 
+pode evitá-lo usando:
 
 ```bash
 scrcpy --prefer-text
 ```
 
-(but this will break keyboard behavior in games)
+(mas isto vai quebrar o comportamento do teclado em jogos)
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
-### File drop
+### Transferência de arquivo
 
-#### Install APK
+#### Instalar APK
 
-To install an APK, drag & drop an APK file (ending with `.apk`) to the _scrcpy_
-window.
+Para instalar um APK, arraste e solte o arquivo APK(com extensão `.apk`) na janela _scrcpy_.
 
-There is no visual feedback, a log is printed to the console.
+Não existe feedback visual, um log é imprimido no console.
 
 
-#### Push file to device
+#### Enviar arquivo para o dispositivo
 
-To push a file to `/sdcard/` on the device, drag & drop a (non-APK) file to the
-_scrcpy_ window.
+Para enviar um arquivo para o diretório `/sdcard/` no dispositivo, arraste e solte um arquivo não APK para a janela do 
+_scrcpy_.
 
-There is no visual feedback, a log is printed to the console.
+Não existe feedback visual, um log é imprimido no console.
 
-The target directory can be changed on start:
+O diretório alvo pode ser mudado ao iniciar:
 
 ```bash
 scrcpy --push-target /sdcard/foo/bar/
