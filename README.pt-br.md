@@ -424,87 +424,86 @@ scrcpy --push-target /sdcard/foo/bar/
 ```
 
 
-### Audio forwarding
+### Encaminhamento de áudio
 
-Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
+Áudio não é encaminhando pelo _scrcpy_. Use [USBaudio] (Apenas linux).
 
-Also see [issue #14].
+Também veja [issue #14].
 
 [USBaudio]: https://github.com/rom1v/usbaudio
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
-## Shortcuts
+## Atalhos
 
- | Action                                 |   Shortcut                    |   Shortcut (macOS)
+ | Ação                                   |   Atalho                      |   Atalho (macOS)
  | -------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
- | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                        | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                               | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
- | Rotate device screen                   | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device     | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    | `Cmd`+`i`
+ | Alternar para modo de tela cheia       | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Redimen. janela p/pixel-perfect(1:1)   | `Ctrl`+`g`                    | `Cmd`+`g`
+ | Redimen. janela p/tirar  bordas pretas | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
+ | Clicar em `HOME`                       | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
+ | Clicar em `BACK`                       | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
+ | Clicar em `APP_SWITCH`                 | `Ctrl`+`s`                    | `Cmd`+`s`
+ | Clicar em `MENU`                       | `Ctrl`+`m`                    | `Ctrl`+`m`
+ | Clicar em `VOLUME_UP`                  | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
+ | Clicar em `VOLUME_DOWN`                | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
+ | Clicar em `POWER`                      | `Ctrl`+`p`                    | `Cmd`+`p`
+ | Ligar                                  | _Right-click²_                | _Right-click²_
+ | Desligar a tela do dispositivo         | `Ctrl`+`o`                    | `Cmd`+`o`
+ | Rotacionar tela do dispositivo         | `Ctrl`+`r`                    | `Cmd`+`r`
+ | Expandir painel de notificação         | `Ctrl`+`n`                    | `Cmd`+`n`
+ | Esconder painel de notificação         | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
+ | Copiar área de transf disp p/computador| `Ctrl`+`c`                    | `Cmd`+`c`
+ | Colar área de transf comput p/ disposit| `Ctrl`+`v`                    | `Cmd`+`v`
+ | Copiar área de transf comput p/disposit| `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
+ | Ativar/desativar contador de FPS       | `Ctrl`+`i`                    | `Cmd`+`i`
 
-_¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._
+_¹Clique duplo em bordas pretas para removê-las._  
+_²Botão direito liga a tela se ela estiver desligada, clique BACK para o contrário._
 
 
-## Custom paths
+## Caminhos personalizados
 
-To use a specific _adb_ binary, configure its path in the environment variable
-`ADB`:
+Para usar um binário específico _adb_, configure seu caminho na variável de ambiente `ADB`:
 
-    ADB=/path/to/adb scrcpy
+    ADB=/caminho/para/adb scrcpy
 
-To override the path of the `scrcpy-server` file, configure its path in
+Para sobrepor o caminho do arquivo `scrcpy-server`, configure seu caminho em 
 `SCRCPY_SERVER_PATH`.
 
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 
 
-## Why _scrcpy_?
+## Por quê _scrcpy_?
 
-A colleague challenged me to find a name as unpronounceable as [gnirehtet].
+Um colega me desafiou a encontrar um nome impronunciável como [gnirehtet].
 
-[`strcpy`] copies a **str**ing; `scrcpy` copies a **scr**een.
+[`strcpy`] copia uma **str**ing; `scrcpy` copia uma **scr**een.
 
 [gnirehtet]: https://github.com/Genymobile/gnirehtet
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
 
 
-## How to build?
+## Como buildar?
 
-See [BUILD].
+Veja [BUILD].
 
 [BUILD]: BUILD.md
 
 
-## Common issues
+## Problemas comuns
 
-See the [FAQ](FAQ.md).
+Veja [FAQ](FAQ.md).
 
 
-## Developers
+## Desenvolvedores
 
-Read the [developers page].
+Leia a  [developers page].
 
 [developers page]: DEVELOP.md
 
 
-## Licence
+## Licença
 
     Copyright (C) 2018 Genymobile
     Copyright (C) 2018-2020 Romain Vimont
@@ -521,7 +520,7 @@ Read the [developers page].
     See the License for the specific language governing permissions and
     limitations under the License.
 
-## Articles
+## Artigos
 
 - [Introducing scrcpy][article-intro]
 - [Scrcpy now works wirelessly][article-tcpip]
