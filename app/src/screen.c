@@ -597,6 +597,9 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     unsigned rotation = screen->rotation;
     assert(rotation < 4);
 
+    int old_x = x;
+    int old_y = y;
+
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
@@ -608,6 +611,11 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     // scale (64 bits for intermediate multiplications)
     x = (int64_t) (x - screen->rect.x) * w * dw / (screen->rect.w * ww);
     y = (int64_t) (y - screen->rect.y) * h * dh / (screen->rect.h * wh);
+
+    LOGI("content=%dx%d, rect={%d, %d, %dx%d}: (%d, %d) -> (%d, %d)",
+         (int) w, (int) h,
+         screen->rect.x, screen->rect.y, screen->rect.w, screen->rect.h,
+         old_x, old_y, (int) x, (int) y);
 
     // rotate
     struct point result;
