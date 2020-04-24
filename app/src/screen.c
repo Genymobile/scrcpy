@@ -113,6 +113,13 @@ get_optimal_size(struct size current_size, struct size content_size) {
         h = MIN(current_size.height, display_size.height);
     }
 
+    if (h == w * content_size.height / content_size.width
+     || w == h * content_size.width / content_size.height) {
+        // The size is already optimal, if we ignore rounding errors due to
+        // integer window dimensions
+        return (struct size) {w, h};
+    }
+
     bool keep_width = content_size.width * h > content_size.height * w;
     if (keep_width) {
         // remove black borders on top and bottom
