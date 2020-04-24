@@ -68,6 +68,16 @@ get_preferred_display_bounds(struct size *bounds) {
     return true;
 }
 
+static bool
+is_optimal_size(struct size current_size, struct size content_size) {
+    // The size is optimal if we can recompute one dimension of the current
+    // size from the other
+    return current_size.height == current_size.width * content_size.height
+                                                     / content_size.width
+        || current_size.width == current_size.height * content_size.width
+                                                     / content_size.height;
+}
+
 // return the optimal size of the window, with the following constraints:
 //  - it attempts to keep at least one dimension of the current_size (i.e. it
 //    crops the black borders)
@@ -80,40 +90,36 @@ get_optimal_size(struct size current_size, struct size content_size) {
         return current_size;
     }
 
-    struct size display_size;
-    // 32 bits because we need to multiply two 16 bits values
-    uint32_t w;
-    uint32_t h;
+    struct size window_size;
 
+    struct size display_size;
     if (!get_preferred_display_bounds(&display_size)) {
         // could not get display bounds, do not constraint the size
-        w = current_size.width;
-        h = current_size.height;
+        window_size.width = current_size.width;
+        window_size.height = current_size.height;
     } else {
-        w = MIN(current_size.width, display_size.width);
-        h = MIN(current_size.height, display_size.height);
+        window_size.width = MIN(current_size.width, display_size.width);
+        window_size.height = MIN(current_size.height, display_size.height);
     }
 
-    if (h == w * content_size.height / content_size.width
-     || w == h * content_size.width / content_size.height) {
-        // The size is already optimal, if we ignore rounding errors due to
-        // integer window dimensions
-        return (struct size) {w, h};
+    if (is_optimal_size(window_size, content_size)) {
+        return window_size;
     }
 
-    bool keep_width = content_size.width * h > content_size.height * w;
+    bool keep_width = content_size.width * window_size.height
+                    > content_size.height * window_size.width;
     if (keep_width) {
         // remove black borders on top and bottom
-        h = content_size.height * w / content_size.width;
+        window_size.height = content_size.height * window_size.width
+                           / content_size.width;
     } else {
         // remove black borders on left and right (or none at all if it already
         // fits)
-        w = content_size.width * h / content_size.height;
+        window_size.width = content_size.width * window_size.height
+                          / content_size.height;
     }
 
-    // w and h must fit into 16 bits
-    assert(w < 0x10000 && h < 0x10000);
-    return (struct size) {w, h};
+    return window_size;
 }
 
 // same as get_optimal_size(), but read the current size from the window
