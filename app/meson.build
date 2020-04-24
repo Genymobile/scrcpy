@@ -116,9 +116,6 @@ conf.set('DEFAULT_LOCK_VIDEO_ORIENTATION', '-1')  # -1: unlocked
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
-# enable High DPI support
-conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
-
 # disable console on Windows
 conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
