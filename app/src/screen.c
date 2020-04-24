@@ -507,6 +507,7 @@ screen_switch_fullscreen(struct screen *screen) {
     apply_windowed_size(screen);
 
     LOGD("Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
+    update_content_rect(screen);
     screen_render(screen);
 }
 
