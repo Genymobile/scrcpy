@@ -109,9 +109,10 @@ static int
 event_watcher(void *data, SDL_Event *event) {
     (void) data;
     if (event->type == SDL_WINDOWEVENT
-            && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // called from another thread, not very safe, but it's a workaround!
-        screen_render(&screen);
+            && event->window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        // In practice, it seems to always be called from the same thread in
+        // that specific case. Anyway, it's just a workaround.
+        screen_handle_window_event(&screen, &event->window);
     }
     return 0;
 }
