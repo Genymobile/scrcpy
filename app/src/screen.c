@@ -210,6 +210,8 @@ update_content_rect(struct screen *screen) {
                                        / content_size.height;
         rect->x = (drawable_size.width - rect->w) / 2;
     }
+
+    LOGI("== update_content_rect: %d,%d %dx%d", rect->x, rect->y, rect->w, rect->h);
 }
 
 void
@@ -344,6 +346,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    LOGI("# init");
     update_content_rect(screen);
 
     screen->windowed_window_size = window_size;
@@ -421,6 +424,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 
         screen->frame_size = new_frame_size;
         screen->content_size = new_content_size;
+        LOGI("# prepare_for_frame");
         update_content_rect(screen);
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
@@ -509,6 +513,7 @@ screen_switch_fullscreen(struct screen *screen) {
     apply_windowed_size(screen);
 
     LOGD("Switched to %s mode", screen->fullscreen ? "fullscreen" : "windowed");
+    LOGI("# screen_switch_fullscreen");
     update_content_rect(screen);
     screen_render(screen);
 }
@@ -553,6 +558,7 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            LOGI("SDL_WINDOW_EVENT_EXPOSED");
             update_content_rect(screen);
             screen_render(screen);
             break;
@@ -569,6 +575,7 @@ screen_handle_window_event(struct screen *screen,
                 // window is maximized or fullscreen is enabled.
                 screen->windowed_window_size = get_window_size(screen->window);
             }
+            LOGI("SDL_WINDOW_EVENT_SIZE_CHANGED");
             update_content_rect(screen);
             screen_render(screen);
             break;
@@ -597,6 +604,9 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     unsigned rotation = screen->rotation;
     assert(rotation < 4);
 
+    int old_x = x;
+    int old_y = y;
+
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
@@ -608,6 +618,11 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     // scale (64 bits for intermediate multiplications)
     x = (int64_t) (x - screen->rect.x) * w * dw / (screen->rect.w * ww);
     y = (int64_t) (y - screen->rect.y) * h * dh / (screen->rect.h * wh);
+
+    LOGI("content=%dx%d, rect={%d, %d, %dx%d}: (%d, %d) -> (%d, %d)",
+         (int) w, (int) h,
+         screen->rect.x, screen->rect.y, screen->rect.w, screen->rect.h,
+         old_x, old_y, (int) x, (int) y);
 
     // rotate
     struct point result;
