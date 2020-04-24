@@ -518,7 +518,7 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
                                             content_size.height);
 }
 
-void
+bool
 screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
@@ -558,6 +558,8 @@ screen_handle_window_event(struct screen *screen,
             apply_windowed_size(screen);
             break;
     }
+
+    return true;
 }
 
 struct point

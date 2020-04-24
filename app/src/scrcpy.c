@@ -128,6 +128,7 @@ enum event_result {
     EVENT_RESULT_CONTINUE,
     EVENT_RESULT_STOPPED_BY_USER,
     EVENT_RESULT_STOPPED_BY_EOS,
+    EVENT_RESULT_STOPPED_BY_ERROR,
 };
 
 static enum event_result
@@ -150,7 +151,9 @@ handle_event(SDL_Event *event, bool control) {
             }
             break;
         case SDL_WINDOWEVENT:
-            screen_handle_window_event(&screen, &event->window);
+            if (!screen_handle_window_event(&screen, &event->window)) {
+                return EVENT_RESULT_STOPPED_BY_ERROR;
+            }
             break;
         case SDL_TEXTINPUT:
             if (!control) {
@@ -221,6 +224,9 @@ event_loop(bool display, bool control) {
                 return true;
             case EVENT_RESULT_STOPPED_BY_EOS:
                 LOGW("Device disconnected");
+                return false;
+            case EVENT_RESULT_STOPPED_BY_ERROR:
+                LOGC("Stopping due to unrecoverable error");
                 return false;
             case EVENT_RESULT_CONTINUE:
                 break;

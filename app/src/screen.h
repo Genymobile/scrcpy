@@ -111,7 +111,8 @@ void
 screen_set_rotation(struct screen *screen, unsigned rotation);
 
 // react to window events
-void
+// return true on success, false on unrecoverable error
+bool
 screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
 
 // convert point from window coordinates to frame coordinates
