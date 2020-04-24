@@ -265,7 +265,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
-    // stats with "opengl"
+    // starts with "opengl"
     screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (screen->use_opengl) {
         struct sc_opengl *gl = &screen->gl;
