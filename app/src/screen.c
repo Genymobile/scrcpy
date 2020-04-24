@@ -550,6 +550,7 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            update_content_rect(screen);
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
