@@ -309,6 +309,11 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     screen->windowed_window_size = window_size;
 
+    struct scale_ratio *rw = &screen->scale.w;
+    struct scale_ratio *rh = &screen->scale.h;
+    SDL_GetWindowSize(screen->window, &rw->window, &rh->window);
+    SDL_GL_GetDrawableSize(screen->window, &rw->drawable, &rh->drawable);
+
     return true;
 }
 
@@ -519,10 +524,73 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
 }
 
 bool
+screen_fix_hidpi(struct screen *screen) {
+    // If the scale ratio has changed, recreate the renderer to fix HiDPI issues
+    // <https://github.com/Genymobile/scrcpy/issues/15>
+
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    struct scale_ratio *rw = &screen->scale.w;
+    struct scale_ratio *rh = &screen->scale.h;
+
+    if (ww * rw->drawable == dw * rw->window &&
+        wh * rh->drawable == dh * rh->window) {
+        // same ratio, both horizontally and vertically, nothing to do
+        return true;
+    }
+
+    // update the current scale
+    rw->window = ww;
+    rh->window = wh;
+    rw->drawable = dw;
+    rh->drawable = dh;
+
+    if (screen->texture) {
+        SDL_DestroyTexture(screen->texture);
+    }
+    if (screen->renderer) {
+        SDL_DestroyRenderer(screen->renderer);
+    }
+
+    screen->renderer = SDL_CreateRenderer(screen->window, -1,
+                                          SDL_RENDERER_ACCELERATED);
+    if (!screen->renderer) {
+        LOGC("Could not create renderer: %s", SDL_GetError());
+        return false;
+    }
+
+    struct size content_size = screen->content_size;
+    if (SDL_RenderSetLogicalSize(screen->renderer, content_size.width,
+                                 content_size.height)) {
+        LOGE("Could not set renderer logical size: %s", SDL_GetError());
+        SDL_DestroyRenderer(screen->renderer);
+        return false;
+    }
+
+    // FIXME this is wrong, we must update the last frame to the new texture,
+    // but we don't have it anymore!
+    screen->texture = create_texture(screen);
+    if (!screen->texture) {
+        LOGC("Could not create texture: %s", SDL_GetError());
+        SDL_DestroyRenderer(screen->renderer);
+        return false;
+    }
+
+    LOGD("Renderer and texture reset");
+    return true;
+}
+
+bool
 screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            if (!screen_fix_hidpi(screen)) {
+                // unrecoverable
+                return false;
+            }
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:

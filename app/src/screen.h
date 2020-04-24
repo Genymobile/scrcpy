@@ -13,6 +13,11 @@
 
 struct video_buffer;
 
+struct scale_ratio {
+    int window;
+    int drawable;
+};
+
 struct screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -33,6 +38,11 @@ struct screen {
     bool maximized;
     bool no_window;
     bool mipmaps;
+
+    struct {
+        struct scale_ratio w;
+        struct scale_ratio h;
+    } scale;
 };
 
 #define SCREEN_INITIALIZER { \
@@ -63,6 +73,16 @@ struct screen {
     .maximized = false, \
     .no_window = false, \
     .mipmaps = false, \
+    .scale = { \
+        .w = { \
+            .window = 0, \
+            .drawable = 0, \
+        }, \
+        .h = { \
+            .window = 0, \
+            .drawable = 0, \
+        }, \
+    } \
 }
 
 // initialize default values
