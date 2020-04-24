@@ -519,11 +519,24 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
                                             content_size.height);
 }
 
+static void
+screen_reset_logical_size(struct screen *screen) {
+    // Re-apply the current logical size.
+    if (SDL_RenderSetLogicalSize(screen->renderer, screen->content_size.width,
+                                 screen->content_size.height)) {
+        LOGE("Could not reset renderer logical size: %s", SDL_GetError());
+    }
+}
+
 void
 screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            // Re-apply the current logical size, in case the window has been
+            // moved to a screen with a different HiDPI scaling
+            // <https://github.com/Genymobile/scrcpy/issues/15>
+            screen_reset_logical_size(screen);
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
