@@ -1,6 +1,6 @@
 # scrcpy (v1.12.1)
 
-Esta aplicação fornece visualização e controle de dispositivos Androids conectados via
+Esta aplicação fornece visualização e controle de dispositivos Android conectados via
 USB (ou [via TCP/IP][article-tcpip]). Não requer nenhum acesso root.
 Funciona em _GNU/Linux_, _Windows_ e _macOS_.
 
@@ -61,12 +61,12 @@ Para Gentoo, uma [Ebuild] está disponível: [`scrcpy/`][ebuild-link].
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
 
-Você também pode [buildar a aplicação manualmente][BUILD] (não se preocupe, não é tão difícil).
+Você também pode [compilar a aplicação manualmente][BUILD] (não se preocupe, não é tão difícil).
 
 
 ### Windows
 
-Para Windows, para simplicidade, um arquivo pré-buildado com todas as dependências
+Para Windows, para simplicidade, um arquivo pré-compilado com todas as dependências
 (incluindo `adb`) está disponível:
 
  - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
@@ -92,7 +92,7 @@ scoop install adb    # se você ainda não o tem
 
 [Scoop]: https://scoop.sh
 
-Você também pode [buildar a aplicação manualmente][BUILD].
+Você também pode [compilar a aplicação manualmente][BUILD].
 
 
 ### macOS
@@ -111,7 +111,7 @@ Você precisa do `adb`, acessível através do seu `PATH`. Se você ainda não o
 brew cask install android-platform-tools
 ```
 
-Você também pode [buildar a aplicação manualmente][BUILD].
+Você também pode [compilar a aplicação manualmente][BUILD].
 
 
 ## Executar
@@ -484,7 +484,7 @@ Um colega me desafiou a encontrar um nome impronunciável como [gnirehtet].
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
 
 
-## Como buildar?
+## Como compilar?
 
 Veja [BUILD].
 
