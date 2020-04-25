@@ -439,26 +439,26 @@ Também veja [issue #14].
  | Ação                                   |   Atalho                      |   Atalho (macOS)
  | -------------------------------------- |:----------------------------- |:-----------------------------
  | Alternar para modo de tela cheia       | `Ctrl`+`f`                    | `Cmd`+`f`
- | Redimen. janela p/pixel-perfect(1:1)   | `Ctrl`+`g`                    | `Cmd`+`g`
- | Redimen. janela p/tirar  bordas pretas | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Clicar em `HOME`                       | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Clicar em `BACK`                       | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
+ | Redimensionar janela para pixel-perfect(Escala 1:1)   | `Ctrl`+`g`                    | `Cmd`+`g`
+ | Redimensionar janela para tirar as bordas pretas | `Ctrl`+`x` \| _Clique-duplo¹_ | `Cmd`+`x`  \| _Clique-duplo¹_
+ | Clicar em `HOME`                       | `Ctrl`+`h` \| _Clique-central_  | `Ctrl`+`h` \| _Clique-central_
+ | Clicar em `BACK`                       | `Ctrl`+`b` \| _Clique-direito²_  | `Cmd`+`b`  \| _Clique-direito²_
  | Clicar em `APP_SWITCH`                 | `Ctrl`+`s`                    | `Cmd`+`s`
  | Clicar em `MENU`                       | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Clicar em `VOLUME_UP`                  | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Clicar em `VOLUME_DOWN`                | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
+ | Clicar em `VOLUME_UP`                  | `Ctrl`+`↑` _(cima)_             | `Cmd`+`↑` _(cima)_
+ | Clicar em `VOLUME_DOWN`                | `Ctrl`+`↓` _(baixo)_           | `Cmd`+`↓` _(baixo)_
  | Clicar em `POWER`                      | `Ctrl`+`p`                    | `Cmd`+`p`
- | Ligar                                  | _Right-click²_                | _Right-click²_
+ | Ligar                                  | _Clique-direito²_                | _Clique-direito²_
  | Desligar a tela do dispositivo         | `Ctrl`+`o`                    | `Cmd`+`o`
  | Rotacionar tela do dispositivo         | `Ctrl`+`r`                    | `Cmd`+`r`
  | Expandir painel de notificação         | `Ctrl`+`n`                    | `Cmd`+`n`
  | Esconder painel de notificação         | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copiar área de transf disp p/computador| `Ctrl`+`c`                    | `Cmd`+`c`
- | Colar área de transf comput p/ disposit| `Ctrl`+`v`                    | `Cmd`+`v`
- | Copiar área de transf comput p/disposit| `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Ativar/desativar contador de FPS       | `Ctrl`+`i`                    | `Cmd`+`i`
+ | Copiar área de transferência do dispositivo para o computador| `Ctrl`+`c`                    | `Cmd`+`c`
+ | Colar área de transferência do computador para o dispositivo| `Ctrl`+`v`                    | `Cmd`+`v`
+ | Copiar área de transferência do computador para dispositivo| `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
+ | Ativar/desativar contador de FPS(Frames por segundo)       | `Ctrl`+`i`                    | `Cmd`+`i`
 
-_¹Clique duplo em bordas pretas para removê-las._  
+_¹Clique-duplo em bordas pretas para removê-las._  
 _²Botão direito liga a tela se ela estiver desligada, clique BACK para o contrário._
 
 
