@@ -25,15 +25,17 @@ public class ScreenEncoder implements Device.RotationListener {
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
+    private String codecOptions;
     private int bitRate;
     private int maxFps;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, String codecOptions) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
+        this.codecOptions = codecOptions;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class ScreenEncoder implements Device.RotationListener {
         Workarounds.prepareMainLooper();
         Workarounds.fillAppInfo();
 
-        MediaFormat format = createFormat(bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
+        MediaFormat format = createFormat(bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL, codecOptions);
         device.setRotationListener(this);
         boolean alive;
         try {
@@ -139,7 +141,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
     }
 
-    private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval) {
+    private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval, String codecOptions) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_VIDEO_AVC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
@@ -154,6 +156,33 @@ public class ScreenEncoder implements Device.RotationListener {
             // <https://android.googlesource.com/platform/frameworks/base/+/625f0aad9f7a259b6881006ad8710adce57d1384%5E%21/>
             // <https://github.com/Genymobile/scrcpy/issues/488#issuecomment-567321437>
             format.setFloat(KEY_MAX_FPS_TO_ENCODER, maxFps);
+        }
+        // Adding additional options specified by the user
+        if(!"-".equals(codecOptions)) {
+            for (String pair : codecOptions.split(",")) {
+                String[] option = pair.split("=");
+                String key = option[0];
+                if(format.containsKey(key)) {
+                    if (option.length < 2) {
+                        Ln.w("No value specified for codec option - " + key);
+                        continue;
+                    }
+                    String[] valueAndType = option[1].split(":");
+                    String value = valueAndType[0];
+                    String type = valueAndType.length < 2 ? "" : valueAndType[1].toLowerCase();
+                    if (type.contains("str")) {
+                        format.setString(key, value);
+                    } else if (type.contains("long")) {
+                        format.setLong(key, Long.parseLong(value));
+                    } else if (type.contains("float")) {
+                        format.setFloat(key, Float.parseFloat(value));
+                    } else {
+                        format.setInteger(key, Integer.parseInt(value));
+                    }
+                } else {
+                    Ln.w("Codec format doesn't contain the requested codec option - " + key);
+                }
+            }
         }
         return format;
     }

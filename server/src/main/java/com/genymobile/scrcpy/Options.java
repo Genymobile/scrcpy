@@ -12,6 +12,7 @@ public class Options {
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
     private int displayId;
+    private String codecOptions;
 
     public int getMaxSize() {
         return maxSize;
@@ -83,5 +84,13 @@ public class Options {
 
     public void setDisplayId(int displayId) {
         this.displayId = displayId;
+    }
+
+    public String getCodecOptions() {
+        return codecOptions;
+    }
+
+    public void setCodecOptions(String codecOptions) {
+        this.codecOptions = codecOptions;
     }
 }
