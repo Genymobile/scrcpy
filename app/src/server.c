@@ -268,6 +268,7 @@ execute_server(struct server *server, const struct server_params *params) {
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
         display_id_string,
+        params->codec_options ? params->codec_options : "-",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "

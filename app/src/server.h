@@ -44,6 +44,7 @@ struct server {
 
 struct server_params {
     const char *crop;
+    const char *codec_options;
     struct port_range port_range;
     uint16_t max_size;
     uint32_t bit_rate;

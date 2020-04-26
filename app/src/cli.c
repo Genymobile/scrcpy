@@ -158,6 +158,13 @@ scrcpy_print_usage(const char *arg0) {
         "        Set the initial window width.\n"
         "        Default is 0 (automatic).\n"
         "\n"
+        "    --codec-options 'options'\n"
+        "        'options' is a list of key=value:type pairs seperated by comma\n"
+        "        for the device encoder.\n"
+        "        'type' is optional, Integer by default.\n"
+        "        For a list of possible codec options:\n"
+        "        developer.android.com/reference/android/media/MediaFormat\n"
+        "\n"
         "Shortcuts:\n"
         "\n"
         "    " CTRL_OR_CMD "+f\n"
@@ -468,18 +475,19 @@ guess_record_format(const char *filename) {
 #define OPT_ROTATION               1015
 #define OPT_RENDER_DRIVER          1016
 #define OPT_NO_MIPMAPS             1017
+#define OPT_CODEC_OPTIONS          1018
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",               required_argument, NULL, 'b'},
+        {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
-        {"lock-video-orientation", required_argument, NULL,
-                                                  OPT_LOCK_VIDEO_ORIENTATION},
+        {"lock-video-orientation", required_argument, NULL, OPT_LOCK_VIDEO_ORIENTATION},
         {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
         {"max-size",               required_argument, NULL, 'm'},
         {"no-control",             no_argument,       NULL, 'n'},
@@ -490,8 +498,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"record",                 required_argument, NULL, 'r'},
         {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
         {"render-driver",          required_argument, NULL, OPT_RENDER_DRIVER},
-        {"render-expired-frames",  no_argument,       NULL,
-                                                  OPT_RENDER_EXPIRED_FRAMES},
+        {"render-expired-frames",  no_argument,       NULL, OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
         {"serial",                 required_argument, NULL, 's'},
         {"show-touches",           no_argument,       NULL, 't'},
@@ -503,8 +510,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-y",               required_argument, NULL, OPT_WINDOW_Y},
         {"window-width",           required_argument, NULL, OPT_WINDOW_WIDTH},
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
-        {"window-borderless",      no_argument,       NULL,
-                                                  OPT_WINDOW_BORDERLESS},
+        {"window-borderless",      no_argument,       NULL, OPT_WINDOW_BORDERLESS},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -638,6 +644,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_CODEC_OPTIONS:
+                opts->codec_options = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr
