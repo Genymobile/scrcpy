@@ -26,6 +26,16 @@ Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are 
 Default is 8000000.
 
 .TP
+.BI "\-\-codec\-options " key[:type]=value[,...]
+Set a list of comma-separated key:type=value options for the device encoder.
+
+The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
+
+The list of possible codec options is available in the Android documentation
+.UR https://d.android.com/reference/android/media/MediaFormat
+.UE .
+
+.TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 

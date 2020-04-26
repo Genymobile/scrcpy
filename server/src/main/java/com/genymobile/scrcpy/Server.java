@@ -8,6 +8,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
+import java.util.List;
 
 public final class Server {
 
@@ -19,6 +20,7 @@ public final class Server {
     private static void scrcpy(Options options) throws IOException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
+        List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
 
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
@@ -49,8 +51,9 @@ public final class Server {
         CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn);
 
         boolean tunnelForward = options.isTunnelForward();
+
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions);
 
             if (options.getControl()) {
                 final Controller controller = new Controller(device, connection);
@@ -116,7 +119,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 12;
+        final int expectedParameters = 13;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -156,6 +159,9 @@ public final class Server {
 
         boolean stayAwake = Boolean.parseBoolean(args[11]);
         options.setStayAwake(stayAwake);
+
+        String codecOptions = args[12];
+        options.setCodecOptions(codecOptions);
 
         return options;
     }

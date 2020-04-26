@@ -14,6 +14,7 @@ public class Options {
     private int displayId;
     private boolean showTouches;
     private boolean stayAwake;
+    private String codecOptions;
 
     public int getMaxSize() {
         return maxSize;
@@ -101,5 +102,13 @@ public class Options {
 
     public void setStayAwake(boolean stayAwake) {
         this.stayAwake = stayAwake;
+    }
+
+    public String getCodecOptions() {
+        return codecOptions;
+    }
+
+    public void setCodecOptions(String codecOptions) {
+        this.codecOptions = codecOptions;
     }
 }

@@ -30,6 +30,15 @@ scrcpy_print_usage(const char *arg0) {
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
         "        Default is %d.\n"
         "\n"
+        "    --codec-options key[:type]=value[,...]\n"
+        "        Set a list of comma-separated key:type=value options for the\n"
+        "        device encoder.\n"
+        "        The possible values for 'type' are 'int' (default), 'long',\n"
+        "        'float' and 'string'.\n"
+        "        The list of possible codec options is available in the\n"
+        "        Android documentation:\n"
+        "        <https://d.android.com/reference/android/media/MediaFormat>\n"
+        "\n"
         "    --crop width:height:x:y\n"
         "        Crop the device screen on the server.\n"
         "        The values are expressed in the device natural orientation\n"
@@ -472,12 +481,14 @@ guess_record_format(const char *filename) {
 #define OPT_ROTATION               1015
 #define OPT_RENDER_DRIVER          1016
 #define OPT_NO_MIPMAPS             1017
+#define OPT_CODEC_OPTIONS          1018
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",               required_argument, NULL, 'b'},
+        {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
         {"fullscreen",             no_argument,       NULL, 'f'},
@@ -646,6 +657,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_CODEC_OPTIONS:
+                opts->codec_options = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr
