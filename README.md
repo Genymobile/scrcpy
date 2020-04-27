@@ -37,7 +37,7 @@ control it using keyboard and mouse.
 
 ### Linux
 
-In Debian (_testing_ and _sid_ for now):
+On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
 
 ```
 apt install scrcpy
