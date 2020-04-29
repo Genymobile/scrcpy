@@ -1,4 +1,4 @@
-# scrcpy (v1.12.1)
+# scrcpy (v1.13)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -69,10 +69,10 @@ hard).
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
- - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
-   _(SHA-256: 57d34b6d16cfd9fe169bc37c4df58ebd256d05c1ea3febc63d9cb0a027ab47c9)_
+ - [`scrcpy-win64-v1.13.zip`][direct-win64]  
+   _(SHA-256: 806aafc00d4db01513193addaa24f47858893ba5efe75770bfef6ae1ea987d27)_
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.13/scrcpy-win64-v1.13.zip
 
 It is also available in [Chocolatey]:
 
