@@ -47,8 +47,20 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         Workarounds.prepareMainLooper();
-        Workarounds.fillAppInfo();
 
+        try {
+            internalStreamScreen(device, fd);
+        } catch (NullPointerException e) {
+            // Retry with workarounds enabled:
+            // <https://github.com/Genymobile/scrcpy/issues/365>
+            // <https://github.com/Genymobile/scrcpy/issues/940>
+            Ln.d("Applying workarounds to avoid NullPointerException");
+            Workarounds.fillAppInfo();
+            internalStreamScreen(device, fd);
+        }
+    }
+
+    private void internalStreamScreen(Device device, FileDescriptor fd) throws IOException {
         MediaFormat format = createFormat(bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
         device.setRotationListener(this);
         boolean alive;
