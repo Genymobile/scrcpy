@@ -38,6 +38,7 @@ struct scrcpy_options {
     bool prefer_text;
     bool window_borderless;
     bool mipmaps;
+    bool stay_awake;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -72,6 +73,7 @@ struct scrcpy_options {
     .prefer_text = false, \
     .window_borderless = false, \
     .mipmaps = true, \
+    .stay_awake = false, \
 }
 
 bool

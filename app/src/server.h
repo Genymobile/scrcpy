@@ -52,6 +52,7 @@ struct server_params {
     bool control;
     uint16_t display_id;
     bool show_touches;
+    bool stay_awake;
 };
 
 // init default values

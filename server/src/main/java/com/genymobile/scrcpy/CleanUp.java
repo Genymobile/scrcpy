@@ -19,18 +19,18 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(boolean disableShowTouches) throws IOException {
-        boolean needProcess = disableShowTouches;
+    public static void configure(boolean disableShowTouches, int restoreStayOn) throws IOException {
+        boolean needProcess = disableShowTouches || restoreStayOn != -1;
         if (needProcess) {
-            startProcess(disableShowTouches);
+            startProcess(disableShowTouches, restoreStayOn);
         } else {
             // There is no additional clean up to do when scrcpy dies
             unlinkSelf();
         }
     }
 
-    private static void startProcess(boolean disableShowTouches) throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches)};
+    private static void startProcess(boolean disableShowTouches, int restoreStayOn) throws IOException {
+        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches), String.valueOf(restoreStayOn)};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
@@ -58,12 +58,19 @@ public final class CleanUp {
         Ln.i("Cleaning up");
 
         boolean disableShowTouches = Boolean.parseBoolean(args[0]);
+        int restoreStayOn = Integer.parseInt(args[1]);
 
-        if (disableShowTouches) {
+        if (disableShowTouches || restoreStayOn != -1) {
             ServiceManager serviceManager = new ServiceManager();
             try (ContentProvider settings = serviceManager.getActivityManager().createSettingsProvider()) {
-                Ln.i("Disabling \"show touches\"");
-                settings.putValue(ContentProvider.TABLE_SYSTEM, "show_touches", "0");
+                if (disableShowTouches) {
+                    Ln.i("Disabling \"show touches\"");
+                    settings.putValue(ContentProvider.TABLE_SYSTEM, "show_touches", "0");
+                }
+                if (restoreStayOn != -1) {
+                    Ln.i("Restoring \"stay awake\"");
+                    settings.putValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(restoreStayOn));
+                }
             }
         }
     }

@@ -278,6 +278,7 @@ scrcpy(const struct scrcpy_options *options) {
         .control = options->control,
         .display_id = options->display_id,
         .show_touches = options->show_touches,
+        .stay_awake = options->stay_awake,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;

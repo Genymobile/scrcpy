@@ -13,6 +13,7 @@ public class Options {
     private boolean control;
     private int displayId;
     private boolean showTouches;
+    private boolean stayAwake;
 
     public int getMaxSize() {
         return maxSize;
@@ -92,5 +93,13 @@ public class Options {
 
     public void setShowTouches(boolean showTouches) {
         this.showTouches = showTouches;
+    }
+
+    public boolean getStayAwake() {
+        return stayAwake;
+    }
+
+    public void setStayAwake(boolean stayAwake) {
+        this.stayAwake = stayAwake;
     }
 }

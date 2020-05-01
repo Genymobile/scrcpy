@@ -137,6 +137,9 @@ scrcpy_print_usage(const char *arg0) {
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
         "\n"
+        "    -w, --stay-awake\n"
+        "        Keep the device on while scrcpy is running.\n"
+        "\n"
         "    --window-borderless\n"
         "        Disable window decorations (display borderless window).\n"
         "\n"
@@ -497,6 +500,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"rotation",               required_argument, NULL, OPT_ROTATION},
         {"serial",                 required_argument, NULL, 's'},
         {"show-touches",           no_argument,       NULL, 't'},
+        {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
         {"version",                no_argument,       NULL, 'v'},
         {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
@@ -514,7 +518,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTv", long_options,
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvw", long_options,
                             NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -593,6 +597,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'v':
                 args->version = true;
+                break;
+            case 'w':
+                opts->stay_awake = true;
                 break;
             case OPT_RENDER_EXPIRED_FRAMES:
                 opts->render_expired_frames = true;
@@ -673,6 +680,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
 
     if (!opts->control && opts->turn_screen_off) {
         LOGE("Could not request to turn screen off if control is disabled");
+        return false;
+    }
+
+    if (!opts->control && opts->stay_awake) {
+        LOGE("Could not request to stay awake if control is disabled");
         return false;
     }
 

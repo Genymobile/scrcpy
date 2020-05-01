@@ -396,6 +396,18 @@ The list of display ids can be retrieved by:
 adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
+#### Stay awake
+
+To prevent the device to sleep after some delay:
+
+```bash
+scrcpy --stay-awake
+scrcpy -w
+```
+
+The initial state is restored when scrcpy is closed.
+
+
 #### Turn screen off
 
 It is possible to turn the device screen off while mirroring on start with a
@@ -409,6 +421,14 @@ scrcpy -S
 Or by pressing `Ctrl`+`o` at any time.
 
 To turn it back on, press `POWER` (or `Ctrl`+`p`).
+
+It can be useful to also prevent the device to sleep:
+
+```bash
+scrcpy --turn-screen-off --stay-awake
+scrcpy -Sw
+```
+
 
 #### Render expired frames
 

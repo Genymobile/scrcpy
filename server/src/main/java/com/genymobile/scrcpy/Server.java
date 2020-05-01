@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import android.graphics.Rect;
 import android.media.MediaCodec;
+import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
@@ -20,15 +21,32 @@ public final class Server {
         final Device device = new Device(options);
 
         boolean mustDisableShowTouchesOnCleanUp = false;
-        if (options.getShowTouches()) {
+        int restoreStayOn = -1;
+        if (options.getShowTouches() || options.getStayAwake()) {
             try (ContentProvider settings = device.createSettingsProvider()) {
-                String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
-                // If "show touches" was disabled, it must be disabled back on clean up
-                mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
+                if (options.getShowTouches()) {
+                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
+                    // If "show touches" was disabled, it must be disabled back on clean up
+                    mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
+                }
+
+                if (options.getStayAwake()) {
+                    int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
+                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
+                    try {
+                        restoreStayOn = Integer.parseInt(oldValue);
+                        if (restoreStayOn == stayOn) {
+                            // No need to restore
+                            restoreStayOn = -1;
+                        }
+                    } catch (NumberFormatException e) {
+                        restoreStayOn = 0;
+                    }
+                }
             }
         }
 
-        CleanUp.configure(mustDisableShowTouchesOnCleanUp);
+        CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn);
 
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
@@ -91,7 +109,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 11;
+        final int expectedParameters = 12;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -128,6 +146,9 @@ public final class Server {
 
         boolean showTouches = Boolean.parseBoolean(args[10]);
         options.setShowTouches(showTouches);
+
+        boolean stayAwake = Boolean.parseBoolean(args[11]);
+        options.setStayAwake(stayAwake);
 
         return options;
     }

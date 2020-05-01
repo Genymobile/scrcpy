@@ -269,6 +269,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->control ? "true" : "false",
         display_id_string,
         params->show_touches ? "true" : "false",
+        params->stay_awake ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
