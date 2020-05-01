@@ -270,7 +270,7 @@ You could use [AutoAdb]:
 autoadb scrcpy -s '{}'
 ```
 
-[AutoAdb]: https://github.com/rom1v/usbaudio
+[AutoAdb]: https://github.com/rom1v/autoadb
 
 #### SSH tunnel
 
