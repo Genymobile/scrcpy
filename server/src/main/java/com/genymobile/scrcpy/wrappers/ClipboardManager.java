@@ -10,10 +10,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class ClipboardManager {
-
-    private static final String PACKAGE_NAME = "com.android.shell";
-    private static final int USER_ID = 0;
-
     private final IInterface manager;
     private Method getPrimaryClipMethod;
     private Method setPrimaryClipMethod;
@@ -46,17 +42,17 @@ public class ClipboardManager {
 
     private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return (ClipData) method.invoke(manager, PACKAGE_NAME);
+            return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME);
         }
-        return (ClipData) method.invoke(manager, PACKAGE_NAME, USER_ID);
+        return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
     }
 
     private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData)
             throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            method.invoke(manager, clipData, PACKAGE_NAME);
+            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME);
         } else {
-            method.invoke(manager, clipData, PACKAGE_NAME, USER_ID);
+            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
         }
     }
 

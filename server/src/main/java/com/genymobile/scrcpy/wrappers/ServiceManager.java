@@ -8,6 +8,10 @@ import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ServiceManager {
+
+    public static final String PACKAGE_NAME = "com.android.shell";
+    public static final int USER_ID = 0;
+
     private final Method getServiceMethod;
 
     private WindowManager windowManager;
