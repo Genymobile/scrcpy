@@ -51,6 +51,7 @@ struct server_params {
     int8_t lock_video_orientation;
     bool control;
     uint16_t display_id;
+    bool show_touches;
 };
 
 // init default values

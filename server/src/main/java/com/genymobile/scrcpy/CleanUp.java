@@ -19,19 +19,18 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure() throws IOException {
-        // TODO
-        boolean needProcess = false;
+    public static void configure(boolean disableShowTouches) throws IOException {
+        boolean needProcess = disableShowTouches;
         if (needProcess) {
-            startProcess();
+            startProcess(disableShowTouches);
         } else {
             // There is no additional clean up to do when scrcpy dies
             unlinkSelf();
         }
     }
 
-    private static void startProcess() throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName()};
+    private static void startProcess(boolean disableShowTouches) throws IOException {
+        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches)};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
@@ -57,6 +56,15 @@ public final class CleanUp {
         }
 
         Ln.i("Cleaning up");
-        // TODO
+
+        boolean disableShowTouches = Boolean.parseBoolean(args[0]);
+
+        if (disableShowTouches) {
+            ServiceManager serviceManager = new ServiceManager();
+            try (ContentProvider settings = serviceManager.getActivityManager().createSettingsProvider()) {
+                Ln.i("Disabling \"show touches\"");
+                settings.putValue(ContentProvider.TABLE_SYSTEM, "show_touches", "0");
+            }
+        }
     }
 }

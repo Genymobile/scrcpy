@@ -12,6 +12,7 @@ public class Options {
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
     private int displayId;
+    private boolean showTouches;
 
     public int getMaxSize() {
         return maxSize;
@@ -83,5 +84,13 @@ public class Options {
 
     public void setDisplayId(int displayId) {
         this.displayId = displayId;
+    }
+
+    public boolean getShowTouches() {
+        return showTouches;
+    }
+
+    public void setShowTouches(boolean showTouches) {
+        this.showTouches = showTouches;
     }
 }

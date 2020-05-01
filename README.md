@@ -429,7 +429,8 @@ device).
 
 Android provides this feature in _Developers options_.
 
-_Scrcpy_ provides an option to enable this feature on start and disable on exit:
+_Scrcpy_ provides an option to enable this feature on start and restore the
+initial value on exit:
 
 ```bash
 scrcpy --show-touches

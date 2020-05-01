@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ContentProvider;
+
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.os.Build;
@@ -17,7 +19,16 @@ public final class Server {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
 
-        CleanUp.configure();
+        boolean mustDisableShowTouchesOnCleanUp = false;
+        if (options.getShowTouches()) {
+            try (ContentProvider settings = device.createSettingsProvider()) {
+                String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
+                // If "show touches" was disabled, it must be disabled back on clean up
+                mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
+            }
+        }
+
+        CleanUp.configure(mustDisableShowTouchesOnCleanUp);
 
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
@@ -80,8 +91,9 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        if (args.length != 10) {
-            throw new IllegalArgumentException("Expecting 10 parameters");
+        final int expectedParameters = 11;
+        if (args.length != expectedParameters) {
+            throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
 
         Options options = new Options();
@@ -113,6 +125,9 @@ public final class Server {
 
         int displayId = Integer.parseInt(args[9]);
         options.setDisplayId(displayId);
+
+        boolean showTouches = Boolean.parseBoolean(args[10]);
+        options.setShowTouches(showTouches);
 
         return options;
     }
