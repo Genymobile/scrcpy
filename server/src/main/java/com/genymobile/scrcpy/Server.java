@@ -4,12 +4,10 @@ import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.os.Build;
 
-import java.io.File;
 import java.io.IOException;
 
 public final class Server {
 
-    private static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
 
     private Server() {
         // not instantiable
@@ -18,6 +16,9 @@ public final class Server {
     private static void scrcpy(Options options) throws IOException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
+
+        CleanUp.configure();
+
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps());
@@ -132,14 +133,6 @@ public final class Server {
         return new Rect(x, y, x + width, y + height);
     }
 
-    private static void unlinkSelf() {
-        try {
-            new File(SERVER_PATH).delete();
-        } catch (Exception e) {
-            Ln.e("Could not unlink server", e);
-        }
-    }
-
     private static void suggestFix(Throwable e) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (e instanceof MediaCodec.CodecException) {
@@ -172,7 +165,6 @@ public final class Server {
             }
         });
 
-        unlinkSelf();
         Options options = createOptions(args);
         scrcpy(options);
     }
