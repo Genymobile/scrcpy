@@ -231,22 +231,17 @@ enable_tunnel_any_port(struct server *server, struct port_range port_range) {
 
 static process_t
 execute_server(struct server *server, const struct server_params *params) {
-    char max_size_string[6];
-    char bit_rate_string[11];
-    char max_fps_string[6];
-    char lock_video_orientation_string[3];
-    char display_id_string[6];
-    sprintf(max_size_string, "%"PRIu16, params->max_size);
-    sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
-    sprintf(max_fps_string, "%"PRIu16, params->max_fps);
-    sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
-    sprintf(display_id_string, "%"PRIu16, params->display_id);
-    const char *const cmd[] = {
-        "shell",
-        "CLASSPATH=" DEVICE_SERVER_PATH,
-        "app_process",
+    process_t result = PROCESS_NONE;
+
+    char *cmd[128];
+    int i = 0;
+    cmd[i++] = "shell";
+    cmd[i++] = "CLASSPATH=" DEVICE_SERVER_PATH;
+    cmd[i++] = "app_process";
+
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
+    cmd[i++] =
 # ifdef SERVER_DEBUGGER_METHOD_NEW
         /* Android 9 and above */
         "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,server=y,address="
@@ -254,23 +249,37 @@ execute_server(struct server *server, const struct server_params *params) {
         /* Android 8 and below */
         "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
 # endif
-            SERVER_DEBUGGER_PORT,
+            SERVER_DEBUGGER_PORT;
 #endif
-        "/", // unused
-        "com.genymobile.scrcpy.Server",
-        SCRCPY_VERSION,
-        max_size_string,
-        bit_rate_string,
-        max_fps_string,
-        lock_video_orientation_string,
-        server->tunnel_forward ? "true" : "false",
-        params->crop ? params->crop : "-",
-        "true", // always send frame meta (packet boundaries + timestamp)
-        params->control ? "true" : "false",
-        display_id_string,
-        params->show_touches ? "true" : "false",
-        params->stay_awake ? "true" : "false",
-    };
+
+    cmd[i++] = "/"; // unused
+    cmd[i++] = "com.genymobile.scrcpy.Server";
+    cmd[i++] = SCRCPY_VERSION;
+
+    int dyn_index = i; // from there, the strings are allocated
+#define ADD_PARAM(fmt, ...) \
+    cmd[i] = sc_asprintf(fmt, ## __VA_ARGS__); \
+    if (!cmd[i++]) { \
+        goto end; \
+    }
+
+#define STRBOOL(p) (p ? "true" : "false")
+
+    ADD_PARAM("%"PRIu16, params->max_size);
+    ADD_PARAM("%"PRIu32, params->bit_rate);
+    ADD_PARAM("%"PRIu16, params->max_fps);
+    ADD_PARAM("%"PRIi8, params->lock_video_orientation);
+    ADD_PARAM("%s", STRBOOL(server->tunnel_forward));
+    ADD_PARAM("%s", params->crop ? params->crop : "-");
+    ADD_PARAM("true"); // always send frame meta (packet boundaries + timestamp)
+    ADD_PARAM("%s", STRBOOL(params->control));
+    ADD_PARAM("%"PRIu16, params->display_id);
+    ADD_PARAM("%s", STRBOOL(params->show_touches));
+    ADD_PARAM("%s", STRBOOL(params->stay_awake));
+
+#undef ADD_PARAM
+#undef STRBOOL
+
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
          SERVER_DEBUGGER_PORT "...");
@@ -282,7 +291,14 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    result = adb_execute(server->serial, (const char **) cmd, i);
+
+end:
+    for (int j = i; j > dyn_index; --j) {
+        free(cmd[j - 1]);
+    }
+
+    return result;
 }
 
 static socket_t
