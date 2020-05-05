@@ -1,8 +1,10 @@
 #ifndef STRUTIL_H
 #define STRUTIL_H
 
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #include "config.h"
 
@@ -56,5 +58,14 @@ utf8_to_wide_char(const char *utf8);
 char *
 utf8_from_wide_char(const wchar_t *s);
 #endif
+
+// compatibility function similar to asprintf()
+// (but returning the resulting string for convenience)
+char *
+sc_asprintf(const char *fmt, ...)
+__attribute__((format(printf, 1, 2)));
+
+char *
+sc_vasprintf(const char *fmt, va_list ap);
 
 #endif

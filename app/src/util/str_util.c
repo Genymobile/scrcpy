@@ -1,7 +1,9 @@
 #include "str_util.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -195,3 +197,33 @@ utf8_from_wide_char(const wchar_t *ws) {
 }
 
 #endif
+
+char *
+sc_asprintf(const char *fmt, ...) {
+    va_list va;
+    va_start(va, fmt);
+    char *s = sc_vasprintf(fmt, va);
+    va_end(va);
+    return s;
+}
+
+char *
+sc_vasprintf(const char *fmt, va_list ap) {
+    va_list va;
+    va_copy(va, ap);
+    int len = vsnprintf(NULL, 0, fmt, va);
+    va_end(va);
+
+    char *str = malloc(len + 1);
+    if (!str) {
+        return NULL;
+    }
+
+    va_copy(va, ap);
+    int len2 = vsprintf(str, fmt, va);
+    (void) len2;
+    assert(len == len2);
+    va_end(va);
+
+    return str;
+}
