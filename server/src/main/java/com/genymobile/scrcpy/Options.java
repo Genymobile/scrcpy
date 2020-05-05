@@ -6,7 +6,7 @@ public class Options {
     private int maxSize;
     private int bitRate;
     private int maxFps;
-    private int lockedVideoOrientation;
+    private int lockedVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly

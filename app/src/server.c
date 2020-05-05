@@ -265,17 +265,18 @@ execute_server(struct server *server, const struct server_params *params) {
 
 #define STRBOOL(p) (p ? "true" : "false")
 
-    ADD_PARAM("%"PRIu16, params->max_size);
-    ADD_PARAM("%"PRIu32, params->bit_rate);
-    ADD_PARAM("%"PRIu16, params->max_fps);
-    ADD_PARAM("%"PRIi8, params->lock_video_orientation);
-    ADD_PARAM("%s", STRBOOL(server->tunnel_forward));
-    ADD_PARAM("%s", params->crop ? params->crop : "-");
-    ADD_PARAM("true"); // always send frame meta (packet boundaries + timestamp)
-    ADD_PARAM("%s", STRBOOL(params->control));
-    ADD_PARAM("%"PRIu16, params->display_id);
-    ADD_PARAM("%s", STRBOOL(params->show_touches));
-    ADD_PARAM("%s", STRBOOL(params->stay_awake));
+    ADD_PARAM("max_size=%"PRIu16, params->max_size);
+    ADD_PARAM("bit_rate=%"PRIu32, params->bit_rate);
+    ADD_PARAM("max_fps=%"PRIu16, params->max_fps);
+    ADD_PARAM("lock_video_orientation=%"PRIi8, params->lock_video_orientation);
+    ADD_PARAM("tunnel_forward=%s", STRBOOL(server->tunnel_forward));
+    ADD_PARAM("crop=%s", params->crop ? params->crop : "");
+    // always send frame meta (packet boundaries + timestamp)
+    ADD_PARAM("send_frame_meta=true");
+    ADD_PARAM("control=%s", STRBOOL(params->control));
+    ADD_PARAM("display_id=%"PRIu16, params->display_id);
+    ADD_PARAM("show_touches=%s", STRBOOL(params->show_touches));
+    ADD_PARAM("stay_awake=%s", STRBOOL(params->stay_awake));
 
 #undef ADD_PARAM
 #undef STRBOOL

@@ -109,52 +109,73 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 12;
-        if (args.length != expectedParameters) {
-            throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
-        }
-
         Options options = new Options();
 
-        int maxSize = Integer.parseInt(args[1]) & ~7; // multiple of 8
-        options.setMaxSize(maxSize);
+        for (int i = 1; i < args.length; ++i) {
+            String arg = args[i];
+            int equalIndex = arg.indexOf('=');
+            if (equalIndex == -1) {
+                throw new IllegalArgumentException("Invalid key=value pair: \"" + arg + "\"");
+            }
+            String key = arg.substring(0, equalIndex);
+            String value = arg.substring(equalIndex + 1);
 
-        int bitRate = Integer.parseInt(args[2]);
-        options.setBitRate(bitRate);
-
-        int maxFps = Integer.parseInt(args[3]);
-        options.setMaxFps(maxFps);
-
-        int lockedVideoOrientation = Integer.parseInt(args[4]);
-        options.setLockedVideoOrientation(lockedVideoOrientation);
-
-        // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[5]);
-        options.setTunnelForward(tunnelForward);
-
-        Rect crop = parseCrop(args[6]);
-        options.setCrop(crop);
-
-        boolean sendFrameMeta = Boolean.parseBoolean(args[7]);
-        options.setSendFrameMeta(sendFrameMeta);
-
-        boolean control = Boolean.parseBoolean(args[8]);
-        options.setControl(control);
-
-        int displayId = Integer.parseInt(args[9]);
-        options.setDisplayId(displayId);
-
-        boolean showTouches = Boolean.parseBoolean(args[10]);
-        options.setShowTouches(showTouches);
-
-        boolean stayAwake = Boolean.parseBoolean(args[11]);
-        options.setStayAwake(stayAwake);
+            switch (key) {
+                case "max_size":
+                    int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
+                    options.setMaxSize(maxSize);
+                    break;
+                case "bit_rate":
+                    int bitRate = Integer.parseInt(value);
+                    options.setBitRate(bitRate);
+                    break;
+                case "max_fps":
+                    int maxFps = Integer.parseInt(value);
+                    options.setMaxFps(maxFps);
+                    break;
+                case "lock_video_orientation":
+                    int lockedVideoOrientation = Integer.parseInt(value);
+                    options.setLockedVideoOrientation(lockedVideoOrientation);
+                    break;
+                case "tunnel_forward":
+                    // use "adb forward" instead of "adb tunnel"? (so the server must listen)
+                    boolean tunnelForward = Boolean.parseBoolean(value);
+                    options.setTunnelForward(tunnelForward);
+                    break;
+                case "crop":
+                    Rect crop = parseCrop(value);
+                    options.setCrop(crop);
+                    break;
+                case "send_frame_meta":
+                    boolean sendFrameMeta = Boolean.parseBoolean(value);
+                    options.setSendFrameMeta(sendFrameMeta);
+                    break;
+                case "control":
+                    boolean control = Boolean.parseBoolean(value);
+                    options.setControl(control);
+                    break;
+                case "display_id":
+                    int displayId = Integer.parseInt(value);
+                    options.setDisplayId(displayId);
+                    break;
+                case "show_touches":
+                    boolean showTouches = Boolean.parseBoolean(value);
+                    options.setShowTouches(showTouches);
+                    break;
+                case "stay_awake":
+                    boolean stayAwake = Boolean.parseBoolean(value);
+                    options.setStayAwake(stayAwake);
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown parameter: " + key);
+            }
+        }
 
         return options;
     }
 
     private static Rect parseCrop(String crop) {
-        if ("-".equals(crop)) {
+        if (crop.isEmpty()) {
             return null;
         }
         // input format: "width:height:x:y"
