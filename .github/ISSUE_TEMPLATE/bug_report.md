@@ -21,5 +21,9 @@ assignees: ''
 A clear and concise description of what the bug is.
 
 On errors, please provide the output of the console (and `adb logcat` if relevant).
-Format them between code blocks (delimited by ```).
+
+```
+Please paste terminal output in a code block.
+```
+
 Please do not post screenshots of your terminal, just post the content as text instead.
