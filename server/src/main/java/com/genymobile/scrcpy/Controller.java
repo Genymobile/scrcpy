@@ -215,7 +215,7 @@ public class Controller {
 
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
-                        InputDevice.SOURCE_MOUSE, 0);
+                        InputDevice.SOURCE_TOUCHSCREEN, 0);
         return injectEvent(event);
     }
 
