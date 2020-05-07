@@ -615,6 +615,8 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     SDL_GetWindowSize(screen->window, &ww, &wh);
     SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
 
+    LOGI("window_size = %dx%d, drawable_size = %dx%d", ww, wh, dw, dh);
+
     // scale (64 bits for intermediate multiplications)
     x = (int64_t) (x - screen->rect.x) * w * dw / (screen->rect.w * ww);
     y = (int64_t) (y - screen->rect.y) * h * dh / (screen->rect.h * wh);
