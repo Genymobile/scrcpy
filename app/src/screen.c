@@ -520,6 +520,7 @@ screen_switch_fullscreen(struct screen *screen) {
 
 void
 screen_resize_to_fit(struct screen *screen) {
+    LOGI("resize_to_fit (fullscreen=%d)", screen->fullscreen);
     if (screen->fullscreen) {
         return;
     }
