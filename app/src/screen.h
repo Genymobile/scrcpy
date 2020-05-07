@@ -29,8 +29,6 @@ struct screen {
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
     unsigned rotation;
     bool has_frame;
-    bool fullscreen;
-    bool maximized;
     bool no_window;
     bool mipmaps;
 };
@@ -59,8 +57,6 @@ struct screen {
     }, \
     .rotation = 0, \
     .has_frame = false, \
-    .fullscreen = false, \
-    .maximized = false, \
     .no_window = false, \
     .mipmaps = false, \
 }
