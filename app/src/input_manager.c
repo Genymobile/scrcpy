@@ -527,8 +527,9 @@ input_manager_process_mouse_button(struct input_manager *im,
 
         // double-click on black borders resize to fit the device screen
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
-            int x = event->x;
-            int y = event->y;
+            int32_t x = event->x;
+            int32_t y = event->y;
+            screen_hidpi_scale_coords(im->screen, &x, &y);
             SDL_Rect *r = &im->screen->rect;
             bool outside = x < r->x || x >= r->x + r->w
                         || y < r->y || y >= r->y + r->h;

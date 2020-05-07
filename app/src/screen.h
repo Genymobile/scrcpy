@@ -127,4 +127,11 @@ screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
 struct point
 screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y);
 
+// Convert coordinates from window to drawable.
+// Events are expressed in window coordinates, but content is expressed in
+// drawable coordinates. They are the same if HiDPI scaling is 1, but differ
+// otherwise.
+void
+screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y);
+
 #endif

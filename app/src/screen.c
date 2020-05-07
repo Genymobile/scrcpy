@@ -611,16 +611,7 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
-    // take the HiDPI scaling (dw/ww and dh/wh) into account
-    int ww, wh, dw, dh;
-    SDL_GetWindowSize(screen->window, &ww, &wh);
-    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
-
-    LOGI("window_size = %dx%d, drawable_size = %dx%d", ww, wh, dw, dh);
-
-    // scale for HiDPI (64 bits for intermediate multiplications)
-    x = (int64_t) x * dw / ww;
-    y = (int64_t) y * dh / wh;
+    screen_hidpi_scale_coords(screen, &x, &y);
 
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
@@ -652,4 +643,16 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
             break;
     }
     return result;
+}
+
+void
+screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y) {
+    // take the HiDPI scaling (dw/ww and dh/wh) into account
+    int ww, wh, dw, dh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
+
+    // scale for HiDPI (64 bits for intermediate multiplications)
+    *x = (int64_t) *x * dw / ww;
+    *y = (int64_t) *y * dh / wh;
 }
