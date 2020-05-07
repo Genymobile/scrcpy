@@ -617,9 +617,12 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
 
     LOGI("window_size = %dx%d, drawable_size = %dx%d", ww, wh, dw, dh);
 
-    // scale (64 bits for intermediate multiplications)
-    x = (int64_t) (x - screen->rect.x) * w * dw / (screen->rect.w * ww);
-    y = (int64_t) (y - screen->rect.y) * h * dh / (screen->rect.h * wh);
+    // scale for HiDPI (64 bits for intermediate multiplications)
+    x = (int64_t) x * dw / ww;
+    y = (int64_t) y * dh / wh;
+
+    x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
+    y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
 
     LOGI("content=%dx%d, rect={%d, %d, %dx%d}: (%d, %d) -> (%d, %d)",
          (int) w, (int) h,
