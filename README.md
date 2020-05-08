@@ -210,7 +210,6 @@ To disable mirroring while recording:
 scrcpy --no-display --record file.mp4
 scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
-# Ctrl+C does not terminate properly on Windows, so disconnect the device
 ```
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for

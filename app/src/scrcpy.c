@@ -7,6 +7,10 @@
 #include <sys/time.h>
 #include <SDL2/SDL.h>
 
+#ifdef _WIN32
+# include <windows.h>
+#endif
+
 #include "config.h"
 #include "command.h"
 #include "common.h"
@@ -45,6 +49,18 @@ static struct input_manager input_manager = {
     .prefer_text = false, // initialized later
 };
 
+#ifdef _WIN32
+BOOL windows_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT) {
+        SDL_Event event;
+        event.type = SDL_QUIT;
+        SDL_PushEvent(&event);
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif // _WIN32
+
 // init SDL and set appropriate hints
 static bool
 sdl_init_and_configure(bool display, const char *render_driver) {
@@ -55,6 +71,14 @@ sdl_init_and_configure(bool display, const char *render_driver) {
     }
 
     atexit(SDL_Quit);
+
+#ifdef _WIN32
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+#endif // _WIN32
 
     if (!display) {
         return true;
