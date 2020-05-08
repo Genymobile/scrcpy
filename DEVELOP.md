@@ -64,9 +64,26 @@ another).
 They can be called using reflection though. The communication with hidden
 components is provided by [_wrappers_ classes][wrappers] and [aidl].
 
+Note: It's also sometimes possible to use hidden Android framework methods just by
+linking to the modified android.jar file available from the [android-hidden-api]
+project - just place android.jar which matches compileSdkVersion of the project
+to the `platforms/android-<sdk_level>/` in the Android SDK directory and set
+`classpath 'com.android.tools.build:gradle:3.1.4'` in the root `build.gradle`
+file - modified android.jar works only with Gradle Plugin 3.1.4 and lower.
+
+This also can speed up resulting code by using direct calls instead of the
+reflection.
+
+However, it's not possible to access [blacklisted APIs] (starting from Android 9)
+directly in this way, but there is [a double-reflection trick] to allow the 
+application to access those hidden APIs.
+
 [hidden]: https://stackoverflow.com/a/31908373/1987178
 [wrappers]: https://github.com/Genymobile/scrcpy/tree/ffe0417228fb78ab45b7ee4e202fc06fc8875bf3/server/src/main/java/com/genymobile/scrcpy/wrappers
 [aidl]: https://github.com/Genymobile/scrcpy/tree/ffe0417228fb78ab45b7ee4e202fc06fc8875bf3/server/src/main/aidl/android/view
+[android-hidden-api]: https://github.com/anggrayudi/android-hidden-api
+[blacklisted APIs]: https://developer.android.com/distribute/best-practices/develop/restrictions-non-sdk-interfaces#list-names
+[a double-reflection trick]: https://www.xda-developers.com/android-development-bypass-hidden-api-restrictions/
 
 
 ### Threading
