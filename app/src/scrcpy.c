@@ -50,7 +50,7 @@ static struct input_manager input_manager = {
 };
 
 #ifdef _WIN32
-BOOL windows_ctrl_handler(DWORD ctrl_type) {
+BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
         SDL_Event event;
         event.type = SDL_QUIT;
