@@ -517,6 +517,26 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
                                             content_size.height);
 }
 
+static inline bool
+is_fullscreen(const struct screen *screen) {
+    uint32_t flags = SDL_GetWindowFlags(screen->window);
+    return !!(flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
+}
+
+static void
+update_fullscreen_state(struct screen *screen) {
+    // There is no SDL event to detect fullscreen changes, so store the
+    // state in a field and compare on every "size changed" event
+    bool fullscreen = is_fullscreen(screen);
+    if (fullscreen != screen->fullscreen) {
+        // Fullscreen state have changed
+        screen->fullscreen = fullscreen;
+        if (!fullscreen && !screen->maximized) {
+            apply_pending_resize(screen);
+        }
+    }
+}
+
 void
 screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
@@ -525,6 +545,7 @@ screen_handle_window_event(struct screen *screen,
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
+            update_fullscreen_state(screen);
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
