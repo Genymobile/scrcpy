@@ -1,3 +1,5 @@
+_Only the original [README](README.md) is guaranteed to be up-to-date._
+
 # scrcpy (v1.12.1)
 
 Esta aplicação fornece visualização e controle de dispositivos Android conectados via
