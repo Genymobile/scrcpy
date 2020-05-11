@@ -331,6 +331,21 @@ screen_destroy(struct screen *screen) {
     }
 }
 
+static void
+set_content_size(struct screen *screen, struct size new_content_size) {
+    struct size old_content_size = screen->content_size;
+    struct size windowed_size = get_windowed_window_size(screen);
+    struct size target_size = {
+        .width = (uint32_t) windowed_size.width * new_content_size.width
+                / old_content_size.width,
+        .height = (uint32_t) windowed_size.height * new_content_size.height
+                / old_content_size.height,
+    };
+    target_size = get_optimal_size(target_size, new_content_size);
+    set_window_size(screen, target_size);
+    screen->content_size = new_content_size;
+}
+
 void
 screen_set_rotation(struct screen *screen, unsigned rotation) {
     assert(rotation < 4);
@@ -338,7 +353,6 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
         return;
     }
 
-    struct size old_content_size = screen->content_size;
     struct size new_content_size =
         get_rotated_size(screen->frame_size, rotation);
 
@@ -349,17 +363,7 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
         return;
     }
 
-    struct size windowed_size = get_windowed_window_size(screen);
-    struct size target_size = {
-        .width = (uint32_t) windowed_size.width * new_content_size.width
-                / old_content_size.width,
-        .height = (uint32_t) windowed_size.height * new_content_size.height
-                / old_content_size.height,
-    };
-    target_size = get_optimal_size(target_size, new_content_size);
-    set_window_size(screen, target_size);
-
-    screen->content_size = new_content_size;
+    set_content_size(screen, new_content_size);
     screen->rotation = rotation;
     LOGI("Display rotation set to %u", rotation);
 
@@ -383,19 +387,8 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
-        struct size content_size = screen->content_size;
-        struct size windowed_size = get_windowed_window_size(screen);
-        struct size target_size = {
-            (uint32_t) windowed_size.width * new_content_size.width
-                    / content_size.width,
-            (uint32_t) windowed_size.height * new_content_size.height
-                    / content_size.height,
-        };
-        target_size = get_optimal_size(target_size, new_content_size);
-        set_window_size(screen, target_size);
-
+        set_content_size(screen, new_content_size);
         screen->frame_size = new_frame_size;
-        screen->content_size = new_content_size;
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
