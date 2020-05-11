@@ -21,11 +21,12 @@ struct screen {
     struct sc_opengl gl;
     struct size frame_size;
     struct size content_size; // rotated frame_size
-    // The window size the last time it was not maximized or fullscreen.
-    struct size windowed_window_size;
-    // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
-    // able to revert the size to its non-maximized value.
-    struct size windowed_window_size_backup;
+
+    bool resize_pending; // resize requested while fullscreen or maximized
+    // The content size the last time the window was not maximized or
+    // fullscreen (meaningful only when resize_pending is true)
+    struct size windowed_content_size;
+
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
     unsigned rotation;
     bool has_frame;
@@ -49,11 +50,8 @@ struct screen {
         .width = 0, \
         .height = 0, \
     }, \
-    .windowed_window_size = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .windowed_window_size_backup = { \
+    .resize_pending = false, \
+    .windowed_content_size = { \
         .width = 0, \
         .height = 0, \
     }, \
