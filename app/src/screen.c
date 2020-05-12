@@ -520,6 +520,7 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
 static inline bool
 is_fullscreen(const struct screen *screen) {
     uint32_t flags = SDL_GetWindowFlags(screen->window);
+    LOGI("flags = 0x%x", flags);
     return !!(flags & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_FULLSCREEN_DESKTOP));
 }
 
