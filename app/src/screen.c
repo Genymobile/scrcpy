@@ -531,6 +531,13 @@ screen_handle_window_event(struct screen *screen,
             screen->maximized = true;
             break;
         case SDL_WINDOWEVENT_RESTORED:
+            if (screen->fullscreen) {
+                // On Windows, in maximized+fullscreen, disabling fullscreen
+                // mode unexpectedly triggers the "restored" then "maximized"
+                // events, leaving the window in a weird state (maximized
+                // according to the events, but not maximized visually).
+                break;
+            }
             screen->maximized = false;
             apply_pending_resize(screen);
             break;
