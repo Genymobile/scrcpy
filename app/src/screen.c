@@ -488,7 +488,7 @@ screen_resize_to_fit(struct screen *screen) {
         return;
     }
 
-    bool flags = SDL_GetWindowFlags(screen->window);
+    int flags = SDL_GetWindowFlags(screen->window);
     LOGI("resize to fit (%d 0x%x)", screen->maximized, flags);
 
     if (screen->maximized) {
