@@ -550,7 +550,7 @@ screen_handle_window_event(struct screen *screen,
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
-            LOGI("SIZE_CHANGED");
+            LOGI("SIZE_CHANGED %dx%d", event->data1, event->data2);
             //update_fullscreen_state(screen);
             screen_render(screen);
             break;
