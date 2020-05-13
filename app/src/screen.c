@@ -488,6 +488,9 @@ screen_resize_to_fit(struct screen *screen) {
         return;
     }
 
+    bool flags = SDL_GetWindowFlags(screen->window);
+    LOGI("resize to fit (%d 0x%x)", screen->maximized, flags);
+
     if (screen->maximized) {
         SDL_RestoreWindow(screen->window);
         screen->maximized = false;
@@ -496,7 +499,7 @@ screen_resize_to_fit(struct screen *screen) {
     struct size optimal_size =
         get_optimal_window_size(screen, screen->content_size);
     SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
-    LOGD("Resized to optimal size: %ux%u", optimal_size.width,
+    LOGI("Resized to optimal size: %ux%u", optimal_size.width,
                                            optimal_size.height);
 }
 
@@ -543,16 +546,20 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            LOGI("EXPOSED");
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
-            update_fullscreen_state(screen);
+            LOGI("SIZE_CHANGED");
+            //update_fullscreen_state(screen);
             screen_render(screen);
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
+            LOGI("MAXIMIZED");
             screen->maximized = true;
             break;
         case SDL_WINDOWEVENT_RESTORED:
+            LOGI("RESTORED");
             if (screen->fullscreen) {
                 // On Windows, in maximized+fullscreen, disabling fullscreen
                 // mode unexpectedly triggers the "restored" then "maximized"
