@@ -484,13 +484,8 @@ screen_switch_fullscreen(struct screen *screen) {
 
 void
 screen_resize_to_fit(struct screen *screen) {
-    if (screen->fullscreen) {
+    if (screen->fullscreen || screen->maximized) {
         return;
-    }
-
-    if (screen->maximized) {
-        SDL_RestoreWindow(screen->window);
-        screen->maximized = false;
     }
 
     struct size optimal_size =
