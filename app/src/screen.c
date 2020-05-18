@@ -164,11 +164,12 @@ screen_update_content_rect(struct screen *screen) {
 
     int ww, wh;
     SDL_GetWindowSize(screen->window, &ww, &wh);
-    LOGI("update_content_rect: window=%dx%d, drawable=%dx%d", ww, wh, dw, dh);
 
     struct size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale
     struct size drawable_size = {dw, dh};
+
+    LOGI("update_content_rect: window=%dx%d, drawable=%dx%d content=%ux%u", ww, wh, dw, dh, content_size.width, content_size.height);
 
     SDL_Rect *rect = &screen->rect;
 
@@ -177,6 +178,7 @@ screen_update_content_rect(struct screen *screen) {
         rect->y = 0;
         rect->w = drawable_size.width;
         rect->h = drawable_size.height;
+        LOGI("  --> (optimal) rect (%d, %d) %dx%d", rect->x, rect->y, rect->w, rect->h);
         return;
     }
 
