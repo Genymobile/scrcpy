@@ -469,7 +469,7 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     update_texture(screen, frame);
     mutex_unlock(vb->mutex);
 
-    screen_render(screen, false);
+    screen_render(screen, true);
     return true;
 }
 
