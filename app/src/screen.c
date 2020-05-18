@@ -162,6 +162,10 @@ screen_update_content_rect(struct screen *screen) {
     int dh;
     SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
 
+    int ww, wh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    LOGI("update_content_rect: window=%dx%d, drawable=%dx%d", ww, wh, dw, dh);
+
     struct size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale
     struct size drawable_size = {dw, dh};
@@ -551,15 +555,19 @@ screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
         case SDL_WINDOWEVENT_EXPOSED:
+            LOGI("EXPOSED");
             screen_render(screen, true);
             break;
         case SDL_WINDOWEVENT_SIZE_CHANGED:
+            LOGI("SIZE_CHANGED %dx%d", event->data1, event->data2);
             screen_render(screen, true);
             break;
         case SDL_WINDOWEVENT_MAXIMIZED:
+            LOGI("MAXIMIZED");
             screen->maximized = true;
             break;
         case SDL_WINDOWEVENT_RESTORED:
+            LOGI("RESTORED");
             if (screen->fullscreen) {
                 // On Windows, in maximized+fullscreen, disabling fullscreen
                 // mode unexpectedly triggers the "restored" then "maximized"
