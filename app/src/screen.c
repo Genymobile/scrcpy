@@ -325,6 +325,11 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    // Reset the window size to trigger a SIZE_CHANGED event, to workaround
+    // HiDPI issues with some SDL renderers when several displays having
+    // different HiDPI scaling are connected
+    SDL_SetWindowSize(screen->window, window_size.width, window_size.height);
+
     screen_update_content_rect(screen);
 
     return true;
