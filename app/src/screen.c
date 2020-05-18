@@ -333,6 +333,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
+    SDL_SetWindowSize(screen->window, window_size.width, window_size.height);
+
     screen_update_content_rect(screen);
 
     return true;
