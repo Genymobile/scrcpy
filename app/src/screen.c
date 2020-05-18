@@ -195,6 +195,8 @@ screen_update_content_rect(struct screen *screen) {
                                        / content_size.height;
         rect->x = (drawable_size.width - rect->w) / 2;
     }
+
+    LOGI("  --> rect (%d, %d) %dx%d", rect->x, rect->y, rect->w, rect->h);
 }
 
 void
