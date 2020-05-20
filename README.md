@@ -482,6 +482,9 @@ both directions:
  - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
+Moreover, any time the Android clipboard changes, it is automatically
+synchronized to the computer clipboard.
+
 #### Text injection preference
 
 There are two kinds of [events][textevents] generated when typing text:

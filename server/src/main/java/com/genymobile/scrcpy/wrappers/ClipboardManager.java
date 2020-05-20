@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.wrappers;
 import com.genymobile.scrcpy.Ln;
 
 import android.content.ClipData;
+import android.content.IOnPrimaryClipChangedListener;
 import android.os.Build;
 import android.os.IInterface;
 
@@ -13,6 +14,7 @@ public class ClipboardManager {
     private final IInterface manager;
     private Method getPrimaryClipMethod;
     private Method setPrimaryClipMethod;
+    private Method addPrimaryClipChangedListener;
 
     public ClipboardManager(IInterface manager) {
         this.manager = manager;
@@ -75,6 +77,39 @@ public class ClipboardManager {
             Method method = getSetPrimaryClipMethod();
             ClipData clipData = ClipData.newPlainText(null, text);
             setPrimaryClip(method, manager, clipData);
+            return true;
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
+            return false;
+        }
+    }
+
+    private static void addPrimaryClipChangedListener(Method method, IInterface manager, IOnPrimaryClipChangedListener listener)
+            throws InvocationTargetException, IllegalAccessException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
+        } else {
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+        }
+    }
+
+    private Method getAddPrimaryClipChangedListener() throws NoSuchMethodException {
+        if (addPrimaryClipChangedListener == null) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                addPrimaryClipChangedListener = manager.getClass()
+                        .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
+            } else {
+                addPrimaryClipChangedListener = manager.getClass()
+                        .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class, int.class);
+            }
+        }
+        return addPrimaryClipChangedListener;
+    }
+
+    public boolean addPrimaryClipChangedListener(IOnPrimaryClipChangedListener listener) {
+        try {
+            Method method = getAddPrimaryClipChangedListener();
+            addPrimaryClipChangedListener(method, manager, listener);
             return true;
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
