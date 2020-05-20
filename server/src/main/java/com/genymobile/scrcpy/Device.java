@@ -52,7 +52,7 @@ public final class Device {
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
         layerStack = displayInfo.getLayerStack();
 
-        registerRotationWatcher(new IRotationWatcher.Stub() {
+        serviceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
                 synchronized (Device.this) {
@@ -132,10 +132,6 @@ public final class Device {
 
     public boolean isScreenOn() {
         return serviceManager.getPowerManager().isScreenOn();
-    }
-
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
-        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
     }
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
