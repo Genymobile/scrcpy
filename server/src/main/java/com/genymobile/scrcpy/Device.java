@@ -6,10 +6,10 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
+import android.content.IOnPrimaryClipChangedListener;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
-import android.os.RemoteException;
 import android.view.IRotationWatcher;
 import android.view.InputEvent;
 
@@ -22,10 +22,15 @@ public final class Device {
         void onRotationChanged(int rotation);
     }
 
+    public interface ClipboardListener {
+        void onClipboardTextChanged(String text);
+    }
+
     private final ServiceManager serviceManager = new ServiceManager();
 
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
+    private ClipboardListener clipboardListener;
 
     /**
      * Logical display identifier
@@ -65,6 +70,23 @@ public final class Device {
                 }
             }
         }, displayId);
+
+        if (options.getControl()) {
+            // If control is enabled, synchronize Android clipboard to the computer automatically
+            serviceManager.getClipboardManager().addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
+                @Override
+                public void dispatchPrimaryClipChanged() {
+                    synchronized (Device.this) {
+                        if (clipboardListener != null) {
+                            String text = getClipboardText();
+                            if (text != null) {
+                                clipboardListener.onClipboardTextChanged(text);
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
@@ -136,6 +158,10 @@ public final class Device {
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
         this.rotationListener = rotationListener;
+    }
+
+    public synchronized void setClipboardListener(ClipboardListener clipboardListener) {
+        this.clipboardListener = clipboardListener;
     }
 
     public void expandNotificationPanel() {

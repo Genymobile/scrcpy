@@ -53,11 +53,18 @@ public final class Server {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps());
 
             if (options.getControl()) {
-                Controller controller = new Controller(device, connection);
+                final Controller controller = new Controller(device, connection);
 
                 // asynchronous
                 startController(controller);
                 startDeviceMessageSender(controller.getSender());
+
+                device.setClipboardListener(new Device.ClipboardListener() {
+                    @Override
+                    public void onClipboardTextChanged(String text) {
+                        controller.getSender().pushClipboardText(text);
+                    }
+                });
             }
 
             try {
