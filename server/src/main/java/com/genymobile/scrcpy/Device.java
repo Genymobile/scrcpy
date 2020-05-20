@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
+import android.content.IOnPrimaryClipChangedListener;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
@@ -65,6 +66,14 @@ public final class Device {
                 }
             }
         }, displayId);
+
+        serviceManager.getClipboardManager().addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
+            @Override
+            public void dispatchPrimaryClipChanged() {
+                String s = getClipboardText();
+                Ln.i("clipboard changed = " + s);
+            }
+        });
 
         if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
