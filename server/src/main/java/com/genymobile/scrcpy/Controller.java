@@ -47,7 +47,6 @@ public class Controller {
         }
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void control() throws IOException {
         // on start, power on the device
         if (!device.isScreenOn()) {
@@ -76,19 +75,29 @@ public class Controller {
         ControlMessage msg = connection.receiveControlMessage();
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
-                injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
+                if (device.supportsInputEvents()) {
+                    injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
+                }
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
-                injectText(msg.getText());
+                if (device.supportsInputEvents()) {
+                    injectText(msg.getText());
+                }
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), msg.getButtons());
+                if (device.supportsInputEvents()) {
+                    injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), msg.getButtons());
+                }
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
-                injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
+                if (device.supportsInputEvents()) {
+                    injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll());
+                }
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
-                pressBackOrTurnScreenOn();
+                if (device.supportsInputEvents()) {
+                    pressBackOrTurnScreenOn();
+                }
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
                 device.expandNotificationPanel();
@@ -104,7 +113,9 @@ public class Controller {
                 device.setClipboardText(msg.getText());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
-                device.setScreenPowerMode(msg.getAction());
+                if (device.supportsInputEvents()) {
+                    device.setScreenPowerMode(msg.getAction());
+                }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 device.rotateDevice();

@@ -48,9 +48,10 @@ static void test_options(void) {
         "--fullscreen",
         "--max-fps", "30",
         "--max-size", "1024",
+        "--lock-video-orientation", "2",
         // "--no-control" is not compatible with "--turn-screen-off"
         // "--no-display" is not compatible with "--fulscreen"
-        "--port", "1234",
+        "--port", "1234:1236",
         "--push-target", "/sdcard/Movies",
         "--record", "file",
         "--record-format", "mkv",
@@ -78,7 +79,9 @@ static void test_options(void) {
     assert(opts->fullscreen);
     assert(opts->max_fps == 30);
     assert(opts->max_size == 1024);
-    assert(opts->port == 1234);
+    assert(opts->lock_video_orientation == 2);
+    assert(opts->port_range.first == 1234);
+    assert(opts->port_range.last == 1236);
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));
     assert(opts->record_format == RECORDER_FORMAT_MKV);

@@ -1,4 +1,4 @@
-# scrcpy (v1.12.1)
+# scrcpy (v1.13)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -37,7 +37,7 @@ control it using keyboard and mouse.
 
 ### Linux
 
-In Debian (_testing_ and _sid_ for now):
+On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
 
 ```
 apt install scrcpy
@@ -66,16 +66,13 @@ hard).
 
 ### Windows
 
-For Windows, for simplicity, prebuilt archives with all the dependencies
-(including `adb`) are available:
+For Windows, for simplicity, a prebuilt archive with all the dependencies
+(including `adb`) is available:
 
- - [`scrcpy-win32-v1.12.1.zip`][direct-win32]  
-   _(SHA-256: 0f4b3b063536b50a2df05dc42c760f9cc0093a9a26dbdf02d8232c74dab43480)_
- - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
-   _(SHA-256: 57d34b6d16cfd9fe169bc37c4df58ebd256d05c1ea3febc63d9cb0a027ab47c9)_
+ - [`scrcpy-win64-v1.13.zip`][direct-win64]  
+   _(SHA-256: 806aafc00d4db01513193addaa24f47858893ba5efe75770bfef6ae1ea987d27)_
 
-[direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win32-v1.12.1.zip
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.13/scrcpy-win64-v1.13.zip
 
 It is also available in [Chocolatey]:
 
@@ -83,13 +80,17 @@ It is also available in [Chocolatey]:
 
 ```bash
 choco install scrcpy
+choco install adb    # if you don't have it yet
 ```
 
-You need `adb`, accessible from your `PATH`. If you don't have it yet:
+And in [Scoop]:
 
 ```bash
-choco install adb
+scoop install scrcpy
+scoop install adb    # if you don't have it yet
 ```
+
+[Scoop]: https://scoop.sh
 
 You can also [build the app manually][BUILD].
 
@@ -158,11 +159,13 @@ scrcpy -b 2M  # short version
 
 #### Limit frame rate
 
-On devices with Android >= 10, the capture frame rate can be limited:
+The capture frame rate can be limited:
 
 ```bash
 scrcpy --max-fps 15
 ```
+
+This is officially supported since Android 10, but may work on earlier versions.
 
 #### Crop
 
@@ -175,6 +178,21 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 ```
 
 If `--max-size` is also specified, resizing is applied after cropping.
+
+
+#### Lock video orientation
+
+
+To lock the orientation of the mirroring:
+
+```bash
+scrcpy --lock-video-orientation 0   # natural orientation
+scrcpy --lock-video-orientation 1   # 90° counterclockwise
+scrcpy --lock-video-orientation 2   # 180°
+scrcpy --lock-video-orientation 3   # 90° clockwise
+```
+
+This affects recording orientation.
 
 
 ### Recording
@@ -201,22 +219,6 @@ variation] does not impact the recorded file.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
-### Serve
-
-It is possible to forward the video stream:
-
-```bash
-scrcpy --serve tcp:localhost:1234
-```
-
-To disable mirroring while forwarding the stream:
-
-```bash
-scrcpy --no-display --serve tcp:localhost:1234
-scrcpy -N --serve tcp:localhost:1234
-# interrupt serve with Ctrl+C
-# Ctrl+C does not terminate properly on Windows, so disconnect the device
-```
 
 ### Connection
 
@@ -259,6 +261,16 @@ scrcpy -s 192.168.0.1:5555  # short version
 ```
 
 You can start several instances of _scrcpy_ for several devices.
+
+#### Autostart on device connection
+
+You could use [AutoAdb]:
+
+```bash
+autoadb scrcpy -s '{}'
+```
+
+[AutoAdb]: https://github.com/rom1v/autoadb
 
 #### SSH tunnel
 
@@ -329,6 +341,33 @@ scrcpy -f  # short version
 
 Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
 
+#### Rotation
+
+The window may be rotated:
+
+```bash
+scrcpy --rotation 1
+```
+
+Possibles values are:
+ - `0`: no rotation
+ - `1`: 90 degrees counterclockwise
+ - `2`: 180 degrees
+ - `3`: 90 degrees clockwise
+
+The rotation can also be changed dynamically with `Ctrl`+`←` _(left)_ and
+`Ctrl`+`→` _(right)_.
+
+Note that _scrcpy_ manages 3 different rotations:
+ - `Ctrl`+`r` requests the device to switch between portrait and landscape (the
+   current running app may refuse, if it does support the requested
+   orientation).
+ - `--lock-video-orientation` changes the mirroring orientation (the orientation
+   of the video sent from the device to the computer). This affects the
+   recording.
+ - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
+   affects only the display, not the recording.
+
 
 ### Other mirroring options
 
@@ -341,6 +380,25 @@ mouse events, drag&drop files):
 scrcpy --no-control
 scrcpy -n
 ```
+
+#### Display
+
+If several displays are available, it is possible to select the display to
+mirror:
+
+```bash
+scrcpy --display 1
+```
+
+The list of display ids can be retrieved by:
+
+```
+adb shell dumpsys display   # search "mDisplayId=" in the output
+```
+
+The secondary display may only be controlled if the device runs at least Android
+10 (otherwise it is mirrored in read-only).
+
 
 #### Turn screen off
 
@@ -465,6 +523,8 @@ Also see [issue #14].
  | Action                                 |   Shortcut                    |   Shortcut (macOS)
  | -------------------------------------- |:----------------------------- |:-----------------------------
  | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Rotate display left                    | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
+ | Rotate display right                   | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
  | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
  | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
  | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_

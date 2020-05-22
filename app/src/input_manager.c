@@ -221,6 +221,18 @@ rotate_device(struct controller *controller) {
     }
 }
 
+static void
+rotate_client_left(struct screen *screen) {
+    unsigned new_rotation = (screen->rotation + 1) % 4;
+    screen_set_rotation(screen, new_rotation);
+}
+
+static void
+rotate_client_right(struct screen *screen) {
+    unsigned new_rotation = (screen->rotation + 3) % 4;
+    screen_set_rotation(screen, new_rotation);
+}
+
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
@@ -351,6 +363,16 @@ input_manager_process_key(struct input_manager *im,
                     action_volume_up(controller, action);
                 }
                 return;
+            case SDLK_LEFT:
+                if (cmd && !shift && down) {
+                    rotate_client_left(im->screen);
+                }
+                return;
+            case SDLK_RIGHT:
+                if (cmd && !shift && down) {
+                    rotate_client_right(im->screen);
+                }
+                return;
             case SDLK_c:
                 if (control && cmd && !shift && !repeat && down) {
                     request_device_clipboard(controller);
@@ -427,8 +449,8 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
     to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
 
@@ -463,13 +485,13 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
         return false;
     }
 
-    struct size frame_size = screen->frame_size;
-
     to->inject_touch_event.pointer_id = from->fingerId;
-    to->inject_touch_event.position.screen_size = frame_size;
+    to->inject_touch_event.position.screen_size = screen->frame_size;
     // SDL touch event coordinates are normalized in the range [0; 1]
-    to->inject_touch_event.position.point.x = from->x * frame_size.width;
-    to->inject_touch_event.position.point.y = from->y * frame_size.height;
+    float x = from->x * screen->content_size.width;
+    float y = from->y * screen->content_size.height;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, x, y);
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
     return true;
@@ -489,8 +511,8 @@ input_manager_process_touch(struct input_manager *im,
 static bool
 is_outside_device_screen(struct input_manager *im, int x, int y)
 {
-    return x < 0 || x >= im->screen->frame_size.width ||
-           y < 0 || y >= im->screen->frame_size.height;
+    return x < 0 || x >= im->screen->content_size.width ||
+           y < 0 || y >= im->screen->content_size.height;
 }
 
 static bool
@@ -504,8 +526,8 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
 
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point.x = from->x;
-    to->inject_touch_event.position.point.y = from->y;
+    to->inject_touch_event.position.point =
+        screen_convert_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));

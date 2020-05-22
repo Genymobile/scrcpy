@@ -43,6 +43,11 @@ enum process_result {
     PROCESS_ERROR_MISSING_BINARY,
 };
 
+#ifndef __WINDOWS__
+bool
+cmd_search(const char *file);
+#endif
+
 enum process_result
 cmd_execute(const char *const argv[], process_t *process);
 

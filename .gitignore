@@ -2,3 +2,5 @@ build/
 /dist/
 .idea/
 .gradle/
+.vs/
+/x/

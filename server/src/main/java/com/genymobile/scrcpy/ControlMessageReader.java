@@ -8,14 +8,13 @@ import java.nio.charset.StandardCharsets;
 
 public class ControlMessageReader {
 
-    private static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
-    private static final int INJECT_MOUSE_EVENT_PAYLOAD_LENGTH = 17;
-    private static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 21;
-    private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
-    private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
+    static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
+    static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
 
-    public static final int TEXT_MAX_LENGTH = 300;
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
+    public static final int INJECT_TEXT_MAX_LENGTH = 300;
     private static final int RAW_BUFFER_SIZE = 1024;
 
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
@@ -122,7 +121,6 @@ public class ControlMessageReader {
         return ControlMessage.createInjectText(text);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private ControlMessage parseInjectTouchEvent() {
         if (buffer.remaining() < INJECT_TOUCH_EVENT_PAYLOAD_LENGTH) {
             return null;
@@ -172,12 +170,10 @@ public class ControlMessageReader {
         return new Position(x, y, screenWidth, screenHeight);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(short value) {
         return value & 0xffff;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(byte value) {
         return value & 0xff;
     }

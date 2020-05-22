@@ -28,6 +28,9 @@ public class ControlMessageReaderTest {
         dos.writeInt(KeyEvent.META_CTRL_ON);
         byte[] packet = bos.toByteArray();
 
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_KEYCODE_PAYLOAD_LENGTH, packet.length - 1);
+
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
 
@@ -63,7 +66,7 @@ public class ControlMessageReaderTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
-        byte[] text = new byte[ControlMessageReader.TEXT_MAX_LENGTH];
+        byte[] text = new byte[ControlMessageReader.INJECT_TEXT_MAX_LENGTH];
         Arrays.fill(text, (byte) 'a');
         dos.writeShort(text.length);
         dos.write(text);
@@ -77,7 +80,6 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseTouchEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
@@ -95,6 +97,9 @@ public class ControlMessageReaderTest {
 
         byte[] packet = bos.toByteArray();
 
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_TOUCH_EVENT_PAYLOAD_LENGTH, packet.length - 1);
+
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
 
@@ -110,7 +115,6 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testParseScrollEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
@@ -125,6 +129,9 @@ public class ControlMessageReaderTest {
         dos.writeInt(-1);
 
         byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_SCROLL_EVENT_PAYLOAD_LENGTH, packet.length - 1);
 
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
@@ -232,6 +239,9 @@ public class ControlMessageReaderTest {
         dos.writeByte(Device.POWER_MODE_NORMAL);
 
         byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH, packet.length - 1);
 
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();

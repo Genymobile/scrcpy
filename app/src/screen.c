@@ -15,6 +15,19 @@
 
 #define DISPLAY_MARGINS 96
 
+static inline struct size
+get_rotated_size(struct size size, int rotation) {
+    struct size rotated_size;
+    if (rotation & 1) {
+        rotated_size.width = size.height;
+        rotated_size.height = size.width;
+    } else {
+        rotated_size.width = size.width;
+        rotated_size.height = size.height;
+    }
+    return rotated_size;
+}
+
 // get the window size in a struct size
 static struct size
 get_window_size(SDL_Window *window) {
@@ -80,8 +93,8 @@ get_preferred_display_bounds(struct size *bounds) {
 //  - it keeps the aspect ratio
 //  - it scales down to make it fit in the display_size
 static struct size
-get_optimal_size(struct size current_size, struct size frame_size) {
-    if (frame_size.width == 0 || frame_size.height == 0) {
+get_optimal_size(struct size current_size, struct size content_size) {
+    if (content_size.width == 0 || content_size.height == 0) {
         // avoid division by 0
         return current_size;
     }
@@ -100,14 +113,21 @@ get_optimal_size(struct size current_size, struct size frame_size) {
         h = MIN(current_size.height, display_size.height);
     }
 
-    bool keep_width = frame_size.width * h > frame_size.height * w;
+    if (h == w * content_size.height / content_size.width
+     || w == h * content_size.width / content_size.height) {
+        // The size is already optimal, if we ignore rounding errors due to
+        // integer window dimensions
+        return (struct size) {w, h};
+    }
+
+    bool keep_width = content_size.width * h > content_size.height * w;
     if (keep_width) {
         // remove black borders on top and bottom
-        h = frame_size.height * w / frame_size.width;
+        h = content_size.height * w / content_size.width;
     } else {
         // remove black borders on left and right (or none at all if it already
         // fits)
-        w = frame_size.width * h / frame_size.height;
+        w = content_size.width * h / content_size.height;
     }
 
     // w and h must fit into 16 bits
@@ -117,33 +137,33 @@ get_optimal_size(struct size current_size, struct size frame_size) {
 
 // same as get_optimal_size(), but read the current size from the window
 static inline struct size
-get_optimal_window_size(const struct screen *screen, struct size frame_size) {
+get_optimal_window_size(const struct screen *screen, struct size content_size) {
     struct size windowed_size = get_windowed_window_size(screen);
-    return get_optimal_size(windowed_size, frame_size);
+    return get_optimal_size(windowed_size, content_size);
 }
 
 // initially, there is no current size, so use the frame size as current size
 // req_width and req_height, if not 0, are the sizes requested by the user
 static inline struct size
-get_initial_optimal_size(struct size frame_size, uint16_t req_width,
+get_initial_optimal_size(struct size content_size, uint16_t req_width,
                          uint16_t req_height) {
     struct size window_size;
     if (!req_width && !req_height) {
-        window_size = get_optimal_size(frame_size, frame_size);
+        window_size = get_optimal_size(content_size, content_size);
     } else {
         if (req_width) {
             window_size.width = req_width;
         } else {
             // compute from the requested height
-            window_size.width = (uint32_t) req_height * frame_size.width
-                              / frame_size.height;
+            window_size.width = (uint32_t) req_height * content_size.width
+                              / content_size.height;
         }
         if (req_height) {
             window_size.height = req_height;
         } else {
             // compute from the requested width
-            window_size.height = (uint32_t) req_width * frame_size.height
-                               / frame_size.width;
+            window_size.height = (uint32_t) req_width * content_size.height
+                               / content_size.width;
         }
     }
     return window_size;
@@ -155,21 +175,48 @@ screen_init(struct screen *screen) {
 }
 
 static inline SDL_Texture *
-create_texture(SDL_Renderer *renderer, struct size frame_size) {
-    return SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
-                             SDL_TEXTUREACCESS_STREAMING,
-                             frame_size.width, frame_size.height);
+create_texture(struct screen *screen) {
+    SDL_Renderer *renderer = screen->renderer;
+    struct size size = screen->frame_size;
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
+                                             SDL_TEXTUREACCESS_STREAMING,
+                                             size.width, size.height);
+    if (!texture) {
+        return NULL;
+    }
+
+    if (screen->mipmaps) {
+        struct sc_opengl *gl = &screen->gl;
+
+        SDL_GL_BindTexture(texture, NULL, NULL);
+
+        // Enable trilinear filtering for downscaling
+        gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                          GL_LINEAR_MIPMAP_LINEAR);
+        gl->TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -.5f);
+
+        SDL_GL_UnbindTexture(texture);
+    }
+
+    return texture;
 }
 
 bool
 screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless) {
+                      uint16_t window_height, bool window_borderless,
+                      uint8_t rotation, bool mipmaps) {
     screen->frame_size = frame_size;
+    screen->rotation = rotation;
+    if (rotation) {
+        LOGI("Initial display rotation set to %u", rotation);
+    }
+    struct size content_size = get_rotated_size(frame_size, screen->rotation);
+    screen->content_size = content_size;
 
     struct size window_size =
-        get_initial_optimal_size(frame_size, window_width, window_height);
+        get_initial_optimal_size(content_size, window_width, window_height);
     uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
 #ifdef HIDPI_SUPPORT
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
@@ -186,8 +233,10 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = window_x != -1 ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
-    int y = window_y != -1 ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
+    int x = window_x != WINDOW_POSITION_UNDEFINED
+          ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
+    int y = window_y != WINDOW_POSITION_UNDEFINED
+          ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
     screen->window = SDL_CreateWindow(window_title, x, y,
                                       window_size.width, window_size.height,
                                       window_flags);
@@ -204,11 +253,42 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
-    if (SDL_RenderSetLogicalSize(screen->renderer, frame_size.width,
-                                 frame_size.height)) {
+    SDL_RendererInfo renderer_info;
+    int r = SDL_GetRendererInfo(screen->renderer, &renderer_info);
+    const char *renderer_name = r ? NULL : renderer_info.name;
+    LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
+
+    if (SDL_RenderSetLogicalSize(screen->renderer, content_size.width,
+                                 content_size.height)) {
         LOGE("Could not set renderer logical size: %s", SDL_GetError());
         screen_destroy(screen);
         return false;
+    }
+
+    // starts with "opengl"
+    screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    if (screen->use_opengl) {
+        struct sc_opengl *gl = &screen->gl;
+        sc_opengl_init(gl);
+
+        LOGI("OpenGL version: %s", gl->version);
+
+        if (mipmaps) {
+            bool supports_mipmaps =
+                sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
+                                               2, 0  /* OpenGL ES 2.0+ */);
+            if (supports_mipmaps) {
+                LOGI("Trilinear filtering enabled");
+                screen->mipmaps = true;
+            } else {
+                LOGW("Trilinear filtering disabled "
+                     "(OpenGL 3.0+ or ES 2.0+ required)");
+            }
+        } else {
+            LOGI("Trilinear filtering disabled");
+        }
+    } else {
+        LOGW("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
     SDL_Surface *icon = read_xpm(icon_xpm);
@@ -221,7 +301,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width,
                                                   frame_size.height);
-    screen->texture = create_texture(screen->renderer, frame_size);
+    screen->texture = create_texture(screen);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
         screen_destroy(screen);
@@ -251,13 +331,51 @@ screen_destroy(struct screen *screen) {
     }
 }
 
+void
+screen_set_rotation(struct screen *screen, unsigned rotation) {
+    assert(rotation < 4);
+    if (rotation == screen->rotation) {
+        return;
+    }
+
+    struct size old_content_size = screen->content_size;
+    struct size new_content_size =
+        get_rotated_size(screen->frame_size, rotation);
+
+    if (SDL_RenderSetLogicalSize(screen->renderer,
+                                 new_content_size.width,
+                                 new_content_size.height)) {
+        LOGE("Could not set renderer logical size: %s", SDL_GetError());
+        return;
+    }
+
+    struct size windowed_size = get_windowed_window_size(screen);
+    struct size target_size = {
+        .width = (uint32_t) windowed_size.width * new_content_size.width
+                / old_content_size.width,
+        .height = (uint32_t) windowed_size.height * new_content_size.height
+                / old_content_size.height,
+    };
+    target_size = get_optimal_size(target_size, new_content_size);
+    set_window_size(screen, target_size);
+
+    screen->content_size = new_content_size;
+    screen->rotation = rotation;
+    LOGI("Display rotation set to %u", rotation);
+
+    screen_render(screen);
+}
+
 // recreate the texture and resize the window if the frame size has changed
 static bool
 prepare_for_frame(struct screen *screen, struct size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
-        if (SDL_RenderSetLogicalSize(screen->renderer, new_frame_size.width,
-                                     new_frame_size.height)) {
+        struct size new_content_size =
+            get_rotated_size(new_frame_size, screen->rotation);
+        if (SDL_RenderSetLogicalSize(screen->renderer,
+                                     new_content_size.width,
+                                     new_content_size.height)) {
             LOGE("Could not set renderer logical size: %s", SDL_GetError());
             return false;
         }
@@ -265,21 +383,23 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
+        struct size content_size = screen->content_size;
         struct size windowed_size = get_windowed_window_size(screen);
         struct size target_size = {
-            (uint32_t) windowed_size.width * new_frame_size.width
-                    / screen->frame_size.width,
-            (uint32_t) windowed_size.height * new_frame_size.height
-                    / screen->frame_size.height,
+            (uint32_t) windowed_size.width * new_content_size.width
+                    / content_size.width,
+            (uint32_t) windowed_size.height * new_content_size.height
+                    / content_size.height,
         };
-        target_size = get_optimal_size(target_size, new_frame_size);
+        target_size = get_optimal_size(target_size, new_content_size);
         set_window_size(screen, target_size);
 
         screen->frame_size = new_frame_size;
+        screen->content_size = new_content_size;
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
-        screen->texture = create_texture(screen->renderer, new_frame_size);
+        screen->texture = create_texture(screen);
         if (!screen->texture) {
             LOGC("Could not create texture: %s", SDL_GetError());
             return false;
@@ -296,6 +416,13 @@ update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[0], frame->linesize[0],
             frame->data[1], frame->linesize[1],
             frame->data[2], frame->linesize[2]);
+
+    if (screen->mipmaps) {
+        assert(screen->use_opengl);
+        SDL_GL_BindTexture(screen->texture, NULL, NULL);
+        screen->gl.GenerateMipmap(GL_TEXTURE_2D);
+        SDL_GL_UnbindTexture(screen->texture);
+    }
 }
 
 bool
@@ -317,7 +444,28 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
 void
 screen_render(struct screen *screen) {
     SDL_RenderClear(screen->renderer);
-    SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+    if (screen->rotation == 0) {
+        SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+    } else {
+        // rotation in RenderCopyEx() is clockwise, while screen->rotation is
+        // counterclockwise (to be consistent with --lock-video-orientation)
+        int cw_rotation = (4 - screen->rotation) % 4;
+        double angle = 90 * cw_rotation;
+
+        SDL_Rect *dstrect = NULL;
+        SDL_Rect rect;
+        if (screen->rotation & 1) {
+            struct size size = screen->content_size;
+            rect.x = (size.width - size.height) / 2;
+            rect.y = (size.height - size.width) / 2;
+            rect.w = size.height;
+            rect.h = size.width;
+            dstrect = &rect;
+        }
+
+        SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
+                         angle, NULL, 0);
+    }
     SDL_RenderPresent(screen->renderer);
 }
 
@@ -348,9 +496,10 @@ screen_resize_to_fit(struct screen *screen) {
     }
 
     struct size optimal_size =
-        get_optimal_window_size(screen, screen->frame_size);
+        get_optimal_window_size(screen, screen->content_size);
     SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
-    LOGD("Resized to optimal size");
+    LOGD("Resized to optimal size: %ux%u", optimal_size.width,
+                                           optimal_size.height);
 }
 
 void
@@ -364,9 +513,10 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
         screen->maximized = false;
     }
 
-    SDL_SetWindowSize(screen->window, screen->frame_size.width,
-                      screen->frame_size.height);
-    LOGD("Resized to pixel-perfect");
+    struct size content_size = screen->content_size;
+    SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
+    LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
+                                            content_size.height);
 }
 
 void
@@ -409,4 +559,34 @@ screen_handle_window_event(struct screen *screen,
             apply_windowed_size(screen);
             break;
     }
+}
+
+struct point
+screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
+    unsigned rotation = screen->rotation;
+    assert(rotation < 4);
+
+    int32_t w = screen->content_size.width;
+    int32_t h = screen->content_size.height;
+    struct point result;
+    switch (rotation) {
+        case 0:
+            result.x = x;
+            result.y = y;
+            break;
+        case 1:
+            result.x = h - y;
+            result.y = x;
+            break;
+        case 2:
+            result.x = w - x;
+            result.y = h - y;
+            break;
+        default:
+            assert(rotation == 3);
+            result.x = y;
+            result.y = w - x;
+            break;
+    }
+    return result;
 }

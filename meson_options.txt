@@ -6,3 +6,4 @@ option('prebuilt_server', type: 'string', description: 'Path of the prebuilt ser
 option('portable', type: 'boolean', value: false, description: 'Use scrcpy-server from the same directory as the scrcpy executable')
 option('hidpi_support', type: 'boolean', value: true, description: 'Enable High DPI support')
 option('server_debugger', type: 'boolean', value: false, description: 'Run a server debugger and wait for a client to be attached')
+option('server_debugger_method', type: 'combo', choices: ['old', 'new'], value: 'new', description: 'Select the debugger method (Android < 9: "old", Android >= 9: "new")')

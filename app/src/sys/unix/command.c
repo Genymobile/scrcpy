@@ -14,11 +14,50 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "util/log.h"
+
+bool
+cmd_search(const char *file) {
+    char *path = getenv("PATH");
+    if (!path)
+        return false;
+    path = strdup(path);
+    if (!path)
+        return false;
+
+    bool ret = false;
+    size_t file_len = strlen(file);
+    char *saveptr;
+    for (char *dir = strtok_r(path, ":", &saveptr); dir;
+            dir = strtok_r(NULL, ":", &saveptr)) {
+        size_t dir_len = strlen(dir);
+        char *fullpath = malloc(dir_len + file_len + 2);
+        if (!fullpath)
+            continue;
+        memcpy(fullpath, dir, dir_len);
+        fullpath[dir_len] = '/';
+        memcpy(fullpath + dir_len + 1, file, file_len + 1);
+
+        struct stat sb;
+        bool fullpath_executable = stat(fullpath, &sb) == 0 &&
+            sb.st_mode & S_IXUSR;
+        free(fullpath);
+        if (fullpath_executable) {
+            ret = true;
+            break;
+        }
+    }
+
+    free(path);
+    return ret;
+}
 
 enum process_result
 cmd_execute(const char *const argv[], pid_t *pid) {
@@ -126,4 +165,15 @@ get_executable_path(void) {
     // (it's useful to have a working version on Linux for debugging though)
     return NULL;
 #endif
+}
+
+bool
+is_regular_file(const char *path) {
+    struct stat path_stat;
+
+    if (stat(path, &path_stat)) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }

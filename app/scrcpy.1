@@ -34,6 +34,15 @@ The values are expressed in the device natural orientation (typically, portrait 
 value is computed on the cropped size.
 
 .TP
+.BI "\-\-display " id
+Specify the display id to mirror.
+
+The list of possible display ids can be listed by "adb shell dumpsys display"
+(search "mDisplayId=" in the output).
+
+Default is 0.
+
+.TP
 .B \-f, \-\-fullscreen
 Start in fullscreen.
 
@@ -42,8 +51,14 @@ Start in fullscreen.
 Print this help.
 
 .TP
+.BI "\-\-lock\-video\-orientation " value
+Lock video orientation to \fIvalue\fR. Possible values are -1 (unlocked), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees otation counterclockwise.
+
+Default is -1 (unlocked).
+
+.TP
 .BI "\-\-max\-fps " value
-Limit the framerate of screen capture (only supported on devices with Android >= 10).
+Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
 .TP
 .BI "\-m, \-\-max\-size " value
@@ -60,10 +75,14 @@ Disable device control (mirror the device in read\-only).
 Do not display device (only when screen recording is enabled).
 
 .TP
-.BI "\-p, \-\-port " port
-Set the TCP port the client listens on.
+.B \-\-no\-mipmaps
+If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
 
-Default is 27183.
+.TP
+.BI "\-p, \-\-port " port[:port]
+Set the TCP port (range) used by the client to listen.
+
+Default is 27183:27199.
 
 .TP
 .B \-\-prefer\-text
@@ -92,8 +111,20 @@ option if set, or by the file extension (.mp4 or .mkv).
 Force recording format (either mp4 or mkv).
 
 .TP
+.BI "\-\-render\-driver " name
+Request SDL to use the given render driver (this is just a hint).
+
+Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "metal" and "software".
+.UR https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER
+.UE
+
+.TP
 .B \-\-render\-expired\-frames
 By default, to minimize latency, scrcpy always renders the last available decoded frame, and drops any previous ones. This flag forces to render all frames, at a cost of a possible increased latency.
+
+.TP
+.BI "\-\-rotation " value
+Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
 
 .TP
 .BI "\-s, \-\-serial " number
@@ -125,13 +156,13 @@ Set a custom window title.
 .BI "\-\-window\-x " value
 Set the initial window horizontal position.
 
-Default is -1 (automatic).\n
+Default is "auto".\n
 
 .TP
 .BI "\-\-window\-y " value
 Set the initial window vertical position.
 
-Default is -1 (automatic).\n
+Default is "auto".\n
 
 .TP
 .BI "\-\-window\-width " value
@@ -149,15 +180,23 @@ Default is 0 (automatic).\n
 
 .TP
 .B Ctrl+f
-switch fullscreen mode
+Switch fullscreen mode
+
+.TP
+.B Ctrl+Left
+Rotate display left
+
+.TP
+.B Ctrl+Right
+Rotate display right
 
 .TP
 .B Ctrl+g
-resize window to 1:1 (pixel\-perfect)
+Resize window to 1:1 (pixel\-perfect)
 
 .TP
 .B Ctrl+x, Double\-click on black borders
-resize window to remove black borders
+Resize window to remove black borders
 
 .TP
 .B Ctrl+h, Home, Middle\-click
@@ -189,43 +228,43 @@ Click on POWER (turn screen on/off)
 
 .TP
 .B Right\-click (when screen is off)
-turn screen on
+Turn screen on
 
 .TP
 .B Ctrl+o
-turn device screen off (keep mirroring)
+Turn device screen off (keep mirroring)
 
 .TP
 .B Ctrl+r
-rotate device screen
+Rotate device screen
 
 .TP
 .B Ctrl+n
-expand notification panel
+Expand notification panel
 
 .TP
 .B Ctrl+Shift+n
-collapse notification panel
+Collapse notification panel
 
 .TP
 .B Ctrl+c
-copy device clipboard to computer
+Copy device clipboard to computer
 
 .TP
 .B Ctrl+v
-paste computer clipboard to device
+Paste computer clipboard to device
 
 .TP
 .B Ctrl+Shift+v
-copy computer clipboard to device
+Copy computer clipboard to device
 
 .TP
 .B Ctrl+i
-enable/disable FPS counter (print frames/second in logs)
+Enable/disable FPS counter (print frames/second in logs)
 
 .TP
 .B Drag & drop APK file
-install APK from computer
+Install APK from computer
 
 
 .SH Environment variables

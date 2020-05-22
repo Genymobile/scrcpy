@@ -16,6 +16,7 @@ public final class Server {
     }
 
     private static void scrcpy(Options options) throws IOException {
+        Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
         boolean tunnelForward = options.isTunnelForward();
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
@@ -67,7 +68,6 @@ public final class Server {
         }).start();
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static Options createOptions(String... args) {
         if (args.length < 1) {
             throw new IllegalArgumentException("Missing client version");
@@ -76,11 +76,11 @@ public final class Server {
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
             throw new IllegalArgumentException(
-                    "The server version (" + clientVersion + ") does not match the client " + "(" + BuildConfig.VERSION_NAME + ")");
+                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        if (args.length != 8) {
-            throw new IllegalArgumentException("Expecting 8 parameters");
+        if (args.length != 10) {
+            throw new IllegalArgumentException("Expecting 10 parameters");
         }
 
         Options options = new Options();
@@ -94,23 +94,28 @@ public final class Server {
         int maxFps = Integer.parseInt(args[3]);
         options.setMaxFps(maxFps);
 
+        int lockedVideoOrientation = Integer.parseInt(args[4]);
+        options.setLockedVideoOrientation(lockedVideoOrientation);
+
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[4]);
+        boolean tunnelForward = Boolean.parseBoolean(args[5]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[5]);
+        Rect crop = parseCrop(args[6]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[6]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[7]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[7]);
+        boolean control = Boolean.parseBoolean(args[8]);
         options.setControl(control);
+
+        int displayId = Integer.parseInt(args[9]);
+        options.setDisplayId(displayId);
 
         return options;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static Rect parseCrop(String crop) {
         if ("-".equals(crop)) {
             return null;
@@ -135,7 +140,6 @@ public final class Server {
         }
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static void suggestFix(Throwable e) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (e instanceof MediaCodec.CodecException) {
@@ -144,6 +148,16 @@ public final class Server {
                     Ln.e("The hardware encoder is not able to encode at the given definition.");
                     Ln.e("Try with a lower definition:");
                     Ln.e("    scrcpy -m 1024");
+                }
+            }
+        }
+        if (e instanceof InvalidDisplayIdException) {
+            InvalidDisplayIdException idie = (InvalidDisplayIdException) e;
+            int[] displayIds = idie.getAvailableDisplayIds();
+            if (displayIds != null && displayIds.length > 0) {
+                Ln.e("Try to use one of the available display ids:");
+                for (int id : displayIds) {
+                    Ln.e("    scrcpy --display " + id);
                 }
             }
         }

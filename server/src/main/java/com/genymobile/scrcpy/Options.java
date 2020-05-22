@@ -6,10 +6,12 @@ public class Options {
     private int maxSize;
     private int bitRate;
     private int maxFps;
+    private int lockedVideoOrientation;
     private boolean tunnelForward;
     private Rect crop;
     private boolean sendFrameMeta; // send PTS so that the client may record properly
     private boolean control;
+    private int displayId;
 
     public int getMaxSize() {
         return maxSize;
@@ -33,6 +35,14 @@ public class Options {
 
     public void setMaxFps(int maxFps) {
         this.maxFps = maxFps;
+    }
+
+    public int getLockedVideoOrientation() {
+        return lockedVideoOrientation;
+    }
+
+    public void setLockedVideoOrientation(int lockedVideoOrientation) {
+        this.lockedVideoOrientation = lockedVideoOrientation;
     }
 
     public boolean isTunnelForward() {
@@ -65,5 +75,13 @@ public class Options {
 
     public void setControl(boolean control) {
         this.control = control;
+    }
+
+    public int getDisplayId() {
+        return displayId;
+    }
+
+    public void setDisplayId(int displayId) {
+        this.displayId = displayId;
     }
 }

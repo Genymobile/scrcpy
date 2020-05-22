@@ -49,7 +49,7 @@ static struct input_manager input_manager = {
 
 // init SDL and set appropriate hints
 static bool
-sdl_init_and_configure(bool display) {
+sdl_init_and_configure(bool display, const char *render_driver) {
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
@@ -62,9 +62,13 @@ sdl_init_and_configure(bool display) {
         return true;
     }
 
-    // Use the best available scale quality
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
-        LOGW("Could not enable bilinear filtering");
+    if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
+        LOGW("Could not set render driver");
+    }
+
+    // Linear filtering
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
+        LOGW("Could not enable linear filtering");
     }
 
 #ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
@@ -107,9 +111,10 @@ static int
 event_watcher(void *data, SDL_Event *event) {
     (void) data;
     if (event->type == SDL_WINDOWEVENT
-            && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // called from another thread, not very safe, but it's a workaround!
-        screen_render(&screen);
+            && event->window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
+        // In practice, it seems to always be called from the same thread in
+        // that specific case. Anyway, it's just a workaround.
+        screen_handle_window_event(&screen, &event->window);
     }
     return 0;
 }
@@ -282,11 +287,13 @@ scrcpy(const struct scrcpy_options *options) {
     bool record = !!options->record_filename;
     struct server_params params = {
         .crop = options->crop,
-        .local_port = options->port,
+        .port_range = options->port_range,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
         .max_fps = options->max_fps,
+        .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
+        .display_id = options->display_id,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;
@@ -309,9 +316,8 @@ scrcpy(const struct scrcpy_options *options) {
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
-    //bool serve_initialized = false;
 
-    if (!sdl_init_and_configure(options->display)) {
+    if (!sdl_init_and_configure(options->display, options->render_driver)) {
         goto end;
     }
 
@@ -366,11 +372,8 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
-    av_log_set_callback(av_log_callback);
-
-    struct serve *serv = NULL;
-    if (options->serve)
-    {
+    struct serve* serv = NULL;
+    if (options->serve) {
         serve_init(&serve, options->serve_protocol, options->serve_ip, options->serve_port);
 
         if (!serve_start(&serve)) {
@@ -378,6 +381,8 @@ scrcpy(const struct scrcpy_options *options) {
         }
         serv = &serve;
     }
+
+    av_log_set_callback(av_log_callback);
 
     stream_init(&stream, server.video_socket, dec, rec, serv);
 
@@ -408,7 +413,8 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->always_on_top, options->window_x,
                                    options->window_y, options->window_width,
                                    options->window_height,
-                                   options->window_borderless)) {
+                                   options->window_borderless,
+                                   options->rotation, options-> mipmaps)) {
             goto end;
         }
 

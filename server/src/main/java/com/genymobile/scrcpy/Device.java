@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
@@ -25,13 +26,36 @@ public final class Device {
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
 
+    /**
+     * Logical display identifier
+     */
+    private final int displayId;
+
+    /**
+     * The surface flinger layer stack associated with this logical display
+     */
+    private final int layerStack;
+
+    private final boolean supportsInputEvents;
+
     public Device(Options options) {
-        screenInfo = computeScreenInfo(options.getCrop(), options.getMaxSize());
+        displayId = options.getDisplayId();
+        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo(displayId);
+        if (displayInfo == null) {
+            int[] displayIds = serviceManager.getDisplayManager().getDisplayIds();
+            throw new InvalidDisplayIdException(displayId, displayIds);
+        }
+
+        int displayInfoFlags = displayInfo.getFlags();
+
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
+        layerStack = displayInfo.getLayerStack();
+
         registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) throws RemoteException {
                 synchronized (Device.this) {
-                    screenInfo = screenInfo.withRotation(rotation);
+                    screenInfo = screenInfo.withDeviceRotation(rotation);
 
                     // notify
                     if (rotationListener != null) {
@@ -39,89 +63,69 @@ public final class Device {
                     }
                 }
             }
-        });
+        }, displayId);
+
+        if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
+            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
+        }
+
+        // main display or any display on Android >= Q
+        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        if (!supportsInputEvents) {
+            Ln.w("Input events are not supported for secondary displays before Android 10");
+        }
     }
 
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
     }
 
-    private ScreenInfo computeScreenInfo(Rect crop, int maxSize) {
-        DisplayInfo displayInfo = serviceManager.getDisplayManager().getDisplayInfo();
-        boolean rotated = (displayInfo.getRotation() & 1) != 0;
-        Size deviceSize = displayInfo.getSize();
-        Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
-        if (crop != null) {
-            if (rotated) {
-                // the crop (provided by the user) is expressed in the natural orientation
-                crop = flipRect(crop);
-            }
-            if (!contentRect.intersect(crop)) {
-                // intersect() changes contentRect so that it is intersected with crop
-                Ln.w("Crop rectangle (" + formatCrop(crop) + ") does not intersect device screen (" + formatCrop(deviceSize.toRect()) + ")");
-                contentRect = new Rect(); // empty
-            }
-        }
-
-        Size videoSize = computeVideoSize(contentRect.width(), contentRect.height(), maxSize);
-        return new ScreenInfo(contentRect, videoSize, rotated);
-    }
-
-    private static String formatCrop(Rect rect) {
-        return rect.width() + ":" + rect.height() + ":" + rect.left + ":" + rect.top;
-    }
-
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private static Size computeVideoSize(int w, int h, int maxSize) {
-        // Compute the video size and the padding of the content inside this video.
-        // Principle:
-        // - scale down the great side of the screen to maxSize (if necessary);
-        // - scale down the other side so that the aspect ratio is preserved;
-        // - round this value to the nearest multiple of 8 (H.264 only accepts multiples of 8)
-        w &= ~7; // in case it's not a multiple of 8
-        h &= ~7;
-        if (maxSize > 0) {
-            if (BuildConfig.DEBUG && maxSize % 8 != 0) {
-                throw new AssertionError("Max size must be a multiple of 8");
-            }
-            boolean portrait = h > w;
-            int major = portrait ? h : w;
-            int minor = portrait ? w : h;
-            if (major > maxSize) {
-                int minorExact = minor * maxSize / major;
-                // +4 to round the value to the nearest multiple of 8
-                minor = (minorExact + 4) & ~7;
-                major = maxSize;
-            }
-            w = portrait ? minor : major;
-            h = portrait ? major : minor;
-        }
-        return new Size(w, h);
+    public int getLayerStack() {
+        return layerStack;
     }
 
     public Point getPhysicalPoint(Position position) {
         // it hides the field on purpose, to read it with a lock
         @SuppressWarnings("checkstyle:HiddenField")
         ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
-        Size videoSize = screenInfo.getVideoSize();
-        Size clientVideoSize = position.getScreenSize();
-        if (!videoSize.equals(clientVideoSize)) {
+
+        // ignore the locked video orientation, the events will apply in coordinates considered in the physical device orientation
+        Size unlockedVideoSize = screenInfo.getUnlockedVideoSize();
+
+        int reverseVideoRotation = screenInfo.getReverseVideoRotation();
+        // reverse the video rotation to apply the events
+        Position devicePosition = position.rotate(reverseVideoRotation);
+
+        Size clientVideoSize = devicePosition.getScreenSize();
+        if (!unlockedVideoSize.equals(clientVideoSize)) {
             // The client sends a click relative to a video with wrong dimensions,
             // the device may have been rotated since the event was generated, so ignore the event
             return null;
         }
         Rect contentRect = screenInfo.getContentRect();
-        Point point = position.getPoint();
-        int scaledX = contentRect.left + point.getX() * contentRect.width() / videoSize.getWidth();
-        int scaledY = contentRect.top + point.getY() * contentRect.height() / videoSize.getHeight();
-        return new Point(scaledX, scaledY);
+        Point point = devicePosition.getPoint();
+        int convertedX = contentRect.left + point.getX() * contentRect.width() / unlockedVideoSize.getWidth();
+        int convertedY = contentRect.top + point.getY() * contentRect.height() / unlockedVideoSize.getHeight();
+        return new Point(convertedX, convertedY);
     }
 
     public static String getDeviceName() {
         return Build.MODEL;
     }
 
+    public boolean supportsInputEvents() {
+        return supportsInputEvents;
+    }
+
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+        if (!supportsInputEvents()) {
+            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
+        }
+
+        if (displayId != 0 && !InputManager.setDisplayId(inputEvent, displayId)) {
+            return false;
+        }
+
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
     }
 
@@ -129,8 +133,8 @@ public final class Device {
         return serviceManager.getPowerManager().isScreenOn();
     }
 
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
-        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher);
+    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
+        serviceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
     }
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
@@ -154,8 +158,10 @@ public final class Device {
     }
 
     public void setClipboardText(String text) {
-        serviceManager.getClipboardManager().setText(text);
-        Ln.i("Device clipboard set");
+        boolean ok = serviceManager.getClipboardManager().setText(text);
+        if (ok) {
+            Ln.i("Device clipboard set");
+        }
     }
 
     /**
@@ -167,8 +173,10 @@ public final class Device {
             Ln.e("Could not get built-in display");
             return;
         }
-        SurfaceControl.setDisplayPowerMode(d, mode);
-        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+        boolean ok = SurfaceControl.setDisplayPowerMode(d, mode);
+        if (ok) {
+            Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+        }
     }
 
     /**
@@ -190,9 +198,5 @@ public final class Device {
         if (accelerometerRotation) {
             wm.thawRotation();
         }
-    }
-
-    static Rect flipRect(Rect crop) {
-        return new Rect(crop.top, crop.left, crop.bottom, crop.right);
     }
 }

@@ -1,5 +1,7 @@
 #include "command.h"
 
+#include <sys/stat.h>
+
 #include "config.h"
 #include "util/log.h"
 #include "util/str_util.h"
@@ -89,4 +91,23 @@ get_executable_path(void) {
     }
     buf[len] = '\0';
     return utf8_from_wide_char(buf);
+}
+
+bool
+is_regular_file(const char *path) {
+    wchar_t *wide_path = utf8_to_wide_char(path);
+    if (!wide_path) {
+        LOGC("Could not allocate wide char string");
+        return false;
+    }
+
+    struct _stat path_stat;
+    int r = _wstat(wide_path, &path_stat);
+    SDL_free(wide_path);
+
+    if (r) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }
