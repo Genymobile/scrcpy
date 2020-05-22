@@ -536,6 +536,30 @@ check_if_ip_valid(char *ip) {
     return true;
 }
 
+uint32_t
+convert_ip_to_int(char* ip_string) {
+    int num, dots = 0;
+    char* ptr;
+
+    char* ip = "0x";
+
+    ptr = strtok(ip_string, "."); //Cut the string using dot as delimiter
+
+    while (ptr) {
+        num = atoi(ptr); //Convert substring to number
+        if (num >= 0 && num <= 255) {
+            char hex[3];
+            sprintf(hex, "%X", num);
+            strcat(ip, hex);
+            ptr = strtok(NULL, "."); //Cut the next part of the string
+            if (ptr != NULL)
+                dots++; //Increase the dot count
+        }
+    }
+
+    return atoi(ip);
+}
+
 static bool
 parse_serve_args(const char *optarg, const char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
     bool protocol_valid = false;
@@ -571,6 +595,7 @@ parse_serve_args(const char *optarg, const char **s_protocol, uint32_t *s_ip, ui
         ip_value = 0x7F000001;
         ip_valid = true;
     } else if (check_if_ip_valid(ip)) {
+        ip_value = convert_ip_to_int(ip);
         ip_valid = true;
     } else {
         LOGE("Unexpected ip address (expected \"localhost\" or 255.255.255.255 format)");
