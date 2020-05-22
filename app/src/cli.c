@@ -461,7 +461,7 @@ str_split(const char *a_str, const char a_delim) {
     char** result = 0;
     size_t count = 0;
     char* tmp = (char*)a_str;
-    char str[100];
+    char str[50];
     strncpy(str, a_str, sizeof(str));
     char* last_comma = 0;
     char delim[2];
@@ -517,7 +517,7 @@ check_if_ip_valid(char *ip) {
         return false;
 
     while (ptr) {
-        long value:
+        long value;
         if (!parse_integer(ptr, &value)) //Check whether the substring is holding only number or not
             return false;
         num = atoi(ptr); //Convert substring to number
@@ -537,7 +537,7 @@ check_if_ip_valid(char *ip) {
 }
 
 static bool
-parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
+parse_serve_args(const char *optarg, const char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
     bool protocol_valid = false;
     bool ip_valid = false;
     bool port_valid = false;
@@ -562,7 +562,7 @@ parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t
     if (!strcmp(protocol, "tcp")) {
         protocol_valid = true;
     } else {
-        LOGE("Unexpected protocol: $s (expected tcp)", protocol);
+        LOGE("Unexpected protocol (expected tcp)");
         return false;
     }
     
@@ -579,11 +579,11 @@ parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t
 
     //Check if the choosen port is valid
     long port_value = 0;
-    port_valid = parse_interger_arg(port, &port_value, false, 0, 0xFFFF, "port");
+    port_valid = parse_integer_arg(port, &port_value, false, 0, 0xFFFF, "port");
 
     //Check if everything is valid
     if (!protocol_valid || !ip_valid || !port_valid) {
-        LOGE("Unexpected argument format: $s (expected [tcp]:[ip or \"localhost\"]:[port])", optarg);
+        LOGE("Unexpected argument format (expected [tcp]:[ip or \"localhost\"]:[port])");
         return false;
     }
 
@@ -639,7 +639,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
         {"serial",                 required_argument, NULL, 's'},
-        {"serve",                  required_argument, NULL, OPT_SERVE}
+        {"serve",                  required_argument, NULL, OPT_SERVE},
         {"show-touches",           no_argument,       NULL, 't'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
         {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},

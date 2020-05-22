@@ -9,7 +9,7 @@
 #include "util/log.h"
 #include "util/net.h"
 
-# define SOCKET_ERROR -1
+# define SOCKET_ERROR (-1)
 
 void
 serve_init(struct serve* serve, char *protocol, uint32_t ip, uint16_t port) {
@@ -32,6 +32,8 @@ serve_start(struct serve* serve) {
         return 0;
     }
 
+    LOGI("Waiting for a client to connect");
+
     ClientSocket = net_accept(Listensocket);
     if (ClientSocket == INVALID_SOCKET) {
         LOGI("Client error");
@@ -49,8 +51,8 @@ serve_start(struct serve* serve) {
 }
 
 bool
-serve_push(struct serve* serve, const AVPacket packet) {
-    if (net_send(serve->socket, packet.data, packet.size) == SOCKET_ERROR) {
+serve_push(struct serve* serve, const AVPacket *packet) {
+    if (net_send(serve->socket, packet->data, packet->size) == SOCKET_ERROR) {
         LOGI("Client lost");
         net_close(serve->socket);
         return false;

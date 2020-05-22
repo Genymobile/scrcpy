@@ -17,6 +17,7 @@ src = [
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
+    'src/serve.c',
     'src/stream.c',
     'src/tiny_xpm.c',
     'src/video_buffer.c',

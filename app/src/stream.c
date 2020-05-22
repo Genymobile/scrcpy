@@ -97,7 +97,7 @@ process_frame(struct stream *stream, AVPacket *packet) {
     if (stream->serve) {
         packet->dts = packet->pts;
 
-        if (!serve_push(stream->serve, packet) {
+        if (!serve_push(stream->serve, packet)) {
             LOGE("Could not serve packet");
             return false;
         }

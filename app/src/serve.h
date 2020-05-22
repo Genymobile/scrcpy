@@ -24,5 +24,5 @@ bool
 serve_start(struct serve* serve);
 
 bool
-serve_push(struct serve* serve, const AVPacket packet);
+serve_push(struct serve* serve, const AVPacket *packet);
 #endif
