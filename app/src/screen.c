@@ -305,7 +305,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
             LOGI("Trilinear filtering disabled");
         }
     } else {
-        LOGW("Trilinear filtering disabled (not an OpenGL renderer)");
+        LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
     SDL_Surface *icon = read_xpm(icon_xpm);
