@@ -395,6 +395,10 @@ The list of display ids can be retrieved by:
 adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
+The secondary display may only be controlled if the device runs at least Android
+10 (otherwise it is mirrored in read-only).
+
+
 #### Stay awake
 
 To prevent the device to sleep after some delay:
