@@ -217,7 +217,7 @@ create_texture(struct screen *screen) {
         // Enable trilinear filtering for downscaling
         gl->TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                           GL_LINEAR_MIPMAP_LINEAR);
-        gl->TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -.5f);
+        gl->TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, -1.f);
 
         SDL_GL_UnbindTexture(texture);
     }
