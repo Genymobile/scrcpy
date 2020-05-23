@@ -54,7 +54,7 @@ public final class Device {
 
         serviceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
-            public void onRotationChanged(int rotation) throws RemoteException {
+            public void onRotationChanged(int rotation) {
                 synchronized (Device.this) {
                     screenInfo = screenInfo.withDeviceRotation(rotation);
 
