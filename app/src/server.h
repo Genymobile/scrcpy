@@ -56,6 +56,7 @@ struct server_params {
     uint16_t display_id;
     bool show_touches;
     bool stay_awake;
+    bool force_adb_forward;
 };
 
 // init default values

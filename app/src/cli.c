@@ -54,6 +54,10 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "        Default is 0.\n"
         "\n"
+        "    --force-adb-forward\n"
+        "        Do not attempt to use \"adb reverse\" to connect to the\n"
+        "        the device.\n"
+        "\n"
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
@@ -516,6 +520,7 @@ guess_record_format(const char *filename) {
 #define OPT_RENDER_DRIVER          1016
 #define OPT_NO_MIPMAPS             1017
 #define OPT_CODEC_OPTIONS          1018
+#define OPT_FORCE_ADB_FORWARD      1019
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -525,6 +530,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
+        {"force-adb-forward",      no_argument,       NULL,
+                                                  OPT_FORCE_ADB_FORWARD},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
         {"lock-video-orientation", required_argument, NULL,
@@ -700,6 +707,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_CODEC_OPTIONS:
                 opts->codec_options = optarg;
+                break;
+            case OPT_FORCE_ADB_FORWARD:
+                opts->force_adb_forward = true;
                 break;
             default:
                 // getopt prints the error message on stderr

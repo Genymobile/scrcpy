@@ -289,6 +289,22 @@ From another terminal:
 scrcpy
 ```
 
+To avoid enabling remote port forwarding, you could force a forward connection
+instead (notice the `-L` instead of `-R`):
+
+```bash
+adb kill-server    # kill the local adb server on 5037
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# keep this open
+```
+
+From another terminal:
+
+```bash
+scrcpy --force-adb-forwrad
+```
+
+
 Like for wireless connections, it may be useful to reduce quality:
 
 ```

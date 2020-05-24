@@ -42,6 +42,7 @@ struct scrcpy_options {
     bool window_borderless;
     bool mipmaps;
     bool stay_awake;
+    bool force_adb_forward;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -79,6 +80,7 @@ struct scrcpy_options {
     .window_borderless = false, \
     .mipmaps = true, \
     .stay_awake = false, \
+    .force_adb_forward = false, \
 }
 
 bool

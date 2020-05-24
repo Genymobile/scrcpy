@@ -217,15 +217,20 @@ enable_tunnel_forward_any_port(struct server *server,
 }
 
 static bool
-enable_tunnel_any_port(struct server *server, struct port_range port_range) {
-    if (enable_tunnel_reverse_any_port(server, port_range)) {
-        return true;
+enable_tunnel_any_port(struct server *server, struct port_range port_range,
+                       bool force_adb_forward) {
+    if (!force_adb_forward) {
+        // Attempt to use "adb reverse"
+        if (enable_tunnel_reverse_any_port(server, port_range)) {
+            return true;
+        }
+
+        // if "adb reverse" does not work (e.g. over "adb connect"), it
+        // fallbacks to "adb forward", so the app socket is the client
+
+        LOGW("'adb reverse' failed, fallback to 'adb forward'");
     }
 
-    // if "adb reverse" does not work (e.g. over "adb connect"), it fallbacks to
-    // "adb forward", so the app socket is the client
-
-    LOGW("'adb reverse' failed, fallback to 'adb forward'");
     return enable_tunnel_forward_any_port(server, port_range);
 }
 
@@ -384,7 +389,8 @@ server_start(struct server *server, const char *serial,
         goto error1;
     }
 
-    if (!enable_tunnel_any_port(server, params->port_range)) {
+    if (!enable_tunnel_any_port(server, params->port_range,
+                                params->force_adb_forward)) {
         goto error1;
     }
 
