@@ -15,10 +15,21 @@ public final class Ln {
         DEBUG, INFO, WARN, ERROR
     }
 
-    private static final Level THRESHOLD = BuildConfig.DEBUG ? Level.DEBUG : Level.INFO;
+    private static Level THRESHOLD;
 
     private Ln() {
         // not instantiable
+    }
+
+    /**
+     * Initialize the log level.
+     * <p>
+     * Must be called before starting any new thread.
+     *
+     * @param level the log level
+     */
+    public static void initLogLevel(Level level) {
+        THRESHOLD = level;
     }
 
     public static boolean isEnabled(Level level) {

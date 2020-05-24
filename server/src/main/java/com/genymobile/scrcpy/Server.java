@@ -119,48 +119,51 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 13;
+        final int expectedParameters = 14;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
 
         Options options = new Options();
 
-        int maxSize = Integer.parseInt(args[1]) & ~7; // multiple of 8
+        Ln.Level level = Ln.Level.valueOf(args[1].toUpperCase());
+        options.setLogLevel(level);
+
+        int maxSize = Integer.parseInt(args[2]) & ~7; // multiple of 8
         options.setMaxSize(maxSize);
 
-        int bitRate = Integer.parseInt(args[2]);
+        int bitRate = Integer.parseInt(args[3]);
         options.setBitRate(bitRate);
 
-        int maxFps = Integer.parseInt(args[3]);
+        int maxFps = Integer.parseInt(args[4]);
         options.setMaxFps(maxFps);
 
-        int lockedVideoOrientation = Integer.parseInt(args[4]);
+        int lockedVideoOrientation = Integer.parseInt(args[5]);
         options.setLockedVideoOrientation(lockedVideoOrientation);
 
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[5]);
+        boolean tunnelForward = Boolean.parseBoolean(args[6]);
         options.setTunnelForward(tunnelForward);
 
-        Rect crop = parseCrop(args[6]);
+        Rect crop = parseCrop(args[7]);
         options.setCrop(crop);
 
-        boolean sendFrameMeta = Boolean.parseBoolean(args[7]);
+        boolean sendFrameMeta = Boolean.parseBoolean(args[8]);
         options.setSendFrameMeta(sendFrameMeta);
 
-        boolean control = Boolean.parseBoolean(args[8]);
+        boolean control = Boolean.parseBoolean(args[9]);
         options.setControl(control);
 
-        int displayId = Integer.parseInt(args[9]);
+        int displayId = Integer.parseInt(args[10]);
         options.setDisplayId(displayId);
 
-        boolean showTouches = Boolean.parseBoolean(args[10]);
+        boolean showTouches = Boolean.parseBoolean(args[11]);
         options.setShowTouches(showTouches);
 
-        boolean stayAwake = Boolean.parseBoolean(args[11]);
+        boolean stayAwake = Boolean.parseBoolean(args[12]);
         options.setStayAwake(stayAwake);
 
-        String codecOptions = args[12];
+        String codecOptions = args[13];
         options.setCodecOptions(codecOptions);
 
         return options;
@@ -215,6 +218,9 @@ public final class Server {
         });
 
         Options options = createOptions(args);
+
+        Ln.initLogLevel(options.getLogLevel());
+
         scrcpy(options);
     }
 }

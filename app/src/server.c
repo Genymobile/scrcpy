@@ -259,6 +259,11 @@ execute_server(struct server *server, const struct server_params *params) {
         "/", // unused
         "com.genymobile.scrcpy.Server",
         SCRCPY_VERSION,
+#ifndef NDEBUG
+        "debug",
+#else
+        "info",
+#endif
         max_size_string,
         bit_rate_string,
         max_fps_string,

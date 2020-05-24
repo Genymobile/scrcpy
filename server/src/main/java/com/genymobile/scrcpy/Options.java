@@ -3,6 +3,7 @@ package com.genymobile.scrcpy;
 import android.graphics.Rect;
 
 public class Options {
+    private Ln.Level logLevel;
     private int maxSize;
     private int bitRate;
     private int maxFps;
@@ -15,6 +16,14 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private String codecOptions;
+
+    public Ln.Level getLogLevel() {
+        return logLevel;
+    }
+
+    public void setLogLevel(Ln.Level logLevel) {
+        this.logLevel = logLevel;
+    }
 
     public int getMaxSize() {
         return maxSize;
