@@ -9,6 +9,7 @@
 #include "config.h"
 #include "command.h"
 #include "common.h"
+#include "util/log.h"
 #include "util/net.h"
 
 struct server {
@@ -43,6 +44,7 @@ struct server {
 }
 
 struct server_params {
+    enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
     struct port_range port_range;

@@ -229,6 +229,23 @@ enable_tunnel_any_port(struct server *server, struct port_range port_range) {
     return enable_tunnel_forward_any_port(server, port_range);
 }
 
+static const char *
+log_level_to_server_string(enum sc_log_level level) {
+    switch (level) {
+        case SC_LOG_LEVEL_DEBUG:
+            return "debug";
+        case SC_LOG_LEVEL_INFO:
+            return "info";
+        case SC_LOG_LEVEL_WARN:
+            return "warn";
+        case SC_LOG_LEVEL_ERROR:
+            return "error";
+        default:
+            assert(!"unexpected log level");
+            return "(unknown)";
+    }
+}
+
 static process_t
 execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
@@ -259,11 +276,7 @@ execute_server(struct server *server, const struct server_params *params) {
         "/", // unused
         "com.genymobile.scrcpy.Server",
         SCRCPY_VERSION,
-#ifndef NDEBUG
-        "debug",
-#else
-        "info",
-#endif
+        log_level_to_server_string(params->log_level),
         max_size_string,
         bit_rate_string,
         max_fps_string,

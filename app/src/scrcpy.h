@@ -8,6 +8,7 @@
 #include "common.h"
 #include "input_manager.h"
 #include "recorder.h"
+#include "util/log.h"
 
 struct scrcpy_options {
     const char *serial;
@@ -17,6 +18,7 @@ struct scrcpy_options {
     const char *push_target;
     const char *render_driver;
     const char *codec_options;
+    enum sc_log_level log_level;
     enum recorder_format record_format;
     struct port_range port_range;
     uint16_t max_size;
@@ -50,6 +52,7 @@ struct scrcpy_options {
     .push_target = NULL, \
     .render_driver = NULL, \
     .codec_options = NULL, \
+    .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = RECORDER_FORMAT_AUTO, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \

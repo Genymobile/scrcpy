@@ -146,6 +146,14 @@ scrcpy_print_usage(const char *arg0) {
         "    -v, --version\n"
         "        Print the version of scrcpy.\n"
         "\n"
+        "    -V, --verbosity value\n"
+        "        Set the log level (debug, info, warn or error).\n"
+#ifndef NDEBUG
+        "        Default is debug.\n"
+#else
+        "        Default is info.\n"
+#endif
+        "\n"
         "    -w, --stay-awake\n"
         "        Keep the device on while scrcpy is running.\n"
         "\n"
@@ -434,6 +442,32 @@ parse_display_id(const char *s, uint16_t *display_id) {
 }
 
 static bool
+parse_log_level(const char *s, enum sc_log_level *log_level) {
+    if (!strcmp(s, "debug")) {
+        *log_level = SC_LOG_LEVEL_DEBUG;
+        return true;
+    }
+
+    if (!strcmp(s, "info")) {
+        *log_level = SC_LOG_LEVEL_INFO;
+        return true;
+    }
+
+    if (!strcmp(s, "warn")) {
+        *log_level = SC_LOG_LEVEL_WARN;
+        return true;
+    }
+
+    if (!strcmp(s, "error")) {
+        *log_level = SC_LOG_LEVEL_ERROR;
+        return true;
+    }
+
+    LOGE("Could not parse log level: %s", s);
+    return false;
+}
+
+static bool
 parse_record_format(const char *optarg, enum recorder_format *format) {
     if (!strcmp(optarg, "mp4")) {
         *format = RECORDER_FORMAT_MP4;
@@ -513,6 +547,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"show-touches",           no_argument,       NULL, 't'},
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
+        {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
         {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
         {"window-x",               required_argument, NULL, OPT_WINDOW_X},
@@ -529,8 +564,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvw", long_options,
-                            NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvV:w",
+                            long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->bit_rate)) {
@@ -608,6 +643,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'v':
                 args->version = true;
+                break;
+            case 'V':
+                if (!parse_log_level(optarg, &opts->log_level)) {
+                    return false;
+                }
                 break;
             case 'w':
                 opts->stay_awake = true;

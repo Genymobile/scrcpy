@@ -293,6 +293,7 @@ bool
 scrcpy(const struct scrcpy_options *options) {
     bool record = !!options->record_filename;
     struct server_params params = {
+        .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,
         .max_size = options->max_size,
