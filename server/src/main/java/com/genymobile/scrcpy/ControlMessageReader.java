@@ -15,7 +15,8 @@ public class ControlMessageReader {
 
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
-    private static final int RAW_BUFFER_SIZE = 1024;
+
+    private static final int RAW_BUFFER_SIZE = 4096;
 
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
