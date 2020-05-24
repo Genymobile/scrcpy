@@ -230,6 +230,30 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseBigSetClipboardEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_SET_CLIPBOARD);
+
+        byte[] rawText = new byte[ControlMessageReader.CLIPBOARD_TEXT_MAX_LENGTH];
+        Arrays.fill(rawText, (byte) 'a');
+        String text = new String(rawText, 0, rawText.length);
+
+        dos.writeShort(rawText.length);
+        dos.write(rawText);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
+        Assert.assertEquals(text, event.getText());
+    }
+
+    @Test
     public void testParseSetScreenPowerMode() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
