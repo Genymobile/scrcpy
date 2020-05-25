@@ -15,7 +15,7 @@ public final class Ln {
         DEBUG, INFO, WARN, ERROR
     }
 
-    private static Level THRESHOLD;
+    private static Level threshold;
 
     private Ln() {
         // not instantiable
@@ -29,11 +29,11 @@ public final class Ln {
      * @param level the log level
      */
     public static void initLogLevel(Level level) {
-        THRESHOLD = level;
+        threshold = level;
     }
 
     public static boolean isEnabled(Level level) {
-        return level.ordinal() >= THRESHOLD.ordinal();
+        return level.ordinal() >= threshold.ordinal();
     }
 
     public static void d(String message) {
