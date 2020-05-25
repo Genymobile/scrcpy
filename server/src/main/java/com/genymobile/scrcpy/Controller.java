@@ -149,6 +149,10 @@ public class Controller {
     }
 
     private int injectText(String text) {
+        if (device.injectTextPaste(text)) {
+            // The best method (fastest and UTF-8) worked!
+            return text.length();
+        }
         int successCount = 0;
         for (char c : text.toCharArray()) {
             if (!injectChar(c)) {
