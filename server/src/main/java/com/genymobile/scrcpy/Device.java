@@ -13,6 +13,8 @@ import android.os.IBinder;
 import android.view.IRotationWatcher;
 import android.view.InputEvent;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public final class Device {
 
     public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
@@ -31,6 +33,7 @@ public final class Device {
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
     private ClipboardListener clipboardListener;
+    private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
     /**
      * Logical display identifier
@@ -76,6 +79,10 @@ public final class Device {
             serviceManager.getClipboardManager().addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
                 @Override
                 public void dispatchPrimaryClipChanged() {
+                    if (isSettingClipboard.get()) {
+                        // This is a notification for the change we are currently applying, ignore it
+                        return;
+                    }
                     synchronized (Device.this) {
                         if (clipboardListener != null) {
                             String text = getClipboardText();
@@ -181,7 +188,10 @@ public final class Device {
     }
 
     public boolean setClipboardText(String text) {
-        return serviceManager.getClipboardManager().setText(text);
+        isSettingClipboard.set(true);
+        boolean ok = serviceManager.getClipboardManager().setText(text);
+        isSettingClipboard.set(false);
+        return ok;
     }
 
     /**
