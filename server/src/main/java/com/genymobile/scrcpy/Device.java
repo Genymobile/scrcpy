@@ -10,8 +10,12 @@ import android.content.IOnPrimaryClipChangedListener;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.view.IRotationWatcher;
+import android.view.InputDevice;
 import android.view.InputEvent;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -147,7 +151,7 @@ public final class Device {
         return supportsInputEvents;
     }
 
-    public boolean injectInputEvent(InputEvent inputEvent, int mode) {
+    public boolean injectEvent(InputEvent inputEvent, int mode) {
         if (!supportsInputEvents()) {
             throw new AssertionError("Could not inject input event if !supportsInputEvents()");
         }
@@ -157,6 +161,21 @@ public final class Device {
         }
 
         return serviceManager.getInputManager().injectInputEvent(inputEvent, mode);
+    }
+
+    public boolean injectEvent(InputEvent event) {
+        return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    }
+
+    public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
+        long now = SystemClock.uptimeMillis();
+        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
+                InputDevice.SOURCE_KEYBOARD);
+        return injectEvent(event);
+    }
+
+    public boolean injectKeycode(int keyCode) {
+        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0);
     }
 
     public boolean isScreenOn() {

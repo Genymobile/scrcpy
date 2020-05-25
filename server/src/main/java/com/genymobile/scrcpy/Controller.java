@@ -1,10 +1,7 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.InputManager;
-
 import android.os.SystemClock;
 import android.view.InputDevice;
-import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -50,7 +47,7 @@ public class Controller {
     public void control() throws IOException {
         // on start, power on the device
         if (!device.isScreenOn()) {
-            injectKeycode(KeyEvent.KEYCODE_POWER);
+            device.injectKeycode(KeyEvent.KEYCODE_POWER);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -133,7 +130,7 @@ public class Controller {
     }
 
     private boolean injectKeycode(int action, int keycode, int metaState) {
-        return injectKeyEvent(action, keycode, 0, metaState);
+        return device.injectKeyEvent(action, keycode, 0, metaState);
     }
 
     private boolean injectChar(char c) {
@@ -144,7 +141,7 @@ public class Controller {
             return false;
         }
         for (KeyEvent event : events) {
-            if (!injectEvent(event)) {
+            if (!device.injectEvent(event)) {
                 return false;
             }
         }
@@ -200,7 +197,7 @@ public class Controller {
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
                         InputDevice.SOURCE_TOUCHSCREEN, 0);
-        return injectEvent(event);
+        return device.injectEvent(event);
     }
 
     private boolean injectScroll(Position position, int hScroll, int vScroll) {
@@ -223,26 +220,11 @@ public class Controller {
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
                         InputDevice.SOURCE_TOUCHSCREEN, 0);
-        return injectEvent(event);
-    }
-
-    private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
-        long now = SystemClock.uptimeMillis();
-        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
-                InputDevice.SOURCE_KEYBOARD);
-        return injectEvent(event);
-    }
-
-    private boolean injectKeycode(int keyCode) {
-        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0);
-    }
-
-    private boolean injectEvent(InputEvent event) {
-        return device.injectInputEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+        return device.injectEvent(event);
     }
 
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
-        return injectKeycode(keycode);
+        return device.injectKeycode(keycode);
     }
 }
