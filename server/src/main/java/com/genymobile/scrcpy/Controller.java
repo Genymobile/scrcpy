@@ -110,11 +110,18 @@ public class Controller {
                 sender.pushClipboardText(clipboardText);
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                device.setClipboardText(msg.getText());
+                boolean setClipboardOk = device.setClipboardText(msg.getText());
+                if (setClipboardOk) {
+                    Ln.i("Device clipboard set");
+                }
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
-                    device.setScreenPowerMode(msg.getAction());
+                    int mode = msg.getAction();
+                    boolean setPowerModeOk = device.setScreenPowerMode(mode);
+                    if (setPowerModeOk) {
+                        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+                    }
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:

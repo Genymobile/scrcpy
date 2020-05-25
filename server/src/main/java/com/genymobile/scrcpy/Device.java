@@ -180,26 +180,20 @@ public final class Device {
         return s.toString();
     }
 
-    public void setClipboardText(String text) {
-        boolean ok = serviceManager.getClipboardManager().setText(text);
-        if (ok) {
-            Ln.i("Device clipboard set");
-        }
+    public boolean setClipboardText(String text) {
+        return serviceManager.getClipboardManager().setText(text);
     }
 
     /**
      * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
      */
-    public void setScreenPowerMode(int mode) {
+    public boolean setScreenPowerMode(int mode) {
         IBinder d = SurfaceControl.getBuiltInDisplay();
         if (d == null) {
             Ln.e("Could not get built-in display");
-            return;
+            return false;
         }
-        boolean ok = SurfaceControl.setDisplayPowerMode(d, mode);
-        if (ok) {
-            Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
-        }
+        return SurfaceControl.setDisplayPowerMode(d, mode);
     }
 
     /**
