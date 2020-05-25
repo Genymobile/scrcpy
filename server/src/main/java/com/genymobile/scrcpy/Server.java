@@ -9,6 +9,7 @@ import android.os.Build;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 public final class Server {
 
@@ -126,7 +127,7 @@ public final class Server {
 
         Options options = new Options();
 
-        Ln.Level level = Ln.Level.valueOf(args[1].toUpperCase());
+        Ln.Level level = Ln.Level.valueOf(args[1].toUpperCase(Locale.ENGLISH));
         options.setLogLevel(level);
 
         int maxSize = Integer.parseInt(args[2]) & ~7; // multiple of 8
