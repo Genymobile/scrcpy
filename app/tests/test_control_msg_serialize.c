@@ -200,7 +200,7 @@ static void test_serialize_get_clipboard(void) {
 static void test_serialize_set_clipboard(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_CLIPBOARD,
-        .inject_text = {
+        .set_clipboard = {
             .text = "hello, world!",
         },
     };
