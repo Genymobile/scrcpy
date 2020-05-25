@@ -494,7 +494,8 @@ It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
  - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard;
+ - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
+   pastes if the device runs Android >= 7);
  - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
@@ -559,29 +560,29 @@ Also see [issue #14].
 
 ## Shortcuts
 
- | Action                                 |   Shortcut                    |   Shortcut (macOS)
- | -------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
- | Rotate display left                    | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
- | Rotate display right                   | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                        | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                               | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
- | Rotate device screen                   | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device     | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    | `Cmd`+`i`
+ | Action                                      |   Shortcut                    |   Shortcut (macOS)
+ | ------------------------------------------- |:----------------------------- |:-----------------------------
+ | Switch fullscreen mode                      | `Ctrl`+`f`                    | `Cmd`+`f`
+ | Rotate display left                         | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
+ | Rotate display right                        | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
+ | Resize window to 1:1 (pixel-perfect)        | `Ctrl`+`g`                    | `Cmd`+`g`
+ | Resize window to remove black borders       | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
+ | Click on `HOME`                             | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
+ | Click on `BACK`                             | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
+ | Click on `APP_SWITCH`                       | `Ctrl`+`s`                    | `Cmd`+`s`
+ | Click on `MENU`                             | `Ctrl`+`m`                    | `Ctrl`+`m`
+ | Click on `VOLUME_UP`                        | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                      | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
+ | Click on `POWER`                            | `Ctrl`+`p`                    | `Cmd`+`p`
+ | Power on                                    | _Right-click²_                | _Right-click²_
+ | Turn device screen off (keep mirroring)     | `Ctrl`+`o`                    | `Cmd`+`o`
+ | Rotate device screen                        | `Ctrl`+`r`                    | `Cmd`+`r`
+ | Expand notification panel                   | `Ctrl`+`n`                    | `Cmd`+`n`
+ | Collapse notification panel                 | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
+ | Copy device clipboard to computer           | `Ctrl`+`c`                    | `Cmd`+`c`
+ | Paste computer clipboard to device          | `Ctrl`+`v`                    | `Cmd`+`v`
+ | Copy computer clipboard to device and paste | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout)      | `Ctrl`+`i`                    | `Cmd`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._

@@ -12,8 +12,9 @@ public class ControlMessageReader {
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4092; // 4096 - 1 (type) - 1 (parse flag) - 2 (length)
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
 
     private static final int RAW_BUFFER_SIZE = 4096;
@@ -148,11 +149,15 @@ public class ControlMessageReader {
     }
 
     private ControlMessage parseSetClipboard() {
+        if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
+            return null;
+        }
+        boolean parse = buffer.get() != 0;
         String text = parseString();
         if (text == null) {
             return null;
         }
-        return ControlMessage.createSetClipboard(text);
+        return ControlMessage.createSetClipboard(text, parse);
     }
 
     private ControlMessage parseSetScreenPowerMode() {

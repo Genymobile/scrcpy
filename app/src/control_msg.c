@@ -67,10 +67,11 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
                              (uint32_t) msg->inject_scroll_event.vscroll);
             return 21;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
+            buf[1] = !!msg->set_clipboard.paste;
             size_t len = write_string(msg->set_clipboard.text,
                                       CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
-                                      &buf[1]);
-            return 1 + len;
+                                      &buf[2]);
+            return 2 + len;
         }
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;

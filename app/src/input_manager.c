@@ -112,7 +112,7 @@ request_device_clipboard(struct controller *controller) {
 }
 
 static void
-set_device_clipboard(struct controller *controller) {
+set_device_clipboard(struct controller *controller, bool paste) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -127,6 +127,7 @@ set_device_clipboard(struct controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
     msg.set_clipboard.text = text;
+    msg.set_clipboard.paste = paste;
 
     if (!controller_push_msg(controller, &msg)) {
         SDL_free(text);
@@ -354,8 +355,8 @@ input_manager_process_key(struct input_manager *im,
             case SDLK_v:
                 if (control && cmd && !repeat && down) {
                     if (shift) {
-                        // store the text in the device clipboard
-                        set_device_clipboard(controller);
+                        // store the text in the device clipboard and paste
+                        set_device_clipboard(controller, true);
                     } else {
                         // inject the text as input events
                         clipboard_paste(controller);

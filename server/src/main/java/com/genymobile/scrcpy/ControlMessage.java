@@ -17,6 +17,8 @@ public final class ControlMessage {
     public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
     public static final int TYPE_ROTATE_DEVICE = 10;
 
+    public static final int FLAGS_PASTE = 1;
+
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
@@ -28,6 +30,7 @@ public final class ControlMessage {
     private Position position;
     private int hScroll;
     private int vScroll;
+    private int flags;
 
     private ControlMessage() {
     }
@@ -68,10 +71,13 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createSetClipboard(String text) {
+    public static ControlMessage createSetClipboard(String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
         msg.text = text;
+        if (paste) {
+            msg.flags = FLAGS_PASTE;
+        }
         return msg;
     }
 
@@ -133,5 +139,9 @@ public final class ControlMessage {
 
     public int getVScroll() {
         return vScroll;
+    }
+
+    public int getFlags() {
+        return flags;
     }
 }

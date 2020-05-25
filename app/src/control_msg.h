@@ -11,9 +11,9 @@
 #include "common.h"
 
 #define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
-#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH 4093
+#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH 4092
 #define CONTROL_MSG_SERIALIZED_MAX_SIZE \
-    (3 + CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH)
+    (4 + CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH)
 
 #define POINTER_ID_MOUSE UINT64_C(-1);
 
@@ -62,6 +62,7 @@ struct control_msg {
         } inject_scroll_event;
         struct {
             char *text; // owned, to be freed by SDL_free()
+            bool paste;
         } set_clipboard;
         struct {
             enum screen_power_mode mode;
