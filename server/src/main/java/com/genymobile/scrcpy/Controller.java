@@ -105,7 +105,9 @@ public class Controller {
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
                 String clipboardText = device.getClipboardText();
-                sender.pushClipboardText(clipboardText);
+                if (clipboardText != null) {
+                    sender.pushClipboardText(clipboardText);
+                }
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 boolean paste = (msg.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
