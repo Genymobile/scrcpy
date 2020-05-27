@@ -15,7 +15,7 @@ public final class Ln {
         DEBUG, INFO, WARN, ERROR
     }
 
-    private static Level threshold;
+    private static Level threshold = Level.INFO;
 
     private Ln() {
         // not instantiable
