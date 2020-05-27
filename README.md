@@ -576,6 +576,7 @@ Also see [issue #14].
  | Click on `POWER`                            | `Ctrl`+`p`                    | `Cmd`+`p`
  | Power on                                    | _Right-click²_                | _Right-click²_
  | Turn device screen off (keep mirroring)     | `Ctrl`+`o`                    | `Cmd`+`o`
+ | Turn device screen on                       | `Ctrl`+`Shift`+`o`            | `Cmd`+`Shift`+`o`
  | Rotate device screen                        | `Ctrl`+`r`                    | `Cmd`+`r`
  | Expand notification panel                   | `Ctrl`+`n`                    | `Cmd`+`n`
  | Collapse notification panel                 | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
