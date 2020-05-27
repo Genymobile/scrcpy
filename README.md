@@ -439,7 +439,7 @@ scrcpy -S
 
 Or by pressing `Ctrl`+`o` at any time.
 
-To turn it back on, press `POWER` (or `Ctrl`+`p`).
+To turn it back on, press `Ctrl`+`Shift`+`o` (or `POWER`, `Ctrl`+`p`).
 
 It can be useful to also prevent the device to sleep:
 
