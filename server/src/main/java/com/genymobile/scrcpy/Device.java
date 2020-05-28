@@ -186,6 +186,10 @@ public final class Device {
         return injectKeycode(keyCode, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
+    public boolean injectPasteKeycode() {
+        return injectKeycode(KeyEvent.KEYCODE_PASTE);
+    }
+
     public boolean isScreenOn() {
         return serviceManager.getPowerManager().isScreenOn();
     }

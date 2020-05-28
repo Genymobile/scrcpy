@@ -237,7 +237,7 @@ public class Controller {
 
         // On Android >= 7, also press the PASTE key if requested
         if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
-            device.injectKeycode(KeyEvent.KEYCODE_PASTE);
+            device.injectPasteKeycode();
         }
 
         return ok;
