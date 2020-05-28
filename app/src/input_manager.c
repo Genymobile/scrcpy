@@ -261,7 +261,6 @@ input_manager_process_key(struct input_manager *im,
 
     // Only capture Left-Ctrl, Right-Ctrl is forwarded to the device
     bool ctrl = event->keysym.mod & KMOD_LCTRL;
-    bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
     // use Cmd on macOS, Ctrl on other platforms
@@ -275,11 +274,6 @@ input_manager_process_key(struct input_manager *im,
     }
     bool cmd = ctrl; // && !meta, already guaranteed
 #endif
-
-    if (alt) {
-        // no shortcuts involve Alt, and it must not be forwarded to the device
-        return;
-    }
 
     struct controller *controller = im->controller;
 
