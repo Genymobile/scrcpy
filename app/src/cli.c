@@ -15,7 +15,7 @@ scrcpy_print_usage(const char *arg0) {
 #ifdef __APPLE__
 # define CTRL_OR_CMD "Cmd"
 #else
-# define CTRL_OR_CMD "Ctrl"
+# define CTRL_OR_CMD "LCtrl"
 #endif
     fprintf(stderr,
         "Usage: %s [options]\n"
@@ -186,6 +186,9 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "Shortcuts:\n"
         "\n"
+        "    LCtrl is the left Ctrl key (the right Ctrl key is forwarded to\n"
+        "    the device).\n"
+        "\n"
         "    " CTRL_OR_CMD "+f\n"
         "        Switch fullscreen mode\n"
         "\n"
@@ -202,7 +205,7 @@ scrcpy_print_usage(const char *arg0) {
         "    Double-click on black borders\n"
         "        Resize window to remove black borders\n"
         "\n"
-        "    Ctrl+h\n"
+        "    LCtrl+h\n"
         "    Middle-click\n"
         "        Click on HOME\n"
         "\n"
@@ -214,7 +217,7 @@ scrcpy_print_usage(const char *arg0) {
         "    " CTRL_OR_CMD "+s\n"
         "        Click on APP_SWITCH\n"
         "\n"
-        "    Ctrl+m\n"
+        "    LCtrl+m\n"
         "        Click on MENU\n"
         "\n"
         "    " CTRL_OR_CMD "+Up\n"

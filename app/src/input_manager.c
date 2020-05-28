@@ -259,7 +259,8 @@ input_manager_process_key(struct input_manager *im,
     // control: indicates the state of the command-line option --no-control
     // ctrl: the Ctrl key
 
-    bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
+    // Only capture Left-Ctrl, Right-Ctrl is forwarded to the device
+    bool ctrl = event->keysym.mod & KMOD_LCTRL;
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
