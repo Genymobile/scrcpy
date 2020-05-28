@@ -159,7 +159,8 @@ scrcpy_print_usage(const char *arg0) {
 #endif
         "\n"
         "    -w, --stay-awake\n"
-        "        Keep the device on while scrcpy is running.\n"
+        "        Keep the device on while scrcpy is running, when the device\n"
+        "        is plugged in.\n"
         "\n"
         "    --window-borderless\n"
         "        Disable window decorations (display borderless window).\n"

@@ -417,7 +417,7 @@ The secondary display may only be controlled if the device runs at least Android
 
 #### Stay awake
 
-To prevent the device to sleep after some delay:
+To prevent the device to sleep after some delay when the device is plugged in:
 
 ```bash
 scrcpy --stay-awake
