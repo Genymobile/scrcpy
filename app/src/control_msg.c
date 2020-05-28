@@ -66,6 +66,9 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
             buffer_write32be(&buf[17],
                              (uint32_t) msg->inject_scroll_event.vscroll);
             return 21;
+        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+            buf[1] = msg->get_clipboard.copy;
+            return 2;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
             buf[1] = !!msg->set_clipboard.paste;
             size_t len = write_string(msg->set_clipboard.text,
@@ -79,7 +82,6 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
         case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL:
-        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
         case CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;

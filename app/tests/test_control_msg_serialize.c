@@ -185,14 +185,18 @@ static void test_serialize_collapse_notification_panel(void) {
 static void test_serialize_get_clipboard(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_GET_CLIPBOARD,
+        .get_clipboard = {
+            .copy = true,
+        },
     };
 
     unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 1);
+    assert(size == 2);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_GET_CLIPBOARD,
+        1, // copy
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }

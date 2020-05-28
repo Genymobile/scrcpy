@@ -18,6 +18,7 @@ public final class ControlMessage {
     public static final int TYPE_ROTATE_DEVICE = 10;
 
     public static final int FLAGS_PASTE = 1;
+    public static final int FLAGS_COPY = 2;
 
     private int type;
     private String text;
@@ -77,6 +78,15 @@ public final class ControlMessage {
         msg.text = text;
         if (paste) {
             msg.flags = FLAGS_PASTE;
+        }
+        return msg;
+    }
+
+    public static ControlMessage createGetClipboard(boolean copy) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_GET_CLIPBOARD;
+        if (copy) {
+            msg.flags = FLAGS_COPY;
         }
         return msg;
     }

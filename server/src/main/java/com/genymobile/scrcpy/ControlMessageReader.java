@@ -12,6 +12,7 @@ public class ControlMessageReader {
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int GET_CLIPBOARD_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4092; // 4096 - 1 (type) - 1 (parse flag) - 2 (length)
@@ -67,6 +68,9 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 msg = parseInjectScrollEvent();
                 break;
+            case ControlMessage.TYPE_GET_CLIPBOARD:
+                msg = parseGetClipboard();
+                break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 msg = parseSetClipboard();
                 break;
@@ -76,7 +80,6 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
-            case ControlMessage.TYPE_GET_CLIPBOARD:
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 msg = ControlMessage.createEmpty(type);
                 break;
@@ -146,6 +149,14 @@ public class ControlMessageReader {
         int hScroll = buffer.getInt();
         int vScroll = buffer.getInt();
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll);
+    }
+
+    private ControlMessage parseGetClipboard() {
+        if (buffer.remaining() < GET_CLIPBOARD_PAYLOAD_LENGTH) {
+            return null;
+        }
+        boolean copy = buffer.get() != 0;
+        return ControlMessage.createGetClipboard(copy);
     }
 
     private ControlMessage parseSetClipboard() {

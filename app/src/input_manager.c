@@ -102,9 +102,10 @@ collapse_notification_panel(struct controller *controller) {
 }
 
 static void
-request_device_clipboard(struct controller *controller) {
+request_device_clipboard(struct controller *controller, bool copy) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
+    msg.get_clipboard.copy = copy;
 
     if (!controller_push_msg(controller, &msg)) {
         LOGW("Could not request device clipboard");
@@ -352,7 +353,8 @@ input_manager_process_key(struct input_manager *im,
                 return;
             case SDLK_c:
                 if (control && cmd && !shift && !repeat && down) {
-                    request_device_clipboard(controller);
+                    // press COPY and get the clipboard content
+                    request_device_clipboard(controller, true);
                 }
                 return;
             case SDLK_v:

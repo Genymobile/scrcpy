@@ -186,6 +186,14 @@ public final class Device {
         return injectKeycode(keyCode, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
+    public boolean injectCopyKeycode() {
+        isSettingClipboard.set(true);
+        // Must wait until the COPY has been executed
+        boolean ret = injectKeycode(KeyEvent.KEYCODE_COPY, InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH);
+        isSettingClipboard.set(false);
+        return ret;
+    }
+
     public boolean injectPasteKeycode() {
         return injectKeycode(KeyEvent.KEYCODE_PASTE);
     }

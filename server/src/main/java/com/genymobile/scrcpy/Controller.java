@@ -104,10 +104,8 @@ public class Controller {
                 device.collapsePanels();
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
-                String clipboardText = device.getClipboardText();
-                if (clipboardText != null) {
-                    sender.pushClipboardText(clipboardText);
-                }
+                boolean copy = (msg.getFlags() & ControlMessage.FLAGS_COPY) != 0;
+                getClipboard(copy);
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 boolean paste = (msg.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
@@ -227,6 +225,19 @@ public class Controller {
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
         return device.injectKeycode(keycode);
+    }
+
+    private void getClipboard(boolean copy) {
+        // On Android >= 7, also press the COPY key if requested
+        if (copy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+            // Must wait until the COPY has been executed
+            device.injectCopyKeycode();
+        }
+
+        String clipboardText = device.getClipboardText();
+        if (clipboardText != null) {
+            sender.pushClipboardText(clipboardText);
+        }
     }
 
     private boolean setClipboard(String text, boolean paste) {
