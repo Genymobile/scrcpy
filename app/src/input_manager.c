@@ -70,6 +70,11 @@ action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
+static inline void
+action_cut(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_CUT, actions, "CUT");
+}
+
 // turn the screen on if it was off, press BACK otherwise
 static void
 press_back_or_turn_screen_on(struct controller *controller) {
@@ -344,6 +349,14 @@ input_manager_process_key(struct input_manager *im,
                 if (control && !shift && !repeat && down) {
                     // Press COPY, then get the clipboard content
                     request_device_clipboard(controller, true);
+                }
+                return;
+            case SDLK_x:
+                if (control && !shift && !repeat && down) {
+                    // For convenience (especially on macOS), bind Meta+x to
+                    // CUT (even if it is already accessible by pressing Ctrl+x
+                    // on the device)
+                    action_cut(controller, action);
                 }
                 return;
             case SDLK_v:
