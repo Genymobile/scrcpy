@@ -560,30 +560,32 @@ Also see [issue #14].
 
 ## Shortcuts
 
- | Action                                      |   Shortcut                    |   Shortcut (macOS)
- | ------------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                      | `Ctrl`+`f`                    | `Cmd`+`f`
- | Rotate display left                         | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
- | Rotate display right                        | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)        | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders       | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                             | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                             | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                       | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                             | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                        | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                      | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                            | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                                    | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)     | `Ctrl`+`o`                    | `Cmd`+`o`
- | Turn device screen on                       | `Ctrl`+`Shift`+`o`            | `Cmd`+`Shift`+`o`
- | Rotate device screen                        | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel                   | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel                 | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer           | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device          | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device and paste | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout)      | `Ctrl`+`i`                    | `Cmd`+`i`
+_`Meta` is typically the `Windows` key on the keyboard, or `Cmd` on macOS._
+
+ | Action                                      |   Shortcut
+ | ------------------------------------------- |:-----------------------------
+ | Switch fullscreen mode                      | `Meta`+`f`
+ | Rotate display left                         | `Meta`+`←` _(left)_
+ | Rotate display right                        | `Meta`+`→` _(right)_
+ | Resize window to 1:1 (pixel-perfect)        | `Meta`+`g`
+ | Resize window to remove black borders       | `Meta`+`x` \| _Double-click¹_
+ | Click on `HOME`                             | `Meta`+`h` \| _Middle-click_
+ | Click on `BACK`                             | `Meta`+`b` \| _Right-click²_
+ | Click on `APP_SWITCH`                       | `Meta`+`s`
+ | Click on `MENU`                             | `Meta`+`m`
+ | Click on `VOLUME_UP`                        | `Meta`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                      | `Meta`+`↓` _(down)_
+ | Click on `POWER`                            | `Meta`+`p`
+ | Power on                                    | _Right-click²_
+ | Turn device screen off (keep mirroring)     | `Meta`+`o`
+ | Turn device screen on                       | `Meta`+`Shift`+`o`
+ | Rotate device screen                        | `Meta`+`r`
+ | Expand notification panel                   | `Meta`+`n`
+ | Collapse notification panel                 | `Meta`+`Shift`+`n`
+ | Copy device clipboard to computer           | `Meta`+`c`
+ | Paste computer clipboard to device          | `Meta`+`v`
+ | Copy computer clipboard to device and paste | `Meta`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout)      | `Meta`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
