@@ -263,9 +263,8 @@ input_manager_process_key(struct input_manager *im,
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
-    if (alt || ctrl) {
-        // No shortcuts involve Alt or Ctrl, and they are not forwarded to the
-        // device
+    if (alt) {
+        // No shortcuts involve Alt, and it is not forwarded to the device
         return;
     }
 
@@ -273,6 +272,11 @@ input_manager_process_key(struct input_manager *im,
 
     // Capture all Meta events
     if (meta) {
+        if (ctrl) {
+            // No shortcuts involve Ctrl+Meta
+            return;
+        }
+
         SDL_Keycode keycode = event->keysym.sym;
         bool down = event->type == SDL_KEYDOWN;
         int action = down ? ACTION_DOWN : ACTION_UP;
