@@ -568,7 +568,7 @@ _`Meta` is typically the `Windows` key on the keyboard, or `Cmd` on macOS._
  | Rotate display left                                  | `Meta`+`←` _(left)_
  | Rotate display right                                 | `Meta`+`→` _(right)_
  | Resize window to 1:1 (pixel-perfect)                 | `Meta`+`g`
- | Resize window to remove black borders                | `Meta`+`x` \| _Double-click¹_
+ | Resize window to remove black borders                | `Meta`+`w` \| _Double-click¹_
  | Click on `HOME`                                      | `Meta`+`h` \| _Middle-click_
  | Click on `BACK`                                      | `Meta`+`b` \| _Right-click²_
  | Click on `APP_SWITCH`                                | `Meta`+`s`
