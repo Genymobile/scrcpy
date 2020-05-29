@@ -321,7 +321,7 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
             case SDLK_o:
-                if (control && cmd && down) {
+                if (control && cmd && !repeat && down) {
                     enum screen_power_mode mode = shift
                                                 ? SCREEN_POWER_MODE_NORMAL
                                                 : SCREEN_POWER_MODE_OFF;
@@ -341,12 +341,12 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
             case SDLK_LEFT:
-                if (cmd && !shift && down) {
+                if (cmd && !shift && !repeat && down) {
                     rotate_client_left(im->screen);
                 }
                 return;
             case SDLK_RIGHT:
-                if (cmd && !shift && down) {
+                if (cmd && !shift && !repeat && down) {
                     rotate_client_right(im->screen);
                 }
                 return;
