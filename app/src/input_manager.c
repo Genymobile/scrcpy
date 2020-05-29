@@ -361,15 +361,9 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
             case SDLK_v:
-                if (control && !repeat && down) {
-                    if (shift) {
-                        // Store the text in the device clipboard, then press
-                        // PASTE
-                        set_device_clipboard(controller, true);
-                    } else {
-                        // Inject the text as input events
-                        clipboard_paste(controller);
-                    }
+                if (control && !shift && !repeat && down) {
+                    // Inject the text as input events
+                    clipboard_paste(controller);
                 }
                 return;
             case SDLK_f:

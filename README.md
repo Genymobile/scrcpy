@@ -585,7 +585,6 @@ _`Meta` is typically the `Windows` key on the keyboard, or `Cmd` on macOS._
  | Press COPY³, then Copy device clipboard to computer  | `Meta`+`c`
  | Press CUT³                                           | `Meta`+`x`
  | Paste computer clipboard to device                   | `Meta`+`v`
- | Copy computer clipboard to device, then press PASTE³ | `Meta`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)               | `Meta`+`i`
 
 _¹Double-click on black borders to remove them._  
