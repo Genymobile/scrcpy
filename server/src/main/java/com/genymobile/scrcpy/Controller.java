@@ -104,13 +104,10 @@ public class Controller {
                 device.collapsePanels();
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
-                String clipboardText = device.getClipboardText();
-                if (clipboardText != null) {
-                    sender.pushClipboardText(clipboardText);
-                }
+                getClipboard(msg.getPressCopyOrPaste());
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                setClipboard(msg.getText(), msg.getPaste());
+                setClipboard(msg.getText(), msg.getPressCopyOrPaste());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
@@ -226,6 +223,23 @@ public class Controller {
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
         return device.injectKeycode(keycode);
+    }
+
+    private boolean getClipboard(boolean copy) {
+        // On Android >= 7, also press the COPY key if requested
+        if (copy && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+            // If there is something to copy, the clipboard will be automatically sent to the computer clipboard via the ClipboardListener
+            return device.injectKeycode(KeyEvent.KEYCODE_COPY);
+        }
+
+        // We can't press COPY, so only synchronize the current clipboard
+        String clipboardText = device.getClipboardText();
+        if (clipboardText != null) {
+            sender.pushClipboardText(clipboardText);
+            return true;
+        }
+
+        return false;
     }
 
     private boolean setClipboard(String text, boolean paste) {

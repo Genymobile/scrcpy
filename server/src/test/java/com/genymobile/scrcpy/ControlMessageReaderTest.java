@@ -200,6 +200,7 @@ public class ControlMessageReaderTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_GET_CLIPBOARD);
+        dos.writeByte(1); // copy
 
         byte[] packet = bos.toByteArray();
 
@@ -207,6 +208,7 @@ public class ControlMessageReaderTest {
         ControlMessage event = reader.next();
 
         Assert.assertEquals(ControlMessage.TYPE_GET_CLIPBOARD, event.getType());
+        Assert.assertTrue(event.getPressCopyOrPaste());
     }
 
     @Test
@@ -228,7 +230,7 @@ public class ControlMessageReaderTest {
 
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals("testé", event.getText());
-        Assert.assertTrue(event.getPaste());
+        Assert.assertTrue(event.getPressCopyOrPaste());
     }
 
     @Test
@@ -254,7 +256,7 @@ public class ControlMessageReaderTest {
 
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals(text, event.getText());
-        Assert.assertTrue(event.getPaste());
+        Assert.assertTrue(event.getPressCopyOrPaste());
     }
 
     @Test

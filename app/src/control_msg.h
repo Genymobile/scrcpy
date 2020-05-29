@@ -61,6 +61,9 @@ struct control_msg {
             int32_t vscroll;
         } inject_scroll_event;
         struct {
+            bool copy;
+        } get_clipboard;
+        struct {
             char *text; // owned, to be freed by SDL_free()
             bool paste;
         } set_clipboard;

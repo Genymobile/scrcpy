@@ -28,7 +28,7 @@ public final class ControlMessage {
     private Position position;
     private int hScroll;
     private int vScroll;
-    private boolean paste;
+    private boolean pressCopyOrPaste;
 
     private ControlMessage() {
     }
@@ -69,11 +69,18 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createGetClipboard(boolean copy) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_GET_CLIPBOARD;
+        msg.pressCopyOrPaste = copy;
+        return msg;
+    }
+
     public static ControlMessage createSetClipboard(String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
         msg.text = text;
-        msg.paste = paste;
+        msg.pressCopyOrPaste = paste;
         return msg;
     }
 
@@ -137,7 +144,7 @@ public final class ControlMessage {
         return vScroll;
     }
 
-    public boolean getPaste() {
-        return paste;
+    public boolean getPressCopyOrPaste() {
+        return pressCopyOrPaste;
     }
 }
