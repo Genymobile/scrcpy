@@ -562,33 +562,34 @@ Also see [issue #14].
 
 _`Meta` is typically the `Windows` key on the keyboard, or `Cmd` on macOS._
 
- | Action                                      |   Shortcut
- | ------------------------------------------- |:-----------------------------
- | Switch fullscreen mode                      | `Meta`+`f`
- | Rotate display left                         | `Meta`+`←` _(left)_
- | Rotate display right                        | `Meta`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)        | `Meta`+`g`
- | Resize window to remove black borders       | `Meta`+`x` \| _Double-click¹_
- | Click on `HOME`                             | `Meta`+`h` \| _Middle-click_
- | Click on `BACK`                             | `Meta`+`b` \| _Right-click²_
- | Click on `APP_SWITCH`                       | `Meta`+`s`
- | Click on `MENU`                             | `Meta`+`m`
- | Click on `VOLUME_UP`                        | `Meta`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                      | `Meta`+`↓` _(down)_
- | Click on `POWER`                            | `Meta`+`p`
- | Power on                                    | _Right-click²_
- | Turn device screen off (keep mirroring)     | `Meta`+`o`
- | Turn device screen on                       | `Meta`+`Shift`+`o`
- | Rotate device screen                        | `Meta`+`r`
- | Expand notification panel                   | `Meta`+`n`
- | Collapse notification panel                 | `Meta`+`Shift`+`n`
- | Copy device clipboard to computer           | `Meta`+`c`
- | Paste computer clipboard to device          | `Meta`+`v`
- | Copy computer clipboard to device and paste | `Meta`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout)      | `Meta`+`i`
+ | Action                                               |   Shortcut
+ | ---------------------------------------------------- |:-----------------------------
+ | Switch fullscreen mode                               | `Meta`+`f`
+ | Rotate display left                                  | `Meta`+`←` _(left)_
+ | Rotate display right                                 | `Meta`+`→` _(right)_
+ | Resize window to 1:1 (pixel-perfect)                 | `Meta`+`g`
+ | Resize window to remove black borders                | `Meta`+`x` \| _Double-click¹_
+ | Click on `HOME`                                      | `Meta`+`h` \| _Middle-click_
+ | Click on `BACK`                                      | `Meta`+`b` \| _Right-click²_
+ | Click on `APP_SWITCH`                                | `Meta`+`s`
+ | Click on `MENU`                                      | `Meta`+`m`
+ | Click on `VOLUME_UP`                                 | `Meta`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                               | `Meta`+`↓` _(down)_
+ | Click on `POWER`                                     | `Meta`+`p`
+ | Power on                                             | _Right-click²_
+ | Turn device screen off (keep mirroring)              | `Meta`+`o`
+ | Turn device screen on                                | `Meta`+`Shift`+`o`
+ | Rotate device screen                                 | `Meta`+`r`
+ | Expand notification panel                            | `Meta`+`n`
+ | Collapse notification panel                          | `Meta`+`Shift`+`n`
+ | Copy device clipboard to computer                    | `Meta`+`c`
+ | Paste computer clipboard to device                   | `Meta`+`v`
+ | Copy computer clipboard to device, then press PASTE³ | `Meta`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout)               | `Meta`+`i`
 
 _¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._
+_²Right-click turns the screen on if it was off, presses BACK otherwise._  
+_³Only if the device runs Android >= 7._
 
 
 ## Custom paths
