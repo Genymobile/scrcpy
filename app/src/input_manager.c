@@ -268,6 +268,7 @@ input_manager_process_key(struct input_manager *im,
     bool ctrl = event->keysym.mod & (KMOD_LCTRL | KMOD_RCTRL);
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+    bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
 
     if (alt) {
         // No shortcuts involve Alt, and it is not forwarded to the device
@@ -276,6 +277,9 @@ input_manager_process_key(struct input_manager *im,
 
     struct controller *controller = im->controller;
 
+    SDL_Keycode keycode = event->keysym.sym;
+    bool down = event->type == SDL_KEYDOWN;
+
     // Capture all Meta events
     if (meta) {
         if (ctrl) {
@@ -283,11 +287,8 @@ input_manager_process_key(struct input_manager *im,
             return;
         }
 
-        SDL_Keycode keycode = event->keysym.sym;
-        bool down = event->type == SDL_KEYDOWN;
         int action = down ? ACTION_DOWN : ACTION_UP;
         bool repeat = event->repeat;
-        bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
                 if (control && !shift && !repeat) {
@@ -414,6 +415,14 @@ input_manager_process_key(struct input_manager *im,
 
     if (!control) {
         return;
+    }
+
+    assert(!meta);
+
+    if (ctrl && !shift && keycode == SDLK_v && down) {
+        // Synchronize the computer clipboard to the device clipboard before
+        // sending Ctrl+v
+        set_device_clipboard(controller, false);
     }
 
     struct control_msg msg;
