@@ -228,9 +228,7 @@ public class ControlMessageReaderTest {
 
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals("testé", event.getText());
-
-        boolean parse = (event.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
-        Assert.assertTrue(parse);
+        Assert.assertTrue(event.getPaste());
     }
 
     @Test
@@ -256,9 +254,7 @@ public class ControlMessageReaderTest {
 
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals(text, event.getText());
-
-        boolean parse = (event.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
-        Assert.assertTrue(parse);
+        Assert.assertTrue(event.getPaste());
     }
 
     @Test
