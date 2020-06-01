@@ -490,14 +490,15 @@ requested orientation.
 
 #### Copy-paste
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+Any time the Android clipboard changes, it is automatically synchronized to the
+computer clipboard.
 
- - `RCtrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+`Ctrl`+`c` (copy), `Ctrl`+`x` (cut) and `LCtrl`+`v` (paste) work as you expect.
 
-Moreover, any time the Android clipboard changes, it is automatically
-synchronized to the computer clipboard.
+In addition, `RCtrl`+`v` allows to inject the computer clipboard content as a
+sequence of text event. Even if it can break non-ASCII content, this is
+sometimes necessary when pasting directly is not possible.
+
 
 #### Text injection preference
 
