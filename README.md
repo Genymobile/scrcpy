@@ -354,7 +354,7 @@ scrcpy --fullscreen
 scrcpy -f  # short version
 ```
 
-Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
+Fullscreen can then be toggled dynamically with `RCtrl`+`f`.
 
 #### Rotation
 
@@ -370,18 +370,18 @@ Possibles values are:
  - `2`: 180 degrees
  - `3`: 90 degrees clockwise
 
-The rotation can also be changed dynamically with `Ctrl`+`←` _(left)_ and
-`Ctrl`+`→` _(right)_.
+The rotation can also be changed dynamically with `RCtrl`+`←` _(left)_ and
+`RCtrl`+`→` _(right)_.
 
 Note that _scrcpy_ manages 3 different rotations:
- - `Ctrl`+`r` requests the device to switch between portrait and landscape (the
+ - `RCtrl`+`r` requests the device to switch between portrait and landscape (the
    current running app may refuse, if it does support the requested
    orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
- - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
-   affects only the display, not the recording.
+ - `--rotation` (or `RCtrl`+`←`/`RCtrl`+`→`) rotates only the window content.
+   This affects only the display, not the recording.
 
 
 ### Other mirroring options
@@ -437,9 +437,9 @@ scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing `Ctrl`+`o` at any time.
+Or by pressing `RCtrl`+`o` at any time.
 
-To turn it back on, press `Ctrl`+`Shift`+`o` (or `POWER`, `Ctrl`+`p`).
+To turn it back on, press `RCtrl`+`Shift`+`o` (or `POWER`, `RCtrl`+`p`).
 
 It can be useful to also prevent the device to sleep:
 
@@ -483,7 +483,7 @@ Note that it only shows _physical_ touches (with the finger on the device).
 
 #### Rotate device screen
 
-Press `Ctrl`+`r` to switch between portrait and landscape modes.
+Press `RCtrl`+`r` to switch between portrait and landscape modes.
 
 Note that it rotates only if the application in foreground supports the
 requested orientation.
@@ -493,10 +493,10 @@ requested orientation.
 It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
- - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
-   pastes if the device runs Android >= 7);
- - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
+ - `RCtrl`+`c` copies the device clipboard to the computer clipboard;
+ - `RCtrl`+`Shift`+`v` copies the computer clipboard to the device clipboard
+   (and pastes if the device runs Android >= 7);
+ - `RCtrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
 Moreover, any time the Android clipboard changes, it is automatically
@@ -560,30 +560,33 @@ Also see [issue #14].
 
 ## Shortcuts
 
- | Action                                      |   Shortcut                    |   Shortcut (macOS)
- | ------------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                      | `Ctrl`+`f`                    | `Cmd`+`f`
- | Rotate display left                         | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
- | Rotate display right                        | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)        | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders       | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                             | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                             | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                       | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                             | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                        | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                      | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                            | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                                    | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)     | `Ctrl`+`o`                    | `Cmd`+`o`
- | Turn device screen on                       | `Ctrl`+`Shift`+`o`            | `Cmd`+`Shift`+`o`
- | Rotate device screen                        | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel                   | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel                 | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer           | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device          | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device and paste | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout)      | `Ctrl`+`i`                    | `Cmd`+`i`
+`RCtrl` is the right `Ctrl` key (the left `Ctrl` key is forwarded to the
+device).
+
+ | Action                                      |   Shortcut
+ | ------------------------------------------- |:-----------------------------
+ | Switch fullscreen mode                      | `RCtrl`+`f`
+ | Rotate display left                         | `RCtrl`+`←`
+ | Rotate display right                        | `RCtrl`+`→`
+ | Resize window to 1:1 (pixel-perfect)        | `RCtrl`+`g`
+ | Resize window to remove black borders       | `RCtrl`+`x` \| _Double-click¹_
+ | Click on `HOME`                             | `RCtrl`+`h` \| _Middle-click_
+ | Click on `BACK`                             | `RCtrl`+`b` \| _Right-click²_
+ | Click on `APP_SWITCH`                       | `RCtrl`+`s`
+ | Click on `MENU`                             | `RCtrl`+`m`
+ | Click on `VOLUME_UP`                        | `RCtrl`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                      | `RCtrl`+`↓` _(down)_
+ | Click on `POWER`                            | `RCtrl`+`p`
+ | Power on                                    | _Right-click²_
+ | Turn device screen off (keep mirroring)     | `RCtrl`+`o`
+ | Turn device screen on                       | `RCtrl`+`Shift`+`o`
+ | Rotate device screen                        | `RCtrl`+`r`
+ | Expand notification panel                   | `RCtrl`+`n`
+ | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
+ | Copy device clipboard to computer           | `RCtrl`+`c`
+ | Paste computer clipboard to device          | `RCtrl`+`v`
+ | Copy computer clipboard to device and paste | `RCtrl`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
