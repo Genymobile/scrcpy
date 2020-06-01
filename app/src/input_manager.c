@@ -259,14 +259,13 @@ input_manager_process_key(struct input_manager *im,
     // control: indicates the state of the command-line option --no-control
     // ctrl: the Ctrl key
 
-    bool lctrl = event->keysym.mod & KMOD_LCTRL;
     bool rctrl = event->keysym.mod & KMOD_RCTRL;
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
 
-    if (alt || lctrl || meta) {
-        // No shortcuts involve Alt, Meta or LCtrl, and they are not forwarded
-        // to the device
+    if (alt || meta) {
+        // No shortcuts involve Alt or Meta, and they are not forwarded to the
+        // device
         return;
     }
 
