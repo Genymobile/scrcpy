@@ -490,15 +490,19 @@ requested orientation.
 
 #### Copy-paste
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+Any time the Android clipboard changes, it is automatically synchronized to the
+computer clipboard.
 
- - `RCtrl`+`Shift`+`v` copies the computer clipboard to the device clipboard
- - `RCtrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+`Ctrl`+`c` (copy), `Ctrl`+`x` (cut) and `LCtrl`+`v` (paste) work as you expect.
 
-Moreover, any time the Android clipboard changes, it is automatically
-synchronized to the computer clipboard.
+In addition, `RCtrl`+`v` allows to inject the computer clipboard content as a
+sequence of text events . This is useful when the component does not accept text
+pasting (for example in _Termux_), but it can break non-ASCII content.
+
+Another shortcut, `RCtrl`+`Shift`+`v`, only copies the computer clipboard to the
+device clipboard. This is useful when `Ctrl`+`v` does not paste on the device
+(for example, again, in _Termux_).
+
 
 #### Text injection preference
 
