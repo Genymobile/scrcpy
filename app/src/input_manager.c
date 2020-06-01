@@ -259,9 +259,11 @@ input_manager_process_key(struct input_manager *im,
     // control: indicates the state of the command-line option --no-control
     // ctrl: the Ctrl key
 
+    bool lctrl = event->keysym.mod & KMOD_LCTRL;
     bool rctrl = event->keysym.mod & KMOD_RCTRL;
     bool alt = event->keysym.mod & (KMOD_LALT | KMOD_RALT);
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
+    bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
 
     if (alt || meta) {
         // No shortcuts involve Alt or Meta, and they are not forwarded to the
@@ -271,13 +273,13 @@ input_manager_process_key(struct input_manager *im,
 
     struct controller *controller = im->controller;
 
+    SDL_Keycode keycode = event->keysym.sym;
+    bool down = event->type == SDL_KEYDOWN;
+
     // Capture all RCtrl events
     if (rctrl) {
-        SDL_Keycode keycode = event->keysym.sym;
-        bool down = event->type == SDL_KEYDOWN;
         int action = down ? ACTION_DOWN : ACTION_UP;
         bool repeat = event->repeat;
-        bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
                 // Ctrl+h on all platform, since Cmd+h is already captured by
@@ -398,6 +400,12 @@ input_manager_process_key(struct input_manager *im,
 
     if (!control) {
         return;
+    }
+
+    if (lctrl && !shift && keycode == SDLK_v && down) {
+        // Synchronize the computer clipboard to the device clipboard before
+        // sending Ctrl+V, to allow seamless copy-paste.
+        set_device_clipboard(controller, false);
     }
 
     struct control_msg msg;
