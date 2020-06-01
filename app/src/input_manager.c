@@ -241,6 +241,25 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
     return true;
 }
 
+static void
+inject_as_ctrl(struct input_manager *im, const SDL_KeyboardEvent *event) {
+    struct control_msg msg;
+
+    if (!convert_input_key(event, &msg, false)) {
+        return;
+    }
+
+    // Disable RCtrl and Meta
+    msg.inject_keycode.metastate &=
+        ~(AMETA_CTRL_RIGHT_ON | AMETA_META_LEFT_ON | AMETA_META_RIGHT_ON);
+    // Enable LCtrl
+    msg.inject_keycode.metastate |= AMETA_CTRL_LEFT_ON;
+
+    if (!controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request 'inject keycode'");
+    }
+}
+
 void
 input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event,
@@ -379,6 +398,15 @@ input_manager_process_key(struct input_manager *im,
             case SDLK_r:
                 if (control && !shift && !repeat && down) {
                     rotate_device(controller);
+                }
+                return;
+            case SDLK_c:
+            case SDLK_x:
+                if (control && !shift) {
+                    // For convenience, forward shortcut_key+c and
+                    // shortcut_key+x as Ctrl+c and Ctrl+x (typically "copy" and
+                    // "cut", but not always) to the device
+                    inject_as_ctrl(im, event);
                 }
                 return;
         }
