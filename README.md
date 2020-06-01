@@ -580,7 +580,7 @@ device).
  | Rotate device screen                        | `RCtrl`+`r`
  | Expand notification panel                   | `RCtrl`+`n`
  | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
- | Paste computer clipboard to device          | `RCtrl`+`v`
+ | Inject computer clipboard text              | `RCtrl`+`v`
  | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
 _¹Double-click on black borders to remove them._  
