@@ -243,7 +243,7 @@ scrcpy_print_usage(const char *arg0) {
         "        Collapse notification panel\n"
         "\n"
         "    RCtrl+v\n"
-        "        Paste computer clipboard to device\n"
+        "        Inject computer clipboard text\n"
         "\n"
         "    RCtrl+Shift+v\n"
         "        Copy computer clipboard to device\n"

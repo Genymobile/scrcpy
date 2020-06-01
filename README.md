@@ -581,7 +581,7 @@ device).
  | Rotate device screen                        | `RCtrl`+`r`
  | Expand notification panel                   | `RCtrl`+`n`
  | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
- | Paste computer clipboard to device          | `RCtrl`+`v`
+ | Inject computer clipboard text              | `RCtrl`+`v`
  | Copy computer clipboard to device           | `RCtrl`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
