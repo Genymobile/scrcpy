@@ -561,6 +561,9 @@ Also see [issue #14].
 `RCtrl` is the right `Ctrl` key (the left `Ctrl` key is forwarded to the
 device).
 
+On macOS, `Cmd` also works (for shortcuts which are not already captured by the
+system).
+
  | Action                                      |   Shortcut
  | ------------------------------------------- |:-----------------------------
  | Switch fullscreen mode                      | `RCtrl`+`f`
