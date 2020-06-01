@@ -493,7 +493,6 @@ requested orientation.
 It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
- - `RCtrl`+`c` copies the device clipboard to the computer clipboard;
  - `RCtrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
@@ -581,7 +580,6 @@ device).
  | Rotate device screen                        | `RCtrl`+`r`
  | Expand notification panel                   | `RCtrl`+`n`
  | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
- | Copy device clipboard to computer           | `RCtrl`+`c`
  | Paste computer clipboard to device          | `RCtrl`+`v`
  | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
