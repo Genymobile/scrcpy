@@ -196,7 +196,7 @@ scrcpy_print_usage(const char *arg0) {
         "    RCtrl+g\n"
         "        Resize window to 1:1 (pixel-perfect)\n"
         "\n"
-        "    RCtrl+x\n"
+        "    RCtrl+w\n"
         "    Double-click on black borders\n"
         "        Resize window to remove black borders\n"
         "\n"
