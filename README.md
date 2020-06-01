@@ -494,8 +494,6 @@ It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
  - `RCtrl`+`c` copies the device clipboard to the computer clipboard;
- - `RCtrl`+`Shift`+`v` copies the computer clipboard to the device clipboard
-   (and pastes if the device runs Android >= 7);
  - `RCtrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
@@ -585,7 +583,6 @@ device).
  | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
  | Copy device clipboard to computer           | `RCtrl`+`c`
  | Paste computer clipboard to device          | `RCtrl`+`v`
- | Copy computer clipboard to device and paste | `RCtrl`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
 _¹Double-click on black borders to remove them._  
