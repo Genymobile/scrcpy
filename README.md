@@ -569,7 +569,7 @@ system).
  | Rotate display left                         | `RCtrl`+`←`
  | Rotate display right                        | `RCtrl`+`→`
  | Resize window to 1:1 (pixel-perfect)        | `RCtrl`+`g`
- | Resize window to remove black borders       | `RCtrl`+`x` \| _Double-click¹_
+ | Resize window to remove black borders       | `RCtrl`+`w` \| _Double-click¹_
  | Click on `HOME`                             | `RCtrl`+`h` \| _Middle-click_
  | Click on `BACK`                             | `RCtrl`+`b` \| _Right-click²_
  | Click on `APP_SWITCH`                       | `RCtrl`+`s`
