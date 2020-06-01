@@ -255,9 +255,18 @@ input_manager_process_key(struct input_manager *im,
     bool meta = event->keysym.mod & (KMOD_LGUI | KMOD_RGUI);
     bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
 
-    if (alt || meta) {
-        // No shortcuts involve Alt or Meta, and they are not forwarded to the
-        // device
+    bool shortcut_key = rctrl;
+#ifdef __APPLE__
+    shortcut_key |= meta;
+#else
+    if (meta) {
+        // No shortcut involve Meta, and it is not forwarded to the device
+        return;
+    }
+#endif
+
+    if (alt) {
+        // No shortcuts involve Alt, and it is not forwarded to the device
         return;
     }
 
@@ -267,7 +276,7 @@ input_manager_process_key(struct input_manager *im,
     bool down = event->type == SDL_KEYDOWN;
 
     // Capture all RCtrl events
-    if (rctrl) {
+    if (shortcut_key) {
         int action = down ? ACTION_DOWN : ACTION_UP;
         bool repeat = event->repeat;
         switch (keycode) {
