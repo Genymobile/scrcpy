@@ -42,7 +42,7 @@ convert_log_level_to_sdl(enum sc_log_level level) {
             return SDL_LOG_PRIORITY_ERROR;
         default:
             assert(!"unexpected log level");
-            return SC_LOG_LEVEL_INFO;
+            return SDL_LOG_PRIORITY_INFO;
     }
 }
 
