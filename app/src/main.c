@@ -71,7 +71,7 @@ main(int argc, char *argv[]) {
     }
 
     SDL_LogPriority sdl_log = convert_log_level_to_sdl(args.opts.log_level);
-    SDL_LogSetAllPriority(sdl_log);
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
