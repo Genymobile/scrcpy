@@ -24,7 +24,7 @@ static void test_deserialize_clipboard(void) {
 }
 
 static void test_deserialize_clipboard_big(void) {
-    unsigned char input[DEVICE_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char input[DEVICE_MSG_MAX_SIZE];
     input[0] = DEVICE_MSG_TYPE_CLIPBOARD;
     input[1] = DEVICE_MSG_TEXT_MAX_LENGTH >> 8; // MSB
     input[2] = DEVICE_MSG_TEXT_MAX_LENGTH & 0xff; // LSB
@@ -33,7 +33,7 @@ static void test_deserialize_clipboard_big(void) {
 
     struct device_msg msg;
     ssize_t r = device_msg_deserialize(input, sizeof(input), &msg);
-    assert(r == DEVICE_MSG_SERIALIZED_MAX_SIZE);
+    assert(r == DEVICE_MSG_MAX_SIZE);
 
     assert(msg.type == DEVICE_MSG_TYPE_CLIPBOARD);
     assert(msg.clipboard.text);

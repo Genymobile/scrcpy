@@ -7,9 +7,9 @@
 
 #include "config.h"
 
-#define DEVICE_MSG_SERIALIZED_MAX_SIZE 4096
+#define DEVICE_MSG_MAX_SIZE 4096
 // type: 1 byte; length: 2 bytes
-#define DEVICE_MSG_TEXT_MAX_LENGTH (DEVICE_MSG_SERIALIZED_MAX_SIZE - 3)
+#define DEVICE_MSG_TEXT_MAX_LENGTH (DEVICE_MSG_MAX_SIZE - 3)
 
 enum device_msg_type {
     DEVICE_MSG_TYPE_CLIPBOARD,
