@@ -13,7 +13,7 @@ static void test_serialize_inject_keycode(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 10);
 
@@ -34,7 +34,7 @@ static void test_serialize_inject_text(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 16);
 
@@ -54,7 +54,7 @@ static void test_serialize_inject_text_long(void) {
     text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH] = '\0';
     msg.inject_text.text = text;
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 3 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
@@ -88,7 +88,7 @@ static void test_serialize_inject_touch_event(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 28);
 
@@ -123,7 +123,7 @@ static void test_serialize_inject_scroll_event(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 21);
 
@@ -142,7 +142,7 @@ static void test_serialize_back_or_screen_on(void) {
         .type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
@@ -157,7 +157,7 @@ static void test_serialize_expand_notification_panel(void) {
         .type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
@@ -172,7 +172,7 @@ static void test_serialize_collapse_notification_panel(void) {
         .type = CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL,
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
@@ -187,7 +187,7 @@ static void test_serialize_get_clipboard(void) {
         .type = CONTROL_MSG_TYPE_GET_CLIPBOARD,
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
@@ -206,7 +206,7 @@ static void test_serialize_set_clipboard(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 17);
 
@@ -227,7 +227,7 @@ static void test_serialize_set_screen_power_mode(void) {
         },
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 2);
 
@@ -243,7 +243,7 @@ static void test_serialize_rotate_device(void) {
         .type = CONTROL_MSG_TYPE_ROTATE_DEVICE,
     };
 
-    unsigned char buf[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 

@@ -60,13 +60,13 @@ static int
 run_receiver(void *data) {
     struct receiver *receiver = data;
 
-    unsigned char buf[DEVICE_MSG_SERIALIZED_MAX_SIZE];
+    unsigned char buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
     for (;;) {
-        assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
+        assert(head < DEVICE_MSG_MAX_SIZE);
         ssize_t r = net_recv(receiver->control_socket, buf,
-                             DEVICE_MSG_SERIALIZED_MAX_SIZE - head);
+                             DEVICE_MSG_MAX_SIZE - head);
         if (r <= 0) {
             LOGD("Receiver stopped");
             break;
