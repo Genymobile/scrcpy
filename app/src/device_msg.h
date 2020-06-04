@@ -7,7 +7,7 @@
 
 #include "config.h"
 
-#define DEVICE_MSG_MAX_SIZE 4096
+#define DEVICE_MSG_MAX_SIZE (1 << 18) // 256k
 // type: 1 byte; length: 4 bytes
 #define DEVICE_MSG_TEXT_MAX_LENGTH (DEVICE_MSG_MAX_SIZE - 5)
 
