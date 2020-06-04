@@ -7,10 +7,10 @@ import java.nio.charset.StandardCharsets;
 
 public class DeviceMessageWriter {
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
-    private static final int MAX_EVENT_SIZE = CLIPBOARD_TEXT_MAX_LENGTH + 3;
+    private static final int MESSAGE_MAX_SIZE = 4096;
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 3; // type: 1 byte; length: 2 bytes
 
-    private final byte[] rawBuffer = new byte[MAX_EVENT_SIZE];
+    private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
 
     public void writeTo(DeviceMessage msg, OutputStream output) throws IOException {

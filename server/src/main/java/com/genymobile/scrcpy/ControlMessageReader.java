@@ -13,12 +13,12 @@ public class ControlMessageReader {
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093; // 4096 - 1 (type) - 2 (length)
+    private static final int MESSAGE_MAX_SIZE = 4096;
+
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 3; // type: 1 byte; length: 2 bytes
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
 
-    private static final int RAW_BUFFER_SIZE = 4096;
-
-    private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
+    private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
 
     public ControlMessageReader() {
