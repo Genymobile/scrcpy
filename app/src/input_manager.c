@@ -102,7 +102,7 @@ collapse_notification_panel(struct controller *controller) {
 }
 
 static void
-set_device_clipboard(struct controller *controller, bool paste) {
+set_device_clipboard(struct controller *controller) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -117,7 +117,6 @@ set_device_clipboard(struct controller *controller, bool paste) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
     msg.set_clipboard.text = text;
-    msg.set_clipboard.paste = paste;
 
     if (!controller_push_msg(controller, &msg)) {
         SDL_free(text);
@@ -385,7 +384,7 @@ input_manager_process_key(struct input_manager *im,
     if (lctrl && !shift && keycode == SDLK_v && down) {
         // Synchronize the computer clipboard to the device clipboard before
         // sending Ctrl+V, to allow seamless copy-paste.
-        set_device_clipboard(controller, false);
+        set_device_clipboard(controller);
     }
 
     struct control_msg msg;
