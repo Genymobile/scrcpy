@@ -48,7 +48,7 @@ public class ControlMessageReaderTest {
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
         byte[] text = "testé".getBytes(StandardCharsets.UTF_8);
-        dos.writeShort(text.length);
+        dos.writeInt(text.length);
         dos.write(text);
         byte[] packet = bos.toByteArray();
 
@@ -68,7 +68,7 @@ public class ControlMessageReaderTest {
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
         byte[] text = new byte[ControlMessageReader.INJECT_TEXT_MAX_LENGTH];
         Arrays.fill(text, (byte) 'a');
-        dos.writeShort(text.length);
+        dos.writeInt(text.length);
         dos.write(text);
         byte[] packet = bos.toByteArray();
 
@@ -217,7 +217,7 @@ public class ControlMessageReaderTest {
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_SET_CLIPBOARD);
         byte[] text = "testé".getBytes(StandardCharsets.UTF_8);
-        dos.writeShort(text.length);
+        dos.writeInt(text.length);
         dos.write(text);
 
         byte[] packet = bos.toByteArray();
@@ -241,7 +241,7 @@ public class ControlMessageReaderTest {
         Arrays.fill(rawText, (byte) 'a');
         String text = new String(rawText, 0, rawText.length);
 
-        dos.writeShort(rawText.length);
+        dos.writeInt(rawText.length);
         dos.write(rawText);
 
         byte[] packet = bos.toByteArray();
