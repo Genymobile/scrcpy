@@ -60,7 +60,7 @@ static int
 run_receiver(void *data) {
     struct receiver *receiver = data;
 
-    unsigned char buf[DEVICE_MSG_MAX_SIZE];
+    static unsigned char buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
     for (;;) {
