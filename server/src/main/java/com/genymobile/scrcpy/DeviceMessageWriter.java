@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 
 public class DeviceMessageWriter {
 
-    private static final int MESSAGE_MAX_SIZE = 4096;
+    private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 5; // type: 1 byte; length: 4 bytes
 
     private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];

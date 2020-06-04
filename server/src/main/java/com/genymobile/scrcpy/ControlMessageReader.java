@@ -14,7 +14,7 @@ public class ControlMessageReader {
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
-    private static final int MESSAGE_MAX_SIZE = 4096;
+    private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
     public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 6; // type: 1 byte; paste flag: 1 byte; length: 4 bytes
     public static final int INJECT_TEXT_MAX_LENGTH = 300;

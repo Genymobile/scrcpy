@@ -10,7 +10,7 @@
 #include "android/keycodes.h"
 #include "common.h"
 
-#define CONTROL_MSG_MAX_SIZE 4096
+#define CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 
 #define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
 // type: 1 byte; paste flag: 1 byte; length: 4 bytes
