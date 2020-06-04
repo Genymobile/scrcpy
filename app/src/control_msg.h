@@ -10,10 +10,12 @@
 #include "android/keycodes.h"
 #include "common.h"
 
+#define CONTROL_MSG_SERIALIZED_MAX_SIZE 4096
+
 #define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
-#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH 4092
-#define CONTROL_MSG_SERIALIZED_MAX_SIZE \
-    (4 + CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH)
+// type: 1 byte; paste flag: 1 byte; length: 2 bytes
+#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH \
+    (CONTROL_MSG_SERIALIZED_MAX_SIZE - 4)
 
 #define POINTER_ID_MOUSE UINT64_C(-1);
 
