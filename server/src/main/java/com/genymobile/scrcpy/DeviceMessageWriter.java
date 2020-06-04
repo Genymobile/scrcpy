@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 public class DeviceMessageWriter {
 
     private static final int MESSAGE_MAX_SIZE = 4096;
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 3; // type: 1 byte; length: 2 bytes
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 5; // type: 1 byte; length: 4 bytes
 
     private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
@@ -21,7 +21,7 @@ public class DeviceMessageWriter {
                 String text = msg.getText();
                 byte[] raw = text.getBytes(StandardCharsets.UTF_8);
                 int len = StringUtils.getUtf8TruncationIndex(raw, CLIPBOARD_TEXT_MAX_LENGTH);
-                buffer.putShort((short) len);
+                buffer.putInt(len);
                 buffer.put(raw, 0, len);
                 output.write(rawBuffer, 0, buffer.position());
                 break;
