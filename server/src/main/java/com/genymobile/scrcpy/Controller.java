@@ -1,6 +1,5 @@
 package com.genymobile.scrcpy;
 
-import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -110,8 +109,7 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                boolean paste = (msg.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
-                setClipboard(msg.getText(), paste);
+                setClipboard(msg.getText());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
@@ -229,17 +227,13 @@ public class Controller {
         return device.injectKeycode(keycode);
     }
 
-    private boolean setClipboard(String text, boolean paste) {
+    private boolean setClipboard(String text) {
         boolean ok = device.setClipboardText(text);
         if (ok) {
             Ln.i("Device clipboard set");
+            return true;
         }
 
-        // On Android >= 7, also press the PASTE key if requested
-        if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
-            device.injectKeycode(KeyEvent.KEYCODE_PASTE);
-        }
-
-        return ok;
+        return false;
     }
 }

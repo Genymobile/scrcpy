@@ -582,7 +582,7 @@ device).
  | Expand notification panel                   | `RCtrl`+`n`
  | Collapse notification panel                 | `RCtrl`+`Shift`+`n`
  | Paste computer clipboard to device          | `RCtrl`+`v`
- | Copy computer clipboard to device and paste | `RCtrl`+`Shift`+`v`
+ | Copy computer clipboard to device           | `RCtrl`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `RCtrl`+`i`
 
 _¹Double-click on black borders to remove them._  
