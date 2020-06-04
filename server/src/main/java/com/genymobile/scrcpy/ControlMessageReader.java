@@ -16,7 +16,7 @@ public class ControlMessageReader {
 
     private static final int MESSAGE_MAX_SIZE = 4096;
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 4; // type: 1 byte; paste flag: 1 byte; length: 2 bytes
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 6; // type: 1 byte; paste flag: 1 byte; length: 4 bytes
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
 
     private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
@@ -103,10 +103,10 @@ public class ControlMessageReader {
     }
 
     private String parseString() {
-        if (buffer.remaining() < 2) {
+        if (buffer.remaining() < 4) {
             return null;
         }
-        int len = toUnsigned(buffer.getShort());
+        int len = buffer.getInt();
         if (buffer.remaining() < len) {
             return null;
         }

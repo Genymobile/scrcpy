@@ -20,9 +20,9 @@ write_position(uint8_t *buf, const struct position *position) {
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = utf8_truncation_index(utf8, max_len);
-    buffer_write16be(buf, (uint16_t) len);
-    memcpy(&buf[2], utf8, len);
-    return 2 + len;
+    buffer_write32be(buf, len);
+    memcpy(&buf[4], utf8, len);
+    return 4 + len;
 }
 
 static uint16_t

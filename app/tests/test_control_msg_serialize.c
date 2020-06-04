@@ -36,11 +36,11 @@ static void test_serialize_inject_text(void) {
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 16);
+    assert(size == 18);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_INJECT_TEXT,
-        0x00, 0x0d, // text length
+        0x00, 0x00, 0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
@@ -56,13 +56,15 @@ static void test_serialize_inject_text_long(void) {
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 3 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
+    assert(size == 5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
-    unsigned char expected[3 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
+    unsigned char expected[5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
     expected[0] = CONTROL_MSG_TYPE_INJECT_TEXT;
-    expected[1] = 0x01;
-    expected[2] = 0x2c; // text length (16 bits)
-    memset(&expected[3], 'a', CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
+    expected[1] = 0x00;
+    expected[2] = 0x00;
+    expected[3] = 0x01;
+    expected[4] = 0x2c; // text length (32 bits)
+    memset(&expected[5], 'a', CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -208,12 +210,12 @@ static void test_serialize_set_clipboard(void) {
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 17);
+    assert(size == 19);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_SET_CLIPBOARD,
         1, // paste
-        0x00, 0x0d, // text length
+        0x00, 0x00, 0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
