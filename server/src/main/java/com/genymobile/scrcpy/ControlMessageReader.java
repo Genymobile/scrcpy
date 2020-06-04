@@ -20,7 +20,6 @@ public class ControlMessageReader {
 
     private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
-    private final byte[] textBuffer = new byte[CLIPBOARD_TEXT_MAX_LENGTH];
 
     public ControlMessageReader() {
         // invariant: the buffer is always in "get" mode
@@ -110,8 +109,10 @@ public class ControlMessageReader {
         if (buffer.remaining() < len) {
             return null;
         }
-        buffer.get(textBuffer, 0, len);
-        return new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+        int position = buffer.position();
+        // Move the buffer position to consume the text
+        buffer.position(position + len);
+        return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
     }
 
     private ControlMessage parseInjectText() {
