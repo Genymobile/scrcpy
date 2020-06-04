@@ -164,12 +164,12 @@ if get_option('buildtype') == 'debug'
             'src/cli.c',
             'src/util/str_util.c',
         ]],
-        ['test_control_event_serialize', [
+        ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
             'src/util/str_util.c',
         ]],
-        ['test_device_event_deserialize', [
+        ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
