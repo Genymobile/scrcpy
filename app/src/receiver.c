@@ -65,23 +65,24 @@ run_receiver(void *data) {
 
     for (;;) {
         assert(head < DEVICE_MSG_MAX_SIZE);
-        ssize_t r = net_recv(receiver->control_socket, buf,
+        ssize_t r = net_recv(receiver->control_socket, buf + head,
                              DEVICE_MSG_MAX_SIZE - head);
         if (r <= 0) {
             LOGD("Receiver stopped");
             break;
         }
 
-        ssize_t consumed = process_msgs(buf, r);
+        head += r;
+        ssize_t consumed = process_msgs(buf, head);
         if (consumed == -1) {
             // an error occurred
             break;
         }
 
         if (consumed) {
+            head -= consumed;
             // shift the remaining data in the buffer
-            memmove(buf, &buf[consumed], r - consumed);
-            head = r - consumed;
+            memmove(buf, &buf[consumed], head);
         }
     }
 
