@@ -42,6 +42,8 @@ echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
 "$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
     android/view/IRotationWatcher.aidl
+"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
+    android/content/IOnPrimaryClipChangedListener.aidl
 
 echo "Compiling java sources..."
 cd ../java
@@ -55,6 +57,7 @@ cd "$CLASSES_DIR"
 "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
     --output "$BUILD_DIR/classes.dex" \
     android/view/*.class \
+    android/content/*.class \
     com/genymobile/scrcpy/*.class \
     com/genymobile/scrcpy/wrappers/*.class
 
