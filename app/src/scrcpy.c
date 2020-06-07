@@ -6,6 +6,7 @@
 #include <libavformat/avformat.h>
 #include <sys/time.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #ifdef _WIN32
 # include <windows.h>
@@ -61,15 +62,26 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 }
 #endif // _WIN32
 
+static void
+ttf_destroy() {
+    TTF_Quit();
+}
+
 // init SDL and set appropriate hints
 static bool
 sdl_init_and_configure(bool display, const char *render_driver) {
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
-    if (SDL_Init(flags)) {
+    if (SDL_Init(flags | SDL_INIT_TIMER)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
         return false;
     }
 
+    if (0 > TTF_Init()) {
+        LOGC("Could not initialize TTF: %s", TTF_GetError());
+        return false;
+    }
+
+    atexit(ttf_destroy);
     atexit(SDL_Quit);
 
 #ifdef _WIN32
@@ -163,6 +175,13 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
+        case EVENT_SCREEN_RENDER:
+            screen_render(&screen, false);
+            break;
+        case EVENT_RENDER_TEXT:
+            screen_add_text_to_render_queue(&screen, event->user.data1);
+            screen_render(&screen, false);
+            break;
         case EVENT_NEW_FRAME:
             if (!screen.has_frame) {
                 screen.has_frame = true;

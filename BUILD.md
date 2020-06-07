@@ -61,7 +61,7 @@ sudo apt install ffmpeg libsdl2-2.0-0 adb
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build \
                  libavcodec-dev libavformat-dev libavutil-dev \
-                 libsdl2-dev
+                 libsdl2-dev libsdl2-ttf-dev
 
 # server build dependencies
 sudo apt install openjdk-8-jdk

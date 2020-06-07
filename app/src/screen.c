@@ -3,17 +3,21 @@
 #include <assert.h>
 #include <string.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "config.h"
 #include "common.h"
 #include "compat.h"
+#include "events.h"
 #include "icon.xpm"
+#include "open_sans_font.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/lock.h"
 #include "util/log.h"
 
 #define DISPLAY_MARGINS 96
+#define OSD_TEXT_TIME 5
 
 static inline struct size
 get_rotated_size(struct size size, int rotation) {
@@ -330,6 +334,21 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     // different HiDPI scaling are connected
     SDL_SetWindowSize(screen->window, window_size.width, window_size.height);
 
+    if (!(screen->mutex = SDL_CreateMutex())) {
+        LOGC("Could not create mutex: %s", SDL_GetError());
+        screen_destroy(screen);
+        return false;
+    }
+
+    SDL_RWops *raw_font = open_sans_font_raw();
+
+    screen->font = TTF_OpenFontRW(raw_font, 1, 25);
+    if (!screen->font) {
+        LOGW("Init font failed: %s", SDL_GetError());
+        screen_destroy(screen);
+        return false;
+    }
+
     screen_update_content_rect(screen);
 
     return true;
@@ -342,6 +361,18 @@ screen_show_window(struct screen *screen) {
 
 void
 screen_destroy(struct screen *screen) {
+    if (screen->text_texture) {
+        SDL_DestroyTexture(screen->text_texture);
+    }
+    if (screen->surface) {
+        SDL_FreeSurface(screen->surface);
+    }
+    if (screen->font) {
+        TTF_CloseFont(screen->font);
+    }
+    if (screen->mutex) {
+        SDL_DestroyMutex(screen->mutex);
+    }
     if (screen->texture) {
         SDL_DestroyTexture(screen->texture);
     }
@@ -454,6 +485,87 @@ update_texture(struct screen *screen, const AVFrame *frame) {
     }
 }
 
+static uint32_t
+screen_text_timer_callback(uint32_t interval __attribute__((unused)), void *param __attribute__((unused))) {
+    static SDL_Event render_event;
+
+    render_event.type = EVENT_SCREEN_RENDER;
+
+    SDL_PushEvent(&render_event);
+
+    return 0;
+}
+
+bool
+screen_render_text(struct screen *screen) {
+    struct render_text_request req;
+
+    if (time(NULL) >= screen->expired_time) {
+        if (screen->text_texture) {
+            SDL_DestroyTexture(screen->text_texture);
+            screen->text_texture = NULL;
+        }
+        if (screen->surface) {
+            SDL_FreeSurface(screen->surface);
+            screen->surface = NULL;
+        }
+    }
+
+    if (screen->surface == NULL || screen->text_texture == NULL) {
+        mutex_lock(screen->mutex);
+        if (cbuf_is_empty(&screen->queue)) {
+            mutex_unlock(screen->mutex);
+            return true;
+        }
+        cbuf_take(&screen->queue, &req);
+        mutex_unlock(screen->mutex);
+
+        SDL_Color text_color = {0, 0, 0, 255};
+        SDL_Color bg_color = {255, 255, 255, 50};
+        int width = 0;
+        int height = 0;
+
+        screen->expired_time = req.expired_time;
+        screen->surface = TTF_RenderText_Shaded(screen->font, req.text, text_color, bg_color);
+        if (!screen->surface) {
+            LOGW("Init surface failed: %s", SDL_GetError());
+            SDL_free(req.text);
+            return false;
+        }
+
+        screen->text_texture = SDL_CreateTextureFromSurface(screen->renderer, screen->surface);
+        if (!screen->text_texture) {
+            LOGW("Init text texture failed: %s", SDL_GetError());
+            SDL_free(req.text);
+            SDL_FreeSurface(screen->surface);
+            return false;
+        }
+
+        if (TTF_SizeText(screen->font, req.text, &width, &height)) {
+            LOGW("Could not get the size of TTF: %s", TTF_GetError());
+            SDL_free(req.text);
+            SDL_DestroyTexture(screen->text_texture);
+            SDL_FreeSurface(screen->surface);
+            return false;
+        }
+
+        screen->text_rect.x = screen->rect.w / 2 - width / 2;
+        screen->text_rect.y = screen->rect.h / 3 * 2;
+        screen->text_rect.w = width;
+        screen->text_rect.h = height;
+
+        SDL_free(req.text);
+
+        if (!SDL_AddTimer((OSD_TEXT_TIME + 1) * 1000, screen_text_timer_callback, NULL)) {
+            LOGW("Failed to add render timer callback, err: %s", SDL_GetError());
+        }
+    }
+
+    SDL_RenderCopy(screen->renderer, screen->text_texture, NULL, &(screen->text_rect));
+
+    return true;
+}
+
 bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     mutex_lock(vb->mutex);
@@ -501,6 +613,7 @@ screen_render(struct screen *screen, bool update_content_rect) {
         SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
                          angle, NULL, 0);
     }
+    screen_render_text(screen);
     SDL_RenderPresent(screen->renderer);
 }
 
@@ -576,6 +689,41 @@ screen_handle_window_event(struct screen *screen,
             apply_pending_resize(screen);
             break;
     }
+}
+
+bool
+screen_add_text_event(const char *text) {
+    char *t = SDL_malloc(strlen(text) + 1);
+
+    if (!t) {
+        LOGW("Failed to allocate memory");
+        return false;
+    }
+
+    memset(t, 0, strlen(text) + 1);
+    strncpy(t, text, strlen(text));
+    static SDL_Event text_event;
+
+    text_event.type = EVENT_RENDER_TEXT;
+    text_event.user.data1 = t;
+
+    SDL_PushEvent(&text_event);
+
+    return true;
+}
+
+void
+screen_add_text_to_render_queue(struct screen *screen, char *text) {
+    struct render_text_request req = {
+        .text = text,
+        .expired_time = time(NULL) + OSD_TEXT_TIME,
+    };
+
+    mutex_lock(screen->mutex);
+    if (!cbuf_push(&screen->queue, req)) {
+        LOGW("Failed to push request to queue");
+    }
+    mutex_unlock(screen->mutex);
 }
 
 struct point
