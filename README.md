@@ -550,11 +550,11 @@ scrcpy --push-target /sdcard/foo/bar/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
+Audio is not forwarded by _scrcpy_. Use [sndcpy].
 
 Also see [issue #14].
 
-[USBaudio]: https://github.com/rom1v/usbaudio
+[sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
