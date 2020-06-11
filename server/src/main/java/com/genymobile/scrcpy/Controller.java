@@ -74,7 +74,7 @@ public class Controller {
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
-                    injectKeycode(msg.getAction(), msg.getKeycode(), msg.getMetaState());
+                    injectKeycode(msg.getAction(), msg.getKeycode(), msg.getRepeat(), msg.getMetaState());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
@@ -130,8 +130,8 @@ public class Controller {
         }
     }
 
-    private boolean injectKeycode(int action, int keycode, int metaState) {
-        return device.injectKeyEvent(action, keycode, 0, metaState);
+    private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
+        return device.injectKeyEvent(action, keycode, repeat, metaState);
     }
 
     private boolean injectChar(char c) {

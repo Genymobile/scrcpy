@@ -42,8 +42,9 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_INJECT_KEYCODE:
             buf[1] = msg->inject_keycode.action;
             buffer_write32be(&buf[2], msg->inject_keycode.keycode);
-            buffer_write32be(&buf[6], msg->inject_keycode.metastate);
-            return 10;
+            buffer_write32be(&buf[6], msg->inject_keycode.repeat);
+            buffer_write32be(&buf[10], msg->inject_keycode.metastate);
+            return 14;
         case CONTROL_MSG_TYPE_INJECT_TEXT: {
             size_t len =
                 write_string(msg->inject_text.text,

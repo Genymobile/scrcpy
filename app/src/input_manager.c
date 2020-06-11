@@ -234,7 +234,7 @@ input_manager_process_text_input(struct input_manager *im,
 
 static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
-                  bool prefer_text) {
+                  bool prefer_text, uint32_t repeat) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -247,6 +247,7 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
         return false;
     }
 
+    to->inject_keycode.repeat = repeat;
     to->inject_keycode.metastate = convert_meta_state(mod);
 
     return true;
@@ -411,8 +412,14 @@ input_manager_process_key(struct input_manager *im,
         return;
     }
 
+    if (event->repeat) {
+        ++im->repeat;
+    } else {
+        im->repeat = 0;
+    }
+
     struct control_msg msg;
-    if (convert_input_key(event, &msg, im->prefer_text)) {
+    if (convert_input_key(event, &msg, im->prefer_text, im->repeat)) {
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }

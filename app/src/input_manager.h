@@ -14,6 +14,11 @@ struct input_manager {
     struct controller *controller;
     struct video_buffer *video_buffer;
     struct screen *screen;
+
+    // SDL reports repeated events as a boolean, but Android expects the actual
+    // number of repetitions. This variable keeps track of the count.
+    unsigned repeat;
+
     bool prefer_text;
 };
 
