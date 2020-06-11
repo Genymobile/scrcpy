@@ -25,6 +25,7 @@ public class ControlMessageReaderTest {
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
         dos.writeByte(KeyEvent.ACTION_UP);
         dos.writeInt(KeyEvent.KEYCODE_ENTER);
+        dos.writeInt(5); // repeat
         dos.writeInt(KeyEvent.META_CTRL_ON);
         byte[] packet = bos.toByteArray();
 
@@ -37,6 +38,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
+        Assert.assertEquals(5, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
     }
 
@@ -308,11 +310,13 @@ public class ControlMessageReaderTest {
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
         dos.writeByte(KeyEvent.ACTION_UP);
         dos.writeInt(KeyEvent.KEYCODE_ENTER);
+        dos.writeInt(0); // repeat
         dos.writeInt(KeyEvent.META_CTRL_ON);
 
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
         dos.writeByte(MotionEvent.ACTION_DOWN);
         dos.writeInt(MotionEvent.BUTTON_PRIMARY);
+        dos.writeInt(1); // repeat
         dos.writeInt(KeyEvent.META_CTRL_ON);
 
         byte[] packet = bos.toByteArray();
@@ -322,12 +326,14 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
+        Assert.assertEquals(0, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
 
         event = reader.next();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
         Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getKeycode());
+        Assert.assertEquals(1, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
     }
 
@@ -341,6 +347,7 @@ public class ControlMessageReaderTest {
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
         dos.writeByte(KeyEvent.ACTION_UP);
         dos.writeInt(KeyEvent.KEYCODE_ENTER);
+        dos.writeInt(4); // repeat
         dos.writeInt(KeyEvent.META_CTRL_ON);
 
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
@@ -353,6 +360,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
+        Assert.assertEquals(4, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
 
         event = reader.next();
@@ -360,6 +368,7 @@ public class ControlMessageReaderTest {
 
         bos.reset();
         dos.writeInt(MotionEvent.BUTTON_PRIMARY);
+        dos.writeInt(5); // repeat
         dos.writeInt(KeyEvent.META_CTRL_ON);
         packet = bos.toByteArray();
         reader.readFrom(new ByteArrayInputStream(packet));
@@ -369,6 +378,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
         Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getKeycode());
+        Assert.assertEquals(5, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
     }
 }

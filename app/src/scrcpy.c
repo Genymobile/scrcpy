@@ -48,6 +48,7 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
+    .repeat = 0,
     .prefer_text = false, // initialized later
 };
 

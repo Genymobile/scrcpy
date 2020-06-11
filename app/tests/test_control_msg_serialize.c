@@ -9,18 +9,20 @@ static void test_serialize_inject_keycode(void) {
         .inject_keycode = {
             .action = AKEY_EVENT_ACTION_UP,
             .keycode = AKEYCODE_ENTER,
+            .repeat = 5,
             .metastate = AMETA_SHIFT_ON | AMETA_SHIFT_LEFT_ON,
         },
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     int size = control_msg_serialize(&msg, buf);
-    assert(size == 10);
+    assert(size == 14);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_INJECT_KEYCODE,
         0x01, // AKEY_EVENT_ACTION_UP
         0x00, 0x00, 0x00, 0x42, // AKEYCODE_ENTER
+        0x00, 0x00, 0x00, 0X05, // repeat
         0x00, 0x00, 0x00, 0x41, // AMETA_SHIFT_ON | AMETA_SHIFT_LEFT_ON
     };
     assert(!memcmp(buf, expected, sizeof(expected)));

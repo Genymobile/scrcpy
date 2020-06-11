@@ -44,6 +44,7 @@ struct control_msg {
         struct {
             enum android_keyevent_action action;
             enum android_keycode keycode;
+            uint32_t repeat;
             enum android_metastate metastate;
         } inject_keycode;
         struct {

@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets;
 
 public class ControlMessageReader {
 
-    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
+    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
@@ -98,8 +98,9 @@ public class ControlMessageReader {
         }
         int action = toUnsigned(buffer.get());
         int keycode = buffer.getInt();
+        int repeat = buffer.getInt();
         int metaState = buffer.getInt();
-        return ControlMessage.createInjectKeycode(action, keycode, metaState);
+        return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
     private String parseString() {
