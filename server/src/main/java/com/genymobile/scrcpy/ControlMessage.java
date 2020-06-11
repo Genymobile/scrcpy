@@ -31,16 +31,18 @@ public final class ControlMessage {
     private int hScroll;
     private int vScroll;
     private int flags;
+    private int repeat;
 
     private ControlMessage() {
     }
 
-    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState) {
+    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState,int repeat) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_KEYCODE;
         msg.action = action;
         msg.keycode = keycode;
         msg.metaState = metaState;
+        msg.repeat = repeat;
         return msg;
     }
 
@@ -107,6 +109,10 @@ public final class ControlMessage {
 
     public int getMetaState() {
         return metaState;
+    }
+        
+    public int getRepeat() {
+        return repeat;
     }
 
     public int getAction() {

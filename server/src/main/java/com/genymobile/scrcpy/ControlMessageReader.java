@@ -99,7 +99,8 @@ public class ControlMessageReader {
         int action = toUnsigned(buffer.get());
         int keycode = buffer.getInt();
         int metaState = buffer.getInt();
-        return ControlMessage.createInjectKeycode(action, keycode, metaState);
+        int repeat = buffer.getInt();
+        return ControlMessage.createInjectKeycode(action, keycode, metaState,repeat);
     }
 
     private String parseString() {

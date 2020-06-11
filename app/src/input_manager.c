@@ -232,9 +232,11 @@ input_manager_process_text_input(struct input_manager *im,
     }
 }
 
+int repeatCounter[AKEYCODE_ALL_APPS];
+
 static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
-                  bool prefer_text) {
+                  bool prefer_text, bool repeat) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -246,6 +248,21 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
                          prefer_text)) {
         return false;
     }
+
+    if (to->inject_keycode.action == AKEY_EVENT_ACTION_DOWN && repeat)
+    {
+        repeatCounter[to->inject_keycode.keycode] = repeatCounter[to->inject_keycode.keycode] + 1;
+        //LOGW("Setting repeat mode to %d %d",to->inject_keycode.keycode,to->inject_keycode.repeat );
+    }
+    else
+    {
+        //LOGW("Clearing repeate for %d",to->inject_keycode.keycode );
+        repeatCounter[to->inject_keycode.keycode] = 0;
+    }
+
+
+    to->inject_keycode.repeat = repeatCounter[to->inject_keycode.keycode];
+    //LOGW("Current code for %d ======== %d",to->inject_keycode.keycode,to->inject_keycode.repeat );
 
     to->inject_keycode.metastate = convert_meta_state(mod);
 
@@ -412,7 +429,7 @@ input_manager_process_key(struct input_manager *im,
     }
 
     struct control_msg msg;
-    if (convert_input_key(event, &msg, im->prefer_text)) {
+    if (convert_input_key(event, &msg, im->prefer_text,event->repeat)) {
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }

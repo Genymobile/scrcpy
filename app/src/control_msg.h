@@ -45,6 +45,7 @@ struct control_msg {
             enum android_keyevent_action action;
             enum android_keycode keycode;
             enum android_metastate metastate;
+            int repeat;
         } inject_keycode;
         struct {
             char *text; // owned, to be freed by SDL_free()
