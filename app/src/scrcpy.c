@@ -63,7 +63,7 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 
 // init SDL and set appropriate hints
 static bool
-sdl_init_and_configure(bool display, const char *render_driver) {
+sdl_init_and_configure(bool display, const char *render_driver, bool disable_screen_saver) {
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
@@ -112,8 +112,14 @@ sdl_init_and_configure(bool display, const char *render_driver) {
         LOGW("Could not disable minimize on focus loss");
     }
 
-    // Do not disable the screensaver when scrcpy is running
-    SDL_EnableScreenSaver();
+    if (disable_screen_saver)
+    {
+        SDL_DisableScreenSaver();
+    }
+    else
+    {
+        SDL_EnableScreenSaver();
+    }
 
     return true;
 }
@@ -321,7 +327,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
 
-    if (!sdl_init_and_configure(options->display, options->render_driver)) {
+    if (!sdl_init_and_configure(options->display, options->render_driver, options->disable_screen_saver)) {
         goto end;
     }
 

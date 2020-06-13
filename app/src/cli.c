@@ -45,6 +45,10 @@ scrcpy_print_usage(const char *arg0) {
         "        (typically, portrait for a phone, landscape for a tablet).\n"
         "        Any --max-size value is computed on the cropped size.\n"
         "\n"
+        "    --disable-screen-saver\n"
+        "        Disable screen saver while scrcpy is running. Convenient if\n"
+        "        the --no-control option is used\n"
+        "\n"
         "    --display id\n"
         "        Specify the display id to mirror.\n"
         "\n"
@@ -526,6 +530,7 @@ guess_record_format(const char *filename) {
 #define OPT_NO_MIPMAPS             1017
 #define OPT_CODEC_OPTIONS          1018
 #define OPT_FORCE_ADB_FORWARD      1019
+#define OPT_DISABLE_SCREEN_SAVER   1020
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -534,6 +539,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"bit-rate",               required_argument, NULL, 'b'},
         {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
+        {"disable-screen-saver",   no_argument,       NULL, OPT_DISABLE_SCREEN_SAVER},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
         {"force-adb-forward",      no_argument,       NULL,
                                                   OPT_FORCE_ADB_FORWARD},
@@ -715,6 +721,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
+                break;
+            case OPT_DISABLE_SCREEN_SAVER:
+                opts->disable_screen_saver = true;
                 break;
             default:
                 // getopt prints the error message on stderr
