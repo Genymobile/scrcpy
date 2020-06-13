@@ -43,6 +43,7 @@ struct scrcpy_options {
     bool mipmaps;
     bool stay_awake;
     bool force_adb_forward;
+    bool disable_screensaver;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -81,6 +82,7 @@ struct scrcpy_options {
     .mipmaps = true, \
     .stay_awake = false, \
     .force_adb_forward = false, \
+    .disable_screensaver = false, \
 }
 
 bool

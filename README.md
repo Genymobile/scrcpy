@@ -479,6 +479,17 @@ scrcpy -t
 Note that it only shows _physical_ touches (with the finger on the device).
 
 
+#### Disable screensaver
+
+By default, scrcpy does not prevent the screensaver to run on the computer.
+
+To disable it:
+
+```bash
+scrcpy --disable-screensaver
+```
+
+
 ### Input control
 
 #### Rotate device screen
