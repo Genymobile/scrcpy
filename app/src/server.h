@@ -23,6 +23,7 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+    struct serve* serve;
 };
 
 #define SERVER_INITIALIZER { \
@@ -60,7 +61,7 @@ server_init(struct server *server);
 // push, enable tunnel et start the server
 bool
 server_start(struct server *server, const char *serial,
-             const struct server_params *params);
+             const struct server_params *params, struct serve* serve);
 
 // block until the communication with the server is established
 bool

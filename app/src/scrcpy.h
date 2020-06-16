@@ -16,7 +16,7 @@ struct scrcpy_options {
     const char *window_title;
     const char *push_target;
     const char *render_driver;
-    const char *serve_protocol;
+    char *serve_protocol;
     enum recorder_format record_format;
     struct port_range port_range;
     uint16_t max_size;

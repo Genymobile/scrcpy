@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include "command.h"
+#include "serve.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/str_util.h"
@@ -349,7 +350,7 @@ run_wait_server(void *data) {
 
 bool
 server_start(struct server *server, const char *serial,
-             const struct server_params *params) {
+             const struct server_params *params, struct serve* serve) {
     server->port_range = params->port_range;
 
     if (serial) {
@@ -367,12 +368,23 @@ server_start(struct server *server, const char *serial,
         goto error1;
     }
 
-    // server will connect to our server socket
-    server->process = execute_server(server, params);
-    if (server->process == PROCESS_NONE) {
-        goto error2;
+    /*server->serve = serve;
+    if (server->serve) {
+        if (server->serve->isServeReady == true) {
+            server->process = execute_server(server, params);
+            if (server->process == PROCESS_NONE) {
+                goto error2;
+            }
+        }
     }
-
+    else {*/
+        // server will connect to our server socket
+        server->process = execute_server(server, params);
+        if (server->process == PROCESS_NONE) {
+            goto error2;
+        }
+    //}
+    
     // If the server process dies before connecting to the server socket, then
     // the client will be stuck forever on accept(). To avoid the problem, we
     // must be able to wake up the accept() call when the server dies. To keep
