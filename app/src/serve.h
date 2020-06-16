@@ -15,6 +15,7 @@ struct serve {
     char *protocol;
     uint32_t ip;
     uint16_t port;
+    bool isServeReady;
 };
 
 void
@@ -25,4 +26,7 @@ serve_start(struct serve* serve);
 
 bool
 serve_push(struct serve* serve, const AVPacket *packet);
+
+void
+serve_stop(struct serve* serve);
 #endif

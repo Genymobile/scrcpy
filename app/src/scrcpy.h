@@ -50,7 +50,7 @@ struct scrcpy_options {
     const char *window_title;
     const char *push_target;
     const char *render_driver;
-    const char *serve_protocol;
+    char *serve_protocol;
     const char *codec_options;
     enum sc_log_level log_level;
     enum sc_record_format record_format;

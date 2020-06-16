@@ -637,7 +637,7 @@ str_split(const char *a_str, const char a_delim) {
     char** result = 0;
     size_t count = 0;
     char* tmp = (char*)a_str;
-    char str[50];
+    char str[100];
     strncpy(str, a_str, sizeof(str));
     char* last_comma = 0;
     char delim[2];
@@ -737,7 +737,7 @@ convert_ip_to_int(char* ip_string) {
 }
 
 static bool
-parse_serve_args(const char *optarg, const char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
+parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t *s_port) {
     bool protocol_valid = false;
     bool ip_valid = false;
     bool port_valid = false;

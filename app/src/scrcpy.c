@@ -322,7 +322,21 @@ scrcpy(const struct scrcpy_options *options) {
         .codec_options = options->codec_options,
         .force_adb_forward = options->force_adb_forward,
     };
-    if (!server_start(&server, options->serial, &params)) {
+
+    struct serve* serv = NULL;
+    if (options->serve) {
+        serve_init(&serve, options->serve_protocol, options->serve_ip, options->serve_port);
+		
+        serv = &serve;
+    }
+
+    if (options->serve) {
+        if (!serve_start(&serve)) {
+            goto end;
+        }
+    }
+
+    if (!server_start(&server, options->serial, &params, serv)) {
         return false;
     }
 
@@ -335,6 +349,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
+    bool serve_started = false;
 
     if (!sdl_init_and_configure(options->display, options->render_driver,
                                 options->disable_screensaver)) {
@@ -392,16 +407,6 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
-    struct serve* serv = NULL;
-    if (options->serve) {
-        serve_init(&serve, options->serve_protocol, options->serve_ip, options->serve_port);
-
-        if (!serve_start(&serve)) {
-            goto end;
-        }
-        serv = &serve;
-    }
-
     av_log_set_callback(av_log_callback);
 
     stream_init(&stream, server.video_socket, dec, rec, serv);
@@ -434,7 +439,7 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->window_y, options->window_width,
                                    options->window_height,
                                    options->window_borderless,
-                                   options->rotation, options-> mipmaps)) {
+                                   options->rotation, options->mipmaps)) {
             goto end;
         }
 
@@ -474,6 +479,9 @@ end:
     }
     if (fps_counter_initialized) {
         fps_counter_interrupt(&fps_counter);
+    }
+    if (serve_started) {
+        serve_stop(&serve);
     }
 
     // shutdown the sockets and kill the server
