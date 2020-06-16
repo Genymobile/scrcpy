@@ -4,3 +4,4 @@ build/
 .gradle/
 .vs/
 /x/
+configuration/
