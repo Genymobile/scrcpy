@@ -232,7 +232,7 @@ input_manager_process_text_input(struct input_manager *im,
     }
 }
 
-int repeatCounter[AKEYCODE_ALL_APPS];
+unsigned int repeatCounter = 0;
 
 static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
@@ -251,18 +251,15 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 
     if (to->inject_keycode.action == AKEY_EVENT_ACTION_DOWN && repeat)
     {
-        repeatCounter[to->inject_keycode.keycode] = repeatCounter[to->inject_keycode.keycode] + 1;
-        //LOGW("Setting repeat mode to %d %d",to->inject_keycode.keycode,to->inject_keycode.repeat );
+        ++repeatCounter;
     }
     else
     {
-        //LOGW("Clearing repeate for %d",to->inject_keycode.keycode );
-        repeatCounter[to->inject_keycode.keycode] = 0;
+        repeatCounter = 0;
     }
 
 
-    to->inject_keycode.repeat = repeatCounter[to->inject_keycode.keycode];
-    //LOGW("Current code for %d ======== %d",to->inject_keycode.keycode,to->inject_keycode.repeat );
+    to->inject_keycode.repeat = repeatCounter;
 
     to->inject_keycode.metastate = convert_meta_state(mod);
 
