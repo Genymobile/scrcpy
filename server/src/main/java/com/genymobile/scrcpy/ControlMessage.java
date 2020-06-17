@@ -36,7 +36,7 @@ public final class ControlMessage {
     private ControlMessage() {
     }
 
-    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState,int repeat) {
+    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState, int repeat) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_KEYCODE;
         msg.action = action;

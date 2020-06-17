@@ -100,7 +100,7 @@ public class ControlMessageReader {
         int keycode = buffer.getInt();
         int metaState = buffer.getInt();
         int repeat = buffer.getInt();
-        return ControlMessage.createInjectKeycode(action, keycode, metaState,repeat);
+        return ControlMessage.createInjectKeycode(action, keycode, metaState, repeat);
     }
 
     private String parseString() {

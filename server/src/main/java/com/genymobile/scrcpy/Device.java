@@ -167,7 +167,7 @@ public final class Device {
         return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
-    public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
+    public boolean injectKeyEvent(int action, int keyCode, int metaState, int repeat) {
         long now = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
                 InputDevice.SOURCE_KEYBOARD);
