@@ -12,6 +12,7 @@ src = [
     'src/fps_counter.c',
     'src/input_manager.c',
     'src/opengl.c',
+    'src/open_sans_font.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
@@ -32,6 +33,7 @@ if not get_option('crossbuild_windows')
         dependency('libavcodec'),
         dependency('libavutil'),
         dependency('sdl2'),
+        dependency('SDL2_ttf'),
     ]
 
 else
@@ -43,13 +45,25 @@ else
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
     sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/lib'
     sdl2_include_dir = '../prebuilt-deps/' + prebuilt_sdl2 + '/include'
-
     sdl2 = declare_dependency(
         dependencies: [
             cc.find_library('SDL2', dirs: sdl2_bin_dir),
             cc.find_library('SDL2main', dirs: sdl2_lib_dir),
         ],
         include_directories: include_directories(sdl2_include_dir)
+    )
+
+    prebuilt_sdl2_ttf = meson.get_cross_property('prebuilt_sdl2_ttf')
+    sdl2_include_sdl2_dir = '../prebuilt-deps/' + prebuilt_sdl2 + '/include/SDL2'
+    sdl2_ttf_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2_ttf + '/bin'
+    sdl2_ttf_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2_ttf + '/lib'
+    sdl2_ttf_include_dir = '../prebuilt-deps/' + prebuilt_sdl2_ttf + '/include'
+    sdl2_ttf = declare_dependency(
+        dependencies: [
+            cc.find_library('SDL2_ttf', dirs: sdl2_ttf_lib_dir),
+            cc.find_library('SDL2_ttf', dirs: sdl2_ttf_bin_dir),
+        ],
+        include_directories: include_directories(sdl2_include_sdl2_dir, sdl2_ttf_include_dir)
     )
 
     prebuilt_ffmpeg_shared = meson.get_cross_property('prebuilt_ffmpeg_shared')
@@ -67,6 +81,7 @@ else
 
     dependencies = [
         ffmpeg,
+        sdl2_ttf,
         sdl2,
         cc.find_library('mingw32')
     ]

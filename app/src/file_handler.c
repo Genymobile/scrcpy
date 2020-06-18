@@ -5,6 +5,7 @@
 
 #include "config.h"
 #include "command.h"
+#include "screen.h"
 #include "util/lock.h"
 #include "util/log.h"
 
@@ -145,6 +146,7 @@ run_file_handler(void *data) {
             if (process_check_success(process, "adb push")) {
                 LOGI("%s successfully pushed to %s", req.file,
                                                      file_handler->push_target);
+                screen_add_text_event("File successfully pushed");
             } else {
                 LOGE("Failed to push %s to %s", req.file,
                                                 file_handler->push_target);

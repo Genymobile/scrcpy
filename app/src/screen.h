@@ -3,15 +3,24 @@
 
 #include <stdbool.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include <libavformat/avformat.h>
 
 #include "config.h"
 #include "common.h"
 #include "opengl.h"
+#include "util/cbuf.h"
 
 #define WINDOW_POSITION_UNDEFINED (-0x8000)
 
 struct video_buffer;
+
+struct render_text_request {
+    char *text;
+    int64_t expired_time;
+};
+
+struct render_text_request_queue CBUF(struct render_text_request, 16);
 
 struct screen {
     SDL_Window *window;
@@ -36,6 +45,15 @@ struct screen {
     bool maximized;
     bool no_window;
     bool mipmaps;
+
+    // use for rendering text in screen
+    SDL_mutex *mutex;
+    struct render_text_request_queue queue;
+    TTF_Font *font;
+    SDL_Surface *surface;
+    SDL_Texture *text_texture;
+    int64_t expired_time;
+    SDL_Rect text_rect;
 };
 
 #define SCREEN_INITIALIZER { \
@@ -69,6 +87,17 @@ struct screen {
     .maximized = false, \
     .no_window = false, \
     .mipmaps = false, \
+    .mutex = NULL, \
+    .font = NULL, \
+    .surface = NULL, \
+    .text_texture = NULL, \
+    .expired_time = 0, \
+    .text_rect = { \
+        .x = 0, \
+        .y = 0, \
+        .w = 0, \
+        .h = 0, \
+    }, \
 }
 
 // initialize default values
@@ -122,6 +151,14 @@ screen_set_rotation(struct screen *screen, unsigned rotation);
 // react to window events
 void
 screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
+
+// add text event
+bool
+screen_add_text_event(const char *text);
+
+// add text to render queue
+void
+screen_add_text_to_render_queue(struct screen *screen, char *text);
 
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels
