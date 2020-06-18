@@ -301,7 +301,7 @@ ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
 From another terminal:
 
 ```bash
-scrcpy --force-adb-forwrad
+scrcpy --force-adb-forward
 ```
 
 
