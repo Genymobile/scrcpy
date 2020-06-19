@@ -73,7 +73,6 @@ static void test_options(void) {
 
     const struct scrcpy_options *opts = &args.opts;
     assert(opts->always_on_top);
-    fprintf(stderr, "%d\n", (int) opts->bit_rate);
     assert(opts->bit_rate == 5000000);
     assert(!strcmp(opts->crop, "100:200:300:400"));
     assert(opts->fullscreen);
