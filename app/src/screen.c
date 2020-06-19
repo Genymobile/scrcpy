@@ -8,6 +8,7 @@
 #include "common.h"
 #include "compat.h"
 #include "icon.xpm"
+#include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/lock.h"
@@ -257,9 +258,9 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = window_x != WINDOW_POSITION_UNDEFINED
+    int x = window_x != SC_WINDOW_POSITION_UNDEFINED
           ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
-    int y = window_y != WINDOW_POSITION_UNDEFINED
+    int y = window_y != SC_WINDOW_POSITION_UNDEFINED
           ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
     screen->window = SDL_CreateWindow(window_title, x, y,
                                       window_size.width, window_size.height,

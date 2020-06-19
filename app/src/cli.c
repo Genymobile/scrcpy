@@ -3,10 +3,11 @@
 #include <assert.h>
 #include <getopt.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <unistd.h>
 
 #include "config.h"
-#include "recorder.h"
+#include "scrcpy.h"
 #include "util/log.h"
 #include "util/str_util.h"
 
@@ -382,10 +383,10 @@ parse_rotation(const char *s, uint8_t *rotation) {
 static bool
 parse_window_position(const char *s, int16_t *position) {
     // special value for "auto"
-    static_assert(WINDOW_POSITION_UNDEFINED == -0x8000, "unexpected value");
+    static_assert(SC_WINDOW_POSITION_UNDEFINED == -0x8000, "unexpected value");
 
     if (!strcmp(s, "auto")) {
-        *position = WINDOW_POSITION_UNDEFINED;
+        *position = SC_WINDOW_POSITION_UNDEFINED;
         return true;
     }
 
@@ -414,7 +415,7 @@ parse_window_dimension(const char *s, uint16_t *dimension) {
 }
 
 static bool
-parse_port_range(const char *s, struct port_range *port_range) {
+parse_port_range(const char *s, struct sc_port_range *port_range) {
     long values[2];
     size_t count = parse_integers_arg(s, 2, values, 0, 0xFFFF, "port");
     if (!count) {
@@ -480,20 +481,20 @@ parse_log_level(const char *s, enum sc_log_level *log_level) {
 }
 
 static bool
-parse_record_format(const char *optarg, enum recorder_format *format) {
+parse_record_format(const char *optarg, enum sc_record_format *format) {
     if (!strcmp(optarg, "mp4")) {
-        *format = RECORDER_FORMAT_MP4;
+        *format = SC_RECORD_FORMAT_MP4;
         return true;
     }
     if (!strcmp(optarg, "mkv")) {
-        *format = RECORDER_FORMAT_MKV;
+        *format = SC_RECORD_FORMAT_MKV;
         return true;
     }
     LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
     return false;
 }
 
-static enum recorder_format
+static enum sc_record_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
     if (len < 4) {
@@ -501,10 +502,10 @@ guess_record_format(const char *filename) {
     }
     const char *ext = &filename[len - 4];
     if (!strcmp(ext, ".mp4")) {
-        return RECORDER_FORMAT_MP4;
+        return SC_RECORD_FORMAT_MP4;
     }
     if (!strcmp(ext, ".mkv")) {
-        return RECORDER_FORMAT_MKV;
+        return SC_RECORD_FORMAT_MKV;
     }
     return 0;
 }

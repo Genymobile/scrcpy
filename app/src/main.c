@@ -1,5 +1,6 @@
 #include "scrcpy.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>

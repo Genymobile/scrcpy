@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 
 #include "cli.h"
 #include "common.h"
@@ -83,7 +84,7 @@ static void test_options(void) {
     assert(opts->port_range.last == 1236);
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));
-    assert(opts->record_format == RECORDER_FORMAT_MKV);
+    assert(opts->record_format == SC_RECORD_FORMAT_MKV);
     assert(opts->render_expired_frames);
     assert(!strcmp(opts->serial, "0123456789abcdef"));
     assert(opts->show_touches);
@@ -118,7 +119,7 @@ static void test_options2(void) {
     assert(!opts->control);
     assert(!opts->display);
     assert(!strcmp(opts->record_filename, "file.mp4"));
-    assert(opts->record_format == RECORDER_FORMAT_MP4);
+    assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
 int main(void) {

@@ -8,13 +8,8 @@
 
 #include "config.h"
 #include "common.h"
+#include "scrcpy.h"
 #include "util/queue.h"
-
-enum recorder_format {
-    RECORDER_FORMAT_AUTO,
-    RECORDER_FORMAT_MP4,
-    RECORDER_FORMAT_MKV,
-};
 
 struct record_packet {
     AVPacket packet;
@@ -25,7 +20,7 @@ struct recorder_queue QUEUE(struct record_packet);
 
 struct recorder {
     char *filename;
-    enum recorder_format format;
+    enum sc_record_format format;
     AVFormatContext *ctx;
     struct size declared_frame_size;
     bool header_written;
@@ -46,7 +41,7 @@ struct recorder {
 
 bool
 recorder_init(struct recorder *recorder, const char *filename,
-              enum recorder_format format, struct size declared_frame_size);
+              enum sc_record_format format, struct size declared_frame_size);
 
 void
 recorder_destroy(struct recorder *recorder);

@@ -8,6 +8,8 @@
 #include <SDL2/SDL.h>
 
 #ifdef _WIN32
+// not needed here, but winsock2.h must never be included AFTER windows.h
+# include <winsock2.h>
 # include <windows.h>
 #endif
 
