@@ -441,7 +441,7 @@ Or by pressing `Ctrl`+`o` at any time.
 
 To turn it back on, press `Ctrl`+`Shift`+`o` (or `POWER`, `Ctrl`+`p`).
 
-It can be useful to also prevent the device to sleep:
+It can also be useful to prevent the device from sleeping:
 
 ```bash
 scrcpy --turn-screen-off --stay-awake
