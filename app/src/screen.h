@@ -124,7 +124,14 @@ screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels
 struct point
-screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y);
+screen_convert_window_to_frame_coords(struct screen *screen,
+                                      int32_t x, int32_t y);
+
+// convert point from drawable coordinates to frame coordinates
+// x and y are expressed in pixels
+struct point
+screen_convert_drawable_to_frame_coords(struct screen *screen,
+                                        int32_t x, int32_t y);
 
 // Convert coordinates from window to drawable.
 // Events are expressed in window coordinates, but content is expressed in

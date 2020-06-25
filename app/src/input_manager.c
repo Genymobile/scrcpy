@@ -434,7 +434,7 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point =
-        screen_convert_to_frame_coords(screen, from->x, from->y);
+        screen_convert_window_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
 
@@ -472,15 +472,15 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
     to->inject_touch_event.pointer_id = from->fingerId;
     to->inject_touch_event.position.screen_size = screen->frame_size;
 
-    int ww;
-    int wh;
-    SDL_GL_GetDrawableSize(screen->window, &ww, &wh);
+    int dw;
+    int dh;
+    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
 
     // SDL touch event coordinates are normalized in the range [0; 1]
-    int32_t x = from->x * ww;
-    int32_t y = from->y * wh;
+    int32_t x = from->x * dw;
+    int32_t y = from->y * dh;
     to->inject_touch_event.position.point =
-        screen_convert_to_frame_coords(screen, x, y);
+        screen_convert_drawable_to_frame_coords(screen, x, y);
 
     to->inject_touch_event.pressure = from->pressure;
     to->inject_touch_event.buttons = 0;
@@ -510,7 +510,7 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
     to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
     to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point =
-        screen_convert_to_frame_coords(screen, from->x, from->y);
+        screen_convert_window_to_frame_coords(screen, from->x, from->y);
     to->inject_touch_event.pressure = 1.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));
@@ -575,7 +575,8 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
 
     struct position position = {
         .screen_size = screen->frame_size,
-        .point = screen_convert_to_frame_coords(screen, mouse_x, mouse_y),
+        .point = screen_convert_window_to_frame_coords(screen,
+                                                       mouse_x, mouse_y),
     };
 
     to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;

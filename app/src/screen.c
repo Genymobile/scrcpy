@@ -580,14 +580,14 @@ screen_handle_window_event(struct screen *screen,
 }
 
 struct point
-screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
+screen_convert_drawable_to_frame_coords(struct screen *screen,
+                                        int32_t x, int32_t y) {
     unsigned rotation = screen->rotation;
     assert(rotation < 4);
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
-    screen_hidpi_scale_coords(screen, &x, &y);
 
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
@@ -614,6 +614,13 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
             break;
     }
     return result;
+}
+
+struct point
+screen_convert_window_to_frame_coords(struct screen *screen,
+                                      int32_t x, int32_t y) {
+    screen_hidpi_scale_coords(screen, &x, &y);
+    return screen_convert_drawable_to_frame_coords(screen, x, y);
 }
 
 void
