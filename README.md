@@ -49,6 +49,11 @@ A [Snap] package is available: [`scrcpy`][snap-link].
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
+For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
+
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
+
 For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
