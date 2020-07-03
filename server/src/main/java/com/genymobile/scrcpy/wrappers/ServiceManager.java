@@ -77,7 +77,14 @@ public final class ServiceManager {
 
     public ClipboardManager getClipboardManager() {
         if (clipboardManager == null) {
-            clipboardManager = new ClipboardManager(getService("clipboard", "android.content.IClipboard"));
+            IInterface clipboard = getService("clipboard", "android.content.IClipboard");
+            if (clipboard == null) {
+                // Some devices have no clipboard manager
+                // <https://github.com/Genymobile/scrcpy/issues/1440>
+                // <https://github.com/Genymobile/scrcpy/issues/1556>
+                return null;
+            }
+            clipboardManager = new ClipboardManager(clipboard);
         }
         return clipboardManager;
     }
