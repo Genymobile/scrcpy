@@ -68,7 +68,7 @@ server_init(struct server *server);
 // push, enable tunnel et start the server
 bool
 server_start(struct server *server, const char *serial,
-             const struct server_params *params, struct serve* serve);
+             const struct server_params *params);
 
 // block until the communication with the server is established
 bool
