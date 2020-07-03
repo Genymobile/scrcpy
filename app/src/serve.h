@@ -19,14 +19,14 @@ struct serve {
 };
 
 void
-serve_init(struct serve* serve, char* protocol, uint32_t ip, uint16_t port);
+serve_init(struct serve *serve, char *protocol, uint32_t ip, uint16_t port);
 
 bool
-serve_start(struct serve* serve);
+serve_start(struct serve *serve);
 
 bool
-serve_push(struct serve* serve, const AVPacket *packet);
+serve_push(struct serve *serve, const AVPacket *packet);
 
 void
-serve_stop(struct serve* serve);
+serve_stop(struct serve *serve);
 #endif

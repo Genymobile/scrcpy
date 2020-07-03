@@ -309,7 +309,7 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
-    if (!server_start(&server, options->serial, &params, serv)) {
+    if (!server_start(&server, options->serial, &params)) {
         return false;
     }
 

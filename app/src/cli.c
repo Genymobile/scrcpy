@@ -458,9 +458,9 @@ guess_record_format(const char *filename) {
 
 char**
 str_split(const char *a_str, const char a_delim) {
-    char** result = 0;
+    char **result = 0;
     size_t count = 0;
-    char* tmp = (char*)a_str;
+    char *tmp = (char*)a_str;
     char str[100];
     strncpy(str, a_str, sizeof(str));
     char* last_comma = 0;
@@ -480,8 +480,8 @@ str_split(const char *a_str, const char a_delim) {
     /* Add space for trailing token. */
     count += last_comma < (str + strlen(str) - 1);
 
-    /* Add space for terminating null string so caller 
-    knows where the list of returned strings ends. */
+    /* Add space for terminating null string so caller
+       knows where the list of returned strings ends. */
     count++;
 
     result = malloc(sizeof(char*) * count);
@@ -506,7 +506,7 @@ str_split(const char *a_str, const char a_delim) {
 bool
 check_if_ip_valid(char *ip) {
     int num, dots = 0;
-    char* ptr;
+    char *ptr;
 
     if (ip == NULL)
         return 0;
@@ -539,9 +539,9 @@ check_if_ip_valid(char *ip) {
 uint32_t
 convert_ip_to_int(char* ip_string) {
     int num, dots = 0;
-    char* ptr;
+    char *ptr;
 
-    char* ip = "0x";
+    char *ip = "0x";
 
     ptr = strtok(ip_string, "."); //Cut the string using dot as delimiter
 
@@ -566,12 +566,12 @@ parse_serve_args(const char *optarg, char **s_protocol, uint32_t *s_ip, uint16_t
     bool ip_valid = false;
     bool port_valid = false;
 
-    char* protocol = NULL;
-    char* ip = NULL;
+    char *protocol = NULL;
+    char *ip = NULL;
     uint32_t ip_value;
-    char* port = NULL;
-    
-    char** values;
+    char *port = NULL;
+    char **values;
+
     values = str_split(optarg, ':');
 
     if (values) {
@@ -755,8 +755,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case OPT_SERVE:
                 if (!parse_serve_args(optarg, &opts->serve_protocol, &opts->serve_ip, &opts->serve_port)) {
                     return false;
-                }
-                else {
+                } else {
                     opts->serve = true;
                 }
                 break;
