@@ -19,18 +19,19 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(boolean disableShowTouches, int restoreStayOn) throws IOException {
-        boolean needProcess = disableShowTouches || restoreStayOn != -1;
+    public static void configure(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode) throws IOException {
+        boolean needProcess = disableShowTouches || restoreStayOn != -1 || restoreNormalPowerMode;
         if (needProcess) {
-            startProcess(disableShowTouches, restoreStayOn);
+            startProcess(disableShowTouches, restoreStayOn, restoreNormalPowerMode);
         } else {
             // There is no additional clean up to do when scrcpy dies
             unlinkSelf();
         }
     }
 
-    private static void startProcess(boolean disableShowTouches, int restoreStayOn) throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches), String.valueOf(restoreStayOn)};
+    private static void startProcess(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode) throws IOException {
+        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches), String.valueOf(
+                restoreStayOn), String.valueOf(restoreNormalPowerMode)};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
@@ -59,6 +60,7 @@ public final class CleanUp {
 
         boolean disableShowTouches = Boolean.parseBoolean(args[0]);
         int restoreStayOn = Integer.parseInt(args[1]);
+        boolean restoreNormalPowerMode = Boolean.parseBoolean(args[2]);
 
         if (disableShowTouches || restoreStayOn != -1) {
             ServiceManager serviceManager = new ServiceManager();
@@ -72,6 +74,11 @@ public final class CleanUp {
                     settings.putValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(restoreStayOn));
                 }
             }
+        }
+
+        if (restoreNormalPowerMode) {
+            Ln.i("Restoring normal power mode");
+            Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
         }
     }
 }
