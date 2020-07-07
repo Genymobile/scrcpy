@@ -19,18 +19,19 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(boolean disableShowTouches, int restoreStayOn) throws IOException {
-        boolean needProcess = disableShowTouches || restoreStayOn != -1;
+    public static void configure(boolean disableShowTouches, int restoreStayOn, boolean scheduleScreenOn) throws IOException {
+        boolean needProcess = disableShowTouches || restoreStayOn != -1 || scheduleScreenOn;
         if (needProcess) {
-            startProcess(disableShowTouches, restoreStayOn);
+            startProcess(disableShowTouches, restoreStayOn, scheduleScreenOn);
         } else {
             // There is no additional clean up to do when scrcpy dies
             unlinkSelf();
         }
     }
 
-    private static void startProcess(boolean disableShowTouches, int restoreStayOn) throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches), String.valueOf(restoreStayOn)};
+    private static void startProcess(boolean disableShowTouches, int restoreStayOn, boolean scheduleScreenOn) throws IOException {
+        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches),
+                String.valueOf(restoreStayOn), String.valueOf(scheduleScreenOn)};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
@@ -59,8 +60,9 @@ public final class CleanUp {
 
         boolean disableShowTouches = Boolean.parseBoolean(args[0]);
         int restoreStayOn = Integer.parseInt(args[1]);
+        boolean scheduleScreenOn = Boolean.parseBoolean(args[2]);
 
-        if (disableShowTouches || restoreStayOn != -1) {
+        if (disableShowTouches || restoreStayOn != -1 || scheduleScreenOn) {
             ServiceManager serviceManager = new ServiceManager();
             try (ContentProvider settings = serviceManager.getActivityManager().createSettingsProvider()) {
                 if (disableShowTouches) {
@@ -71,6 +73,10 @@ public final class CleanUp {
                     Ln.i("Restoring \"stay awake\"");
                     settings.putValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(restoreStayOn));
                 }
+            }
+            if (scheduleScreenOn) {
+                Ln.i("Restoring \"displayPowerMode\"");
+                new Device(new Options()).setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }
     }

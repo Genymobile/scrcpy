@@ -49,7 +49,7 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn);
+        CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn, true);
 
         boolean tunnelForward = options.isTunnelForward();
 
