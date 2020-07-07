@@ -228,7 +228,7 @@ public final class Device {
     }
 
     /**
-     * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
+     * @param mode one of the {@code POWER_MODE_*} constants
      */
     public static boolean setScreenPowerMode(int mode) {
         IBinder d = SurfaceControl.getBuiltInDisplay();
