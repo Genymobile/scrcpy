@@ -511,7 +511,8 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
     to->inject_touch_event.position.screen_size = screen->frame_size;
     to->inject_touch_event.position.point =
         screen_convert_window_to_frame_coords(screen, from->x, from->y);
-    to->inject_touch_event.pressure = 1.f;
+    to->inject_touch_event.pressure =
+        from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
     to->inject_touch_event.buttons =
         convert_mouse_buttons(SDL_BUTTON(from->button));
 
