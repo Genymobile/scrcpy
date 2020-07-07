@@ -116,7 +116,7 @@ public class Controller {
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
                     int mode = msg.getAction();
-                    boolean setPowerModeOk = device.setScreenPowerMode(mode);
+                    boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
                     }

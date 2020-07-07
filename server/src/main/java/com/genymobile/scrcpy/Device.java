@@ -230,7 +230,7 @@ public final class Device {
     /**
      * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
      */
-    public boolean setScreenPowerMode(int mode) {
+    public static boolean setScreenPowerMode(int mode) {
         IBinder d = SurfaceControl.getBuiltInDisplay();
         if (d == null) {
             Ln.e("Could not get built-in display");
