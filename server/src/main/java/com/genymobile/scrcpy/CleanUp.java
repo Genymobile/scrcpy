@@ -76,7 +76,7 @@ public final class CleanUp {
             }
             if (scheduleScreenOn) {
                 Ln.i("Restoring \"displayPowerMode\"");
-                new Device(new Options()).setScreenPowerMode(Device.POWER_MODE_NORMAL);
+                Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }
     }
