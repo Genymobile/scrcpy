@@ -8,6 +8,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Controller {
 
@@ -20,6 +22,8 @@ public class Controller {
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
     private long lastTouchDown;
+
+    private boolean screenStayOff = false;
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
@@ -75,6 +79,9 @@ public class Controller {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
                     injectKeycode(msg.getAction(), msg.getKeycode(), msg.getRepeat(), msg.getMetaState());
+                    if(msg.getAction() == 1 && (msg.getKeycode() == 26 || msg.getKeycode() == 224)){  // Power and wakeup keys
+                        scheduleScreenOff();
+                    }
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
@@ -95,6 +102,7 @@ public class Controller {
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
                 if (device.supportsInputEvents()) {
                     pressBackOrTurnScreenOn();
+                    scheduleScreenOff();
                 }
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
@@ -118,6 +126,7 @@ public class Controller {
                     int mode = msg.getAction();
                     boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
+                        screenStayOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
                     }
                 }
@@ -222,6 +231,27 @@ public class Controller {
                 .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
                         InputDevice.SOURCE_TOUCHSCREEN, 0);
         return device.injectEvent(event);
+    }
+
+    /**
+     * Dirty hack to wait for the screen to be on to turn it back off.
+     * Hopefully something better will come up in the future
+     * Tested on a low end Android 6 device
+     */
+    public void scheduleScreenOff(){
+        if(screenStayOff) {
+            final Timer timing = new Timer("KeepScreenOn", true);
+            timing.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    Ln.i("Forcing screen back off");
+                                    if (Device.setScreenPowerMode(Device.POWER_MODE_OFF)) {
+                                        timing.cancel();
+                                    }
+                                }
+                            },
+                    100);
+        }
     }
 
     private boolean pressBackOrTurnScreenOn() {
