@@ -8,6 +8,8 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Controller {
 
@@ -23,6 +25,9 @@ public class Controller {
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
+
+    private boolean screenStayOff;
+    private static final Timer keepScreenOffTimer = new Timer("KeepScreenOff", true);
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
@@ -117,6 +122,7 @@ public class Controller {
                     int mode = msg.getAction();
                     boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
+                        screenStayOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
                     }
                 }
@@ -130,6 +136,9 @@ public class Controller {
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
+        if (screenStayOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
+            scheduleScreenOff();
+        }
         return device.injectKeyEvent(action, keycode, repeat, metaState);
     }
 
@@ -223,8 +232,24 @@ public class Controller {
         return device.injectEvent(event);
     }
 
+    /**
+     * Schedule a call to turn the screen off after a small delay.
+     */
+    private static void scheduleScreenOff() {
+        keepScreenOffTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                Ln.i("Forcing screen off");
+                Device.setScreenPowerMode(Device.POWER_MODE_OFF);
+            }
+        }, 200);
+    }
+
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_WAKEUP;
+        if (screenStayOff && keycode == KeyEvent.KEYCODE_WAKEUP) {
+            scheduleScreenOff();
+        }
         return device.injectKeycode(keycode);
     }
 

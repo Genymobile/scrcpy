@@ -440,8 +440,12 @@ scrcpy -S
 
 Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time.
 
-To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd> (or
-`POWER`, <kbd>MOD</kbd>+<kbd>p</kbd>).
+To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
+
+On Android, the `POWER` button always turns the screen on. For convenience, if
+`POWER` is sent via scrcpy (via right-click or <kbd>Ctrl</kbd>+<kbd>p</kbd>), it
+will force to turn the screen off after a small delay (on a best effort basis).
+The physical `POWER` button will still cause the screen to be turned on.
 
 It can be useful to also prevent the device to sleep:
 
