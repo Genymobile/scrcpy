@@ -8,10 +8,15 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Controller {
 
     private static final int DEVICE_ID_VIRTUAL = -1;
+
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private final Device device;
     private final DesktopConnection connection;
@@ -23,6 +28,8 @@ public class Controller {
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
+
+    private boolean keepPowerModeOff;
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
@@ -117,6 +124,7 @@ public class Controller {
                     int mode = msg.getAction();
                     boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
+                        keepPowerModeOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
                     }
                 }
@@ -130,6 +138,9 @@ public class Controller {
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
+        if (keepPowerModeOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
+            schedulePowerModeOff();
+        }
         return device.injectKeyEvent(action, keycode, repeat, metaState);
     }
 
@@ -223,8 +234,24 @@ public class Controller {
         return device.injectEvent(event);
     }
 
+    /**
+     * Schedule a call to set power mode to off after a small delay.
+     */
+    private static void schedulePowerModeOff() {
+        EXECUTOR.schedule(new Runnable() {
+            @Override
+            public void run() {
+                Ln.i("Forcing screen off");
+                Device.setScreenPowerMode(Device.POWER_MODE_OFF);
+            }
+        }, 200, TimeUnit.MILLISECONDS);
+    }
+
     private boolean pressBackOrTurnScreenOn() {
         int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_WAKEUP;
+        if (keepPowerModeOff && keycode == KeyEvent.KEYCODE_WAKEUP) {
+            schedulePowerModeOff();
+        }
         return device.injectKeycode(keycode);
     }
 
