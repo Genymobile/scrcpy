@@ -439,7 +439,8 @@ scrcpy -S
 
 Or by pressing `Ctrl`+`o` at any time.
 
-To turn it back on, press `Ctrl`+`Shift`+`o` (or `POWER`, `Ctrl`+`p`).
+To turn it back on, press `Ctrl`+`Shift`+`o` (or the phone's physical `POWER` button).
+Otherwise, scrcpy will do effort (read: should work) to keep the screen off.
 
 It can be useful to also prevent the device to sleep:
 
