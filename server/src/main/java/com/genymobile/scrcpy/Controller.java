@@ -166,7 +166,7 @@ public class Controller {
 
         Point point = device.getPhysicalPoint(position);
         if (point == null) {
-            // ignore event
+            Ln.w("Ignore touch event, it was generated for a different device size");
             return false;
         }
 
