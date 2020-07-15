@@ -122,7 +122,10 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_flag_version();
     test_flag_help();
     test_options();

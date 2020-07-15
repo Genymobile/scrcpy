@@ -257,7 +257,10 @@ static void test_serialize_rotate_device(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_serialize_inject_keycode();
     test_serialize_inject_text();
     test_serialize_inject_text_long();

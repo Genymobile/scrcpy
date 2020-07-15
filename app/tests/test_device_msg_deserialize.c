@@ -45,7 +45,10 @@ static void test_deserialize_clipboard_big(void) {
     device_msg_destroy(&msg);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_deserialize_clipboard();
     test_deserialize_clipboard_big();
     return 0;
