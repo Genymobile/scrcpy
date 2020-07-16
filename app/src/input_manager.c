@@ -269,6 +269,10 @@ rotate_client_right(struct screen *screen) {
 void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
+    if (is_shortcut_mod(im, SDL_GetModState())) {
+        // A shortcut must never generate text events
+        return;
+    }
     if (!im->prefer_text) {
         char c = event->text[0];
         if (isalpha(c) || c == ' ') {
