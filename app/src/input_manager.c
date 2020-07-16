@@ -326,13 +326,15 @@ input_manager_process_key(struct input_manager *im,
 
     struct controller *controller = im->controller;
 
+    SDL_Keycode keycode = event->keysym.sym;
+    bool down = event->type == SDL_KEYDOWN;
+    bool ctrl = event->keysym.mod & KMOD_CTRL;
+    bool shift = event->keysym.mod & KMOD_SHIFT;
+    bool repeat = event->repeat;
+
     // The shortcut modifier is pressed
     if (smod) {
-        SDL_Keycode keycode = event->keysym.sym;
-        bool down = event->type == SDL_KEYDOWN;
         int action = down ? ACTION_DOWN : ACTION_UP;
-        bool repeat = event->repeat;
-        bool shift = event->keysym.mod & (KMOD_LSHIFT | KMOD_RSHIFT);
         switch (keycode) {
             case SDLK_h:
                 if (control && !shift && !repeat) {
@@ -455,6 +457,12 @@ input_manager_process_key(struct input_manager *im,
         ++im->repeat;
     } else {
         im->repeat = 0;
+    }
+
+    if (ctrl && !shift && keycode == SDLK_v && down && !repeat) {
+        // Synchronize the computer clipboard to the device clipboard before
+        // sending Ctrl+v, to allow seamless copy-paste.
+        set_device_clipboard(controller, false);
     }
 
     struct control_msg msg;
