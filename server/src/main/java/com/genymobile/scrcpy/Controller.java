@@ -110,8 +110,7 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                boolean paste = (msg.getFlags() & ControlMessage.FLAGS_PASTE) != 0;
-                setClipboard(msg.getText(), paste);
+                setClipboard(msg.getText(), msg.getPaste());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
