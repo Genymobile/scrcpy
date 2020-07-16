@@ -354,7 +354,7 @@ scrcpy --fullscreen
 scrcpy -f  # short version
 ```
 
-Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
+Fullscreen can then be toggled dynamically with `MOD`+`f`.
 
 #### Rotation
 
@@ -370,17 +370,17 @@ Possibles values are:
  - `2`: 180 degrees
  - `3`: 90 degrees clockwise
 
-The rotation can also be changed dynamically with `Ctrl`+`←` _(left)_ and
-`Ctrl`+`→` _(right)_.
+The rotation can also be changed dynamically with `MOD`+`←` _(left)_ and
+`MOD`+`→` _(right)_.
 
 Note that _scrcpy_ manages 3 different rotations:
- - `Ctrl`+`r` requests the device to switch between portrait and landscape (the
+ - `MOD`+`r` requests the device to switch between portrait and landscape (the
    current running app may refuse, if it does support the requested
    orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
- - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
+ - `--rotation` (or `MOD`+`←`/`MOD`+`→`) rotates only the window content. This
    affects only the display, not the recording.
 
 
@@ -437,9 +437,9 @@ scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing `Ctrl`+`o` at any time.
+Or by pressing `MOD`+`o` at any time.
 
-To turn it back on, press `Ctrl`+`Shift`+`o` (or `POWER`, `Ctrl`+`p`).
+To turn it back on, press `MOD`+`Shift`+`o` (or `POWER`, `MOD`+`p`).
 
 It can be useful to also prevent the device to sleep:
 
@@ -494,7 +494,7 @@ scrcpy --disable-screensaver
 
 #### Rotate device screen
 
-Press `Ctrl`+`r` to switch between portrait and landscape modes.
+Press `MOD`+`r` to switch between portrait and landscape modes.
 
 Note that it rotates only if the application in foreground supports the
 requested orientation.
@@ -504,10 +504,10 @@ requested orientation.
 It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
- - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
+ - `MOD`+`c` copies the device clipboard to the computer clipboard;
+ - `MOD`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
    pastes if the device runs Android >= 7);
- - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
+ - `MOD`+`v` _pastes_ the computer clipboard as a sequence of text events (but
    breaks non-ASCII characters).
 
 Moreover, any time the Android clipboard changes, it is automatically
@@ -571,30 +571,48 @@ Also see [issue #14].
 
 ## Shortcuts
 
+In the following list, `MOD` is the shortcut modifier. By default, it's (left)
+`Alt`.
+
+It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
+`lalt`, `ralt`, `lsuper` and `rsuper`. For example:
+
+```bash
+# use RCtrl for shortcuts
+scrcpy --shortcut-mod=rctrl
+
+# use either LCtrl+LAlt or LSuper for shortcuts
+scrcpy --shortcut-mod=lctrl+lalt,lsuper
+```
+
+_[Super] is typically the "Windows" or "Cmd" key._
+
+[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+
  | Action                                      |   Shortcut
  | ------------------------------------------- |:-----------------------------
- | Switch fullscreen mode                      | `Ctrl`+`f`
- | Rotate display left                         | `Ctrl`+`←` _(left)_
- | Rotate display right                        | `Ctrl`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)        | `Ctrl`+`g`
- | Resize window to remove black borders       | `Ctrl`+`x` \| _Double-click¹_
- | Click on `HOME`                             | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                             | `Ctrl`+`b` \| _Right-click²_
- | Click on `APP_SWITCH`                       | `Ctrl`+`s`
- | Click on `MENU`                             | `Ctrl`+`m`
- | Click on `VOLUME_UP`                        | `Ctrl`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                      | `Ctrl`+`↓` _(down)_
- | Click on `POWER`                            | `Ctrl`+`p`
+ | Switch fullscreen mode                      | `MOD`+`f`
+ | Rotate display left                         | `MOD`+`←` _(left)_
+ | Rotate display right                        | `MOD`+`→` _(right)_
+ | Resize window to 1:1 (pixel-perfect)        | `MOD`+`g`
+ | Resize window to remove black borders       | `MOD`+`x` \| _Double-click¹_
+ | Click on `HOME`                             | `MOD`+`h` \| _Middle-click_
+ | Click on `BACK`                             | `MOD`+`b` \| _Right-click²_
+ | Click on `APP_SWITCH`                       | `MOD`+`s`
+ | Click on `MENU`                             | `MOD`+`m`
+ | Click on `VOLUME_UP`                        | `MOD`+`↑` _(up)_
+ | Click on `VOLUME_DOWN`                      | `MOD`+`↓` _(down)_
+ | Click on `POWER`                            | `MOD`+`p`
  | Power on                                    | _Right-click²_
- | Turn device screen off (keep mirroring)     | `Ctrl`+`o`
- | Turn device screen on                       | `Ctrl`+`Shift`+`o`
- | Rotate device screen                        | `Ctrl`+`r`
- | Expand notification panel                   | `Ctrl`+`n`
- | Collapse notification panel                 | `Ctrl`+`Shift`+`n`
- | Copy device clipboard to computer           | `Ctrl`+`c`
- | Paste computer clipboard to device          | `Ctrl`+`v`
- | Copy computer clipboard to device and paste | `Ctrl`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout)      | `Ctrl`+`i`
+ | Turn device screen off (keep mirroring)     | `MOD`+`o`
+ | Turn device screen on                       | `MOD`+`Shift`+`o`
+ | Rotate device screen                        | `MOD`+`r`
+ | Expand notification panel                   | `MOD`+`n`
+ | Collapse notification panel                 | `MOD`+`Shift`+`n`
+ | Copy device clipboard to computer           | `MOD`+`c`
+ | Paste computer clipboard to device          | `MOD`+`v`
+ | Copy computer clipboard to device and paste | `MOD`+`Shift`+`v`
+ | Enable/disable FPS counter (on stdout)      | `MOD`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._

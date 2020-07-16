@@ -49,7 +49,13 @@ static struct input_manager input_manager = {
     .video_buffer = &video_buffer,
     .screen = &screen,
     .repeat = 0,
-    .prefer_text = false, // initialized later
+
+    // initialized later
+    .prefer_text = false,
+    .sdl_shortcut_mods = {
+        .data = {0},
+        .count = 0,
+    },
 };
 
 #ifdef _WIN32
@@ -437,7 +443,8 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
-    input_manager.prefer_text = options->prefer_text;
+    input_manager_init(&input_manager, options->prefer_text,
+                       &options->shortcut_mods);
 
     ret = event_loop(options->display, options->control);
     LOGD("quit...");
