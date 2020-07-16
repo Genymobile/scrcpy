@@ -95,8 +95,8 @@ struct scrcpy_options {
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \
     }, \
     .shortcut_mods = { \
-        .data = {SC_MOD_LALT}, \
-        .count = 1, \
+        .data = {SC_MOD_LALT, SC_MOD_LCMD}, \
+        .count = 2, \
     }, \
     .max_size = DEFAULT_MAX_SIZE, \
     .bit_rate = DEFAULT_BIT_RATE, \
