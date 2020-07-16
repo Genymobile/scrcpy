@@ -501,16 +501,35 @@ requested orientation.
 
 #### Copy-paste
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+Any time the Android clipboard changes, it is automatically synchronized to the
+computer clipboard.
 
- - `MOD`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
-   pastes if the device runs Android >= 7);
- - `MOD`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+Any `Ctrl` shortcut is forwarded to the device. In particular:
+ - `Ctrl`+`c` typically copies
+ - `Ctrl`+`x` typically cuts
+ - `Ctrl`+`v` typically pastes (after computer-to-device clipboard
+   synchronization)
 
-Moreover, any time the Android clipboard changes, it is automatically
-synchronized to the computer clipboard.
+This typically works as you expect.
+
+The actual behavior depends on the active application though. For example,
+_Termux_ sends SIGINT on `Ctrl`+`c` instead, and _K-9 Mail_ composes a new
+message.
+
+To copy, cut and paste in all cases (but only supported on Android >= 7):
+ - `MOD`+`c` injects `COPY`
+ - `MOD`+`x` injects `CUT`
+ - `MOD`+`v` injects `PASTE` (after computer-to-device clipboard
+   synchronization)
+
+In addition, `MOD`+`Shift`+`v` allows to inject the computer clipboard text as a
+sequence of key events. This is useful when the component does not accept text
+pasting (for example in _Termux_), but it can break non-ASCII content.
+
+*WARNING:* Pasting the computer clipboard to the device (either via `Ctrl`+`v`
+or `MOD`+`v`) copies the content in the device clipboard. As a consequence, any
+Android application could read its content. You should avoid to paste sensitive
+content (like passwords) that way.
 
 #### Text injection preference
 
