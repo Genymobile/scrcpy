@@ -3,6 +3,7 @@
 
 #include "cli.h"
 #include "common.h"
+#include "scrcpy.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
@@ -122,6 +123,43 @@ static void test_options2(void) {
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
+static void test_parse_shortcut_mods(void) {
+    struct sc_shortcut_mods mods;
+    bool ok;
+
+    ok = sc_parse_shortcut_mods("lctrl", &mods);
+    assert(ok);
+    assert(mods.count == 1);
+    assert(mods.data[0] == SC_MOD_LCTRL);
+
+    ok = sc_parse_shortcut_mods("lctrl+lalt", &mods);
+    assert(ok);
+    assert(mods.count == 1);
+    assert(mods.data[0] == (SC_MOD_LCTRL | SC_MOD_LALT));
+
+    ok = sc_parse_shortcut_mods("rctrl,lalt", &mods);
+    assert(ok);
+    assert(mods.count == 2);
+    assert(mods.data[0] == SC_MOD_RCTRL);
+    assert(mods.data[1] == SC_MOD_LALT);
+
+    ok = sc_parse_shortcut_mods("lcmd,rcmd+lalt,lctrl+rctrl+ralt", &mods);
+    assert(ok);
+    assert(mods.count == 3);
+    assert(mods.data[0] == SC_MOD_LCMD);
+    assert(mods.data[1] == (SC_MOD_RCMD | SC_MOD_LALT));
+    assert(mods.data[2] == (SC_MOD_LCTRL | SC_MOD_RCTRL | SC_MOD_RALT));
+
+    ok = sc_parse_shortcut_mods("", &mods);
+    assert(!ok);
+
+    ok = sc_parse_shortcut_mods("lctrl+", &mods);
+    assert(!ok);
+
+    ok = sc_parse_shortcut_mods("lctrl,", &mods);
+    assert(!ok);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -130,5 +168,6 @@ int main(int argc, char *argv[]) {
     test_flag_help();
     test_options();
     test_options2();
+    test_parse_shortcut_mods();
     return 0;
 };

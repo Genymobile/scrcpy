@@ -20,6 +20,22 @@ enum sc_record_format {
     SC_RECORD_FORMAT_MKV,
 };
 
+#define SC_MAX_SHORTCUT_MODS 8
+
+enum sc_shortcut_mod {
+    SC_MOD_LCTRL = 1 << 0,
+    SC_MOD_RCTRL = 1 << 1,
+    SC_MOD_LALT = 1 << 2,
+    SC_MOD_RALT = 1 << 3,
+    SC_MOD_LCMD = 1 << 4,
+    SC_MOD_RCMD = 1 << 5,
+};
+
+struct sc_shortcut_mods {
+    unsigned data[SC_MAX_SHORTCUT_MODS];
+    unsigned count;
+};
+
 struct sc_port_range {
     uint16_t first;
     uint16_t last;
@@ -38,6 +54,7 @@ struct scrcpy_options {
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     struct sc_port_range port_range;
+    struct sc_shortcut_mods shortcut_mods;
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
@@ -76,6 +93,10 @@ struct scrcpy_options {
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \
+    }, \
+    .shortcut_mods = { \
+        .data = {SC_MOD_LALT}, \
+        .count = 1, \
     }, \
     .max_size = DEFAULT_MAX_SIZE, \
     .bit_rate = DEFAULT_BIT_RATE, \

@@ -138,6 +138,19 @@ scrcpy_print_usage(const char *arg0) {
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
         "\n"
+        "    --shortcut-mod key[+...]][,...]\n"
+        "        Specify the modifiers to use for scrcpy shortcuts. Possible\n"
+        "        keys are \"lctrl\", \"rctrl\", \"lalt\", \"ralt\", \"lcmd\"\n"
+        "        and \"rcmd\".\n"
+        "\n"
+        "        A shortcut can consist in several keys, separated by '+'.\n"
+        "        Several shortcuts can be specified, separated by ','.\n"
+        "\n"
+        "        For example, to use either LCtrl+LAlt or LCmd for scrcpy\n"
+        "        shortcuts, pass \"lctrl+lalt,lcmd\".\n"
+        "\n"
+        "        Default is \"lalt\" (left-Alt).\n"
+        "\n"
         "    -S, --turn-screen-off\n"
         "        Turn the device screen off immediately.\n"
         "\n"
@@ -185,75 +198,78 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "Shortcuts:\n"
         "\n"
-        "    Ctrl+f\n"
+        "    In the following list, MOD is the shortcut modifier. By default,\n"
+        "    it's (left) Alt, but it can be configured by --shortcut-mod.\n"
+        "\n"
+        "    MOD+f\n"
         "        Switch fullscreen mode\n"
         "\n"
-        "    Ctrl+Left\n"
+        "    MOD+Left\n"
         "        Rotate display left\n"
         "\n"
-        "    Ctrl+Right\n"
+        "    MOD+Right\n"
         "        Rotate display right\n"
         "\n"
-        "    Ctrl+g\n"
+        "    MOD+g\n"
         "        Resize window to 1:1 (pixel-perfect)\n"
         "\n"
-        "    Ctrl+x\n"
+        "    MOD+x\n"
         "    Double-click on black borders\n"
         "        Resize window to remove black borders\n"
         "\n"
-        "    Ctrl+h\n"
+        "    MOD+h\n"
         "    Middle-click\n"
         "        Click on HOME\n"
         "\n"
-        "    Ctrl+b\n"
-        "    Ctrl+Backspace\n"
+        "    MOD+b\n"
+        "    MOD+Backspace\n"
         "    Right-click (when screen is on)\n"
         "        Click on BACK\n"
         "\n"
-        "    Ctrl+s\n"
+        "    MOD+s\n"
         "        Click on APP_SWITCH\n"
         "\n"
-        "    Ctrl+m\n"
+        "    MOD+m\n"
         "        Click on MENU\n"
         "\n"
-        "    Ctrl+Up\n"
+        "    MOD+Up\n"
         "        Click on VOLUME_UP\n"
         "\n"
-        "    Ctrl+Down\n"
+        "    MOD+Down\n"
         "        Click on VOLUME_DOWN\n"
         "\n"
-        "    Ctrl+p\n"
+        "    MOD+p\n"
         "        Click on POWER (turn screen on/off)\n"
         "\n"
         "    Right-click (when screen is off)\n"
         "        Power on\n"
         "\n"
-        "    Ctrl+o\n"
+        "    MOD+o\n"
         "        Turn device screen off (keep mirroring)\n"
         "\n"
-        "    Ctrl+Shift+o\n"
+        "    MOD+Shift+o\n"
         "        Turn device screen on\n"
         "\n"
-        "    Ctrl+r\n"
+        "    MOD+r\n"
         "        Rotate device screen\n"
         "\n"
-        "    Ctrl+n\n"
+        "    MOD+n\n"
         "        Expand notification panel\n"
         "\n"
-        "    Ctrl+Shift+n\n"
+        "    MOD+Shift+n\n"
         "        Collapse notification panel\n"
         "\n"
-        "    Ctrl+c\n"
+        "    MOD+c\n"
         "        Copy device clipboard to computer\n"
         "\n"
-        "    Ctrl+v\n"
+        "    MOD+v\n"
         "        Paste computer clipboard to device\n"
         "\n"
-        "    Ctrl+Shift+v\n"
+        "    MOD+Shift+v\n"
         "        Copy computer clipboard to device (and paste if the device\n"
         "        runs Android >= 7)\n"
         "\n"
-        "    Ctrl+i\n"
+        "    MOD+i\n"
         "        Enable/disable FPS counter (print frames/second in logs)\n"
         "\n"
         "    Drag & drop APK file\n"
@@ -475,6 +491,101 @@ parse_log_level(const char *s, enum sc_log_level *log_level) {
     return false;
 }
 
+// item is a list of mod keys separated by '+' (e.g. "lctrl+lalt")
+// returns a bitwise-or of SC_MOD_* constants (or 0 on error)
+static unsigned
+parse_shortcut_mods_item(const char *item, size_t len) {
+    unsigned mod = 0;
+
+    for (;;) {
+        char *plus = strchr(item, '+');
+        // strchr() does not consider the "len" parameter, to it could find an
+        // occurrence too far in the string (there is no strnchr())
+        bool has_plus = plus && plus < item + len;
+
+        assert(!has_plus || plus > item);
+        size_t key_len = has_plus ? (size_t) (plus - item) : len;
+
+#define STREQ(literal, s, len) \
+    ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
+
+        if (STREQ("lctrl", item, key_len)) {
+            mod |= SC_MOD_LCTRL;
+        } else if (STREQ("rctrl", item, key_len)) {
+            mod |= SC_MOD_RCTRL;
+        } else if (STREQ("lalt", item, key_len)) {
+            mod |= SC_MOD_LALT;
+        } else if (STREQ("ralt", item, key_len)) {
+            mod |= SC_MOD_RALT;
+        } else if (STREQ("lcmd", item, key_len)) {
+            mod |= SC_MOD_LCMD;
+        } else if (STREQ("rcmd", item, key_len)) {
+            mod |= SC_MOD_RCMD;
+        } else {
+            LOGW("Unknown modifier key: %.*s", (int) key_len, item);
+            return 0;
+        }
+#undef STREQ
+
+        if (!has_plus) {
+            break;
+        }
+
+        item = plus + 1;
+        assert(len >= key_len + 1);
+        len -= key_len + 1;
+    }
+
+    return mod;
+}
+
+static bool
+parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
+    unsigned count = 0;
+    unsigned current = 0;
+
+    // LCtrl+LAlt or RCtrl or LCtrl+RCmd: "lctrl+lalt,rctrl,lctrl+rcmd"
+
+    for (;;) {
+        char *comma = strchr(s, ',');
+        if (comma && count == SC_MAX_SHORTCUT_MODS - 1) {
+            assert(count < SC_MAX_SHORTCUT_MODS);
+            LOGW("Too many shortcut modifiers alternatives");
+            return false;
+        }
+
+        assert(!comma || comma > s);
+        size_t limit = comma ? (size_t) (comma - s) : strlen(s);
+
+        unsigned mod = parse_shortcut_mods_item(s, limit);
+        if (!mod) {
+            LOGE("Invalid modifier keys: %.*s", (int) limit, s);
+            return false;
+        }
+
+        mods->data[current++] = mod;
+        ++count;
+
+        if (!comma) {
+            break;
+        }
+
+        s = comma + 1;
+    }
+
+    mods->count = count;
+
+    return true;
+}
+
+#ifdef SC_TEST
+// expose the function to unit-tests
+bool
+sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
+    return parse_shortcut_mods(s, mods);
+}
+#endif
+
 static bool
 parse_record_format(const char *optarg, enum sc_record_format *format) {
     if (!strcmp(optarg, "mp4")) {
@@ -526,6 +637,7 @@ guess_record_format(const char *filename) {
 #define OPT_CODEC_OPTIONS          1018
 #define OPT_FORCE_ADB_FORWARD      1019
 #define OPT_DISABLE_SCREENSAVER    1020
+#define OPT_SHORTCUT_MOD           1021
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -558,6 +670,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
         {"serial",                 required_argument, NULL, 's'},
+        {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
         {"show-touches",           no_argument,       NULL, 't'},
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
@@ -720,6 +833,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_DISABLE_SCREENSAVER:
                 opts->disable_screensaver = true;
+                break;
+            case OPT_SHORTCUT_MOD:
+                if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr

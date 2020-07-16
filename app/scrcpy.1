@@ -150,6 +150,16 @@ Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each incre
 The device serial number. Mandatory only if several devices are connected to adb.
 
 .TP
+.BI "\-\-shortcut\-mod " key[+...]][,...]
+Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lcmd" and "rcmd".
+
+A shortcut can consist in several keys, separated by '+'. Several shortcuts can be specified, separated by ','.
+
+For example, to use either LCtrl+LAlt or LCmd for scrcpy shortcuts, pass "lctrl+lalt,lcmd".
+
+Default is "lalt" (left-Alt).
+
+.TP
 .B \-S, \-\-turn\-screen\-off
 Turn the device screen off immediately.
 
@@ -207,52 +217,55 @@ Default is 0 (automatic).\n
 
 .SH SHORTCUTS
 
+In the following list, MOD is the shortcut modifier. By default, it's (left)
+Alt, but it can be configured by \-\-shortcut-mod.
+
 .TP
-.B Ctrl+f
+.B MOD+f
 Switch fullscreen mode
 
 .TP
-.B Ctrl+Left
+.B MOD+Left
 Rotate display left
 
 .TP
-.B Ctrl+Right
+.B MOD+Right
 Rotate display right
 
 .TP
-.B Ctrl+g
+.B MOD+g
 Resize window to 1:1 (pixel\-perfect)
 
 .TP
-.B Ctrl+x, Double\-click on black borders
+.B MOD+x, Double\-click on black borders
 Resize window to remove black borders
 
 .TP
-.B Ctrl+h, Home, Middle\-click
+.B MOD+h, Home, Middle\-click
 Click on HOME
 
 .TP
-.B Ctrl+b, Ctrl+Backspace, Right\-click (when screen is on)
+.B MOD+b, MOD+Backspace, Right\-click (when screen is on)
 Click on BACK
 
 .TP
-.B Ctrl+s
+.B MOD+s
 Click on APP_SWITCH
 
 .TP
-.B Ctrl+m
+.B MOD+m
 Click on MENU
 
 .TP
-.B Ctrl+Up
+.B MOD+Up
 Click on VOLUME_UP
 
 .TP
-.B Ctrl+Down
+.B MOD+Down
 Click on VOLUME_DOWN
 
 .TP
-.B Ctrl+p
+.B MOD+p
 Click on POWER (turn screen on/off)
 
 .TP
@@ -260,39 +273,39 @@ Click on POWER (turn screen on/off)
 Turn screen on
 
 .TP
-.B Ctrl+o
+.B MOD+o
 Turn device screen off (keep mirroring)
 
 .TP
-.B Ctrl+Shift+o
+.B MOD+Shift+o
 Turn device screen on
 
 .TP
-.B Ctrl+r
+.B MOD+r
 Rotate device screen
 
 .TP
-.B Ctrl+n
+.B MOD+n
 Expand notification panel
 
 .TP
-.B Ctrl+Shift+n
+.B MOD+Shift+n
 Collapse notification panel
 
 .TP
-.B Ctrl+c
+.B MOD+c
 Copy device clipboard to computer
 
 .TP
-.B Ctrl+v
+.B MOD+v
 Paste computer clipboard to device
 
 .TP
-.B Ctrl+Shift+v
+.B MOD+Shift+v
 Copy computer clipboard to device (and paste if the device runs Android >= 7)
 
 .TP
-.B Ctrl+i
+.B MOD+i
 Enable/disable FPS counter (print frames/second in logs)
 
 .TP

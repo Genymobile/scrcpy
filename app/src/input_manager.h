@@ -3,12 +3,15 @@
 
 #include <stdbool.h>
 
+#include <SDL2/SDL.h>
+
 #include "config.h"
 #include "common.h"
 #include "controller.h"
 #include "fps_counter.h"
-#include "video_buffer.h"
+#include "scrcpy.h"
 #include "screen.h"
+#include "video_buffer.h"
 
 struct input_manager {
     struct controller *controller;
@@ -20,7 +23,16 @@ struct input_manager {
     unsigned repeat;
 
     bool prefer_text;
+
+    struct {
+        unsigned data[SC_MAX_SHORTCUT_MODS];
+        unsigned count;
+    } sdl_shortcut_mods;
 };
+
+void
+input_manager_init(struct input_manager *im, bool prefer_text,
+                   const struct sc_shortcut_mods *shortcut_mods);
 
 void
 input_manager_process_text_input(struct input_manager *im,
