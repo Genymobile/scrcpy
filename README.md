@@ -572,7 +572,7 @@ Also see [issue #14].
 ## Shortcuts
 
 In the following list, `MOD` is the shortcut modifier. By default, it's (left)
-`Alt`.
+`Alt` or (left) `Super`.
 
 It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
 `lalt`, `ralt`, `lsuper` and `rsuper`. For example:
