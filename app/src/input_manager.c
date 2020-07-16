@@ -129,6 +129,16 @@ action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
+static inline void
+action_copy(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_COPY, actions, "COPY");
+}
+
+static inline void
+action_cut(struct controller *controller, int actions) {
+    send_keycode(controller, AKEYCODE_CUT, actions, "CUT");
+}
+
 // turn the screen on if it was off, press BACK otherwise
 static void
 press_back_or_turn_screen_on(struct controller *controller) {
@@ -380,6 +390,16 @@ input_manager_process_key(struct input_manager *im,
             case SDLK_RIGHT:
                 if (!shift && !repeat && down) {
                     rotate_client_right(im->screen);
+                }
+                return;
+            case SDLK_c:
+                if (control && !shift && !repeat) {
+                    action_copy(controller, action);
+                }
+                return;
+            case SDLK_x:
+                if (control && !shift && !repeat) {
+                    action_cut(controller, action);
                 }
                 return;
             case SDLK_v:

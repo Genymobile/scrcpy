@@ -604,12 +604,15 @@ scrcpy --shortcut-mod=lctrl+lalt,lcmd
  | Rotate device screen                        | `MOD`+`r`
  | Expand notification panel                   | `MOD`+`n`
  | Collapse notification panel                 | `MOD`+`Shift`+`n`
+ | Copy to clipboard³                          | `MOD`+`c`
+ | Cut to clipboard³                           | `MOD`+`x`
  | Paste computer clipboard to device          | `MOD`+`v`
  | Copy computer clipboard to device and paste | `MOD`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `MOD`+`i`
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._
+_³Only on Android >= 7._
 
 
 ## Custom paths
