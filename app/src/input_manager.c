@@ -368,22 +368,22 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
             case SDLK_f:
-                if (!shift && cmd && !repeat && down) {
+                if (cmd && !shift && !repeat && down) {
                     screen_switch_fullscreen(im->screen);
                 }
                 return;
             case SDLK_x:
-                if (!shift && cmd && !repeat && down) {
+                if (cmd && !shift && !repeat && down) {
                     screen_resize_to_fit(im->screen);
                 }
                 return;
             case SDLK_g:
-                if (!shift && cmd && !repeat && down) {
+                if (cmd && !shift && !repeat && down) {
                     screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
             case SDLK_i:
-                if (!shift && cmd && !repeat && down) {
+                if (cmd && !shift && !repeat && down) {
                     struct fps_counter *fps_counter =
                         im->video_buffer->fps_counter;
                     switch_fps_counter_state(fps_counter);
