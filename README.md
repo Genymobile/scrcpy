@@ -610,8 +610,8 @@ _[Super] is typically the "Windows" or "Cmd" key._
  | Collapse notification panel                 | `MOD`+`Shift`+`n`
  | Copy to clipboard³                          | `MOD`+`c`
  | Cut to clipboard³                           | `MOD`+`x`
- | Paste computer clipboard to device          | `MOD`+`v`
- | Copy computer clipboard to device and paste | `MOD`+`Shift`+`v`
+ | Synchronize clipboards and paste³           | `MOD`+`v`
+ | Inject computer clipboard text              | `MOD`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `MOD`+`i`
 
 _¹Double-click on black borders to remove them._  
