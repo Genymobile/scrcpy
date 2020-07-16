@@ -504,7 +504,6 @@ requested orientation.
 It is possible to synchronize clipboards between the computer and the device, in
 both directions:
 
- - `MOD`+`c` copies the device clipboard to the computer clipboard;
  - `MOD`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
    pastes if the device runs Android >= 7);
  - `MOD`+`v` _pastes_ the computer clipboard as a sequence of text events (but
@@ -605,7 +604,6 @@ scrcpy --shortcut-mod=lctrl+lalt,lcmd
  | Rotate device screen                        | `MOD`+`r`
  | Expand notification panel                   | `MOD`+`n`
  | Collapse notification panel                 | `MOD`+`Shift`+`n`
- | Copy device clipboard to computer           | `MOD`+`c`
  | Paste computer clipboard to device          | `MOD`+`v`
  | Copy computer clipboard to device and paste | `MOD`+`Shift`+`v`
  | Enable/disable FPS counter (on stdout)      | `MOD`+`i`

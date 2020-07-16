@@ -161,16 +161,6 @@ collapse_notification_panel(struct controller *controller) {
 }
 
 static void
-request_device_clipboard(struct controller *controller) {
-    struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
-
-    if (!controller_push_msg(controller, &msg)) {
-        LOGW("Could not request device clipboard");
-    }
-}
-
-static void
 set_device_clipboard(struct controller *controller, bool paste) {
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -390,11 +380,6 @@ input_manager_process_key(struct input_manager *im,
             case SDLK_RIGHT:
                 if (!shift && !repeat && down) {
                     rotate_client_right(im->screen);
-                }
-                return;
-            case SDLK_c:
-                if (control && !shift && !repeat && down) {
-                    request_device_clipboard(controller);
                 }
                 return;
             case SDLK_v:
