@@ -221,6 +221,16 @@ public final class Device {
         if (clipboardManager == null) {
             return false;
         }
+
+        String currentClipboard = getClipboardText();
+        if (currentClipboard == null || currentClipboard.equals(text)) {
+            // The clipboard already contains the requested text.
+            // Since pasting text from the computer involves setting the device clipboard, it could be set twice on a copy-paste. This would cause
+            // the clipboard listeners to be notified twice, and that would flood the Android keyboard clipboard history. To workaround this
+            // problem, do not explicitly set the clipboard text if it already contains the expected content.
+            return false;
+        }
+
         isSettingClipboard.set(true);
         boolean ok = clipboardManager.setText(text);
         isSettingClipboard.set(false);
