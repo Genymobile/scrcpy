@@ -25,10 +25,19 @@ receiver_destroy(struct receiver *receiver) {
 static void
 process_msg(struct device_msg *msg) {
     switch (msg->type) {
-        case DEVICE_MSG_TYPE_CLIPBOARD:
+        case DEVICE_MSG_TYPE_CLIPBOARD: {
+            char *current = SDL_GetClipboardText();
+            bool same = current && !strcmp(current, msg->clipboard.text);
+            SDL_free(current);
+            if (same) {
+                LOGD("Computer clipboard unchanged");
+                return;
+            }
+
             LOGI("Device clipboard copied");
             SDL_SetClipboardText(msg->clipboard.text);
             break;
+        }
     }
 }
 
