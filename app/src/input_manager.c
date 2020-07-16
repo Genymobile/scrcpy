@@ -398,7 +398,7 @@ input_manager_process_key(struct input_manager *im,
                     screen_switch_fullscreen(im->screen);
                 }
                 return;
-            case SDLK_x:
+            case SDLK_w:
                 if (!shift && !repeat && down) {
                     screen_resize_to_fit(im->screen);
                 }

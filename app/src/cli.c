@@ -214,7 +214,7 @@ scrcpy_print_usage(const char *arg0) {
         "    MOD+g\n"
         "        Resize window to 1:1 (pixel-perfect)\n"
         "\n"
-        "    MOD+x\n"
+        "    MOD+w\n"
         "    Double-click on black borders\n"
         "        Resize window to remove black borders\n"
         "\n"

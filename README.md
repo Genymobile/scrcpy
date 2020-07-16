@@ -590,7 +590,7 @@ scrcpy --shortcut-mod=lctrl+lalt,lcmd
  | Rotate display left                         | `MOD`+`←` _(left)_
  | Rotate display right                        | `MOD`+`→` _(right)_
  | Resize window to 1:1 (pixel-perfect)        | `MOD`+`g`
- | Resize window to remove black borders       | `MOD`+`x` \| _Double-click¹_
+ | Resize window to remove black borders       | `MOD`+`w` \| _Double-click¹_
  | Click on `HOME`                             | `MOD`+`h` \| _Middle-click_
  | Click on `BACK`                             | `MOD`+`b` \| _Right-click²_
  | Click on `APP_SWITCH`                       | `MOD`+`s`
