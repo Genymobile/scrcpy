@@ -637,6 +637,9 @@ _¹Double-click on black borders to remove them._
 _²Right-click turns the screen on if it was off, presses BACK otherwise._  
 _³Only on Android >= 7._
 
+All `Ctrl`+_key_ shortcuts are forwarded to the device, so they are handled by
+the active application.
+
 
 ## Custom paths
 
