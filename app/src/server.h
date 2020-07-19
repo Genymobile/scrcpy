@@ -55,6 +55,7 @@ struct server_params {
     int8_t lock_video_orientation;
     bool control;
     uint16_t display_id;
+    bool keep_screen_off;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;

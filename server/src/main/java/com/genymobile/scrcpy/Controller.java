@@ -28,13 +28,15 @@ public class Controller {
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
-    private final Timer keepScreenOffTimer = new Timer("KeepScreenOff", true);
+    private final Timer keepScreenOffTimer;
 
-    public Controller(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection, boolean keepScreenOff) {
         this.device = device;
         this.connection = connection;
         initPointers();
         sender = new DeviceMessageSender(connection);
+
+        keepScreenOffTimer = keepScreenOff ? new Timer("KeepScreenOff", true) : null;
     }
 
     private void initPointers() {
@@ -241,7 +243,7 @@ public class Controller {
      * Tested on a low end Android 6 device
      */
     public void scheduleScreenOff() {
-        if (screenStayOff) {
+        if (keepScreenOffTimer != null && screenStayOff) {
             keepScreenOffTimer.schedule(
                     new TimerTask() {
                         @Override

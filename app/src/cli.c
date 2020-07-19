@@ -566,6 +566,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"show-touches",           no_argument,       NULL, 't'},
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
+        {"keep-screen-off",        no_argument,       NULL, 'S'},
         {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
         {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
@@ -649,6 +650,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->serial = optarg;
                 break;
             case 'S':
+                opts->keep_screen_off = opts->turn_screen_off;
                 opts->turn_screen_off = true;
                 break;
             case 't':
