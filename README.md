@@ -558,6 +558,18 @@ scrcpy --prefer-text
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
+#### Key repeat
+
+By default, holding a key down generates repeated key events. This can cause
+performance problems in some games, where these events are useless anyway.
+
+To avoid forwarding repeated key events:
+
+```bash
+scrcpy --no-key-repeat
+```
+
+
 ### File drop
 
 #### Install APK

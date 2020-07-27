@@ -92,6 +92,9 @@ scrcpy_print_usage(const char *arg0) {
         "        mipmaps are automatically generated to improve downscaling\n"
         "        quality. This option disables the generation of mipmaps.\n"
         "\n"
+        "    --no-key-repeat\n"
+        "        Do not forward repeated key events when a key is held down.\n"
+        "\n"
         "    -p, --port port[:port]\n"
         "        Set the TCP port (range) used by the client to listen.\n"
         "        Default is %d:%d.\n"
@@ -642,6 +645,7 @@ guess_record_format(const char *filename) {
 #define OPT_FORCE_ADB_FORWARD      1019
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
+#define OPT_NO_KEY_REPEAT          1022
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -664,6 +668,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"no-control",             no_argument,       NULL, 'n'},
         {"no-display",             no_argument,       NULL, 'N'},
         {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
+        {"no-key-repeat",          no_argument,       NULL, OPT_NO_KEY_REPEAT},
         {"port",                   required_argument, NULL, 'p'},
         {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
@@ -828,6 +833,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_KEY_REPEAT:
+                opts->forward_key_repeat = false;
                 break;
             case OPT_CODEC_OPTIONS:
                 opts->codec_options = optarg;
