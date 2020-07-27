@@ -58,6 +58,7 @@ struct scrcpy_options {
     bool prefer_text;
     bool window_borderless;
     bool mipmaps;
+    bool ignore_key_repeat;
     bool stay_awake;
     bool force_adb_forward;
     bool disable_screensaver;

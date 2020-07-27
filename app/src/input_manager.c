@@ -256,7 +256,10 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 void
 input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event,
-                          bool control) {
+                          const struct scrcpy_options *options) {
+
+
+    bool control = options->control;                          
     // control: indicates the state of the command-line option --no-control
     // ctrl: the Ctrl key
 
@@ -408,7 +411,7 @@ input_manager_process_key(struct input_manager *im,
         return;
     }
 
-    if (!control) {
+    if (!control || (options->ignore_key_repeat && event->repeat)) {
         return;
     }
 

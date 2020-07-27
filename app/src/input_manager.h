@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+#include "scrcpy.h"
 #include "config.h"
 #include "common.h"
 #include "controller.h"
@@ -29,7 +30,7 @@ input_manager_process_text_input(struct input_manager *im,
 void
 input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event,
-                          bool control);
+                          const struct scrcpy_options *options);
 
 void
 input_manager_process_mouse_motion(struct input_manager *im,

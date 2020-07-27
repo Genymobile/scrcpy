@@ -531,6 +531,7 @@ guess_record_format(const char *filename) {
 #define OPT_CODEC_OPTIONS          1018
 #define OPT_FORCE_ADB_FORWARD      1019
 #define OPT_DISABLE_SCREENSAVER    1020
+#define OPT_NO_REPEAT              1021
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -553,6 +554,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"no-control",             no_argument,       NULL, 'n'},
         {"no-display",             no_argument,       NULL, 'N'},
         {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
+        {"no-repeat",              no_argument,       NULL, OPT_NO_REPEAT},
         {"port",                   required_argument, NULL, 'p'},
         {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
@@ -573,8 +575,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-y",               required_argument, NULL, OPT_WINDOW_Y},
         {"window-width",           required_argument, NULL, OPT_WINDOW_WIDTH},
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
-        {"window-borderless",      no_argument,       NULL,
-                                                  OPT_WINDOW_BORDERLESS},
+        {"window-borderless",      no_argument,       NULL, OPT_WINDOW_BORDERLESS},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -716,6 +717,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_REPEAT:
+                opts->ignore_key_repeat = true;
                 break;
             case OPT_CODEC_OPTIONS:
                 opts->codec_options = optarg;

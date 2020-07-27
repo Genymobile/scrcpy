@@ -164,7 +164,8 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event, bool control) {
+handle_event(SDL_Event *event, const struct scrcpy_options *options) {
+    bool control = options->control;
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -195,7 +196,7 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
-            input_manager_process_key(&input_manager, &event->key, control);
+            input_manager_process_key(&input_manager, &event->key, options);
             break;
         case SDL_MOUSEMOTION:
             if (!control) {
@@ -239,7 +240,8 @@ handle_event(SDL_Event *event, bool control) {
 }
 
 static bool
-event_loop(bool display, bool control) {
+event_loop(const struct scrcpy_options *options) {
+    bool display = options->display;
     (void) display;
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (display) {
@@ -248,7 +250,7 @@ event_loop(bool display, bool control) {
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(&event, control);
+        enum event_result result = handle_event(&event, options);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
@@ -439,7 +441,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     input_manager.prefer_text = options->prefer_text;
 
-    ret = event_loop(options->display, options->control);
+    ret = event_loop(options);
     LOGD("quit...");
 
     screen_destroy(&screen);
