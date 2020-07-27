@@ -23,6 +23,7 @@ struct input_manager {
     unsigned repeat;
 
     bool control;
+    bool forward_key_repeat;
     bool prefer_text;
 
     struct {

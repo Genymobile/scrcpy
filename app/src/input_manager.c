@@ -58,6 +58,7 @@ input_manager_init(struct input_manager *im,
                    const struct scrcpy_options *options)
 {
     im->control = options->control;
+    im->forward_key_repeat = options->forward_key_repeat;
     im->prefer_text = options->prefer_text;
 
     const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
@@ -461,6 +462,9 @@ input_manager_process_key(struct input_manager *im,
     }
 
     if (event->repeat) {
+        if (!im->forward_key_repeat) {
+            return;
+        }
         ++im->repeat;
     } else {
         im->repeat = 0;
