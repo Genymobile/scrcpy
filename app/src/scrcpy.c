@@ -170,7 +170,7 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event, bool control) {
+handle_event(SDL_Event *event, const struct scrcpy_options *options) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -192,7 +192,7 @@ handle_event(SDL_Event *event, bool control) {
             screen_handle_window_event(&screen, &event->window);
             break;
         case SDL_TEXTINPUT:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_text_input(&input_manager, &event->text);
@@ -204,13 +204,13 @@ handle_event(SDL_Event *event, bool control) {
             input_manager_process_key(&input_manager, &event->key);
             break;
         case SDL_MOUSEMOTION:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_mouse_motion(&input_manager, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_mouse_wheel(&input_manager, &event->wheel);
@@ -227,7 +227,7 @@ handle_event(SDL_Event *event, bool control) {
             input_manager_process_touch(&input_manager, &event->tfinger);
             break;
         case SDL_DROPFILE: {
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             file_handler_action_t action;
@@ -244,16 +244,15 @@ handle_event(SDL_Event *event, bool control) {
 }
 
 static bool
-event_loop(bool display, bool control) {
-    (void) display;
+event_loop(const struct scrcpy_options *options) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
-    if (display) {
+    if (options->display) {
         SDL_AddEventWatch(event_watcher, NULL);
     }
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(&event, control);
+        enum event_result result = handle_event(&event, options);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
@@ -444,7 +443,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     input_manager_init(&input_manager, options);
 
-    ret = event_loop(options->display, options->control);
+    ret = event_loop(options);
     LOGD("quit...");
 
     screen_destroy(&screen);
