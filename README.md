@@ -1,5 +1,7 @@
 # scrcpy (v1.15.1)
 
+[Read in another language](#translations)
+
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
@@ -734,3 +736,13 @@ Read the [developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+## Translations
+
+This README is available in other languages:
+
+- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
+- [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
+
+Only this README file is guaranteed to be up-to-date.
