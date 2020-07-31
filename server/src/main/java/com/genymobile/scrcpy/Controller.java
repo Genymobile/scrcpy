@@ -252,7 +252,7 @@ public class Controller {
                             Device.setScreenPowerMode(Device.POWER_MODE_OFF);
                         }
                     },
-                    100);
+                    200);
         }
     }
 
