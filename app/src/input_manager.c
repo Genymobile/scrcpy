@@ -54,11 +54,13 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 }
 
 void
-input_manager_init(struct input_manager *im, bool prefer_text,
-                   const struct sc_shortcut_mods *shortcut_mods)
+input_manager_init(struct input_manager *im,
+                   const struct scrcpy_options *options)
 {
-    im->prefer_text = prefer_text;
+    im->control = options->control;
+    im->prefer_text = options->prefer_text;
 
+    const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
     assert(shortcut_mods->count);
     assert(shortcut_mods->count < SC_MAX_SHORTCUT_MODS);
     for (unsigned i = 0; i < shortcut_mods->count; ++i) {
@@ -318,9 +320,9 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 
 void
 input_manager_process_key(struct input_manager *im,
-                          const SDL_KeyboardEvent *event,
-                          bool control) {
+                          const SDL_KeyboardEvent *event) {
     // control: indicates the state of the command-line option --no-control
+    bool control = im->control;
 
     bool smod = is_shortcut_mod(im, event->keysym.mod);
 
@@ -573,8 +575,9 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
 
 void
 input_manager_process_mouse_button(struct input_manager *im,
-                                   const SDL_MouseButtonEvent *event,
-                                   bool control) {
+                                   const SDL_MouseButtonEvent *event) {
+    bool control = im->control;
+
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
         return;

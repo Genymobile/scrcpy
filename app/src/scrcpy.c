@@ -201,7 +201,7 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
-            input_manager_process_key(&input_manager, &event->key, control);
+            input_manager_process_key(&input_manager, &event->key);
             break;
         case SDL_MOUSEMOTION:
             if (!control) {
@@ -219,8 +219,7 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_MOUSEBUTTONUP:
             // some mouse events do not interact with the device, so process
             // the event even if control is disabled
-            input_manager_process_mouse_button(&input_manager, &event->button,
-                                               control);
+            input_manager_process_mouse_button(&input_manager, &event->button);
             break;
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
@@ -443,8 +442,7 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
-    input_manager_init(&input_manager, options->prefer_text,
-                       &options->shortcut_mods);
+    input_manager_init(&input_manager, options);
 
     ret = event_loop(options->display, options->control);
     LOGD("quit...");
