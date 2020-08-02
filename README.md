@@ -354,7 +354,7 @@ scrcpy --fullscreen
 scrcpy -f  # short version
 ```
 
-Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
+Fullscreen can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>.
 
 #### Rotation
 
@@ -370,18 +370,19 @@ Possibles values are:
  - `2`: 180 degrees
  - `3`: 90 degrees clockwise
 
-The rotation can also be changed dynamically with `Ctrl`+`←` _(left)_ and
-`Ctrl`+`→` _(right)_.
+The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
+_(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
 
 Note that _scrcpy_ manages 3 different rotations:
- - `Ctrl`+`r` requests the device to switch between portrait and landscape (the
-   current running app may refuse, if it does support the requested
-   orientation).
+- <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait and
+  landscape (the current running app may refuse, if it does support the
+  requested orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
- - `--rotation` (or `Ctrl`+`←`/`Ctrl`+`→`) rotates only the window content. This
-   affects only the display, not the recording.
+ - `--rotation` (or <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
+   rotates only the window content. This affects only the display, not the
+   recording.
 
 
 ### Other mirroring options
@@ -437,10 +438,12 @@ scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing `Ctrl`+`o` at any time.
+Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time.
 
-To turn it back on, press `Ctrl`+`Shift`+`o` (or the phone's physical `POWER` button).
+To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd> (or 
+the phone's physical `POWER` button).
 Otherwise, scrcpy will do effort (read: should work) to keep the screen off.
+
 
 It can be useful to also prevent the device to sleep:
 
@@ -495,24 +498,45 @@ scrcpy --disable-screensaver
 
 #### Rotate device screen
 
-Press `Ctrl`+`r` to switch between portrait and landscape modes.
+Press <kbd>MOD</kbd>+<kbd>r</kbd> to switch between portrait and landscape
+modes.
 
 Note that it rotates only if the application in foreground supports the
 requested orientation.
 
 #### Copy-paste
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+Any time the Android clipboard changes, it is automatically synchronized to the
+computer clipboard.
 
- - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard (and
-   pastes if the device runs Android >= 7);
- - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+Any <kbd>Ctrl</kbd> shortcut is forwarded to the device. In particular:
+ - <kbd>Ctrl</kbd>+<kbd>c</kbd> typically copies
+ - <kbd>Ctrl</kbd>+<kbd>x</kbd> typically cuts
+ - <kbd>Ctrl</kbd>+<kbd>v</kbd> typically pastes (after computer-to-device
+   clipboard synchronization)
 
-Moreover, any time the Android clipboard changes, it is automatically
-synchronized to the computer clipboard.
+This typically works as you expect.
+
+The actual behavior depends on the active application though. For example,
+_Termux_ sends SIGINT on <kbd>Ctrl</kbd>+<kbd>c</kbd> instead, and _K-9 Mail_
+composes a new message.
+
+To copy, cut and paste in such cases (but only supported on Android >= 7):
+ - <kbd>MOD</kbd>+<kbd>c</kbd> injects `COPY`
+ - <kbd>MOD</kbd>+<kbd>x</kbd> injects `CUT`
+ - <kbd>MOD</kbd>+<kbd>v</kbd> injects `PASTE` (after computer-to-device
+   clipboard synchronization)
+
+In addition, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> allows to inject the
+computer clipboard text as a sequence of key events. This is useful when the
+component does not accept text pasting (for example in _Termux_), but it can
+break non-ASCII content.
+
+**WARNING:** Pasting the computer clipboard to the device (either via
+<kbd>Ctrl</kbd>+<kbd>v</kbd> or <kbd>MOD</kbd>+<kbd>v</kbd>) copies the content
+into the device clipboard. As a consequence, any Android application could read
+its content. You should avoid to paste sensitive content (like passwords) that
+way.
 
 #### Text injection preference
 
@@ -572,33 +596,56 @@ Also see [issue #14].
 
 ## Shortcuts
 
- | Action                                      |   Shortcut                    |   Shortcut (macOS)
- | ------------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                      | `Ctrl`+`f`                    | `Cmd`+`f`
- | Rotate display left                         | `Ctrl`+`←` _(left)_           | `Cmd`+`←` _(left)_
- | Rotate display right                        | `Ctrl`+`→` _(right)_          | `Cmd`+`→` _(right)_
- | Resize window to 1:1 (pixel-perfect)        | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders       | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                             | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                             | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                       | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                             | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                        | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                      | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                            | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                                    | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)     | `Ctrl`+`o`                    | `Cmd`+`o`
- | Turn device screen on                       | `Ctrl`+`Shift`+`o`            | `Cmd`+`Shift`+`o`
- | Rotate device screen                        | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel                   | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel                 | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer           | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device          | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device and paste | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout)      | `Ctrl`+`i`                    | `Cmd`+`i`
+In the following list, <kbd>MOD</kbd> is the shortcut modifier. By default, it's
+(left) <kbd>Alt</kbd> or (left) <kbd>Super</kbd>.
+
+It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
+`lalt`, `ralt`, `lsuper` and `rsuper`. For example:
+
+```bash
+# use RCtrl for shortcuts
+scrcpy --shortcut-mod=rctrl
+
+# use either LCtrl+LAlt or LSuper for shortcuts
+scrcpy --shortcut-mod=lctrl+lalt,lsuper
+```
+
+_<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
+
+[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+
+ | Action                                      |   Shortcut
+ | ------------------------------------------- |:-----------------------------
+ | Switch fullscreen mode                      | <kbd>MOD</kbd>+<kbd>f</kbd>
+ | Rotate display left                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
+ | Rotate display right                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
+ | Resize window to 1:1 (pixel-perfect)        | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-click¹_
+ | Click on `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Middle-click_
+ | Click on `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Right-click²_
+ | Click on `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | Click on `MENU` (unlock screen)             | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
+ | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
+ | Click on `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | Power on                                    | _Right-click²_
+ | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | Turn device screen on                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
+ | Rotate device screen                        | <kbd>MOD</kbd>+<kbd>r</kbd>
+ | Expand notification panel                   | <kbd>MOD</kbd>+<kbd>n</kbd>
+ | Collapse notification panel                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copy to clipboard³                          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Cut to clipboard³                           | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Synchronize clipboards and paste³           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
 
 _¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._
+_²Right-click turns the screen on if it was off, presses BACK otherwise._  
+_³Only on Android >= 7._
+
+All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
+handled by the active application.
 
 
 ## Custom paths

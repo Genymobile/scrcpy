@@ -154,12 +154,12 @@ public class ControlMessageReader {
         if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
             return null;
         }
-        boolean parse = buffer.get() != 0;
+        boolean paste = buffer.get() != 0;
         String text = parseString();
         if (text == null) {
             return null;
         }
-        return ControlMessage.createSetClipboard(text, parse);
+        return ControlMessage.createSetClipboard(text, paste);
     }
 
     private ControlMessage parseSetScreenPowerMode() {
