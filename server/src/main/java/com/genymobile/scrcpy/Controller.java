@@ -8,12 +8,15 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Controller {
 
     private static final int DEVICE_ID_VIRTUAL = -1;
+
+    private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private final Device device;
     private final DesktopConnection connection;
@@ -27,7 +30,6 @@ public class Controller {
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
     private boolean screenStayOff;
-    private static final Timer keepScreenOffTimer = new Timer("KeepScreenOff", true);
 
     public Controller(Device device, DesktopConnection connection) {
         this.device = device;
@@ -236,13 +238,13 @@ public class Controller {
      * Schedule a call to turn the screen off after a small delay.
      */
     private static void scheduleScreenOff() {
-        keepScreenOffTimer.schedule(new TimerTask() {
+        EXECUTOR.schedule(new Runnable() {
             @Override
             public void run() {
                 Ln.i("Forcing screen off");
                 Device.setScreenPowerMode(Device.POWER_MODE_OFF);
             }
-        }, 200);
+        }, 200, TimeUnit.MILLISECONDS);
     }
 
     private boolean pressBackOrTurnScreenOn() {
