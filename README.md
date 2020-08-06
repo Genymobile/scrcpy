@@ -49,6 +49,11 @@ A [Snap] package is available: [`scrcpy`][snap-link].
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
+For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
+
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
+
 For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
@@ -301,7 +306,7 @@ ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
 From another terminal:
 
 ```bash
-scrcpy --force-adb-forwrad
+scrcpy --force-adb-forward
 ```
 
 
@@ -447,7 +452,7 @@ On Android, the `POWER` button always turns the screen on. For convenience, if
 will force to turn the screen off after a small delay (on a best effort basis).
 The physical `POWER` button will still cause the screen to be turned on.
 
-It can be useful to also prevent the device to sleep:
+It can also be useful to prevent the device from sleeping:
 
 ```bash
 scrcpy --turn-screen-off --stay-awake
@@ -600,11 +605,11 @@ scrcpy --push-target /sdcard/foo/bar/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
+Audio is not forwarded by _scrcpy_. Use [sndcpy].
 
 Also see [issue #14].
 
-[USBaudio]: https://github.com/rom1v/usbaudio
+[sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 

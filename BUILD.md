@@ -176,8 +176,8 @@ Additionally, if you want to build the server, install Java 8 from Caskroom, and
 make it avaliable from the `PATH`:
 
 ```bash
-brew tap caskroom/versions
-brew cask install java8
+brew tap homebrew/cask-versions
+brew cask install adoptopenjdk/openjdk/adoptopenjdk8
 export JAVA_HOME="$(/usr/libexec/java_home --version 1.8)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
@@ -190,12 +190,17 @@ See [pierlon/scrcpy-docker](https://github.com/pierlon/scrcpy-docker).
 ## Common steps
 
 If you want to build the server, install the [Android SDK] (_Android Studio_),
-and set `ANDROID_HOME` to its directory. For example:
+and set `ANDROID_SDK_ROOT` to its directory. For example:
 
 [Android SDK]: https://developer.android.com/studio/index.html
 
 ```bash
-export ANDROID_HOME=~/android/sdk
+# Linux
+export ANDROID_SDK_ROOT=~/Android/Sdk
+# Mac
+export ANDROID_SDK_ROOT=~/Library/Android/sdk
+# Windows
+set ANDROID_SDK_ROOT=%LOCALAPPDATA%\Android\sdk
 ```
 
 If you don't want to build the server, use the [prebuilt server].
