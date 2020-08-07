@@ -4,6 +4,17 @@ This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
+Translations available:
+- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.14][README zh-Hant]
+- [한국어 (Korean, `ko`) - v1.11][README ko]
+- [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1][README pt-BR]
+
+> Only this README file is guaranteed to be up-to-date.
+
+[README zh-Hant]: README.zh-Hant.md
+[README ko]: README.ko.md
+[README pt-BR]: README.pt-br.md
+
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 It focuses on:
