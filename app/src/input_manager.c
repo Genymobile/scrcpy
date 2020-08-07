@@ -80,6 +80,7 @@ send_keycode(struct controller *controller, enum android_keycode keycode,
     msg.type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
     msg.inject_keycode.keycode = keycode;
     msg.inject_keycode.metastate = 0;
+    msg.inject_keycode.repeat = 0;
 
     if (actions & ACTION_DOWN) {
         msg.inject_keycode.action = AKEY_EVENT_ACTION_DOWN;
