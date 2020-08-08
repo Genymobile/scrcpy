@@ -34,6 +34,7 @@ control it using keyboard and mouse.
 
 ## Get the app
 
+<a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
 ### Linux
 
