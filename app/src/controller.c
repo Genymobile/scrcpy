@@ -60,7 +60,7 @@ controller_push_msg(struct controller *controller,
 static bool
 process_msg(struct controller *controller,
               const struct control_msg *msg) {
-    unsigned char serialized_msg[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
     int length = control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;

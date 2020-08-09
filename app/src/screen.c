@@ -8,6 +8,7 @@
 #include "common.h"
 #include "compat.h"
 #include "icon.xpm"
+#include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/lock.h"
@@ -257,9 +258,9 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = window_x != WINDOW_POSITION_UNDEFINED
+    int x = window_x != SC_WINDOW_POSITION_UNDEFINED
           ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
-    int y = window_y != WINDOW_POSITION_UNDEFINED
+    int y = window_y != SC_WINDOW_POSITION_UNDEFINED
           ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
     screen->window = SDL_CreateWindow(window_title, x, y,
                                       window_size.width, window_size.height,
@@ -579,14 +580,14 @@ screen_handle_window_event(struct screen *screen,
 }
 
 struct point
-screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
+screen_convert_drawable_to_frame_coords(struct screen *screen,
+                                        int32_t x, int32_t y) {
     unsigned rotation = screen->rotation;
     assert(rotation < 4);
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
-    screen_hidpi_scale_coords(screen, &x, &y);
 
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
@@ -613,6 +614,13 @@ screen_convert_to_frame_coords(struct screen *screen, int32_t x, int32_t y) {
             break;
     }
     return result;
+}
+
+struct point
+screen_convert_window_to_frame_coords(struct screen *screen,
+                                      int32_t x, int32_t y) {
+    screen_hidpi_scale_coords(screen, &x, &y);
+    return screen_convert_drawable_to_frame_coords(screen, x, y);
 }
 
 void

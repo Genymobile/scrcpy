@@ -20,9 +20,9 @@ write_position(uint8_t *buf, const struct position *position) {
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = utf8_truncation_index(utf8, max_len);
-    buffer_write16be(buf, (uint16_t) len);
-    memcpy(&buf[2], utf8, len);
-    return 2 + len;
+    buffer_write32be(buf, len);
+    memcpy(&buf[4], utf8, len);
+    return 4 + len;
 }
 
 static uint16_t
@@ -42,8 +42,9 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_INJECT_KEYCODE:
             buf[1] = msg->inject_keycode.action;
             buffer_write32be(&buf[2], msg->inject_keycode.keycode);
-            buffer_write32be(&buf[6], msg->inject_keycode.metastate);
-            return 10;
+            buffer_write32be(&buf[6], msg->inject_keycode.repeat);
+            buffer_write32be(&buf[10], msg->inject_keycode.metastate);
+            return 14;
         case CONTROL_MSG_TYPE_INJECT_TEXT: {
             size_t len =
                 write_string(msg->inject_text.text,

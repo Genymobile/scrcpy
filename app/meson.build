@@ -164,12 +164,12 @@ if get_option('buildtype') == 'debug'
             'src/cli.c',
             'src/util/str_util.c',
         ]],
-        ['test_control_event_serialize', [
+        ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
             'src/util/str_util.c',
         ]],
-        ['test_device_event_deserialize', [
+        ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
@@ -186,7 +186,7 @@ if get_option('buildtype') == 'debug'
         exe = executable(t[0], t[1],
                          include_directories: src_dir,
                          dependencies: dependencies,
-                         c_args: ['-DSDL_MAIN_HANDLED'])
+                         c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
         test(t[0], exe)
     endforeach
 endif

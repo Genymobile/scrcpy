@@ -17,8 +17,6 @@ public final class ControlMessage {
     public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
     public static final int TYPE_ROTATE_DEVICE = 10;
 
-    public static final int FLAGS_PASTE = 1;
-
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
@@ -30,16 +28,18 @@ public final class ControlMessage {
     private Position position;
     private int hScroll;
     private int vScroll;
-    private int flags;
+    private boolean paste;
+    private int repeat;
 
     private ControlMessage() {
     }
 
-    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState) {
+    public static ControlMessage createInjectKeycode(int action, int keycode, int repeat, int metaState) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_KEYCODE;
         msg.action = action;
         msg.keycode = keycode;
+        msg.repeat = repeat;
         msg.metaState = metaState;
         return msg;
     }
@@ -75,9 +75,7 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
         msg.text = text;
-        if (paste) {
-            msg.flags = FLAGS_PASTE;
-        }
+        msg.paste = paste;
         return msg;
     }
 
@@ -141,7 +139,11 @@ public final class ControlMessage {
         return vScroll;
     }
 
-    public int getFlags() {
-        return flags;
+    public boolean getPaste() {
+        return paste;
+    }
+
+    public int getRepeat() {
+        return repeat;
     }
 }

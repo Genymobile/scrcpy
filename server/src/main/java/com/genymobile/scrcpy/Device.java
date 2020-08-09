@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -80,23 +81,28 @@ public final class Device {
 
         if (options.getControl()) {
             // If control is enabled, synchronize Android clipboard to the computer automatically
-            serviceManager.getClipboardManager().addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
-                @Override
-                public void dispatchPrimaryClipChanged() {
-                    if (isSettingClipboard.get()) {
-                        // This is a notification for the change we are currently applying, ignore it
-                        return;
-                    }
-                    synchronized (Device.this) {
-                        if (clipboardListener != null) {
-                            String text = getClipboardText();
-                            if (text != null) {
-                                clipboardListener.onClipboardTextChanged(text);
+            ClipboardManager clipboardManager = serviceManager.getClipboardManager();
+            if (clipboardManager != null) {
+                clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
+                    @Override
+                    public void dispatchPrimaryClipChanged() {
+                        if (isSettingClipboard.get()) {
+                            // This is a notification for the change we are currently applying, ignore it
+                            return;
+                        }
+                        synchronized (Device.this) {
+                            if (clipboardListener != null) {
+                                String text = getClipboardText();
+                                if (text != null) {
+                                    clipboardListener.onClipboardTextChanged(text);
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
+            } else {
+                Ln.w("No clipboard manager, copy-paste between device and computer will not work");
+            }
         }
 
         if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
@@ -199,7 +205,11 @@ public final class Device {
     }
 
     public String getClipboardText() {
-        CharSequence s = serviceManager.getClipboardManager().getText();
+        ClipboardManager clipboardManager = serviceManager.getClipboardManager();
+        if (clipboardManager == null) {
+            return null;
+        }
+        CharSequence s = clipboardManager.getText();
         if (s == null) {
             return null;
         }
@@ -207,16 +217,30 @@ public final class Device {
     }
 
     public boolean setClipboardText(String text) {
+        ClipboardManager clipboardManager = serviceManager.getClipboardManager();
+        if (clipboardManager == null) {
+            return false;
+        }
+
+        String currentClipboard = getClipboardText();
+        if (currentClipboard == null || currentClipboard.equals(text)) {
+            // The clipboard already contains the requested text.
+            // Since pasting text from the computer involves setting the device clipboard, it could be set twice on a copy-paste. This would cause
+            // the clipboard listeners to be notified twice, and that would flood the Android keyboard clipboard history. To workaround this
+            // problem, do not explicitly set the clipboard text if it already contains the expected content.
+            return false;
+        }
+
         isSettingClipboard.set(true);
-        boolean ok = serviceManager.getClipboardManager().setText(text);
+        boolean ok = clipboardManager.setText(text);
         isSettingClipboard.set(false);
         return ok;
     }
 
     /**
-     * @param mode one of the {@code SCREEN_POWER_MODE_*} constants
+     * @param mode one of the {@code POWER_MODE_*} constants
      */
-    public boolean setScreenPowerMode(int mode) {
+    public static boolean setScreenPowerMode(int mode) {
         IBinder d = SurfaceControl.getBuiltInDisplay();
         if (d == null) {
             Ln.e("Could not get built-in display");

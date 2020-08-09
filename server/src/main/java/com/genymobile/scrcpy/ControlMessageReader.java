@@ -8,20 +8,19 @@ import java.nio.charset.StandardCharsets;
 
 public class ControlMessageReader {
 
-    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
+    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4092; // 4096 - 1 (type) - 1 (parse flag) - 2 (length)
+    private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
+
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 6; // type: 1 byte; paste flag: 1 byte; length: 4 bytes
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
 
-    private static final int RAW_BUFFER_SIZE = 4096;
-
-    private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
+    private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
-    private final byte[] textBuffer = new byte[CLIPBOARD_TEXT_MAX_LENGTH];
 
     public ControlMessageReader() {
         // invariant: the buffer is always in "get" mode
@@ -99,20 +98,23 @@ public class ControlMessageReader {
         }
         int action = toUnsigned(buffer.get());
         int keycode = buffer.getInt();
+        int repeat = buffer.getInt();
         int metaState = buffer.getInt();
-        return ControlMessage.createInjectKeycode(action, keycode, metaState);
+        return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
     private String parseString() {
-        if (buffer.remaining() < 2) {
+        if (buffer.remaining() < 4) {
             return null;
         }
-        int len = toUnsigned(buffer.getShort());
+        int len = buffer.getInt();
         if (buffer.remaining() < len) {
             return null;
         }
-        buffer.get(textBuffer, 0, len);
-        return new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+        int position = buffer.position();
+        // Move the buffer position to consume the text
+        buffer.position(position + len);
+        return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
     }
 
     private ControlMessage parseInjectText() {
@@ -152,12 +154,12 @@ public class ControlMessageReader {
         if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
             return null;
         }
-        boolean parse = buffer.get() != 0;
+        boolean paste = buffer.get() != 0;
         String text = parseString();
         if (text == null) {
             return null;
         }
-        return ControlMessage.createSetClipboard(text, parse);
+        return ControlMessage.createSetClipboard(text, paste);
     }
 
     private ControlMessage parseSetScreenPowerMode() {

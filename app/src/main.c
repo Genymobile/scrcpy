@@ -1,5 +1,6 @@
 #include "scrcpy.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
@@ -42,7 +43,7 @@ convert_log_level_to_sdl(enum sc_log_level level) {
             return SDL_LOG_PRIORITY_ERROR;
         default:
             assert(!"unexpected log level");
-            return SC_LOG_LEVEL_INFO;
+            return SDL_LOG_PRIORITY_INFO;
     }
 }
 
@@ -71,7 +72,7 @@ main(int argc, char *argv[]) {
     }
 
     SDL_LogPriority sdl_log = convert_log_level_to_sdl(args.opts.log_level);
-    SDL_LogSetAllPriority(sdl_log);
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);

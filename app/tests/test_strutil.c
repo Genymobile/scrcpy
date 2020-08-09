@@ -286,7 +286,10 @@ static void test_parse_integer_with_suffix(void) {
     assert(!ok);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
     test_xstrncpy_truncated();

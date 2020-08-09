@@ -143,7 +143,7 @@ listen_on_port(uint16_t port) {
 
 static bool
 enable_tunnel_reverse_any_port(struct server *server,
-                               struct port_range port_range) {
+                               struct sc_port_range port_range) {
     uint16_t port = port_range.first;
     for (;;) {
         if (!enable_tunnel_reverse(server->serial, port)) {
@@ -189,7 +189,7 @@ enable_tunnel_reverse_any_port(struct server *server,
 
 static bool
 enable_tunnel_forward_any_port(struct server *server,
-                               struct port_range port_range) {
+                               struct sc_port_range port_range) {
     server->tunnel_forward = true;
     uint16_t port = port_range.first;
     for (;;) {
@@ -217,7 +217,7 @@ enable_tunnel_forward_any_port(struct server *server,
 }
 
 static bool
-enable_tunnel_any_port(struct server *server, struct port_range port_range,
+enable_tunnel_any_port(struct server *server, struct sc_port_range port_range,
                        bool force_adb_forward) {
     if (!force_adb_forward) {
         // Attempt to use "adb reverse"
