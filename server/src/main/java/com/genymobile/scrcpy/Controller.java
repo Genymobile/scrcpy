@@ -55,10 +55,10 @@ public class Controller {
     public void control() throws IOException {
         // on start, power on the device
         if (!device.isScreenOn()) {
-            device.injectKeycode(KeyEvent.KEYCODE_WAKEUP);
+            device.injectKeycode(KeyEvent.KEYCODE_POWER);
 
             // dirty hack
-            // After the keycode is injected, the device is powered on asynchronously.
+            // After POWER is injected, the device is powered on asynchronously.
             // To turn the device screen off while mirroring, the client will send a message that
             // would be handled before the device is actually powered on, so its effect would
             // be "canceled" once the device is turned back on.
@@ -248,8 +248,8 @@ public class Controller {
     }
 
     private boolean pressBackOrTurnScreenOn() {
-        int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_WAKEUP;
-        if (keepPowerModeOff && keycode == KeyEvent.KEYCODE_WAKEUP) {
+        int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
+        if (keepPowerModeOff && keycode == KeyEvent.KEYCODE_POWER) {
             schedulePowerModeOff();
         }
         return device.injectKeycode(keycode);
