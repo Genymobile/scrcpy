@@ -70,6 +70,8 @@ input_manager_init(struct input_manager *im,
         im->sdl_shortcut_mods.data[i] = sdl_mod;
     }
     im->sdl_shortcut_mods.count = shortcut_mods->count;
+
+    im->vfinger_down = false;
 }
 
 static void
@@ -300,6 +302,36 @@ input_manager_process_text_input(struct input_manager *im,
 }
 
 static bool
+simulate_virtual_finger(struct input_manager *im,
+                        enum android_motionevent_action action,
+                        struct point point) {
+    bool up = action == AMOTION_EVENT_ACTION_UP;
+
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg.inject_touch_event.action = action;
+    msg.inject_touch_event.position.screen_size = im->screen->frame_size;
+    msg.inject_touch_event.position.point = point;
+    msg.inject_touch_event.pointer_id = POINTER_ID_VIRTUAL_FINGER;
+    msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
+    msg.inject_touch_event.buttons = 0;
+
+    if (!controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request 'inject virtual finger event'");
+        return false;
+    }
+
+    return true;
+}
+
+static struct point
+inverse_point(struct point point, struct size size) {
+    point.x = size.width - point.x;
+    point.y = size.height - point.y;
+    return point;
+}
+
+static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
                   bool prefer_text, uint32_t repeat) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
@@ -512,10 +544,18 @@ input_manager_process_mouse_motion(struct input_manager *im,
         return;
     }
     struct control_msg msg;
-    if (convert_mouse_motion(event, im->screen, &msg)) {
-        if (!controller_push_msg(im->controller, &msg)) {
-            LOGW("Could not request 'inject mouse motion event'");
-        }
+    if (!convert_mouse_motion(event, im->screen, &msg)) {
+        return;
+    }
+
+    if (!controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request 'inject mouse motion event'");
+    }
+
+    if (im->vfinger_down) {
+        struct point mouse = msg.inject_touch_event.position.point;
+        struct point vfinger = inverse_point(mouse, im->screen->frame_size);
+        simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
 }
 
@@ -587,7 +627,9 @@ input_manager_process_mouse_button(struct input_manager *im,
         // simulated from touch events, so it's a duplicate
         return;
     }
-    if (event->type == SDL_MOUSEBUTTONDOWN) {
+
+    bool down = event->type == SDL_MOUSEBUTTONDOWN;
+    if (down) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(im->controller);
             return;
@@ -618,10 +660,36 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 
     struct control_msg msg;
-    if (convert_mouse_button(event, im->screen, &msg)) {
-        if (!controller_push_msg(im->controller, &msg)) {
-            LOGW("Could not request 'inject mouse button event'");
+    if (!convert_mouse_button(event, im->screen, &msg)) {
+        return;
+    }
+
+    if (!controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request 'inject mouse button event'");
+        return;
+    }
+
+    // Pinch-to-zoom simulation.
+    //
+    // If Ctrl is hold when the left-click button is pressed, then
+    // pinch-to-zoom mode is enabled: on every mouse event until the left-click
+    // button is released, an additional "virtual finger" event is generated,
+    // having a position inverted through the center of the screen.
+    //
+    // In other words, the center of the rotation/scaling is the center of the
+    // screen.
+#define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
+    if ((down && !im->vfinger_down && CTRL_PRESSED)
+            || (!down && im->vfinger_down)) {
+        struct point mouse = msg.inject_touch_event.position.point;
+        struct point vfinger = inverse_point(mouse, im->screen->frame_size);
+        enum android_motionevent_action action = down
+                                               ? AMOTION_EVENT_ACTION_DOWN
+                                               : AMOTION_EVENT_ACTION_UP;
+        if (!simulate_virtual_finger(im, action, vfinger)) {
+            return;
         }
+        im->vfinger_down = down;
     }
 }
 

@@ -279,6 +279,9 @@ scrcpy_print_usage(const char *arg0) {
         "    MOD+i\n"
         "        Enable/disable FPS counter (print frames/second in logs)\n"
         "\n"
+        "    Ctrl+click-and-move\n"
+        "        Pinch-to-zoom from the center of the screen\n"
+        "\n"
         "    Drag & drop APK file\n"
         "        Install APK from computer\n"
         "\n",

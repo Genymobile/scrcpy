@@ -30,6 +30,8 @@ struct input_manager {
         unsigned data[SC_MAX_SHORTCUT_MODS];
         unsigned count;
     } sdl_shortcut_mods;
+
+    bool vfinger_down;
 };
 
 void

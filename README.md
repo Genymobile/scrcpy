@@ -546,6 +546,19 @@ into the device clipboard. As a consequence, any Android application could read
 its content. You should avoid to paste sensitive content (like passwords) that
 way.
 
+
+#### Pinch-to-zoom
+
+To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.
+
+More precisely, hold <kbd>Ctrl</kbd> while pressing the left-click button. Until
+the left-click button is released, all mouse movements scale and rotate the
+content (if supported by the app) relative to the center of the screen.
+
+Concretely, scrcpy generates additional touch events from a "virtual finger" at
+a location inverted through the center of the screen.
+
+
 #### Text injection preference
 
 There are two kinds of [events][textevents] generated when typing text:
@@ -659,6 +672,7 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Synchronize clipboards and paste³           | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | Pinch-to-zoom                               | <kbd>Ctrl</kbd>+_click-and-move_
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._  
