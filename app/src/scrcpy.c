@@ -27,6 +27,7 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "serve.h"
 #include "stream.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
@@ -41,6 +42,7 @@ static struct video_buffer video_buffer;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
+static struct serve serve;
 static struct controller controller;
 static struct file_handler file_handler;
 
@@ -390,9 +392,19 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
+    struct serve* serv = NULL;
+    if (options->serve) {
+        serve_init(&serve, options->serve_protocol, options->serve_ip, options->serve_port);
+
+        if (!serve_start(&serve)) {
+            goto end;
+        }
+        serv = &serve;
+    }
+
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    stream_init(&stream, server.video_socket, dec, rec, serv);
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream

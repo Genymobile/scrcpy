@@ -50,6 +50,7 @@ struct scrcpy_options {
     const char *window_title;
     const char *push_target;
     const char *render_driver;
+    const char *serve_protocol;
     const char *codec_options;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
@@ -65,6 +66,8 @@ struct scrcpy_options {
     uint16_t window_width;
     uint16_t window_height;
     uint16_t display_id;
+    uint32_t serve_ip;
+    uint16_t serve_port;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
@@ -75,6 +78,7 @@ struct scrcpy_options {
     bool prefer_text;
     bool window_borderless;
     bool mipmaps;
+    bool serve;
     bool stay_awake;
     bool force_adb_forward;
     bool disable_screensaver;
@@ -88,6 +92,7 @@ struct scrcpy_options {
     .window_title = NULL, \
     .push_target = NULL, \
     .render_driver = NULL, \
+    .serve_protocol = NULL, \
     .codec_options = NULL, \
     .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = SC_RECORD_FORMAT_AUTO, \
@@ -109,6 +114,8 @@ struct scrcpy_options {
     .window_width = 0, \
     .window_height = 0, \
     .display_id = 0, \
+    .serve_ip = 0, \
+    .serve_port = 0, \
     .show_touches = false, \
     .fullscreen = false, \
     .always_on_top = false, \
@@ -119,6 +126,7 @@ struct scrcpy_options {
     .prefer_text = false, \
     .window_borderless = false, \
     .mipmaps = true, \
+    .serve = false, \
     .stay_awake = false, \
     .force_adb_forward = false, \
     .disable_screensaver = false, \
