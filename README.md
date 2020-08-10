@@ -1,4 +1,4 @@
-# scrcpy (v1.15.1)
+# scrcpy (v1.16)
 
 [Read in another language](#translations)
 
@@ -77,10 +77,10 @@ hard).
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
- - [`scrcpy-win64-v1.15.1.zip`][direct-win64]  
-   _(SHA-256: 78fba4caad6328016ea93219254b5df391f24224c519a2c8e3f070695b8b38ff)_
+ - [`scrcpy-win64-v1.16.zip`][direct-win64]  
+   _(SHA-256: 3f30dc5db1a2f95c2b40a0f5de91ec1642d9f53799250a8c529bc882bc0918f0)_
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.15.1/scrcpy-win64-v1.15.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.16/scrcpy-win64-v1.16.zip
 
 It is also available in [Chocolatey]:
 
