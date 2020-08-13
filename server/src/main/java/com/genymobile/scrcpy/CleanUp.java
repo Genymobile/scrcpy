@@ -81,7 +81,6 @@ public final class CleanUp {
         if (restoreNormalPowerMode) {
             Ln.i("Restoring normal power mode");
             Device device = new Device(new Options());
-            device.injectKeycode(KeyEvent.KEYCODE_WAKEUP);
             if(device.isScreenOn()){
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
