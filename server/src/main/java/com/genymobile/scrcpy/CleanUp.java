@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.view.KeyEvent;
+
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
@@ -78,7 +80,11 @@ public final class CleanUp {
 
         if (restoreNormalPowerMode) {
             Ln.i("Restoring normal power mode");
-            Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            Device device = new Device(new Options());
+            device.injectKeycode(KeyEvent.KEYCODE_WAKEUP);
+            if(device.isScreenOn()){
+                Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            }
         }
     }
 }
