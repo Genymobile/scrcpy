@@ -78,7 +78,9 @@ public final class CleanUp {
 
         if (restoreNormalPowerMode) {
             Ln.i("Restoring normal power mode");
-            Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            if (Device.isScreenOn()) {
+                Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            }
         }
     }
 }
