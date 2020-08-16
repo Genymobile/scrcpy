@@ -203,7 +203,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    In the following list, MOD is the shortcut modifier. By default,\n"
         "    it's (left) Alt or (left) Super, but it can be configured by\n"
-        "    --shortcut-mod.\n"
+        "    --shortcut-mod (see above).\n"
         "\n"
         "    MOD+f\n"
         "        Switch fullscreen mode\n"
