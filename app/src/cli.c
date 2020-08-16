@@ -532,7 +532,9 @@ parse_shortcut_mods_item(const char *item, size_t len) {
         } else if (STREQ("rsuper", item, key_len)) {
             mod |= SC_MOD_RSUPER;
         } else {
-            LOGW("Unknown modifier key: %.*s", (int) key_len, item);
+            LOGE("Unknown modifier key: %.*s "
+                 "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
+                 (int) key_len, item);
             return 0;
         }
 #undef STREQ
