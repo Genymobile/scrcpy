@@ -37,6 +37,8 @@ Check [stackoverflow][device-unauthorized].
 
 ### Device not detected
 
+>     adb: error: failed to get feature set: no devices/emulators found
+
 If your device is not detected, you may need some [drivers] (on Windows).
 
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
