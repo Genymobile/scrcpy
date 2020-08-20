@@ -144,122 +144,120 @@ scrcpy --max-size 1024
 scrcpy -m 1024  # short version
 ```
 
-The other dimension is computed to that the device aspect ratio is preserved.
-That way, a device in 1920×1080 will be mirrored at 1024×576.
+较短的一边会被按比例缩小以保持设备的显示比例。
+这样，1920x1080的设备会以1020x576的分辨率显示。
 
 
 #### 修改画面比特率
 
-The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
+默认的比特率是8Mbps。如果要改变画面的比特率 (比如说改成2Mbps)：
 
 ```bash
 scrcpy --bit-rate 2M
 scrcpy -b 2M  # short version
 ```
 
-#### Limit frame rate
+#### 限制画面帧率
 
-The capture frame rate can be limited:
+画面的帧率可以通过下面的命令被限制：
 
 ```bash
 scrcpy --max-fps 15
 ```
 
-This is officially supported since Android 10, but may work on earlier versions.
+这个功能仅在Android 10和以后的版本被Android官方支持，但也有可能在更早的版本可用。
 
-#### Crop
+#### 画面裁剪
 
-The device screen may be cropped to mirror only part of the screen.
+设备画面可在输出到电脑时被裁切，以仅显示屏幕的一部分。
 
-This is useful for example to mirror only one eye of the Oculus Go:
+这项功能可以用于，例如，只显示Oculus Go的一只眼睛。
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 ```
 
-If `--max-size` is also specified, resizing is applied after cropping.
+如果`--max-size`在同时被指定，分辨率的改变将在画面裁切后进行。
 
 
-#### Lock video orientation
+#### 锁定屏幕朝向
 
 
-To lock the orientation of the mirroring:
+可以使用如下命令锁定屏幕朝向：
 
 ```bash
-scrcpy --lock-video-orientation 0   # natural orientation
-scrcpy --lock-video-orientation 1   # 90° counterclockwise
+scrcpy --lock-video-orientation 0   # 自然朝向
+scrcpy --lock-video-orientation 1   # 90° 逆时针旋转
 scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° clockwise
+scrcpy --lock-video-orientation 3   # 90° 顺时针旋转
 ```
 
-This affects recording orientation.
+该设定影响录制。
 
 
-### Recording
+### 屏幕录制
 
-It is possible to record the screen while mirroring:
+可以在传输的同时录制视频：
 
 ```bash
 scrcpy --record file.mp4
 scrcpy -r file.mkv
 ```
 
-To disable mirroring while recording:
+在不开启屏幕共享的同时录制：
 
 ```bash
 scrcpy --no-display --record file.mp4
 scrcpy -Nr file.mkv
-# interrupt recording with Ctrl+C
+# 按Ctrl+C以停止录制
 ```
 
-"Skipped frames" are recorded, even if they are not displayed in real time (for
-performance reasons). Frames are _timestamped_ on the device, so [packet delay
-variation] does not impact the recorded file.
+在显示中“被跳过的帧”会被录制，虽然它们由于性能原因没有实时显示。
+在传输中每一帧都有 _时间戳_ ，所以 [包时延变化] 并不影响录制的文件。
 
-[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+[包时延变化]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
-### Connection
+### 连接方式
 
-#### Wireless
+#### 无线
 
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP:
+_Scrcpy_ 使用`adb`来与安卓设备连接。同时，`adb`能够通过TCP/IP[连接]到安卓设备:
 
-1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
+1. 将您的安卓设备和电脑连接至同一Wi-Fi。
+2. 获取安卓设备的IP地址（在设置-关于手机-状态信息）。
+3. 打开安卓设备的网络adb功能`adb tcpip 5555`。
+4. 将您的设备与电脑断开连接。
+5. 连接到您的设备：`adb connect DEVICE_IP:5555` _(用设备IP替换 `DEVICE_IP`)_.
+6. 运行`scrcpy`。
 
-It may be useful to decrease the bit-rate and the definition:
+降低比特率和分辨率可能有助于性能：
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
 scrcpy -b2M -m800  # short version
 ```
 
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+[连接]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 
-#### Multi-devices
+#### 多设备
 
-If several devices are listed in `adb devices`, you must specify the _serial_:
+如果多个设备在执行`adb devices`后被列出，您必须指定设备的 _序列号_ ：
 
 ```bash
 scrcpy --serial 0123456789abcdef
 scrcpy -s 0123456789abcdef  # short version
 ```
 
-If the device is connected over TCP/IP:
+如果设备是通过TCP/IP方式连接到电脑的：
 
 ```bash
 scrcpy --serial 192.168.0.1:5555
 scrcpy -s 192.168.0.1:5555  # short version
 ```
 
-You can start several instances of _scrcpy_ for several devices.
+您可以同时启动多个 _scrcpy_ 实例以同时显示多个设备的画面。
 
 #### Autostart on device connection
 
@@ -311,67 +309,67 @@ Like for wireless connections, it may be useful to reduce quality:
 scrcpy -b2M -m800 --max-fps 15
 ```
 
-### Window configuration
+### 窗口设置
 
-#### Title
+#### 标题
 
-By default, the window title is the device model. It can be changed:
+窗口的标题默认为设备型号。您可以通过如下命令修改它：
 
 ```bash
 scrcpy --window-title 'My device'
 ```
 
-#### Position and size
+#### 位置和大小
 
-The initial window position and size may be specified:
+您可以指定初始的窗口位置和大小：
 
 ```bash
 scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
 ```
 
-#### Borderless
+#### 无边框
 
-To disable window decorations:
+关闭边框：
 
 ```bash
 scrcpy --window-borderless
 ```
 
-#### Always on top
+#### 保持窗口在最前
 
-To keep the scrcpy window always on top:
+您可以通过如下命令保持窗口在最前面：
 
 ```bash
 scrcpy --always-on-top
 ```
 
-#### Fullscreen
+#### 全屏
 
-The app may be started directly in fullscreen:
+您可以通过如下命令直接全屏打开共享：
 
 ```bash
 scrcpy --fullscreen
 scrcpy -f  # short version
 ```
 
-Fullscreen can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>.
+全屏状态可以通过<kbd>MOD</kbd>+<kbd>f</kbd>实时改变。
 
-#### Rotation
+#### 旋转
 
-The window may be rotated:
+通过如下命令，窗口可以旋转：
 
 ```bash
 scrcpy --rotation 1
 ```
 
-Possibles values are:
- - `0`: no rotation
- - `1`: 90 degrees counterclockwise
- - `2`: 180 degrees
- - `3`: 90 degrees clockwise
+可选的值有：
+ - `0`: 无旋转
+ - `1`: 逆时针旋转90°
+ - `2`: 旋转180°
+ - `3`: 顺时针旋转90°
 
-The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
-_(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
+这同样可以使用<kbd>MOD</kbd>+<kbd>←</kbd>
+_(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_ 的快捷键实时更改。
 
 Note that _scrcpy_ manages 3 different rotations:
 - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait and
@@ -676,46 +674,46 @@ All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
 handled by the active application.
 
 
-## Custom paths
+## 自定义路径
 
-To use a specific _adb_ binary, configure its path in the environment variable
-`ADB`:
+为了使用您想使用的 _adb_ ，您可以在环境变量
+`ADB`中设置它的路径：
 
     ADB=/path/to/adb scrcpy
 
-To override the path of the `scrcpy-server` file, configure its path in
-`SCRCPY_SERVER_PATH`.
+如果需要覆盖`scrcpy-server`的路径，您可以在
+`SCRCPY_SERVER_PATH`中设置它。
 
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 
 
-## Why _scrcpy_?
+## 为什么叫 _scrcpy_ ？
 
-A colleague challenged me to find a name as unpronounceable as [gnirehtet].
+一个同事让我找出一个和[gnirehtet]一样难以发音的名字。
 
-[`strcpy`] copies a **str**ing; `scrcpy` copies a **scr**een.
+[`strcpy`] 可以复制**str**ing; `scrcpy` 可以“复制”**scr**een。
 
 [gnirehtet]: https://github.com/Genymobile/gnirehtet
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
 
 
-## How to build?
+## 如何编译？
 
-See [BUILD].
+请查看[编译]。
 
-[BUILD]: BUILD.md
-
-
-## Common issues
-
-See the [FAQ](FAQ.md).
+[编译]: BUILD.md
 
 
-## Developers
+## 常见问题
 
-Read the [developers page].
+请查看[FAQ](FAQ.md).
 
-[developers page]: DEVELOP.md
+
+## 开发者
+
+请查看[开发者页面]。
+
+[开发者]: DEVELOP.md
 
 
 ## Licence
@@ -742,13 +740,3 @@ Read the [developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
-## Translations
-
-This README is available in other languages:
-
-- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
-- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
-- [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
-
-Only this README file is guaranteed to be up-to-date.
