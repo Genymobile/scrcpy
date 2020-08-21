@@ -26,7 +26,7 @@ public final class Server {
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
         if (options.getShowTouches() || options.getStayAwake()) {
-            try (ContentProvider settings = device.createSettingsProvider()) {
+            try (ContentProvider settings = Device.createSettingsProvider()) {
                 if (options.getShowTouches()) {
                     String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
                     // If "show touches" was disabled, it must be disabled back on clean up

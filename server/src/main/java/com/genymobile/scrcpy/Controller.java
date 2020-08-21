@@ -54,7 +54,7 @@ public class Controller {
 
     public void control() throws IOException {
         // on start, power on the device
-        if (!device.isScreenOn()) {
+        if (!Device.isScreenOn()) {
             device.injectKeycode(KeyEvent.KEYCODE_POWER);
 
             // dirty hack
@@ -105,13 +105,13 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
-                device.expandNotificationPanel();
+                Device.expandNotificationPanel();
                 break;
             case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
-                device.collapsePanels();
+                Device.collapsePanels();
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
-                String clipboardText = device.getClipboardText();
+                String clipboardText = Device.getClipboardText();
                 if (clipboardText != null) {
                     sender.pushClipboardText(clipboardText);
                 }
@@ -130,7 +130,7 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
-                device.rotateDevice();
+                Device.rotateDevice();
                 break;
             default:
                 // do nothing
@@ -248,7 +248,7 @@ public class Controller {
     }
 
     private boolean pressBackOrTurnScreenOn() {
-        int keycode = device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
+        int keycode = Device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
         if (keepPowerModeOff && keycode == KeyEvent.KEYCODE_POWER) {
             schedulePowerModeOff();
         }
