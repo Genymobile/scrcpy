@@ -194,8 +194,8 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case SDL_ACTIVEEVENT:
             if (options->auto_turn_on && event->gain == 1) {
                 struct control_msg msg;
-                msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-                msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_NORMAL;
+                msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
+                msg.back_or_screen_on.screen_on_only = true;
 
                 if (!controller_push_msg(&controller, &msg)) {
                     LOGW("Could not request 'set screen power mode'");

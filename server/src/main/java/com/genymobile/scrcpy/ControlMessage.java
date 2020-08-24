@@ -30,6 +30,7 @@ public final class ControlMessage {
     private int vScroll;
     private boolean paste;
     private int repeat;
+    private boolean screenOnOnly;
 
     private ControlMessage() {
     }
@@ -68,6 +69,13 @@ public final class ControlMessage {
         msg.position = position;
         msg.hScroll = hScroll;
         msg.vScroll = vScroll;
+        return msg;
+    }
+
+    public static ControlMessage createBackOrScreenOn(boolean screenOnOnly) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_BACK_OR_SCREEN_ON;
+        msg.screenOnOnly = screenOnOnly;
         return msg;
     }
 
@@ -145,5 +153,9 @@ public final class ControlMessage {
 
     public int getRepeat() {
         return repeat;
+    }
+
+    public boolean getScreenOnOnly() {
+        return screenOnOnly;
     }
 }

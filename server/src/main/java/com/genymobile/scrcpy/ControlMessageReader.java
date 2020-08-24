@@ -11,6 +11,7 @@ public class ControlMessageReader {
     static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int BACK_OR_SCREEN_ON_PAYLOAD_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
@@ -73,6 +74,8 @@ public class ControlMessageReader {
                 msg = parseSetScreenPowerMode();
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
+                msg = parseBackOrScreenOn();
+                break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_GET_CLIPBOARD:
@@ -168,6 +171,14 @@ public class ControlMessageReader {
         }
         int mode = buffer.get();
         return ControlMessage.createSetScreenPowerMode(mode);
+    }
+
+    private ControlMessage parseBackOrScreenOn() {
+        if (buffer.remaining() != BACK_OR_SCREEN_ON_PAYLOAD_LENGTH) {
+            return null;
+        }
+        boolean screenOnOnly = buffer.get() != 0;
+        return ControlMessage.createBackOrScreenOn(screenOnOnly);
     }
 
     private static Position readPosition(ByteBuffer buffer) {
