@@ -190,9 +190,8 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
             break;
         case SDL_WINDOWEVENT:
             screen_handle_window_event(&screen, &event->window);
-            break;
-        case SDL_ACTIVEEVENT:
-            if (options->auto_turn_on && event->gain == 1) {
+            if (options->auto_turn_on
+                    && event->window.type == SDL_WINDOWEVENT_FOCUS_GAINED) {
                 struct control_msg msg;
                 msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
                 msg.back_or_screen_on.screen_on_only = true;
