@@ -21,6 +21,9 @@ scrcpy_print_usage(const char *arg0) {
         "    --always-on-top\n"
         "        Make scrcpy window always on top (above other windows).\n"
         "\n"
+        "    --auto-turn-on\n"
+        "        Turn on device screen when scrcpy window become active.\n"
+        "\n"
         "    -b, --bit-rate value\n"
         "        Encode the video at the given bit-rate, expressed in bits/s.\n"
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
@@ -651,11 +654,13 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_AUTO_TURN_ON           1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
+        {"auto-turn-on",           no_argument,       NULL, OPT_AUTO_TURN_ON},
         {"bit-rate",               required_argument, NULL, 'b'},
         {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
@@ -855,6 +860,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
                     return false;
                 }
+                break;
+            case OPT_AUTO_TURN_ON:
+                opts->auto_turn_on = true;
                 break;
             default:
                 // getopt prints the error message on stderr

@@ -191,6 +191,17 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case SDL_WINDOWEVENT:
             screen_handle_window_event(&screen, &event->window);
             break;
+        case SDL_ACTIVEEVENT:
+            if (options->auto_turn_on && event->gain == 1) {
+                struct control_msg msg;
+                msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+                msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_NORMAL;
+
+                if (!controller_push_msg(&controller, &msg)) {
+                    LOGW("Could not request 'set screen power mode'");
+                }
+            }
+            break;
         case SDL_TEXTINPUT:
             if (!options->control) {
                 break;
@@ -422,7 +433,7 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->window_y, options->window_width,
                                    options->window_height,
                                    options->window_borderless,
-                                   options->rotation, options-> mipmaps)) {
+                                   options->rotation, options->mipmaps)) {
             goto end;
         }
 
