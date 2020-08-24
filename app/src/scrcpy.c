@@ -191,13 +191,13 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case SDL_WINDOWEVENT:
             screen_handle_window_event(&screen, &event->window);
             if (options->auto_turn_on
-                    && event->window.type == SDL_WINDOWEVENT_FOCUS_GAINED) {
+                    && event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED) {
                 struct control_msg msg;
                 msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
                 msg.back_or_screen_on.screen_on_only = true;
 
                 if (!controller_push_msg(&controller, &msg)) {
-                    LOGW("Could not request 'set screen power mode'");
+                    LOGW("Could not request 'press back or turn screen on'");
                 }
             }
             break;

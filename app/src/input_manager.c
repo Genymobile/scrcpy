@@ -150,6 +150,7 @@ static void
 press_back_or_turn_screen_on(struct controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
+    msg.back_or_screen_on.screen_on_only = false;
 
     if (!controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'press back or turn screen on'");
