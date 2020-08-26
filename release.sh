@@ -10,7 +10,7 @@ ninja -C"$TESTDIR" test
 
 # test server
 GRADLE=${GRADLE:-./gradlew}
-$GRADLE -p server check
+$GRADLE -p server
 
 BUILDDIR=build_release
 rm -rf "$BUILDDIR"
