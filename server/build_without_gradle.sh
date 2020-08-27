@@ -17,6 +17,16 @@ SCRCPY_VERSION_NAME=1.16
 PLATFORM=${ANDROID_PLATFORM:-29}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-29.0.2}
 
+if [ -z ${ANDROID_HOME+x} ]; then
+    AIDL="$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl"
+    DX="$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx"
+else
+    [ -x "$(which dx)" ] && DX="dx" \
+        || (echo "Please provide \$ANDROID_HOME or set \$PATH to include 'dx' executable"; exit 1)
+    [ -x "$(which aidl)" ] && AIDL="aidl" \
+        || (echo "Please provide \$ANDROID_HOME or set \$PATH to include 'aidl' executable"; exit 1)
+fi
+
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 SERVER_DIR=$(dirname "$0")
@@ -40,9 +50,9 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
+"$AIDL" -o"$CLASSES_DIR" \
     android/view/IRotationWatcher.aidl
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
+"$AIDL" -o"$CLASSES_DIR" \
     android/content/IOnPrimaryClipChangedListener.aidl
 
 echo "Compiling java sources..."
@@ -54,8 +64,7 @@ javac -bootclasspath "$ANDROID_HOME/platforms/android-$PLATFORM/android.jar" \
 
 echo "Dexing..."
 cd "$CLASSES_DIR"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
-    --output "$BUILD_DIR/classes.dex" \
+"$DX" --dex --output "$BUILD_DIR/classes.dex" \
     android/view/*.class \
     android/content/*.class \
     com/genymobile/scrcpy/*.class \
