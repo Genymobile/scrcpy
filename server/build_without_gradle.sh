@@ -9,7 +9,7 @@
 #
 #     BUILD_DIR=my_build_dir ./build_without_gradle.sh
 
-set -e
+set -eo pipefail
 
 SCRCPY_DEBUG=false
 SCRCPY_VERSION_NAME=1.16
