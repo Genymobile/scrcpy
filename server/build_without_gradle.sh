@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # This script generates the scrcpy binary "manually" (without gradle).
 #
