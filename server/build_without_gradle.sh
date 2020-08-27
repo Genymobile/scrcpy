@@ -17,14 +17,17 @@ SCRCPY_VERSION_NAME=1.16
 PLATFORM=${ANDROID_PLATFORM:-29}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-29.0.2}
 
-if [ -z ${ANDROID_HOME+x} ]; then
+if [ "$ANDROID_HOME" != "" ]; then
     AIDL="$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl"
     DX="$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx"
+    ANDROID_PLATFORMS_PATH="$ANDROID_HOME/platforms"
 else
     [ -x "$(which dx)" ] && DX="dx" \
         || (echo "Please provide \$ANDROID_HOME or set \$PATH to include 'dx' executable"; exit 1)
     [ -x "$(which aidl)" ] && AIDL="aidl" \
         || (echo "Please provide \$ANDROID_HOME or set \$PATH to include 'aidl' executable"; exit 1)
+    [ "$ANDROID_PLATFORMS_PATH" == "" ] && \
+        (echo "Please provide \$ANDROID_HOME or set \$ANDROID_PLATFORMS_PATH"; exit 1)
 fi
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
@@ -57,7 +60,7 @@ cd "$SERVER_DIR/src/main/aidl"
 
 echo "Compiling java sources..."
 cd ../java
-javac -bootclasspath "$ANDROID_HOME/platforms/android-$PLATFORM/android.jar" \
+javac -bootclasspath "$ANDROID_PLATFORMS_PATH/android-$PLATFORM/android.jar" \
     -cp "$CLASSES_DIR" -d "$CLASSES_DIR" -source 1.8 -target 1.8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
