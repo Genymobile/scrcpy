@@ -1,8 +1,10 @@
 # scrcpy (v1.16)
 
 本应用程序可以让你实现在电脑上对安卓设备的查看和操作。
+
 该程序不要求 _root_ 权限，它只需要您的手机和电脑通过USB（或通过TCP/IP）连接。
-该应用程序可以在 _GNU/Linux_, _Windows_ and _macOS_ 环境下运行
+
+该应用程序可以在 _GNU/Linux_, _Windows_ and _macOS_ 环境下运行。
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -35,7 +37,7 @@
 
 ### Linux
 
-在Debian (_testing_ and _sid_ for now) 和Ubuntu (20.04)上：
+在Debian (目前 _测试中_ 且 _sid_)（译者注：这个不懂） 和Ubuntu (20.04)上：
 
 ```
 apt install scrcpy
@@ -62,7 +64,7 @@ apt install scrcpy
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
-您也可以[自行编译][BUILD](不必担心，这并不困难)。
+您也可以[自行编译][编译](不必担心，这并不困难)。
 
 
 
@@ -93,7 +95,7 @@ scoop install adb    # 如果你没有adb
 
 [Scoop]: https://scoop.sh
 
-您也可以[自行编译][BUILD]。
+您也可以[自行编译][编译]。
 
 
 ### macOS
@@ -106,13 +108,13 @@ scoop install adb    # 如果你没有adb
 brew install scrcpy
 ```
 
-您需要 `adb`，并且它应该可以通过 `PATH`被访问。如果您没有：
+您需要 `adb`以使用本应用程序，并且它需要可以通过 `PATH`被访问。如果您没有：
 
 ```bash
 brew cask install android-platform-tools
 ```
 
-您也可以[自行编译][BUILD]。
+您也可以[自行编译][编译]。
 
 
 ## 运行程序
@@ -259,9 +261,9 @@ scrcpy -s 192.168.0.1:5555  # short version
 
 您可以同时启动多个 _scrcpy_ 实例以同时显示多个设备的画面。
 
-#### Autostart on device connection
+#### 在设备连接时自动启动
 
-You could use [AutoAdb]:
+您可以使用 [AutoAdb]:
 
 ```bash
 autoadb scrcpy -s '{}'
@@ -269,7 +271,7 @@ autoadb scrcpy -s '{}'
 
 [AutoAdb]: https://github.com/rom1v/autoadb
 
-#### SSH tunnel
+#### SSH 连接
 
 To connect to a remote device, it is possible to connect a local `adb` client to
 a remote `adb` server (provided they use the same version of the _adb_
@@ -369,83 +371,77 @@ scrcpy --rotation 1
  - `3`: 顺时针旋转90°
 
 这同样可以使用<kbd>MOD</kbd>+<kbd>←</kbd>
-_(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_ 的快捷键实时更改。
+_(左)_ 和 <kbd>MOD</kbd>+<kbd>→</kbd> _(右)_ 的快捷键实时更改。
 
-Note that _scrcpy_ manages 3 different rotations:
-- <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait and
-  landscape (the current running app may refuse, if it does support the
-  requested orientation).
- - `--lock-video-orientation` changes the mirroring orientation (the orientation
-   of the video sent from the device to the computer). This affects the
-   recording.
- - `--rotation` (or <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
-   rotates only the window content. This affects only the display, not the
-   recording.
+需要注意的是， _scrcpy_ 控制三个不同的朝向：
+ - <kbd>MOD</kbd>+<kbd>r</kbd> 要求设备在竖屏和横屏之间切换（前台应用可能会拒绝该请求，如果它不支持）
+
+ - `--lock-video-orientation` 改变共享的朝向（设备输出到电脑的画面的朝向）。这会影响录制。
+ 
+ - `--rotation` （或<kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>）
+   只旋转窗口的画面。这只影响显示，不影响录制。
 
 
-### Other mirroring options
+### 其他共享设置
 
-#### Read-only
+#### 只读
 
-To disable controls (everything which can interact with the device: input keys,
-mouse events, drag&drop files):
+关闭电脑对设备的控制（如键盘输入、鼠标移动和文件传输）：
 
 ```bash
 scrcpy --no-control
 scrcpy -n
 ```
 
-#### Display
+#### 显示屏
 
-If several displays are available, it is possible to select the display to
-mirror:
+如果有多个显示屏可用，您可以选择共享哪个屏幕到电脑上：
 
 ```bash
 scrcpy --display 1
 ```
 
-The list of display ids can be retrieved by:
+您可以通过如下命令找到显示屏的id：
 
 ```
-adb shell dumpsys display   # search "mDisplayId=" in the output
+adb shell dumpsys display   # 在回显中搜索“mDisplayId=”
 ```
 
-The secondary display may only be controlled if the device runs at least Android
-10 (otherwise it is mirrored in read-only).
+第二显示屏可能只能在设备运行Android 10或以上的情况下被控制（它可能会在电脑上显示，但无法通过电脑操作）。
 
 
-#### Stay awake
+#### 防止设备休眠
 
-To prevent the device to sleep after some delay when the device is plugged in:
+防止设备在已连接的状态下休眠：
 
 ```bash
 scrcpy --stay-awake
 scrcpy -w
 ```
 
-The initial state is restored when scrcpy is closed.
+程序关闭后，设备设置会恢复原样。
 
 
-#### Turn screen off
+#### 关闭设备屏幕
 
-It is possible to turn the device screen off while mirroring on start with a
-command-line option:
+在启动屏幕共享时，可以通过如下命令关闭设备的屏幕：
 
 ```bash
 scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time.
+或者在需要的时候按<kbd>MOD</kbd>+<kbd>o</kbd>。
 
-To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
+要重新打开屏幕的话，需要按<kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
 
-On Android, the `POWER` button always turns the screen on. For convenience, if
-`POWER` is sent via scrcpy (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>), it
-will force to turn the screen off after a small delay (on a best effort basis).
-The physical `POWER` button will still cause the screen to be turned on.
+在Android上,`电源`按钮始终能把屏幕打开。
 
-It can also be useful to prevent the device from sleeping:
+为了方便，如果按下`电源`按钮的事件是通过 _scrcpy_ 发出的（通过点按鼠标右键或<kbd>MOD</kbd>+<kbd>p</kbd>），它会在短暂的延迟后将屏幕关闭。
+
+物理的`电源`按钮仍然能打开设备屏幕。
+
+同时，这项功能还能被用于防止设备休眠：
 
 ```bash
 scrcpy --turn-screen-off --stay-awake
@@ -453,225 +449,206 @@ scrcpy -Sw
 ```
 
 
-#### Render expired frames
+#### 渲染超时帧
 
-By default, to minimize latency, _scrcpy_ always renders the last decoded frame
-available, and drops any previous one.
+为了降低延迟 _scrcpy_ 默认渲染解码成功的最近一帧，并跳过前面任意帧。
 
-To force the rendering of all frames (at a cost of a possible increased
-latency), use:
+强制渲染所有帧（可能导致延迟变高）：
 
 ```bash
 scrcpy --render-expired-frames
 ```
 
-#### Show touches
+#### 显示触摸
 
-For presentations, it may be useful to show physical touches (on the physical
-device).
+在展示时，有些时候可能会用到显示触摸点这项功能（在设备上显示）。
 
-Android provides this feature in _Developers options_.
+Android在 _开发者设置_ 中提供了这项功能。
 
-_Scrcpy_ provides an option to enable this feature on start and restore the
-initial value on exit:
+_Scrcpy_ 可以在启动时开启这项功能并在停止共享后关闭这项功能。
 
 ```bash
 scrcpy --show-touches
 scrcpy -t
 ```
 
-Note that it only shows _physical_ touches (with the finger on the device).
+请注意这项功能只能显示 _物理_ 触摸（要用手在屏幕上触摸）。
 
 
-#### Disable screensaver
+#### 关闭熄屏定时器
 
-By default, scrcpy does not prevent the screensaver to run on the computer.
+_scrcpy_ 不会默认关闭熄屏定时器。
 
-To disable it:
+关闭熄屏定时器：
 
 ```bash
 scrcpy --disable-screensaver
 ```
 
 
-### Input control
+### 输入控制
 
-#### Rotate device screen
+#### 旋转设备屏幕
 
-Press <kbd>MOD</kbd>+<kbd>r</kbd> to switch between portrait and landscape
-modes.
+使用<kbd>MOD</kbd>+<kbd>r</kbd>以在竖屏和横屏模式之间切换。
 
-Note that it rotates only if the application in foreground supports the
-requested orientation.
+需要注意的是，只有在前台应用程序支持所要求的模式时，才会进行切换。
 
-#### Copy-paste
+#### 复制黏贴
 
-Any time the Android clipboard changes, it is automatically synchronized to the
-computer clipboard.
+每次Android的剪贴板变化的时候，它都会被自动同步到电脑的剪贴板上。
 
-Any <kbd>Ctrl</kbd> shortcut is forwarded to the device. In particular:
- - <kbd>Ctrl</kbd>+<kbd>c</kbd> typically copies
- - <kbd>Ctrl</kbd>+<kbd>x</kbd> typically cuts
- - <kbd>Ctrl</kbd>+<kbd>v</kbd> typically pastes (after computer-to-device
-   clipboard synchronization)
+所有的 <kbd>Ctrl</kbd> 快捷键都会被转发至设备。其中：
+ - <kbd>Ctrl</kbd>+<kbd>c</kbd> 复制
+ - <kbd>Ctrl</kbd>+<kbd>x</kbd> 剪切
+ - <kbd>Ctrl</kbd>+<kbd>v</kbd> 黏贴 （在电脑到设备的剪贴板同步完成之后）
 
-This typically works as you expect.
+这通常如您所期望的那样运作。
 
-The actual behavior depends on the active application though. For example,
-_Termux_ sends SIGINT on <kbd>Ctrl</kbd>+<kbd>c</kbd> instead, and _K-9 Mail_
-composes a new message.
+但实际的行为取决于设备上的前台程序。
+例如 _Termux_ 在<kbd>Ctrl</kbd>+<kbd>c</kbd>被按下时发送 SIGINT，
+又如 _K-9 Mail_ 会新建一封新邮件。
 
-To copy, cut and paste in such cases (but only supported on Android >= 7):
- - <kbd>MOD</kbd>+<kbd>c</kbd> injects `COPY`
- - <kbd>MOD</kbd>+<kbd>x</kbd> injects `CUT`
- - <kbd>MOD</kbd>+<kbd>v</kbd> injects `PASTE` (after computer-to-device
-   clipboard synchronization)
+在这种情况下剪切复制黏贴（仅在Android >= 7时可用）：
+ - <kbd>MOD</kbd>+<kbd>c</kbd> 注入 `COPY`（复制）
+ - <kbd>MOD</kbd>+<kbd>x</kbd> 注入 `CUT`（剪切）
+ - <kbd>MOD</kbd>+<kbd>v</kbd> 注入 `PASTE`（黏贴）（在电脑到设备的剪贴板同步完成之后）
 
-In addition, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> allows to inject the
-computer clipboard text as a sequence of key events. This is useful when the
-component does not accept text pasting (for example in _Termux_), but it can
-break non-ASCII content.
+另外，<kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>可以将电脑的剪贴板内容转换为一串按键事件输入到设备。
+在应用程序不接受黏贴时（比如 _Termux_ ），这项功能可以排上一定的用场。
+需要注意的是，这项功能可能会导致非ASCII编码的内容出现错误。
 
-**WARNING:** Pasting the computer clipboard to the device (either via
-<kbd>Ctrl</kbd>+<kbd>v</kbd> or <kbd>MOD</kbd>+<kbd>v</kbd>) copies the content
-into the device clipboard. As a consequence, any Android application could read
-its content. You should avoid to paste sensitive content (like passwords) that
-way.
+**警告：** 将电脑剪贴板的内容黏贴至设备（无论是通过<kbd>Ctrl</kbd>+<kbd>v</kbd>还是<kbd>MOD</kbd>+<kbd>v</kbd>）
+都需要将内容保存至设备的剪贴板。如此，任何一个应用程序都可以读取它。
+您应当避免将敏感内容通过这种方式传输（如密码）。
 
 
-#### Pinch-to-zoom
+#### 捏拉缩放
 
-To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.
+模拟 “捏拉缩放”：<kbd>Ctrl</kbd>+_按住并移动鼠标_。
 
-More precisely, hold <kbd>Ctrl</kbd> while pressing the left-click button. Until
-the left-click button is released, all mouse movements scale and rotate the
-content (if supported by the app) relative to the center of the screen.
+更准确的说，您需要在按住<kbd>Ctrl</kbd>的同时按住并移动鼠标。
+在鼠标左键松开之后，光标的任何操作都会相对于屏幕的中央进行。
 
-Concretely, scrcpy generates additional touch events from a "virtual finger" at
-a location inverted through the center of the screen.
+具体来说， _scrcpy_ 使用“虚拟手指”以在相对于屏幕中央相反的位置产生触摸事件。
 
 
-#### Text injection preference
+#### 文字注入偏好
 
-There are two kinds of [events][textevents] generated when typing text:
- - _key events_, signaling that a key is pressed or released;
- - _text events_, signaling that a text has been entered.
+打字的时候，系统会产生两种[事件][textevents]：
+ - _按键事件_ ，代表一个按键被按下/松开。
+ - _文本事件_ ，代表一个文本被输入。
 
-By default, letters are injected using key events, so that the keyboard behaves
-as expected in games (typically for WASD keys).
+程序默认使用按键事件来输入字母。只有这样，键盘才会在游戏中正常运作（尤其WASD键）。
 
-But this may [cause issues][prefertext]. If you encounter such a problem, you
-can avoid it by:
+但这也有可能[造成问题][prefertext]。如果您遇到了这样的问题，您可以通过下列操作避免它：
 
 ```bash
 scrcpy --prefer-text
 ```
 
-(but this will break keyboard behavior in games)
+（这会导致键盘在游戏中工作不正常）
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
-#### Key repeat
+#### 按键重复
 
-By default, holding a key down generates repeated key events. This can cause
-performance problems in some games, where these events are useless anyway.
+当你一直按着一个按键不放时，程序默认产生多个按键事件。
+在某些游戏中这可能会导致性能问题。
 
-To avoid forwarding repeated key events:
+关闭此功能：
 
 ```bash
 scrcpy --no-key-repeat
 ```
 
 
-### File drop
+### 文件传输
 
-#### Install APK
+#### 安装APK
 
-To install an APK, drag & drop an APK file (ending with `.apk`) to the _scrcpy_
-window.
+如果您要要安装APK，请拖放APK文件（文件名以`.apk`结尾）到 _scrcpy_ 窗口。
 
-There is no visual feedback, a log is printed to the console.
+该操作没有可见的响应，只会在控制台输出日志。
 
 
-#### Push file to device
+#### 将文件推送至设备
 
-To push a file to `/sdcard/` on the device, drag & drop a (non-APK) file to the
-_scrcpy_ window.
+如果您要推送文件到设备的 `/sdcard/`，请拖放文件至（不能是APK文件）_scrcpy_ 窗口。
 
-There is no visual feedback, a log is printed to the console.
+该操作没有可见的响应，只会在控制台输出日志。
 
-The target directory can be changed on start:
+在启动时可以修改目标目录：
 
 ```bash
 scrcpy --push-target /sdcard/foo/bar/
 ```
 
 
-### Audio forwarding
+### 音频转发
 
-Audio is not forwarded by _scrcpy_. Use [sndcpy].
+_scrcpy_ 不支持音频。请使用 [sndcpy].
 
-Also see [issue #14].
+另外请阅读 [issue #14]。
 
 [sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
-## Shortcuts
+## 热键
 
-In the following list, <kbd>MOD</kbd> is the shortcut modifier. By default, it's
-(left) <kbd>Alt</kbd> or (left) <kbd>Super</kbd>.
+在下列表格中, <kbd>MOD</kbd> 是热键的修饰键。
+默认是（左）<kbd>Alt</kbd>或者（左）<kbd>Super</kbd>。
 
-It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
-`lalt`, `ralt`, `lsuper` and `rsuper`. For example:
+您可以使用 `--shortcut-mod`后缀来修改它。可选的按键有`lctrl`、`rctrl`、
+`lalt`、`ralt`、`lsuper`和`rsuper`。如下例：
 
 ```bash
-# use RCtrl for shortcuts
+# 使用右侧的Ctrl键
 scrcpy --shortcut-mod=rctrl
 
-# use either LCtrl+LAlt or LSuper for shortcuts
+# 使用左侧的Ctrl键、Alt键或Super键
 scrcpy --shortcut-mod=lctrl+lalt,lsuper
 ```
 
-_<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
+_一般来说，<kbd>[Super]</kbd>就是<kbd>Windows</kbd>或者<kbd>Cmd</kbd>。_
 
 [Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
 
- | Action                                      |   Shortcut
+ | 操作                                        |   快捷键
  | ------------------------------------------- |:-----------------------------
- | Switch fullscreen mode                      | <kbd>MOD</kbd>+<kbd>f</kbd>
- | Rotate display left                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
- | Rotate display right                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
- | Resize window to 1:1 (pixel-perfect)        | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-click¹_
- | Click on `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Middle-click_
- | Click on `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Right-click²_
- | Click on `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd>
- | Click on `MENU` (unlock screen)             | <kbd>MOD</kbd>+<kbd>m</kbd>
- | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
- | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
- | Click on `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
- | Power on                                    | _Right-click²_
- | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
- | Turn device screen on                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
- | Rotate device screen                        | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Expand notification panel                   | <kbd>MOD</kbd>+<kbd>n</kbd>
- | Collapse notification panel                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copy to clipboard³                          | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Cut to clipboard³                           | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Synchronize clipboards and paste³           | <kbd>MOD</kbd>+<kbd>v</kbd>
- | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
- | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
- | Pinch-to-zoom                               | <kbd>Ctrl</kbd>+_click-and-move_
+ | 全屏                                        | <kbd>MOD</kbd>+<kbd>f</kbd>
+ | 向左旋转屏幕                                 | <kbd>MOD</kbd>+<kbd>←</kbd> _(左)_
+ | 向右旋转屏幕                                 | <kbd>MOD</kbd>+<kbd>→</kbd> _(右)_
+ | 将窗口大小重置为1:1 (像素优先)                | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | 将窗口大小重置为消除黑边                      | <kbd>MOD</kbd>+<kbd>w</kbd> \| _双击¹_
+ | 点按 `主屏幕`                                | <kbd>MOD</kbd>+<kbd>h</kbd> \| _点击鼠标中键_
+ | 点按 `返回`                                  | <kbd>MOD</kbd>+<kbd>b</kbd> \| _点击鼠标右键²_
+ | 点按 `切换应用`                              | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | 点按 `菜单` （解锁屏幕）                      | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | 点按 `音量+`                                | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
+ | 点按 `音量-`                                | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
+ | 点按 `电源`                                 | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | 打开屏幕                                    | _点击鼠标右键²_
+ | 关闭设备屏幕（但继续在电脑上显示）             | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | 打开设备屏幕                                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
+ | 旋转设备屏幕                                 | <kbd>MOD</kbd>+<kbd>r</kbd>
+ | 展开通知面板                                 | <kbd>MOD</kbd>+<kbd>n</kbd>
+ | 展开快捷操作                                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | 复制到剪贴板³                                | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | 剪切到剪贴板³                                | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | 同步剪贴板并黏贴³                            | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | 导入电脑剪贴板文本                           | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | 打开/关闭FPS显示（在 stdout)                 | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | 捏拉缩放                                    | <kbd>Ctrl</kbd>+_点按并移动鼠标_
 
-_¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._  
-_³Only on Android >= 7._
+_¹双击黑色边界以关闭黑色边界_  
+_²点击鼠标右键将在屏幕熄灭时点亮屏幕，其余情况则视为按下 返回键 。_  
+_³需要安卓版本 Android >= 7。_
 
-All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
-handled by the active application.
+所有的 <kbd>Ctrl</kbd>+_按键_ 的热键都是被转发到设备进行处理的，所以实际上会由当前应用程序对其做出响应。
 
 
 ## 自定义路径
@@ -713,10 +690,10 @@ handled by the active application.
 
 请查看[开发者页面]。
 
-[开发者]: DEVELOP.md
+[开发者页面]: DEVELOP.md
 
 
-## Licence
+## 许可证明
 
     Copyright (C) 2018 Genymobile
     Copyright (C) 2018-2020 Romain Vimont
@@ -733,7 +710,7 @@ handled by the active application.
     See the License for the specific language governing permissions and
     limitations under the License.
 
-## Articles
+## 相关文章
 
 - [Introducing scrcpy][article-intro]
 - [Scrcpy now works wirelessly][article-tcpip]
