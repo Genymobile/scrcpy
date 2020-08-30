@@ -1,5 +1,7 @@
 _Only the original [README] is guaranteed to be up-to-date._
+
 只有原版的[README]是实时更新的。
+
 本文根据[479d10d]进行翻译。
 
 [README]:https://github.com/Genymobile/scrcpy/blob/master/README.md
