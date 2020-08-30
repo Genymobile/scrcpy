@@ -1,3 +1,12 @@
+_Only the original [README] is guaranteed to be up-to-date._
+只有原版的[README]是实时更新的。
+本文根据[479d10d]进行翻译。
+
+[README]:https://github.com/Genymobile/scrcpy/blob/master/README.md
+[479d10d]:https://github.com/Genymobile/scrcpy/commit/479d10dc22b70272187e0963c6ad24d754a669a2#diff-04c6e90faac2675aa89e2176d2eec7d8
+
+
+
 # scrcpy (v1.16)
 
 本应用程序可以让你实现在电脑上对安卓设备的查看和操作。
