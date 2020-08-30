@@ -273,39 +273,36 @@ autoadb scrcpy -s '{}'
 
 #### SSH 连接
 
-To connect to a remote device, it is possible to connect a local `adb` client to
-a remote `adb` server (provided they use the same version of the _adb_
-protocol):
+本地的 adb 可以远程连接到另一个 adb 服务器（假设两者的adb版本相同），来远程连接到设备：
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
-# keep this open
+adb kill-server    # 关闭本地5037端口上的adb服务器
+ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 _你的另一台电脑_
+# 保持该窗口开启
 ```
 
-From another terminal:
+从另一个终端：
 
 ```bash
 scrcpy
 ```
 
-To avoid enabling remote port forwarding, you could force a forward connection
-instead (notice the `-L` instead of `-R`):
+为了避免启动远程端口转发，你可以强制启动一个转发连接（注意`-L`和`-R`的区别：
 
 ```bash
 adb kill-server    # kill the local adb server on 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
-# keep this open
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 _你的另一台电脑_
+# 保持该窗口开启
 ```
 
-From another terminal:
+从另一个终端:
 
 ```bash
 scrcpy --force-adb-forward
 ```
 
 
-Like for wireless connections, it may be useful to reduce quality:
+和无线网络连接类似，下列设置可能对改善性能有帮助：
 
 ```
 scrcpy -b2M -m800 --max-fps 15
