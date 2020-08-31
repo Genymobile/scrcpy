@@ -201,7 +201,7 @@ enable_tunnel_forward_any_port(struct server *server,
 
         if (port < port_range.last) {
             LOGW("Could not forward port %" PRIu16", retrying on %" PRIu16,
-                 port, port + 1);
+                 port, (uint16_t) (port + 1));
             port++;
             continue;
         }
