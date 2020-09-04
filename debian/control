@@ -2,6 +2,7 @@ Source: scrcpy
 Section: net
 Priority: optional
 Maintainer: Yangfl <mmyangfl@gmail.com>
+            zhaozhen <zhaozhen@uniontech.com>
 Build-Depends:
  debhelper-compat (= 13), quilt
 Build-Depends-Arch:
