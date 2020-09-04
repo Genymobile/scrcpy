@@ -13,7 +13,7 @@ Build-Depends-Arch:
 Build-Depends-Indep:
  android-sdk,
  android-sdk-platform-23,
- default-jdk,
+ default-jdk (>= 2:1.11),
  unzip,
  zip,
 Rules-Requires-Root: no
