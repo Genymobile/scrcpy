@@ -1,0 +1,28 @@
+scrcpy (1.16-1) unstable; urgency=medium
+
+  * build 1.16.
+  * 
+
+ -- zhaozhen <zhaozhen@uniontech.com>  Wed, 02 Sep 2020 18:23:17 +0800
+
+scrcpy (1.14-1) unstable; urgency=medium
+
+  * New upstream release
+  * Bump Standards-Version to 4.5.0
+  * Bump debhelper compat to 13
+
+ -- Yangfl <mmyangfl@gmail.com>  Wed, 01 Jul 2020 14:59:53 +0800
+
+scrcpy (1.12.1+ds-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #947465)
+  * Recommend but not depend on adb
+  * Add upstream metadata
+
+ -- Yangfl <mmyangfl@gmail.com>  Tue, 14 Jan 2020 13:14:59 +0800
+
+scrcpy (1.11+ds-1) unstable; urgency=medium
+
+  * Initial release (Closes: #893279)
+
+ -- Yangfl <mmyangfl@gmail.com>  Wed, 20 Nov 2019 23:40:21 +0800

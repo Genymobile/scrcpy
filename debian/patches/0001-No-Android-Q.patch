@@ -1,0 +1,108 @@
+diff --git a/server/src/main/java/com/genymobile/scrcpy/Controller.java b/server/src/main/java/com/genymobile/scrcpy/Controller.java
+index 9100a9d..572a1b2 100644
+--- a/server/src/main/java/com/genymobile/scrcpy/Controller.java
++++ b/server/src/main/java/com/genymobile/scrcpy/Controller.java
+@@ -262,8 +262,8 @@ public class Controller {
+         }
+ 
+         // On Android >= 7, also press the PASTE key if requested
+-        if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+-            device.injectKeycode(KeyEvent.KEYCODE_PASTE);
++        if (paste && Build.VERSION.SDK_INT >= 24 && device.supportsInputEvents()) {
++            device.injectKeycode(279);
+         }
+ 
+         return ok;
+diff --git a/server/src/main/java/com/genymobile/scrcpy/Device.java b/server/src/main/java/com/genymobile/scrcpy/Device.java
+index f23dd05..6be0652 100644
+--- a/server/src/main/java/com/genymobile/scrcpy/Device.java
++++ b/server/src/main/java/com/genymobile/scrcpy/Device.java
+@@ -110,7 +110,7 @@ public final class Device {
+         }
+ 
+         // main display or any display on Android >= Q
+-        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
++        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= 29;
+         if (!supportsInputEvents) {
+             Ln.w("Input events are not supported for secondary displays before Android 10");
+         }
+diff --git a/server/src/main/java/com/genymobile/scrcpy/wrappers/ClipboardManager.java b/server/src/main/java/com/genymobile/scrcpy/wrappers/ClipboardManager.java
+index e25b6e9..9566de6 100644
+--- a/server/src/main/java/com/genymobile/scrcpy/wrappers/ClipboardManager.java
++++ b/server/src/main/java/com/genymobile/scrcpy/wrappers/ClipboardManager.java
+@@ -22,7 +22,7 @@ public class ClipboardManager {
+ 
+     private Method getGetPrimaryClipMethod() throws NoSuchMethodException {
+         if (getPrimaryClipMethod == null) {
+-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++            if (Build.VERSION.SDK_INT < 29) {
+                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
+             } else {
+                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
+@@ -33,7 +33,7 @@ public class ClipboardManager {
+ 
+     private Method getSetPrimaryClipMethod() throws NoSuchMethodException {
+         if (setPrimaryClipMethod == null) {
+-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++            if (Build.VERSION.SDK_INT < 29) {
+                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
+             } else {
+                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
+@@ -43,7 +43,7 @@ public class ClipboardManager {
+     }
+ 
+     private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException, IllegalAccessException {
+-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++        if (Build.VERSION.SDK_INT < 29) {
+             return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME);
+         }
+         return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+@@ -51,7 +51,7 @@ public class ClipboardManager {
+ 
+     private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData)
+             throws InvocationTargetException, IllegalAccessException {
+-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++        if (Build.VERSION.SDK_INT < 29) {
+             method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME);
+         } else {
+             method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+@@ -86,7 +86,7 @@ public class ClipboardManager {
+ 
+     private static void addPrimaryClipChangedListener(Method method, IInterface manager, IOnPrimaryClipChangedListener listener)
+             throws InvocationTargetException, IllegalAccessException {
+-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++        if (Build.VERSION.SDK_INT < 29) {
+             method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
+         } else {
+             method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+@@ -95,7 +95,7 @@ public class ClipboardManager {
+ 
+     private Method getAddPrimaryClipChangedListener() throws NoSuchMethodException {
+         if (addPrimaryClipChangedListener == null) {
+-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++            if (Build.VERSION.SDK_INT < 29) {
+                 addPrimaryClipChangedListener = manager.getClass()
+                         .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
+             } else {
+diff --git a/server/src/main/java/com/genymobile/scrcpy/wrappers/SurfaceControl.java b/server/src/main/java/com/genymobile/scrcpy/wrappers/SurfaceControl.java
+index 8fbb860..de09834 100644
+--- a/server/src/main/java/com/genymobile/scrcpy/wrappers/SurfaceControl.java
++++ b/server/src/main/java/com/genymobile/scrcpy/wrappers/SurfaceControl.java
+@@ -88,7 +88,7 @@ public final class SurfaceControl {
+         if (getBuiltInDisplayMethod == null) {
+             // the method signature has changed in Android Q
+             // <https://github.com/Genymobile/scrcpy/issues/586>
+-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++            if (Build.VERSION.SDK_INT < 29) {
+                 getBuiltInDisplayMethod = CLASS.getMethod("getBuiltInDisplay", int.class);
+             } else {
+                 getBuiltInDisplayMethod = CLASS.getMethod("getInternalDisplayToken");
+@@ -101,7 +101,7 @@ public final class SurfaceControl {
+ 
+         try {
+             Method method = getGetBuiltInDisplayMethod();
+-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
++            if (Build.VERSION.SDK_INT < 29) {
+                 // call getBuiltInDisplay(0)
+                 return (IBinder) method.invoke(null, 0);
+             }

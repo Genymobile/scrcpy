@@ -1,0 +1,44 @@
+Source: scrcpy
+Section: net
+Priority: optional
+Maintainer: Yangfl <mmyangfl@gmail.com>
+Build-Depends:
+ debhelper-compat (= 13),
+Build-Depends-Arch:
+ meson,
+ libavcodec-dev,
+ libavformat-dev,
+ libavutil-dev,
+ libsdl2-dev,
+Build-Depends-Indep:
+ android-sdk,
+ android-sdk-platform-23,
+ default-jdk,
+ unzip,
+ zip,
+Rules-Requires-Root: no
+Standards-Version: 4.5.0
+Homepage: https://github.com/Genymobile/scrcpy
+Vcs-Git: https://salsa.debian.org/yangfl-guest/scrcpy.git
+Vcs-Browser: https://salsa.debian.org/yangfl-guest/scrcpy
+
+Package: scrcpy
+Architecture: any
+Depends: ${misc:Depends}, ${shlibs:Depends}, scrcpy-server,
+Recommends: adb,
+Description: Display and control your Android device
+ This application provides display and control of Android devices connected on
+ USB (or over TCP/IP). It does not require any root access.
+ .
+ This package contains the client (desktop) binary.
+
+Package: scrcpy-server
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends},
+Description: Display and control your Android device - server binary
+ This application provides display and control of Android devices connected on
+ USB (or over TCP/IP). It does not require any root access.
+ .
+ This package contains the server (mobile) binary, which will be pushed to the
+ Android device.

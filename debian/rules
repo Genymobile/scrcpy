@@ -1,0 +1,49 @@
+#!/usr/bin/make -f
+#export DH_VERBOSE = 1
+
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+export DEB_CFLAGS_MAINT_APPEND  = -Wall -pedantic
+export DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
+
+export ANDROID_HOME=/usr/lib/android-sdk
+export JAVA_HOME=/usr/lib/jvm/default-java
+export JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF8
+
+include /usr/share/dpkg/pkg-info.mk
+
+
+%:
+	dh $@
+
+build:
+	dh build-arch
+	dh build-indep --buildsystem=makefile
+
+build-arch:
+	dh build-arch
+
+build-indep:
+	dh build-indep --buildsystem=makefile
+
+clean:
+	dh clean
+
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf build_manual
+
+override_dh_auto_configure-arch:
+	dh_auto_configure -a -- -Dcompile_server=false
+
+override_dh_auto_build-indep:
+	ANDROID_PLATFORM=23 ANDROID_BUILD_TOOLS=debian server/build_without_gradle.sh
+	# dirty hack for reproducible jar build
+	cd build_manual; \
+		unzip scrcpy-server; \
+		touch -t $$(date --date="@${SOURCE_DATE_EPOCH}" +%Y%m%d%H%M.%S) META-INF META-INF/MANIFEST.MF classes.dex; \
+		chmod 755 META-INF; \
+		chmod 644 META-INF/MANIFEST.MF classes.dex; \
+		TZ=UTC zip -X scrcpy-server.zip META-INF/MANIFEST.MF classes.dex; \
+		mv scrcpy-server.zip scrcpy-server

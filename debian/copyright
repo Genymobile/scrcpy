@@ -1,0 +1,38 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: scrcpy
+Upstream-Contact: Romain Vimont <rom@rom1v.com>
+Source: https://github.com/Genymobile/scrcpy
+
+Files: *
+Copyright: 2018 Genymobile
+           2018-2019 Romain Vimont <rom@rom1v.com>
+License: Apache-2
+
+Files: app/src/android/input.h
+       app/src/android/keycodes.h
+Copyright: 2010 The Android Open Source Project
+License: Apache-2
+
+Files: debian/missing-sources/gradle/wrapper/gradle-wrapper/*
+Copyright: 2007-2017 Gradle authors
+License: Apache-2
+
+Files: debian/*
+Copyright: 2019 Yangfl <mmyangfl@gmail.com>
+License: Apache-2
+
+License: Apache-2
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
+ .
+     http://www.apache.org/licenses/LICENSE-2.0
+ .
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ .
+ On Debian systems, the full text of the Apache License, Version 2.0
+ can be found in the file '/usr/share/common-licenses/Apache-2.0'.
