@@ -22,7 +22,7 @@ public class ClipboardManager {
 
     private Method getGetPrimaryClipMethod() throws NoSuchMethodException {
         if (getPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < 29) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
             } else {
                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
@@ -33,7 +33,7 @@ public class ClipboardManager {
 
     private Method getSetPrimaryClipMethod() throws NoSuchMethodException {
         if (setPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < 29) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
             } else {
                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
@@ -43,7 +43,7 @@ public class ClipboardManager {
     }
 
     private static ClipData getPrimaryClip(Method method, IInterface manager) throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < 29) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME);
         }
         return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
@@ -51,7 +51,7 @@ public class ClipboardManager {
 
     private static void setPrimaryClip(Method method, IInterface manager, ClipData clipData)
             throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < 29) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME);
         } else {
             method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
@@ -86,7 +86,7 @@ public class ClipboardManager {
 
     private static void addPrimaryClipChangedListener(Method method, IInterface manager, IOnPrimaryClipChangedListener listener)
             throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < 29) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
         } else {
             method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
@@ -95,7 +95,7 @@ public class ClipboardManager {
 
     private Method getAddPrimaryClipChangedListener() throws NoSuchMethodException {
         if (addPrimaryClipChangedListener == null) {
-            if (Build.VERSION.SDK_INT < 29) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 addPrimaryClipChangedListener = manager.getClass()
                         .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
             } else {

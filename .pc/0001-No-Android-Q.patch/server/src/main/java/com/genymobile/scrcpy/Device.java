@@ -110,7 +110,7 @@ public final class Device {
         }
 
         // main display or any display on Android >= Q
-        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= 29;
+        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }

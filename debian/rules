@@ -1,6 +1,7 @@
 #!/usr/bin/make -f
 #export DH_VERBOSE = 1
 
+export QUILT_PATCHES=$(CURDIR)debian/patches
 
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
@@ -33,8 +34,10 @@ clean:
 override_dh_auto_clean:
 	dh_auto_clean
 	rm -rf build_manual
+	quilt pop -a
 
 override_dh_auto_configure-arch:
+	quilt push -a
 	dh_auto_configure -a -- -Dcompile_server=false
 
 override_dh_auto_build-indep:

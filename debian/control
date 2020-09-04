@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Yangfl <mmyangfl@gmail.com>
 Build-Depends:
- debhelper-compat (= 13),
+ debhelper-compat (= 13), quilt
 Build-Depends-Arch:
  meson,
  libavcodec-dev,
