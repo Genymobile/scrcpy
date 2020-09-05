@@ -174,7 +174,7 @@ public class ControlMessageReader {
     }
 
     private ControlMessage parseBackOrScreenOn() {
-        if (buffer.remaining() != BACK_OR_SCREEN_ON_PAYLOAD_LENGTH) {
+        if (buffer.remaining() < BACK_OR_SCREEN_ON_PAYLOAD_LENGTH) {
             return null;
         }
         boolean screenOnOnly = buffer.get() != 0;
