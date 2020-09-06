@@ -111,7 +111,7 @@ static bool prepare_ssh_socket_path(const struct server_params *params) {
         SSH_SOCKET_NAME,
     };
     process_t process = ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
-        NULL, 0, NULL, 0);
+        NULL, 0);
     return process_check_success(process, "ssh rm -f " SSH_SOCKET_NAME);
 }
 
@@ -264,6 +264,17 @@ log_level_to_server_string(enum sc_log_level level) {
 }
 
 static process_t
+execute_socket_forwarding(const struct server_params *params) {
+    const char *const cmd[] = {
+        "/data/ssh/root/socat",
+        "abstract-listen:" SOCKET_NAME ",fork,reuseaddr",
+        "unix-connect:" SSH_SOCKET_NAME
+    };
+    return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
+        NULL, 0);
+}
+
+static process_t
 execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
@@ -326,13 +337,6 @@ execute_server(struct server *server, const struct server_params *params) {
             "-R", tunnel_desc,
         };
 
-        const char *const prefix_cmd[] = {
-            "/data/ssh/root/socat",
-            "abstract-listen:" SOCKET_NAME ",fork",
-            "unix-connect:" SSH_SOCKET_NAME,
-            "&",
-        };
-
         for (uint16_t port = server->port_range.first;;) {
             server->server_socket = listen_on_port(port);
             if (server->server_socket == INVALID_SOCKET) {
@@ -355,7 +359,6 @@ execute_server(struct server *server, const struct server_params *params) {
             snprintf(tunnel_desc + strlen(tunnel_desc) - 5, 6, "%d", port);
 
             return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
-                prefix_cmd, sizeof(prefix_cmd) / sizeof(prefix_cmd[0]),
                 ssh_options, sizeof(ssh_options) / sizeof(ssh_options[0]));
         }
     }
@@ -445,8 +448,13 @@ server_start(struct server *server, const char *serial,
         goto error1;
     }
 
-    if (params->use_ssh && !prepare_ssh_socket_path(params))
-        goto error1;
+    if (params->use_ssh) {
+        if (!prepare_ssh_socket_path(params))
+            goto error1;
+        server->socket_forwarder = execute_socket_forwarding(params);
+        if (server->socket_forwarder == PROCESS_NONE)
+            goto error1;
+    }
 
     if (!params->use_ssh && !enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
@@ -470,6 +478,10 @@ server_start(struct server *server, const char *serial,
     if (!server->wait_server_thread) {
         cmd_terminate(server->process);
         cmd_simple_wait(server->process, NULL); // ignore exit code
+        if (server->use_ssh) {
+            cmd_terminate(server->socket_forwarder);
+            cmd_simple_wait(server->socket_forwarder, NULL); // ignore exit code
+        }
         goto error2;
     }
 
@@ -556,8 +568,12 @@ server_stop(struct server *server) {
     }
 
     assert(server->process != PROCESS_NONE);
-
     cmd_terminate(server->process);
+
+    if (server->use_ssh) {
+        assert(server->socket_forwarder != PROCESS_NONE);
+        cmd_terminate(server->socket_forwarder);
+    }
 
     if (server->tunnel_enabled && !server->use_ssh) {
         // ignore failure
