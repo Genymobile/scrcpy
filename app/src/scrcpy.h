@@ -51,6 +51,7 @@ struct scrcpy_options {
     const char *push_target;
     const char *render_driver;
     const char *codec_options;
+    const char *ssh_endpoint;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     struct sc_port_range port_range;
@@ -125,6 +126,7 @@ struct scrcpy_options {
     .disable_screensaver = false, \
     .forward_key_repeat = true, \
     .use_ssh = false, \
+    .ssh_endpoint = NULL, \
 }
 
 bool

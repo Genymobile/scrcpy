@@ -265,6 +265,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(display_id_string, "%"PRIu16, params->display_id);
     const char *const cmd[] = {
         "shell",
+        params->use_ssh ? "ANDROID_DATA=/data" : "UNUSED_ENV_VAR=/data",
         "CLASSPATH=" DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
@@ -306,7 +307,10 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    if (params->use_ssh)
+        return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    else
+        return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 
 static socket_t

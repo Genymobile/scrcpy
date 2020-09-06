@@ -652,6 +652,7 @@ guess_record_format(const char *filename) {
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
 #define OPT_USE_SSH                1024
+#define OPT_SSH_ENDPOINT           1025
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -687,6 +688,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"serial",                 required_argument, NULL, 's'},
         {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
         {"show-touches",           no_argument,       NULL, 't'},
+        {"ssh-endpoint",           required_argument, NULL, OPT_SSH_ENDPOINT},
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
         {"verbosity",              required_argument, NULL, 'V'},
@@ -800,6 +802,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
+                break;
+            case OPT_SSH_ENDPOINT:
+                opts->ssh_endpoint = optarg;
                 break;
             case OPT_WINDOW_X:
                 if (!parse_window_position(optarg, &opts->window_x)) {

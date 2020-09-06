@@ -103,6 +103,24 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
 }
 
 process_t
+ssh_execute(const char *endpoint, const char *const adb_cmd[], size_t len) {
+    const char *cmd[len + 3];
+    int i = 2;
+    process_t process;
+    cmd[0] = "ssh";
+    cmd[1] = endpoint;
+
+    memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
+    cmd[len + i] = NULL;
+    enum process_result r = cmd_execute(cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r, cmd);
+        return PROCESS_NONE;
+    }
+    return process;
+}
+
+process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     const char *cmd[len + 4];
     int i;
