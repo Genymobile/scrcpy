@@ -394,7 +394,7 @@ server_start(struct server *server, const char *serial,
         goto error1;
     }
 
-    if (!enable_tunnel_any_port(server, params->port_range,
+    if (!params->use_ssh && !enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
         goto error1;
     }
@@ -419,20 +419,23 @@ server_start(struct server *server, const char *serial,
         goto error2;
     }
 
-    server->tunnel_enabled = true;
+    if (!params->use_ssh)
+        server->tunnel_enabled = true;
 
     return true;
 
 error2:
-    if (!server->tunnel_forward) {
-        bool was_closed =
-            atomic_flag_test_and_set(&server->server_socket_closed);
-        // the thread is not started, the flag could not be already set
-        assert(!was_closed);
-        (void) was_closed;
-        close_socket(server->server_socket);
+    if (!params->use_ssh) {
+        if (!server->tunnel_forward) {
+            bool was_closed =
+                atomic_flag_test_and_set(&server->server_socket_closed);
+            // the thread is not started, the flag could not be already set
+            assert(!was_closed);
+            (void) was_closed;
+            close_socket(server->server_socket);
+        }
+        disable_tunnel(server);
     }
-    disable_tunnel(server);
 error1:
     SDL_free(server->serial);
     return false;
@@ -475,9 +478,11 @@ server_connect_to(struct server *server) {
         }
     }
 
-    // we don't need the adb tunnel anymore
-    disable_tunnel(server); // ignore failure
-    server->tunnel_enabled = false;
+    if (server->tunnel_enabled) {
+        // we don't need the adb tunnel anymore
+        disable_tunnel(server); // ignore failure
+        server->tunnel_enabled = false;
+    }
 
     return true;
 }
