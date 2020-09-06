@@ -651,6 +651,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_USE_SSH                1024
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -697,6 +698,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
         {"window-borderless",      no_argument,       NULL,
                                                   OPT_WINDOW_BORDERLESS},
+        {"use-ssh",                no_argument,       NULL, OPT_USE_SSH},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -855,6 +857,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
                     return false;
                 }
+                break;
+            case OPT_USE_SSH:
+                opts->use_ssh = true;
                 break;
             default:
                 // getopt prints the error message on stderr
