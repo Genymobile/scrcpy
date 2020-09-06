@@ -89,7 +89,7 @@ get_server_path(void) {
 }
 
 static bool
-push_server(const char *serial) {
+push_server(const char *serial, const struct server_params *params) {
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -99,7 +99,11 @@ push_server(const char *serial) {
         SDL_free(server_path);
         return false;
     }
-    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    process_t process;
+    if (params->use_ssh)
+        process = ssh_push(params->ssh_endpoint, server_path, DEVICE_SERVER_PATH);
+    else
+        process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     SDL_free(server_path);
     return process_check_success(process, "adb push");
 }
@@ -444,7 +448,7 @@ server_start(struct server *server, const char *serial,
 
     server->use_ssh = params->use_ssh;
 
-    if (!push_server(serial)) {
+    if (!push_server(serial, params)) {
         goto error1;
     }
 
