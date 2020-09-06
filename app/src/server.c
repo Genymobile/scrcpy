@@ -264,8 +264,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
     sprintf(display_id_string, "%"PRIu16, params->display_id);
     const char *const cmd[] = {
-        "shell",
-        params->use_ssh ? "ANDROID_DATA=/data" : "UNUSED_ENV_VAR=/data",
+        params->use_ssh ? "ANDROID_DATA=/data" : "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
