@@ -52,9 +52,8 @@ public final class Server {
         CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn, true);
 
         boolean tunnelForward = options.isTunnelForward();
-        boolean sshMode = options.isSshMode();
 
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward, sshMode)) {
+        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions);
 
             if (options.getControl()) {
@@ -121,7 +120,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 15;
+        final int expectedParameters = 14;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -167,9 +166,6 @@ public final class Server {
 
         String codecOptions = args[13];
         options.setCodecOptions(codecOptions);
-
-        boolean sshMode = Boolean.parseBoolean(args[14]);
-        options.setSshMode(sshMode);
 
         return options;
     }

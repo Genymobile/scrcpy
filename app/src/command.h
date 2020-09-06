@@ -58,7 +58,9 @@ bool
 cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t
-ssh_execute(const char *serial, const char *const adb_cmd[], size_t len);
+ssh_execute(const char *serial, const char *const ssh_cmd[], size_t len,
+            const char *const prefix_cmd[], size_t prefix_cmd_len,
+            const char *const ssh_options[], size_t ssh_options_len);
 
 process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len);

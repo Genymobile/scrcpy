@@ -16,7 +16,7 @@
 #include "util/str_util.h"
 
 #define SOCKET_NAME "scrcpy"
-#define SSH_SOCKET_NAME "/data/local/tmp/scrcpy"
+#define SSH_SOCKET_NAME "/dev/socket/scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
@@ -102,6 +102,17 @@ push_server(const char *serial) {
     process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     SDL_free(server_path);
     return process_check_success(process, "adb push");
+}
+
+static bool prepare_ssh_socket_path(const struct server_params *params) {
+    const char *const cmd[] = {
+        "rm",
+        "-f",
+        SSH_SOCKET_NAME,
+    };
+    process_t process = ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
+        NULL, 0, NULL, 0);
+    return process_check_success(process, "ssh rm -f " SSH_SOCKET_NAME);
 }
 
 static bool
@@ -295,7 +306,6 @@ execute_server(struct server *server, const struct server_params *params) {
         params->show_touches ? "true" : "false",
         params->stay_awake ? "true" : "false",
         params->codec_options ? params->codec_options : "-",
-        params->use_ssh ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
@@ -309,7 +319,46 @@ execute_server(struct server *server, const struct server_params *params) {
     // Then click on "Debug"
 #endif
     if (params->use_ssh)
-        return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    {
+        char *tunnel_desc = SDL_strdup(SSH_SOCKET_NAME ":localhost:12345");
+        const char *const ssh_options[] = {
+            "-o", "ExitOnForwardFailure=yes",
+            "-R", tunnel_desc,
+        };
+
+        const char *const prefix_cmd[] = {
+            "/data/ssh/root/socat",
+            "abstract-listen:" SOCKET_NAME ",fork",
+            "unix-connect:" SSH_SOCKET_NAME,
+            "&",
+        };
+
+        for (uint16_t port = server->port_range.first;;) {
+            server->server_socket = listen_on_port(port);
+            if (server->server_socket == INVALID_SOCKET) {
+                if (port < server->port_range.last) {
+                    LOGW("Could not listen on port %" PRIu16", retrying on %" PRIu16,
+                        port, (uint16_t) (port + 1));
+                    port++;
+                    continue;
+                }
+
+                if (server->port_range.first == server->port_range.last) {
+                    LOGE("Could not listen on port %" PRIu16, server->port_range.first);
+                } else {
+                    LOGE("Could not listen on any port in range %" PRIu16 ":%" PRIu16,
+                        server->port_range.first, server->port_range.last);
+                }
+                return PROCESS_NONE;
+            }
+            server->local_port = port;
+            snprintf(tunnel_desc + strlen(tunnel_desc) - 5, 6, "%d", port);
+
+            return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
+                prefix_cmd, sizeof(prefix_cmd) / sizeof(prefix_cmd[0]),
+                ssh_options, sizeof(ssh_options) / sizeof(ssh_options[0]));
+        }
+    }
     else
         return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
@@ -390,9 +439,14 @@ server_start(struct server *server, const char *serial,
         }
     }
 
+    server->use_ssh = params->use_ssh;
+
     if (!push_server(serial)) {
         goto error1;
     }
+
+    if (params->use_ssh && !prepare_ssh_socket_path(params))
+        goto error1;
 
     if (!params->use_ssh && !enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
@@ -419,21 +473,21 @@ server_start(struct server *server, const char *serial,
         goto error2;
     }
 
-    if (!params->use_ssh)
-        server->tunnel_enabled = true;
+    server->tunnel_enabled = true;
 
     return true;
 
 error2:
-    if (!params->use_ssh) {
-        if (!server->tunnel_forward) {
-            bool was_closed =
-                atomic_flag_test_and_set(&server->server_socket_closed);
-            // the thread is not started, the flag could not be already set
-            assert(!was_closed);
-            (void) was_closed;
-            close_socket(server->server_socket);
-        }
+    if (!server->tunnel_forward) {
+        bool was_closed =
+            atomic_flag_test_and_set(&server->server_socket_closed);
+        // the thread is not started, the flag could not be already set
+        assert(!was_closed);
+        (void) was_closed;
+        close_socket(server->server_socket);
+    }
+
+    if (!server->use_ssh) {
         disable_tunnel(server);
     }
 error1:
@@ -480,7 +534,8 @@ server_connect_to(struct server *server) {
 
     if (server->tunnel_enabled) {
         // we don't need the adb tunnel anymore
-        disable_tunnel(server); // ignore failure
+        if (!server->use_ssh)
+            disable_tunnel(server); // ignore failure
         server->tunnel_enabled = false;
     }
 
@@ -504,7 +559,7 @@ server_stop(struct server *server) {
 
     cmd_terminate(server->process);
 
-    if (server->tunnel_enabled) {
+    if (server->tunnel_enabled && !server->use_ssh) {
         // ignore failure
         disable_tunnel(server);
     }

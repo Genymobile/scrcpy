@@ -16,7 +16,6 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private String codecOptions;
-    private boolean sshMode;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -120,13 +119,5 @@ public class Options {
 
     public void setCodecOptions(String codecOptions) {
         this.codecOptions = codecOptions;
-    }
-
-    public boolean isSshMode() {
-        return sshMode;
-    }
-
-    public void setSshMode(boolean sshMode) {
-        this.sshMode = sshMode;
     }
 }

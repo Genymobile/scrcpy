@@ -25,6 +25,7 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+    bool use_ssh;
 };
 
 #define SERVER_INITIALIZER { \
@@ -42,6 +43,7 @@ struct server {
     .local_port = 0, \
     .tunnel_enabled = false, \
     .tunnel_forward = false, \
+    .use_ssh = false, \
 }
 
 struct server_params {
