@@ -52,8 +52,9 @@ public final class Server {
         CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn, true);
 
         boolean tunnelForward = options.isTunnelForward();
+        boolean sshMode = options.isSshMode();
 
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
+        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward, sshMode)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions);
 
             if (options.getControl()) {
@@ -166,6 +167,9 @@ public final class Server {
 
         String codecOptions = args[13];
         options.setCodecOptions(codecOptions);
+
+        boolean sshMode = Boolean.parseBoolean(args[14]);
+        options.setSshMode(sshMode);
 
         return options;
     }

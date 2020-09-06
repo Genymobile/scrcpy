@@ -16,6 +16,7 @@
 #include "util/str_util.h"
 
 #define SOCKET_NAME "scrcpy"
+#define SSH_SOCKET_NAME "/data/local/tmp/scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
@@ -294,6 +295,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->show_touches ? "true" : "false",
         params->stay_awake ? "true" : "false",
         params->codec_options ? params->codec_options : "-",
+        params->use_ssh ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "

@@ -16,6 +16,7 @@ public final class DesktopConnection implements Closeable {
     private static final int DEVICE_NAME_FIELD_LENGTH = 64;
 
     private static final String SOCKET_NAME = "scrcpy";
+    private static final String SSH_SOCKET_NAME = "/data/local/tmp/scrcpy";
 
     private final LocalSocket videoSocket;
     private final FileDescriptor videoFd;
@@ -41,11 +42,11 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
+    public static DesktopConnection open(Device device, boolean tunnelForward, boolean sshMode) throws IOException {
         LocalSocket videoSocket;
         LocalSocket controlSocket;
         if (tunnelForward) {
-            LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
+            LocalServerSocket localServerSocket = new LocalServerSocket(sshMode ? SSH_SOCKET_NAME : SOCKET_NAME);
             try {
                 videoSocket = localServerSocket.accept();
                 // send one byte so the client may read() to detect a connection error
@@ -60,9 +61,9 @@ public final class DesktopConnection implements Closeable {
                 localServerSocket.close();
             }
         } else {
-            videoSocket = connect(SOCKET_NAME);
+            videoSocket = connect(sshMode ? SSH_SOCKET_NAME : SOCKET_NAME);
             try {
-                controlSocket = connect(SOCKET_NAME);
+                controlSocket = connect(sshMode ? SSH_SOCKET_NAME : SOCKET_NAME);
             } catch (IOException | RuntimeException e) {
                 videoSocket.close();
                 throw e;
