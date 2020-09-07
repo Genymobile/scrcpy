@@ -26,6 +26,8 @@
 #define DEFAULT_ABSTRACTCAT_PATH PREFIX "/share/scrcpy/" ABSTRACTCAT_FILENAME
 #define DEVICE_ABSTRACTCAT_PATH "/data/local/tmp/" ABSTRACTCAT_FILENAME
 
+static void close_socket(socket_t socket);
+
 static char *
 get_server_path(void) {
 #ifdef __WINDOWS__
@@ -388,7 +390,7 @@ execute_server(struct server *server, const struct server_params *params) {
         bit_rate_string,
         max_fps_string,
         lock_video_orientation_string,
-        server->tunnel_forward ? "true" : "false",
+        server->tunnel_forward || params->force_adb_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
@@ -410,19 +412,6 @@ execute_server(struct server *server, const struct server_params *params) {
 #endif
     if (params->use_ssh)
     {
-        char *tunnel_desc = SDL_strdup(SSH_SOCKET_NAME ":localhost:12345");
-        const char *const ssh_options[] = {
-            "-o", "ExitOnForwardFailure=yes",
-            "-R", tunnel_desc,
-        };
-
-        const char *const prefix_cmd[] = {
-            DEVICE_ABSTRACTCAT_PATH,
-            "@" SOCKET_NAME, // Source.
-            SSH_SOCKET_NAME, // Destination.
-            "2", // Maximum connections to forward.
-        };
-
         for (uint16_t port = server->port_range.first;;) {
             server->server_socket = listen_on_port(port);
             if (server->server_socket == INVALID_SOCKET) {
@@ -442,7 +431,30 @@ execute_server(struct server *server, const struct server_params *params) {
                 return PROCESS_NONE;
             }
             server->local_port = port;
-            snprintf(tunnel_desc + strlen(tunnel_desc) - 5, 6, "%d", port);
+            char *tunnel_desc = SDL_strdup(SSH_SOCKET_NAME ":localhost:12345");
+
+            if (params->force_adb_forward)
+                sprintf(tunnel_desc, "localhost:%d:" SSH_SOCKET_NAME, port);
+            else
+                sprintf(tunnel_desc, SSH_SOCKET_NAME ":localhost:%d", port);
+
+            const char *const ssh_options[] = {
+                "-o", "ExitOnForwardFailure=yes",
+                params->force_adb_forward ? "-L" : "-R", tunnel_desc,
+            };
+
+            const char *const prefix_cmd[] = {
+                DEVICE_ABSTRACTCAT_PATH,
+                params->force_adb_forward ? SSH_SOCKET_NAME : "@" SOCKET_NAME, // Source.
+                params->force_adb_forward ? "@" SOCKET_NAME : SSH_SOCKET_NAME, // Destination.
+                "2", // Maximum connections to forward.
+            };
+
+            if (params->force_adb_forward) {
+                close_socket(server->server_socket);
+                server->server_socket = INVALID_SOCKET;
+                server->tunnel_forward = true;
+            }
 
             return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
                 prefix_cmd, sizeof(prefix_cmd) / sizeof(prefix_cmd[0]),
