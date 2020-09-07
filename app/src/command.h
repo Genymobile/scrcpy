@@ -62,6 +62,7 @@ scp_execute(const char *const ssh_cmd[], size_t len);
 
 process_t
 ssh_execute(const char *endpoint, const char *const ssh_cmd[], size_t len,
+            const char *const prefix_cmd[], size_t prefix_cmd_len,
             const char *const ssh_options[], size_t ssh_options_len);
 
 process_t

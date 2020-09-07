@@ -16,7 +16,6 @@
 struct server {
     char *serial;
     process_t process;
-    process_t socket_forwarder;
     SDL_Thread *wait_server_thread;
     atomic_flag server_socket_closed;
     socket_t server_socket; // only used if !tunnel_forward
@@ -32,7 +31,6 @@ struct server {
 #define SERVER_INITIALIZER { \
     .serial = NULL, \
     .process = PROCESS_NONE, \
-    .socket_forwarder = PROCESS_NONE, \
     .wait_server_thread = NULL, \
     .server_socket_closed = ATOMIC_FLAG_INIT, \
     .server_socket = INVALID_SOCKET, \

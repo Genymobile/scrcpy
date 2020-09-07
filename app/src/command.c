@@ -122,8 +122,9 @@ scp_execute(const char *const scp_cmd[], size_t len) {
 
 process_t
 ssh_execute(const char *endpoint, const char *const ssh_cmd[], size_t len,
-        const char *const ssh_options[], size_t ssh_options_len) {
-    const char *cmd[len + ssh_options_len + 3];
+            const char *const prefix_cmd[], size_t prefix_cmd_len,
+            const char *const ssh_options[], size_t ssh_options_len) {
+    const char *cmd[len + prefix_cmd_len + ssh_options_len + 3];
     unsigned i = 0;
     process_t process;
 
@@ -131,6 +132,8 @@ ssh_execute(const char *endpoint, const char *const ssh_cmd[], size_t len,
     memcpy(&cmd[i], ssh_options, ssh_options_len * sizeof(const char *));
     i += ssh_options_len;
     cmd[i++] = endpoint;
+    memcpy(&cmd[i], prefix_cmd, prefix_cmd_len * sizeof(const char *));
+    i += prefix_cmd_len;
     memcpy(&cmd[i], ssh_cmd, len * sizeof(const char *));
     i += len;
     cmd[i] = NULL;
