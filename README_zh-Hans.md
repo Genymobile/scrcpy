@@ -217,7 +217,7 @@ scrcpy --record file.mp4
 scrcpy -r file.mkv
 ```
 
-在不开启屏幕共享的同时录制：
+在不开启屏幕镜像的同时录制：
 
 ```bash
 scrcpy --no-display --record file.mp4
