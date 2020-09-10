@@ -17,6 +17,7 @@ public class Options {
     private boolean stayAwake;
     private String codecOptions;
     private String encoderName;
+    private boolean useADBKeyboard;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -128,5 +129,13 @@ public class Options {
 
     public void setEncoderName(String encoderName) {
         this.encoderName = encoderName;
+    }
+
+    public boolean useADBKeyboard() {
+        return useADBKeyboard;
+    }
+
+    public void setUseADBKeyboard(boolean useADBKeyboard) {
+        this.useADBKeyboard = useADBKeyboard;
     }
 }

@@ -59,7 +59,7 @@ public final class Server {
                     options.getEncoderName());
 
             if (options.getControl()) {
-                final Controller controller = new Controller(device, connection);
+                final Controller controller = new Controller(device, connection, options);
 
                 // asynchronous
                 startController(controller);
@@ -122,7 +122,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 15;
+        final int expectedParameters = 16;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -171,6 +171,9 @@ public final class Server {
 
         String encoderName = "-".equals(args[14]) ? null : args[14];
         options.setEncoderName(encoderName);
+
+        boolean useADBKeyboard = Boolean.parseBoolean(args[15]);
+        options.setUseADBKeyboard(useADBKeyboard);
 
         return options;
     }

@@ -320,6 +320,7 @@ scrcpy(const struct scrcpy_options *options) {
         .codec_options = options->codec_options,
         .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
+        .use_adb_keyboard = options->use_adb_keyboard,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;

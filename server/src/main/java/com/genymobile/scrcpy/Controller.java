@@ -20,6 +20,7 @@ public class Controller {
 
     private final Device device;
     private final DesktopConnection connection;
+    private final Options options;
     private final DeviceMessageSender sender;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
@@ -31,9 +32,10 @@ public class Controller {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection, Options options) {
         this.device = device;
         this.connection = connection;
+        this.options = options;
         initPointers();
         sender = new DeviceMessageSender(connection);
     }
@@ -145,18 +147,28 @@ public class Controller {
     }
 
     private boolean injectChar(char c) {
-        String decomposed = KeyComposition.decompose(c);
-        char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
-        KeyEvent[] events = charMap.getEvents(chars);
-        if (events == null) {
-            return false;
-        }
-        for (KeyEvent event : events) {
-            if (!device.injectEvent(event)) {
+        if (options.useADBKeyboard()) {
+            // Process latin keys the same way in order to provide same reaction speed.
+            try {
+                Process process = Runtime.getRuntime().exec("am broadcast -a ADB_INPUT_CHARS --eia chars " + String.valueOf((int) c));
+                return process.waitFor() == 0;
+            } catch (Throwable throwable) {
                 return false;
             }
+        } else {
+            String decomposed = KeyComposition.decompose(c);
+            char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
+            KeyEvent[] events = charMap.getEvents(chars);
+            if (events == null) {
+                return false;
+            }
+            for (KeyEvent event : events) {
+                if (!device.injectEvent(event)) {
+                    return false;
+                }
+            }
+            return true;
         }
-        return true;
     }
 
     private int injectText(String text) {
