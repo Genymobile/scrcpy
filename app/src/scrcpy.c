@@ -319,6 +319,7 @@ scrcpy(const struct scrcpy_options *options) {
         .stay_awake = options->stay_awake,
         .codec_options = options->codec_options,
         .force_adb_forward = options->force_adb_forward,
+        .use_adb_keyboard = options->use_adb_keyboard,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;
