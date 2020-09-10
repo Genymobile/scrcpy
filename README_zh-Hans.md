@@ -473,7 +473,7 @@ scrcpy --render-expired-frames
 
 Android在 _开发者设置_ 中提供了这项功能。
 
-_Scrcpy_ 可以在启动时开启这项功能并在停止共享后关闭这项功能。
+_Scrcpy_ 提供一个选项可以在启动时开启这项功能并在退出时恢复初始设置：
 
 ```bash
 scrcpy --show-touches
