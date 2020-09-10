@@ -210,7 +210,7 @@ scrcpy --lock-video-orientation 3   # 90° 顺时针旋转
 
 ### 屏幕录制
 
-可以在传输的同时录制视频：
+可以在屏幕镜像的同时录制视频：
 
 ```bash
 scrcpy --record file.mp4
