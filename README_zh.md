@@ -302,7 +302,7 @@ scrcpy
 
 ```bash
 adb kill-server    # kill the local adb server on 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 _你的另一台电脑_
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # 保持该窗口开启
 ```
 
