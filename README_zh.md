@@ -136,7 +136,7 @@ brew cask install android-platform-tools
 scrcpy
 ```
 
-本程序接受命令行输入，可以通过如下命令查看帮助：
+支持带命令行参数执行，查看参数列表：
 
 ```bash
 scrcpy --help
