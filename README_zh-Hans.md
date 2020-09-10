@@ -487,7 +487,7 @@ scrcpy -t
 
 _Scrcpy_ 不会默认关闭屏幕保护。
 
-关闭熄屏定时器：
+关闭屏幕保护：
 
 ```bash
 scrcpy --disable-screensaver
