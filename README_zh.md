@@ -48,7 +48,7 @@ _Only the original [README] is guaranteed to be up-to-date._
 
 ### Linux
 
-在Debian (目前 _测试中_ 且 _sid_)（译者注：这个不懂） 和Ubuntu (20.04)上：
+在Debian（目前仅测试版和不稳定版，即 _testing_ 和 _sid_ 版本）和Ubuntu （20.04）上：
 
 ```
 apt install scrcpy
