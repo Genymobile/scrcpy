@@ -288,7 +288,7 @@ autoadb scrcpy -s '{}'
 
 ```bash
 adb kill-server    # 关闭本地5037端口上的adb服务器
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 _你的另一台电脑_
+ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
 # 保持该窗口开启
 ```
 
