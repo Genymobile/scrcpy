@@ -11,11 +11,11 @@ _Only the original [README] is guaranteed to be up-to-date._
 
 # scrcpy (v1.16)
 
-本应用程序可以让你实现在电脑上对安卓设备的查看和操作。
+本应用程序可以通过USB（或 [TCP/IP][article-tcpip] ）连接用于显示或控制安卓设备。这不需要获取 _root_ 权限。
 
-该程序不要求 _root_ 权限，它只需要您的手机和电脑通过USB（或通过TCP/IP）连接。
+该应用程序可以在 _GNU/Linux_, _Windows_ 和 _macOS_ 环境下运行。
 
-该应用程序可以在 _GNU/Linux_, _Windows_ and _macOS_ 环境下运行。
+[article-tcpip]:https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
