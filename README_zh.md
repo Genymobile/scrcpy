@@ -1,6 +1,6 @@
 _Only the original [README] is guaranteed to be up-to-date._
 
-只有原版的[README]是实时更新的。
+只有原版的[README](README.md)会保持最新。
 
 本文根据[479d10d]进行翻译。
 
