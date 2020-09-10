@@ -384,7 +384,7 @@ _(左)_ 和 <kbd>MOD</kbd>+<kbd>→</kbd> _(右)_ 的快捷键实时更改。
 需要注意的是， _scrcpy_ 控制三个不同的朝向：
  - <kbd>MOD</kbd>+<kbd>r</kbd> 请求设备在竖屏和横屏之间切换（如果前台应用程序不支持所请求的朝向，可能会拒绝该请求）。
 
- - `--lock-video-orientation` 改变共享的朝向（设备输出到电脑的画面的朝向）。这会影响录制。
+ - `--lock-video-orientation` 改变镜像的朝向（设备镜像到电脑的画面朝向）。这会影响录制。
  
  - `--rotation` （或<kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>）
    只旋转窗口的画面。这只影响显示，不影响录制。
