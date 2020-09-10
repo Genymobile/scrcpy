@@ -676,7 +676,7 @@ _³需要安卓版本 Android >= 7。_
 
 一个同事让我找出一个和[gnirehtet]一样难以发音的名字。
 
-[`strcpy`] 可以复制**str**ing; `scrcpy` 可以“复制”**scr**een。
+[`strcpy`] 可以复制**str**ing； `scrcpy` 可以复制**scr**een。
 
 [gnirehtet]: https://github.com/Genymobile/gnirehtet
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
