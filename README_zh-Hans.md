@@ -355,7 +355,7 @@ scrcpy --always-on-top
 
 #### 全屏
 
-您可以通过如下命令直接全屏打开共享：
+您可以通过如下命令直接全屏启动程序：
 
 ```bash
 scrcpy --fullscreen
