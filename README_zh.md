@@ -701,7 +701,7 @@ _³需要安卓版本 Android >= 7。_
 [开发者页面]: DEVELOP.md
 
 
-## 许可证明
+## 许可协议
 
     Copyright (C) 2018 Genymobile
     Copyright (C) 2018-2020 Romain Vimont
