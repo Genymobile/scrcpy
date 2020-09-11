@@ -42,7 +42,7 @@ _Only the original [README] is guaranteed to be up-to-date._
 [额外的选项]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
-## 获取应用程序
+## 获取scrcpy
 
 <a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
@@ -81,7 +81,7 @@ apt install scrcpy
 
 ### Windows
 
-在Windows上，简便起见，我们准备了包含所有依赖项（包括adb）的程序。
+在Windows上，简便起见，我们准备了包含所有依赖项（包括adb）的程序包。
 
  - [`scrcpy-win64-v1.16.zip`][direct-win64]  
    _(SHA-256: 3f30dc5db1a2f95c2b40a0f5de91ec1642d9f53799250a8c529bc882bc0918f0)_
@@ -111,7 +111,7 @@ scoop install adb    # 如果你没有adb
 
 ### macOS
 
-本应用程序可以使用[Homebrew]下载。直接安装就可以了：
+您可以使用[Homebrew]下载scrcpy。直接安装就可以了：
 
 [Homebrew]: https://brew.sh/
 
@@ -119,7 +119,7 @@ scoop install adb    # 如果你没有adb
 brew install scrcpy
 ```
 
-您需要 `adb`以使用本应用程序，并且它需要可以通过 `PATH`被访问。如果您没有：
+您需要 `adb`以使用scrcpy，并且它需要可以通过 `PATH`被访问。如果您没有：
 
 ```bash
 brew cask install android-platform-tools
@@ -128,7 +128,7 @@ brew cask install android-platform-tools
 您也可以[自行编译][编译]。
 
 
-## 运行程序
+## 运行scrcpy
 
 用USB链接电脑和安卓设备，并执行：
 
@@ -355,7 +355,7 @@ scrcpy --always-on-top
 
 #### 全屏
 
-您可以通过如下命令直接全屏启动程序：
+您可以通过如下命令直接全屏启动scrcpy：
 
 ```bash
 scrcpy --fullscreen
@@ -459,7 +459,7 @@ scrcpy -Sw
 
 #### 渲染超时帧
 
-为了降低延迟 _scrcpy_ 默认渲染解码成功的最近一帧，并跳过前面任意帧。
+为了降低延迟， _scrcpy_ 默认渲染解码成功的最近一帧，并跳过前面任意帧。
 
 强制渲染所有帧（可能导致延迟变高）：
 
