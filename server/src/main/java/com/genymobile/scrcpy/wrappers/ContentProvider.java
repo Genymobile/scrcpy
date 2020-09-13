@@ -35,7 +35,7 @@ public class ContentProvider implements Closeable {
     private final IBinder token;
 
     private Method callMethod;
-    private boolean callMethodLegacy;
+    private int callMethodVersion;
 
     ContentProvider(ActivityManager manager, Object provider, String name, IBinder token) {
         this.manager = manager;
@@ -46,12 +46,20 @@ public class ContentProvider implements Closeable {
 
     private Method getCallMethod() throws NoSuchMethodException {
         if (callMethod == null) {
+
             try {
-                callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, String.class, Bundle.class);
+                callMethod = provider.getClass()
+                        .getMethod("call", String.class, String.class, String.class, String.class, String.class, Bundle.class);
+                callMethodVersion = 0;
             } catch (NoSuchMethodException e) {
-                // old version
-                callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, Bundle.class);
-                callMethodLegacy = true;
+                // old versions
+                try {
+                    callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, String.class, Bundle.class);
+                    callMethodVersion = 1;
+                } catch (NoSuchMethodException e2) {
+                    callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, Bundle.class);
+                    callMethodVersion = 2;
+                }
             }
         }
         return callMethod;
@@ -61,10 +69,16 @@ public class ContentProvider implements Closeable {
         try {
             Method method = getCallMethod();
             Object[] args;
-            if (!callMethodLegacy) {
-                args = new Object[]{ServiceManager.PACKAGE_NAME, "settings", callMethod, arg, extras};
-            } else {
-                args = new Object[]{ServiceManager.PACKAGE_NAME, callMethod, arg, extras};
+            switch (callMethodVersion) {
+                case 0:
+                    args = new Object[]{ServiceManager.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
+                    break;
+                case 1:
+                    args = new Object[]{ServiceManager.PACKAGE_NAME, "settings", callMethod, arg, extras};
+                    break;
+                default:
+                    args = new Object[]{ServiceManager.PACKAGE_NAME, callMethod, arg, extras};
+                    break;
             }
             return (Bundle) method.invoke(provider, args);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
