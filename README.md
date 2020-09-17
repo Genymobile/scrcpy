@@ -382,9 +382,9 @@ The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
 _(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
 
 Note that _scrcpy_ manages 3 different rotations:
-- <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait and
-  landscape (the current running app may refuse, if it does support the
-  requested orientation).
+ - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait
+   and landscape (the current running app may refuse, if it does support the
+   requested orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
