@@ -3,16 +3,16 @@
 다음은 자주 제보되는 문제들과 그들의 현황입니다.
 
 
-### Window 운영체제에서, 디바이스가 발견되지 않습니다.
+### Windows 운영체제에서, 디바이스가 발견되지 않습니다.
 
 가장 흔한 제보는 `adb`에 발견되지 않는 디바이스 혹은 권한 관련 문제입니다.
 다음 명령어를 호출하여 모든 것들에 이상이 없는지 확인하세요:
 
     adb devices
 
-Window는 당신의 디바이스를 감지하기 위해 [drivers]가 필요할 수도 있습니다.
+Windows는 당신의 디바이스를 감지하기 위해 [드라이버]가 필요할 수도 있습니다.
 
-[drivers]: https://developer.android.com/studio/run/oem-usb.html
+[드라이버]: https://developer.android.com/studio/run/oem-usb.html
 
 
 ### 내 디바이스의 미러링만 가능하고, 디바이스와 상호작용을 할 수 없습니다.
