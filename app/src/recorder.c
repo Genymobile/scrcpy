@@ -361,12 +361,14 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
 
     if (recorder->failed) {
         // reject any new packet (this will stop the stream)
+        mutex_unlock(recorder->mutex);
         return false;
     }
 
     struct record_packet *rec = record_packet_new(packet);
     if (!rec) {
         LOGC("Could not allocate record packet");
+        mutex_unlock(recorder->mutex);
         return false;
     }
 
