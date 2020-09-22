@@ -100,7 +100,7 @@ main(int argc, char *argv[]) {
 
 #if defined (__WINDOWS__) && ! defined (WINDOWS_NOCONSOLE)
     if (res != 0) {
-        fprintf(stderr, "Press any key to continue...\n");
+        fprintf(stderr, "Press Enter to continue...\n");
         getchar();
     }
 #endif
