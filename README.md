@@ -1,4 +1,4 @@
-# scrcpy (v1.16)
+# SRCPY(v1.16)
 
 [Read in another language](#translations)
 
