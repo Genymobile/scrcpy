@@ -759,5 +759,6 @@ This README is available in other languages:
 - [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.16](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+- [Indonesian (Indonesia, `id`)](README.id.md)
 
 Only this README file is guaranteed to be up-to-date.
