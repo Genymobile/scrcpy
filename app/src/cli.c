@@ -87,13 +87,13 @@ scrcpy_print_usage(const char *arg0) {
         "        Do not display device (only when screen recording is\n"
         "        enabled).\n"
         "\n"
+        "    --no-key-repeat\n"
+        "        Do not forward repeated key events when a key is held down.\n"
+        "\n"
         "    --no-mipmaps\n"
         "        If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then\n"
         "        mipmaps are automatically generated to improve downscaling\n"
         "        quality. This option disables the generation of mipmaps.\n"
-        "\n"
-        "    --no-key-repeat\n"
-        "        Do not forward repeated key events when a key is held down.\n"
         "\n"
         "    -p, --port port[:port]\n"
         "        Set the TCP port (range) used by the client to listen.\n"
@@ -672,8 +672,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"max-size",               required_argument, NULL, 'm'},
         {"no-control",             no_argument,       NULL, 'n'},
         {"no-display",             no_argument,       NULL, 'N'},
-        {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
         {"no-key-repeat",          no_argument,       NULL, OPT_NO_KEY_REPEAT},
+        {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
         {"port",                   required_argument, NULL, 'p'},
         {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},
         {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
