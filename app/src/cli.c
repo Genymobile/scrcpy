@@ -26,6 +26,11 @@ scrcpy_print_usage(const char *arg0) {
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
         "        Default is %d.\n"
         "\n"
+        "    --char-inject-fallback\n"
+        "        Fallback to the clipboard (copy and paste) when non-supported\n"
+        "        non-ASCII characters are typed.\n"
+        "        Would override the device clipboard content when it happens.\n"
+        "\n"
         "    --codec-options key[:type]=value[,...]\n"
         "        Set a list of comma-separated key:type=value options for the\n"
         "        device encoder.\n"
@@ -651,12 +656,15 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_CHAR_INJECT_FALLBACK   1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     static const struct option long_options[] = {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",               required_argument, NULL, 'b'},
+        {"char-inject-fallback",   no_argument,       NULL,
+                                                  OPT_CHAR_INJECT_FALLBACK},
         {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"disable-screensaver",    no_argument,       NULL,
@@ -718,6 +726,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 // fall through
             case OPT_CROP:
                 opts->crop = optarg;
+                break;
+            case OPT_CHAR_INJECT_FALLBACK:
+                opts->char_inject_fallback = true;
                 break;
             case OPT_DISPLAY_ID:
                 if (!parse_display_id(optarg, &opts->display_id)) {

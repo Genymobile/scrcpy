@@ -69,6 +69,7 @@ struct scrcpy_options {
     bool fullscreen;
     bool always_on_top;
     bool control;
+    bool char_inject_fallback;
     bool display;
     bool turn_screen_off;
     bool render_expired_frames;
@@ -112,6 +113,7 @@ struct scrcpy_options {
     .show_touches = false, \
     .fullscreen = false, \
     .always_on_top = false, \
+    .char_inject_fallback = false, \
     .control = true, \
     .display = true, \
     .turn_screen_off = false, \

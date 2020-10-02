@@ -313,6 +313,7 @@ scrcpy(const struct scrcpy_options *options) {
         .bit_rate = options->bit_rate,
         .max_fps = options->max_fps,
         .lock_video_orientation = options->lock_video_orientation,
+        .char_inject_fallback = options->char_inject_fallback,
         .control = options->control,
         .display_id = options->display_id,
         .show_touches = options->show_touches,

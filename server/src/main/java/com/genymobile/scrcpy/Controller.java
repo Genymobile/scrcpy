@@ -21,6 +21,7 @@ public class Controller {
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
+    private final boolean charInjectFallback;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -31,9 +32,10 @@ public class Controller {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection, boolean charInjectFallback) {
         this.device = device;
         this.connection = connection;
+        this.charInjectFallback = charInjectFallback;
         initPointers();
         sender = new DeviceMessageSender(connection);
     }
@@ -163,8 +165,19 @@ public class Controller {
         int successCount = 0;
         for (char c : text.toCharArray()) {
             if (!injectChar(c)) {
-                Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
-                continue;
+                if (this.charInjectFallback) {
+                    // Needs to handle the full remaining substring than only the failed character,
+                    // since the events may happen too fast. E.g. if we are to do it per character,
+                    // the expected input "ABCD" may lead to the actual value of "DDDD".
+                    String remaining = text.substring(successCount);
+                    setClipboard(remaining, true);
+                    successCount = text.length();
+                    break;
+                }
+                else {
+                    Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
+                    continue;
+                }
             }
             successCount++;
         }
