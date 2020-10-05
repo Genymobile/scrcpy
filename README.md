@@ -595,6 +595,16 @@ scrcpy --no-key-repeat
 ```
 
 
+#### Right-click and middle-click
+
+By default, right-click triggers BACK (or POWER on) and middle-click triggers
+HOME. To disable these shortcuts and forward the clicks to the device instead:
+
+```bash
+scrcpy --forward-all-clicks
+```
+
+
 ### File drop
 
 #### Install APK

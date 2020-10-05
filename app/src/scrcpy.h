@@ -79,6 +79,7 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
+    bool forward_all_clicks;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -123,6 +124,7 @@ struct scrcpy_options {
     .force_adb_forward = false, \
     .disable_screensaver = false, \
     .forward_key_repeat = true, \
+    .forward_all_clicks = false, \
 }
 
 bool

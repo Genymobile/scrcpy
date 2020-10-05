@@ -60,6 +60,7 @@ input_manager_init(struct input_manager *im,
     im->control = options->control;
     im->forward_key_repeat = options->forward_key_repeat;
     im->prefer_text = options->prefer_text;
+    im->forward_all_clicks = options->forward_all_clicks;
 
     const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
     assert(shortcut_mods->count);
@@ -629,7 +630,7 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
-    if (down) {
+    if (!im->forward_all_clicks && down) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
             press_back_or_turn_screen_on(im->controller);
             return;

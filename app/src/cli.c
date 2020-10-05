@@ -57,6 +57,11 @@ scrcpy_print_usage(const char *arg0) {
         "        Do not attempt to use \"adb reverse\" to connect to the\n"
         "        the device.\n"
         "\n"
+        "    --forward-all-clicks\n"
+        "        By default, right-click triggers BACK (or POWER on) and\n"
+        "        middle-click triggers HOME. This option disables these\n"
+        "        shortcuts and forward the clicks to the device instead.\n"
+        "\n"
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
@@ -651,6 +656,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_FORWARD_ALL_CLICKS     1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -664,6 +670,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
         {"force-adb-forward",      no_argument,       NULL,
                                                   OPT_FORCE_ADB_FORWARD},
+        {"forward-all-clicks",     no_argument,       NULL,
+                                                  OPT_FORWARD_ALL_CLICKS},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
         {"lock-video-orientation", required_argument, NULL,
@@ -855,6 +863,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
                     return false;
                 }
+                break;
+            case OPT_FORWARD_ALL_CLICKS:
+                opts->forward_all_clicks = true;
                 break;
             default:
                 // getopt prints the error message on stderr

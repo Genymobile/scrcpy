@@ -25,6 +25,7 @@ struct input_manager {
     bool control;
     bool forward_key_repeat;
     bool prefer_text;
+    bool forward_all_clicks;
 
     struct {
         unsigned data[SC_MAX_SHORTCUT_MODS];
