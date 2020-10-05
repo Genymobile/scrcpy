@@ -53,6 +53,7 @@ struct server_params {
     uint32_t bit_rate;
     uint16_t max_fps;
     int8_t lock_video_orientation;
+    bool char_inject_fallback;
     bool control;
     uint16_t display_id;
     bool show_touches;
