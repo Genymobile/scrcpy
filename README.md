@@ -755,7 +755,7 @@ Read the [developers page].
 
 This README is available in other languages:
 
-- [Indonesian (Indonesia, `id`)](README.id.md)
+- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.16](README.zh-Hans.md)
