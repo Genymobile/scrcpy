@@ -19,6 +19,9 @@ allprojects {
         google()
         jcenter()
     }
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:deprecation"
+    }
 }
 
 task clean(type: Delete) {
