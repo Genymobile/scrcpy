@@ -73,6 +73,12 @@ Start in fullscreen.
 Print this help.
 
 .TP
+.B \-\-legacy\-paste
+Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
+
+This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
+
+.TP
 .BI "\-\-lock\-video\-orientation " value
 Lock video orientation to \fIvalue\fR. Possible values are -1 (unlocked), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees otation counterclockwise.
 

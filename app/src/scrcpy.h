@@ -80,6 +80,7 @@ struct scrcpy_options {
     bool disable_screensaver;
     bool forward_key_repeat;
     bool forward_all_clicks;
+    bool legacy_paste;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -125,6 +126,7 @@ struct scrcpy_options {
     .disable_screensaver = false, \
     .forward_key_repeat = true, \
     .forward_all_clicks = false, \
+    .legacy_paste = false, \
 }
 
 bool

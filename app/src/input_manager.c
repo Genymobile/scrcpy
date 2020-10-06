@@ -61,6 +61,7 @@ input_manager_init(struct input_manager *im,
     im->forward_key_repeat = options->forward_key_repeat;
     im->prefer_text = options->prefer_text;
     im->forward_all_clicks = options->forward_all_clicks;
+    im->legacy_paste = options->legacy_paste;
 
     const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
     assert(shortcut_mods->count);
@@ -441,7 +442,7 @@ input_manager_process_key(struct input_manager *im,
                 return;
             case SDLK_v:
                 if (control && !repeat && down) {
-                    if (shift) {
+                    if (shift || im->legacy_paste) {
                         // inject the text as input events
                         clipboard_paste(controller);
                     } else {
@@ -505,6 +506,11 @@ input_manager_process_key(struct input_manager *im,
     }
 
     if (ctrl && !shift && keycode == SDLK_v && down && !repeat) {
+        if (im->legacy_paste) {
+            // inject the text as input events
+            clipboard_paste(controller);
+            return;
+        }
         // Synchronize the computer clipboard to the device clipboard before
         // sending Ctrl+v, to allow seamless copy-paste.
         set_device_clipboard(controller, false);
