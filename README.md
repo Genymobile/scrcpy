@@ -548,6 +548,10 @@ into the device clipboard. As a consequence, any Android application could read
 its content. You should avoid to paste sensitive content (like passwords) that
 way.
 
+Some devices do not behave as expected when setting the device clipboard
+programmatically. An option `--legacy-paste` is provided to change the behavior
+of <kbd>Ctrl</kbd>+<kbd>v</kbd> and <kbd>MOD</kbd>+<kbd>v</kbd> to also inject
+the computer clipboard text as a sequence of key events.
 
 #### Pinch-to-zoom
 

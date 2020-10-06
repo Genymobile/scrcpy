@@ -63,6 +63,12 @@ scrcpy_print_usage(const char *arg0) {
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
+        "    --legacy-paste\n"
+        "        Inject computer clipboard text as a sequence of key events\n"
+        "        on Ctrl+v (like MOD+Shift+v).\n"
+        "        This is a workaround for some devices not behaving as\n"
+        "        expected when setting the device clipboard programmatically.\n"
+        "\n"
         "    --lock-video-orientation value\n"
         "        Lock video orientation to value.\n"
         "        Possible values are -1 (unlocked), 0, 1, 2 and 3.\n"
@@ -651,6 +657,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_LEGACY_PASTE           1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -666,6 +673,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_FORCE_ADB_FORWARD},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
+        {"legacy-paste",           no_argument,       NULL, OPT_LEGACY_PASTE},
         {"lock-video-orientation", required_argument, NULL,
                                                   OPT_LOCK_VIDEO_ORIENTATION},
         {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
@@ -855,6 +863,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
                     return false;
                 }
+                break;
+            case OPT_LEGACY_PASTE:
+                opts->legacy_paste = true;
                 break;
             default:
                 // getopt prints the error message on stderr
