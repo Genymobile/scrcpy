@@ -16,6 +16,7 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private String codecOptions;
+    private String encoderName;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -119,5 +120,13 @@ public class Options {
 
     public void setCodecOptions(String codecOptions) {
         this.codecOptions = codecOptions;
+    }
+
+    public String getEncoderName() {
+        return encoderName;
+    }
+
+    public void setEncoderName(String encoderName) {
+        this.encoderName = encoderName;
     }
 }

@@ -60,6 +60,11 @@ scrcpy_print_usage(const char *arg0) {
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
+        "    --encoder-name name\n"
+        "        Attempts to create the MediaCodec encoder by its exact name.\n"
+        "        Given encoder must be a h264 format encoder.\n"
+        "        By default encoder is created by type and is choosen automatically by the device.\n"
+        "\n"
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
@@ -651,6 +656,7 @@ guess_record_format(const char *filename) {
 #define OPT_DISABLE_SCREENSAVER    1020
 #define OPT_SHORTCUT_MOD           1021
 #define OPT_NO_KEY_REPEAT          1022
+#define OPT_ENCODER_NAME           1023
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -658,6 +664,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
         {"bit-rate",               required_argument, NULL, 'b'},
         {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
+        {"encoder-name",           required_argument, NULL, OPT_ENCODER_NAME},
         {"crop",                   required_argument, NULL, OPT_CROP},
         {"disable-screensaver",    no_argument,       NULL,
                                                   OPT_DISABLE_SCREENSAVER},
@@ -844,6 +851,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_CODEC_OPTIONS:
                 opts->codec_options = optarg;
+                break;
+            case OPT_ENCODER_NAME:
+                opts->encoder_name = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
