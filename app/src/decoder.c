@@ -15,6 +15,10 @@
 #include "util/buffer_util.h"
 #include "util/log.h"
 
+typedef enum bool {
+    false, true
+} bool;
+
 // set the decoded frame as ready for rendering, and notify
 static void
 push_frame(struct decoder *decoder) {
@@ -79,7 +83,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         return false;
     }
 #else
-    int got_picture;
+    bool got_picture;
     int len = avcodec_decode_video2(decoder->codec_ctx,
                                     decoder->video_buffer->decoding_frame,
                                     &got_picture,
