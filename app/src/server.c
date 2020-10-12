@@ -294,6 +294,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->show_touches ? "true" : "false",
         params->stay_awake ? "true" : "false",
         params->codec_options ? params->codec_options : "-",
+        params->encoder_name ? params->encoder_name : "-",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "

@@ -26,17 +26,19 @@ public class ScreenEncoder implements Device.RotationListener {
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
+    private String encoderName;
     private List<CodecOption> codecOptions;
     private int bitRate;
     private int maxFps;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
+        this.encoderName = encoderName;
     }
 
     @Override
@@ -69,7 +71,7 @@ public class ScreenEncoder implements Device.RotationListener {
         boolean alive;
         try {
             do {
-                MediaCodec codec = createCodec();
+                MediaCodec codec = createCodec(encoderName);
                 IBinder display = createDisplay();
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
@@ -150,7 +152,11 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
-    private static MediaCodec createCodec() throws IOException {
+    private static MediaCodec createCodec(String encoderName) throws IOException {
+        if (encoderName != null) {
+            Ln.d("Creating encoder by name: '" + encoderName + "'");
+            return MediaCodec.createByCodecName(encoderName);
+        }
         return MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
     }
 

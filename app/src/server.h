@@ -48,6 +48,7 @@ struct server_params {
     enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
+    const char *encoder_name;
     struct sc_port_range port_range;
     uint16_t max_size;
     uint32_t bit_rate;

@@ -53,6 +53,9 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "        Default is 0.\n"
         "\n"
+        "    --encoder name\n"
+        "        Use a specific MediaCodec encoder (must be a H.264 encoder).\n"
+        "\n"
         "    --force-adb-forward\n"
         "        Do not attempt to use \"adb reverse\" to connect to the\n"
         "        the device.\n"
@@ -664,6 +667,7 @@ guess_record_format(const char *filename) {
 #define OPT_NO_KEY_REPEAT          1022
 #define OPT_FORWARD_ALL_CLICKS     1023
 #define OPT_LEGACY_PASTE           1024
+#define OPT_ENCODER_NAME           1025
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -675,6 +679,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"disable-screensaver",    no_argument,       NULL,
                                                   OPT_DISABLE_SCREENSAVER},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
+        {"encoder",                required_argument, NULL, OPT_ENCODER_NAME},
         {"force-adb-forward",      no_argument,       NULL,
                                                   OPT_FORCE_ADB_FORWARD},
         {"forward-all-clicks",     no_argument,       NULL,
@@ -860,6 +865,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_CODEC_OPTIONS:
                 opts->codec_options = optarg;
+                break;
+            case OPT_ENCODER_NAME:
+                opts->encoder_name = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;

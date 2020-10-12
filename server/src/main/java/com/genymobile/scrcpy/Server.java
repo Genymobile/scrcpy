@@ -54,7 +54,8 @@ public final class Server {
         boolean tunnelForward = options.isTunnelForward();
 
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions);
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
+                    options.getEncoderName());
 
             if (options.getControl()) {
                 final Controller controller = new Controller(device, connection);
@@ -120,7 +121,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 14;
+        final int expectedParameters = 15;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -166,6 +167,9 @@ public final class Server {
 
         String codecOptions = args[13];
         options.setCodecOptions(codecOptions);
+
+        String encoderName = "-".equals(args[14]) ? null : args[14];
+        options.setEncoderName(encoderName);
 
         return options;
     }

@@ -318,6 +318,7 @@ scrcpy(const struct scrcpy_options *options) {
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
         .codec_options = options->codec_options,
+        .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
     };
     if (!server_start(&server, options->serial, &params)) {
