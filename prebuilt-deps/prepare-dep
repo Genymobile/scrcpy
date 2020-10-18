@@ -25,15 +25,37 @@ get_file() {
     checksum "$file" "$sum"
 }
 
+get_first_layer_dir_name() {
+    local file="$1"
+
+    if [[ "$file" == *.zip ]]
+    then
+        echo `unzip -Z -1 "$file" | head -n 1 | cut -d/ -f1`
+    elif [[ "$file" == *.tar.gz ]]
+    then
+        echo `tar tf "$file" | head -n 1 | cut -d/ -f1`
+    else
+        echo "Unsupported file: $file"
+        return 1
+    fi
+}
+
 extract() {
     local file="$1"
+    local dir="$2"
+
+    mkdir -p "$dir"
     echo "Extracting $file..."
     if [[ "$file" == *.zip ]]
     then
-        unzip -q "$file"
+        local folder_in_file=`get_first_layer_dir_name "$file"`
+
+        ln -s . "$dir"/"$folder_in_file"
+        unzip -q "$file" -d "$dir"
+        rm "$dir"/"$folder_in_file"
     elif [[ "$file" == *.tar.gz ]]
     then
-        tar xf "$file"
+        tar xf "$file" --strip 1 -C "$dir"
     else
         echo "Unsupported file: $file"
         return 1
@@ -51,7 +73,7 @@ get_dep() {
     else
         echo "$dir: not found"
         get_file "$url" "$file" "$sum"
-        extract "$file"
+        extract "$file" "$dir"
     fi
 }
 
