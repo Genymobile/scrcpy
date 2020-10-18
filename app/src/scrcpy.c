@@ -7,6 +7,12 @@
 #include <sys/time.h>
 #include <SDL2/SDL.h>
 
+#ifdef _WIN32
+// not needed here, but winsock2.h must never be included AFTER windows.h
+# include <winsock2.h>
+# include <windows.h>
+#endif
+
 #include "config.h"
 #include "command.h"
 #include "common.h"
@@ -42,12 +48,32 @@ static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
     .screen = &screen,
-    .prefer_text = false, // initialized later
+    .repeat = 0,
+
+    // initialized later
+    .prefer_text = false,
+    .sdl_shortcut_mods = {
+        .data = {0},
+        .count = 0,
+    },
 };
+
+#ifdef _WIN32
+BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
+    if (ctrl_type == CTRL_C_EVENT) {
+        SDL_Event event;
+        event.type = SDL_QUIT;
+        SDL_PushEvent(&event);
+        return TRUE;
+    }
+    return FALSE;
+}
+#endif // _WIN32
 
 // init SDL and set appropriate hints
 static bool
-sdl_init_and_configure(bool display) {
+sdl_init_and_configure(bool display, const char *render_driver,
+                       bool disable_screensaver) {
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
@@ -56,13 +82,25 @@ sdl_init_and_configure(bool display) {
 
     atexit(SDL_Quit);
 
+#ifdef _WIN32
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+#endif // _WIN32
+
     if (!display) {
         return true;
     }
 
-    // Use the best available scale quality
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2")) {
-        LOGW("Could not enable bilinear filtering");
+    if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
+        LOGW("Could not set render driver");
+    }
+
+    // Linear filtering
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
+        LOGW("Could not enable linear filtering");
     }
 
 #ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
@@ -84,8 +122,13 @@ sdl_init_and_configure(bool display) {
         LOGW("Could not disable minimize on focus loss");
     }
 
-    // Do not disable the screensaver when scrcpy is running
-    SDL_EnableScreenSaver();
+    if (disable_screensaver) {
+        LOGD("Screensaver disabled");
+        SDL_DisableScreenSaver();
+    } else {
+        LOGD("Screensaver enabled");
+        SDL_EnableScreenSaver();
+    }
 
     return true;
 }
@@ -106,8 +149,9 @@ event_watcher(void *data, SDL_Event *event) {
     (void) data;
     if (event->type == SDL_WINDOWEVENT
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // called from another thread, not very safe, but it's a workaround!
-        screen_render(&screen);
+        // In practice, it seems to always be called from the same thread in
+        // that specific case. Anyway, it's just a workaround.
+        screen_render(&screen, true);
     }
     return 0;
 }
@@ -126,7 +170,7 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event, bool control) {
+handle_event(SDL_Event *event, const struct scrcpy_options *options) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -148,7 +192,7 @@ handle_event(SDL_Event *event, bool control) {
             screen_handle_window_event(&screen, &event->window);
             break;
         case SDL_TEXTINPUT:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_text_input(&input_manager, &event->text);
@@ -157,16 +201,16 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
-            input_manager_process_key(&input_manager, &event->key, control);
+            input_manager_process_key(&input_manager, &event->key);
             break;
         case SDL_MOUSEMOTION:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_mouse_motion(&input_manager, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             input_manager_process_mouse_wheel(&input_manager, &event->wheel);
@@ -175,8 +219,7 @@ handle_event(SDL_Event *event, bool control) {
         case SDL_MOUSEBUTTONUP:
             // some mouse events do not interact with the device, so process
             // the event even if control is disabled
-            input_manager_process_mouse_button(&input_manager, &event->button,
-                                               control);
+            input_manager_process_mouse_button(&input_manager, &event->button);
             break;
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
@@ -184,7 +227,7 @@ handle_event(SDL_Event *event, bool control) {
             input_manager_process_touch(&input_manager, &event->tfinger);
             break;
         case SDL_DROPFILE: {
-            if (!control) {
+            if (!options->control) {
                 break;
             }
             file_handler_action_t action;
@@ -201,16 +244,15 @@ handle_event(SDL_Event *event, bool control) {
 }
 
 static bool
-event_loop(bool display, bool control) {
-    (void) display;
+event_loop(const struct scrcpy_options *options) {
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
-    if (display) {
+    if (options->display) {
         SDL_AddEventWatch(event_watcher, NULL);
     }
 #endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(&event, control);
+        enum event_result result = handle_event(&event, options);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
@@ -222,21 +264,6 @@ event_loop(bool display, bool control) {
         }
     }
     return false;
-}
-
-static process_t
-set_show_touches_enabled(const char *serial, bool enabled) {
-    const char *value = enabled ? "1" : "0";
-    const char *const adb_cmd[] = {
-        "shell", "settings", "put", "system", "show_touches", value
-    };
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
-}
-
-static void
-wait_show_touches(process_t process) {
-    // reap the process, ignore the result
-    process_check_success(process, "show_touches");
 }
 
 static SDL_LogPriority
@@ -279,23 +306,22 @@ bool
 scrcpy(const struct scrcpy_options *options) {
     bool record = !!options->record_filename;
     struct server_params params = {
+        .log_level = options->log_level,
         .crop = options->crop,
-        .local_port = options->port,
+        .port_range = options->port_range,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
         .max_fps = options->max_fps,
+        .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
+        .display_id = options->display_id,
+        .show_touches = options->show_touches,
+        .stay_awake = options->stay_awake,
+        .codec_options = options->codec_options,
+        .force_adb_forward = options->force_adb_forward,
     };
     if (!server_start(&server, options->serial, &params)) {
         return false;
-    }
-
-    process_t proc_show_touches = PROCESS_NONE;
-    bool show_touches_waited;
-    if (options->show_touches) {
-        LOGI("Enable show_touches");
-        proc_show_touches = set_show_touches_enabled(options->serial, true);
-        show_touches_waited = false;
     }
 
     bool ret = false;
@@ -308,7 +334,8 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
 
-    if (!sdl_init_and_configure(options->display)) {
+    if (!sdl_init_and_configure(options->display, options->render_driver,
+                                options->disable_screensaver)) {
         goto end;
     }
 
@@ -394,7 +421,8 @@ scrcpy(const struct scrcpy_options *options) {
                                    options->always_on_top, options->window_x,
                                    options->window_y, options->window_width,
                                    options->window_height,
-                                   options->window_borderless)) {
+                                   options->window_borderless,
+                                   options->rotation, options-> mipmaps)) {
             goto end;
         }
 
@@ -413,14 +441,9 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
-    if (options->show_touches) {
-        wait_show_touches(proc_show_touches);
-        show_touches_waited = true;
-    }
+    input_manager_init(&input_manager, options);
 
-    input_manager.prefer_text = options->prefer_text;
-
-    ret = event_loop(options->display, options->control);
+    ret = event_loop(options);
     LOGD("quit...");
 
     screen_destroy(&screen);
@@ -472,16 +495,6 @@ end:
     if (fps_counter_initialized) {
         fps_counter_join(&fps_counter);
         fps_counter_destroy(&fps_counter);
-    }
-
-    if (options->show_touches) {
-        if (!show_touches_waited) {
-            // wait the process which enabled "show touches"
-            wait_show_touches(proc_show_touches);
-        }
-        LOGI("Disable show_touches");
-        proc_show_touches = set_show_touches_enabled(options->serial, false);
-        wait_show_touches(proc_show_touches);
     }
 
     server_destroy(&server);

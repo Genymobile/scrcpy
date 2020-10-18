@@ -11,6 +11,7 @@ src = [
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
+    'src/opengl.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
@@ -76,11 +77,9 @@ cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
     src += [ 'src/sys/win/command.c' ]
-    src += [ 'src/sys/win/net.c' ]
     dependencies += cc.find_library('ws2_32')
 else
     src += [ 'src/sys/unix/command.c' ]
-    src += [ 'src/sys/unix/net.c' ]
 endif
 
 conf = configuration_data()
@@ -98,13 +97,20 @@ conf.set_quoted('PREFIX', get_option('prefix'))
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
-# the default client TCP port for the "adb reverse" tunnel
+# the default client TCP port range for the "adb reverse" tunnel
 # overridden by option --port
-conf.set('DEFAULT_LOCAL_PORT', '27183')
+conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
+conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
 # the default max video size for both dimensions, in pixels
 # overridden by option --max-size
 conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
+
+# the default video orientation
+# natural device orientation is 0 and each increment adds 90 degrees
+# counterclockwise
+# overridden by option --lock-video-orientation
+conf.set('DEFAULT_LOCK_VIDEO_ORIENTATION', '-1')  # -1: unlocked
 
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
@@ -118,6 +124,9 @@ conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
+
+# select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
+conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == 'new')
 
 configure_file(configuration: conf, output: 'config.h')
 
@@ -155,12 +164,12 @@ if get_option('buildtype') == 'debug'
             'src/cli.c',
             'src/util/str_util.c',
         ]],
-        ['test_control_event_serialize', [
+        ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
             'src/util/str_util.c',
         ]],
-        ['test_device_event_deserialize', [
+        ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
@@ -177,7 +186,7 @@ if get_option('buildtype') == 'debug'
         exe = executable(t[0], t[1],
                          include_directories: src_dir,
                          dependencies: dependencies,
-                         c_args: ['-DSDL_MAIN_HANDLED'])
+                         c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
         test(t[0], exe)
     endforeach
 endif

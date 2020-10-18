@@ -1,7 +1,9 @@
 #include <assert.h>
+#include <string.h>
 
 #include "cli.h"
 #include "common.h"
+#include "scrcpy.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
@@ -48,9 +50,10 @@ static void test_options(void) {
         "--fullscreen",
         "--max-fps", "30",
         "--max-size", "1024",
+        "--lock-video-orientation", "2",
         // "--no-control" is not compatible with "--turn-screen-off"
         // "--no-display" is not compatible with "--fulscreen"
-        "--port", "1234",
+        "--port", "1234:1236",
         "--push-target", "/sdcard/Movies",
         "--record", "file",
         "--record-format", "mkv",
@@ -72,16 +75,17 @@ static void test_options(void) {
 
     const struct scrcpy_options *opts = &args.opts;
     assert(opts->always_on_top);
-    fprintf(stderr, "%d\n", (int) opts->bit_rate);
     assert(opts->bit_rate == 5000000);
     assert(!strcmp(opts->crop, "100:200:300:400"));
     assert(opts->fullscreen);
     assert(opts->max_fps == 30);
     assert(opts->max_size == 1024);
-    assert(opts->port == 1234);
+    assert(opts->lock_video_orientation == 2);
+    assert(opts->port_range.first == 1234);
+    assert(opts->port_range.last == 1236);
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));
-    assert(opts->record_format == RECORDER_FORMAT_MKV);
+    assert(opts->record_format == SC_RECORD_FORMAT_MKV);
     assert(opts->render_expired_frames);
     assert(!strcmp(opts->serial, "0123456789abcdef"));
     assert(opts->show_touches);
@@ -116,13 +120,54 @@ static void test_options2(void) {
     assert(!opts->control);
     assert(!opts->display);
     assert(!strcmp(opts->record_filename, "file.mp4"));
-    assert(opts->record_format == RECORDER_FORMAT_MP4);
+    assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }
 
-int main(void) {
+static void test_parse_shortcut_mods(void) {
+    struct sc_shortcut_mods mods;
+    bool ok;
+
+    ok = sc_parse_shortcut_mods("lctrl", &mods);
+    assert(ok);
+    assert(mods.count == 1);
+    assert(mods.data[0] == SC_MOD_LCTRL);
+
+    ok = sc_parse_shortcut_mods("lctrl+lalt", &mods);
+    assert(ok);
+    assert(mods.count == 1);
+    assert(mods.data[0] == (SC_MOD_LCTRL | SC_MOD_LALT));
+
+    ok = sc_parse_shortcut_mods("rctrl,lalt", &mods);
+    assert(ok);
+    assert(mods.count == 2);
+    assert(mods.data[0] == SC_MOD_RCTRL);
+    assert(mods.data[1] == SC_MOD_LALT);
+
+    ok = sc_parse_shortcut_mods("lsuper,rsuper+lalt,lctrl+rctrl+ralt", &mods);
+    assert(ok);
+    assert(mods.count == 3);
+    assert(mods.data[0] == SC_MOD_LSUPER);
+    assert(mods.data[1] == (SC_MOD_RSUPER | SC_MOD_LALT));
+    assert(mods.data[2] == (SC_MOD_LCTRL | SC_MOD_RCTRL | SC_MOD_RALT));
+
+    ok = sc_parse_shortcut_mods("", &mods);
+    assert(!ok);
+
+    ok = sc_parse_shortcut_mods("lctrl+", &mods);
+    assert(!ok);
+
+    ok = sc_parse_shortcut_mods("lctrl,", &mods);
+    assert(!ok);
+}
+
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_flag_version();
     test_flag_help();
     test_options();
     test_options2();
+    test_parse_shortcut_mods();
     return 0;
 };

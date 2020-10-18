@@ -6,40 +6,37 @@ import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
-import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenEncoder implements Device.RotationListener {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
+    private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
 
     private static final int NO_PTS = -1;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
+    private List<CodecOption> codecOptions;
     private int bitRate;
     private int maxFps;
-    private int iFrameInterval;
     private boolean sendFrameMeta;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, int iFrameInterval) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
-        this.iFrameInterval = iFrameInterval;
-    }
-
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps) {
-        this(sendFrameMeta, bitRate, maxFps, DEFAULT_I_FRAME_INTERVAL);
+        this.codecOptions = codecOptions;
     }
 
     @Override
@@ -53,21 +50,40 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         Workarounds.prepareMainLooper();
-        Workarounds.fillAppInfo();
 
-        MediaFormat format = createFormat(bitRate, maxFps, iFrameInterval);
+        try {
+            internalStreamScreen(device, fd);
+        } catch (NullPointerException e) {
+            // Retry with workarounds enabled:
+            // <https://github.com/Genymobile/scrcpy/issues/365>
+            // <https://github.com/Genymobile/scrcpy/issues/940>
+            Ln.d("Applying workarounds to avoid NullPointerException");
+            Workarounds.fillAppInfo();
+            internalStreamScreen(device, fd);
+        }
+    }
+
+    private void internalStreamScreen(Device device, FileDescriptor fd) throws IOException {
+        MediaFormat format = createFormat(bitRate, maxFps, codecOptions);
         device.setRotationListener(this);
         boolean alive;
         try {
             do {
                 MediaCodec codec = createCodec();
                 IBinder display = createDisplay();
-                Rect contentRect = device.getScreenInfo().getContentRect();
-                Rect videoRect = device.getScreenInfo().getVideoSize().toRect();
+                ScreenInfo screenInfo = device.getScreenInfo();
+                Rect contentRect = screenInfo.getContentRect();
+                // include the locked video orientation
+                Rect videoRect = screenInfo.getVideoSize().toRect();
+                // does not include the locked video orientation
+                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
+                int videoRotation = screenInfo.getVideoRotation();
+                int layerStack = device.getLayerStack();
+
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, contentRect, videoRect);
+                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
                 codec.start();
                 try {
                     alive = encode(codec, fd);
@@ -135,27 +151,49 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private static MediaCodec createCodec() throws IOException {
-        return MediaCodec.createEncoderByType("video/avc");
+        return MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
-    private static MediaFormat createFormat(int bitRate, int maxFps, int iFrameInterval) {
+    private static void setCodecOption(MediaFormat format, CodecOption codecOption) {
+        String key = codecOption.getKey();
+        Object value = codecOption.getValue();
+
+        if (value instanceof Integer) {
+            format.setInteger(key, (Integer) value);
+        } else if (value instanceof Long) {
+            format.setLong(key, (Long) value);
+        } else if (value instanceof Float) {
+            format.setFloat(key, (Float) value);
+        } else if (value instanceof String) {
+            format.setString(key, (String) value);
+        }
+
+        Ln.d("Codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
+    }
+
+    private static MediaFormat createFormat(int bitRate, int maxFps, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
-        format.setString(MediaFormat.KEY_MIME, "video/avc");
+        format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_VIDEO_AVC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
         format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
-        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, iFrameInterval);
+        format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
         // display the very first frame, and recover from bad quality when no new frames
         format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
         if (maxFps > 0) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                format.setFloat(MediaFormat.KEY_MAX_FPS_TO_ENCODER, maxFps);
-            } else {
-                Ln.w("Max FPS is only supported since Android 10, the option has been ignored");
+            // The key existed privately before Android 10:
+            // <https://android.googlesource.com/platform/frameworks/base/+/625f0aad9f7a259b6881006ad8710adce57d1384%5E%21/>
+            // <https://github.com/Genymobile/scrcpy/issues/488#issuecomment-567321437>
+            format.setFloat(KEY_MAX_FPS_TO_ENCODER, maxFps);
+        }
+
+        if (codecOptions != null) {
+            for (CodecOption option : codecOptions) {
+                setCodecOption(format, option);
             }
         }
+
         return format;
     }
 
@@ -172,12 +210,12 @@ public class ScreenEncoder implements Device.RotationListener {
         format.setInteger(MediaFormat.KEY_HEIGHT, height);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect) {
+    private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect, int layerStack) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
-            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
-            SurfaceControl.setDisplayLayerStack(display, 0);
+            SurfaceControl.setDisplayProjection(display, orientation, deviceRect, displayRect);
+            SurfaceControl.setDisplayLayerStack(display, layerStack);
         } finally {
             SurfaceControl.closeTransaction();
         }

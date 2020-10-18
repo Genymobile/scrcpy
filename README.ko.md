@@ -1,3 +1,5 @@
+_Only the original [README](README.md) is guaranteed to be up-to-date._
+
 # scrcpy (v1.11)
 
 This document will be updated frequently along with the original Readme file

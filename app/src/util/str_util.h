@@ -31,6 +31,11 @@ strquote(const char *src);
 bool
 parse_integer(const char *s, long *out);
 
+// parse s as integers separated by sep (for example '1234:2000')
+// returns the number of integers on success, 0 on failure
+size_t
+parse_integers(const char *s, const char sep, size_t max_items, long *out);
+
 // parse s as an integer into value
 // like parse_integer(), but accept 'k'/'K' (x1000) and 'm'/'M' (x1000000) as
 // suffix

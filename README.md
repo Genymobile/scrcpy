@@ -1,4 +1,6 @@
-# scrcpy (v1.12.1)
+# scrcpy (v1.16)
+
+[Read in another language](#translations)
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
@@ -34,10 +36,11 @@ control it using keyboard and mouse.
 
 ## Get the app
 
+<a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
 ### Linux
 
-In Debian (_testing_ and _sid_ for now):
+On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
 
 ```
 apt install scrcpy
@@ -48,6 +51,11 @@ A [Snap] package is available: [`scrcpy`][snap-link].
 [snap-link]: https://snapstats.org/snaps/scrcpy
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+
+For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
+
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
 For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
 
@@ -69,10 +77,10 @@ hard).
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
- - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
-   _(SHA-256: 57d34b6d16cfd9fe169bc37c4df58ebd256d05c1ea3febc63d9cb0a027ab47c9)_
+ - [`scrcpy-win64-v1.16.zip`][direct-win64]  
+   _(SHA-256: 3f30dc5db1a2f95c2b40a0f5de91ec1642d9f53799250a8c529bc882bc0918f0)_
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.16/scrcpy-win64-v1.16.zip
 
 It is also available in [Chocolatey]:
 
@@ -159,11 +167,13 @@ scrcpy -b 2M  # short version
 
 #### Limit frame rate
 
-On devices with Android >= 10, the capture frame rate can be limited:
+The capture frame rate can be limited:
 
 ```bash
 scrcpy --max-fps 15
 ```
+
+This is officially supported since Android 10, but may work on earlier versions.
 
 #### Crop
 
@@ -176,6 +186,21 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 ```
 
 If `--max-size` is also specified, resizing is applied after cropping.
+
+
+#### Lock video orientation
+
+
+To lock the orientation of the mirroring:
+
+```bash
+scrcpy --lock-video-orientation 0   # natural orientation
+scrcpy --lock-video-orientation 1   # 90° counterclockwise
+scrcpy --lock-video-orientation 2   # 180°
+scrcpy --lock-video-orientation 3   # 90° clockwise
+```
+
+This affects recording orientation.
 
 
 ### Recording
@@ -193,7 +218,6 @@ To disable mirroring while recording:
 scrcpy --no-display --record file.mp4
 scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
-# Ctrl+C does not terminate properly on Windows, so disconnect the device
 ```
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for
@@ -245,6 +269,16 @@ scrcpy -s 192.168.0.1:5555  # short version
 
 You can start several instances of _scrcpy_ for several devices.
 
+#### Autostart on device connection
+
+You could use [AutoAdb]:
+
+```bash
+autoadb scrcpy -s '{}'
+```
+
+[AutoAdb]: https://github.com/rom1v/autoadb
+
 #### SSH tunnel
 
 To connect to a remote device, it is possible to connect a local `adb` client to
@@ -262,6 +296,22 @@ From another terminal:
 ```bash
 scrcpy
 ```
+
+To avoid enabling remote port forwarding, you could force a forward connection
+instead (notice the `-L` instead of `-R`):
+
+```bash
+adb kill-server    # kill the local adb server on 5037
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# keep this open
+```
+
+From another terminal:
+
+```bash
+scrcpy --force-adb-forward
+```
+
 
 Like for wireless connections, it may be useful to reduce quality:
 
@@ -312,7 +362,35 @@ scrcpy --fullscreen
 scrcpy -f  # short version
 ```
 
-Fullscreen can then be toggled dynamically with `Ctrl`+`f`.
+Fullscreen can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>.
+
+#### Rotation
+
+The window may be rotated:
+
+```bash
+scrcpy --rotation 1
+```
+
+Possibles values are:
+ - `0`: no rotation
+ - `1`: 90 degrees counterclockwise
+ - `2`: 180 degrees
+ - `3`: 90 degrees clockwise
+
+The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
+_(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
+
+Note that _scrcpy_ manages 3 different rotations:
+ - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait
+   and landscape (the current running app may refuse, if it does support the
+   requested orientation).
+ - `--lock-video-orientation` changes the mirroring orientation (the orientation
+   of the video sent from the device to the computer). This affects the
+   recording.
+ - `--rotation` (or <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
+   rotates only the window content. This affects only the display, not the
+   recording.
 
 
 ### Other mirroring options
@@ -327,6 +405,37 @@ scrcpy --no-control
 scrcpy -n
 ```
 
+#### Display
+
+If several displays are available, it is possible to select the display to
+mirror:
+
+```bash
+scrcpy --display 1
+```
+
+The list of display ids can be retrieved by:
+
+```
+adb shell dumpsys display   # search "mDisplayId=" in the output
+```
+
+The secondary display may only be controlled if the device runs at least Android
+10 (otherwise it is mirrored in read-only).
+
+
+#### Stay awake
+
+To prevent the device to sleep after some delay when the device is plugged in:
+
+```bash
+scrcpy --stay-awake
+scrcpy -w
+```
+
+The initial state is restored when scrcpy is closed.
+
+
 #### Turn screen off
 
 It is possible to turn the device screen off while mirroring on start with a
@@ -337,9 +446,22 @@ scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Or by pressing `Ctrl`+`o` at any time.
+Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time.
 
-To turn it back on, press `POWER` (or `Ctrl`+`p`).
+To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
+
+On Android, the `POWER` button always turns the screen on. For convenience, if
+`POWER` is sent via scrcpy (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>), it
+will force to turn the screen off after a small delay (on a best effort basis).
+The physical `POWER` button will still cause the screen to be turned on.
+
+It can also be useful to prevent the device from sleeping:
+
+```bash
+scrcpy --turn-screen-off --stay-awake
+scrcpy -Sw
+```
+
 
 #### Render expired frames
 
@@ -360,7 +482,8 @@ device).
 
 Android provides this feature in _Developers options_.
 
-_Scrcpy_ provides an option to enable this feature on start and disable on exit:
+_Scrcpy_ provides an option to enable this feature on start and restore the
+initial value on exit:
 
 ```bash
 scrcpy --show-touches
@@ -370,24 +493,73 @@ scrcpy -t
 Note that it only shows _physical_ touches (with the finger on the device).
 
 
+#### Disable screensaver
+
+By default, scrcpy does not prevent the screensaver to run on the computer.
+
+To disable it:
+
+```bash
+scrcpy --disable-screensaver
+```
+
+
 ### Input control
 
 #### Rotate device screen
 
-Press `Ctrl`+`r` to switch between portrait and landscape modes.
+Press <kbd>MOD</kbd>+<kbd>r</kbd> to switch between portrait and landscape
+modes.
 
 Note that it rotates only if the application in foreground supports the
 requested orientation.
 
 #### Copy-paste
 
-It is possible to synchronize clipboards between the computer and the device, in
-both directions:
+Any time the Android clipboard changes, it is automatically synchronized to the
+computer clipboard.
 
- - `Ctrl`+`c` copies the device clipboard to the computer clipboard;
- - `Ctrl`+`Shift`+`v` copies the computer clipboard to the device clipboard;
- - `Ctrl`+`v` _pastes_ the computer clipboard as a sequence of text events (but
-   breaks non-ASCII characters).
+Any <kbd>Ctrl</kbd> shortcut is forwarded to the device. In particular:
+ - <kbd>Ctrl</kbd>+<kbd>c</kbd> typically copies
+ - <kbd>Ctrl</kbd>+<kbd>x</kbd> typically cuts
+ - <kbd>Ctrl</kbd>+<kbd>v</kbd> typically pastes (after computer-to-device
+   clipboard synchronization)
+
+This typically works as you expect.
+
+The actual behavior depends on the active application though. For example,
+_Termux_ sends SIGINT on <kbd>Ctrl</kbd>+<kbd>c</kbd> instead, and _K-9 Mail_
+composes a new message.
+
+To copy, cut and paste in such cases (but only supported on Android >= 7):
+ - <kbd>MOD</kbd>+<kbd>c</kbd> injects `COPY`
+ - <kbd>MOD</kbd>+<kbd>x</kbd> injects `CUT`
+ - <kbd>MOD</kbd>+<kbd>v</kbd> injects `PASTE` (after computer-to-device
+   clipboard synchronization)
+
+In addition, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> allows to inject the
+computer clipboard text as a sequence of key events. This is useful when the
+component does not accept text pasting (for example in _Termux_), but it can
+break non-ASCII content.
+
+**WARNING:** Pasting the computer clipboard to the device (either via
+<kbd>Ctrl</kbd>+<kbd>v</kbd> or <kbd>MOD</kbd>+<kbd>v</kbd>) copies the content
+into the device clipboard. As a consequence, any Android application could read
+its content. You should avoid to paste sensitive content (like passwords) that
+way.
+
+
+#### Pinch-to-zoom
+
+To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.
+
+More precisely, hold <kbd>Ctrl</kbd> while pressing the left-click button. Until
+the left-click button is released, all mouse movements scale and rotate the
+content (if supported by the app) relative to the center of the screen.
+
+Concretely, scrcpy generates additional touch events from a "virtual finger" at
+a location inverted through the center of the screen.
+
 
 #### Text injection preference
 
@@ -409,6 +581,18 @@ scrcpy --prefer-text
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+
+
+#### Key repeat
+
+By default, holding a key down generates repeated key events. This can cause
+performance problems in some games, where these events are useless anyway.
+
+To avoid forwarding repeated key events:
+
+```bash
+scrcpy --no-key-repeat
+```
 
 
 ### File drop
@@ -437,40 +621,67 @@ scrcpy --push-target /sdcard/foo/bar/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [USBaudio] (Linux-only).
+Audio is not forwarded by _scrcpy_. Use [sndcpy].
 
 Also see [issue #14].
 
-[USBaudio]: https://github.com/rom1v/usbaudio
+[sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
 
- | Action                                 |   Shortcut                    |   Shortcut (macOS)
- | -------------------------------------- |:----------------------------- |:-----------------------------
- | Switch fullscreen mode                 | `Ctrl`+`f`                    | `Cmd`+`f`
- | Resize window to 1:1 (pixel-perfect)   | `Ctrl`+`g`                    | `Cmd`+`g`
- | Resize window to remove black borders  | `Ctrl`+`x` \| _Double-click¹_ | `Cmd`+`x`  \| _Double-click¹_
- | Click on `HOME`                        | `Ctrl`+`h` \| _Middle-click_  | `Ctrl`+`h` \| _Middle-click_
- | Click on `BACK`                        | `Ctrl`+`b` \| _Right-click²_  | `Cmd`+`b`  \| _Right-click²_
- | Click on `APP_SWITCH`                  | `Ctrl`+`s`                    | `Cmd`+`s`
- | Click on `MENU`                        | `Ctrl`+`m`                    | `Ctrl`+`m`
- | Click on `VOLUME_UP`                   | `Ctrl`+`↑` _(up)_             | `Cmd`+`↑` _(up)_
- | Click on `VOLUME_DOWN`                 | `Ctrl`+`↓` _(down)_           | `Cmd`+`↓` _(down)_
- | Click on `POWER`                       | `Ctrl`+`p`                    | `Cmd`+`p`
- | Power on                               | _Right-click²_                | _Right-click²_
- | Turn device screen off (keep mirroring)| `Ctrl`+`o`                    | `Cmd`+`o`
- | Rotate device screen                   | `Ctrl`+`r`                    | `Cmd`+`r`
- | Expand notification panel              | `Ctrl`+`n`                    | `Cmd`+`n`
- | Collapse notification panel            | `Ctrl`+`Shift`+`n`            | `Cmd`+`Shift`+`n`
- | Copy device clipboard to computer      | `Ctrl`+`c`                    | `Cmd`+`c`
- | Paste computer clipboard to device     | `Ctrl`+`v`                    | `Cmd`+`v`
- | Copy computer clipboard to device      | `Ctrl`+`Shift`+`v`            | `Cmd`+`Shift`+`v`
- | Enable/disable FPS counter (on stdout) | `Ctrl`+`i`                    | `Cmd`+`i`
+In the following list, <kbd>MOD</kbd> is the shortcut modifier. By default, it's
+(left) <kbd>Alt</kbd> or (left) <kbd>Super</kbd>.
+
+It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
+`lalt`, `ralt`, `lsuper` and `rsuper`. For example:
+
+```bash
+# use RCtrl for shortcuts
+scrcpy --shortcut-mod=rctrl
+
+# use either LCtrl+LAlt or LSuper for shortcuts
+scrcpy --shortcut-mod=lctrl+lalt,lsuper
+```
+
+_<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
+
+[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+
+ | Action                                      |   Shortcut
+ | ------------------------------------------- |:-----------------------------
+ | Switch fullscreen mode                      | <kbd>MOD</kbd>+<kbd>f</kbd>
+ | Rotate display left                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
+ | Rotate display right                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
+ | Resize window to 1:1 (pixel-perfect)        | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-click¹_
+ | Click on `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Middle-click_
+ | Click on `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Right-click²_
+ | Click on `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | Click on `MENU` (unlock screen)             | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
+ | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
+ | Click on `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | Power on                                    | _Right-click²_
+ | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | Turn device screen on                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
+ | Rotate device screen                        | <kbd>MOD</kbd>+<kbd>r</kbd>
+ | Expand notification panel                   | <kbd>MOD</kbd>+<kbd>n</kbd>
+ | Collapse notification panel                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copy to clipboard³                          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Cut to clipboard³                           | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Synchronize clipboards and paste³           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | Pinch-to-zoom                               | <kbd>Ctrl</kbd>+_click-and-move_
 
 _¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._
+_²Right-click turns the screen on if it was off, presses BACK otherwise._  
+_³Only on Android >= 7._
+
+All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
+handled by the active application.
 
 
 ## Custom paths
@@ -539,3 +750,15 @@ Read the [developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+## Translations
+
+This README is available in other languages:
+
+- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
+- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
+- [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
+- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.16](README.zh-Hans.md)
+- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+
+Only this README file is guaranteed to be up-to-date.

@@ -25,10 +25,19 @@ receiver_destroy(struct receiver *receiver) {
 static void
 process_msg(struct device_msg *msg) {
     switch (msg->type) {
-        case DEVICE_MSG_TYPE_CLIPBOARD:
+        case DEVICE_MSG_TYPE_CLIPBOARD: {
+            char *current = SDL_GetClipboardText();
+            bool same = current && !strcmp(current, msg->clipboard.text);
+            SDL_free(current);
+            if (same) {
+                LOGD("Computer clipboard unchanged");
+                return;
+            }
+
             LOGI("Device clipboard copied");
             SDL_SetClipboardText(msg->clipboard.text);
             break;
+        }
     }
 }
 
@@ -60,28 +69,29 @@ static int
 run_receiver(void *data) {
     struct receiver *receiver = data;
 
-    unsigned char buf[DEVICE_MSG_SERIALIZED_MAX_SIZE];
+    static unsigned char buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
     for (;;) {
-        assert(head < DEVICE_MSG_SERIALIZED_MAX_SIZE);
-        ssize_t r = net_recv(receiver->control_socket, buf,
-                             DEVICE_MSG_SERIALIZED_MAX_SIZE - head);
+        assert(head < DEVICE_MSG_MAX_SIZE);
+        ssize_t r = net_recv(receiver->control_socket, buf + head,
+                             DEVICE_MSG_MAX_SIZE - head);
         if (r <= 0) {
             LOGD("Receiver stopped");
             break;
         }
 
-        ssize_t consumed = process_msgs(buf, r);
+        head += r;
+        ssize_t consumed = process_msgs(buf, head);
         if (consumed == -1) {
             // an error occurred
             break;
         }
 
         if (consumed) {
+            head -= consumed;
             // shift the remaining data in the buffer
-            memmove(buf, &buf[consumed], r - consumed);
-            head = r - consumed;
+            memmove(buf, &buf[consumed], head);
         }
     }
 
