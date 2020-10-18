@@ -20,14 +20,9 @@ prepare-ffmpeg-dev-win32:
 		ffmpeg-4.3.1-win32-dev
 
 prepare-ffmpeg-shared-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/shared/ffmpeg-4.3.1-win64-shared.zip \
-		dd29b7f92f48dead4dd940492c7509138c0f99db445076d0a597007298a79940 \
+	@./prepare-dep https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2020-10-17-12-30/ffmpeg-n4.3.1-20-g8a2acdc6da-win64-lgpl-shared-4.3.zip \
+		db3a355a2569044ceb7b417aae0b4bed4a01b1ef0a762dd7a4610bd34d886203 \
 		ffmpeg-4.3.1-win64-shared
-
-prepare-ffmpeg-dev-win64:
-	@./prepare-dep https://ffmpeg.zeranoe.com/builds/win64/dev/ffmpeg-4.3.1-win64-dev.zip \
-		2e8038242cf8e1bd095c2978f196ff0462b122cc6ef7e74626a6af15459d8b81 \
-		ffmpeg-4.3.1-win64-dev
 
 prepare-sdl2:
 	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.12-mingw.tar.gz \
