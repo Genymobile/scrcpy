@@ -199,3 +199,4 @@ scrcpy -m 1920
 scrcpy -m 1024
 scrcpy -m 800
 ```
+meson x --buildtype release --strip -Db_lto=true -Dprebuilt_server=server/scrcpy-server

@@ -7,14 +7,16 @@
 
 #include "config.h"
 
-enum sc_log_level {
+enum sc_log_level
+{
     SC_LOG_LEVEL_DEBUG,
     SC_LOG_LEVEL_INFO,
     SC_LOG_LEVEL_WARN,
     SC_LOG_LEVEL_ERROR,
 };
 
-enum sc_record_format {
+enum sc_record_format
+{
     SC_RECORD_FORMAT_AUTO,
     SC_RECORD_FORMAT_MP4,
     SC_RECORD_FORMAT_MKV,
@@ -22,7 +24,8 @@ enum sc_record_format {
 
 #define SC_MAX_SHORTCUT_MODS 8
 
-enum sc_shortcut_mod {
+enum sc_shortcut_mod
+{
     SC_MOD_LCTRL = 1 << 0,
     SC_MOD_RCTRL = 1 << 1,
     SC_MOD_LALT = 1 << 2,
@@ -31,19 +34,22 @@ enum sc_shortcut_mod {
     SC_MOD_RSUPER = 1 << 5,
 };
 
-struct sc_shortcut_mods {
+struct sc_shortcut_mods
+{
     unsigned data[SC_MAX_SHORTCUT_MODS];
     unsigned count;
 };
 
-struct sc_port_range {
+struct sc_port_range
+{
     uint16_t first;
     uint16_t last;
 };
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
-struct scrcpy_options {
+struct scrcpy_options
+{
     const char *serial;
     const char *crop;
     const char *record_filename;
@@ -81,51 +87,31 @@ struct scrcpy_options {
     bool forward_key_repeat;
 };
 
-#define SCRCPY_OPTIONS_DEFAULT { \
-    .serial = NULL, \
-    .crop = NULL, \
-    .record_filename = NULL, \
-    .window_title = NULL, \
-    .push_target = NULL, \
-    .render_driver = NULL, \
-    .codec_options = NULL, \
-    .log_level = SC_LOG_LEVEL_INFO, \
-    .record_format = SC_RECORD_FORMAT_AUTO, \
-    .port_range = { \
-        .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
-        .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \
-    }, \
-    .shortcut_mods = { \
-        .data = {SC_MOD_LALT, SC_MOD_LSUPER}, \
-        .count = 2, \
-    }, \
-    .max_size = DEFAULT_MAX_SIZE, \
-    .bit_rate = DEFAULT_BIT_RATE, \
-    .max_fps = 0, \
-    .lock_video_orientation = DEFAULT_LOCK_VIDEO_ORIENTATION, \
-    .rotation = 0, \
-    .window_x = SC_WINDOW_POSITION_UNDEFINED, \
-    .window_y = SC_WINDOW_POSITION_UNDEFINED, \
-    .window_width = 0, \
-    .window_height = 0, \
-    .display_id = 0, \
-    .show_touches = false, \
-    .fullscreen = false, \
-    .always_on_top = false, \
-    .control = true, \
-    .display = true, \
-    .turn_screen_off = false, \
-    .render_expired_frames = false, \
-    .prefer_text = false, \
-    .window_borderless = false, \
-    .mipmaps = true, \
-    .stay_awake = false, \
-    .force_adb_forward = false, \
-    .disable_screensaver = false, \
-    .forward_key_repeat = true, \
+#define SCRCPY_OPTIONS_DEFAULT \
+    {
+/*sadas*/
+    .serial = NULL,
+
+    /*sadas*/
+    .crop = NULL,
+    .record_filename = NULL,
+    .window_title = NULL,
+    .push_target = NULL,
+    .render_driver = NULL,
+    .codec_options = NULL,
+    .log_level = SC_LOG_LEVEL_INFO,
+    .record_format = SC_RECORD_FORMAT_AUTO,
+    .port_range = {
+        .first = DEFAULT_LOCAL_PORT_RANGE_FIRST,
+        .last = DEFAULT_LOCAL_PORT_RANGE_LAST,
+},
+    .shortcut_mods = {
+        .data = {SC_MOD_LALT, SC_MOD_LSUPER},
+        .count = 2,
+},
+    .max_size = DEFAULT_MAX_SIZE, .bit_rate = DEFAULT_BIT_RATE, .max_fps = 0, .lock_video_orientation = DEFAULT_LOCK_VIDEO_ORIENTATION, .rotation = 0, .window_x = SC_WINDOW_POSITION_UNDEFINED, .window_y = SC_WINDOW_POSITION_UNDEFINED, .window_width = 0, .window_height = 0, .display_id = 0, .show_touches = false, .fullscreen = false, .always_on_top = false, .control = true, .display = true, .turn_screen_off = false, .render_expired_frames = false, .prefer_text = false, .window_borderless = false, .mipmaps = true, .stay_awake = false, .force_adb_forward = false, .disable_screensaver = false, .forward_key_repeat = true,
 }
 
-bool
-scrcpy(const struct scrcpy_options *options);
+bool scrcpy(const struct scrcpy_options *options);
 
 #endif
