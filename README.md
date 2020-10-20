@@ -560,6 +560,9 @@ content (if supported by the app) relative to the center of the screen.
 Concretely, scrcpy generates additional touch events from a "virtual finger" at
 a location inverted through the center of the screen.
 
+#### Restart
+
+To restart the device, hold <kbd>MOD</kbd>+<kbd>p</kbd> (`POWER` button). Depending on the device, this opens a menu where `restart` or `shutdown` can be selected.
 
 #### Text injection preference
 
