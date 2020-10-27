@@ -504,5 +504,11 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
+    const char *const cmd[] = {
+        "kill-server",
+    };
+
+    adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+
     SDL_free(server->serial);
 }
