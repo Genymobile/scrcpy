@@ -5,6 +5,7 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.IBinder;
 import android.view.Surface;
@@ -12,6 +13,8 @@ import android.view.Surface;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -152,10 +155,26 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
+    private static MediaCodecInfo[] listEncoders() {
+        List<MediaCodecInfo> result = new ArrayList<>();
+        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        for (MediaCodecInfo codecInfo : list.getCodecInfos()) {
+            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(MediaFormat.MIMETYPE_VIDEO_AVC)) {
+                result.add(codecInfo);
+            }
+        }
+        return result.toArray(new MediaCodecInfo[result.size()]);
+    }
+
     private static MediaCodec createCodec(String encoderName) throws IOException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
-            return MediaCodec.createByCodecName(encoderName);
+            try {
+                return MediaCodec.createByCodecName(encoderName);
+            } catch (IllegalArgumentException e) {
+                MediaCodecInfo[] encoders = listEncoders();
+                throw new InvalidEncoderException(encoderName, encoders);
+            }
         }
         MediaCodec codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
         Ln.d("Using encoder: '" + codec.getName() + "'");

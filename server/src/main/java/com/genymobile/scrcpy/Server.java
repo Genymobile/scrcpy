@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import android.graphics.Rect;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 
@@ -208,6 +209,15 @@ public final class Server {
                 Ln.e("Try to use one of the available display ids:");
                 for (int id : displayIds) {
                     Ln.e("    scrcpy --display " + id);
+                }
+            }
+        } else if (e instanceof InvalidEncoderException) {
+            InvalidEncoderException iee = (InvalidEncoderException) e;
+            MediaCodecInfo[] encoders = iee.getAvailableEncoders();
+            if (encoders != null && encoders.length > 0) {
+                Ln.e("Try to use one of the available encoders:");
+                for (MediaCodecInfo encoder : encoders) {
+                    Ln.e("    scrcpy --encoder-name '" + encoder.getName() + "'");
                 }
             }
         }
