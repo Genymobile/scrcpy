@@ -203,6 +203,22 @@ scrcpy --lock-video-orientation 3   # 90° clockwise
 This affects recording orientation.
 
 
+#### Encoder
+
+Some devices have more than one encoder, and some of them may cause issues or
+crash. It is possible to select a different encoder:
+
+```bash
+scrcpy --encoder OMX.qcom.video.encoder.avc
+```
+
+To list the available encoders, you could pass an invalid encoder name, the
+error will give the available encoders:
+
+```bash
+scrcpy --encoder _
+```
+
 ### Recording
 
 It is possible to record the screen while mirroring:
