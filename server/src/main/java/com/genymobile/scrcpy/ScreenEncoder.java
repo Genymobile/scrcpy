@@ -157,7 +157,9 @@ public class ScreenEncoder implements Device.RotationListener {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             return MediaCodec.createByCodecName(encoderName);
         }
-        return MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+        MediaCodec codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+        Ln.d("Using encoder: '" + codec.getName() + "'");
+        return codec;
     }
 
     private static void setCodecOption(MediaFormat format, CodecOption codecOption) {
