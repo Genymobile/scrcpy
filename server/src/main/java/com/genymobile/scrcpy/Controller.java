@@ -1,5 +1,8 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
+
+import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -149,12 +152,12 @@ public class Controller {
     private boolean injectChar(char c) {
         if (options.useADBKeyboard()) {
             // Process latin keys the same way in order to provide same reaction speed.
-            try {
-                Process process = Runtime.getRuntime().exec("am broadcast -a ADB_INPUT_CHARS --eia chars " + String.valueOf((int) c));
-                return process.waitFor() == 0;
-            } catch (Throwable throwable) {
-                return false;
-            }
+            Intent intent = new Intent();
+            intent.setAction("ADB_INPUT_CHARS");
+            int[] chars = {c};
+            intent.putExtra("chars", chars);
+            device.sendBroadcast(intent);
+            return true;
         } else {
             String decomposed = KeyComposition.decompose(c);
             char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};

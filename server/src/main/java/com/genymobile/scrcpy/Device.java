@@ -8,6 +8,7 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.content.IOnPrimaryClipChangedListener;
+import android.content.Intent;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
@@ -272,5 +273,9 @@ public final class Device {
 
     public static ContentProvider createSettingsProvider() {
         return SERVICE_MANAGER.getActivityManager().createSettingsProvider();
+    }
+
+    public void sendBroadcast(Intent intent) {
+        SERVICE_MANAGER.getActivityManager().sendBroadcast(intent);
     }
 }
