@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <SDL2/SDL_mutex.h>
 #include <libavutil/avutil.h>
+#include <libavutil/imgutils.h>
 #include <libavformat/avformat.h>
 
 #include "config.h"
@@ -11,7 +12,7 @@
 
 bool
 video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames) {
+                  bool render_expired_frames, struct size *size) {
     vb->fps_counter = fps_counter;
 
     if (!(vb->hw_frame = av_frame_alloc())) {
@@ -21,21 +22,27 @@ video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
     if (!(vb->decoding_frame = av_frame_alloc())) {
         goto error_1;
     }
-    vb->decoding_frame->format = AV_PIX_FMT_YUV420P;
+    vb->decoding_frame->format = AV_PIX_FMT_NV12;
 
     if (!(vb->rendering_frame = av_frame_alloc())) {
         goto error_2;
     }
+    vb->rendering_frame->format = AV_PIX_FMT_NV12;
+
+    vb->out_buffer = av_malloc(av_image_get_buffer_size(AV_PIX_FMT_NV12, size->width, size->height, 1));
+    if (!vb->out_buffer) {
+        goto error_3;
+    }
 
     if (!(vb->mutex = SDL_CreateMutex())) {
-        goto error_3;
+        goto error_4;
     }
 
     vb->render_expired_frames = render_expired_frames;
     if (render_expired_frames) {
         if (!(vb->rendering_frame_consumed_cond = SDL_CreateCond())) {
             SDL_DestroyMutex(vb->mutex);
-            goto error_3;
+            goto error_4;
         }
         // interrupted is not used if expired frames are not rendered
         // since offering a frame will never block
@@ -48,6 +55,8 @@ video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
 
     return true;
 
+error_4:
+    av_free(vb->out_buffer);
 error_3:
     av_frame_free(&vb->rendering_frame);
 error_2:
@@ -64,6 +73,7 @@ video_buffer_destroy(struct video_buffer *vb) {
         SDL_DestroyCond(vb->rendering_frame_consumed_cond);
     }
     SDL_DestroyMutex(vb->mutex);
+    av_free(vb->out_buffer);
     av_frame_free(&vb->rendering_frame);
     av_frame_free(&vb->decoding_frame);
     av_frame_free(&vb->hw_frame);
