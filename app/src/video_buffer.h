@@ -11,6 +11,7 @@
 typedef struct AVFrame AVFrame;
 
 struct video_buffer {
+    AVFrame *hw_frame;
     AVFrame *decoding_frame;
     AVFrame *rendering_frame;
     SDL_mutex *mutex;

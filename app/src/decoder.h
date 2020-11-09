@@ -10,6 +10,7 @@ struct video_buffer;
 
 struct decoder {
     struct video_buffer *video_buffer;
+    AVBufferRef *hw_device_ctx;
     AVCodecContext *codec_ctx;
 };
 
