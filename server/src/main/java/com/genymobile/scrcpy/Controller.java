@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.ServiceManager;
-
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
@@ -150,33 +148,35 @@ public class Controller {
     }
 
     private boolean injectChar(char c) {
-        if (options.useADBKeyboard()) {
-            // Process latin keys the same way in order to provide same reaction speed.
-            Intent intent = new Intent();
-            intent.setAction("ADB_INPUT_CHARS");
-            int[] chars = {c};
-            intent.putExtra("chars", chars);
-            device.sendBroadcast(intent);
-            return true;
-        } else {
-            String decomposed = KeyComposition.decompose(c);
-            char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
-            KeyEvent[] events = charMap.getEvents(chars);
-            if (events == null) {
+        String decomposed = KeyComposition.decompose(c);
+        char[] chars = decomposed != null ? decomposed.toCharArray() : new char[]{c};
+        KeyEvent[] events = charMap.getEvents(chars);
+        if (events == null) {
+            return false;
+        }
+        for (KeyEvent event : events) {
+            if (!device.injectEvent(event)) {
                 return false;
             }
-            for (KeyEvent event : events) {
-                if (!device.injectEvent(event)) {
-                    return false;
-                }
-            }
-            return true;
         }
+        return true;
     }
 
     private int injectText(String text) {
+        char[] chars = text.toCharArray();
+        if (options.useADBKeyboard()) {
+            Intent intent = new Intent();
+            intent.setAction("ADB_INPUT_CHARS");
+            int[] intChars = new int[chars.length];
+            for (int i = 0; i < chars.length; ++i) {
+                intChars[i] = chars[i];
+            }
+            intent.putExtra("chars", intChars);
+            device.sendBroadcast(intent);
+            return chars.length;
+        }
         int successCount = 0;
-        for (char c : text.toCharArray()) {
+        for (char c : chars) {
             if (!injectChar(c)) {
                 Ln.w("Could not inject char u+" + String.format("%04x", (int) c));
                 continue;
