@@ -12,11 +12,7 @@
 # define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
-# ifdef _WIN64
-#   define PRIsizet PRIu64
-# else
-#   define PRIsizet PRIu32
-# endif
+# define PRIsizet "Iu"
 # define PROCESS_NONE NULL
 # define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
