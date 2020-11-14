@@ -18,6 +18,7 @@
 # define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
   typedef DWORD exit_code_t;
+  typedef HANDLE pipe_t;
 
 #else
 
@@ -29,6 +30,7 @@
 # define NO_EXIT_CODE -1
   typedef pid_t process_t;
   typedef int exit_code_t;
+  typedef int pipe_t;
 
 #endif
 
@@ -41,6 +43,14 @@ enum process_result {
 // execute the command and write the result to the output parameter "process"
 enum process_result
 process_execute(const char *const argv[], process_t *process);
+
+enum process_result
+process_execute_redirect(const char *const argv[], process_t *process,
+                         pipe_t *pipe_stdin, pipe_t *pipe_stdout,
+                         pipe_t *pipe_stderr);
+
+bool
+process_terminate(process_t pid);
 
 // kill the process
 bool
@@ -82,5 +92,11 @@ get_local_file_path(const char *name);
 // returns true if the file exists and is not a directory
 bool
 is_regular_file(const char *path);
+
+ssize_t
+read_pipe(pipe_t pipe, char *data, size_t len);
+
+void
+close_pipe(pipe_t pipe);
 
 #endif
