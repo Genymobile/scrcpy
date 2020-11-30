@@ -235,7 +235,13 @@ _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
 1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
+2. Get your device IP address, in Settings → About phone → Status, or by
+   executing this command:
+
+    ```bash
+    adb shell ip route | awk '{print $9}'
+    ```
+
 3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
 4. Unplug your device.
 5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
