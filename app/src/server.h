@@ -26,7 +26,6 @@ struct server {
     socket_t server_socket; // only used if !tunnel_forward
     socket_t video_socket;
     socket_t control_socket;
-    struct sc_port_range port_range;
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"

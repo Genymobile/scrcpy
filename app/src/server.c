@@ -378,8 +378,6 @@ server_init(struct server *server) {
     server->video_socket = INVALID_SOCKET;
     server->control_socket = INVALID_SOCKET;
 
-    server->port_range.first = 0;
-    server->port_range.last = 0;
     server->local_port = 0;
 
     server->tunnel_enabled = false;
@@ -413,8 +411,6 @@ run_wait_server(void *data) {
 bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
-    server->port_range = params->port_range;
-
     if (serial) {
         server->serial = SDL_strdup(serial);
         if (!server->serial) {
