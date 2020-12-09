@@ -5,6 +5,10 @@
 // modern glibc will complain without this
 #define _DEFAULT_SOURCE
 
+#ifdef __APPLE__
+# define _DARWIN_C_SOURCE // for strdup(), strtok_r(), memset_pattern4()
+#endif
+
 #include "command.h"
 
 #include "config.h"
