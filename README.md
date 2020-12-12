@@ -251,7 +251,13 @@ _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
 1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address (in Settings → About phone → Status).
+2. Get your device IP address, in Settings → About phone → Status, or by
+   executing this command:
+
+    ```bash
+    adb shell ip route | awk '{print $9}'
+    ```
+
 3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
 4. Unplug your device.
 5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
@@ -398,9 +404,9 @@ The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
 _(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
 
 Note that _scrcpy_ manages 3 different rotations:
-- <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait and
-  landscape (the current running app may refuse, if it does support the
-  requested orientation).
+ - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait
+   and landscape (the current running app may refuse, if it does support the
+   requested orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
@@ -786,8 +792,10 @@ Read the [developers page].
 
 This README is available in other languages:
 
-- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.12.1](README.pt-br.md)
+- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.16](README.zh-Hans.md)
+- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
 
 Only this README file is guaranteed to be up-to-date.
