@@ -199,3 +199,5 @@ scrcpy -m 1920
 scrcpy -m 1024
 scrcpy -m 800
 ```
+
+You could also try another [encoder](README.md#encoder).
