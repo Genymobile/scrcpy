@@ -199,3 +199,36 @@ scrcpy -m 1920
 scrcpy -m 1024
 scrcpy -m 800
 ```
+
+
+## Command line on Windows
+
+Some Windows users are not familiar with the command line. Here is how to open a
+terminal and run `scrcpy` with arguments:
+
+ 1. Press <kbd>Windows</kbd>+<kbd>r</kbd>, this opens a dialog box.
+ 2. Type `cmd` and press <kbd>Enter</kbd>, this opens a terminal.
+ 3. Go to your _scrcpy_ directory, by typing (adapt the path):
+
+    ```bat
+    cd C:\Users\user\Downloads\scrcpy-win64-xxx
+    ```
+
+    and press <kbd>Enter</kbd>
+ 4. Type your command. For example:
+
+    ```bat
+    scrcpy --record file.mkv
+    ```
+
+If you plan to always use the same arguments, create a file `myscrcpy.bat`
+(enable [show file extensions] to avoid confusion) in the `scrcpy` directory,
+containing your command. For example:
+
+```bat
+scrcpy --prefer-text --turn-screen-off --stay-awake
+```
+
+Then just double-click on that file.
+
+[show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
