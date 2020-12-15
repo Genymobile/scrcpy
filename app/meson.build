@@ -119,9 +119,6 @@ conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 # enable High DPI support
 conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
 
-# disable console on Windows
-conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
-
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
@@ -132,18 +129,11 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-if get_option('windows_noconsole')
-    link_args = [ '-Wl,--subsystem,windows' ]
-else
-    link_args = []
-endif
-
 executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
-           c_args: [],
-           link_args: link_args)
+           c_args: [])
 
 install_man('scrcpy.1')
 
