@@ -7,9 +7,8 @@
 #include "config.h"
 #include "common.h"
 #include "compat.h"
-#include "icon.xpm"
+#include "icon.h"
 #include "scrcpy.h"
-#include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/lock.h"
 #include "util/log.h"
@@ -309,10 +308,10 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
-    SDL_Surface *icon = read_xpm(icon_xpm);
+    SDL_Surface *icon = scrcpy_icon_load();
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
-        SDL_FreeSurface(icon);
+        scrcpy_icon_destroy(icon);
     } else {
         LOGW("Could not load icon");
     }

@@ -8,6 +8,7 @@ src = [
     'src/device.c',
     'src/device_msg.c',
     'src/event_converter.c',
+    'src/icon.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
@@ -18,7 +19,6 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/stream.c',
-    'src/tiny_xpm.c',
     'src/video_buffer.c',
     'src/util/net.c',
     'src/util/str_util.c'
@@ -136,6 +136,9 @@ executable('scrcpy', src,
            c_args: [])
 
 install_man('scrcpy.1')
+install_data('../data/icon.png',
+             rename: 'scrcpy.png',
+             install_dir: 'share/icons/hicolor/512x512/apps')
 
 
 ### TESTS

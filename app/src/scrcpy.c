@@ -28,7 +28,6 @@
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
-#include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/lock.h"
 #include "util/log.h"
