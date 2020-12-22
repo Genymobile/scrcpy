@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  scrcpy:
+    build: .
+    privileged: true
+    volumes:
+     - .:/scrcpy
