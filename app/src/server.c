@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
@@ -53,34 +52,12 @@ get_server_path(void) {
     // the absolute path is hardcoded
     return server_path;
 #else
-
-    // use scrcpy-server in the same directory as the executable
-    char *executable_path = get_executable_path();
-    if (!executable_path) {
-        LOGE("Could not get executable path, "
-             "using " SERVER_FILENAME " from current directory");
-        // not found, use current directory
-        return SERVER_FILENAME;
-    }
-    char *dir = dirname(executable_path);
-    size_t dirlen = strlen(dir);
-
-    // sizeof(SERVER_FILENAME) gives statically the size including the null byte
-    size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
-    char *server_path = SDL_malloc(len);
+    char *server_path = get_local_file_path(SERVER_FILENAME);
     if (!server_path) {
-        LOGE("Could not alloc server path string, "
+        LOGE("Could not get local file path, "
              "using " SERVER_FILENAME " from current directory");
-        SDL_free(executable_path);
         return SERVER_FILENAME;
     }
-
-    memcpy(server_path, dir, dirlen);
-    server_path[dirlen] = PATH_SEPARATOR;
-    memcpy(&server_path[dirlen + 1], SERVER_FILENAME, sizeof(SERVER_FILENAME));
-    // the final null byte has been copied with SERVER_FILENAME
-
-    SDL_free(executable_path);
 
     LOGD("Using server (portable): %s", server_path);
     return server_path;

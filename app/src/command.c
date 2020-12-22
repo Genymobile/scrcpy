@@ -1,6 +1,7 @@
 #include "command.h"
 
 #include <assert.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -228,4 +229,32 @@ process_check_success(process_t proc, const char *name) {
         return false;
     }
     return true;
+}
+
+char *
+get_local_file_path(const char *name) {
+    char *executable_path = get_executable_path();
+    if (!executable_path) {
+        return NULL;
+    }
+
+    char *dir = dirname(executable_path);
+    size_t dirlen = strlen(dir);
+    size_t namelen = strlen(name);
+
+    size_t len = dirlen + namelen + 2; // +2: '/' and '\0`
+    char *file_path = SDL_malloc(len);
+    if (!file_path) {
+        LOGE("Could not alloc path");
+        SDL_free(executable_path);
+    }
+
+    memcpy(file_path, dir, dirlen);
+    file_path[dirlen] = PATH_SEPARATOR;
+    // namelen + 1 to copy the final '\0'
+    memcpy(&file_path[dirlen + 1], name, namelen + 1);
+
+    SDL_free(executable_path);
+
+    return file_path;
 }

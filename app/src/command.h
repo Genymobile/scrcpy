@@ -90,4 +90,9 @@ get_executable_path(void);
 bool
 is_regular_file(const char *path);
 
+// return the absolute path of a file in the same directory as the executable
+// may be NULL on error; to be freed by SDL_free
+char *
+get_local_file_path(const char *name);
+
 #endif
