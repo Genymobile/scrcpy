@@ -182,6 +182,7 @@ to_sdl_pixel_format(enum AVPixelFormat fmt) {
         case AV_PIX_FMT_BGR555BE: return SDL_PIXELFORMAT_BGR555;
         case AV_PIX_FMT_RGB444BE: return SDL_PIXELFORMAT_RGB444;
         case AV_PIX_FMT_BGR444BE: return SDL_PIXELFORMAT_BGR444;
+        case AV_PIX_FMT_PAL8: return SDL_PIXELFORMAT_INDEX8;
         default: return SDL_PIXELFORMAT_UNKNOWN;
     }
 }
@@ -203,10 +204,9 @@ scrcpy_icon_load() {
         goto error;
     }
 
-    bool is_packed_rgb = desc->flags & AV_PIX_FMT_FLAG_RGB
-                    && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
-    if (!is_packed_rgb) {
-        LOGE("Could not load non-RGB icon");
+    bool is_packed = !(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
+    if (!is_packed) {
+        LOGE("Could not load non-packed icon");
         goto error;
     }
 
@@ -228,6 +228,40 @@ scrcpy_icon_load() {
     if (!surface) {
         LOGE("Could not create icon surface");
         goto error;
+    }
+
+    if (frame->format == AV_PIX_FMT_PAL8) {
+        // Initialize the SDL palette
+        uint8_t *data = frame->data[1];
+        SDL_Color colors[256];
+        for (int i = 0; i < 256; ++i) {
+            SDL_Color *color = &colors[i];
+
+            // The palette is transported in AVFrame.data[1], is 1024 bytes
+            // long (256 4-byte entries) and is formatted the same as in
+            // AV_PIX_FMT_RGB32 described above (i.e., it is also
+            // endian-specific).
+            // <https://ffmpeg.org/doxygen/4.1/pixfmt_8h.html#a9a8e335cf3be472042bc9f0cf80cd4c5>
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+            color->a = data[i * 4];
+            color->r = data[i * 4 + 1];
+            color->g = data[i * 4 + 2];
+            color->b = data[i * 4 + 3];
+#else
+            color->a = data[i * 4 + 3];
+            color->r = data[i * 4 + 2];
+            color->g = data[i * 4 + 1];
+            color->b = data[i * 4];
+#endif
+        }
+
+        SDL_Palette *palette = surface->format->palette;
+        assert(palette);
+        int ret = SDL_SetPaletteColors(palette, colors, 0, 256);
+        if (ret) {
+            LOGE("Could not set palette colors");
+            goto error;
+        }
     }
 
     surface->userdata = frame; // frame owns the data
