@@ -51,6 +51,7 @@ struct scrcpy_options {
     const char *push_target;
     const char *render_driver;
     const char *codec_options;
+    const char *ssh_endpoint;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     struct sc_port_range port_range;
@@ -79,6 +80,7 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
+    bool use_ssh;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -123,6 +125,8 @@ struct scrcpy_options {
     .force_adb_forward = false, \
     .disable_screensaver = false, \
     .forward_key_repeat = true, \
+    .use_ssh = false, \
+    .ssh_endpoint = NULL, \
 }
 
 bool

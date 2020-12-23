@@ -25,6 +25,7 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+    bool use_ssh;
 };
 
 #define SERVER_INITIALIZER { \
@@ -42,12 +43,14 @@ struct server {
     .local_port = 0, \
     .tunnel_enabled = false, \
     .tunnel_forward = false, \
+    .use_ssh = false, \
 }
 
 struct server_params {
     enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
+    const char *ssh_endpoint;
     struct sc_port_range port_range;
     uint16_t max_size;
     uint32_t bit_rate;
@@ -58,6 +61,7 @@ struct server_params {
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
+    bool use_ssh;
 };
 
 // init default values

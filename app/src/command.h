@@ -58,6 +58,14 @@ bool
 cmd_simple_wait(process_t pid, exit_code_t *exit_code);
 
 process_t
+scp_execute(const char *const ssh_cmd[], size_t len);
+
+process_t
+ssh_execute(const char *endpoint, const char *const ssh_cmd[], size_t len,
+            const char *const prefix_cmd[], size_t prefix_cmd_len,
+            const char *const ssh_options[], size_t ssh_options_len);
+
+process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
 
 process_t
@@ -73,6 +81,9 @@ adb_reverse(const char *serial, const char *device_socket_name,
 
 process_t
 adb_reverse_remove(const char *serial, const char *device_socket_name);
+
+process_t
+ssh_push(const char *endpoint, const char *local, const char *remote);
 
 process_t
 adb_push(const char *serial, const char *local, const char *remote);

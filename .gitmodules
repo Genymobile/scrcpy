@@ -1,0 +1,3 @@
+[submodule "abstractcat"]
+	path = abstractcat
+	url = https://github.com/excitoon/abstractcat

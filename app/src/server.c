@@ -16,10 +16,17 @@
 #include "util/str_util.h"
 
 #define SOCKET_NAME "scrcpy"
+#define SSH_SOCKET_NAME "/dev/socket/scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
+#define ABSTRACTCAT_FILENAME "abstractcat"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
 #define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+
+#define DEFAULT_ABSTRACTCAT_PATH PREFIX "/share/scrcpy/" ABSTRACTCAT_FILENAME
+#define DEVICE_ABSTRACTCAT_PATH "/data/local/tmp/" ABSTRACTCAT_FILENAME
+
+static void close_socket(socket_t socket);
 
 static char *
 get_server_path(void) {
@@ -87,8 +94,90 @@ get_server_path(void) {
 #endif
 }
 
+static char *
+get_abstractcat_path(void) {
+#ifdef __WINDOWS__
+    const wchar_t *abstractcat_path_env = _wgetenv(L"SCRCPY_ABSTRACTCAT_PATH");
+#else
+    const char *abstractcat_path_env = getenv("SCRCPY_ABSTRACTCAT_PATH");
+#endif
+    if (abstractcat_path_env) {
+        // if the envvar is set, use it
+#ifdef __WINDOWS__
+        char *abstractcat_path = utf8_from_wide_char(abstractcat_path_env);
+#else
+        char *abstractcat_path = SDL_strdup(abstractcat_path_env);
+#endif
+        if (!abstractcat_path) {
+            LOGE("Could not allocate memory");
+            return NULL;
+        }
+        LOGD("Using SCRCPY_ABSTRACTCAT_PATH: %s", abstractcat_path);
+        return abstractcat_path;
+    }
+
+#ifndef PORTABLE
+    LOGD("Using abstractcat: " DEFAULT_ABSTRACTCAT_PATH);
+    char *abstractcat_path = SDL_strdup(DEFAULT_ABSTRACTCAT_PATH);
+    if (!abstractcat_path) {
+        LOGE("Could not allocate memory");
+        return NULL;
+    }
+    // the absolute path is hardcoded
+    return abstractcat_path;
+#else
+
+    // use scrcpy-server in the same directory as the executable
+    char *executable_path = get_executable_path();
+    if (!executable_path) {
+        LOGE("Could not get executable path, "
+             "using " ABSTRACTCAT_FILENAME " from current directory");
+        // not found, use current directory
+        return ABSTRACTCAT_FILENAME;
+    }
+    char *dir = dirname(executable_path);
+    size_t dirlen = strlen(dir);
+
+    // sizeof(ABSTRACTCAT_FILENAME) gives statically the size including the null byte
+    size_t len = dirlen + 1 + sizeof(ABSTRACTCAT_FILENAME);
+    char *abstractcat_path = SDL_malloc(len);
+    if (!abstractcat_path) {
+        LOGE("Could not alloc abstractcat path string, "
+             "using " ABSTRACTCAT_FILENAME " from current directory");
+        SDL_free(executable_path);
+        return ABSTRACTCAT_FILENAME;
+    }
+
+    memcpy(abstractcat_path, dir, dirlen);
+    abstractcat_path[dirlen] = PATH_SEPARATOR;
+    memcpy(&abstractcat_path[dirlen + 1], ABSTRACTCAT_FILENAME, sizeof(ABSTRACTCAT_FILENAME));
+    // the final null byte has been copied with ABSTRACTCAT_FILENAME
+
+    SDL_free(executable_path);
+
+    LOGD("Using abstractcat (portable): %s", abstractcat_path);
+    return abstractcat_path;
+#endif
+}
+
 static bool
-push_server(const char *serial) {
+push_abstractcat(const struct server_params *params) {
+    char *abstractcat_path = get_abstractcat_path();
+    if (!abstractcat_path) {
+        return false;
+    }
+    if (!is_regular_file(abstractcat_path)) {
+        LOGE("'%s' does not exist or is not a regular file\n", abstractcat_path);
+        SDL_free(abstractcat_path);
+        return false;
+    }
+    process_t process = ssh_push(params->ssh_endpoint, abstractcat_path, DEVICE_ABSTRACTCAT_PATH);
+    SDL_free(abstractcat_path);
+    return process_check_success(process, "scp");
+}
+
+static bool
+push_server(const char *serial, const struct server_params *params) {
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -98,9 +187,24 @@ push_server(const char *serial) {
         SDL_free(server_path);
         return false;
     }
-    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    process_t process;
+    if (params->use_ssh)
+        process = ssh_push(params->ssh_endpoint, server_path, DEVICE_SERVER_PATH);
+    else
+        process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     SDL_free(server_path);
     return process_check_success(process, "adb push");
+}
+
+static bool prepare_ssh_socket_path(const struct server_params *params) {
+    const char *const cmd[] = {
+        "rm",
+        "-f",
+        SSH_SOCKET_NAME,
+    };
+    process_t process = ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
+        NULL, 0, NULL, 0);
+    return process_check_success(process, "ssh rm -f " SSH_SOCKET_NAME);
 }
 
 static bool
@@ -264,9 +368,9 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
     sprintf(display_id_string, "%"PRIu16, params->display_id);
     const char *const cmd[] = {
-        "shell",
+        params->use_ssh ? "ANDROID_DATA=/data" : "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,
-        "app_process",
+        "/system/bin/app_process",
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
 # ifdef SERVER_DEBUGGER_METHOD_NEW
@@ -286,7 +390,7 @@ execute_server(struct server *server, const struct server_params *params) {
         bit_rate_string,
         max_fps_string,
         lock_video_orientation_string,
-        server->tunnel_forward ? "true" : "false",
+        server->tunnel_forward || params->force_adb_forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
@@ -306,7 +410,59 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    if (params->use_ssh)
+    {
+        for (uint16_t port = server->port_range.first;;) {
+            server->server_socket = listen_on_port(port);
+            if (server->server_socket == INVALID_SOCKET) {
+                if (port < server->port_range.last) {
+                    LOGW("Could not listen on port %" PRIu16", retrying on %" PRIu16,
+                        port, (uint16_t) (port + 1));
+                    port++;
+                    continue;
+                }
+
+                if (server->port_range.first == server->port_range.last) {
+                    LOGE("Could not listen on port %" PRIu16, server->port_range.first);
+                } else {
+                    LOGE("Could not listen on any port in range %" PRIu16 ":%" PRIu16,
+                        server->port_range.first, server->port_range.last);
+                }
+                return PROCESS_NONE;
+            }
+            server->local_port = port;
+            char *tunnel_desc = SDL_strdup(SSH_SOCKET_NAME ":localhost:12345");
+
+            if (params->force_adb_forward)
+                sprintf(tunnel_desc, "localhost:%d:" SSH_SOCKET_NAME, port);
+            else
+                sprintf(tunnel_desc, SSH_SOCKET_NAME ":localhost:%d", port);
+
+            const char *const ssh_options[] = {
+                "-o", "ExitOnForwardFailure=yes",
+                params->force_adb_forward ? "-L" : "-R", tunnel_desc,
+            };
+
+            const char *const prefix_cmd[] = {
+                DEVICE_ABSTRACTCAT_PATH,
+                params->force_adb_forward ? SSH_SOCKET_NAME : "@" SOCKET_NAME, // Source.
+                params->force_adb_forward ? "@" SOCKET_NAME : SSH_SOCKET_NAME, // Destination.
+                "2", // Maximum connections to forward.
+            };
+
+            if (params->force_adb_forward) {
+                close_socket(server->server_socket);
+                server->server_socket = INVALID_SOCKET;
+                server->tunnel_forward = true;
+            }
+
+            return ssh_execute(params->ssh_endpoint, cmd, sizeof(cmd) / sizeof(cmd[0]),
+                prefix_cmd, sizeof(prefix_cmd) / sizeof(prefix_cmd[0]),
+                ssh_options, sizeof(ssh_options) / sizeof(ssh_options[0]));
+        }
+    }
+    else
+        return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
 }
 
 static socket_t
@@ -385,11 +541,19 @@ server_start(struct server *server, const char *serial,
         }
     }
 
-    if (!push_server(serial)) {
+    server->use_ssh = params->use_ssh;
+
+    if (!push_server(serial, params)) {
         goto error1;
     }
 
-    if (!enable_tunnel_any_port(server, params->port_range,
+    if (params->use_ssh && !push_abstractcat(params))
+        goto error1;
+
+    if (params->use_ssh && !prepare_ssh_socket_path(params))
+        goto error1;
+
+    if (!params->use_ssh && !enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
         goto error1;
     }
@@ -427,7 +591,10 @@ error2:
         (void) was_closed;
         close_socket(server->server_socket);
     }
-    disable_tunnel(server);
+
+    if (!server->use_ssh) {
+        disable_tunnel(server);
+    }
 error1:
     SDL_free(server->serial);
     return false;
@@ -470,9 +637,12 @@ server_connect_to(struct server *server) {
         }
     }
 
-    // we don't need the adb tunnel anymore
-    disable_tunnel(server); // ignore failure
-    server->tunnel_enabled = false;
+    if (server->tunnel_enabled) {
+        // we don't need the adb tunnel anymore
+        if (!server->use_ssh)
+            disable_tunnel(server); // ignore failure
+        server->tunnel_enabled = false;
+    }
 
     return true;
 }
@@ -494,7 +664,7 @@ server_stop(struct server *server) {
 
     cmd_terminate(server->process);
 
-    if (server->tunnel_enabled) {
+    if (server->tunnel_enabled && !server->use_ssh) {
         // ignore failure
         disable_tunnel(server);
     }

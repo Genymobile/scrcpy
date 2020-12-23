@@ -103,6 +103,49 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
 }
 
 process_t
+scp_execute(const char *const scp_cmd[], size_t len) {
+    const char *cmd[len + 2];
+    unsigned i = 0;
+    process_t process;
+
+    cmd[i++] = "scp";
+    memcpy(&cmd[i], scp_cmd, len * sizeof(const char *));
+    i += len;
+    cmd[i] = NULL;
+    enum process_result r = cmd_execute(cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r, cmd);
+        return PROCESS_NONE;
+    }
+    return process;
+}
+
+process_t
+ssh_execute(const char *endpoint, const char *const ssh_cmd[], size_t len,
+            const char *const prefix_cmd[], size_t prefix_cmd_len,
+            const char *const ssh_options[], size_t ssh_options_len) {
+    const char *cmd[len + prefix_cmd_len + ssh_options_len + 3];
+    unsigned i = 0;
+    process_t process;
+
+    cmd[i++] = "ssh";
+    memcpy(&cmd[i], ssh_options, ssh_options_len * sizeof(const char *));
+    i += ssh_options_len;
+    cmd[i++] = endpoint;
+    memcpy(&cmd[i], prefix_cmd, prefix_cmd_len * sizeof(const char *));
+    i += prefix_cmd_len;
+    memcpy(&cmd[i], ssh_cmd, len * sizeof(const char *));
+    i += len;
+    cmd[i] = NULL;
+    enum process_result r = cmd_execute(cmd, &process);
+    if (r != PROCESS_SUCCESS) {
+        show_adb_err_msg(r, cmd);
+        return PROCESS_NONE;
+    }
+    return process;
+}
+
+process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     const char *cmd[len + 4];
     int i;
@@ -162,6 +205,38 @@ adb_reverse_remove(const char *serial, const char *device_socket_name) {
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
     return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+}
+
+process_t
+ssh_push(const char *endpoint, const char *local, const char *remote) {
+#ifdef __WINDOWS__
+    // Windows will parse the string, so the paths must be quoted
+    // (see sys/win/command.c)
+    local = strquote(local);
+    if (!local) {
+        return PROCESS_NONE;
+    }
+    remote = strquote(remote);
+    if (!remote) {
+        SDL_free((void *) local);
+        return PROCESS_NONE;
+    }
+#endif
+
+    char * destination = (char *) SDL_malloc(strlen(remote) + strlen(endpoint) + 2);
+    strcpy(destination, endpoint);
+    strcat(destination, ":");
+    strcat(destination, remote);
+    const char *const scp_cmd[] = {local, destination};
+    process_t proc = scp_execute(scp_cmd, ARRAY_LEN(scp_cmd));
+
+#ifdef __WINDOWS__
+    SDL_free((void *) remote);
+    SDL_free((void *) local);
+#endif
+    SDL_free((void *) destination);
+
+    return proc;
 }
 
 process_t
