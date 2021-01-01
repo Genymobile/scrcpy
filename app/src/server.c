@@ -493,8 +493,6 @@ server_stop(struct server *server) {
 
     assert(server->process != PROCESS_NONE);
 
-    cmd_terminate(server->process);
-
     if (server->tunnel_enabled) {
         // ignore failure
         disable_tunnel(server);
