@@ -233,4 +233,7 @@ scrcpy --prefer-text --turn-screen-off --stay-awake
 
 Then just double-click on that file.
 
+You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
+to add some arguments.
+
 [show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
