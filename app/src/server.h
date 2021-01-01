@@ -27,23 +27,6 @@ struct server {
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 };
 
-#define SERVER_INITIALIZER { \
-    .serial = NULL, \
-    .process = PROCESS_NONE, \
-    .wait_server_thread = NULL, \
-    .server_socket_closed = ATOMIC_FLAG_INIT, \
-    .server_socket = INVALID_SOCKET, \
-    .video_socket = INVALID_SOCKET, \
-    .control_socket = INVALID_SOCKET, \
-    .port_range = { \
-        .first = 0, \
-        .last = 0, \
-    }, \
-    .local_port = 0, \
-    .tunnel_enabled = false, \
-    .tunnel_forward = false, \
-}
-
 struct server_params {
     enum sc_log_level log_level;
     const char *crop;
@@ -62,7 +45,7 @@ struct server_params {
 };
 
 // init default values
-void
+bool
 server_init(struct server *server);
 
 // push, enable tunnel et start the server

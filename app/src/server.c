@@ -353,9 +353,26 @@ close_socket(socket_t socket) {
     }
 }
 
-void
+bool
 server_init(struct server *server) {
-    *server = (struct server) SERVER_INITIALIZER;
+    server->serial = NULL;
+    server->process = PROCESS_NONE;
+    server->wait_server_thread = NULL;
+    atomic_flag_clear_explicit(&server->server_socket_closed,
+                               memory_order_relaxed);
+
+    server->server_socket = INVALID_SOCKET;
+    server->video_socket = INVALID_SOCKET;
+    server->control_socket = INVALID_SOCKET;
+
+    server->port_range.first = 0;
+    server->port_range.last = 0;
+    server->local_port = 0;
+
+    server->tunnel_enabled = false;
+    server->tunnel_forward = false;
+
+    return true;
 }
 
 static int
