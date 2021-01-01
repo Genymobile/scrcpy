@@ -58,12 +58,14 @@ public final class Server {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName());
 
+            Thread controllerThread = null;
+            Thread deviceMessageSenderThread = null;
             if (options.getControl()) {
                 final Controller controller = new Controller(device, connection);
 
                 // asynchronous
-                startController(controller);
-                startDeviceMessageSender(controller.getSender());
+                controllerThread = startController(controller);
+                deviceMessageSenderThread = startDeviceMessageSender(controller.getSender());
 
                 device.setClipboardListener(new Device.ClipboardListener() {
                     @Override
@@ -79,12 +81,19 @@ public final class Server {
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
+            } finally {
+                if (controllerThread != null) {
+                    controllerThread.interrupt();
+                }
+                if (deviceMessageSenderThread != null) {
+                    deviceMessageSenderThread.interrupt();
+                }
             }
         }
     }
 
-    private static void startController(final Controller controller) {
-        new Thread(new Runnable() {
+    private static Thread startController(final Controller controller) {
+        Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -94,11 +103,13 @@ public final class Server {
                     Ln.d("Controller stopped");
                 }
             }
-        }).start();
+        });
+        thread.start();
+        return thread;
     }
 
-    private static void startDeviceMessageSender(final DeviceMessageSender sender) {
-        new Thread(new Runnable() {
+    private static Thread startDeviceMessageSender(final DeviceMessageSender sender) {
+        Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
@@ -108,7 +119,9 @@ public final class Server {
                     Ln.d("Device message sender stopped");
                 }
             }
-        }).start();
+        });
+        thread.start();
+        return thread;
     }
 
     private static Options createOptions(String... args) {
