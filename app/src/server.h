@@ -18,6 +18,11 @@ struct server {
     process_t process;
     SDL_Thread *wait_server_thread;
     atomic_flag server_socket_closed;
+
+    SDL_mutex *mutex;
+    SDL_cond *process_terminated_cond;
+    bool process_terminated;
+
     socket_t server_socket; // only used if !tunnel_forward
     socket_t video_socket;
     socket_t control_socket;
