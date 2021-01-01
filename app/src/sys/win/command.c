@@ -56,7 +56,7 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
 
 bool
 cmd_terminate(HANDLE handle) {
-    return TerminateProcess(handle, 1) && CloseHandle(handle);
+    return TerminateProcess(handle, 1);
 }
 
 bool
@@ -70,6 +70,7 @@ cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
     if (exit_code) {
         *exit_code = code;
     }
+    CloseHandle(handle);
     return !code;
 }
 
