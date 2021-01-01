@@ -202,6 +202,8 @@ scrcpy --lock-video-orientation 3   # 90° clockwise
 
 This affects recording orientation.
 
+The [window may also be rotated](#rotation) independently.
+
 
 #### Encoder
 
@@ -407,9 +409,9 @@ Note that _scrcpy_ manages 3 different rotations:
  - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait
    and landscape (the current running app may refuse, if it does support the
    requested orientation).
- - `--lock-video-orientation` changes the mirroring orientation (the orientation
-   of the video sent from the device to the computer). This affects the
-   recording.
+ - [`--lock-video-orientation`](#lock-video-orientation) changes the mirroring
+   orientation (the orientation of the video sent from the device to the
+   computer). This affects the recording.
  - `--rotation` (or <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
    rotates only the window content. This affects only the display, not the
    recording.
@@ -766,7 +768,7 @@ Read the [developers page].
 ## Licence
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2020 Romain Vimont
+    Copyright (C) 2018-2021 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
