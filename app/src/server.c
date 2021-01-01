@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include "command.h"
+#include "util/lock.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/str_util.h"
@@ -361,6 +362,19 @@ server_init(struct server *server) {
     atomic_flag_clear_explicit(&server->server_socket_closed,
                                memory_order_relaxed);
 
+    server->mutex = SDL_CreateMutex();
+    if (!server->mutex) {
+        return false;
+    }
+
+    server->process_terminated_cond = SDL_CreateCond();
+    if (!server->process_terminated_cond) {
+        SDL_DestroyMutex(server->mutex);
+        return false;
+    }
+
+    server->process_terminated = false;
+
     server->server_socket = INVALID_SOCKET;
     server->video_socket = INVALID_SOCKET;
     server->control_socket = INVALID_SOCKET;
@@ -387,6 +401,12 @@ run_wait_server(void *data) {
         // unblocked by closesocket(). Therefore, call both (close_socket()).
         close_socket(server->server_socket);
     }
+
+    mutex_lock(server->mutex);
+    server->process_terminated = true;
+    cond_signal(server->process_terminated_cond);
+    mutex_unlock(server->mutex);
+
     LOGD("Server terminated");
     return 0;
 }
@@ -510,11 +530,28 @@ server_stop(struct server *server) {
 
     assert(server->process != PROCESS_NONE);
 
-    cmd_terminate(server->process);
-
     if (server->tunnel_enabled) {
         // ignore failure
         disable_tunnel(server);
+    }
+
+    // Give some delay for the server to terminate properly
+    mutex_lock(server->mutex);
+    int r = 0;
+    if (!server->process_terminated) {
+#define WATCHDOG_DELAY_MS 2000
+        r = cond_wait_timeout(server->process_terminated_cond,
+                              server->mutex,
+                              WATCHDOG_DELAY_MS);
+    }
+    mutex_unlock(server->mutex);
+
+    // After this delay, kill the server.
+    // On some devices, closing the sockets is not sufficient to wake up the
+    // blocking calls while the device is asleep.
+    if (r == SDL_MUTEX_TIMEDOUT) {
+        LOGW("Killing the server");
+        cmd_terminate(server->process);
     }
 
     SDL_WaitThread(server->wait_server_thread, NULL);
@@ -523,4 +560,6 @@ server_stop(struct server *server) {
 void
 server_destroy(struct server *server) {
     SDL_free(server->serial);
+    SDL_DestroyCond(server->process_terminated_cond);
+    SDL_DestroyMutex(server->mutex);
 }
