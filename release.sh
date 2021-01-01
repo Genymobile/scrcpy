@@ -1,2 +1,2 @@
 #!/bin/bash
-make -f release.make
+make -f release.mk
