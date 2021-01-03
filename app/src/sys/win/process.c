@@ -60,7 +60,7 @@ process_terminate(HANDLE handle) {
 }
 
 bool
-process_simple_wait(HANDLE handle, DWORD *exit_code) {
+process_wait(HANDLE handle, DWORD *exit_code) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {

@@ -9,7 +9,7 @@ process_check_success(process_t proc, const char *name) {
         return false;
     }
     exit_code_t exit_code;
-    if (!process_simple_wait(proc, &exit_code)) {
+    if (!process_wait(proc, &exit_code)) {
         if (exit_code != NO_EXIT_CODE) {
             LOGE("\"%s\" returned with value %" PRIexitcode, name, exit_code);
         } else {

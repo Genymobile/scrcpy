@@ -135,7 +135,7 @@ process_terminate(pid_t pid) {
 }
 
 bool
-process_simple_wait(pid_t pid, int *exit_code) {
+process_wait(pid_t pid, int *exit_code) {
     int status;
     int code;
     if (waitpid(pid, &status, 0) == -1 || !WIFEXITED(status)) {

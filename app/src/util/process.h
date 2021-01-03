@@ -48,7 +48,7 @@ process_terminate(process_t pid);
 
 // wait and close the process
 bool
-process_simple_wait(process_t pid, exit_code_t *exit_code);
+process_wait(process_t pid, exit_code_t *exit_code);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
