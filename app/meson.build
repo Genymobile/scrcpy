@@ -1,7 +1,7 @@
 src = [
     'src/main.c',
+    'src/adb.c',
     'src/cli.c',
-    'src/command.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
@@ -21,6 +21,7 @@ src = [
     'src/tiny_xpm.c',
     'src/video_buffer.c',
     'src/util/net.c',
+    'src/util/process.c',
     'src/util/str_util.c'
 ]
 
@@ -76,10 +77,10 @@ endif
 cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/command.c' ]
+    src += [ 'src/sys/win/process.c' ]
     dependencies += cc.find_library('ws2_32')
 else
-    src += [ 'src/sys/unix/command.c' ]
+    src += [ 'src/sys/unix/process.c' ]
 endif
 
 conf = configuration_data()

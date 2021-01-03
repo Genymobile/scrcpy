@@ -1,4 +1,4 @@
-#include "command.h"
+#include "adb.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -70,7 +70,7 @@ show_adb_installation_msg() {
         {"pacman", "pacman -S android-tools"},
     };
     for (size_t i = 0; i < ARRAY_LEN(pkg_managers); ++i) {
-        if (cmd_search(pkg_managers[i].binary)) {
+        if (search_executable(pkg_managers[i].binary)) {
             LOGI("You may install 'adb' by \"%s\"", pkg_managers[i].command);
             return;
         }
@@ -118,7 +118,7 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 
     memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
     cmd[len + i] = NULL;
-    enum process_result r = cmd_execute(cmd, &process);
+    enum process_result r = process_execute(cmd, &process);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, cmd);
         return PROCESS_NONE;
@@ -210,22 +210,4 @@ adb_install(const char *serial, const char *local) {
 #endif
 
     return proc;
-}
-
-bool
-process_check_success(process_t proc, const char *name) {
-    if (proc == PROCESS_NONE) {
-        LOGE("Could not execute \"%s\"", name);
-        return false;
-    }
-    exit_code_t exit_code;
-    if (!cmd_simple_wait(proc, &exit_code)) {
-        if (exit_code != NO_EXIT_CODE) {
-            LOGE("\"%s\" returned with value %" PRIexitcode, name, exit_code);
-        } else {
-            LOGE("\"%s\" exited unexpectedly", name);
-        }
-        return false;
-    }
-    return true;
 }

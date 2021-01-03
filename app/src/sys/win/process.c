@@ -1,4 +1,4 @@
-#include "command.h"
+#include "util/process.h"
 
 #include <sys/stat.h>
 
@@ -21,7 +21,7 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
 }
 
 enum process_result
-cmd_execute(const char *const argv[], HANDLE *handle) {
+process_execute(const char *const argv[], HANDLE *handle) {
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
@@ -55,12 +55,12 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
 }
 
 bool
-cmd_terminate(HANDLE handle) {
+process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
 bool
-cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
+process_simple_wait(HANDLE handle, DWORD *exit_code) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {

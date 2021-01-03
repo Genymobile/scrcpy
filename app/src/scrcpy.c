@@ -14,7 +14,6 @@
 #endif
 
 #include "config.h"
-#include "command.h"
 #include "common.h"
 #include "compat.h"
 #include "controller.h"

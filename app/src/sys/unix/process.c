@@ -9,7 +9,7 @@
 # define _DARWIN_C_SOURCE // for strdup(), strtok_r(), memset_pattern4()
 #endif
 
-#include "command.h"
+#include "util/process.h"
 
 #include "config.h"
 
@@ -27,7 +27,7 @@
 #include "util/log.h"
 
 bool
-cmd_search(const char *file) {
+search_executable(const char *file) {
     char *path = getenv("PATH");
     if (!path)
         return false;
@@ -63,7 +63,7 @@ cmd_search(const char *file) {
 }
 
 enum process_result
-cmd_execute(const char *const argv[], pid_t *pid) {
+process_execute(const char *const argv[], pid_t *pid) {
     int fd[2];
 
     if (pipe(fd) == -1) {
@@ -125,7 +125,7 @@ end:
 }
 
 bool
-cmd_terminate(pid_t pid) {
+process_terminate(pid_t pid) {
     if (pid <= 0) {
         LOGC("Requested to kill %d, this is an error. Please report the bug.\n",
              (int) pid);
@@ -135,7 +135,7 @@ cmd_terminate(pid_t pid) {
 }
 
 bool
-cmd_simple_wait(pid_t pid, int *exit_code) {
+process_simple_wait(pid_t pid, int *exit_code) {
     int status;
     int code;
     if (waitpid(pid, &status, 0) == -1 || !WIFEXITED(status)) {

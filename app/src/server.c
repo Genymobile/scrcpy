@@ -10,7 +10,7 @@
 #include <SDL2/SDL_platform.h>
 
 #include "config.h"
-#include "command.h"
+#include "adb.h"
 #include "util/lock.h"
 #include "util/log.h"
 #include "util/net.h"
@@ -392,7 +392,7 @@ server_init(struct server *server) {
 static int
 run_wait_server(void *data) {
     struct server *server = data;
-    cmd_simple_wait(server->process, NULL); // ignore exit code
+    process_simple_wait(server->process, NULL); // ignore exit code
 
     mutex_lock(server->mutex);
     server->process_terminated = true;
@@ -447,8 +447,8 @@ server_start(struct server *server, const char *serial,
     server->wait_server_thread =
         SDL_CreateThread(run_wait_server, "wait-server", server);
     if (!server->wait_server_thread) {
-        cmd_terminate(server->process);
-        cmd_simple_wait(server->process, NULL); // ignore exit code
+        process_terminate(server->process);
+        process_simple_wait(server->process, NULL); // ignore exit code
         goto error2;
     }
 
@@ -554,7 +554,7 @@ server_stop(struct server *server) {
         // the process is already terminated, and the PID assigned to a new
         // process.
         LOGW("Killing the server...");
-        cmd_terminate(server->process);
+        process_terminate(server->process);
     }
 
     SDL_WaitThread(server->wait_server_thread, NULL);

@@ -6,7 +6,7 @@
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
-#include "command.h"
+#include "adb.h"
 #include "util/cbuf.h"
 
 typedef enum {

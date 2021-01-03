@@ -7,7 +7,7 @@
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
-#include "command.h"
+#include "adb.h"
 #include "common.h"
 #include "scrcpy.h"
 #include "util/log.h"

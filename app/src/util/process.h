@@ -1,8 +1,9 @@
-#ifndef COMMAND_H
-#define COMMAND_H
+#ifndef SC_PROCESS_H
+#define SC_PROCESS_H
 
 #include <stdbool.h>
-#include <inttypes.h>
+
+#include "config.h"
 
 #ifdef _WIN32
 
@@ -31,55 +32,34 @@
 
 #endif
 
-#include "config.h"
-
 enum process_result {
     PROCESS_SUCCESS,
     PROCESS_ERROR_GENERIC,
     PROCESS_ERROR_MISSING_BINARY,
 };
 
-#ifndef __WINDOWS__
-bool
-cmd_search(const char *file);
-#endif
-
+// execute the command and write the result to the output parameter "process"
 enum process_result
-cmd_execute(const char *const argv[], process_t *process);
+process_execute(const char *const argv[], process_t *process);
 
+// kill the process
 bool
-cmd_terminate(process_t pid);
+process_terminate(process_t pid);
 
+// wait and close the process
 bool
-cmd_simple_wait(process_t pid, exit_code_t *exit_code);
-
-process_t
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
-
-process_t
-adb_forward(const char *serial, uint16_t local_port,
-            const char *device_socket_name);
-
-process_t
-adb_forward_remove(const char *serial, uint16_t local_port);
-
-process_t
-adb_reverse(const char *serial, const char *device_socket_name,
-            uint16_t local_port);
-
-process_t
-adb_reverse_remove(const char *serial, const char *device_socket_name);
-
-process_t
-adb_push(const char *serial, const char *local, const char *remote);
-
-process_t
-adb_install(const char *serial, const char *local);
+process_simple_wait(process_t pid, exit_code_t *exit_code);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 bool
 process_check_success(process_t proc, const char *name);
+
+#ifndef _WIN32
+// only used to find package manager, not implemented for Windows
+bool
+search_executable(const char *file);
+#endif
 
 // return the absolute path of the executable (the scrcpy binary)
 // may be NULL on error; to be freed by SDL_free

@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "config.h"
-#include "command.h"
+#include "adb.h"
 #include "util/lock.h"
 #include "util/log.h"
 
@@ -176,10 +176,10 @@ file_handler_stop(struct file_handler *file_handler) {
     file_handler->stopped = true;
     cond_signal(file_handler->event_cond);
     if (file_handler->current_process != PROCESS_NONE) {
-        if (!cmd_terminate(file_handler->current_process)) {
+        if (!process_terminate(file_handler->current_process)) {
             LOGW("Could not terminate install process");
         }
-        cmd_simple_wait(file_handler->current_process, NULL);
+        process_simple_wait(file_handler->current_process, NULL);
         file_handler->current_process = PROCESS_NONE;
     }
     mutex_unlock(file_handler->mutex);
