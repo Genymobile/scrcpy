@@ -25,6 +25,12 @@ src = [
     'src/util/str_util.c'
 ]
 
+if host_machine.system() == 'windows'
+    src += [ 'src/sys/win/process.c' ]
+else
+    src += [ 'src/sys/unix/process.c' ]
+endif
+
 if not get_option('crossbuild_windows')
 
     # native build
@@ -77,10 +83,7 @@ endif
 cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/process.c' ]
     dependencies += cc.find_library('ws2_32')
-else
-    src += [ 'src/sys/unix/process.c' ]
 endif
 
 conf = configuration_data()
