@@ -308,6 +308,8 @@ scrcpy(const struct scrcpy_options *options) {
         return false;
     }
 
+    bool ret = false;
+
     bool server_started = false;
     bool fps_counter_initialized = false;
     bool video_buffer_initialized = false;
@@ -449,7 +451,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     input_manager_init(&input_manager, options);
 
-    bool ret = event_loop(options);
+    ret = event_loop(options);
     LOGD("quit...");
 
     screen_destroy(&screen);
