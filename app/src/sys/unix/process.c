@@ -134,20 +134,41 @@ process_terminate(pid_t pid) {
     return kill(pid, SIGTERM) != -1;
 }
 
-bool
-process_wait(pid_t pid, int *exit_code) {
-    int status;
+static bool
+process_wait_internal(pid_t pid, int *exit_code, bool close) {
     int code;
-    if (waitpid(pid, &status, 0) == -1 || !WIFEXITED(status)) {
+    int options = WEXITED;
+    if (!close) {
+        options |= WNOWAIT;
+    }
+
+    siginfo_t info;
+    int r = waitid(P_PID, pid, &info, options);
+    if (r == -1 || info.si_code != CLD_EXITED) {
         // could not wait, or exited unexpectedly, probably by a signal
         code = -1;
     } else {
-        code = WEXITSTATUS(status);
+        code = info.si_status;
     }
     if (exit_code) {
         *exit_code = code;
     }
     return !code;
+}
+
+bool
+process_wait(pid_t pid, int *exit_code) {
+    return process_wait_internal(pid, exit_code, true);
+}
+
+bool
+process_wait_noclose(pid_t pid, int *exit_code) {
+    return process_wait_internal(pid, exit_code, false);
+}
+
+void
+process_close(pid_t pid) {
+    process_wait_internal(pid, NULL, true);
 }
 
 char *

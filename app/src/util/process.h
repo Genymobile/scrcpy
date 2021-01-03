@@ -46,9 +46,19 @@ process_execute(const char *const argv[], process_t *process);
 bool
 process_terminate(process_t pid);
 
-// wait and close the process
+// wait and close the process (like waitpid())
 bool
 process_wait(process_t pid, exit_code_t *exit_code);
+
+// wait (but does not close) the process (waitid() with WNOWAIT)
+bool
+process_wait_noclose(process_t pid, exit_code_t *exit_code);
+
+// close the process
+//
+// Semantically, process_wait = process_wait_noclose + process_close.
+void
+process_close(process_t pid);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name

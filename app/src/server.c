@@ -392,7 +392,7 @@ server_init(struct server *server) {
 static int
 run_wait_server(void *data) {
     struct server *server = data;
-    process_wait(server->process, NULL); // ignore exit code
+    process_wait_noclose(server->process, NULL); // ignore exit code
 
     mutex_lock(server->mutex);
     server->process_terminated = true;
@@ -550,14 +550,14 @@ server_stop(struct server *server) {
     // On some devices, closing the sockets is not sufficient to wake up the
     // blocking calls while the device is asleep.
     if (r == SDL_MUTEX_TIMEDOUT) {
-        // FIXME There is a race condition here: there is a small chance that
-        // the process is already terminated, and the PID assigned to a new
-        // process.
+        // The process is terminated, but not reaped (closed) yet, so its PID
+        // is still valid.
         LOGW("Killing the server...");
         process_terminate(server->process);
     }
 
     SDL_WaitThread(server->wait_server_thread, NULL);
+    process_close(server->process);
 }
 
 void

@@ -1,5 +1,6 @@
 #include "util/process.h"
 
+#include <assert.h>
 #include <sys/stat.h>
 
 #include "config.h"
@@ -59,8 +60,8 @@ process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
-bool
-process_wait(HANDLE handle, DWORD *exit_code) {
+static bool
+process_wait_internal(HANDLE handle, DWORD *exit_code, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
@@ -70,8 +71,27 @@ process_wait(HANDLE handle, DWORD *exit_code) {
     if (exit_code) {
         *exit_code = code;
     }
-    CloseHandle(handle);
+    if (close) {
+        CloseHandle(handle);
+    }
     return !code;
+}
+
+bool
+process_wait(HANDLE handle, DWORD *exit_code) {
+    return process_wait_internal(handle, exit_code, true);
+}
+
+bool
+process_wait_noclose(HANDLE handle, DWORD *exit_code) {
+    return process_wait_internal(handle, exit_code, false);
+}
+
+void
+process_close(HANDLE handle) {
+    bool closed = CloseHandle(handle);
+    assert(closed);
+    (void) closed;
 }
 
 char *
