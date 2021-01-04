@@ -258,12 +258,12 @@ execute_server(struct server *server, const struct server_params *params) {
     char bit_rate_string[11];
     char max_fps_string[6];
     char lock_video_orientation_string[5];
-    char display_id_string[6];
+    char display_id_string[11];
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
     sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
-    sprintf(display_id_string, "%"PRIu16, params->display_id);
+    sprintf(display_id_string, "%"PRIu32, params->display_id);
     const char *const cmd[] = {
         "shell",
         "CLASSPATH=" DEVICE_SERVER_PATH,

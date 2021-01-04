@@ -478,14 +478,14 @@ parse_port_range(const char *s, struct sc_port_range *port_range) {
 }
 
 static bool
-parse_display_id(const char *s, uint16_t *display_id) {
+parse_display_id(const char *s, uint32_t *display_id) {
     long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "display id");
+    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "display id");
     if (!ok) {
         return false;
     }
 
-    *display_id = (uint16_t) value;
+    *display_id = (uint32_t) value;
     return true;
 }
 

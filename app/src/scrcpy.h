@@ -65,7 +65,7 @@ struct scrcpy_options {
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;
     uint16_t window_height;
-    uint16_t display_id;
+    uint32_t display_id;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;

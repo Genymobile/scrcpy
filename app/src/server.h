@@ -43,7 +43,7 @@ struct server_params {
     uint16_t max_fps;
     int8_t lock_video_orientation;
     bool control;
-    uint16_t display_id;
+    uint32_t display_id;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
