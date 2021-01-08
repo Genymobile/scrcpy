@@ -8,7 +8,6 @@
 
 #include "config.h"
 #include "adb.h"
-#include "common.h"
 #include "scrcpy.h"
 #include "util/log.h"
 #include "util/net.h"

@@ -8,7 +8,7 @@
 #include "config.h"
 #include "android/input.h"
 #include "android/keycodes.h"
-#include "common.h"
+#include "coords.h"
 
 #define CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 

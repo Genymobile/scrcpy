@@ -6,7 +6,7 @@
 #include <libavformat/avformat.h>
 
 #include "config.h"
-#include "common.h"
+#include "coords.h"
 #include "opengl.h"
 
 struct video_buffer;

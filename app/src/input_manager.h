@@ -6,7 +6,6 @@
 #include <SDL2/SDL.h>
 
 #include "config.h"
-#include "common.h"
 #include "controller.h"
 #include "fps_counter.h"
 #include "scrcpy.h"

@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "config.h"
-#include "common.h"
+#include "coords.h"
 #include "util/net.h"
 
 #define DEVICE_NAME_FIELD_LENGTH 64

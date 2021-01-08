@@ -7,7 +7,7 @@
 #include <SDL2/SDL_thread.h>
 
 #include "config.h"
-#include "common.h"
+#include "coords.h"
 #include "scrcpy.h"
 #include "util/queue.h"
 
