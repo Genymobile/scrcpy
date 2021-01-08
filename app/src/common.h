@@ -27,9 +27,4 @@ struct position {
     struct point point;
 };
 
-struct port_range {
-    uint16_t first;
-    uint16_t last;
-};
-
 #endif
