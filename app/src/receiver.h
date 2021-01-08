@@ -1,11 +1,12 @@
 #ifndef RECEIVER_H
 #define RECEIVER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
-#include "common.h"
 #include "util/net.h"
 
 // receive events from the device

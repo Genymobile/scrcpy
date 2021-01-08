@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include <assert.h>
 #include <string.h>
 

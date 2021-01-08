@@ -1,10 +1,10 @@
 #ifndef STRUTIL_H
 #define STRUTIL_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "common.h"
 
 // like strncpy, except:
 //  - it copies at most n-1 chars

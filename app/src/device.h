@@ -1,9 +1,10 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
+#include "common.h"
+
 #include <stdbool.h>
 
-#include "common.h"
 #include "coords.h"
 #include "util/net.h"
 

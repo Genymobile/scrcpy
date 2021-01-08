@@ -1,9 +1,9 @@
 #ifndef SC_PROCESS_H
 #define SC_PROCESS_H
 
-#include <stdbool.h>
-
 #include "common.h"
+
+#include <stdbool.h>
 
 #ifdef _WIN32
 

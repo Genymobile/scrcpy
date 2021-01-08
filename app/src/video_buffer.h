@@ -1,10 +1,11 @@
 #ifndef VIDEO_BUFFER_H
 #define VIDEO_BUFFER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 
-#include "common.h"
 #include "fps_counter.h"
 
 // forward declarations
