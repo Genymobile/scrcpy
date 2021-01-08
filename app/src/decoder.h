@@ -1,10 +1,10 @@
 #ifndef DECODER_H
 #define DECODER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <libavformat/avformat.h>
-
-#include "common.h"
 
 struct video_buffer;
 

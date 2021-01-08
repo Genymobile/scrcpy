@@ -1,10 +1,11 @@
 #ifndef LOCK_H
 #define LOCK_H
 
+#include "common.h"
+
 #include <stdint.h>
 #include <SDL2/SDL_mutex.h>
 
-#include "common.h"
 #include "log.h"
 
 static inline void

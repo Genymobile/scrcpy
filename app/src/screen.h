@@ -1,11 +1,12 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
-#include "common.h"
 #include "coords.h"
 #include "opengl.h"
 

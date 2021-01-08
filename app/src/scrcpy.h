@@ -1,11 +1,11 @@
 #ifndef SCRCPY_H
 #define SCRCPY_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "common.h"
 
 enum sc_log_level {
     SC_LOG_LEVEL_DEBUG,

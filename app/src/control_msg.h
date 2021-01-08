@@ -1,11 +1,12 @@
 #ifndef CONTROLMSG_H
 #define CONTROLMSG_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "common.h"
 #include "android/input.h"
 #include "android/keycodes.h"
 #include "coords.h"

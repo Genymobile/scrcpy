@@ -1,11 +1,12 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
-#include "common.h"
 #include "control_msg.h"
 #include "receiver.h"
 #include "util/cbuf.h"

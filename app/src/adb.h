@@ -1,10 +1,10 @@
 #ifndef SC_ADB_H
 #define SC_ADB_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <inttypes.h>
-
-#include "common.h"
 
 #include "util/process.h"
 

@@ -1,11 +1,12 @@
 #ifndef INPUTMANAGER_H
 #define INPUTMANAGER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 
 #include <SDL2/SDL.h>
 
-#include "common.h"
 #include "controller.h"
 #include "fps_counter.h"
 #include "scrcpy.h"

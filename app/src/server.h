@@ -1,12 +1,13 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "common.h"
+
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <SDL2/SDL_thread.h>
 
-#include "common.h"
 #include "adb.h"
 #include "scrcpy.h"
 #include "util/log.h"

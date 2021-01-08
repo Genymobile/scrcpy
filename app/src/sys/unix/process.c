@@ -1,14 +1,3 @@
-// for portability (kill, readlink, strdup, strtok_r)
-#define _POSIX_C_SOURCE 200809L
-#define _BSD_SOURCE
-
-// modern glibc will complain without this
-#define _DEFAULT_SOURCE
-
-#ifdef __APPLE__
-# define _DARWIN_C_SOURCE // for strdup(), strtok_r(), memset_pattern4()
-#endif
-
 #include "util/process.h"
 
 #include <errno.h>

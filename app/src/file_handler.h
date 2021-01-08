@@ -1,11 +1,12 @@
 #ifndef FILE_HANDLER_H
 #define FILE_HANDLER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
-#include "common.h"
 #include "adb.h"
 #include "util/cbuf.h"
 

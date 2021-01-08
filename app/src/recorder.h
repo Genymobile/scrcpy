@@ -1,12 +1,13 @@
 #ifndef RECORDER_H
 #define RECORDER_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <libavformat/avformat.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
-#include "common.h"
 #include "coords.h"
 #include "scrcpy.h"
 #include "util/queue.h"

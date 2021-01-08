@@ -1,10 +1,10 @@
 #ifndef BUFFER_UTIL_H
 #define BUFFER_UTIL_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "common.h"
 
 static inline void
 buffer_write16be(uint8_t *buf, uint16_t value) {

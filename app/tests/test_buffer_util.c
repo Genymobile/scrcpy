@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include <assert.h>
 
 #include "util/buffer_util.h"

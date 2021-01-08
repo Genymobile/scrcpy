@@ -1,7 +1,8 @@
+#include "common.h"
+
 #include <assert.h>
 #include <string.h>
 
-#include "common.h"
 #include "cli.h"
 #include "scrcpy.h"
 
