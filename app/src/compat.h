@@ -1,6 +1,7 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+#include <libavcodec/version.h>
 #include <libavformat/version.h>
 #include <SDL2/SDL_version.h>
 
