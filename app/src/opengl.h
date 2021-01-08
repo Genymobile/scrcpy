@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL_opengl.h>
 
-#include "config.h"
+#include "common.h"
 
 struct sc_opengl {
     const char *version;

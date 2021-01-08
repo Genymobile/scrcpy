@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <SDL2/SDL_keycode.h>
 
-#include "config.h"
 #include "event_converter.h"
 #include "util/lock.h"
 #include "util/log.h"

@@ -7,7 +7,7 @@
 #include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_thread.h>
 
-#include "config.h"
+#include "common.h"
 #include "util/net.h"
 
 struct video_buffer;

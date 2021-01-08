@@ -5,7 +5,7 @@
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
-#include "config.h"
+#include "common.h"
 #include "control_msg.h"
 #include "receiver.h"
 #include "util/cbuf.h"

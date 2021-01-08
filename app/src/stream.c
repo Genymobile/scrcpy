@@ -8,8 +8,6 @@
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
-#include "config.h"
-#include "compat.h"
 #include "decoder.h"
 #include "events.h"
 #include "recorder.h"

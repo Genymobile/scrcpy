@@ -2,7 +2,6 @@
 
 #include <assert.h>
 
-#include "config.h"
 #include "util/lock.h"
 #include "util/log.h"
 

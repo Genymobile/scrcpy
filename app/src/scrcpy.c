@@ -13,8 +13,6 @@
 # include <windows.h>
 #endif
 
-#include "config.h"
-#include "compat.h"
 #include "controller.h"
 #include "decoder.h"
 #include "device.h"

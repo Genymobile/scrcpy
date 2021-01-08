@@ -1,6 +1,5 @@
 #include "device.h"
 
-#include "config.h"
 #include "util/log.h"
 
 bool

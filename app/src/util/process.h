@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "config.h"
+#include "common.h"
 
 #ifdef _WIN32
 

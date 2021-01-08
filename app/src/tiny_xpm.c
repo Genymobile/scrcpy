@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "config.h"
 #include "util/log.h"
 
 struct index {

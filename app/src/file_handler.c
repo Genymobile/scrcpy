@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "config.h"
 #include "adb.h"
 #include "util/lock.h"
 #include "util/log.h"

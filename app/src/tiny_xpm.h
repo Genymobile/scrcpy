@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "config.h"
+#include "common.h"
 
 SDL_Surface *
 read_xpm(char *xpm[]);

@@ -12,8 +12,6 @@
 
 #include <SDL2/SDL_stdinc.h>
 
-#include "config.h"
-
 size_t
 xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;

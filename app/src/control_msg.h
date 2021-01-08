@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "config.h"
+#include "common.h"
 #include "android/input.h"
 #include "android/keycodes.h"
 #include "coords.h"

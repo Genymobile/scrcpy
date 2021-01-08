@@ -7,9 +7,8 @@
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
-#include "config.h"
+#include "common.h"
 #include "cli.h"
-#include "compat.h"
 #include "util/log.h"
 
 static void

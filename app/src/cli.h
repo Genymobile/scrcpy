@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "config.h"
+#include "common.h"
 #include "scrcpy.h"
 
 struct scrcpy_cli_args {

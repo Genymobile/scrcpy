@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "config.h"
+#include "common.h"
 
 // like strncpy, except:
 //  - it copies at most n-1 chars

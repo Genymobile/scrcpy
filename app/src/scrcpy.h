@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "config.h"
+#include "common.h"
 
 enum sc_log_level {
     SC_LOG_LEVEL_DEBUG,

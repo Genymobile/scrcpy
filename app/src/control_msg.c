@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <string.h>
 
-#include "config.h"
 #include "util/buffer_util.h"
 #include "util/log.h"
 #include "util/str_util.h"

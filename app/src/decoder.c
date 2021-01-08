@@ -7,8 +7,6 @@
 #include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
-#include "config.h"
-#include "compat.h"
 #include "events.h"
 #include "recorder.h"
 #include "video_buffer.h"

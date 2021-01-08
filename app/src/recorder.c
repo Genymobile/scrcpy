@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <libavutil/time.h>
 
-#include "config.h"
-#include "compat.h"
 #include "util/lock.h"
 #include "util/log.h"
 

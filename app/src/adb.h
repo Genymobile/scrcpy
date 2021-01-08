@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "config.h"
+#include "common.h"
 
 #include "util/process.h"
 

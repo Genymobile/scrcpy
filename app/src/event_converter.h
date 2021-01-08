@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL_events.h>
 
-#include "config.h"
+#include "common.h"
 #include "control_msg.h"
 
 bool

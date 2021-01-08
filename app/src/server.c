@@ -9,7 +9,6 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
 
-#include "config.h"
 #include "adb.h"
 #include "util/lock.h"
 #include "util/log.h"

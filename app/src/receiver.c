@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <SDL2/SDL_clipboard.h>
 
-#include "config.h"
 #include "device_msg.h"
 #include "util/lock.h"
 #include "util/log.h"

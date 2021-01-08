@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "config.h"
+#include "common.h"
 
 // To define a queue type of "struct foo":
 //    struct queue_foo QUEUE(struct foo);

@@ -1,7 +1,5 @@
 #include "event_converter.h"
 
-#include "config.h"
-
 #define MAP(FROM, TO) case FROM: *to = TO; return true
 #define FAIL default: return false
 
