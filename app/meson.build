@@ -31,6 +31,8 @@ else
     src += [ 'src/sys/unix/process.c' ]
 endif
 
+cc = meson.get_compiler('c')
+
 if not get_option('crossbuild_windows')
 
     # native build
@@ -44,8 +46,6 @@ if not get_option('crossbuild_windows')
 else
 
     # cross-compile mingw32 build (from Linux to Windows)
-    cc = meson.get_compiler('c')
-
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
     sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/lib'
@@ -79,8 +79,6 @@ else
     ]
 
 endif
-
-cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
     dependencies += cc.find_library('ws2_32')
