@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <time.h>
 #include <SDL2/SDL.h>
 
 #include "config.h"
@@ -11,6 +12,7 @@
 #include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
+#include "lodepng.h"
 #include "util/lock.h"
 #include "util/log.h"
 
@@ -471,10 +473,105 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     return true;
 }
 
+
+void
+save_screenshot(struct screen *screen) {
+    char filename[40];
+    struct tm *timenow;
+    SDL_Texture *ren_tex;
+    SDL_Surface *surf;
+    int st;
+    int w;
+    int h;
+    int format;
+    void *pixels;
+
+    pixels  = NULL;
+    surf    = NULL;
+    ren_tex = NULL;
+    format  = SDL_PIXELFORMAT_RGBA32;
+
+    //Create filename
+    time_t now = time(NULL);
+    timenow = localtime(&now);
+    strftime(filename, sizeof(filename), "screenshot_%Y%m%d%H%M%S.png", timenow);
+
+    // Get information about texture we want to save
+    st = SDL_QueryTexture(screen->texture, NULL, NULL, &w, &h);
+    if (st != 0) {
+        LOGE("Failed querying texture: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    ren_tex = SDL_CreateTexture(screen->renderer, format, SDL_TEXTUREACCESS_TARGET, w, h);
+    if (!ren_tex) {
+        LOGE("Failed creating render texture: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    // Initialize our canvas, then copy texture to a target whose pixel data we
+    // can access
+
+    st = SDL_SetRenderTarget(screen->renderer, ren_tex);
+    if (st != 0) {
+        LOGE("Failed setting render target: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    SDL_SetRenderDrawColor(screen->renderer, 0x00, 0x00, 0x00, 0x00);
+    SDL_RenderClear(screen->renderer);
+
+    st = SDL_RenderCopy(screen->renderer, screen->texture, NULL, NULL);
+    if (st != 0) {
+        LOGE("Failed copying texture data: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    // Create buffer to hold texture data and load it
+    pixels = malloc(w * h * SDL_BYTESPERPIXEL(format));
+    if (!pixels) {
+        LOGE("Failed allocating memory\n");
+        goto cleanup;
+    }
+
+    st = SDL_RenderReadPixels(screen->renderer, NULL, format, pixels, w * SDL_BYTESPERPIXEL(format));
+    if (st != 0) {
+        LOGE("Failed reading pixel data: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    // Copy pixel data over to surface
+    surf = SDL_CreateRGBSurfaceWithFormatFrom(pixels, w, h, SDL_BITSPERPIXEL(format), w * SDL_BYTESPERPIXEL(format), format);
+    if (!surf) {
+        LOGE("Failed creating new surface: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    // Save result to an image
+    st = lodepng_encode_file(filename, surf->pixels, w, h, LCT_RGBA, 8);
+    if (st != 0) {
+        LOGE("Failed saving image: %s\n", SDL_GetError());
+        goto cleanup;
+    }
+
+    LOGI("Saved screenshot to \"%s\"\n", filename);
+
+cleanup:
+    SDL_FreeSurface(surf);
+    free(pixels);
+    SDL_DestroyTexture(ren_tex);
+}
+
+
 void
 screen_render(struct screen *screen, bool update_content_rect) {
     if (update_content_rect) {
         screen_update_content_rect(screen);
+    }
+
+    if (screen->save_screenshot) {
+        screen->save_screenshot = false;
+        save_screenshot(screen);
     }
 
     SDL_RenderClear(screen->renderer);

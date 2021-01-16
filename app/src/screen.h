@@ -34,6 +34,7 @@ struct screen {
     bool maximized;
     bool no_window;
     bool mipmaps;
+    bool save_screenshot;
 };
 
 #define SCREEN_INITIALIZER { \
@@ -67,6 +68,7 @@ struct screen {
     .maximized = false, \
     .no_window = false, \
     .mipmaps = false, \
+    .save_screenshot = false,\
 }
 
 // initialize default values

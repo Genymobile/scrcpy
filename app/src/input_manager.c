@@ -456,6 +456,11 @@ input_manager_process_key(struct input_manager *im,
                     screen_switch_fullscreen(im->screen);
                 }
                 return;
+            case SDLK_q:
+                if (!shift && !repeat && down) {
+                   im->screen->save_screenshot = true;
+                }
+                return;
             case SDLK_w:
                 if (!shift && !repeat && down) {
                     screen_resize_to_fit(im->screen);
