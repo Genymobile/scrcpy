@@ -2,6 +2,7 @@ src = [
     'src/main.c',
     'src/adb.c',
     'src/cli.c',
+    'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
@@ -30,6 +31,10 @@ if host_machine.system() == 'windows'
 else
     src += [ 'src/sys/unix/process.c' ]
 endif
+
+check_functions = [
+    'strdup'
+]
 
 cc = meson.get_compiler('c')
 
@@ -85,6 +90,13 @@ if host_machine.system() == 'windows'
 endif
 
 conf = configuration_data()
+
+foreach f : check_functions
+  if cc.has_function(f)
+    define = 'HAVE_' + f.underscorify().to_upper()
+    conf.set(define, true)
+  endif
+endforeach
 
 # expose the build type
 conf.set('NDEBUG', get_option('buildtype') != 'debug')
