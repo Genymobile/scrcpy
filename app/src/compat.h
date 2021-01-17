@@ -56,4 +56,8 @@
 # define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
 #endif
 
+#ifndef HAVE_STRDUP
+char *strdup(const char *s);
+#endif
+
 #endif
