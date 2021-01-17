@@ -60,12 +60,12 @@ static bool
 process_msg(struct controller *controller,
               const struct control_msg *msg) {
     static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
-    int length = control_msg_serialize(msg, serialized_msg);
+    size_t length = control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
     }
     int w = net_send_all(controller->control_socket, serialized_msg, length);
-    return w == length;
+    return (size_t) w == length;
 }
 
 static int

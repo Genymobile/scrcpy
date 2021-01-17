@@ -17,7 +17,7 @@ static void test_serialize_inject_keycode(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 14);
 
     const unsigned char expected[] = {
@@ -39,7 +39,7 @@ static void test_serialize_inject_text(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 18);
 
     const unsigned char expected[] = {
@@ -59,7 +59,7 @@ static void test_serialize_inject_text_long(void) {
     msg.inject_text.text = text;
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
     unsigned char expected[5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
@@ -95,7 +95,7 @@ static void test_serialize_inject_touch_event(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 28);
 
     const unsigned char expected[] = {
@@ -130,7 +130,7 @@ static void test_serialize_inject_scroll_event(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 21);
 
     const unsigned char expected[] = {
@@ -149,7 +149,7 @@ static void test_serialize_back_or_screen_on(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -164,7 +164,7 @@ static void test_serialize_expand_notification_panel(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -179,7 +179,7 @@ static void test_serialize_collapse_notification_panel(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -194,7 +194,7 @@ static void test_serialize_get_clipboard(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -213,7 +213,7 @@ static void test_serialize_set_clipboard(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 19);
 
     const unsigned char expected[] = {
@@ -234,7 +234,7 @@ static void test_serialize_set_screen_power_mode(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 2);
 
     const unsigned char expected[] = {
@@ -250,7 +250,7 @@ static void test_serialize_rotate_device(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    int size = control_msg_serialize(&msg, buf);
+    size_t size = control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
