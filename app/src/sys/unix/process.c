@@ -118,7 +118,7 @@ process_terminate(pid_t pid) {
              (int) pid);
         abort();
     }
-    return kill(pid, SIGTERM) != -1;
+    return kill(pid, SIGKILL) != -1;
 }
 
 exit_code_t
