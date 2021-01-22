@@ -100,31 +100,31 @@ push_server(const char *serial) {
     }
     process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     SDL_free(server_path);
-    return process_check_success(process, "adb push");
+    return process_check_success(process, "adb push", true);
 }
 
 static bool
 enable_tunnel_reverse(const char *serial, uint16_t local_port) {
     process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
-    return process_check_success(process, "adb reverse");
+    return process_check_success(process, "adb reverse", true);
 }
 
 static bool
 disable_tunnel_reverse(const char *serial) {
     process_t process = adb_reverse_remove(serial, SOCKET_NAME);
-    return process_check_success(process, "adb reverse --remove");
+    return process_check_success(process, "adb reverse --remove", true);
 }
 
 static bool
 enable_tunnel_forward(const char *serial, uint16_t local_port) {
     process_t process = adb_forward(serial, local_port, SOCKET_NAME);
-    return process_check_success(process, "adb forward");
+    return process_check_success(process, "adb forward", true);
 }
 
 static bool
 disable_tunnel_forward(const char *serial, uint16_t local_port) {
     process_t process = adb_forward_remove(serial, local_port);
-    return process_check_success(process, "adb forward --remove");
+    return process_check_success(process, "adb forward --remove", true);
 }
 
 static bool

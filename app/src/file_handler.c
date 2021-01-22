@@ -135,13 +135,13 @@ run_file_handler(void *data) {
         mutex_unlock(file_handler->mutex);
 
         if (req.action == ACTION_INSTALL_APK) {
-            if (process_check_success(process, "adb install")) {
+            if (process_check_success(process, "adb install", false)) {
                 LOGI("%s successfully installed", req.file);
             } else {
                 LOGE("Failed to install %s", req.file);
             }
         } else {
-            if (process_check_success(process, "adb push")) {
+            if (process_check_success(process, "adb push", false)) {
                 LOGI("%s successfully pushed to %s", req.file,
                                                      file_handler->push_target);
             } else {
@@ -149,6 +149,14 @@ run_file_handler(void *data) {
                                                 file_handler->push_target);
             }
         }
+
+        mutex_lock(file_handler->mutex);
+        // Close the process (it is necessary already terminated)
+        // Execute this call with mutex locked to avoid race conditions with
+        // file_handler_stop()
+        process_close(file_handler->current_process);
+        file_handler->current_process = PROCESS_NONE;
+        mutex_unlock(file_handler->mutex);
 
         file_handler_request_destroy(&req);
     }
@@ -178,8 +186,6 @@ file_handler_stop(struct file_handler *file_handler) {
         if (!process_terminate(file_handler->current_process)) {
             LOGW("Could not terminate install process");
         }
-        process_wait(file_handler->current_process, true); // ignore exit code
-        file_handler->current_process = PROCESS_NONE;
     }
     mutex_unlock(file_handler->mutex);
 }

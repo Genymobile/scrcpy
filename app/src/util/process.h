@@ -61,7 +61,7 @@ process_close(process_t pid);
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 bool
-process_check_success(process_t proc, const char *name);
+process_check_success(process_t proc, const char *name, bool close);
 
 #ifndef _WIN32
 // only used to find package manager, not implemented for Windows
