@@ -184,7 +184,7 @@ file_handler_stop(struct file_handler *file_handler) {
     cond_signal(file_handler->event_cond);
     if (file_handler->current_process != PROCESS_NONE) {
         if (!process_terminate(file_handler->current_process)) {
-            LOGW("Could not terminate install process");
+            LOGW("Could not terminate push/install process");
         }
     }
     mutex_unlock(file_handler->mutex);
