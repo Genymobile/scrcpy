@@ -121,8 +121,8 @@ process_terminate(pid_t pid) {
     return kill(pid, SIGTERM) != -1;
 }
 
-static exit_code_t
-process_wait_internal(pid_t pid, bool close) {
+exit_code_t
+process_wait(pid_t pid, bool close) {
     int code;
     int options = WEXITED;
     if (!close) {
@@ -140,19 +140,9 @@ process_wait_internal(pid_t pid, bool close) {
     return code;
 }
 
-exit_code_t
-process_wait(pid_t pid) {
-    return process_wait_internal(pid, true);
-}
-
-exit_code_t
-process_wait_noclose(pid_t pid) {
-    return process_wait_internal(pid, false);
-}
-
 void
 process_close(pid_t pid) {
-    process_wait_internal(pid, true); // ignore exit code
+    process_wait(pid, true); // ignore exit code
 }
 
 char *

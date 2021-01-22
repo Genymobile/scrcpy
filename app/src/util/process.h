@@ -47,16 +47,14 @@ bool
 process_terminate(process_t pid);
 
 // wait and close the process (like waitpid())
+// the "close" flag indicates if the process must be "closed" (reaped)
+// (passing false is equivalent to enable WNOWAIT in waitid())
 exit_code_t
-process_wait(process_t pid);
-
-// wait (but does not close) the process (waitid() with WNOWAIT)
-exit_code_t
-process_wait_noclose(process_t pid);
+process_wait(process_t pid, bool close);
 
 // close the process
 //
-// Semantically, process_wait = process_wait_noclose + process_close.
+// Semantically, process_wait(close) = process_wait(noclose) + process_close
 void
 process_close(process_t pid);
 

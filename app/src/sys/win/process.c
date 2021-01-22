@@ -59,8 +59,8 @@ process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
-static exit_code_t
-process_wait_internal(HANDLE handle, bool close) {
+exit_code_t
+process_wait(HANDLE handle, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
@@ -71,16 +71,6 @@ process_wait_internal(HANDLE handle, bool close) {
         CloseHandle(handle);
     }
     return code;
-}
-
-exit_code_t
-process_wait(HANDLE handle) {
-    return process_wait_internal(handle, true);
-}
-
-exit_code_t
-process_wait_noclose(HANDLE handle) {
-    return process_wait_internal(handle, false);
 }
 
 void

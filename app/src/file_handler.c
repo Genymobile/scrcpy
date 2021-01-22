@@ -178,7 +178,7 @@ file_handler_stop(struct file_handler *file_handler) {
         if (!process_terminate(file_handler->current_process)) {
             LOGW("Could not terminate install process");
         }
-        process_wait(file_handler->current_process); // ignore exit code
+        process_wait(file_handler->current_process, true); // ignore exit code
         file_handler->current_process = PROCESS_NONE;
     }
     mutex_unlock(file_handler->mutex);
