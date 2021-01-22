@@ -47,12 +47,12 @@ bool
 process_terminate(process_t pid);
 
 // wait and close the process (like waitpid())
-bool
-process_wait(process_t pid, exit_code_t *exit_code);
+exit_code_t
+process_wait(process_t pid);
 
 // wait (but does not close) the process (waitid() with WNOWAIT)
-bool
-process_wait_noclose(process_t pid, exit_code_t *exit_code);
+exit_code_t
+process_wait_noclose(process_t pid);
 
 // close the process
 //

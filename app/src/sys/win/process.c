@@ -59,31 +59,28 @@ process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
-static bool
-process_wait_internal(HANDLE handle, DWORD *exit_code, bool close) {
+static exit_code_t
+process_wait_internal(HANDLE handle, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
         // could not wait or retrieve the exit code
-        code = -1; // max value, it's unsigned
-    }
-    if (exit_code) {
-        *exit_code = code;
+        code = NO_EXIT_CODE; // max value, it's unsigned
     }
     if (close) {
         CloseHandle(handle);
     }
-    return !code;
+    return code;
 }
 
-bool
-process_wait(HANDLE handle, DWORD *exit_code) {
-    return process_wait_internal(handle, exit_code, true);
+exit_code_t
+process_wait(HANDLE handle) {
+    return process_wait_internal(handle, true);
 }
 
-bool
-process_wait_noclose(HANDLE handle, DWORD *exit_code) {
-    return process_wait_internal(handle, exit_code, false);
+exit_code_t
+process_wait_noclose(HANDLE handle) {
+    return process_wait_internal(handle, false);
 }
 
 void

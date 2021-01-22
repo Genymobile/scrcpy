@@ -391,7 +391,7 @@ server_init(struct server *server) {
 static int
 run_wait_server(void *data) {
     struct server *server = data;
-    process_wait_noclose(server->process, NULL); // ignore exit code
+    process_wait_noclose(server->process); // ignore exit code
 
     mutex_lock(server->mutex);
     server->process_terminated = true;
@@ -447,7 +447,7 @@ server_start(struct server *server, const char *serial,
         SDL_CreateThread(run_wait_server, "wait-server", server);
     if (!server->wait_server_thread) {
         process_terminate(server->process);
-        process_wait(server->process, NULL); // ignore exit code
+        process_wait(server->process); // ignore exit code
         goto error2;
     }
 

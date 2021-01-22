@@ -121,8 +121,8 @@ process_terminate(pid_t pid) {
     return kill(pid, SIGTERM) != -1;
 }
 
-static bool
-process_wait_internal(pid_t pid, int *exit_code, bool close) {
+static exit_code_t
+process_wait_internal(pid_t pid, bool close) {
     int code;
     int options = WEXITED;
     if (!close) {
@@ -133,29 +133,26 @@ process_wait_internal(pid_t pid, int *exit_code, bool close) {
     int r = waitid(P_PID, pid, &info, options);
     if (r == -1 || info.si_code != CLD_EXITED) {
         // could not wait, or exited unexpectedly, probably by a signal
-        code = -1;
+        code = NO_EXIT_CODE;
     } else {
         code = info.si_status;
     }
-    if (exit_code) {
-        *exit_code = code;
-    }
-    return !code;
+    return code;
 }
 
-bool
-process_wait(pid_t pid, int *exit_code) {
-    return process_wait_internal(pid, exit_code, true);
+exit_code_t
+process_wait(pid_t pid) {
+    return process_wait_internal(pid, true);
 }
 
-bool
-process_wait_noclose(pid_t pid, int *exit_code) {
-    return process_wait_internal(pid, exit_code, false);
+exit_code_t
+process_wait_noclose(pid_t pid) {
+    return process_wait_internal(pid, false);
 }
 
 void
 process_close(pid_t pid) {
-    process_wait_internal(pid, NULL, true);
+    process_wait_internal(pid, true); // ignore exit code
 }
 
 char *
