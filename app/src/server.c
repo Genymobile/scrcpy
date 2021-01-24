@@ -33,7 +33,7 @@ get_server_path(void) {
 #ifdef __WINDOWS__
         char *server_path = utf8_from_wide_char(server_path_env);
 #else
-        char *server_path = SDL_strdup(server_path_env);
+        char *server_path = strdup(server_path_env);
 #endif
         if (!server_path) {
             LOGE("Could not allocate memory");
@@ -45,7 +45,7 @@ get_server_path(void) {
 
 #ifndef PORTABLE
     LOGD("Using server: " DEFAULT_SERVER_PATH);
-    char *server_path = SDL_strdup(DEFAULT_SERVER_PATH);
+    char *server_path = strdup(DEFAULT_SERVER_PATH);
     if (!server_path) {
         LOGE("Could not allocate memory");
         return NULL;
@@ -67,11 +67,11 @@ get_server_path(void) {
 
     // sizeof(SERVER_FILENAME) gives statically the size including the null byte
     size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
-    char *server_path = SDL_malloc(len);
+    char *server_path = malloc(len);
     if (!server_path) {
         LOGE("Could not alloc server path string, "
              "using " SERVER_FILENAME " from current directory");
-        SDL_free(executable_path);
+        free(executable_path);
         return SERVER_FILENAME;
     }
 
@@ -80,7 +80,7 @@ get_server_path(void) {
     memcpy(&server_path[dirlen + 1], SERVER_FILENAME, sizeof(SERVER_FILENAME));
     // the final null byte has been copied with SERVER_FILENAME
 
-    SDL_free(executable_path);
+    free(executable_path);
 
     LOGD("Using server (portable): %s", server_path);
     return server_path;
@@ -95,11 +95,11 @@ push_server(const char *serial) {
     }
     if (!is_regular_file(server_path)) {
         LOGE("'%s' does not exist or is not a regular file\n", server_path);
-        SDL_free(server_path);
+        free(server_path);
         return false;
     }
     process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
-    SDL_free(server_path);
+    free(server_path);
     return process_check_success(process, "adb push", true);
 }
 
@@ -412,7 +412,7 @@ bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params) {
     if (serial) {
-        server->serial = SDL_strdup(serial);
+        server->serial = strdup(serial);
         if (!server->serial) {
             return false;
         }
@@ -462,7 +462,7 @@ error2:
     }
     disable_tunnel(server);
 error1:
-    SDL_free(server->serial);
+    free(server->serial);
     return false;
 }
 
@@ -557,7 +557,7 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
-    SDL_free(server->serial);
+    free(server->serial);
     SDL_DestroyCond(server->process_terminated_cond);
     SDL_DestroyMutex(server->mutex);
 }
