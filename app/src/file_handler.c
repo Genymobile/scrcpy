@@ -11,7 +11,7 @@
 
 static void
 file_handler_request_destroy(struct file_handler_request *req) {
-    SDL_free(req->file);
+    free(req->file);
 }
 
 bool
@@ -30,7 +30,7 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
     }
 
     if (serial) {
-        file_handler->serial = SDL_strdup(serial);
+        file_handler->serial = strdup(serial);
         if (!file_handler->serial) {
             LOGW("Could not strdup serial");
             SDL_DestroyCond(file_handler->event_cond);
@@ -56,7 +56,7 @@ void
 file_handler_destroy(struct file_handler *file_handler) {
     SDL_DestroyCond(file_handler->event_cond);
     SDL_DestroyMutex(file_handler->mutex);
-    SDL_free(file_handler->serial);
+    free(file_handler->serial);
 
     struct file_handler_request req;
     while (cbuf_take(&file_handler->queue, &req)) {

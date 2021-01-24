@@ -190,13 +190,20 @@ set_device_clipboard(struct controller *controller, bool paste) {
         return;
     }
 
+    char *text_dup = strdup(text);
+    SDL_free(text);
+    if (!text_dup) {
+        LOGW("Could not strdup input text");
+        return;
+    }
+
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
-    msg.set_clipboard.text = text;
+    msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
 
     if (!controller_push_msg(controller, &msg)) {
-        SDL_free(text);
+        free(text_dup);
         LOGW("Could not request 'set device clipboard'");
     }
 }
@@ -242,11 +249,18 @@ clipboard_paste(struct controller *controller) {
         return;
     }
 
+    char *text_dup = strdup(text);
+    SDL_free(text);
+    if (!text_dup) {
+        LOGW("Could not strdup input text");
+        return;
+    }
+
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
-    msg.inject_text.text = text;
+    msg.inject_text.text = text_dup;
     if (!controller_push_msg(controller, &msg)) {
-        SDL_free(text);
+        free(text_dup);
         LOGW("Could not request 'paste clipboard'");
     }
 }
@@ -291,13 +305,13 @@ input_manager_process_text_input(struct input_manager *im,
 
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
-    msg.inject_text.text = SDL_strdup(event->text);
+    msg.inject_text.text = strdup(event->text);
     if (!msg.inject_text.text) {
         LOGW("Could not strdup input text");
         return;
     }
     if (!controller_push_msg(im->controller, &msg)) {
-        SDL_free(msg.inject_text.text);
+        free(msg.inject_text.text);
         LOGW("Could not request 'inject text'");
     }
 }

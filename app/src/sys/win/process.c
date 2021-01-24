@@ -41,7 +41,7 @@ process_execute(const char *const argv[], HANDLE *handle) {
 
     if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, 0, NULL, NULL, &si,
                         &pi)) {
-        SDL_free(wide);
+        free(wide);
         *handle = NULL;
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             return PROCESS_ERROR_MISSING_BINARY;
@@ -49,7 +49,7 @@ process_execute(const char *const argv[], HANDLE *handle) {
         return PROCESS_ERROR_GENERIC;
     }
 
-    SDL_free(wide);
+    free(wide);
     *handle = pi.hProcess;
     return PROCESS_SUCCESS;
 }
@@ -105,7 +105,7 @@ is_regular_file(const char *path) {
 
     struct _stat path_stat;
     int r = _wstat(wide_path, &path_stat);
-    SDL_free(wide_path);
+    free(wide_path);
 
     if (r) {
         perror("stat");

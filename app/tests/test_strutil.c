@@ -4,7 +4,6 @@
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <SDL2/SDL.h>
 
 #include "util/str_util.h"
 
@@ -138,7 +137,7 @@ static void test_strquote(void) {
     // add '"' at the beginning and the end
     assert(!strcmp("\"abcde\"", out));
 
-    SDL_free(out);
+    free(out);
 }
 
 static void test_utf8_truncate(void) {
