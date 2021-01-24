@@ -226,13 +226,20 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
             if (!options->control) {
                 break;
             }
+            char *file = strdup(event->drop.file);
+            SDL_free(event->drop.file);
+            if (!file) {
+                LOGW("Could not strdup drop filename\n");
+                break;
+            }
+
             file_handler_action_t action;
-            if (is_apk(event->drop.file)) {
+            if (is_apk(file)) {
                 action = ACTION_INSTALL_APK;
             } else {
                 action = ACTION_PUSH_FILE;
             }
-            file_handler_request(&file_handler, action, event->drop.file);
+            file_handler_request(&file_handler, action, file);
             break;
         }
     }
@@ -286,7 +293,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     if (priority == 0) {
         return;
     }
-    char *local_fmt = SDL_malloc(strlen(fmt) + 10);
+    char *local_fmt = malloc(strlen(fmt) + 10);
     if (!local_fmt) {
         LOGC("Could not allocate string");
         return;
@@ -295,7 +302,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     strcpy(local_fmt, "[FFmpeg] ");
     strcpy(local_fmt + 9, fmt);
     SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
-    SDL_free(local_fmt);
+    free(local_fmt);
 }
 
 bool

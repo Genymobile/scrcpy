@@ -70,7 +70,7 @@ search_executable(const char *file);
 #endif
 
 // return the absolute path of the executable (the scrcpy binary)
-// may be NULL on error; to be freed by SDL_free
+// may be NULL on error; to be freed by free()
 char *
 get_executable_path(void);
 

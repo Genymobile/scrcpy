@@ -156,7 +156,7 @@ get_executable_path(void) {
         return NULL;
     }
     buf[len] = '\0';
-    return SDL_strdup(buf);
+    return strdup(buf);
 #else
     // in practice, we only need this feature for portable builds, only used on
     // Windows, so we don't care implementing it for every platform

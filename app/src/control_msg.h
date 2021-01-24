@@ -50,7 +50,7 @@ struct control_msg {
             enum android_metastate metastate;
         } inject_keycode;
         struct {
-            char *text; // owned, to be freed by SDL_free()
+            char *text; // owned, to be freed by free()
         } inject_text;
         struct {
             enum android_motionevent_action action;
@@ -65,7 +65,7 @@ struct control_msg {
             int32_t vscroll;
         } inject_scroll_event;
         struct {
-            char *text; // owned, to be freed by SDL_free()
+            char *text; // owned, to be freed by free()
             bool paste;
         } set_clipboard;
         struct {

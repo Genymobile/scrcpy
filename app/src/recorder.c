@@ -27,7 +27,7 @@ find_muxer(const char *name) {
 
 static struct record_packet *
 record_packet_new(const AVPacket *packet) {
-    struct record_packet *rec = SDL_malloc(sizeof(*rec));
+    struct record_packet *rec = malloc(sizeof(*rec));
     if (!rec) {
         return NULL;
     }
@@ -37,7 +37,7 @@ record_packet_new(const AVPacket *packet) {
     av_init_packet(&rec->packet);
 
     if (av_packet_ref(&rec->packet, packet)) {
-        SDL_free(rec);
+        free(rec);
         return NULL;
     }
     return rec;
@@ -46,7 +46,7 @@ record_packet_new(const AVPacket *packet) {
 static void
 record_packet_delete(struct record_packet *rec) {
     av_packet_unref(&rec->packet);
-    SDL_free(rec);
+    free(rec);
 }
 
 static void
@@ -63,7 +63,7 @@ recorder_init(struct recorder *recorder,
               const char *filename,
               enum sc_record_format format,
               struct size declared_frame_size) {
-    recorder->filename = SDL_strdup(filename);
+    recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOGE("Could not strdup filename");
         return false;
@@ -72,7 +72,7 @@ recorder_init(struct recorder *recorder,
     recorder->mutex = SDL_CreateMutex();
     if (!recorder->mutex) {
         LOGC("Could not create mutex");
-        SDL_free(recorder->filename);
+        free(recorder->filename);
         return false;
     }
 
@@ -80,7 +80,7 @@ recorder_init(struct recorder *recorder,
     if (!recorder->queue_cond) {
         LOGC("Could not create cond");
         SDL_DestroyMutex(recorder->mutex);
-        SDL_free(recorder->filename);
+        free(recorder->filename);
         return false;
     }
 
@@ -99,7 +99,7 @@ void
 recorder_destroy(struct recorder *recorder) {
     SDL_DestroyCond(recorder->queue_cond);
     SDL_DestroyMutex(recorder->mutex);
-    SDL_free(recorder->filename);
+    free(recorder->filename);
 }
 
 static const char *
