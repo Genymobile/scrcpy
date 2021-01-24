@@ -50,7 +50,7 @@ file_handler_stop(struct file_handler *file_handler);
 void
 file_handler_join(struct file_handler *file_handler);
 
-// take ownership of file, and will SDL_free() it
+// take ownership of file, and will free() it
 bool
 file_handler_request(struct file_handler *file_handler,
                      file_handler_action_t action,

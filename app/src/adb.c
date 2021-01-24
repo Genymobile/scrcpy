@@ -173,7 +173,7 @@ adb_push(const char *serial, const char *local, const char *remote) {
     }
     remote = strquote(remote);
     if (!remote) {
-        SDL_free((void *) local);
+        free((void *) local);
         return PROCESS_NONE;
     }
 #endif
@@ -182,8 +182,8 @@ adb_push(const char *serial, const char *local, const char *remote) {
     process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
-    SDL_free((void *) remote);
-    SDL_free((void *) local);
+    free((void *) remote);
+    free((void *) local);
 #endif
 
     return proc;
@@ -204,7 +204,7 @@ adb_install(const char *serial, const char *local) {
     process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
 
 #ifdef __WINDOWS__
-    SDL_free((void *) local);
+    free((void *) local);
 #endif
 
     return proc;

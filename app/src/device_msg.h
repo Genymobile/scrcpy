@@ -19,7 +19,7 @@ struct device_msg {
     enum device_msg_type type;
     union {
         struct {
-            char *text; // owned, to be freed by SDL_free()
+            char *text; // owned, to be freed by free()
         } clipboard;
     };
 };

@@ -286,7 +286,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     if (priority == 0) {
         return;
     }
-    char *local_fmt = SDL_malloc(strlen(fmt) + 10);
+    char *local_fmt = malloc(strlen(fmt) + 10);
     if (!local_fmt) {
         LOGC("Could not allocate string");
         return;
@@ -295,7 +295,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     strcpy(local_fmt, "[FFmpeg] ");
     strcpy(local_fmt + 9, fmt);
     SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
-    SDL_free(local_fmt);
+    free(local_fmt);
 }
 
 bool
