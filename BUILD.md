@@ -64,7 +64,7 @@ sudo apt install gcc git pkg-config meson ninja-build \
                  libsdl2-dev
 
 # server build dependencies
-sudo apt install openjdk-8-jdk
+sudo apt install openjdk-11-jdk
 ```
 
 On old versions (like Ubuntu 16.04), `meson` is too old. In that case, install
