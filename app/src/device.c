@@ -11,7 +11,7 @@ device_read_info(socket_t device_socket, char *device_name, struct size *size) {
         LOGE("Could not retrieve device information");
         return false;
     }
-    // in case the client sends garbage!
+    // in case the client sends garbage
     buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
     // strcpy is safe here, since name contains at least
     // DEVICE_NAME_FIELD_LENGTH bytes and strlen(buf) < DEVICE_NAME_FIELD_LENGTH

@@ -242,7 +242,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     struct size window_size =
         get_initial_optimal_size(content_size, window_width, window_height);
-    uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
+    uint32_t window_flags = SDL_WINDOW_HIDDEN;
 #ifdef HIDPI_SUPPORT
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
@@ -254,8 +254,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
              "(compile with SDL >= 2.0.5 to enable it)");
 #endif
     }
-    if (window_borderless) {
-        window_flags |= SDL_WINDOW_BORDERLESS;
+    if (!window_borderless) {
+        window_flags |= SDL_WINDOW_RESIZABLE;
     }
 
     int x = window_x != SC_WINDOW_POSITION_UNDEFINED
