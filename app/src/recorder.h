@@ -5,12 +5,11 @@
 
 #include <stdbool.h>
 #include <libavformat/avformat.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
 
 #include "coords.h"
 #include "scrcpy.h"
 #include "util/queue.h"
+#include "util/thread.h"
 
 struct record_packet {
     AVPacket packet;
@@ -26,9 +25,9 @@ struct recorder {
     struct size declared_frame_size;
     bool header_written;
 
-    SDL_Thread *thread;
-    SDL_mutex *mutex;
-    SDL_cond *queue_cond;
+    sc_thread thread;
+    sc_mutex mutex;
+    sc_cond queue_cond;
     bool stopped; // set on recorder_stop() by the stream reader
     bool failed; // set on packet write failure
     struct recorder_queue queue;

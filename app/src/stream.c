@@ -4,8 +4,6 @@
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
 #include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
 #include "decoder.h"
@@ -279,8 +277,8 @@ bool
 stream_start(struct stream *stream) {
     LOGD("Starting stream thread");
 
-    stream->thread = SDL_CreateThread(run_stream, "stream", stream);
-    if (!stream->thread) {
+    bool ok = sc_thread_create(&stream->thread, run_stream, "stream", stream);
+    if (!ok) {
         LOGC("Could not start stream thread");
         return false;
     }
@@ -296,5 +294,5 @@ stream_stop(struct stream *stream) {
 
 void
 stream_join(struct stream *stream) {
-    SDL_WaitThread(stream->thread, NULL);
+    sc_thread_join(&stream->thread, NULL);
 }

@@ -4,7 +4,6 @@
 #include <string.h>
 
 #include "adb.h"
-#include "util/lock.h"
 #include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/"
@@ -20,12 +19,14 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
 
     cbuf_init(&file_handler->queue);
 
-    if (!(file_handler->mutex = SDL_CreateMutex())) {
+    bool ok = sc_mutex_init(&file_handler->mutex);
+    if (!ok) {
         return false;
     }
 
-    if (!(file_handler->event_cond = SDL_CreateCond())) {
-        SDL_DestroyMutex(file_handler->mutex);
+    ok = sc_cond_init(&file_handler->event_cond);
+    if (!ok) {
+        sc_mutex_destroy(&file_handler->mutex);
         return false;
     }
 
@@ -33,8 +34,8 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
         file_handler->serial = strdup(serial);
         if (!file_handler->serial) {
             LOGW("Could not strdup serial");
-            SDL_DestroyCond(file_handler->event_cond);
-            SDL_DestroyMutex(file_handler->mutex);
+            sc_cond_destroy(&file_handler->event_cond);
+            sc_mutex_destroy(&file_handler->mutex);
             return false;
         }
     } else {
@@ -54,8 +55,8 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
 
 void
 file_handler_destroy(struct file_handler *file_handler) {
-    SDL_DestroyCond(file_handler->event_cond);
-    SDL_DestroyMutex(file_handler->mutex);
+    sc_cond_destroy(&file_handler->event_cond);
+    sc_mutex_destroy(&file_handler->mutex);
     free(file_handler->serial);
 
     struct file_handler_request req;
@@ -92,13 +93,13 @@ file_handler_request(struct file_handler *file_handler,
         .file = file,
     };
 
-    mutex_lock(file_handler->mutex);
+    sc_mutex_lock(&file_handler->mutex);
     bool was_empty = cbuf_is_empty(&file_handler->queue);
     bool res = cbuf_push(&file_handler->queue, req);
     if (was_empty) {
-        cond_signal(file_handler->event_cond);
+        sc_cond_signal(&file_handler->event_cond);
     }
-    mutex_unlock(file_handler->mutex);
+    sc_mutex_unlock(&file_handler->mutex);
     return res;
 }
 
@@ -107,14 +108,14 @@ run_file_handler(void *data) {
     struct file_handler *file_handler = data;
 
     for (;;) {
-        mutex_lock(file_handler->mutex);
+        sc_mutex_lock(&file_handler->mutex);
         file_handler->current_process = PROCESS_NONE;
         while (!file_handler->stopped && cbuf_is_empty(&file_handler->queue)) {
-            cond_wait(file_handler->event_cond, file_handler->mutex);
+            sc_cond_wait(&file_handler->event_cond, &file_handler->mutex);
         }
         if (file_handler->stopped) {
             // stop immediately, do not process further events
-            mutex_unlock(file_handler->mutex);
+            sc_mutex_unlock(&file_handler->mutex);
             break;
         }
         struct file_handler_request req;
@@ -132,7 +133,7 @@ run_file_handler(void *data) {
                                 file_handler->push_target);
         }
         file_handler->current_process = process;
-        mutex_unlock(file_handler->mutex);
+        sc_mutex_unlock(&file_handler->mutex);
 
         if (req.action == ACTION_INSTALL_APK) {
             if (process_check_success(process, "adb install", false)) {
@@ -150,13 +151,13 @@ run_file_handler(void *data) {
             }
         }
 
-        mutex_lock(file_handler->mutex);
+        sc_mutex_lock(&file_handler->mutex);
         // Close the process (it is necessary already terminated)
         // Execute this call with mutex locked to avoid race conditions with
         // file_handler_stop()
         process_close(file_handler->current_process);
         file_handler->current_process = PROCESS_NONE;
-        mutex_unlock(file_handler->mutex);
+        sc_mutex_unlock(&file_handler->mutex);
 
         file_handler_request_destroy(&req);
     }
@@ -167,9 +168,9 @@ bool
 file_handler_start(struct file_handler *file_handler) {
     LOGD("Starting file_handler thread");
 
-    file_handler->thread = SDL_CreateThread(run_file_handler, "file_handler",
-                                            file_handler);
-    if (!file_handler->thread) {
+    bool ok = sc_thread_create(&file_handler->thread, run_file_handler,
+                               "file_handler", file_handler);
+    if (!ok) {
         LOGC("Could not start file_handler thread");
         return false;
     }
@@ -179,18 +180,18 @@ file_handler_start(struct file_handler *file_handler) {
 
 void
 file_handler_stop(struct file_handler *file_handler) {
-    mutex_lock(file_handler->mutex);
+    sc_mutex_lock(&file_handler->mutex);
     file_handler->stopped = true;
-    cond_signal(file_handler->event_cond);
+    sc_cond_signal(&file_handler->event_cond);
     if (file_handler->current_process != PROCESS_NONE) {
         if (!process_terminate(file_handler->current_process)) {
             LOGW("Could not terminate push/install process");
         }
     }
-    mutex_unlock(file_handler->mutex);
+    sc_mutex_unlock(&file_handler->mutex);
 }
 
 void
 file_handler_join(struct file_handler *file_handler) {
-    SDL_WaitThread(file_handler->thread, NULL);
+    sc_thread_join(&file_handler->thread, NULL);
 }

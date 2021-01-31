@@ -3,8 +3,6 @@
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
 #include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
 #include "events.h"
