@@ -23,7 +23,8 @@ src = [
     'src/video_buffer.c',
     'src/util/net.c',
     'src/util/process.c',
-    'src/util/str_util.c'
+    'src/util/str_util.c',
+    'src/util/thread.c',
 ]
 
 if host_machine.system() == 'windows'

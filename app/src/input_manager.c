@@ -4,7 +4,6 @@
 #include <SDL2/SDL_keycode.h>
 
 #include "event_converter.h"
-#include "util/lock.h"
 #include "util/log.h"
 
 static const int ACTION_DOWN = 1;

@@ -4,11 +4,10 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
 
 #include "adb.h"
 #include "util/cbuf.h"
+#include "util/thread.h"
 
 typedef enum {
     ACTION_INSTALL_APK,
@@ -25,9 +24,9 @@ struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 struct file_handler {
     char *serial;
     const char *push_target;
-    SDL_Thread *thread;
-    SDL_mutex *mutex;
-    SDL_cond *event_cond;
+    sc_thread thread;
+    sc_mutex mutex;
+    sc_cond event_cond;
     bool stopped;
     bool initialized;
     process_t current_process;

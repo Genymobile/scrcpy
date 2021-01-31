@@ -6,13 +6,15 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
+
+#include "util/thread.h"
 
 struct fps_counter {
-    SDL_Thread *thread;
-    SDL_mutex *mutex;
-    SDL_cond *state_cond;
+    sc_thread thread;
+    sc_mutex mutex;
+    sc_cond state_cond;
+
+    bool thread_started;
 
     // atomic so that we can check without locking the mutex
     // if the FPS counter is disabled, we don't want to lock unnecessarily

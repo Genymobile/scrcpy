@@ -4,12 +4,12 @@
 #include <SDL2/SDL_clipboard.h>
 
 #include "device_msg.h"
-#include "util/lock.h"
 #include "util/log.h"
 
 bool
 receiver_init(struct receiver *receiver, socket_t control_socket) {
-    if (!(receiver->mutex = SDL_CreateMutex())) {
+    bool ok = sc_mutex_init(&receiver->mutex);
+    if (!ok) {
         return false;
     }
     receiver->control_socket = control_socket;
@@ -18,7 +18,7 @@ receiver_init(struct receiver *receiver, socket_t control_socket) {
 
 void
 receiver_destroy(struct receiver *receiver) {
-    SDL_DestroyMutex(receiver->mutex);
+    sc_mutex_destroy(&receiver->mutex);
 }
 
 static void
@@ -101,8 +101,9 @@ bool
 receiver_start(struct receiver *receiver) {
     LOGD("Starting receiver thread");
 
-    receiver->thread = SDL_CreateThread(run_receiver, "receiver", receiver);
-    if (!receiver->thread) {
+    bool ok = sc_thread_create(&receiver->thread, run_receiver, "receiver",
+                               receiver);
+    if (!ok) {
         LOGC("Could not start receiver thread");
         return false;
     }
@@ -112,5 +113,5 @@ receiver_start(struct receiver *receiver) {
 
 void
 receiver_join(struct receiver *receiver) {
-    SDL_WaitThread(receiver->thread, NULL);
+    sc_thread_join(&receiver->thread, NULL);
 }

@@ -5,12 +5,10 @@
 #include <inttypes.h>
 #include <libgen.h>
 #include <stdio.h>
-#include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
 
 #include "adb.h"
-#include "util/lock.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/str_util.h"
@@ -357,18 +355,17 @@ bool
 server_init(struct server *server) {
     server->serial = NULL;
     server->process = PROCESS_NONE;
-    server->wait_server_thread = NULL;
     atomic_flag_clear_explicit(&server->server_socket_closed,
                                memory_order_relaxed);
 
-    server->mutex = SDL_CreateMutex();
-    if (!server->mutex) {
+    bool ok = sc_mutex_init(&server->mutex);
+    if (!ok) {
         return false;
     }
 
-    server->process_terminated_cond = SDL_CreateCond();
-    if (!server->process_terminated_cond) {
-        SDL_DestroyMutex(server->mutex);
+    ok = sc_cond_init(&server->process_terminated_cond);
+    if (!ok) {
+        sc_mutex_destroy(&server->mutex);
         return false;
     }
 
@@ -391,10 +388,10 @@ run_wait_server(void *data) {
     struct server *server = data;
     process_wait(server->process, false); // ignore exit code
 
-    mutex_lock(server->mutex);
+    sc_mutex_lock(&server->mutex);
     server->process_terminated = true;
-    cond_signal(server->process_terminated_cond);
-    mutex_unlock(server->mutex);
+    sc_cond_signal(&server->process_terminated_cond);
+    sc_mutex_unlock(&server->mutex);
 
     // no need for synchronization, server_socket is initialized before this
     // thread was created
@@ -439,9 +436,9 @@ server_start(struct server *server, const char *serial,
     // things simple and multiplatform, just spawn a new thread waiting for the
     // server process and calling shutdown()/close() on the server socket if
     // necessary to wake up any accept() blocking call.
-    server->wait_server_thread =
-        SDL_CreateThread(run_wait_server, "wait-server", server);
-    if (!server->wait_server_thread) {
+    bool ok = sc_thread_create(&server->wait_server_thread, run_wait_server,
+                               "wait-server", server);
+    if (!ok) {
         process_terminate(server->process);
         process_wait(server->process, true); // ignore exit code
         goto error2;
@@ -531,33 +528,33 @@ server_stop(struct server *server) {
     }
 
     // Give some delay for the server to terminate properly
-    mutex_lock(server->mutex);
-    int r = 0;
+    sc_mutex_lock(&server->mutex);
+    bool signaled = false;
     if (!server->process_terminated) {
 #define WATCHDOG_DELAY_MS 1000
-        r = cond_wait_timeout(server->process_terminated_cond,
-                              server->mutex,
-                              WATCHDOG_DELAY_MS);
+        signaled = sc_cond_timedwait(&server->process_terminated_cond,
+                                     &server->mutex,
+                                     WATCHDOG_DELAY_MS);
     }
-    mutex_unlock(server->mutex);
+    sc_mutex_unlock(&server->mutex);
 
     // After this delay, kill the server if it's not dead already.
     // On some devices, closing the sockets is not sufficient to wake up the
     // blocking calls while the device is asleep.
-    if (r == SDL_MUTEX_TIMEDOUT) {
+    if (!signaled) {
         // The process is terminated, but not reaped (closed) yet, so its PID
         // is still valid.
         LOGW("Killing the server...");
         process_terminate(server->process);
     }
 
-    SDL_WaitThread(server->wait_server_thread, NULL);
+    sc_thread_join(&server->wait_server_thread, NULL);
     process_close(server->process);
 }
 
 void
 server_destroy(struct server *server) {
     free(server->serial);
-    SDL_DestroyCond(server->process_terminated_cond);
-    SDL_DestroyMutex(server->mutex);
+    sc_cond_destroy(&server->process_terminated_cond);
+    sc_mutex_destroy(&server->mutex);
 }
