@@ -30,6 +30,9 @@ sc_mutex_init(sc_mutex *mutex) {
     }
 
     mutex->mutex = sdl_mutex;
+#ifndef NDEBUG
+    mutex->locker = 0;
+#endif
     return true;
 }
 
@@ -46,6 +49,8 @@ sc_mutex_lock(sc_mutex *mutex) {
         LOGC("Could not lock mutex: %s", SDL_GetError());
         abort();
     }
+
+    mutex->locker = sc_thread_get_id();
 #else
     (void) r;
 #endif
@@ -53,6 +58,9 @@ sc_mutex_lock(sc_mutex *mutex) {
 
 void
 sc_mutex_unlock(sc_mutex *mutex) {
+#ifndef NDEBUG
+    mutex->locker = 0;
+#endif
     int r = SDL_UnlockMutex(mutex->mutex);
 #ifndef NDEBUG
     if (r) {
@@ -68,6 +76,13 @@ sc_thread_id
 sc_thread_get_id(void) {
     return SDL_ThreadID();
 }
+
+#ifndef NDEBUG
+bool
+sc_mutex_held(struct sc_mutex *mutex) {
+    return mutex->locker == sc_thread_get_id();
+}
+#endif
 
 bool
 sc_cond_init(sc_cond *cond) {
@@ -93,6 +108,8 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
         LOGC("Could not wait on condition: %s", SDL_GetError());
         abort();
     }
+
+    mutex->locker = sc_thread_get_id();
 #else
     (void) r;
 #endif
@@ -106,6 +123,8 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms) {
         LOGC("Could not wait on condition with timeout: %s", SDL_GetError());
         abort();
     }
+
+    mutex->locker = sc_thread_get_id();
 #endif
     assert(r == 0 || r == SDL_MUTEX_TIMEDOUT);
     return r == 0;
