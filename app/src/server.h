@@ -6,21 +6,21 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_thread.h>
 
 #include "adb.h"
 #include "scrcpy.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/thread.h"
 
 struct server {
     char *serial;
     process_t process;
-    SDL_Thread *wait_server_thread;
+    sc_thread wait_server_thread;
     atomic_flag server_socket_closed;
 
-    SDL_mutex *mutex;
-    SDL_cond *process_terminated_cond;
+    sc_mutex mutex;
+    sc_cond process_terminated_cond;
     bool process_terminated;
 
     socket_t server_socket; // only used if !tunnel_forward
