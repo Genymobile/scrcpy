@@ -12,6 +12,7 @@ typedef struct SDL_mutex SDL_mutex;
 typedef struct SDL_cond SDL_cond;
 
 typedef int sc_thread_fn(void *);
+typedef unsigned int sc_thread_id;
 
 typedef struct sc_thread {
     SDL_Thread *thread;
@@ -43,6 +44,9 @@ sc_mutex_lock(sc_mutex *mutex);
 
 void
 sc_mutex_unlock(sc_mutex *mutex);
+
+sc_thread_id
+sc_thread_get_id(void);
 
 bool
 sc_cond_init(sc_cond *cond);

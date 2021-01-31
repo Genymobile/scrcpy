@@ -64,6 +64,11 @@ sc_mutex_unlock(sc_mutex *mutex) {
 #endif
 }
 
+sc_thread_id
+sc_thread_get_id(void) {
+    return SDL_ThreadID();
+}
+
 bool
 sc_cond_init(sc_cond *cond) {
     SDL_cond *sdl_cond = SDL_CreateCond();
