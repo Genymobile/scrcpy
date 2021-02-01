@@ -453,15 +453,13 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 
 bool
 screen_update_frame(struct screen *screen, struct video_buffer *vb) {
-    sc_mutex_lock(&vb->mutex);
-    const AVFrame *frame = video_buffer_consume_rendered_frame(vb);
+    const AVFrame *frame = video_buffer_take_rendering_frame(vb);
     struct size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
         sc_mutex_unlock(&vb->mutex);
         return false;
     }
     update_texture(screen, frame);
-    sc_mutex_unlock(&vb->mutex);
 
     screen_render(screen, false);
     return true;
