@@ -168,6 +168,13 @@ Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each incre
 The device serial number. Mandatory only if several devices are connected to adb.
 
 .TP
+.BI "\-\-scale\-filter filter
+Supported filters are "none" and "trilinear".
+
+Trilinear filtering is only available if the renderer is OpenGL 3.0+ or OpenGL
+ES 2.0+.
+
+.TP
 .BI "\-\-shortcut\-mod " key[+...]][,...]
 Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lsuper" and "rsuper".
 

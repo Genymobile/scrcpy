@@ -9,11 +9,12 @@
 
 #include "coords.h"
 #include "opengl.h"
+#include "scrcpy.h"
 
 struct sc_frame_texture {
     SDL_Renderer *renderer; // owned by struct screen
 
-    bool mipmaps;
+    enum sc_scale_filter scale_filter;
     struct sc_opengl gl;
 
     SDL_Texture *texture;
@@ -22,7 +23,8 @@ struct sc_frame_texture {
 
 bool
 sc_frame_texture_init(struct sc_frame_texture *ftex, SDL_Renderer *renderer,
-                      bool mipmaps, struct size initial_size);
+                      enum sc_scale_filter scale_filter,
+                      struct size initial_size);
 
 void
 sc_frame_texture_destroy(struct sc_frame_texture *ftex);

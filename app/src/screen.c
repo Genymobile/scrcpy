@@ -5,7 +5,6 @@
 #include <SDL2/SDL.h>
 
 #include "icon.xpm"
-#include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/log.h"
@@ -200,7 +199,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
                       uint16_t window_height, bool window_borderless,
-                      uint8_t rotation, bool mipmaps) {
+                      uint8_t rotation, enum sc_scale_filter scale_filter) {
     screen->frame_size = frame_size;
     screen->rotation = rotation;
     if (rotation) {
@@ -247,8 +246,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         return false;
     }
 
-    bool ok = sc_frame_texture_init(&screen->ftex, screen->renderer, mipmaps,
-                                    frame_size);
+    bool ok = sc_frame_texture_init(&screen->ftex, screen->renderer,
+                                    scale_filter, frame_size);
     if (!ok) {
         LOGC("Could not init frame texture");
         SDL_DestroyRenderer(screen->renderer);

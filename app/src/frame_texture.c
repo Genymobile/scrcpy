@@ -12,7 +12,7 @@ create_texture(struct sc_frame_texture *ftex, struct size size) {
         return NULL;
     }
 
-    if (ftex->mipmaps) {
+    if (ftex->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
         struct sc_opengl *gl = &ftex->gl;
 
         SDL_GL_BindTexture(texture, NULL, NULL);
@@ -30,13 +30,14 @@ create_texture(struct sc_frame_texture *ftex, struct size size) {
 
 bool
 sc_frame_texture_init(struct sc_frame_texture *ftex, SDL_Renderer *renderer,
-                      bool mipmaps, struct size initial_size) {
+                      enum sc_scale_filter scale_filter,
+                      struct size initial_size) {
     SDL_RendererInfo renderer_info;
     int r = SDL_GetRendererInfo(renderer, &renderer_info);
     const char *renderer_name = r ? NULL : renderer_info.name;
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
-    ftex->mipmaps = false;
+    ftex->scale_filter = scale_filter;
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
@@ -46,16 +47,16 @@ sc_frame_texture_init(struct sc_frame_texture *ftex, SDL_Renderer *renderer,
 
         LOGI("OpenGL version: %s", gl->version);
 
-        if (mipmaps) {
+        if (scale_filter == SC_SCALE_FILTER_TRILINEAR) {
             bool supports_mipmaps =
                 sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
                                                2, 0  /* OpenGL ES 2.0+ */);
             if (supports_mipmaps) {
                 LOGI("Trilinear filtering enabled");
-                ftex->mipmaps = true;
             } else {
                 LOGW("Trilinear filtering disabled "
                      "(OpenGL 3.0+ or ES 2.0+ required)");
+                scale_filter = SC_SCALE_FILTER_NONE;
             }
         } else {
             LOGI("Trilinear filtering disabled");
@@ -110,7 +111,7 @@ sc_frame_texture_update(struct sc_frame_texture *ftex, const AVFrame *frame) {
             frame->data[1], frame->linesize[1],
             frame->data[2], frame->linesize[2]);
 
-    if (ftex->mipmaps) {
+    if (ftex->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
         SDL_GL_BindTexture(ftex->texture, NULL, NULL);
         ftex->gl.GenerateMipmap(GL_TEXTURE_2D);
         SDL_GL_UnbindTexture(ftex->texture);
