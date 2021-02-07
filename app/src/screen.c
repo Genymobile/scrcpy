@@ -280,8 +280,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
     // starts with "opengl"
-    screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
-    if (screen->use_opengl) {
+    bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    if (use_opengl) {
         struct sc_opengl *gl = &screen->gl;
         sc_opengl_init(gl);
 
@@ -444,7 +444,6 @@ update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[2], frame->linesize[2]);
 
     if (screen->mipmaps) {
-        assert(screen->use_opengl);
         SDL_GL_BindTexture(screen->texture, NULL, NULL);
         screen->gl.GenerateMipmap(GL_TEXTURE_2D);
         SDL_GL_UnbindTexture(screen->texture);
