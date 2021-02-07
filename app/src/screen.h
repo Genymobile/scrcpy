@@ -16,7 +16,6 @@ struct screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
-    bool use_opengl;
     struct sc_opengl gl;
     struct size frame_size;
     struct size content_size; // rotated frame_size
@@ -41,7 +40,6 @@ struct screen {
     .window = NULL, \
     .renderer = NULL, \
     .texture = NULL, \
-    .use_opengl = false, \
     .gl = {0}, \
     .frame_size = { \
         .width = 0, \
