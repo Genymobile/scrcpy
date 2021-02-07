@@ -8,6 +8,7 @@
 #include <libavformat/avformat.h>
 
 #include "coords.h"
+#include "frame_texture.h"
 #include "opengl.h"
 
 struct video_buffer;
@@ -15,8 +16,8 @@ struct video_buffer;
 struct screen {
     SDL_Window *window;
     SDL_Renderer *renderer;
-    SDL_Texture *texture;
-    struct sc_opengl gl;
+    struct sc_frame_texture ftex;
+
     struct size frame_size;
     struct size content_size; // rotated frame_size
 
@@ -33,14 +34,12 @@ struct screen {
     bool fullscreen;
     bool maximized;
     bool no_window;
-    bool mipmaps;
 };
 
 #define SCREEN_INITIALIZER { \
     .window = NULL, \
     .renderer = NULL, \
-    .texture = NULL, \
-    .gl = {0}, \
+    .ftex = {0}, \
     .frame_size = { \
         .width = 0, \
         .height = 0, \
@@ -65,7 +64,6 @@ struct screen {
     .fullscreen = false, \
     .maximized = false, \
     .no_window = false, \
-    .mipmaps = false, \
 }
 
 // initialize default values

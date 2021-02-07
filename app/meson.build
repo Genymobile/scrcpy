@@ -11,6 +11,7 @@ src = [
     'src/event_converter.c',
     'src/file_handler.c',
     'src/fps_counter.c',
+    'src/frame_texture.c',
     'src/input_manager.c',
     'src/opengl.c',
     'src/receiver.c',
