@@ -184,7 +184,9 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
             }
             break;
         case SDL_WINDOWEVENT:
-            screen_handle_window_event(&screen, &event->window);
+            if (screen.has_frame) {
+                screen_handle_window_event(&screen, &event->window);
+            }
             break;
         case SDL_TEXTINPUT:
             if (!options->control) {
