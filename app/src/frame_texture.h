@@ -19,6 +19,11 @@ struct sc_frame_texture {
 
     SDL_Texture *texture;
     struct size texture_size;
+
+    // For swscaling
+    const AVFrame *decoded_frame; // owned by the video_buffer
+    uint8_t *data[4];
+    int linesize[4];
 };
 
 bool
@@ -30,6 +35,7 @@ void
 sc_frame_texture_destroy(struct sc_frame_texture *ftex);
 
 bool
-sc_frame_texture_update(struct sc_frame_texture *ftex, const AVFrame *frame);
+sc_frame_texture_update(struct sc_frame_texture *ftex, const AVFrame *frame,
+                        struct size target_size);
 
 #endif

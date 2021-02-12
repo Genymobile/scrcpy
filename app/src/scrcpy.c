@@ -29,6 +29,26 @@
 #include "util/log.h"
 #include "util/net.h"
 
+static const char *sc_scale_filter_names[SC_SCALE_FILTER__COUNT] = {
+    [SC_SCALE_FILTER_NONE] = "none",
+    [SC_SCALE_FILTER_TRILINEAR] = "trilinear",
+    [SC_SCALE_FILTER_BILINEAR] = "bilinear",
+    [SC_SCALE_FILTER_BICUBIC] = "bicubic",
+    [SC_SCALE_FILTER_X] = "x",
+    [SC_SCALE_FILTER_POINT] = "point",
+    [SC_SCALE_FILTER_AREA] = "area",
+    [SC_SCALE_FILTER_BICUBLIN] = "bicublin",
+    [SC_SCALE_FILTER_GAUSS] = "gauss",
+    [SC_SCALE_FILTER_SINC] = "sinc",
+    [SC_SCALE_FILTER_LANCZOS] = "lanczos",
+    [SC_SCALE_FILTER_SPLINE] = "spline",
+};
+
+const char *
+sc_scale_filter_name(enum sc_scale_filter scale_filter) {
+    return sc_scale_filter_names[scale_filter];
+}
+
 static struct server server;
 static struct screen screen = SCREEN_INITIALIZER;
 static struct fps_counter fps_counter;

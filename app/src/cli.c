@@ -643,6 +643,7 @@ guess_record_format(const char *filename) {
 
 static bool
 parse_scale_filter(const char *optarg, enum sc_scale_filter *filter) {
+    // TODO store in a map and loop over the entries instead
     if (!strcmp(optarg, "none")) {
         *filter = SC_SCALE_FILTER_NONE;
         return true;
@@ -651,8 +652,48 @@ parse_scale_filter(const char *optarg, enum sc_scale_filter *filter) {
         *filter = SC_SCALE_FILTER_TRILINEAR;
         return true;
     }
+    if (!strcmp(optarg, "bilinear")) {
+        *filter = SC_SCALE_FILTER_BILINEAR;
+        return true;
+    }
+    if (!strcmp(optarg, "bicubic")) {
+        *filter = SC_SCALE_FILTER_BICUBIC;
+        return true;
+    }
+    if (!strcmp(optarg, "x")) {
+        *filter = SC_SCALE_FILTER_X;
+        return true;
+    }
+    if (!strcmp(optarg, "point")) {
+        *filter = SC_SCALE_FILTER_POINT;
+        return true;
+    }
+    if (!strcmp(optarg, "area")) {
+        *filter = SC_SCALE_FILTER_AREA;
+        return true;
+    }
+    if (!strcmp(optarg, "bicublin")) {
+        *filter = SC_SCALE_FILTER_BICUBLIN;
+        return true;
+    }
+    if (!strcmp(optarg, "gauss")) {
+        *filter = SC_SCALE_FILTER_GAUSS;
+        return true;
+    }
+    if (!strcmp(optarg, "sinc")) {
+        *filter = SC_SCALE_FILTER_SINC;
+        return true;
+    }
+    if (!strcmp(optarg, "lanczos")) {
+        *filter = SC_SCALE_FILTER_LANCZOS;
+        return true;
+    }
+    if (!strcmp(optarg, "spline")) {
+        *filter = SC_SCALE_FILTER_SPLINE;
+        return true;
+    }
     LOGE("Unsupported scale filter: %s "
-         "(expected \"none\" or \"trilinear\")", optarg);
+         "(expected one of [TODO])", optarg);
     return false;
 }
 

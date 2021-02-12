@@ -44,7 +44,21 @@ struct sc_port_range {
 enum sc_scale_filter {
     SC_SCALE_FILTER_NONE,
     SC_SCALE_FILTER_TRILINEAR, // mipmaps
+    SC_SCALE_FILTER_BILINEAR,
+    SC_SCALE_FILTER_BICUBIC,
+    SC_SCALE_FILTER_X,
+    SC_SCALE_FILTER_POINT,
+    SC_SCALE_FILTER_AREA,
+    SC_SCALE_FILTER_BICUBLIN,
+    SC_SCALE_FILTER_GAUSS,
+    SC_SCALE_FILTER_SINC,
+    SC_SCALE_FILTER_LANCZOS,
+    SC_SCALE_FILTER_SPLINE,
+    SC_SCALE_FILTER__COUNT,
 };
+
+const char *
+sc_scale_filter_name(enum sc_scale_filter scale_filter);
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 

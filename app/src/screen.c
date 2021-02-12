@@ -363,7 +363,8 @@ screen_update_frame(struct screen *screen, struct video_buffer *vb) {
     struct size new_frame_size = {frame->width, frame->height};
     prepare_for_frame(screen, new_frame_size);
 
-    bool ok = sc_frame_texture_update(&screen->ftex, frame);
+    struct size rect_size = {screen->rect.w, screen->rect.h};
+    bool ok = sc_frame_texture_update(&screen->ftex, frame, rect_size);
     if (!ok) {
         return false;
     }
