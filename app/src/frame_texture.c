@@ -60,7 +60,7 @@ sc_frame_texture_init(struct sc_frame_texture *ftex, SDL_Renderer *renderer,
         } else {
             LOGI("Trilinear filtering disabled");
         }
-    } else {
+    } else if (scale_filter == SC_SCALE_FILTER_TRILINEAR) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
