@@ -135,6 +135,7 @@ screen_generate_resized_frame(struct sc_frame_texture *ftex,
     }
 
     const AVFrame *input = ftex->decoded_frame;
+    assert(input);
 
     int flags = to_sws_filter(ftex->scale_filter);
     struct SwsContext *ctx =
@@ -231,4 +232,16 @@ sc_frame_texture_update(struct sc_frame_texture *ftex, const AVFrame *frame,
         return sc_frame_texture_update_swscale(ftex, frame, target_size);
     }
     return sc_frame_texture_update_direct(ftex, frame);
+}
+
+bool
+sc_frame_texture_resize(struct sc_frame_texture *ftex,
+                        struct size target_size) {
+    if (is_swscale_enabled(ftex->scale_filter)) {
+        return sc_frame_texture_update_swscale(ftex, ftex->decoded_frame,
+                                               target_size);
+    }
+
+    // Nothing to do
+    return true;
 }

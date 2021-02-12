@@ -377,6 +377,11 @@ void
 screen_render(struct screen *screen, bool update_content_rect) {
     if (update_content_rect) {
         screen_update_content_rect(screen);
+        struct size rect_size = {screen->rect.w, screen->rect.h};
+        if (!sc_frame_texture_resize(&screen->ftex, rect_size)) {
+            // FIXME return error
+            LOGC("oops");
+        }
     }
 
     struct sc_frame_texture *ftex = &screen->ftex;

@@ -38,4 +38,7 @@ bool
 sc_frame_texture_update(struct sc_frame_texture *ftex, const AVFrame *frame,
                         struct size target_size);
 
+bool
+sc_frame_texture_resize(struct sc_frame_texture *ftex, struct size target_size);
+
 #endif
