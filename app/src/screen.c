@@ -270,7 +270,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                                           SDL_RENDERER_ACCELERATED);
     if (!screen->renderer) {
         LOGC("Could not create renderer: %s", SDL_GetError());
-        screen_destroy(screen);
+        SDL_DestroyWindow(screen->window);
         return false;
     }
 
@@ -318,7 +318,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     screen->texture = create_texture(screen);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
-        screen_destroy(screen);
+        SDL_DestroyRenderer(screen->renderer);
+        SDL_DestroyWindow(screen->window);
         return false;
     }
 
@@ -339,15 +340,9 @@ screen_show_window(struct screen *screen) {
 
 void
 screen_destroy(struct screen *screen) {
-    if (screen->texture) {
-        SDL_DestroyTexture(screen->texture);
-    }
-    if (screen->renderer) {
-        SDL_DestroyRenderer(screen->renderer);
-    }
-    if (screen->window) {
-        SDL_DestroyWindow(screen->window);
-    }
+    SDL_DestroyTexture(screen->texture);
+    SDL_DestroyRenderer(screen->renderer);
+    SDL_DestroyWindow(screen->window);
 }
 
 static void
