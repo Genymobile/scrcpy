@@ -301,7 +301,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         } else {
             LOGI("Trilinear filtering disabled");
         }
-    } else {
+    } else if (mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
