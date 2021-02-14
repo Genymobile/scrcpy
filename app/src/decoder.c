@@ -2,7 +2,6 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_events.h>
 #include <unistd.h>
 
 #include "events.h"
@@ -18,18 +17,22 @@ push_frame(struct decoder *decoder) {
     video_buffer_offer_decoded_frame(decoder->video_buffer,
                                      &previous_frame_skipped);
     if (previous_frame_skipped) {
-        // the previous EVENT_NEW_FRAME will consume this frame
+        // the previous callback will consume this frame
         return;
     }
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-    SDL_PushEvent(&new_frame_event);
+
+    decoder->cbs->on_new_frame(decoder, decoder->cbs_userdata);
 }
 
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb) {
+decoder_init(struct decoder *decoder, struct video_buffer *vb,
+             const struct decoder_callbacks *cbs, void *cbs_userdata) {
     decoder->video_buffer = vb;
+
+    assert(cbs);
+    assert(cbs->on_new_frame);
+    decoder->cbs = cbs;
+    decoder->cbs_userdata = cbs_userdata;
 }
 
 bool
