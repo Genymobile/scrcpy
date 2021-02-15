@@ -4,6 +4,7 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
+#include "events.h"
 #include "icon.xpm"
 #include "scrcpy.h"
 #include "tiny_xpm.h"
@@ -446,7 +447,7 @@ update_texture(struct screen *screen, const AVFrame *frame) {
     }
 }
 
-bool
+static bool
 screen_update_frame(struct screen *screen) {
     const AVFrame *frame = video_buffer_take_rendering_frame(screen->vb);
     struct size new_frame_size = {frame->width, frame->height};
@@ -540,7 +541,7 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
                                             content_size.height);
 }
 
-void
+static void
 screen_handle_window_event(struct screen *screen,
                            const SDL_WindowEvent *event) {
     switch (event->event) {
@@ -565,6 +566,33 @@ screen_handle_window_event(struct screen *screen,
             apply_pending_resize(screen);
             break;
     }
+}
+
+
+bool
+screen_handle_event(struct screen *screen, SDL_Event *event) {
+    switch (event->type) {
+        case EVENT_NEW_FRAME:
+            if (!screen->has_frame) {
+                screen->has_frame = true;
+                // this is the very first frame, show the window
+                screen_show_window(screen);
+            }
+            bool ok = screen_update_frame(screen);
+            if (!ok) {
+                LOGW("Frame update failed\n");
+            }
+            return true;
+        case SDL_WINDOWEVENT:
+            if (!screen->has_frame) {
+                // Do nothing
+                return true;
+            }
+            screen_handle_window_event(screen, &event->window);
+            return true;
+    }
+
+    return false;
 }
 
 struct point
