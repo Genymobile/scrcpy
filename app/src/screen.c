@@ -541,34 +541,6 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
                                             content_size.height);
 }
 
-static void
-screen_handle_window_event(struct screen *screen,
-                           const SDL_WindowEvent *event) {
-    switch (event->event) {
-        case SDL_WINDOWEVENT_EXPOSED:
-            screen_render(screen, true);
-            break;
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-            screen_render(screen, true);
-            break;
-        case SDL_WINDOWEVENT_MAXIMIZED:
-            screen->maximized = true;
-            break;
-        case SDL_WINDOWEVENT_RESTORED:
-            if (screen->fullscreen) {
-                // On Windows, in maximized+fullscreen, disabling fullscreen
-                // mode unexpectedly triggers the "restored" then "maximized"
-                // events, leaving the window in a weird state (maximized
-                // according to the events, but not maximized visually).
-                break;
-            }
-            screen->maximized = false;
-            apply_pending_resize(screen);
-            break;
-    }
-}
-
-
 bool
 screen_handle_event(struct screen *screen, SDL_Event *event) {
     switch (event->type) {
@@ -588,7 +560,29 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
                 // Do nothing
                 return true;
             }
-            screen_handle_window_event(screen, &event->window);
+            switch (event->window.event) {
+                case SDL_WINDOWEVENT_EXPOSED:
+                    screen_render(screen, true);
+                    break;
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    screen_render(screen, true);
+                    break;
+                case SDL_WINDOWEVENT_MAXIMIZED:
+                    screen->maximized = true;
+                    break;
+                case SDL_WINDOWEVENT_RESTORED:
+                    if (screen->fullscreen) {
+                        // On Windows, in maximized+fullscreen, disabling
+                        // fullscreen mode unexpectedly triggers the "restored"
+                        // then "maximized" events, leaving the window in a
+                        // weird state (maximized according to the events, but
+                        // not maximized visually).
+                        break;
+                    }
+                    screen->maximized = false;
+                    apply_pending_resize(screen);
+                    break;
+            }
             return true;
     }
 
