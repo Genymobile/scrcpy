@@ -286,7 +286,7 @@ rotate_client_right(struct screen *screen) {
     screen_set_rotation(screen, new_rotation);
 }
 
-void
+static void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
     if (is_shortcut_mod(im, SDL_GetModState())) {
@@ -366,7 +366,7 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
     return true;
 }
 
-void
+static void
 input_manager_process_key(struct input_manager *im,
                           const SDL_KeyboardEvent *event) {
     // control: indicates the state of the command-line option --no-control
@@ -551,7 +551,7 @@ convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
     return true;
 }
 
-void
+static void
 input_manager_process_mouse_motion(struct input_manager *im,
                                    const SDL_MouseMotionEvent *event) {
     if (!event->state) {
@@ -605,7 +605,7 @@ convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
     return true;
 }
 
-void
+static void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
     struct control_msg msg;
@@ -637,7 +637,7 @@ convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
     return true;
 }
 
-void
+static void
 input_manager_process_mouse_button(struct input_manager *im,
                                    const SDL_MouseButtonEvent *event) {
     bool control = im->control;
@@ -736,7 +736,7 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
     return true;
 }
 
-void
+static void
 input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
     struct control_msg msg;
@@ -745,4 +745,47 @@ input_manager_process_mouse_wheel(struct input_manager *im,
             LOGW("Could not request 'inject mouse wheel event'");
         }
     }
+}
+
+bool
+input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
+    switch (event->type) {
+        case SDL_TEXTINPUT:
+            if (!im->control) {
+                return true;
+            }
+            input_manager_process_text_input(im, &event->text);
+            return true;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            // some key events do not interact with the device, so process the
+            // event even if control is disabled
+            input_manager_process_key(im, &event->key);
+            return true;
+        case SDL_MOUSEMOTION:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_mouse_motion(im, &event->motion);
+            return true;
+        case SDL_MOUSEWHEEL:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_mouse_wheel(im, &event->wheel);
+            return true;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            // some mouse events do not interact with the device, so process
+            // the event even if control is disabled
+            input_manager_process_mouse_button(im, &event->button);
+            return true;
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+            input_manager_process_touch(im, &event->tfinger);
+            return true;
+    }
+
+    return false;
 }

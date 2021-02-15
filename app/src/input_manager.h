@@ -40,28 +40,7 @@ void
 input_manager_init(struct input_manager *im,
                    const struct scrcpy_options *options);
 
-void
-input_manager_process_text_input(struct input_manager *im,
-                                 const SDL_TextInputEvent *event);
-
-void
-input_manager_process_key(struct input_manager *im,
-                          const SDL_KeyboardEvent *event);
-
-void
-input_manager_process_mouse_motion(struct input_manager *im,
-                                   const SDL_MouseMotionEvent *event);
-
-void
-input_manager_process_touch(struct input_manager *im,
-                            const SDL_TouchFingerEvent *event);
-
-void
-input_manager_process_mouse_button(struct input_manager *im,
-                                   const SDL_MouseButtonEvent *event);
-
-void
-input_manager_process_mouse_wheel(struct input_manager *im,
-                                  const SDL_MouseWheelEvent *event);
+bool
+input_manager_handle_event(struct input_manager *im, SDL_Event *event);
 
 #endif
