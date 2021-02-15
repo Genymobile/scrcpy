@@ -13,6 +13,7 @@
 struct video_buffer;
 
 struct screen {
+    struct video_buffer *vb;
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
@@ -37,6 +38,7 @@ struct screen {
 };
 
 #define SCREEN_INITIALIZER { \
+    .vb = NULL, \
     .window = NULL, \
     .renderer = NULL, \
     .texture = NULL, \
@@ -70,7 +72,7 @@ struct screen {
 
 // initialize default values
 void
-screen_init(struct screen *screen);
+screen_init(struct screen *screen, struct video_buffer *vb);
 
 // initialize screen, create window, renderer and texture (window is hidden)
 // window_x and window_y accept SC_WINDOW_POSITION_UNDEFINED
@@ -91,7 +93,7 @@ screen_destroy(struct screen *screen);
 
 // resize if necessary and write the rendered frame into the texture
 bool
-screen_update_frame(struct screen *screen, struct video_buffer *vb);
+screen_update_frame(struct screen *screen);
 
 // render the texture to the renderer
 //

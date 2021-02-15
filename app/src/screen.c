@@ -191,8 +191,9 @@ screen_update_content_rect(struct screen *screen) {
 }
 
 void
-screen_init(struct screen *screen) {
+screen_init(struct screen *screen, struct video_buffer *vb) {
     *screen = (struct screen) SCREEN_INITIALIZER;
+    screen->vb = vb;
 }
 
 static inline SDL_Texture *
@@ -446,8 +447,8 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 }
 
 bool
-screen_update_frame(struct screen *screen, struct video_buffer *vb) {
-    const AVFrame *frame = video_buffer_take_rendering_frame(vb);
+screen_update_frame(struct screen *screen) {
+    const AVFrame *frame = video_buffer_take_rendering_frame(screen->vb);
     struct size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
         return false;
