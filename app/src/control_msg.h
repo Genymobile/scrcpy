@@ -33,6 +33,9 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
     CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS,
+    CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON,
+    CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE,
 };
 
 enum screen_power_mode {
@@ -76,6 +79,20 @@ struct control_msg {
         struct {
             enum screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            int16_t id;
+            uint8_t axis;
+            int16_t value;
+        } inject_game_controller_axis;
+        struct {
+            int16_t id;
+            uint8_t button;
+            uint8_t state;
+        } inject_game_controller_button;
+        struct {
+            int16_t id;
+            uint8_t event;
+        } inject_game_controller_device;
     };
 };
 

@@ -135,6 +135,29 @@ public class Controller {
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 Device.rotateDevice();
                 break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_AXIS:
+                {
+                    int id = msg.getGameControllerId();
+                    int axis = msg.getGameControllerAxis();
+                    int value = msg.getGameControllerAxisValue();
+                    Ln.d(String.format("Received gc axis: %d %d %d", id, axis, value));
+                }
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON:
+                {
+                    int id = msg.getGameControllerId();
+                    int button = msg.getGameControllerButton();
+                    int state = msg.getGameControllerButtonState();
+                    Ln.d(String.format("Received gc button: %d %d %d", id, button, state));
+                }
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE:
+                {
+                    int id = msg.getGameControllerId();
+                    int event = msg.getGameControllerDeviceEvent();
+                    Ln.d(String.format("Received gc device event: %d %d", id, event));
+                }
+                break;
             default:
                 // do nothing
         }

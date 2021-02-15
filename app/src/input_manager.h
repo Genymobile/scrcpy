@@ -12,9 +12,12 @@
 #include "scrcpy.h"
 #include "screen.h"
 
+#define MAX_GAME_CONTROLLERS 16
+
 struct input_manager {
     struct controller *controller;
     struct screen *screen;
+    SDL_GameController *game_controllers[MAX_GAME_CONTROLLERS];
 
     // SDL reports repeated events as a boolean, but Android expects the actual
     // number of repetitions. This variable keeps track of the count.

@@ -14,6 +14,9 @@ public class ControlMessageReader {
     static final int BACK_OR_SCREEN_ON_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
+    static final int INJECT_GAME_CONTROLLER_AXIS_PAYLOAD_LENGTH = 5;
+    static final int INJECT_GAME_CONTROLLER_BUTTON_PAYLOAD_LENGTH = 4;
+    static final int INJECT_GAME_CONTROLLER_DEVICE_PAYLOAD_LENGTH = 3;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
@@ -82,6 +85,15 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_GET_CLIPBOARD:
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 msg = ControlMessage.createEmpty(type);
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_AXIS:
+                msg = parseInjectGameControllerAxis();
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON:
+                msg = parseInjectGameControllerButton();
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE:
+                msg = parseInjectGameControllerDevice();
                 break;
             default:
                 Ln.w("Unknown event type: " + type);
@@ -180,6 +192,35 @@ public class ControlMessageReader {
         }
         int mode = buffer.get();
         return ControlMessage.createSetScreenPowerMode(mode);
+    }
+
+    private ControlMessage parseInjectGameControllerAxis() {
+        if (buffer.remaining() < INJECT_GAME_CONTROLLER_AXIS_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        int axis = buffer.get();
+        int value = buffer.getShort();
+        return ControlMessage.createInjectGameControllerAxis(id, axis, value);
+    }
+
+    private ControlMessage parseInjectGameControllerButton() {
+        if (buffer.remaining() < INJECT_GAME_CONTROLLER_BUTTON_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        int button = buffer.get();
+        int state = buffer.get();
+        return ControlMessage.createInjectGameControllerButton(id, button, state);
+    }
+
+    private ControlMessage parseInjectGameControllerDevice() {
+        if (buffer.remaining() < INJECT_GAME_CONTROLLER_DEVICE_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        int event = buffer.get();
+        return ControlMessage.createInjectGameControllerDevice(id, event);
     }
 
     private static Position readPosition(ByteBuffer buffer) {

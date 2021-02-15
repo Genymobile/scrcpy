@@ -59,7 +59,7 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 static bool
 sdl_init_and_configure(bool display, const char *render_driver,
                        bool disable_screensaver) {
-    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
+    uint32_t flags = (display ? SDL_INIT_VIDEO : 0) | SDL_INIT_GAMECONTROLLER;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
         return false;
