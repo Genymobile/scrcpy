@@ -30,7 +30,7 @@
 #include "util/net.h"
 
 static struct server server;
-static struct screen screen = SCREEN_INITIALIZER;
+static struct screen screen;
 static struct fps_counter fps_counter;
 static struct video_buffer video_buffer;
 static struct stream stream;
@@ -179,7 +179,7 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
                 // this is the very first frame, show the window
                 screen_show_window(&screen);
             }
-            if (!screen_update_frame(&screen, &video_buffer)) {
+            if (!screen_update_frame(&screen)) {
                 return EVENT_RESULT_CONTINUE;
             }
             break;
@@ -428,6 +428,8 @@ scrcpy(const struct scrcpy_options *options) {
 
         const char *window_title =
             options->window_title ? options->window_title : device_name;
+
+        screen_init(&screen, &video_buffer);
 
         if (!screen_init_rendering(&screen, window_title, frame_size,
                                    options->always_on_top, options->window_x,
