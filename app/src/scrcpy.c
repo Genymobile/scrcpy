@@ -173,41 +173,6 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
-        case SDL_TEXTINPUT:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_text_input(&input_manager, &event->text);
-            break;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            // some key events do not interact with the device, so process the
-            // event even if control is disabled
-            input_manager_process_key(&input_manager, &event->key);
-            break;
-        case SDL_MOUSEMOTION:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_mouse_motion(&input_manager, &event->motion);
-            break;
-        case SDL_MOUSEWHEEL:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_mouse_wheel(&input_manager, &event->wheel);
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            // some mouse events do not interact with the device, so process
-            // the event even if control is disabled
-            input_manager_process_mouse_button(&input_manager, &event->button);
-            break;
-        case SDL_FINGERMOTION:
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-            input_manager_process_touch(&input_manager, &event->tfinger);
-            break;
         case SDL_DROPFILE: {
             if (!options->control) {
                 break;
@@ -231,8 +196,14 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
     }
 
     bool consumed = screen_handle_event(&screen, event);
+    if (consumed) {
+        goto end;
+    }
+
+    consumed = input_manager_handle_event(&input_manager, event);
     (void) consumed;
 
+end:
     return EVENT_RESULT_CONTINUE;
 }
 
