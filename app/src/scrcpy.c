@@ -173,21 +173,6 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
-        case EVENT_NEW_FRAME:
-            if (!screen.has_frame) {
-                screen.has_frame = true;
-                // this is the very first frame, show the window
-                screen_show_window(&screen);
-            }
-            if (!screen_update_frame(&screen)) {
-                return EVENT_RESULT_CONTINUE;
-            }
-            break;
-        case SDL_WINDOWEVENT:
-            if (screen.has_frame) {
-                screen_handle_window_event(&screen, &event->window);
-            }
-            break;
         case SDL_TEXTINPUT:
             if (!options->control) {
                 break;
@@ -244,6 +229,10 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
             break;
         }
     }
+
+    bool consumed = screen_handle_event(&screen, event);
+    (void) consumed;
+
     return EVENT_RESULT_CONTINUE;
 }
 
