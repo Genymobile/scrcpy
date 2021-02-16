@@ -137,4 +137,9 @@ screen_convert_drawable_to_frame_coords(struct screen *screen,
 void
 screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y);
 
+// Notify the screen that a new frame is available in the video_buffer.
+// Called from a separate thread.
+void
+screen_on_new_frame(struct screen *screen);
+
 #endif

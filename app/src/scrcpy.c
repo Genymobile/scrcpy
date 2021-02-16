@@ -271,10 +271,7 @@ decoder_on_new_frame(struct decoder *decoder, void *userdata) {
     (void) decoder;
     (void) userdata;
 
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-    SDL_PushEvent(&new_frame_event);
+    screen_on_new_frame(&screen);
 }
 
 bool

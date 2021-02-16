@@ -647,3 +647,15 @@ screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y) {
     *x = (int64_t) *x * dw / ww;
     *y = (int64_t) *y * dh / wh;
 }
+
+void
+screen_on_new_frame(struct screen *screen) {
+    (void) screen;
+
+    static SDL_Event new_frame_event = {
+        .type = EVENT_NEW_FRAME,
+    };
+
+    // Post the event on the UI thread
+    SDL_PushEvent(&new_frame_event);
+}
