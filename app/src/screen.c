@@ -6,7 +6,6 @@
 
 #include "events.h"
 #include "icon.xpm"
-#include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/log.h"
@@ -229,7 +228,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                       struct size frame_size, bool always_on_top,
                       int16_t window_x, int16_t window_y, uint16_t window_width,
                       uint16_t window_height, bool window_borderless,
-                      uint8_t rotation, bool mipmaps) {
+                      uint8_t rotation, enum sc_scale_filter scale_filter) {
     screen->frame_size = frame_size;
     screen->rotation = rotation;
     if (rotation) {
@@ -283,6 +282,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    bool mipmaps = scale_filter == SC_SCALE_FILTER_TRILINEAR;
     if (use_opengl) {
         struct sc_opengl *gl = &screen->gl;
         sc_opengl_init(gl);
