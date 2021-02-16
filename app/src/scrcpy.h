@@ -41,6 +41,11 @@ struct sc_port_range {
     uint16_t last;
 };
 
+enum sc_scale_filter {
+    SC_SCALE_FILTER_NONE,
+    SC_SCALE_FILTER_TRILINEAR, // mipmaps
+};
+
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
 struct scrcpy_options {
@@ -56,6 +61,7 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     struct sc_port_range port_range;
     struct sc_shortcut_mods shortcut_mods;
+    enum sc_scale_filter scale_filter;
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
@@ -75,7 +81,6 @@ struct scrcpy_options {
     bool render_expired_frames;
     bool prefer_text;
     bool window_borderless;
-    bool mipmaps;
     bool stay_awake;
     bool force_adb_forward;
     bool disable_screensaver;
@@ -103,6 +108,7 @@ struct scrcpy_options {
         .data = {SC_MOD_LALT, SC_MOD_LSUPER}, \
         .count = 2, \
     }, \
+    .scale_filter = SC_SCALE_FILTER_TRILINEAR, \
     .max_size = DEFAULT_MAX_SIZE, \
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
@@ -122,7 +128,6 @@ struct scrcpy_options {
     .render_expired_frames = false, \
     .prefer_text = false, \
     .window_borderless = false, \
-    .mipmaps = true, \
     .stay_awake = false, \
     .force_adb_forward = false, \
     .disable_screensaver = false, \

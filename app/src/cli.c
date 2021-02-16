@@ -103,11 +103,6 @@ scrcpy_print_usage(const char *arg0) {
         "    --no-key-repeat\n"
         "        Do not forward repeated key events when a key is held down.\n"
         "\n"
-        "    --no-mipmaps\n"
-        "        If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then\n"
-        "        mipmaps are automatically generated to improve downscaling\n"
-        "        quality. This option disables the generation of mipmaps.\n"
-        "\n"
         "    -p, --port port[:port]\n"
         "        Set the TCP port (range) used by the client to listen.\n"
         "        Default is %d:%d.\n"
@@ -153,6 +148,11 @@ scrcpy_print_usage(const char *arg0) {
         "    -s, --serial serial\n"
         "        The device serial number. Mandatory only if several devices\n"
         "        are connected to adb.\n"
+        "\n"
+        "    --scale-filter filter\n"
+        "        Supported filters are \"none\" and \"trilinear\".\n"
+        "        Trilinear filtering is only available if the renderer is\n"
+        "        OpenGL 3.0+ or OpenGL ES 2.0+.\n"
         "\n"
         "    --shortcut-mod key[+...]][,...]\n"
         "        Specify the modifiers to use for scrcpy shortcuts.\n"
@@ -641,6 +641,21 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+static bool
+parse_scale_filter(const char *optarg, enum sc_scale_filter *filter) {
+    if (!strcmp(optarg, "none")) {
+        *filter = SC_SCALE_FILTER_NONE;
+        return true;
+    }
+    if (!strcmp(optarg, "trilinear")) {
+        *filter = SC_SCALE_FILTER_TRILINEAR;
+        return true;
+    }
+    LOGE("Unsupported scale filter: %s "
+         "(expected \"none\" or \"trilinear\")", optarg);
+    return false;
+}
+
 #define OPT_RENDER_EXPIRED_FRAMES  1000
 #define OPT_WINDOW_TITLE           1001
 #define OPT_PUSH_TARGET            1002
@@ -667,6 +682,7 @@ guess_record_format(const char *filename) {
 #define OPT_FORWARD_ALL_CLICKS     1023
 #define OPT_LEGACY_PASTE           1024
 #define OPT_ENCODER_NAME           1025
+#define OPT_SCALE_FILTER           1026
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -703,6 +719,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"render-expired-frames",  no_argument,       NULL,
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
+        {"scale-filter",           required_argument, NULL, OPT_SCALE_FILTER},
         {"serial",                 required_argument, NULL, 's'},
         {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
         {"show-touches",           no_argument,       NULL, 't'},
@@ -857,7 +874,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->render_driver = optarg;
                 break;
             case OPT_NO_MIPMAPS:
-                opts->mipmaps = false;
+                LOGW("Deprecated option --no-mipmaps. "
+                     "Use --scale-filter=none instead.");
+                opts->scale_filter = SC_SCALE_FILTER_NONE;
                 break;
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;
@@ -884,6 +903,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
+                break;
+            case OPT_SCALE_FILTER:
+                if (!parse_scale_filter(optarg, &opts->scale_filter)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr
