@@ -6,7 +6,6 @@
 
 #include "events.h"
 #include "icon.xpm"
-#include "scrcpy.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
 #include "util/log.h"
@@ -314,13 +313,14 @@ screen_init(struct screen *screen, struct video_buffer *vb,
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    bool mipmaps = params->scale_filter == SC_SCALE_FILTER_TRILINEAR;
     if (use_opengl) {
         struct sc_opengl *gl = &screen->gl;
         sc_opengl_init(gl);
 
         LOGI("OpenGL version: %s", gl->version);
 
-        if (params->mipmaps) {
+        if (mipmaps) {
             bool supports_mipmaps =
                 sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
                                                2, 0  /* OpenGL ES 2.0+ */);
@@ -334,7 +334,7 @@ screen_init(struct screen *screen, struct video_buffer *vb,
         } else {
             LOGI("Trilinear filtering disabled");
         }
-    } else if (params->mipmaps) {
+    } else if (mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 

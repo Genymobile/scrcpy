@@ -9,6 +9,7 @@
 
 #include "coords.h"
 #include "opengl.h"
+#include "scrcpy.h"
 
 struct video_buffer;
 
@@ -53,7 +54,7 @@ struct screen_params {
     bool window_borderless;
 
     uint8_t rotation;
-    bool mipmaps;
+    enum sc_scale_filter scale_filter;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

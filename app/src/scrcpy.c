@@ -392,7 +392,7 @@ scrcpy(const struct scrcpy_options *options) {
             .window_height = options->window_height,
             .window_borderless = options->window_borderless,
             .rotation = options->rotation,
-            .mipmaps = options->mipmaps,
+            .scale_filter = options->scale_filter,
         };
 
         if (!screen_init(&screen, &video_buffer, &fps_counter,
