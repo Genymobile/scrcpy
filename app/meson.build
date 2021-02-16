@@ -99,9 +99,6 @@ foreach f : check_functions
   endif
 endforeach
 
-# expose the build type
-conf.set('NDEBUG', get_option('buildtype') != 'debug')
-
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 
