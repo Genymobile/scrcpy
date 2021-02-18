@@ -17,7 +17,7 @@ import java.io.IOException;
  */
 public final class CleanUp {
 
-    public static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
+    public static final String SERVER_PATH = Server.SERVER_DIR + "/scrcpy-server.jar";
 
     // A simple struct to be passed from the main process to the cleanup process
     public static class Config implements Parcelable {
@@ -150,8 +150,19 @@ public final class CleanUp {
         }
     }
 
+    private static void unlinkNativeLibs() {
+        for (String lib : Server.NATIVE_LIBRARIES){
+            try {
+                new File(Server.SERVER_DIR + "/" + lib).delete();
+            } catch (Exception e) {
+                Ln.e("Could not unlink native library " + lib, e);
+            }
+        }
+    }
+
     public static void main(String... args) {
         unlinkSelf();
+        unlinkNativeLibs();
 
         try {
             // Wait for the server to die
