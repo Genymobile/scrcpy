@@ -809,70 +809,6 @@ input_manager_process_mouse_wheel(struct input_manager *im,
     }
 }
 
-bool
-input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
-    switch (event->type) {
-        case SDL_TEXTINPUT:
-            if (!im->control) {
-                return true;
-            }
-            input_manager_process_text_input(im, &event->text);
-            return true;
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
-            // some key events do not interact with the device, so process the
-            // event even if control is disabled
-            input_manager_process_key(im, &event->key);
-            return true;
-        case SDL_MOUSEMOTION:
-            if (!im->control) {
-                break;
-            }
-            input_manager_process_mouse_motion(im, &event->motion);
-            return true;
-        case SDL_MOUSEWHEEL:
-            if (!im->control) {
-                break;
-            }
-            input_manager_process_mouse_wheel(im, &event->wheel);
-            return true;
-        case SDL_MOUSEBUTTONDOWN:
-        case SDL_MOUSEBUTTONUP:
-            // some mouse events do not interact with the device, so process
-            // the event even if control is disabled
-            input_manager_process_mouse_button(im, &event->button);
-            return true;
-        case SDL_FINGERMOTION:
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-            input_manager_process_touch(im, &event->tfinger);
-            return true;
-        case SDL_CONTROLLERAXISMOTION:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_controller_axis(&input_manager, &event->caxis);
-            break;
-        case SDL_CONTROLLERBUTTONDOWN:
-        case SDL_CONTROLLERBUTTONUP:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_controller_button(&input_manager, &event->cbutton);
-            break;
-        case SDL_CONTROLLERDEVICEADDED:
-        // case SDL_CONTROLLERDEVICEREMAPPED:
-        case SDL_CONTROLLERDEVICEREMOVED:
-            if (!options->control) {
-                break;
-            }
-            input_manager_process_controller_device(&input_manager, &event->cdevice);
-            break;
-    }
-
-    return false;
-}
-
 void
 input_manager_process_controller_axis(struct input_manager *im,
                                       const SDL_ControllerAxisEvent *event) {
@@ -976,4 +912,68 @@ input_manager_process_controller_device(struct input_manager *im,
     msg.inject_game_controller_device.event = event->type;
     msg.inject_game_controller_device.event -= SDL_CONTROLLERDEVICEADDED;
     controller_push_msg(im->controller, &msg);
+}
+
+bool
+input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
+    switch (event->type) {
+        case SDL_TEXTINPUT:
+            if (!im->control) {
+                return true;
+            }
+            input_manager_process_text_input(im, &event->text);
+            return true;
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            // some key events do not interact with the device, so process the
+            // event even if control is disabled
+            input_manager_process_key(im, &event->key);
+            return true;
+        case SDL_MOUSEMOTION:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_mouse_motion(im, &event->motion);
+            return true;
+        case SDL_MOUSEWHEEL:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_mouse_wheel(im, &event->wheel);
+            return true;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            // some mouse events do not interact with the device, so process
+            // the event even if control is disabled
+            input_manager_process_mouse_button(im, &event->button);
+            return true;
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+            input_manager_process_touch(im, &event->tfinger);
+            return true;
+        case SDL_CONTROLLERAXISMOTION:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_controller_axis(im, &event->caxis);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_controller_button(im, &event->cbutton);
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+        // case SDL_CONTROLLERDEVICEREMAPPED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+            if (!im->control) {
+                break;
+            }
+            input_manager_process_controller_device(im, &event->cdevice);
+            break;
+    }
+
+    return false;
 }
