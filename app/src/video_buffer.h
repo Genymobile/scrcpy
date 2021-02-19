@@ -13,28 +13,28 @@ typedef struct AVFrame AVFrame;
 
 /**
  * There are 3 frames in memory:
- *  - one frame is held by the decoder (decoding_frame)
- *  - one frame is held by the renderer (rendering_frame)
- *  - one frame is shared between the decoder and the renderer (pending_frame)
+ *  - one frame is held by the producer (producer_frame)
+ *  - one frame is held by the consumer (consumer_frame)
+ *  - one frame is shared between the producer and the consumer (pending_frame)
  *
- * The decoder decodes a packet into the decoding_frame (it may takes time).
+ * The producer generates a frame into the producer_frame (it may takes time).
  *
- * Once the frame is decoded, it calls video_buffer_offer_decoded_frame(),
- * which swaps the decoding and pending frames.
+ * Once the frame is produced, it calls video_buffer_producer_offer_frame(),
+ * which swaps the producer and pending frames.
  *
- * When the renderer is notified that a new frame is available, it calls
- * video_buffer_take_rendering_frame() to retrieve it, which swaps the pending
- * and rendering frames. The frame is valid until the next call, without
- * blocking the decoder.
+ * When the consumer is notified that a new frame is available, it calls
+ * video_buffer_consumer_take_frame() to retrieve it, which swaps the pending
+ * and consumer frames. The frame is valid until the next call, without
+ * blocking the producer.
  */
 
 struct video_buffer {
-    AVFrame *decoding_frame;
+    AVFrame *producer_frame;
     AVFrame *pending_frame;
-    AVFrame *rendering_frame;
+    AVFrame *consumer_frame;
 
     sc_mutex mutex;
-    bool render_expired_frames;
+    bool wait_consumer; // never overwrite a pending frame if it is not consumed
     bool interrupted;
 
     sc_cond pending_frame_consumed_cond;
@@ -42,21 +42,21 @@ struct video_buffer {
 };
 
 bool
-video_buffer_init(struct video_buffer *vb, bool render_expired_frames);
+video_buffer_init(struct video_buffer *vb, bool wait_consumer);
 
 void
 video_buffer_destroy(struct video_buffer *vb);
 
-// set the decoded frame as ready for rendering
+// set the producer frame as ready for consuming
 // the output flag is set to report whether the previous frame has been skipped
 void
-video_buffer_offer_decoded_frame(struct video_buffer *vb,
-                                 bool *previous_frame_skipped);
+video_buffer_producer_offer_frame(struct video_buffer *vb,
+                                  bool *previous_frame_skipped);
 
-// mark the rendering frame as consumed and return it
+// mark the consumer frame as consumed and return it
 // the frame is valid until the next call to this function
 const AVFrame *
-video_buffer_take_rendering_frame(struct video_buffer *vb);
+video_buffer_consumer_take_frame(struct video_buffer *vb);
 
 // wake up and avoid any blocking call
 void

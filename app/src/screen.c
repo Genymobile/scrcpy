@@ -451,7 +451,7 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 
 static bool
 screen_update_frame(struct screen *screen) {
-    const AVFrame *frame = video_buffer_take_rendering_frame(screen->vb);
+    const AVFrame *frame = video_buffer_consumer_take_frame(screen->vb);
 
     fps_counter_add_rendered_frame(screen->fps_counter);
 
