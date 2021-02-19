@@ -10,11 +10,14 @@ struct video_buffer;
 
 struct decoder {
     struct video_buffer *video_buffer;
+    struct fps_counter *fps_counter;
+
     AVCodecContext *codec_ctx;
 };
 
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb);
+decoder_init(struct decoder *decoder, struct video_buffer *vb,
+             struct fps_counter *fps_counter);
 
 bool
 decoder_open(struct decoder *decoder, const AVCodec *codec);
