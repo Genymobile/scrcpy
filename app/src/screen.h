@@ -14,6 +14,8 @@ struct video_buffer;
 
 struct screen {
     struct video_buffer *vb;
+    struct fps_counter *fps_counter;
+
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
@@ -39,6 +41,7 @@ struct screen {
 
 #define SCREEN_INITIALIZER { \
     .vb = NULL, \
+    .fps_counter = NULL, \
     .window = NULL, \
     .renderer = NULL, \
     .texture = NULL, \
@@ -72,7 +75,8 @@ struct screen {
 
 // initialize default values
 void
-screen_init(struct screen *screen, struct video_buffer *vb);
+screen_init(struct screen *screen, struct video_buffer *vb,
+            struct fps_counter *fps_counter);
 
 // initialize screen, create window, renderer and texture (window is hidden)
 // window_x and window_y accept SC_WINDOW_POSITION_UNDEFINED

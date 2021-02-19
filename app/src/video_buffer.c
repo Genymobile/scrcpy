@@ -7,10 +7,7 @@
 #include "util/log.h"
 
 bool
-video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames) {
-    vb->fps_counter = fps_counter;
-
+video_buffer_init(struct video_buffer *vb, bool render_expired_frames) {
     vb->decoding_frame = av_frame_alloc();
     if (!vb->decoding_frame) {
         goto error_0;
@@ -95,8 +92,6 @@ video_buffer_offer_decoded_frame(struct video_buffer *vb,
         while (!vb->pending_frame_consumed && !vb->interrupted) {
             sc_cond_wait(&vb->pending_frame_consumed_cond, &vb->mutex);
         }
-    } else if (!vb->pending_frame_consumed) {
-        fps_counter_add_skipped_frame(vb->fps_counter);
     }
 
     video_buffer_swap_decoding_frame(vb);
@@ -112,8 +107,6 @@ video_buffer_take_rendering_frame(struct video_buffer *vb) {
     sc_mutex_lock(&vb->mutex);
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
-
-    fps_counter_add_rendered_frame(vb->fps_counter);
 
     video_buffer_swap_rendering_frame(vb);
 
