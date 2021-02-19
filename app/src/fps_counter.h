@@ -54,6 +54,6 @@ void
 fps_counter_add_rendered_frame(struct fps_counter *counter);
 
 void
-fps_counter_add_skipped_frame(struct fps_counter *counter);
+fps_counter_add_skipped_frames(struct fps_counter *counter, unsigned n);
 
 #endif

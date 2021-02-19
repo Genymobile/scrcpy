@@ -454,8 +454,11 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 
 static bool
 screen_update_frame(struct screen *screen) {
-    const AVFrame *frame = video_buffer_consumer_take_frame(screen->vb);
+    unsigned skipped;
+    const AVFrame *frame =
+        video_buffer_consumer_take_frame(screen->vb, &skipped);
 
+    fps_counter_add_skipped_frames(screen->fps_counter, skipped);
     fps_counter_add_rendered_frame(screen->fps_counter);
 
     struct size new_frame_size = {frame->width, frame->height};

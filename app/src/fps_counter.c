@@ -168,7 +168,7 @@ fps_counter_add_rendered_frame(struct fps_counter *counter) {
 }
 
 void
-fps_counter_add_skipped_frame(struct fps_counter *counter) {
+fps_counter_add_skipped_frames(struct fps_counter *counter, unsigned n) {
     if (!is_started(counter)) {
         return;
     }
@@ -176,6 +176,6 @@ fps_counter_add_skipped_frame(struct fps_counter *counter) {
     sc_mutex_lock(&counter->mutex);
     uint32_t now = SDL_GetTicks();
     check_interval_expired(counter, now);
-    ++counter->nr_skipped;
+    counter->nr_skipped += n;
     sc_mutex_unlock(&counter->mutex);
 }

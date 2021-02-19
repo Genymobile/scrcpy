@@ -14,19 +14,12 @@
 // set the decoded frame as ready for rendering, and notify
 static void
 push_frame(struct decoder *decoder) {
-    bool previous_frame_skipped;
-    video_buffer_producer_offer_frame(decoder->video_buffer,
-                                      &previous_frame_skipped);
-    if (previous_frame_skipped) {
-        fps_counter_add_skipped_frame(decoder->fps_counter);
-    }
+    video_buffer_producer_offer_frame(decoder->video_buffer);
 }
 
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb,
-            struct fps_counter *fps_counter) {
+decoder_init(struct decoder *decoder, struct video_buffer *vb) {
     decoder->video_buffer = vb;
-    decoder->fps_counter = fps_counter;
 }
 
 bool

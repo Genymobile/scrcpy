@@ -40,6 +40,8 @@ struct video_buffer {
     sc_cond pending_frame_consumed_cond;
     bool pending_frame_consumed;
 
+    unsigned skipped;
+
     const struct video_buffer_callbacks *cbs;
     void *cbs_userdata;
 };
@@ -58,15 +60,15 @@ void
 video_buffer_destroy(struct video_buffer *vb);
 
 // set the producer frame as ready for consuming
-// the output flag is set to report whether the previous frame has been skipped
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb,
-                                  bool *previous_frame_skipped);
+video_buffer_producer_offer_frame(struct video_buffer *vb);
 
 // mark the consumer frame as consumed and return it
 // the frame is valid until the next call to this function
+// the output parameter "skipped" indicates how many produced frames have been
+// skipped
 const AVFrame *
-video_buffer_consumer_take_frame(struct video_buffer *vb);
+video_buffer_consumer_take_frame(struct video_buffer *vb, unsigned *skipped);
 
 // wake up and avoid any blocking call
 void
