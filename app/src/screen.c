@@ -191,12 +191,31 @@ screen_update_content_rect(struct screen *screen) {
     }
 }
 
+static void
+on_frame_available(struct video_buffer *vb, void *userdata) {
+    (void) vb;
+    (void) userdata;
+
+    static SDL_Event new_frame_event = {
+        .type = EVENT_NEW_FRAME,
+    };
+
+    // Post the event on the UI thread
+    SDL_PushEvent(&new_frame_event);
+}
+
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter) {
     *screen = (struct screen) SCREEN_INITIALIZER;
     screen->vb = vb;
     screen->fps_counter = fps_counter;
+
+    static const struct video_buffer_callbacks cbs = {
+        .on_frame_available = on_frame_available,
+    };
+
+    video_buffer_set_consumer_callbacks(vb, &cbs, NULL);
 }
 
 static inline SDL_Texture *

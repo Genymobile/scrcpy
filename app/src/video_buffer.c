@@ -43,6 +43,10 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
     // there is initially no frame, so consider it has already been consumed
     vb->pending_frame_consumed = true;
 
+    // The callbacks must be set by the consumer via
+    // video_buffer_set_consumer_callbacks()
+    vb->cbs = NULL;
+
     return true;
 
 error_3:
@@ -83,8 +87,21 @@ video_buffer_swap_consumer_frame(struct video_buffer *vb) {
 }
 
 void
+video_buffer_set_consumer_callbacks(struct video_buffer *vb,
+                                    const struct video_buffer_callbacks *cbs,
+                                    void *cbs_userdata) {
+    assert(!vb->cbs); // must be set only once
+    assert(cbs);
+    assert(cbs->on_frame_available);
+    vb->cbs = cbs;
+    vb->cbs_userdata = cbs_userdata;
+}
+
+void
 video_buffer_producer_offer_frame(struct video_buffer *vb,
                                   bool *previous_frame_skipped) {
+    assert(vb->cbs);
+
     sc_mutex_lock(&vb->mutex);
     if (vb->wait_consumer) {
         // wait for the current (expired) frame to be consumed
@@ -95,10 +112,17 @@ video_buffer_producer_offer_frame(struct video_buffer *vb,
 
     video_buffer_swap_producer_frame(vb);
 
-    *previous_frame_skipped = !vb->pending_frame_consumed;
+    bool skipped = !vb->pending_frame_consumed;
+    *previous_frame_skipped = skipped;
     vb->pending_frame_consumed = false;
 
     sc_mutex_unlock(&vb->mutex);
+
+    if (!skipped) {
+        // If skipped, then the previous call will consume this frame, the
+        // callback must not be called
+        vb->cbs->on_frame_available(vb, vb->cbs_userdata);
+    }
 }
 
 const AVFrame *

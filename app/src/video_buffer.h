@@ -39,6 +39,16 @@ struct video_buffer {
 
     sc_cond pending_frame_consumed_cond;
     bool pending_frame_consumed;
+
+    const struct video_buffer_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct video_buffer_callbacks {
+    // Called when a new frame can be consumed by
+    // video_buffer_consumer_take_frame(vb)
+    // This callback is mandatory (it must not be NULL).
+    void (*on_frame_available)(struct video_buffer *vb, void *userdata);
 };
 
 bool
@@ -46,6 +56,11 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer);
 
 void
 video_buffer_destroy(struct video_buffer *vb);
+
+void
+video_buffer_set_consumer_callbacks(struct video_buffer *vb,
+                                    const struct video_buffer_callbacks *cbs,
+                                    void *cbs_userdata);
 
 // set the producer frame as ready for consuming
 // the output flag is set to report whether the previous frame has been skipped
