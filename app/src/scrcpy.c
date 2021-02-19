@@ -272,12 +272,7 @@ video_buffer_on_frame_available(struct video_buffer *vb, void *userdata) {
     (void) vb;
     (void) userdata;
 
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-
-    // Post the event on the UI thread
-    SDL_PushEvent(&new_frame_event);
+    screen_on_frame_available(&screen);
 }
 
 bool
