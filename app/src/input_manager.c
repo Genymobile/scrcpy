@@ -480,9 +480,7 @@ input_manager_process_key(struct input_manager *im,
                 return;
             case SDLK_i:
                 if (!shift && !repeat && down) {
-                    struct fps_counter *fps_counter =
-                        im->video_buffer->fps_counter;
-                    switch_fps_counter_state(fps_counter);
+                    switch_fps_counter_state(im->fps_counter);
                 }
                 return;
             case SDLK_n:
