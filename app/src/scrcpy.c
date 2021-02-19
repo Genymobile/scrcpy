@@ -366,13 +366,6 @@ scrcpy(const struct scrcpy_options *options) {
 
     stream_init(&stream, server.video_socket, dec, rec);
 
-    // now we consumed the header values, the socket receives the video stream
-    // start the stream
-    if (!stream_start(&stream)) {
-        goto end;
-    }
-    stream_started = true;
-
     if (options->display) {
         if (options->control) {
             if (!controller_init(&controller, server.control_socket)) {
@@ -414,6 +407,13 @@ scrcpy(const struct scrcpy_options *options) {
             screen_switch_fullscreen(&screen);
         }
     }
+
+    // now we consumed the header values, the socket receives the video stream
+    // start the stream
+    if (!stream_start(&stream)) {
+        goto end;
+    }
+    stream_started = true;
 
     input_manager_init(&input_manager, options);
 
