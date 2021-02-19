@@ -39,13 +39,10 @@ struct video_buffer {
 
     sc_cond pending_frame_consumed_cond;
     bool pending_frame_consumed;
-
-    struct fps_counter *fps_counter;
 };
 
 bool
-video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames);
+video_buffer_init(struct video_buffer *vb, bool render_expired_frames);
 
 void
 video_buffer_destroy(struct video_buffer *vb);

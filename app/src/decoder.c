@@ -18,6 +18,7 @@ push_frame(struct decoder *decoder) {
     video_buffer_offer_decoded_frame(decoder->video_buffer,
                                      &previous_frame_skipped);
     if (previous_frame_skipped) {
+        fps_counter_add_skipped_frame(decoder->fps_counter);
         // the previous EVENT_NEW_FRAME will consume this frame
         return;
     }
@@ -28,8 +29,10 @@ push_frame(struct decoder *decoder) {
 }
 
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb) {
+decoder_init(struct decoder *decoder, struct video_buffer *vb,
+             struct fps_counter *fps_counter) {
     decoder->video_buffer = vb;
+    decoder->fps_counter = fps_counter;
 }
 
 bool
