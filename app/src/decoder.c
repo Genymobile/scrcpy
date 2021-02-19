@@ -15,8 +15,8 @@
 static void
 push_frame(struct decoder *decoder) {
     bool previous_frame_skipped;
-    video_buffer_offer_decoded_frame(decoder->video_buffer,
-                                     &previous_frame_skipped);
+    video_buffer_producer_offer_frame(decoder->video_buffer,
+                                      &previous_frame_skipped);
     if (previous_frame_skipped) {
         fps_counter_add_skipped_frame(decoder->fps_counter);
         // the previous EVENT_NEW_FRAME will consume this frame
@@ -69,7 +69,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         return false;
     }
     ret = avcodec_receive_frame(decoder->codec_ctx,
-                                decoder->video_buffer->decoding_frame);
+                                decoder->video_buffer->producer_frame);
     if (!ret) {
         // a frame was received
         push_frame(decoder);
