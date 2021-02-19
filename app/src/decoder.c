@@ -19,13 +19,7 @@ push_frame(struct decoder *decoder) {
                                       &previous_frame_skipped);
     if (previous_frame_skipped) {
         fps_counter_add_skipped_frame(decoder->fps_counter);
-        // the previous EVENT_NEW_FRAME will consume this frame
-        return;
     }
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-    SDL_PushEvent(&new_frame_event);
 }
 
 void

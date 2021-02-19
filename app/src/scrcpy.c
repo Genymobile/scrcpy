@@ -267,6 +267,19 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     free(local_fmt);
 }
 
+static void
+video_buffer_on_frame_available(struct video_buffer *vb, void *userdata) {
+    (void) vb;
+    (void) userdata;
+
+    static SDL_Event new_frame_event = {
+        .type = EVENT_NEW_FRAME,
+    };
+
+    // Post the event on the UI thread
+    SDL_PushEvent(&new_frame_event);
+}
+
 bool
 scrcpy(const struct scrcpy_options *options) {
     if (!server_init(&server)) {
@@ -333,7 +346,12 @@ scrcpy(const struct scrcpy_options *options) {
         }
         fps_counter_initialized = true;
 
-        if (!video_buffer_init(&video_buffer, options->render_expired_frames)) {
+        static const struct video_buffer_callbacks video_buffer_cbs = {
+            .on_frame_available = video_buffer_on_frame_available,
+        };
+
+        if (!video_buffer_init(&video_buffer, options->render_expired_frames,
+                               &video_buffer_cbs, NULL)) {
             goto end;
         }
         video_buffer_initialized = true;
