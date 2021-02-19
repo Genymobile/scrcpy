@@ -7,6 +7,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
@@ -225,7 +226,9 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private static IBinder createDisplay() {
-        return SurfaceControl.createDisplay("scrcpy", true);
+        // Since Android 12, secure displays could not be created with shell permissions anymore
+        boolean secure = Build.VERSION.SDK_INT <= Build.VERSION_CODES.R;
+        return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
     private static void configure(MediaCodec codec, MediaFormat format) {
