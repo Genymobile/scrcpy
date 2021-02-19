@@ -42,6 +42,7 @@ static struct file_handler file_handler;
 static struct input_manager input_manager = {
     .controller = &controller,
     .video_buffer = &video_buffer,
+    .fps_counter = &fps_counter,
     .screen = &screen,
     .repeat = 0,
 
@@ -332,8 +333,7 @@ scrcpy(const struct scrcpy_options *options) {
         }
         fps_counter_initialized = true;
 
-        if (!video_buffer_init(&video_buffer, &fps_counter,
-                               options->render_expired_frames)) {
+        if (!video_buffer_init(&video_buffer, options->render_expired_frames)) {
             goto end;
         }
         video_buffer_initialized = true;
@@ -346,7 +346,7 @@ scrcpy(const struct scrcpy_options *options) {
             file_handler_initialized = true;
         }
 
-        decoder_init(&decoder, &video_buffer);
+        decoder_init(&decoder, &video_buffer, &fps_counter);
         dec = &decoder;
     }
 
@@ -389,7 +389,7 @@ scrcpy(const struct scrcpy_options *options) {
         const char *window_title =
             options->window_title ? options->window_title : device_name;
 
-        screen_init(&screen, &video_buffer);
+        screen_init(&screen, &video_buffer, &fps_counter);
 
         if (!screen_init_rendering(&screen, window_title, frame_size,
                                    options->always_on_top, options->window_x,
