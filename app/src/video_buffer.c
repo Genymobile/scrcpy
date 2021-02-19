@@ -45,6 +45,8 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer,
     // there is initially no frame, so consider it has already been consumed
     vb->pending_frame_consumed = true;
 
+    vb->skipped = 0;
+
     assert(cbs);
     assert(cbs->on_frame_available);
     vb->cbs = cbs;
@@ -90,8 +92,7 @@ video_buffer_swap_consumer_frame(struct video_buffer *vb) {
 }
 
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb,
-                                  bool *previous_frame_skipped) {
+video_buffer_producer_offer_frame(struct video_buffer *vb) {
     sc_mutex_lock(&vb->mutex);
     if (vb->wait_consumer) {
         // wait for the current (expired) frame to be consumed
@@ -103,7 +104,10 @@ video_buffer_producer_offer_frame(struct video_buffer *vb,
     video_buffer_swap_producer_frame(vb);
 
     bool skipped = !vb->pending_frame_consumed;
-    *previous_frame_skipped = skipped;
+    if (skipped) {
+        ++vb->skipped;
+    }
+
     vb->pending_frame_consumed = false;
 
     sc_mutex_unlock(&vb->mutex);
@@ -116,7 +120,7 @@ video_buffer_producer_offer_frame(struct video_buffer *vb,
 }
 
 const AVFrame *
-video_buffer_consumer_take_frame(struct video_buffer *vb) {
+video_buffer_consumer_take_frame(struct video_buffer *vb, unsigned *skipped) {
     sc_mutex_lock(&vb->mutex);
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
@@ -127,6 +131,12 @@ video_buffer_consumer_take_frame(struct video_buffer *vb) {
         // unblock video_buffer_offer_decoded_frame()
         sc_cond_signal(&vb->pending_frame_consumed_cond);
     }
+
+    if (skipped) {
+        *skipped = vb->skipped;
+    }
+    vb->skipped = 0; // reset
+
     sc_mutex_unlock(&vb->mutex);
 
     // consumer_frame is only written from this thread, no need to lock
