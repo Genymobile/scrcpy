@@ -1,25 +1,26 @@
 package com.genymobile.scrcpy;
 
+import com.sun.jna.Library;
+import com.sun.jna.Native;
+import com.sun.jna.Platform;
+import com.sun.jna.Pointer;
+import com.sun.jna.Structure;
+
 import java.util.Arrays;
 import java.util.List;
-import com.sun.jna.Library;
-import com.sun.jna.Platform;
-import com.sun.jna.Native;
-import com.sun.jna.Structure;
-import com.sun.jna.Pointer;
 
 public final class GameController {
     public static final int DEVICE_ADDED = 0;
     public static final int DEVICE_REMOVED = 1;
 
-    private static int UINPUT_MAX_NAME_SIZE = 80;
+    private static final int UINPUT_MAX_NAME_SIZE = 80;
 
     public static class input_id extends Structure {
         public short bustype = 0;
         public short vendor = 0;
         public short product = 0;
         public short version = 0;
-    
+
         @Override
         protected List<String> getFieldOrder() {
             return Arrays.asList("bustype", "vendor", "product", "version");
@@ -54,10 +55,9 @@ public final class GameController {
     public static class uinput_abs_setup extends Structure {
         public short code;
         public input_absinfo absinfo;
-    
+
         @Override
-        protected List<String> getFieldOrder()
-        {
+        protected List<String> getFieldOrder() {
             return Arrays.asList("code", "absinfo");
         }
     };
@@ -87,19 +87,19 @@ public final class GameController {
         }
     }
 
-    private static int _IOC_NONE = 0;
-    private static int _IOC_WRITE = 1;
+    private static final int _IOC_NONE = 0;
+    private static final int _IOC_WRITE = 1;
 
-    private static int _IOC_DIRSHIFT = 30;
-    private static int _IOC_TYPESHIFT = 8;
-    private static int _IOC_NRSHIFT = 0;
-    private static int _IOC_SIZESHIFT = 16;
+    private static final int _IOC_DIRSHIFT = 30;
+    private static final int _IOC_TYPESHIFT = 8;
+    private static final int _IOC_NRSHIFT = 0;
+    private static final int _IOC_SIZESHIFT = 16;
 
     private static int _IOC(int dir, int type, int nr, int size) {
-        return (dir << _IOC_DIRSHIFT) |
-               (type << _IOC_TYPESHIFT) |
-               (nr << _IOC_NRSHIFT) |
-               (size << _IOC_SIZESHIFT);
+        return (dir << _IOC_DIRSHIFT)
+             | (type << _IOC_TYPESHIFT)
+             | (nr << _IOC_NRSHIFT)
+             | (size << _IOC_SIZESHIFT);
     }
 
     private static int _IO(int type, int nr, int size) {
@@ -114,7 +114,7 @@ public final class GameController {
     private static final int O_NONBLOCK = 04000;
 
     private static final int BUS_USB = 0x03;
-    
+
     private static final int UINPUT_IOCTL_BASE = 'U';
 
     private static final int UI_SET_EVBIT = _IOW(UINPUT_IOCTL_BASE, 100, 4);
@@ -200,7 +200,7 @@ public final class GameController {
     private int fd;
 
     public interface LibC extends Library {
-        LibC fn = (LibC)Native.load("c", LibC.class);
+        LibC fn = (LibC) Native.load("c", LibC.class);
 
         int open(String pathname, int flags);
         int ioctl(int fd, long request, Object... args);
@@ -208,7 +208,7 @@ public final class GameController {
         int close(int fd);
     }
 
-    static public void load_native_libraries() {
+    public static void load_native_libraries() {
         GameController.LibC.fn.write(1, null, 0);
     }
 
@@ -217,7 +217,7 @@ public final class GameController {
         if (fd == -1) {
             throw new RuntimeException("Couldn't open uinput device.");
         }
-    
+
         LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_KEY);
         add_key(XBOX_BTN_A);
         add_key(XBOX_BTN_B);
@@ -230,7 +230,7 @@ public final class GameController {
         add_key(XBOX_BTN_GUIDE);
         add_key(XBOX_BTN_LS);
         add_key(XBOX_BTN_RS);
-    
+
         LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_ABS);
         add_abs(XBOX_ABS_LSX, -32768, 32767, 16, 128);
         add_abs(XBOX_ABS_LSY, -32768, 32767, 16, 128);
@@ -254,7 +254,7 @@ public final class GameController {
             close();
             throw new RuntimeException("Couldn't setup uinput device.");
         }
-    
+
         if (LibC.fn.ioctl(fd, UI_DEV_CREATE) == -1) {
             close();
             throw new RuntimeException("Couldn't create uinput device.");
@@ -414,7 +414,7 @@ public final class GameController {
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
                 emit(fd, EV_ABS, XBOX_ABS_DPADX, state != 0 ? 1 : 0);
                 break;
-        
+
             default:
                 emit(fd, EV_KEY, translateButton(button), state);
         }

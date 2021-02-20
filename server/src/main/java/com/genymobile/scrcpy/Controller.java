@@ -219,6 +219,9 @@ public class Controller {
                             gameControllers.get(id).close();
                             gameControllers.delete(id);
                             break;
+
+                        default:
+                            Ln.w("Unknown game controller event received.");
                     }
                 }
                 break;
