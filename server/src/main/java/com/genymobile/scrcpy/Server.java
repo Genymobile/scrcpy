@@ -9,7 +9,6 @@ import android.text.TextUtils;
 import java.io.InputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Locale;
 

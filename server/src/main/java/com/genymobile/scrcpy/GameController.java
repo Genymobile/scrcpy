@@ -15,7 +15,8 @@ public final class GameController {
 
     private static final int UINPUT_MAX_NAME_SIZE = 80;
 
-    public static class input_id extends Structure {
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class InputId extends Structure {
         public short bustype = 0;
         public short vendor = 0;
         public short product = 0;
@@ -27,18 +28,20 @@ public final class GameController {
         }
     }
 
-    public static class uinput_setup extends Structure {
-        public input_id id;
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class UinputSetup extends Structure {
+        public InputId id;
         public byte[] name = new byte[UINPUT_MAX_NAME_SIZE];
-        public int ff_effects_max = 0;
+        public int ffEffectsMax = 0;
 
         @Override
         protected List<String> getFieldOrder() {
-            return Arrays.asList("id", "name", "ff_effects_max");
+            return Arrays.asList("id", "name", "ffEffectsMax");
         }
     }
 
-    public static class input_absinfo extends Structure {
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class InputAbsinfo extends Structure {
         public int value = 0;
         public int minimum = 0;
         public int maximum = 0;
@@ -52,9 +55,10 @@ public final class GameController {
         }
     };
 
-    public static class uinput_abs_setup extends Structure {
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class UinputAbsSetup extends Structure {
         public short code;
-        public input_absinfo absinfo;
+        public InputAbsinfo absinfo;
 
         @Override
         protected List<String> getFieldOrder() {
@@ -62,7 +66,8 @@ public final class GameController {
         }
     };
 
-    public static class input_event32 extends Structure {
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class InputEvent32 extends Structure {
         public long time = 0;
         public short type = 0;
         public short code = 0;
@@ -74,7 +79,8 @@ public final class GameController {
         }
     }
 
-    public static class input_event64 extends Structure {
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class InputEvent64 extends Structure {
         public long sec = 0;
         public long usec = 0;
         public short type = 0;
@@ -87,27 +93,27 @@ public final class GameController {
         }
     }
 
-    private static final int _IOC_NONE = 0;
-    private static final int _IOC_WRITE = 1;
+    private static final int IOC_NONE = 0;
+    private static final int IOC_WRITE = 1;
 
-    private static final int _IOC_DIRSHIFT = 30;
-    private static final int _IOC_TYPESHIFT = 8;
-    private static final int _IOC_NRSHIFT = 0;
-    private static final int _IOC_SIZESHIFT = 16;
+    private static final int IOC_DIRSHIFT = 30;
+    private static final int IOC_TYPESHIFT = 8;
+    private static final int IOC_NRSHIFT = 0;
+    private static final int IOC_SIZESHIFT = 16;
 
-    private static int _IOC(int dir, int type, int nr, int size) {
-        return (dir << _IOC_DIRSHIFT)
-             | (type << _IOC_TYPESHIFT)
-             | (nr << _IOC_NRSHIFT)
-             | (size << _IOC_SIZESHIFT);
+    private static int ioc(int dir, int type, int nr, int size) {
+        return (dir << IOC_DIRSHIFT)
+             | (type << IOC_TYPESHIFT)
+             | (nr << IOC_NRSHIFT)
+             | (size << IOC_SIZESHIFT);
     }
 
-    private static int _IO(int type, int nr, int size) {
-        return _IOC(_IOC_NONE, type, nr, size);
+    private static int io(int type, int nr, int size) {
+        return ioc(IOC_NONE, type, nr, size);
     }
 
-    private static int _IOW(int type, int nr, int size) {
-        return _IOC(_IOC_WRITE, type, nr, size);
+    private static int iow(int type, int nr, int size) {
+        return ioc(IOC_WRITE, type, nr, size);
     }
 
     private static final int O_WRONLY = 01;
@@ -117,14 +123,14 @@ public final class GameController {
 
     private static final int UINPUT_IOCTL_BASE = 'U';
 
-    private static final int UI_SET_EVBIT = _IOW(UINPUT_IOCTL_BASE, 100, 4);
-    private static final int UI_SET_KEYBIT = _IOW(UINPUT_IOCTL_BASE, 101, 4);
-    private static final int UI_SET_ABSBIT = _IOW(UINPUT_IOCTL_BASE, 103, 4);
-    private static final int UI_ABS_SETUP = _IOW(UINPUT_IOCTL_BASE, 4, new uinput_abs_setup().size());
+    private static final int UI_SET_EVBIT = iow(UINPUT_IOCTL_BASE, 100, 4);
+    private static final int UI_SET_KEYBIT = iow(UINPUT_IOCTL_BASE, 101, 4);
+    private static final int UI_SET_ABSBIT = iow(UINPUT_IOCTL_BASE, 103, 4);
+    private static final int UI_ABS_SETUP = iow(UINPUT_IOCTL_BASE, 4, new UinputAbsSetup().size());
 
-    private static final int UI_DEV_SETUP = _IOW(UINPUT_IOCTL_BASE, 3, new uinput_setup().size());
-    private static final int UI_DEV_CREATE = _IO(UINPUT_IOCTL_BASE, 1, 0);
-    private static final int UI_DEV_DESTROY = _IO(UINPUT_IOCTL_BASE, 2, 0);
+    private static final int UI_DEV_SETUP = iow(UINPUT_IOCTL_BASE, 3, new UinputSetup().size());
+    private static final int UI_DEV_CREATE = iow(UINPUT_IOCTL_BASE, 1, 0);
+    private static final int UI_DEV_DESTROY = iow(UINPUT_IOCTL_BASE, 2, 0);
 
     private static final short EV_SYN = 0x00;
     private static final short EV_KEY = 0x01;
@@ -200,7 +206,7 @@ public final class GameController {
     private int fd;
 
     public interface LibC extends Library {
-        LibC fn = (LibC) Native.load("c", LibC.class);
+        LibC FN = (LibC) Native.load("c", LibC.class);
 
         int open(String pathname, int flags);
         int ioctl(int fd, long request, Object... args);
@@ -208,54 +214,54 @@ public final class GameController {
         int close(int fd);
     }
 
-    public static void load_native_libraries() {
-        GameController.LibC.fn.write(1, null, 0);
+    public static void loadNativeLibraries() {
+        GameController.LibC.FN.write(1, null, 0);
     }
 
     public GameController() {
-        fd = LibC.fn.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+        fd = LibC.FN.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
         if (fd == -1) {
             throw new RuntimeException("Couldn't open uinput device.");
         }
 
-        LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_KEY);
-        add_key(XBOX_BTN_A);
-        add_key(XBOX_BTN_B);
-        add_key(XBOX_BTN_X);
-        add_key(XBOX_BTN_Y);
-        add_key(XBOX_BTN_BACK);
-        add_key(XBOX_BTN_START);
-        add_key(XBOX_BTN_LB);
-        add_key(XBOX_BTN_RB);
-        add_key(XBOX_BTN_GUIDE);
-        add_key(XBOX_BTN_LS);
-        add_key(XBOX_BTN_RS);
+        LibC.FN.ioctl(fd, UI_SET_EVBIT, EV_KEY);
+        addKey(XBOX_BTN_A);
+        addKey(XBOX_BTN_B);
+        addKey(XBOX_BTN_X);
+        addKey(XBOX_BTN_Y);
+        addKey(XBOX_BTN_BACK);
+        addKey(XBOX_BTN_START);
+        addKey(XBOX_BTN_LB);
+        addKey(XBOX_BTN_RB);
+        addKey(XBOX_BTN_GUIDE);
+        addKey(XBOX_BTN_LS);
+        addKey(XBOX_BTN_RS);
 
-        LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_ABS);
-        add_abs(XBOX_ABS_LSX, -32768, 32767, 16, 128);
-        add_abs(XBOX_ABS_LSY, -32768, 32767, 16, 128);
-        add_abs(XBOX_ABS_RSX, -32768, 32767, 16, 128);
-        add_abs(XBOX_ABS_RSY, -32768, 32767, 16, 128);
-        add_abs(XBOX_ABS_DPADX, -1, 1, 0, 0);
-        add_abs(XBOX_ABS_DPADY, -1, 1, 0, 0);
+        LibC.FN.ioctl(fd, UI_SET_EVBIT, EV_ABS);
+        addAbs(XBOX_ABS_LSX, -32768, 32767, 16, 128);
+        addAbs(XBOX_ABS_LSY, -32768, 32767, 16, 128);
+        addAbs(XBOX_ABS_RSX, -32768, 32767, 16, 128);
+        addAbs(XBOX_ABS_RSY, -32768, 32767, 16, 128);
+        addAbs(XBOX_ABS_DPADX, -1, 1, 0, 0);
+        addAbs(XBOX_ABS_DPADY, -1, 1, 0, 0);
         // These values deviate from the real Xbox 360 controller,
         // but allow higher precision (eg. Xbox One controller)
-        add_abs(XBOX_ABS_LT, 0, 32767, 0, 0);
-        add_abs(XBOX_ABS_RT, 0, 32767, 0, 0);
+        addAbs(XBOX_ABS_LT, 0, 32767, 0, 0);
+        addAbs(XBOX_ABS_RT, 0, 32767, 0, 0);
 
-        uinput_setup usetup = new uinput_setup();
+        UinputSetup usetup = new UinputSetup();
         usetup.id.bustype = BUS_USB;
         usetup.id.vendor = 0x045e;
         usetup.id.product = 0x028e;
         byte[] name = "Microsoft X-Box 360 pad".getBytes();
         System.arraycopy(name, 0, usetup.name, 0, name.length);
 
-        if (LibC.fn.ioctl(fd, UI_DEV_SETUP, usetup) == -1) {
+        if (LibC.FN.ioctl(fd, UI_DEV_SETUP, usetup) == -1) {
             close();
             throw new RuntimeException("Couldn't setup uinput device.");
         }
 
-        if (LibC.fn.ioctl(fd, UI_DEV_CREATE) == -1) {
+        if (LibC.FN.ioctl(fd, UI_DEV_CREATE) == -1) {
             close();
             throw new RuntimeException("Couldn't create uinput device.");
         }
@@ -263,38 +269,38 @@ public final class GameController {
 
     public void close() {
         if (fd != -1) {
-            LibC.fn.ioctl(fd, UI_DEV_DESTROY);
-            LibC.fn.close(fd);
+            LibC.FN.ioctl(fd, UI_DEV_DESTROY);
+            LibC.FN.close(fd);
             fd = -1;
         }
     }
 
-    private void add_key(int key) {
-        if (LibC.fn.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
+    private void addKey(int key) {
+        if (LibC.FN.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
             Ln.e("Could not add key event.");
         }
     }
 
-    private void add_abs(short code, int minimum, int maximum, int fuzz, int flat) {
-        if (LibC.fn.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
+    private void addAbs(short code, int minimum, int maximum, int fuzz, int flat) {
+        if (LibC.FN.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
             Ln.e("Could not add absolute event.");
         }
 
-        uinput_abs_setup abs_setup = new uinput_abs_setup();
+        UinputAbsSetup absSetup = new UinputAbsSetup();
 
-        abs_setup.code = code;
-        abs_setup.absinfo.minimum = minimum;
-        abs_setup.absinfo.maximum = maximum;
-        abs_setup.absinfo.fuzz = fuzz;
-        abs_setup.absinfo.flat = flat;
+        absSetup.code = code;
+        absSetup.absinfo.minimum = minimum;
+        absSetup.absinfo.maximum = maximum;
+        absSetup.absinfo.fuzz = fuzz;
+        absSetup.absinfo.flat = flat;
 
-        if (LibC.fn.ioctl(fd, UI_ABS_SETUP, abs_setup) == -1) {
+        if (LibC.FN.ioctl(fd, UI_ABS_SETUP, absSetup) == -1) {
             Ln.e("Could not set absolute event info.");
         }
     }
 
     private static void emit32(int fd, short type, short code, int val) {
-        input_event32 ie = new input_event32();
+        InputEvent32 ie = new InputEvent32();
 
         ie.type = type;
         ie.code = code;
@@ -302,11 +308,11 @@ public final class GameController {
 
         ie.write();
 
-        LibC.fn.write(fd, ie.getPointer(), ie.size());
+        LibC.FN.write(fd, ie.getPointer(), ie.size());
     }
 
     private static void emit64(int fd, short type, short code, int val) {
-        input_event64 ie = new input_event64();
+        InputEvent64 ie = new InputEvent64();
 
         ie.type = type;
         ie.code = code;
@@ -314,7 +320,7 @@ public final class GameController {
 
         ie.write();
 
-        LibC.fn.write(fd, ie.getPointer(), ie.size());
+        LibC.FN.write(fd, ie.getPointer(), ie.size());
     }
 
     private static void emit(int fd, short type, short code, int val) {
