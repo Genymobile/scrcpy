@@ -152,8 +152,7 @@ public class Controller {
                     int id = msg.getGameControllerId();
                     int axis = msg.getGameControllerAxis();
                     int value = msg.getGameControllerAxisValue();
-                    if (!gameControllers.contains(id))
-                    {
+                    if (!gameControllers.contains(id)) {
                         Ln.w("Received data for non-existant controller.");
                         break;
                     }
@@ -165,8 +164,7 @@ public class Controller {
                     int id = msg.getGameControllerId();
                     int button = msg.getGameControllerButton();
                     int state = msg.getGameControllerButtonState();
-                    if (!gameControllers.contains(id))
-                    {
+                    if (!gameControllers.contains(id)) {
                         Ln.w("Received data for non-existant controller.");
                         break;
                     }
@@ -182,16 +180,18 @@ public class Controller {
                         case GameController.DEVICE_ADDED:
                             gameControllers.append(id, new GameController());
                             break;
-                    
+
                         case GameController.DEVICE_REMOVED:
-                            if (!gameControllers.contains(id))
-                            {
+                            if (!gameControllers.contains(id)) {
                                 Ln.w("Non-existant game controller removed.");
                                 break;
                             }
                             gameControllers.get(id).close();
                             gameControllers.delete(id);
                             break;
+
+                        default:
+                            Ln.w("Unknown game controller event received.");
                     }
                 }
                 break;

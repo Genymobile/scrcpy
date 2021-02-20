@@ -151,7 +151,7 @@ public final class CleanUp {
     }
 
     private static void unlinkNativeLibs() {
-        for (String lib : Server.NATIVE_LIBRARIES){
+        for (String lib : Server.NATIVE_LIBRARIES) {
             try {
                 new File(Server.SERVER_DIR + "/" + lib).delete();
             } catch (Exception e) {
