@@ -2,6 +2,8 @@
 
 #include <assert.h>
 #include <string.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_gamecontroller.h>
 
 #include "control_msg.h"
 
@@ -278,6 +280,73 @@ static void test_serialize_rotate_device(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_inject_game_controller_axis(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS,
+        .inject_game_controller_axis = {
+            .id = 0x1234,
+            .axis = SDL_CONTROLLER_AXIS_RIGHTY,
+            .value = -32768,
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == 6);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS,
+        0x12, 0x34, // id = 0x1234
+        0x03, // axis = SDL_CONTROLLER_AXIS_RIGHTY
+        0x80, 0x00, // value = -32768
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_inject_game_controller_button(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON,
+        .inject_game_controller_button = {
+            .id = 0x1234,
+            .button = SDL_CONTROLLER_BUTTON_START,
+            .state = 1,
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == 5);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON,
+        0x12, 0x34, // id = 0x1234
+        0x06, // button = SDL_CONTROLLER_BUTTON_START
+        0x01, // state = 1
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_inject_game_controller_device(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE,
+        .inject_game_controller_device = {
+            .id = 0x1234,
+            .event = (SDL_CONTROLLERDEVICEREMOVED) - SDL_CONTROLLERDEVICEADDED,
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == 4);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE,
+        0x12, 0x34, // id = 0x1234
+        0x01, // event = GameController.DEVICE_REMOVED
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -295,5 +364,8 @@ int main(int argc, char *argv[]) {
     test_serialize_set_clipboard();
     test_serialize_set_screen_power_mode();
     test_serialize_rotate_device();
+    test_serialize_inject_game_controller_axis();
+    test_serialize_inject_game_controller_button();
+    test_serialize_inject_game_controller_device();
     return 0;
 }

@@ -315,6 +315,76 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseGameControllerAxisEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_AXIS);
+        dos.writeShort(0x1234);
+        dos.writeByte(GameController.SDL_CONTROLLER_AXIS_RIGHTY);
+        dos.writeShort(-32768);
+        byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_GAME_CONTROLLER_AXIS_PAYLOAD_LENGTH, packet.length - 1);
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_AXIS, event.getType());
+        Assert.assertEquals(0x1234, event.getGameControllerId());
+        Assert.assertEquals(GameController.SDL_CONTROLLER_AXIS_RIGHTY, event.getGameControllerAxis());
+        Assert.assertEquals(-32768, event.getGameControllerAxisValue());
+    }
+
+    @Test
+    public void testParseGameControllerButtonEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON);
+        dos.writeShort(0x1234);
+        dos.writeByte(GameController.SDL_CONTROLLER_BUTTON_START);
+        dos.writeByte(1);
+        byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_GAME_CONTROLLER_BUTTON_PAYLOAD_LENGTH, packet.length - 1);
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON, event.getType());
+        Assert.assertEquals(0x1234, event.getGameControllerId());
+        Assert.assertEquals(GameController.SDL_CONTROLLER_BUTTON_START, event.getGameControllerButton());
+        Assert.assertEquals(1, event.getGameControllerButtonState());
+    }
+
+    @Test
+    public void testParseGameControllerDeviceEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE);
+        dos.writeShort(0x1234);
+        dos.writeByte(GameController.DEVICE_REMOVED);
+        byte[] packet = bos.toByteArray();
+
+        // The message type (1 byte) does not count
+        Assert.assertEquals(ControlMessageReader.INJECT_GAME_CONTROLLER_DEVICE_PAYLOAD_LENGTH, packet.length - 1);
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE, event.getType());
+        Assert.assertEquals(0x1234, event.getGameControllerId());
+        Assert.assertEquals(GameController.DEVICE_REMOVED, event.getGameControllerDeviceEvent());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
