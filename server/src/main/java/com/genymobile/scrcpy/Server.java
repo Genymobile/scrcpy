@@ -7,13 +7,12 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.os.BatteryManager;
 import android.os.Build;
+import android.text.TextUtils;
 
 import java.io.InputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.channels.FileChannel;
 import java.util.List;
 import java.util.Locale;
 
@@ -30,16 +29,25 @@ public final class Server {
 
     private static void scrcpy(Options options) throws IOException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
-        Ln.i("Supported ABIs: " + String.join(", ", Build.SUPPORTED_ABIS));
+        Ln.i("Supported ABIs: " + TextUtils.join(", ", Build.SUPPORTED_ABIS));
         final Device device = new Device(options);
         List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
 
         for (String lib : NATIVE_LIBRARIES) {
             for (String abi : Build.SUPPORTED_ABIS) {
                 try {
-                    InputStream stream = Server.class.getResourceAsStream("/lib/" + abi + "/" + lib);
-                    Path destPath = Paths.get(SERVER_DIR + "/" + lib);
-                    Files.copy(stream, destPath, StandardCopyOption.REPLACE_EXISTING);
+                    InputStream resStream = Server.class.getResourceAsStream("/lib/" + abi + "/" + lib);
+                    FileOutputStream fileStream = new FileOutputStream(SERVER_DIR + "/" + lib);
+
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = resStream.read(buffer)) > 0) {
+                        fileStream.write(buffer, 0, length);
+                    }
+
+                    resStream.close();
+                    fileStream.close();
+                    
                     break;
                 } catch (Exception e) {
                     Ln.e("Could not extract native library for " + abi, e);

@@ -152,11 +152,15 @@ public class Controller {
                     int id = msg.getGameControllerId();
                     int axis = msg.getGameControllerAxis();
                     int value = msg.getGameControllerAxisValue();
-                    if (!gameControllers.contains(id)) {
+
+                    GameController controller = gameControllers.get(id);
+
+                    if (controller != null) {
+                        controller.setAxis(axis, value);
+                    } else {
                         Ln.w("Received data for non-existant controller.");
-                        break;
                     }
-                    gameControllers.get(id).setAxis(axis, value);
+                    break;
                 }
                 break;
             case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON:
@@ -164,11 +168,14 @@ public class Controller {
                     int id = msg.getGameControllerId();
                     int button = msg.getGameControllerButton();
                     int state = msg.getGameControllerButtonState();
-                    if (!gameControllers.contains(id)) {
+                    
+                    GameController controller = gameControllers.get(id);
+
+                    if (controller != null) {
+                        controller.setButton(button, state);
+                    } else {
                         Ln.w("Received data for non-existant controller.");
-                        break;
                     }
-                    gameControllers.get(id).setButton(button, state);
                 }
                 break;
             case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE:
@@ -182,12 +189,15 @@ public class Controller {
                             break;
 
                         case GameController.DEVICE_REMOVED:
-                            if (!gameControllers.contains(id)) {
+                            GameController controller = gameControllers.get(id);
+
+                            if (controller != null) {
+                                controller.close();
+                                gameControllers.delete(id);
+                            } else {
                                 Ln.w("Non-existant game controller removed.");
-                                break;
                             }
-                            gameControllers.get(id).close();
-                            gameControllers.delete(id);
+                            
                             break;
 
                         default:
