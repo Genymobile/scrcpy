@@ -70,20 +70,11 @@ video_buffer_destroy(struct video_buffer *vb) {
     av_frame_free(&vb->producer_frame);
 }
 
-static void
-video_buffer_swap_producer_frame(struct video_buffer *vb) {
-    sc_mutex_assert(&vb->mutex);
-    AVFrame *tmp = vb->producer_frame;
-    vb->producer_frame = vb->pending_frame;
-    vb->pending_frame = tmp;
-}
-
-static void
-video_buffer_swap_consumer_frame(struct video_buffer *vb) {
-    sc_mutex_assert(&vb->mutex);
-    AVFrame *tmp = vb->consumer_frame;
-    vb->consumer_frame = vb->pending_frame;
-    vb->pending_frame = tmp;
+static inline void
+swap_frames(AVFrame **lhs, AVFrame **rhs) {
+    AVFrame *tmp = *lhs;
+    *lhs = *rhs;
+    *rhs = tmp;
 }
 
 void
@@ -109,7 +100,7 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
         }
     }
 
-    video_buffer_swap_producer_frame(vb);
+    swap_frames(&vb->producer_frame, &vb->pending_frame);
 
     bool skipped = !vb->pending_frame_consumed;
     vb->pending_frame_consumed = false;
@@ -130,7 +121,7 @@ video_buffer_consumer_take_frame(struct video_buffer *vb) {
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
 
-    video_buffer_swap_consumer_frame(vb);
+    swap_frames(&vb->consumer_frame, &vb->pending_frame);
 
     if (vb->wait_consumer) {
         // unblock video_buffer_offer_decoded_frame()
