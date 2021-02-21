@@ -9,7 +9,9 @@
 
 #include "coords.h"
 #include "opengl.h"
+#include "resizer.h"
 #include "scrcpy.h"
+#include "video_buffer.h"
 
 struct video_buffer;
 
@@ -37,6 +39,13 @@ struct screen {
     bool fullscreen;
     bool maximized;
     bool mipmaps;
+
+    enum sc_scale_filter scale_filter;
+    bool use_swscale;
+
+    // For swscale resizing
+    struct video_buffer resizer_vb;
+    struct sc_resizer resizer;
 };
 
 // initialize default values
