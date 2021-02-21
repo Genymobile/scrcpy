@@ -33,7 +33,6 @@ struct screen {
     bool has_frame;
     bool fullscreen;
     bool maximized;
-    bool no_window;
     bool mipmaps;
 };
 
@@ -66,7 +65,6 @@ struct screen {
     .has_frame = false, \
     .fullscreen = false, \
     .maximized = false, \
-    .no_window = false, \
     .mipmaps = false, \
 }
 
