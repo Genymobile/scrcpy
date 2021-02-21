@@ -14,7 +14,7 @@
 // set the decoded frame as ready for rendering, and notify
 static void
 push_frame(struct decoder *decoder) {
-    video_buffer_producer_offer_frame(decoder->video_buffer);
+    video_buffer_producer_offer_frame(decoder->video_buffer, &decoder->frame);
 }
 
 void
@@ -36,11 +36,19 @@ decoder_open(struct decoder *decoder, const AVCodec *codec) {
         return false;
     }
 
+    decoder->frame = av_frame_alloc();
+    if (!decoder->frame) {
+        avcodec_close(decoder->codec_ctx);
+        avcodec_free_context(&decoder->codec_ctx);
+        return false;
+    }
+
     return true;
 }
 
 void
 decoder_close(struct decoder *decoder) {
+    av_frame_free(&decoder->frame);
     avcodec_close(decoder->codec_ctx);
     avcodec_free_context(&decoder->codec_ctx);
 }
@@ -55,8 +63,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         LOGE("Could not send video packet: %d", ret);
         return false;
     }
-    ret = avcodec_receive_frame(decoder->codec_ctx,
-                                decoder->video_buffer->producer_frame);
+    ret = avcodec_receive_frame(decoder->codec_ctx, decoder->frame);
     if (!ret) {
         // a frame was received
         push_frame(decoder);
@@ -67,7 +74,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
 #else
     int got_picture;
     int len = avcodec_decode_video2(decoder->codec_ctx,
-                                    decoder->video_buffer->decoding_frame,
+                                    decoder->frame,
                                     &got_picture,
                                     packet);
     if (len < 0) {

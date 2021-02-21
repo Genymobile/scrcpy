@@ -11,6 +11,7 @@ struct video_buffer;
 struct decoder {
     struct video_buffer *video_buffer;
     AVCodecContext *codec_ctx;
+    AVFrame *frame;
 };
 
 void

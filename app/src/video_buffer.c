@@ -10,24 +10,19 @@ bool
 video_buffer_init(struct video_buffer *vb, bool wait_consumer,
                   const struct video_buffer_callbacks *cbs,
                   void *cbs_userdata) {
-    vb->producer_frame = av_frame_alloc();
-    if (!vb->producer_frame) {
-        goto error_0;
-    }
-
     vb->pending_frame = av_frame_alloc();
     if (!vb->pending_frame) {
-        goto error_1;
+        goto error_0;
     }
 
     vb->consumer_frame = av_frame_alloc();
     if (!vb->consumer_frame) {
-        goto error_2;
+        goto error_1;
     }
 
     bool ok = sc_mutex_init(&vb->mutex);
     if (!ok) {
-        goto error_3;
+        goto error_2;
     }
 
     vb->wait_consumer = wait_consumer;
@@ -54,12 +49,10 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer,
 
     return true;
 
-error_3:
-    av_frame_free(&vb->consumer_frame);
 error_2:
-    av_frame_free(&vb->pending_frame);
+    av_frame_free(&vb->consumer_frame);
 error_1:
-    av_frame_free(&vb->producer_frame);
+    av_frame_free(&vb->pending_frame);
 error_0:
     return false;
 }
@@ -72,7 +65,6 @@ video_buffer_destroy(struct video_buffer *vb) {
     sc_mutex_destroy(&vb->mutex);
     av_frame_free(&vb->consumer_frame);
     av_frame_free(&vb->pending_frame);
-    av_frame_free(&vb->producer_frame);
 }
 
 static inline void
@@ -83,7 +75,7 @@ swap_frames(AVFrame **lhs, AVFrame **rhs) {
 }
 
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb) {
+video_buffer_producer_offer_frame(struct video_buffer *vb, AVFrame **pframe) {
     sc_mutex_lock(&vb->mutex);
     if (vb->wait_consumer) {
         // wait for the current (expired) frame to be consumed
@@ -93,7 +85,7 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
     }
 
     av_frame_unref(vb->pending_frame);
-    swap_frames(&vb->producer_frame, &vb->pending_frame);
+    swap_frames(pframe, &vb->pending_frame);
 
     bool skipped = !vb->pending_frame_consumed;
     if (skipped) {
