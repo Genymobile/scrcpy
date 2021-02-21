@@ -46,6 +46,7 @@ struct server_params {
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
+    bool power_off_on_close;
 };
 
 // init default values

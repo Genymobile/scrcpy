@@ -17,6 +17,7 @@ public class Options {
     private boolean stayAwake;
     private String codecOptions;
     private String encoderName;
+    private boolean powerOffScreenOnClose;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -128,5 +129,13 @@ public class Options {
 
     public void setEncoderName(String encoderName) {
         this.encoderName = encoderName;
+    }
+
+    public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {
+        this.powerOffScreenOnClose = powerOffScreenOnClose;
+    }
+
+    public boolean getPowerOffScreenOnClose() {
+        return this.powerOffScreenOnClose;
     }
 }

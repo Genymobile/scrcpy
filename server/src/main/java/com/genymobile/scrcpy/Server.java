@@ -50,7 +50,7 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn, true);
+        CleanUp.configure(mustDisableShowTouchesOnCleanUp, restoreStayOn, true, options.getPowerOffScreenOnClose(), options.getDisplayId());
 
         boolean tunnelForward = options.isTunnelForward();
 
@@ -135,7 +135,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 15;
+        final int expectedParameters = 16;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -184,6 +184,9 @@ public final class Server {
 
         String encoderName = "-".equals(args[14]) ? null : args[14];
         options.setEncoderName(encoderName);
+
+        boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
+        options.setPowerOffScreenOnClose(powerOffScreenOnClose);
 
         return options;
     }
