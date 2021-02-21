@@ -8,24 +8,14 @@
 
 bool
 video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
-    vb->producer_frame = av_frame_alloc();
-    if (!vb->producer_frame) {
-        goto error_0;
-    }
-
     vb->pending_frame = av_frame_alloc();
     if (!vb->pending_frame) {
-        goto error_1;
-    }
-
-    vb->consumer_frame = av_frame_alloc();
-    if (!vb->consumer_frame) {
-        goto error_2;
+        goto error_0;
     }
 
     bool ok = sc_mutex_init(&vb->mutex);
     if (!ok) {
-        goto error_3;
+        goto error_1;
     }
 
     vb->wait_consumer = wait_consumer;
@@ -33,7 +23,7 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
         ok = sc_cond_init(&vb->pending_frame_consumed_cond);
         if (!ok) {
             sc_mutex_destroy(&vb->mutex);
-            goto error_2;
+            goto error_1;
         }
         // interrupted is not used if wait_consumer is disabled since offering
         // a frame will never block
@@ -49,12 +39,8 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
 
     return true;
 
-error_3:
-    av_frame_free(&vb->consumer_frame);
-error_2:
-    av_frame_free(&vb->pending_frame);
 error_1:
-    av_frame_free(&vb->producer_frame);
+    av_frame_free(&vb->pending_frame);
 error_0:
     return false;
 }
@@ -65,9 +51,7 @@ video_buffer_destroy(struct video_buffer *vb) {
         sc_cond_destroy(&vb->pending_frame_consumed_cond);
     }
     sc_mutex_destroy(&vb->mutex);
-    av_frame_free(&vb->consumer_frame);
     av_frame_free(&vb->pending_frame);
-    av_frame_free(&vb->producer_frame);
 }
 
 static inline void
@@ -89,7 +73,7 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
 }
 
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb) {
+video_buffer_producer_offer_frame(struct video_buffer *vb, AVFrame **pframe) {
     assert(vb->cbs);
 
     sc_mutex_lock(&vb->mutex);
@@ -101,7 +85,7 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
     }
 
     av_frame_unref(vb->pending_frame);
-    swap_frames(&vb->producer_frame, &vb->pending_frame);
+    swap_frames(pframe, &vb->pending_frame);
 
     bool skipped = !vb->pending_frame_consumed;
     vb->pending_frame_consumed = false;
@@ -116,13 +100,13 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
     }
 }
 
-const AVFrame *
-video_buffer_consumer_take_frame(struct video_buffer *vb) {
+void
+video_buffer_consumer_take_frame(struct video_buffer *vb, AVFrame **pframe) {
     sc_mutex_lock(&vb->mutex);
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
 
-    swap_frames(&vb->consumer_frame, &vb->pending_frame);
+    swap_frames(pframe, &vb->pending_frame);
     av_frame_unref(vb->pending_frame);
 
     if (vb->wait_consumer) {
@@ -130,9 +114,6 @@ video_buffer_consumer_take_frame(struct video_buffer *vb) {
         sc_cond_signal(&vb->pending_frame_consumed_cond);
     }
     sc_mutex_unlock(&vb->mutex);
-
-    // consumer_frame is only written from this thread, no need to lock
-    return vb->consumer_frame;
 }
 
 void

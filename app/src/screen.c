@@ -356,6 +356,15 @@ screen_init(struct screen *screen, struct video_buffer *vb,
         return false;
     }
 
+    screen->frame = av_frame_alloc();
+    if (!screen->frame) {
+        LOGC("Could not create screen frame");
+        SDL_DestroyTexture(screen->texture);
+        SDL_DestroyRenderer(screen->renderer);
+        SDL_DestroyWindow(screen->window);
+        return false;
+    }
+
     // Reset the window size to trigger a SIZE_CHANGED event, to workaround
     // HiDPI issues with some SDL renderers when several displays having
     // different HiDPI scaling are connected
@@ -373,6 +382,7 @@ screen_show_window(struct screen *screen) {
 
 void
 screen_destroy(struct screen *screen) {
+    av_frame_free(&screen->frame);
     SDL_DestroyTexture(screen->texture);
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
@@ -480,7 +490,8 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 
 static bool
 screen_update_frame(struct screen *screen) {
-    const AVFrame *frame = video_buffer_consumer_take_frame(screen->vb);
+    video_buffer_consumer_take_frame(screen->vb, &screen->frame);
+    AVFrame *frame = screen->frame;
 
     fps_counter_add_rendered_frame(screen->fps_counter);
 
