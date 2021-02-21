@@ -322,7 +322,6 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         LOGC("Could not create texture: %s", SDL_GetError());
         SDL_DestroyRenderer(screen->renderer);
         SDL_DestroyWindow(screen->window);
-        screen_destroy(screen);
         return false;
     }
 
