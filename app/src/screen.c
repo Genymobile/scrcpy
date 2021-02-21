@@ -215,9 +215,13 @@ on_frame_skipped(struct video_buffer *vb, void *userdata) {
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter) {
-    *screen = (struct screen) SCREEN_INITIALIZER;
     screen->vb = vb;
     screen->fps_counter = fps_counter;
+
+    screen->resize_pending = false;
+    screen->has_frame = false;
+    screen->fullscreen = false;
+    screen->maximized = false;
 
     static const struct video_buffer_callbacks cbs = {
         .on_frame_available = on_frame_available,
@@ -310,6 +314,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     int r = SDL_GetRendererInfo(screen->renderer, &renderer_info);
     const char *renderer_name = r ? NULL : renderer_info.name;
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
+
+    screen->mipmaps = false;
 
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
