@@ -29,7 +29,6 @@ typedef struct AVFrame AVFrame;
  */
 
 struct video_buffer {
-    AVFrame *producer_frame;
     AVFrame *pending_frame;
     AVFrame *consumer_frame;
 
@@ -67,8 +66,9 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
                                     void *cbs_userdata);
 
 // set the producer frame as ready for consuming
+// the produced frame is exchanged with an unused allocated frame
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb);
+video_buffer_producer_offer_frame(struct video_buffer *vb, AVFrame **pframe);
 
 // mark the consumer frame as consumed and return it
 // the frame is valid until the next call to this function
