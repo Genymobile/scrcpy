@@ -194,9 +194,13 @@ screen_update_content_rect(struct screen *screen) {
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter) {
-    *screen = (struct screen) SCREEN_INITIALIZER;
     screen->vb = vb;
     screen->fps_counter = fps_counter;
+
+    screen->resize_pending = false;
+    screen->has_frame = false;
+    screen->fullscreen = false;
+    screen->maximized = false;
 }
 
 static inline SDL_Texture *

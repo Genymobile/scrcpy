@@ -38,39 +38,6 @@ struct screen {
     bool mipmaps;
 };
 
-#define SCREEN_INITIALIZER { \
-    .vb = NULL, \
-    .fps_counter = NULL, \
-    .window = NULL, \
-    .renderer = NULL, \
-    .texture = NULL, \
-    .gl = {0}, \
-    .frame_size = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .content_size = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .resize_pending = false, \
-    .windowed_content_size = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .rotation = 0, \
-    .rect = { \
-        .x = 0, \
-        .y = 0, \
-        .w = 0, \
-        .h = 0, \
-    }, \
-    .has_frame = false, \
-    .fullscreen = false, \
-    .maximized = false, \
-    .mipmaps = false, \
-}
-
 // initialize default values
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
