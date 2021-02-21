@@ -666,6 +666,7 @@ guess_record_format(const char *filename) {
 #define OPT_FORWARD_ALL_CLICKS     1023
 #define OPT_LEGACY_PASTE           1024
 #define OPT_ENCODER_NAME           1025
+#define OPT_POWER_OFF_ON_CLOSE     1026
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -716,6 +717,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
         {"window-borderless",      no_argument,       NULL,
                                                   OPT_WINDOW_BORDERLESS},
+        {"power-off-on-close",     no_argument,       NULL,
+                                                  OPT_POWER_OFF_ON_CLOSE},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -883,6 +886,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
+                break;
+            case OPT_POWER_OFF_ON_CLOSE:
+                opts->power_off_on_close = true;
                 break;
             default:
                 // getopt prints the error message on stderr

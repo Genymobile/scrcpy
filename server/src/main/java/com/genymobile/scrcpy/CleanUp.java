@@ -19,19 +19,21 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode) throws IOException {
-        boolean needProcess = disableShowTouches || restoreStayOn != -1 || restoreNormalPowerMode;
+    public static void configure(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode, boolean powerOffScreen, int displayId)
+            throws IOException {
+        boolean needProcess = disableShowTouches || restoreStayOn != -1 || restoreNormalPowerMode || powerOffScreen;
         if (needProcess) {
-            startProcess(disableShowTouches, restoreStayOn, restoreNormalPowerMode);
+            startProcess(disableShowTouches, restoreStayOn, restoreNormalPowerMode, powerOffScreen, displayId);
         } else {
             // There is no additional clean up to do when scrcpy dies
             unlinkSelf();
         }
     }
 
-    private static void startProcess(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode) throws IOException {
+    private static void startProcess(boolean disableShowTouches, int restoreStayOn, boolean restoreNormalPowerMode, boolean powerOffScreen,
+            int displayId) throws IOException {
         String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(disableShowTouches), String.valueOf(
-                restoreStayOn), String.valueOf(restoreNormalPowerMode)};
+                restoreStayOn), String.valueOf(restoreNormalPowerMode), String.valueOf(powerOffScreen), String.valueOf(displayId)};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
@@ -61,6 +63,8 @@ public final class CleanUp {
         boolean disableShowTouches = Boolean.parseBoolean(args[0]);
         int restoreStayOn = Integer.parseInt(args[1]);
         boolean restoreNormalPowerMode = Boolean.parseBoolean(args[2]);
+        boolean powerOffScreen = Boolean.parseBoolean(args[3]);
+        int displayId = Integer.parseInt(args[4]);
 
         if (disableShowTouches || restoreStayOn != -1) {
             ServiceManager serviceManager = new ServiceManager();
@@ -76,9 +80,12 @@ public final class CleanUp {
             }
         }
 
-        if (restoreNormalPowerMode) {
-            Ln.i("Restoring normal power mode");
-            if (Device.isScreenOn()) {
+        if (Device.isScreenOn()) {
+            if (powerOffScreen) {
+                Ln.i("Power off screen");
+                Device.powerOffScreen(displayId);
+            } else if (restoreNormalPowerMode) {
+                Ln.i("Restoring normal power mode");
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }

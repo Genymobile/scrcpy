@@ -82,6 +82,7 @@ struct scrcpy_options {
     bool forward_key_repeat;
     bool forward_all_clicks;
     bool legacy_paste;
+    bool power_off_on_close;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -129,6 +130,7 @@ struct scrcpy_options {
     .forward_key_repeat = true, \
     .forward_all_clicks = false, \
     .legacy_paste = false, \
+    .power_off_on_close = false, \
 }
 
 bool

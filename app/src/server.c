@@ -293,6 +293,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->stay_awake ? "true" : "false",
         params->codec_options ? params->codec_options : "-",
         params->encoder_name ? params->encoder_name : "-",
+        params->power_off_on_close ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
