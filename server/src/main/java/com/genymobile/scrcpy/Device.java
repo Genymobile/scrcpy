@@ -153,13 +153,17 @@ public final class Device {
         return Build.MODEL;
     }
 
+    public static boolean supportsInputEvents(int displayId) {
+        return displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+    }
+
     public boolean supportsInputEvents() {
         return supportsInputEvents;
     }
 
-    public boolean injectEvent(InputEvent inputEvent, int mode) {
-        if (!supportsInputEvents()) {
-            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
+    public static boolean injectEvent(InputEvent inputEvent, int mode, int displayId) {
+        if (!supportsInputEvents(displayId)) {
+            return false;
         }
 
         if (displayId != 0 && !InputManager.setDisplayId(inputEvent, displayId)) {
@@ -169,8 +173,27 @@ public final class Device {
         return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, mode);
     }
 
+    public boolean injectEvent(InputEvent inputEvent, int mode) {
+        if (!supportsInputEvents()) {
+            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
+        }
+
+        return injectEvent(inputEvent, mode, displayId);
+    }
+
+    public static boolean injectEventOnDisplay(InputEvent event, int displayId) {
+        return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC, displayId);
+    }
+
     public boolean injectEvent(InputEvent event) {
         return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    }
+
+    public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId) {
+        long now = SystemClock.uptimeMillis();
+        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
+                InputDevice.SOURCE_KEYBOARD);
+        return injectEventOnDisplay(event, displayId);
     }
 
     public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
@@ -178,6 +201,10 @@ public final class Device {
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
                 InputDevice.SOURCE_KEYBOARD);
         return injectEvent(event);
+    }
+
+    public static boolean injectKeycode(int keyCode, int displayId) {
+        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0, displayId) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0, displayId);
     }
 
     public boolean injectKeycode(int keyCode) {
@@ -247,6 +274,13 @@ public final class Device {
             return false;
         }
         return SurfaceControl.setDisplayPowerMode(d, mode);
+    }
+
+    public static boolean powerOffScreen(int displayId) {
+        if (!isScreenOn()) {
+            return true;
+        }
+        return injectKeycode(KeyEvent.KEYCODE_POWER, displayId);
     }
 
     /**
