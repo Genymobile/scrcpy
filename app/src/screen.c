@@ -241,7 +241,7 @@ create_texture(struct screen *screen) {
         return NULL;
     }
 
-    if (screen->mipmaps) {
+    if (screen->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
         struct sc_opengl *gl = &screen->gl;
 
         SDL_GL_BindTexture(texture, NULL, NULL);
@@ -255,6 +255,12 @@ create_texture(struct screen *screen) {
     }
 
     return texture;
+}
+
+static inline bool
+is_swscale(enum sc_scale_filter scale_filter) {
+    return scale_filter != SC_SCALE_FILTER_NONE
+        && scale_filter != SC_SCALE_FILTER_TRILINEAR;
 }
 
 bool
@@ -329,10 +335,10 @@ screen_init_rendering(struct screen *screen, const char *window_title,
                                                2, 0  /* OpenGL ES 2.0+ */);
             if (supports_mipmaps) {
                 LOGI("Trilinear filtering enabled");
-                screen->mipmaps = true;
             } else {
                 LOGW("Trilinear filtering disabled "
                      "(OpenGL 3.0+ or ES 2.0+ required)");
+                scale_filter = SC_SCALE_FILTER_NONE;
             }
         } else {
             LOGI("Trilinear filtering disabled");
@@ -340,6 +346,29 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     } else if (mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
+
+    screen->use_swscale = is_swscale(scale_filter);
+    if (screen->use_swscale) {
+        bool ok = sc_resizer_init(&screen->resizer, screen->vb,
+                                  &screen->resizer_vb, scale_filter,
+                                  window_size);
+        if (!ok) {
+            LOGE("Could not create resizer");
+            SDL_DestroyRenderer(screen->renderer);
+            SDL_DestroyWindow(screen->window);
+            return false;
+        }
+
+        ok = sc_resizer_start(&screen->resizer);
+        if (!ok) {
+            LOGE("Could not start resizer");
+            sc_resizer_destroy(&screen->resizer);
+            SDL_DestroyRenderer(screen->renderer);
+            SDL_DestroyWindow(screen->window);
+        }
+    }
+
+    screen->scale_filter = scale_filter;
 
     SDL_Surface *icon = read_xpm(icon_xpm);
     if (icon) {
@@ -376,6 +405,11 @@ screen_show_window(struct screen *screen) {
 
 void
 screen_destroy(struct screen *screen) {
+    if (screen->use_swscale) {
+        sc_resizer_stop(&screen->resizer);
+        sc_resizer_join(&screen->resizer);
+        sc_resizer_destroy(&screen->resizer);
+    }
     if (screen->texture) {
         SDL_DestroyTexture(screen->texture);
     }
@@ -476,7 +510,7 @@ update_texture(struct screen *screen, const AVFrame *frame) {
             frame->data[1], frame->linesize[1],
             frame->data[2], frame->linesize[2]);
 
-    if (screen->mipmaps) {
+    if (screen->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
         SDL_GL_BindTexture(screen->texture, NULL, NULL);
         screen->gl.GenerateMipmap(GL_TEXTURE_2D);
         SDL_GL_UnbindTexture(screen->texture);

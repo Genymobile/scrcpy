@@ -7,12 +7,14 @@
 #include <libavformat/avformat.h>
 
 #include "coords.h"
+#include "scrcpy.h"
 #include "util/thread.h"
 #include "video_buffer.h"
 
 struct sc_resizer {
     struct video_buffer *vb_in;
     struct video_buffer *vb_out;
+    enum sc_scale_filter scale_filter;
     struct size size;
 
     // valid until the next call to video_buffer_consumer_take_frame(vb_in)
@@ -30,7 +32,8 @@ struct sc_resizer {
 
 bool
 sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
-                struct video_buffer *vb_out, struct size initial_size);
+                struct video_buffer *vb_out, enum sc_scale_filter scale_filter,
+                struct size size);
 
 void
 sc_resizer_destroy(struct sc_resizer *resizer);

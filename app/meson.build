@@ -47,6 +47,7 @@ if not get_option('crossbuild_windows')
         dependency('libavformat'),
         dependency('libavcodec'),
         dependency('libavutil'),
+        dependency('libswscale'),
         dependency('sdl2'),
     ]
 
