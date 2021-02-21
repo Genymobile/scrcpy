@@ -100,6 +100,7 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
         }
     }
 
+    av_frame_unref(vb->pending_frame);
     swap_frames(&vb->producer_frame, &vb->pending_frame);
 
     bool skipped = !vb->pending_frame_consumed;
@@ -122,6 +123,7 @@ video_buffer_consumer_take_frame(struct video_buffer *vb) {
     vb->pending_frame_consumed = true;
 
     swap_frames(&vb->consumer_frame, &vb->pending_frame);
+    av_frame_unref(vb->pending_frame);
 
     if (vb->wait_consumer) {
         // unblock video_buffer_offer_decoded_frame()
