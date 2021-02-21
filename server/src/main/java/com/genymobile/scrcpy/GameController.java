@@ -129,8 +129,8 @@ public final class GameController {
     private static final int UI_ABS_SETUP = iow(UINPUT_IOCTL_BASE, 4, new UinputAbsSetup().size());
 
     private static final int UI_DEV_SETUP = iow(UINPUT_IOCTL_BASE, 3, new UinputSetup().size());
-    private static final int UI_DEV_CREATE = iow(UINPUT_IOCTL_BASE, 1, 0);
-    private static final int UI_DEV_DESTROY = iow(UINPUT_IOCTL_BASE, 2, 0);
+    private static final int UI_DEV_CREATE = io(UINPUT_IOCTL_BASE, 1, 0);
+    private static final int UI_DEV_DESTROY = io(UINPUT_IOCTL_BASE, 2, 0);
 
     private static final short EV_SYN = 0x00;
     private static final short EV_KEY = 0x01;
