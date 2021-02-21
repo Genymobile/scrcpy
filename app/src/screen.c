@@ -193,14 +193,19 @@ screen_update_content_rect(struct screen *screen) {
 static void
 on_frame_available(struct video_buffer *vb, void *userdata) {
     (void) vb;
-    (void) userdata;
 
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
+    struct screen *screen = userdata;
 
-    // Post the event on the UI thread
-    SDL_PushEvent(&new_frame_event);
+    if (screen->use_swscale) {
+        sc_resizer_process_new_frame(&screen->resizer);
+    } else {
+        static SDL_Event new_frame_event = {
+            .type = EVENT_NEW_FRAME,
+        };
+
+        // Post the event on the UI thread
+        SDL_PushEvent(&new_frame_event);
+    }
 }
 
 static void
@@ -234,7 +239,9 @@ static inline SDL_Texture *
 create_texture(struct screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
     struct size size = screen->frame_size;
-    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
+    SDL_PixelFormatEnum fmt = screen->use_swscale ? SDL_PIXELFORMAT_RGB24
+                                                  : SDL_PIXELFORMAT_YV12;
+    SDL_Texture *texture = SDL_CreateTexture(renderer, fmt,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              size.width, size.height);
     if (!texture) {
@@ -242,6 +249,7 @@ create_texture(struct screen *screen) {
     }
 
     if (screen->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
+        assert(!screen->use_swscale);
         struct sc_opengl *gl = &screen->gl;
 
         SDL_GL_BindTexture(texture, NULL, NULL);
@@ -261,6 +269,19 @@ static inline bool
 is_swscale(enum sc_scale_filter scale_filter) {
     return scale_filter != SC_SCALE_FILTER_NONE
         && scale_filter != SC_SCALE_FILTER_TRILINEAR;
+}
+
+static void
+on_resizer_frame_available(struct video_buffer *vb, void *userdata) {
+    (void) vb;
+    (void) userdata;
+
+    static SDL_Event new_frame_event = {
+        .type = EVENT_NEW_FRAME,
+    };
+
+    // Post the event on the UI thread
+    SDL_PushEvent(&new_frame_event);
 }
 
 bool
@@ -349,11 +370,19 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
     screen->use_swscale = is_swscale(scale_filter);
     if (screen->use_swscale) {
-        bool ok = sc_resizer_init(&screen->resizer, screen->vb,
-                                  &screen->resizer_vb, scale_filter,
-                                  window_size);
+        bool ok = video_buffer_init(&screen->resizer_vb, false);
+        if (!ok) {
+            LOGE("Could not create resizer video buffer");
+            SDL_DestroyRenderer(screen->renderer);
+            SDL_DestroyWindow(screen->window);
+            return false;
+        }
+
+        ok = sc_resizer_init(&screen->resizer, screen->vb, &screen->resizer_vb,
+                             scale_filter, window_size);
         if (!ok) {
             LOGE("Could not create resizer");
+            video_buffer_destroy(&screen->resizer_vb);
             SDL_DestroyRenderer(screen->renderer);
             SDL_DestroyWindow(screen->window);
             return false;
@@ -363,6 +392,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         if (!ok) {
             LOGE("Could not start resizer");
             sc_resizer_destroy(&screen->resizer);
+            video_buffer_destroy(&screen->resizer_vb);
             SDL_DestroyRenderer(screen->renderer);
             SDL_DestroyWindow(screen->window);
         }
@@ -505,21 +535,28 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 // write the frame into the texture
 static void
 update_texture(struct screen *screen, const AVFrame *frame) {
-    SDL_UpdateYUVTexture(screen->texture, NULL,
-            frame->data[0], frame->linesize[0],
-            frame->data[1], frame->linesize[1],
-            frame->data[2], frame->linesize[2]);
+    if (screen->use_swscale) {
+        SDL_UpdateTexture(screen->texture, NULL, frame->data[0],
+                          frame->linesize[0]);
+    } else {
+        SDL_UpdateYUVTexture(screen->texture, NULL,
+                frame->data[0], frame->linesize[0],
+                frame->data[1], frame->linesize[1],
+                frame->data[2], frame->linesize[2]);
 
-    if (screen->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
-        SDL_GL_BindTexture(screen->texture, NULL, NULL);
-        screen->gl.GenerateMipmap(GL_TEXTURE_2D);
-        SDL_GL_UnbindTexture(screen->texture);
+        if (screen->scale_filter == SC_SCALE_FILTER_TRILINEAR) {
+            SDL_GL_BindTexture(screen->texture, NULL, NULL);
+            screen->gl.GenerateMipmap(GL_TEXTURE_2D);
+            SDL_GL_UnbindTexture(screen->texture);
+        }
     }
 }
 
 static bool
 screen_update_frame(struct screen *screen) {
-    const AVFrame *frame = video_buffer_consumer_take_frame(screen->vb);
+    struct video_buffer *vb = screen->use_swscale ? &screen->resizer_vb
+                                                  : screen->vb;
+    const AVFrame *frame = video_buffer_consumer_take_frame(vb);
 
     fps_counter_add_rendered_frame(screen->fps_counter);
 
