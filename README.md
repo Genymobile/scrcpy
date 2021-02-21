@@ -253,31 +253,60 @@ variation] does not impact the recorded file.
 
 #### Wireless
 
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP:
+_[Scrcpy]_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+[device over TCP/IP]:
 
 1. Connect the device to the same Wi-Fi as your computer.
-2. Get your device IP address, in Settings → About phone → Status, or by
-   executing this command:
+2. Get your device IP address, in Settings → About phone → Status,
+   or in some devices, Settings → Wi-Fi Settings → Advanced → IP address,
+   or by executing this command:
 
     ```bash
     adb shell ip route | awk '{print $9}'
     ```
 
-3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-4. Unplug your device.
-5. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-6. Run `scrcpy` as usual.
+3. Connect the device to the host computer with a USB cable.
+4. Set the target device to listen for a TCP/IP connection on port 5555: `adb tcpip 5555`.
+   This enables adb over TCP/IP on your device
+5. Unplug your device.
+6. Connect to the device by its IP address: `adb connect YOUR_DEVICE_IP_ADDRESS:5555` _(replace `YOUR_DEVICE_IP_ADDRESS`)_.
+7. Run `scrcpy` as usual.
 
-It may be useful to decrease the bit-rate and the definition:
+
+8. (_Optional_) Confirm that your host computer is connected to the target device:
+    ```bash
+    adb devices
+    List of devices attached
+    device_ip_address:5555 device
+    ```
+
+9. If the adb connection is ever lost: Reconnect by executing the `adb connect` again. (step 6)
+
+   Or if that doesn't work, reset your adb host: `adb kill-server`
+   
+   Then start over from the beginning.
+
+10. To switch back to USB mode: `adb usb`.
+
+ The performances are not the same as over USB.
+ The default scrcpy bit-rate is 8Mbps, which may sometimes lag on a very weak Wi-Fi
+ connection. So it may be useful to decrease the bit-rate and the 
+ resolution/definition:
 
 ```bash
-scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # short version
+scrcpy --bit-rate 2M --max-size 800 
+#or, in short
+scrcpy -b2M -m800
 ```
 
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+ Note that while it now works over TCP/IP, this is not an optimal solution for
+ streaming a video wirelessly on weal networks, since the raw stream is still sent over TCP,
+ where a packet loss is very bad for latency, due to head-of-line blocking.
+ Hence, usb connection is more preffered in such conditions.
 
+[Scrcpy]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+[device over TCP/IP]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 #### Multi-devices
 
@@ -346,6 +375,28 @@ Like for wireless connections, it may be useful to reduce quality:
 ```
 scrcpy -b2M -m800 --max-fps 15
 ```
+### Audio forwarding
+
+Audio is not forwarded by _scrcpy_. Use [sndcpy].
+
+Also see [issue #14].
+
+[sndcpy]: https://github.com/rom1v/sndcpy
+[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
+
+#### FOR WIRELESS AUDIO
+Suggested in [issue #14], [Bluetooth Audio Receiver] app from the microsoft store 
+can be used to forward phone audio to PC after the new Windows 10 May 2020 Update (2004).
+A bluetooth adapter and a playback device that supports A2DP SINK is needed for this to work.
+By default, most new devices/laptops have this feature built-in.
+
+To make this possible, pair your device with your PC over bluetooth and
+connect it using the app. In rare case, if any noise is noticed → disconnecting pc from
+Wifi and using scrcpy over usb can fix the problem.
+ 
+[Bluetooth Audio Receiver]: https://www.microsoft.com/en-us/p/bluetooth-audio-receiver/9n9wclwdqs5j
+[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
+![screenshot](assets/bluetooth-audio-reciever.png)
 
 ### Window configuration
 
@@ -661,15 +712,6 @@ The target directory can be changed on start:
 scrcpy --push-target /sdcard/foo/bar/
 ```
 
-
-### Audio forwarding
-
-Audio is not forwarded by _scrcpy_. Use [sndcpy].
-
-Also see [issue #14].
-
-[sndcpy]: https://github.com/rom1v/sndcpy
-[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
