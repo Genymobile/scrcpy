@@ -1,12 +1,14 @@
 #include "resizer.h"
 
 #include <assert.h>
+#include <libswscale/swscale.h>
 
 #include "util/log.h"
 
 bool
 sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
-                struct video_buffer *vb_out, struct size size) {
+                struct video_buffer *vb_out, enum sc_scale_filter scale_filter,
+                struct size size) {
     bool ok = sc_mutex_init(&resizer->mutex);
     if (!ok) {
         return false;
@@ -27,6 +29,7 @@ sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
 
     resizer->vb_in = vb_in;
     resizer->vb_out = vb_out;
+    resizer->scale_filter = scale_filter;
     resizer->size = size;
 
     resizer->input_frame = NULL;
@@ -44,11 +47,57 @@ sc_resizer_destroy(struct sc_resizer *resizer) {
     sc_mutex_destroy(&resizer->mutex);
 }
 
+static int
+to_sws_filter(enum sc_scale_filter scale_filter) {
+    switch (scale_filter) {
+        case SC_SCALE_FILTER_BILINEAR:  return SWS_BILINEAR;
+        case SC_SCALE_FILTER_BICUBIC:   return SWS_BICUBIC;
+        case SC_SCALE_FILTER_X:         return SWS_X;
+        case SC_SCALE_FILTER_POINT:     return SWS_POINT;
+        case SC_SCALE_FILTER_AREA:      return SWS_AREA;
+        case SC_SCALE_FILTER_BICUBLIN:  return SWS_BICUBLIN;
+        case SC_SCALE_FILTER_GAUSS:     return SWS_GAUSS;
+        case SC_SCALE_FILTER_SINC:      return SWS_SINC;
+        case SC_SCALE_FILTER_LANCZOS:   return SWS_LANCZOS;
+        case SC_SCALE_FILTER_SPLINE:    return SWS_SPLINE;
+        default: assert(!"unsupported filter");
+    }
+}
+
 static bool
 sc_resizer_swscale(struct sc_resizer *resizer) {
     assert(!resizer->resized_frame->buf[0]); // The frame must be "empty"
+    assert(resizer->size.width);
+    assert(resizer->size.height);
 
-    return false;
+    const AVFrame *in = resizer->input_frame;
+    struct size size = resizer->size;
+
+    AVFrame *out = resizer->resized_frame;
+    out->format = AV_PIX_FMT_RGB24;
+    out->width = size.width;
+    out->height = size.height;
+
+    int ret = av_frame_get_buffer(out, 32);
+    if (ret < 0) {
+        return false;
+    }
+
+    int flags = to_sws_filter(resizer->scale_filter);
+    struct SwsContext *ctx =
+        sws_getContext(in->width, in->height, AV_PIX_FMT_YUV420P,
+                       size.width, size.height, AV_PIX_FMT_RGB24, flags, NULL,
+                       NULL, NULL);
+    if (!ctx) {
+        av_frame_unref(out);
+        return false;
+    }
+
+    sws_scale(ctx, (const uint8_t *const *) in->data, in->linesize, 0,
+              in->height, out->data, out->linesize);
+    sws_freeContext(ctx);
+
+    return true;
 }
 
 static int
