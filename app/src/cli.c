@@ -10,6 +10,9 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+#define STR_IMPL_(x) #x
+#define STR(x) STR_IMPL_(x)
+
 void
 scrcpy_print_usage(const char *arg0) {
     fprintf(stderr,
@@ -23,7 +26,7 @@ scrcpy_print_usage(const char *arg0) {
         "    -b, --bit-rate value\n"
         "        Encode the video at the given bit-rate, expressed in bits/s.\n"
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
-        "        Default is %d.\n"
+        "        Default is " STR(DEFAULT_BIT_RATE) ".\n"
         "\n"
         "    --codec-options key[:type]=value[,...]\n"
         "        Set a list of comma-separated key:type=value options for the\n"
@@ -81,7 +84,12 @@ scrcpy_print_usage(const char *arg0) {
         "        Possible values are -1 (unlocked), 0, 1, 2 and 3.\n"
         "        Natural device orientation is 0, and each increment adds a\n"
         "        90 degrees rotation counterclockwise.\n"
-        "        Default is %d%s.\n"
+#if DEFAULT_LOCK_VIDEO_ORIENTATION == -1
+# define DEFAULT_LOCK_VIDEO_ORIENTATION_STR "-1 (unlocked)"
+#else
+# define DEFAULT_LOCK_VIDEO_ORIENTATION_STR STR(DEFAULT_LOCK_VIDEO_ORIENTATION)
+#endif
+        "        Default is " DEFAULT_LOCK_VIDEO_ORIENTATION_STR ".\n"
         "\n"
         "    --max-fps value\n"
         "        Limit the frame rate of screen capture (officially supported\n"
@@ -91,7 +99,12 @@ scrcpy_print_usage(const char *arg0) {
         "        Limit both the width and height of the video to value. The\n"
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
-        "        Default is %d%s.\n"
+#if DEFAULT_MAX_SIZE == 0
+# define DEFAULT_MAX_SIZE_STR "0 (unlimited)"
+#else
+# define DEFAULT_MAX_SIZE_STR STR(DEFAULT_MAX_SIZE)
+#endif
+        "        Default is " DEFAULT_MAX_SIZE_STR ".\n"
         "\n"
         "    -n, --no-control\n"
         "        Disable device control (mirror the device in read-only).\n"
@@ -110,7 +123,8 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    -p, --port port[:port]\n"
         "        Set the TCP port (range) used by the client to listen.\n"
-        "        Default is %d:%d.\n"
+        "        Default is " STR(DEFAULT_LOCAL_PORT_RANGE_FIRST) ":"
+                              STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".\n"
         "\n"
         "    --prefer-text\n"
         "        Inject alpha characters and space as text events instead of\n"
@@ -297,12 +311,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    Drag & drop APK file\n"
         "        Install APK from computer\n"
-        "\n",
-        arg0,
-        DEFAULT_BIT_RATE,
-        DEFAULT_LOCK_VIDEO_ORIENTATION, DEFAULT_LOCK_VIDEO_ORIENTATION >= 0 ? "" : " (unlocked)",
-        DEFAULT_MAX_SIZE, DEFAULT_MAX_SIZE ? "" : " (unlimited)",
-        DEFAULT_LOCAL_PORT_RANGE_FIRST, DEFAULT_LOCAL_PORT_RANGE_LAST);
+        "\n", arg0);
 }
 
 static bool
