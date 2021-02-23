@@ -49,6 +49,10 @@ struct video_buffer_callbacks {
     // video_buffer_consumer_take_frame(vb)
     // This callback is mandatory (it must not be NULL).
     void (*on_frame_available)(struct video_buffer *vb, void *userdata);
+
+    // Called when a pending frame has been overwritten by the producer
+    // This callback is optional (it may be NULL).
+    void (*on_frame_skipped)(struct video_buffer *vb, void *userdata);
 };
 
 bool
@@ -63,10 +67,8 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
                                     void *cbs_userdata);
 
 // set the producer frame as ready for consuming
-// the output flag is set to report whether the previous frame has been skipped
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb,
-                                  bool *previous_frame_skipped);
+video_buffer_producer_offer_frame(struct video_buffer *vb);
 
 // mark the consumer frame as consumed and return it
 // the frame is valid until the next call to this function

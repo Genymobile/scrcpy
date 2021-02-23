@@ -11,22 +11,9 @@
 #include "util/buffer_util.h"
 #include "util/log.h"
 
-// set the decoded frame as ready for rendering, and notify
-static void
-push_frame(struct decoder *decoder) {
-    bool previous_frame_skipped;
-    video_buffer_producer_offer_frame(decoder->video_buffer,
-                                      &previous_frame_skipped);
-    if (previous_frame_skipped) {
-        fps_counter_add_skipped_frame(decoder->fps_counter);
-    }
-}
-
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb,
-             struct fps_counter *fps_counter) {
+decoder_init(struct decoder *decoder, struct video_buffer *vb) {
     decoder->video_buffer = vb;
-    decoder->fps_counter = fps_counter;
 }
 
 bool
@@ -66,7 +53,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
                                 decoder->video_buffer->producer_frame);
     if (!ret) {
         // a frame was received
-        push_frame(decoder);
+        video_buffer_producer_offer_frame(decoder->video_buffer);
     } else if (ret != AVERROR(EAGAIN)) {
         LOGE("Could not receive video frame: %d", ret);
         return false;
