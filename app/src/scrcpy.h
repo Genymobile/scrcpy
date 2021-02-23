@@ -103,10 +103,10 @@ struct scrcpy_options {
         .data = {SC_MOD_LALT, SC_MOD_LSUPER}, \
         .count = 2, \
     }, \
-    .max_size = DEFAULT_MAX_SIZE, \
+    .max_size = 0, \
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
-    .lock_video_orientation = DEFAULT_LOCK_VIDEO_ORIENTATION, \
+    .lock_video_orientation = -1, \
     .rotation = 0, \
     .window_x = SC_WINDOW_POSITION_UNDEFINED, \
     .window_y = SC_WINDOW_POSITION_UNDEFINED, \
