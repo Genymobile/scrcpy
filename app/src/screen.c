@@ -520,16 +520,17 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
 
 // recreate the texture and resize the window if the frame size has changed
 static bool
-prepare_for_frame(struct screen *screen, struct size new_frame_size) {
-    if (screen->frame_size.width != new_frame_size.width
-            || screen->frame_size.height != new_frame_size.height) {
+prepare_for_frame(struct screen *screen, struct size original_frame_size,
+                  struct size frame_size) {
+    if (screen->frame_size.width != original_frame_size.width
+            || screen->frame_size.height != original_frame_size.height) {
         // frame dimension changed, destroy texture
         SDL_DestroyTexture(screen->texture);
 
-        screen->frame_size = new_frame_size;
+        screen->frame_size = original_frame_size;
 
         struct size new_content_size =
-            get_rotated_size(new_frame_size, screen->rotation);
+            get_rotated_size(original_frame_size, screen->rotation);
         set_content_size(screen, new_content_size);
 
         screen_update_content_rect(screen);
@@ -568,14 +569,22 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 
 static bool
 screen_update_frame(struct screen *screen) {
-    struct video_buffer *vb = screen->use_swscale ? &screen->resizer_vb
-                                                  : screen->vb;
-    const AVFrame *frame = video_buffer_consumer_take_frame(vb);
+    const AVFrame *frame;
+    struct size original_frame_size;
+
+    if (screen->use_swscale) {
+        frame = sc_resizer_consumer_take_frame(&screen->resizer,
+                                               &original_frame_size);
+    } else {
+        frame = video_buffer_consumer_take_frame(screen->vb);
+        original_frame_size.width = frame->width;
+        original_frame_size.height = frame->height;
+    }
+    struct size frame_size = {frame->width, frame->height};
 
     fps_counter_add_rendered_frame(screen->fps_counter);
 
-    struct size new_frame_size = {frame->width, frame->height};
-    if (!prepare_for_frame(screen, new_frame_size)) {
+    if (!prepare_for_frame(screen, original_frame_size, frame_size)) {
         return false;
     }
     update_texture(screen, frame);
