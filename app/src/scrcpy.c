@@ -346,7 +346,7 @@ scrcpy(const struct scrcpy_options *options) {
             file_handler_initialized = true;
         }
 
-        decoder_init(&decoder, &video_buffer, &fps_counter);
+        decoder_init(&decoder, &video_buffer);
         dec = &decoder;
     }
 

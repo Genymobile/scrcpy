@@ -204,6 +204,14 @@ on_frame_available(struct video_buffer *vb, void *userdata) {
     SDL_PushEvent(&new_frame_event);
 }
 
+static void
+on_frame_skipped(struct video_buffer *vb, void *userdata) {
+    (void) vb;
+
+    struct screen *screen = userdata;
+    fps_counter_add_skipped_frame(screen->fps_counter);
+}
+
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter) {
@@ -213,9 +221,10 @@ screen_init(struct screen *screen, struct video_buffer *vb,
 
     static const struct video_buffer_callbacks cbs = {
         .on_frame_available = on_frame_available,
+        .on_frame_skipped = on_frame_skipped,
     };
 
-    video_buffer_set_consumer_callbacks(vb, &cbs, NULL);
+    video_buffer_set_consumer_callbacks(vb, &cbs, screen);
 }
 
 static inline SDL_Texture *

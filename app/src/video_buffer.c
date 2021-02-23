@@ -98,8 +98,7 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
 }
 
 void
-video_buffer_producer_offer_frame(struct video_buffer *vb,
-                                  bool *previous_frame_skipped) {
+video_buffer_producer_offer_frame(struct video_buffer *vb) {
     assert(vb->cbs);
 
     sc_mutex_lock(&vb->mutex);
@@ -113,14 +112,14 @@ video_buffer_producer_offer_frame(struct video_buffer *vb,
     video_buffer_swap_producer_frame(vb);
 
     bool skipped = !vb->pending_frame_consumed;
-    *previous_frame_skipped = skipped;
     vb->pending_frame_consumed = false;
 
     sc_mutex_unlock(&vb->mutex);
 
-    if (!skipped) {
-        // If skipped, then the previous call will consume this frame, the
-        // callback must not be called
+    if (skipped) {
+        if (vb->cbs->on_frame_skipped)
+            vb->cbs->on_frame_skipped(vb, vb->cbs_userdata);
+    } else {
         vb->cbs->on_frame_available(vb, vb->cbs_userdata);
     }
 }
