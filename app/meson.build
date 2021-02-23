@@ -114,16 +114,6 @@ conf.set('PORTABLE', get_option('portable'))
 conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
 conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
-# the default max video size for both dimensions, in pixels
-# overridden by option --max-size
-conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
-
-# the default video orientation
-# natural device orientation is 0 and each increment adds 90 degrees
-# counterclockwise
-# overridden by option --lock-video-orientation
-conf.set('DEFAULT_LOCK_VIDEO_ORIENTATION', '-1')  # -1: unlocked
-
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps

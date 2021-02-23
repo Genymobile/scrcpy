@@ -84,12 +84,7 @@ scrcpy_print_usage(const char *arg0) {
         "        Possible values are -1 (unlocked), 0, 1, 2 and 3.\n"
         "        Natural device orientation is 0, and each increment adds a\n"
         "        90 degrees rotation counterclockwise.\n"
-#if DEFAULT_LOCK_VIDEO_ORIENTATION == -1
-# define DEFAULT_LOCK_VIDEO_ORIENTATION_STR "-1 (unlocked)"
-#else
-# define DEFAULT_LOCK_VIDEO_ORIENTATION_STR STR(DEFAULT_LOCK_VIDEO_ORIENTATION)
-#endif
-        "        Default is " DEFAULT_LOCK_VIDEO_ORIENTATION_STR ".\n"
+        "        Default is -1 (unlocked).\n"
         "\n"
         "    --max-fps value\n"
         "        Limit the frame rate of screen capture (officially supported\n"
@@ -99,12 +94,7 @@ scrcpy_print_usage(const char *arg0) {
         "        Limit both the width and height of the video to value. The\n"
         "        other dimension is computed so that the device aspect-ratio\n"
         "        is preserved.\n"
-#if DEFAULT_MAX_SIZE == 0
-# define DEFAULT_MAX_SIZE_STR "0 (unlimited)"
-#else
-# define DEFAULT_MAX_SIZE_STR STR(DEFAULT_MAX_SIZE)
-#endif
-        "        Default is " DEFAULT_MAX_SIZE_STR ".\n"
+        "        Default is 0 (unlimited).\n"
         "\n"
         "    -n, --no-control\n"
         "        Disable device control (mirror the device in read-only).\n"
