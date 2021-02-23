@@ -13,13 +13,16 @@
 
 struct sc_resizer {
     struct video_buffer *vb_in;
-    struct video_buffer *vb_out;
+    struct video_buffer vb_out;
     enum sc_scale_filter scale_filter;
     struct size size;
 
     // valid until the next call to video_buffer_consumer_take_frame(vb_in)
     const AVFrame *input_frame;
     AVFrame *resized_frame;
+
+    // original size of the available (resized) frame in vb_out
+    struct size original_size;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -32,8 +35,7 @@ struct sc_resizer {
 
 bool
 sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
-                struct video_buffer *vb_out, enum sc_scale_filter scale_filter,
-                struct size size);
+                enum sc_scale_filter scale_filter, struct size size);
 
 void
 sc_resizer_destroy(struct sc_resizer *resizer);
@@ -46,6 +48,10 @@ sc_resizer_stop(struct sc_resizer *resizer);
 
 void
 sc_resizer_join(struct sc_resizer *resizer);
+
+const AVFrame *
+sc_resizer_consumer_take_frame(struct sc_resizer *resizer,
+                               struct size *out_original_size);
 
 void
 sc_resizer_process_new_frame(struct sc_resizer *resizer);

@@ -216,6 +216,25 @@ on_frame_skipped(struct video_buffer *vb, void *userdata) {
     fps_counter_add_skipped_frame(screen->fps_counter);
 }
 
+static void
+resizer_on_frame_available(struct video_buffer *vb, void *userdata) {
+    (void) vb;
+    (void) userdata;
+
+    static SDL_Event new_frame_event = {
+        .type = EVENT_NEW_FRAME,
+    };
+
+    // Post the event on the UI thread
+    SDL_PushEvent(&new_frame_event);
+}
+
+static void
+resizer_on_frame_skipped(struct video_buffer *vb, void *userdata) {
+    // Count skipped frames from decoder or resizer the same way
+    on_frame_skipped(vb, userdata);
+}
+
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter) {
@@ -269,19 +288,6 @@ static inline bool
 is_swscale(enum sc_scale_filter scale_filter) {
     return scale_filter != SC_SCALE_FILTER_NONE
         && scale_filter != SC_SCALE_FILTER_TRILINEAR;
-}
-
-static void
-on_resizer_frame_available(struct video_buffer *vb, void *userdata) {
-    (void) vb;
-    (void) userdata;
-
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-
-    // Post the event on the UI thread
-    SDL_PushEvent(&new_frame_event);
 }
 
 bool
@@ -378,8 +384,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
             return false;
         }
 
-        ok = sc_resizer_init(&screen->resizer, screen->vb, &screen->resizer_vb,
-                             scale_filter, window_size);
+        ok = sc_resizer_init(&screen->resizer, screen->vb, scale_filter,
+                             window_size);
         if (!ok) {
             LOGE("Could not create resizer");
             video_buffer_destroy(&screen->resizer_vb);
@@ -387,6 +393,14 @@ screen_init_rendering(struct screen *screen, const char *window_title,
             SDL_DestroyWindow(screen->window);
             return false;
         }
+
+        static const struct video_buffer_callbacks cbs = {
+            .on_frame_available = resizer_on_frame_available,
+            .on_frame_skipped = resizer_on_frame_skipped,
+        };
+
+        video_buffer_set_consumer_callbacks(&screen->resizer.vb_out, &cbs,
+                                            screen);
 
         ok = sc_resizer_start(&screen->resizer);
         if (!ok) {

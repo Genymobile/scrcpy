@@ -7,8 +7,7 @@
 
 bool
 sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
-                struct video_buffer *vb_out, enum sc_scale_filter scale_filter,
-                struct size size) {
+                enum sc_scale_filter scale_filter, struct size size) {
     bool ok = sc_mutex_init(&resizer->mutex);
     if (!ok) {
         return false;
@@ -20,15 +19,22 @@ sc_resizer_init(struct sc_resizer *resizer, struct video_buffer *vb_in,
         return false;
     }
 
+    ok = video_buffer_init(&resizer->vb_out, false); // FIXME wait_consumer
+    if (!ok) {
+        sc_cond_destroy(&resizer->req_cond);
+        sc_mutex_destroy(&resizer->mutex);
+        return false;
+    }
+
     resizer->resized_frame = av_frame_alloc();
     if (!resizer->resized_frame) {
+        video_buffer_destroy(&resizer->vb_out);
         sc_cond_destroy(&resizer->req_cond);
         sc_mutex_destroy(&resizer->mutex);
         return false;
     }
 
     resizer->vb_in = vb_in;
-    resizer->vb_out = vb_out;
     resizer->scale_filter = scale_filter;
     resizer->size = size;
 
@@ -123,10 +129,16 @@ run_resizer(void *data) {
         // Do the actual work without mutex
         sc_resizer_swscale(resizer);
 
-        video_buffer_producer_offer_frame(resizer->vb_out,
-                                          &resizer->resized_frame);
-
         sc_mutex_lock(&resizer->mutex);
+
+        // Update the original size of the resized frame
+        resizer->original_size.width = resizer->input_frame->width;
+        resizer->original_size.height = resizer->input_frame->height;
+        assert(resizer->original_size.width);
+        assert(resizer->original_size.height);
+
+        video_buffer_producer_offer_frame(&resizer->vb_out,
+                                          &resizer->resized_frame);
     }
     sc_mutex_unlock(&resizer->mutex);
 
@@ -154,12 +166,26 @@ sc_resizer_stop(struct sc_resizer *resizer) {
     sc_cond_signal(&resizer->req_cond);
     sc_mutex_unlock(&resizer->mutex);
 
-    video_buffer_interrupt(resizer->vb_out);
+    video_buffer_interrupt(&resizer->vb_out);
 }
 
 void
 sc_resizer_join(struct sc_resizer *resizer) {
     sc_thread_join(&resizer->thread, NULL);
+}
+
+const AVFrame *
+sc_resizer_consumer_take_frame(struct sc_resizer *resizer,
+                               struct size *out_original_size) {
+    // Locking the mutex is necessary to ensure that the size corresponds to the correct frame
+    sc_mutex_lock(&resizer->mutex);
+
+    const AVFrame *frame = video_buffer_consumer_take_frame(&resizer->vb_out);
+    *out_original_size = resizer->original_size;
+
+    sc_mutex_unlock(&resizer->mutex);
+
+    return frame;
 }
 
 void
