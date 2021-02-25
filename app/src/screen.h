@@ -38,19 +38,31 @@ struct screen {
     bool mipmaps;
 };
 
+struct screen_params {
+    const char *window_title;
+    struct size frame_size;
+    bool always_on_top;
+
+    int16_t window_x;
+    int16_t window_y;
+    uint16_t window_width;  // accepts SC_WINDOW_POSITION_UNDEFINED
+    uint16_t window_height; // accepts SC_WINDOW_POSITION_UNDEFINED
+
+    bool window_borderless;
+
+    uint8_t rotation;
+    bool mipmaps;
+};
+
 // initialize default values
 void
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter);
 
 // initialize screen, create window, renderer and texture (window is hidden)
-// window_x and window_y accept SC_WINDOW_POSITION_UNDEFINED
 bool
-screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top,
-                      int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless,
-                      uint8_t rotation, bool mipmaps);
+screen_init_rendering(struct screen *screen,
+                      const struct screen_params *params);
 
 // show the window
 void
