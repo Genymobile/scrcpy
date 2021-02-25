@@ -212,25 +212,6 @@ on_frame_skipped(struct video_buffer *vb, void *userdata) {
     fps_counter_add_skipped_frame(screen->fps_counter);
 }
 
-void
-screen_init(struct screen *screen, struct video_buffer *vb,
-            struct fps_counter *fps_counter) {
-    screen->vb = vb;
-    screen->fps_counter = fps_counter;
-
-    screen->resize_pending = false;
-    screen->has_frame = false;
-    screen->fullscreen = false;
-    screen->maximized = false;
-
-    static const struct video_buffer_callbacks cbs = {
-        .on_frame_available = on_frame_available,
-        .on_frame_skipped = on_frame_skipped,
-    };
-
-    video_buffer_set_consumer_callbacks(vb, &cbs, screen);
-}
-
 static inline SDL_Texture *
 create_texture(struct screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
@@ -259,8 +240,23 @@ create_texture(struct screen *screen) {
 }
 
 bool
-screen_init_rendering(struct screen *screen,
-                      const struct screen_params *params) {
+screen_init(struct screen *screen, struct video_buffer *vb,
+            struct fps_counter *fps_counter,
+            const struct screen_params *params) {
+    screen->vb = vb;
+    screen->fps_counter = fps_counter;
+
+    screen->resize_pending = false;
+    screen->has_frame = false;
+    screen->fullscreen = false;
+    screen->maximized = false;
+
+    static const struct video_buffer_callbacks cbs = {
+        .on_frame_available = on_frame_available,
+        .on_frame_skipped = on_frame_skipped,
+    };
+    video_buffer_set_consumer_callbacks(vb, &cbs, screen);
+
     screen->frame_size = params->frame_size;
     screen->rotation = params->rotation;
     if (screen->rotation) {
