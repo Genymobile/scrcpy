@@ -54,15 +54,11 @@ struct screen_params {
     bool mipmaps;
 };
 
-// initialize default values
-void
-screen_init(struct screen *screen, struct video_buffer *vb,
-            struct fps_counter *fps_counter);
-
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init_rendering(struct screen *screen,
-                      const struct screen_params *params);
+screen_init(struct screen *screen, struct video_buffer *vb,
+            struct fps_counter *fps_counter,
+            const struct screen_params *params);
 
 // show the window
 void

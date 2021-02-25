@@ -382,8 +382,6 @@ scrcpy(const struct scrcpy_options *options) {
         const char *window_title =
             options->window_title ? options->window_title : device_name;
 
-        screen_init(&screen, &video_buffer, &fps_counter);
-
         struct screen_params screen_params = {
             .window_title = window_title,
             .frame_size = frame_size,
@@ -397,7 +395,8 @@ scrcpy(const struct scrcpy_options *options) {
             .mipmaps = options->mipmaps,
         };
 
-        if (!screen_init_rendering(&screen, &screen_params)) {
+        if (!screen_init(&screen, &video_buffer, &fps_counter,
+                         &screen_params)) {
             goto end;
         }
 
