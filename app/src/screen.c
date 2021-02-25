@@ -259,26 +259,25 @@ create_texture(struct screen *screen) {
 }
 
 bool
-screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top,
-                      int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless,
-                      uint8_t rotation, bool mipmaps) {
-    screen->frame_size = frame_size;
-    screen->rotation = rotation;
-    if (rotation) {
-        LOGI("Initial display rotation set to %u", rotation);
+screen_init_rendering(struct screen *screen,
+                      const struct screen_params *params) {
+    screen->frame_size = params->frame_size;
+    screen->rotation = params->rotation;
+    if (screen->rotation) {
+        LOGI("Initial display rotation set to %u", screen->rotation);
     }
-    struct size content_size = get_rotated_size(frame_size, screen->rotation);
+    struct size content_size =
+        get_rotated_size(screen->frame_size, screen->rotation);
     screen->content_size = content_size;
 
-    struct size window_size =
-        get_initial_optimal_size(content_size, window_width, window_height);
+    struct size window_size = get_initial_optimal_size(content_size,
+                                                       params->window_width,
+                                                       params->window_height);
     uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
 #ifdef HIDPI_SUPPORT
     window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 #endif
-    if (always_on_top) {
+    if (params->always_on_top) {
 #ifdef SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
 #else
@@ -286,15 +285,15 @@ screen_init_rendering(struct screen *screen, const char *window_title,
              "(compile with SDL >= 2.0.5 to enable it)");
 #endif
     }
-    if (window_borderless) {
+    if (params->window_borderless) {
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = window_x != SC_WINDOW_POSITION_UNDEFINED
-          ? window_x : (int) SDL_WINDOWPOS_UNDEFINED;
-    int y = window_y != SC_WINDOW_POSITION_UNDEFINED
-          ? window_y : (int) SDL_WINDOWPOS_UNDEFINED;
-    screen->window = SDL_CreateWindow(window_title, x, y,
+    int x = params->window_x != SC_WINDOW_POSITION_UNDEFINED
+          ? params->window_x : (int) SDL_WINDOWPOS_UNDEFINED;
+    int y = params->window_y != SC_WINDOW_POSITION_UNDEFINED
+          ? params->window_y : (int) SDL_WINDOWPOS_UNDEFINED;
+    screen->window = SDL_CreateWindow(params->window_title, x, y,
                                       window_size.width, window_size.height,
                                       window_flags);
     if (!screen->window) {
@@ -325,7 +324,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
 
         LOGI("OpenGL version: %s", gl->version);
 
-        if (mipmaps) {
+        if (params->mipmaps) {
             bool supports_mipmaps =
                 sc_opengl_version_at_least(gl, 3, 0, /* OpenGL 3.0+ */
                                                2, 0  /* OpenGL ES 2.0+ */);
@@ -339,7 +338,7 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         } else {
             LOGI("Trilinear filtering disabled");
         }
-    } else if (mipmaps) {
+    } else if (params->mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
@@ -351,8 +350,8 @@ screen_init_rendering(struct screen *screen, const char *window_title,
         LOGW("Could not load icon");
     }
 
-    LOGI("Initial texture: %" PRIu16 "x%" PRIu16, frame_size.width,
-                                                  frame_size.height);
+    LOGI("Initial texture: %" PRIu16 "x%" PRIu16, params->frame_size.width,
+                                                  params->frame_size.height);
     screen->texture = create_texture(screen);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());

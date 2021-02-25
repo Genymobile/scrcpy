@@ -384,12 +384,20 @@ scrcpy(const struct scrcpy_options *options) {
 
         screen_init(&screen, &video_buffer, &fps_counter);
 
-        if (!screen_init_rendering(&screen, window_title, frame_size,
-                                   options->always_on_top, options->window_x,
-                                   options->window_y, options->window_width,
-                                   options->window_height,
-                                   options->window_borderless,
-                                   options->rotation, options->mipmaps)) {
+        struct screen_params screen_params = {
+            .window_title = window_title,
+            .frame_size = frame_size,
+            .always_on_top = options->always_on_top,
+            .window_x = options->window_x,
+            .window_y = options->window_y,
+            .window_width = options->window_width,
+            .window_height = options->window_height,
+            .window_borderless = options->window_borderless,
+            .rotation = options->rotation,
+            .mipmaps = options->mipmaps,
+        };
+
+        if (!screen_init_rendering(&screen, &screen_params)) {
             goto end;
         }
 
