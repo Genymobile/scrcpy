@@ -112,7 +112,7 @@ sudo apt install openjdk-8-jdk
 Then generate the releases:
 
 ```bash
-make -f Makefile.CrossWindows
+./release.sh
 ```
 
 It will generate win32 and win64 releases into `dist/`.
