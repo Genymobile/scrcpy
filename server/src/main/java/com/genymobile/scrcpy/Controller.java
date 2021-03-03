@@ -45,7 +45,7 @@ public class Controller {
 
             MotionEvent.PointerCoords coords = new MotionEvent.PointerCoords();
             coords.orientation = 0;
-            coords.size = 1;
+            coords.size = 0;
 
             pointerProperties[i] = props;
             pointerCoords[i] = coords;
