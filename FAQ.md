@@ -114,16 +114,6 @@ In developer options, enable:
 [simulating input]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
-### Mouse clicks at wrong location
-
-On MacOS, with HiDPI support and multiple screens, input location are wrongly
-scaled. See [#15].
-
-[#15]: https://github.com/Genymobile/scrcpy/issues/15
-
-Open _scrcpy_ directly on the monitor you use it.
-
-
 ### Special characters do not work
 
 Injecting text input is [limited to ASCII characters][text-input]. A trick
