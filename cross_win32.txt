@@ -2,11 +2,11 @@
 
 [binaries]
 name = 'mingw'
-c = '/usr/bin/i686-w64-mingw32-gcc'
-cpp = '/usr/bin/i686-w64-mingw32-g++'
-ar = '/usr/bin/i686-w64-mingw32-ar'
-strip = '/usr/bin/i686-w64-mingw32-strip'
-pkgconfig = '/usr/bin/i686-w64-mingw32-pkg-config'
+c = 'i686-w64-mingw32-gcc'
+cpp = 'i686-w64-mingw32-g++'
+ar = 'i686-w64-mingw32-ar'
+strip = 'i686-w64-mingw32-strip'
+pkgconfig = 'i686-w64-mingw32-pkg-config'
 
 [host_machine]
 system = 'windows'
