@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Controller {
 
-    private static final int DEVICE_ID_VIRTUAL = -1;
+    private static final int DEFAULT_DEVICE_ID = 0;
 
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
@@ -210,7 +210,7 @@ public class Controller {
         int source = nonPrimaryButtonPressed ? InputDevice.SOURCE_MOUSE : InputDevice.SOURCE_TOUCHSCREEN;
 
         MotionEvent event = MotionEvent
-                .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEVICE_ID_VIRTUAL, 0, source,
+                .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source,
                         0);
         return device.injectEvent(event);
     }
@@ -233,7 +233,7 @@ public class Controller {
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
         MotionEvent event = MotionEvent
-                .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEVICE_ID_VIRTUAL, 0,
+                .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEFAULT_DEVICE_ID, 0,
                         InputDevice.SOURCE_TOUCHSCREEN, 0);
         return device.injectEvent(event);
     }
