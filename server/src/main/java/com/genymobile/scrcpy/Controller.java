@@ -208,6 +208,10 @@ public class Controller {
         // Right-click and middle-click only work if the source is a mouse
         boolean nonPrimaryButtonPressed = (buttons & ~MotionEvent.BUTTON_PRIMARY) != 0;
         int source = nonPrimaryButtonPressed ? InputDevice.SOURCE_MOUSE : InputDevice.SOURCE_TOUCHSCREEN;
+        if (source != InputDevice.SOURCE_MOUSE) {
+            // Buttons must not be set for touch events
+            buttons = 0;
+        }
 
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source,
