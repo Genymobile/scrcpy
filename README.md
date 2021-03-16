@@ -38,6 +38,15 @@ control it using keyboard and mouse.
 
 <a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
+### Summary
+
+ - Linux: `apt install scrcpy`
+ - Windows: [download][direct-win64]
+ - macOS: `brew install scrcpy`
+
+Build from sources: [BUILD]
+
+
 ### Linux
 
 On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
