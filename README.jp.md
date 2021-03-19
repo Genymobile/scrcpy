@@ -2,12 +2,10 @@ _Only the original [README](README.md) is guaranteed to be up-to-date._
 
 # scrcpy (v1.17)
 
-[他の言語で読む](#translations)
-
 このアプリケーションはUSB(もしくは[TCP/IP経由][article-tcpip])で接続された
 Androidデバイスの表示と制御を提供します。このアプリケーションは  _root_ でのアクセス
 を必要としません。
-このアプリケーションは　_GNU/Linux_, _Windows_ そして _macOS_　上で動作します。
+このアプリケーションは　_GNU/Linux_, _Windows_ そして _macOS_ 上で動作します。
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -15,7 +13,7 @@ Androidデバイスの表示と制御を提供します。このアプリケー�
 
  - **軽量** (ネイティブ、デバイス画面表示のみ)
  - **パフォーマンス**　(30~60fps)
- - **クオリティ**　(1920x1018以上)
+ - **クオリティ**　(1920x1080以上)
  - **低遅延**　([35~70ms][lowlatency])
  - **短い起動時間**　(初回画像を1秒以内に表示)
  - **非侵入型**　(デバイスに何もインストールされない)
@@ -51,7 +49,7 @@ apt install scrcpy
 
 [Snap]パッケージが利用可能: [`scrcpy`][snap-link]
 
-[snap-link]: https://snapstats.org/snaps/scrcpy
+[snap-link]: https://ja.wikipedia.org/wiki/Snappy
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
@@ -88,14 +86,14 @@ Windowsでは簡単に、（`adb`を含む）すべての依存関係を構築�
 
 ```bash
 choco install scrcpy
-choco install adb    # if you don't have it yet
+choco install adb    # まだ入手していない場合
 ```
 
 [Scoop]でも利用可能です:
 
 ```bash
 scoop install scrcpy
-scoop install adb    # if you don't have it yet
+scoop install adb    # まだ入手していない場合
 ```
 
 [Scoop]: https://scoop.sh
@@ -152,7 +150,7 @@ Androidデバイスを低解像度でミラーリングする場合、パフォ�
 
 ```bash
 scrcpy --max-size 1024
-scrcpy -m 1024  # short version
+scrcpy -m 1024  # 短縮版
 ```
 
 一方のサイズはデバイスのアスペクト比が維持されるように計算されます。
@@ -165,7 +163,7 @@ scrcpy -m 1024  # short version
 
 ```bash
 scrcpy --bit-rate 2M
-scrcpy -b 2M  # short version
+scrcpy -b 2M  # 短縮版
 ```
 
 #### フレームレート制限
@@ -186,7 +184,7 @@ scrcpy --max-fps 15
 これは、例えばOculus Goの片方の目をミラーリングする場合に便利です。:
 
 ```bash
-scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
+scrcpy --crop 1224:1440:0:0   # オフセット位置(0,0)で1224x1440 
 ```
 
 もし`--max-size`も指定されている場合、トリミング後にサイズ変更が適用されます。
@@ -196,15 +194,15 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 ミラーリングの向きをロックするには:
 
 ```bash
-scrcpy --lock-video-orientation 0   # natural orientation
-scrcpy --lock-video-orientation 1   # 90° counterclockwise
+scrcpy --lock-video-orientation 0   # 自然な向き
+scrcpy --lock-video-orientation 1   # 90°反時計回り
 scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° clockwise
+scrcpy --lock-video-orientation 3   # 90°時計回り
 ```
 
 この設定は録画の向きに影響します。
 
-[ウィンドウは独立して回転することもできます](#rotation)。
+[ウィンドウは独立して回転することもできます](#回転)。
 
 
 #### エンコーダ
@@ -272,11 +270,11 @@ _Scrcpy_ はデバイスとの通信に`adb`を使用します。そして`adb`�
  `adb connect DEVICE_IP:5555` _(`DEVICE_IP`は置き換える)_
 6. 通常通り`scrcpy`を実行します。
 
-この方法はビットレートと定義を減らすのにおそらく有用です:
+この方法はビットレートと鮮明度を減らすのにおそらく有用です:
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # short version
+scrcpy -b2M -m800  # 短縮版
 ```
 
 [接続]: https://developer.android.com/studio/command-line/adb.html#wireless
@@ -289,14 +287,14 @@ scrcpy -b2M -m800  # short version
 
 ```bash
 scrcpy --serial 0123456789abcdef
-scrcpy -s 0123456789abcdef  # short version
+scrcpy -s 0123456789abcdef  # 短縮版
 ```
 
 デバイスがTCP/IPを介して接続されている場合:
 
 ```bash
 scrcpy --serial 192.168.0.1:5555
-scrcpy -s 192.168.0.1:5555  # short version
+scrcpy -s 192.168.0.1:5555  # 短縮版
 ```
 
 複数のデバイスに対して、複数の _scrcpy_ インスタンスを開始することができます。
@@ -317,9 +315,9 @@ autoadb scrcpy -s '{}'
 接続することが可能です(同じバージョンの _adb_ プロトコルを使用している場合):
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
+adb kill-server    # 5037ポートのローカルadbサーバーを終了する
 ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
-# keep this open
+# オープンしたままにする
 ```
 
 他の端末から:
@@ -332,9 +330,9 @@ scrcpy
 強制することができます(`-R`の代わりに`-L`を使用することに注意):
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
+adb kill-server    # 5037ポートのローカルadbサーバーを終了する
 ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
-# keep this open
+# オープンしたままにする
 ```
 
 他の端末から:
@@ -390,7 +388,7 @@ scrcpy --always-on-top
 
 ```bash
 scrcpy --fullscreen
-scrcpy -f  # short version
+scrcpy -f  # 短縮版
 ```
 
 フルスクリーンは、次のコマンドで動的に切り替えることができます <kbd>MOD</kbd>+<kbd>f</kbd>
@@ -415,8 +413,8 @@ _(左)_ 、 <kbd>MOD</kbd>+<kbd>→</kbd> _(右)_
 
 _scrcpy_ は3つの回転を管理することに注意:
  - <kbd>MOD</kbd>+<kbd>r</kbd>はデバイスに縦向きと横向きの切り替えを要求する
-   (現在実行中のアプリで要求している向きをサポートしている場合、拒否する場合がある)
- - [`--lock-video-orientation`](#lock-video-orientation)は、ミラーリングする向きを
+   (現在実行中のアプリで要求している向きをサポートしていない場合、拒否することがある)
+ - [`--lock-video-orientation`](#ビデオの向きをロックする)は、ミラーリングする向きを
     変更する(デバイスからPCへ送信される向き)。録画に影響します。
  - `--rotation` (もしくは<kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
     は、ウィンドウのコンテンツのみを回転します。これは表示にのみに影響し、録画
@@ -461,7 +459,7 @@ scrcpy --stay-awake
 scrcpy -w
 ```
 
-初期状態はscrcpyが閉じられた時に保存されます。
+scrcpyが閉じられた時、初期状態に復元されます。
 
 #### 画面OFF
 
@@ -494,7 +492,7 @@ scrcpy -Sw
 #### 期限切れフレームをレンダリングする
 
 初期状態では、待ち時間を最小限にするために、_scrcpy_ は最後にデコードされたフレーム
-を使用可能にレンダリングし、前のフレームを削除します。
+をレンダリングし、前のフレームを削除します。
 
 全フレームのレンダリングを強制するには(待ち時間が長くなる可能性があります):
 
@@ -583,7 +581,7 @@ _K-9 Mail_ は新しいメッセージを作成します。
 
 #### ピンチしてズームする
 
-"ピンチしてズームする"をシミュレートするには: <kbd>Ctrl</kbd>+_click-and-move_
+"ピンチしてズームする"をシミュレートするには: <kbd>Ctrl</kbd>+_クリック&移動_
 
 より正確にするには、左クリックボタンを押している間、<kbd>Ctrl</kbd>を
 押したままにします。左クリックボタンを離すまで、全てのマウスの動きは、(アプリでサポート
@@ -682,10 +680,10 @@ scrcpy --push-target /sdcard/foo/bar/
 `lctrl`、`rctrl`、`lalt`、 `ralt`、 `lsuper`そして`rsuper`です。例えば:
 
 ```bash
-# use RCtrl for shortcuts
+# RCtrlをショートカットとして使用します
 scrcpy --shortcut-mod=rctrl
 
-# use either LCtrl+LAlt or LSuper for shortcuts
+# ショートカットにLCtrl+LAltまたはLSuperのいずれかを使用します
 scrcpy --shortcut-mod=lctrl+lalt,lsuper
 ```
 
@@ -715,7 +713,7 @@ _<kbd>[Super]</kbd>は通常<kbd>Windows</kbd>もしくは<kbd>Cmd</kbd>キー�
  | 通知パネルを折りたたむ                        | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
  | クリップボードへのコピー³                     | <kbd>MOD</kbd>+<kbd>c</kbd>
  | クリップボードへのカット³                     | <kbd>MOD</kbd>+<kbd>x</kbd>
- | クリップボードとペーストの同期³                | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | クリップボードの同期とペースト³                | <kbd>MOD</kbd>+<kbd>v</kbd>
  | コンピュータのクリップボードテキストの挿入      | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | FPSカウンタ有効/無効(標準入出力上)             | <kbd>MOD</kbd>+<kbd>i</kbd>
  | ピンチしてズームする                          | <kbd>Ctrl</kbd>+_クリック&移動_
@@ -757,7 +755,7 @@ _³Android 7以上のみ._
 [BUILD]: BUILD.md
 
 
-## 共通の問題
+## よくある質問
 
 [FAQ](FAQ.md)を参照してください。
 
