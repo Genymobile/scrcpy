@@ -726,13 +726,3 @@ _³Android 7以上のみ._
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
-## 翻訳
-
-このREADMEは他の言語で利用可能です:
-
-- [Indonesian (インドネシア語, `id`) - v1.16](README.id.md)
-- [한국어 (韓国語, `ko`) - v1.11](README.ko.md)
-- [português brasileiro (ブラジルポルトガル語, `pt-BR`) - v1.17](README.pt-br.md)
-- [简体中文 (簡体字中国語, `zh-Hans`) - v1.17](README.zh-Hans.md)
-- [繁體中文 (繁体字中国語, `zh-Hant`) - v1.15](README.zh-Hant.md)
