@@ -77,10 +77,7 @@ difícil).
 Para Windows, por simplicidade, um arquivo pré-compilado com todas as dependências
 (incluindo `adb`) está disponível:
 
- - [`scrcpy-win64-v1.17.zip`][direct-win64]  
-   _(SHA-256: 8b9e57993c707367ed10ebfe0e1ef563c7a29d9af4a355cd8b6a52a317c73eea)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.17/scrcpy-win64-v1.17.zip
+ - [README](README.md#windows)
 
 Também está disponível em [Chocolatey]:
 

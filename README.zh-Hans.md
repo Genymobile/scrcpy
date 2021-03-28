@@ -78,10 +78,7 @@ apt install scrcpy
 
 在 Windows 上，简便起见，我们提供包含了所有依赖 (包括 `adb`) 的预编译包。
 
- - [`scrcpy-win64-v1.17.zip`][direct-win64]
-   _(SHA-256: 8b9e57993c707367ed10ebfe0e1ef563c7a29d9af4a355cd8b6a52a317c73eea)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.17/scrcpy-win64-v1.17.zip
+ - [README](README.md#windows)
 
 也可以使用 [Chocolatey]：
 

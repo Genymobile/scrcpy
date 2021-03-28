@@ -69,10 +69,7 @@ Anda juga bisa [membangun aplikasi secara manual][BUILD] (jangan khawatir, tidak
 
 Untuk Windows, untuk kesederhanaan, arsip prebuilt dengan semua dependensi (termasuk `adb`) tersedia :
 
- - [`scrcpy-win64-v1.16.zip`][direct-win64]  
-   _(SHA-256: 3f30dc5db1a2f95c2b40a0f5de91ec1642d9f53799250a8c529bc882bc0918f0)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.16/scrcpy-win64-v1.16.zip
+ - [README](README.md#windows)
 
 Ini juga tersedia di [Chocolatey]:
 
