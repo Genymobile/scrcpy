@@ -667,7 +667,7 @@ There is no visual feedback, a log is printed to the console.
 The target directory can be changed on start:
 
 ```bash
-scrcpy --push-target /sdcard/foo/bar/
+scrcpy --push-target=/sdcard/Download/
 ```
 
 
