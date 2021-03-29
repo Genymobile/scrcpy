@@ -3,6 +3,37 @@
 Here are the instructions to build _scrcpy_ (client and server).
 
 
+## Simple
+
+If you just want to install the latest release from `master`, follow this
+simplified process.
+
+First, you need to install the required packages:
+
+```bash
+# for Debian/Ubuntu
+sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
+                 gcc git pkg-config meson ninja-build \
+                 libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev
+```
+
+Then clone the repo and execute the installation script
+([source](install_release.sh)):
+
+```bash
+git clone https://github.com/Genymobile/scrcpy
+cd scrcpy
+./install_release.sh
+```
+
+When a new release is out, update the repo and reinstall:
+
+```bash
+git pull
+./install_release.sh
+```
+
+
 ## Branches
 
 ### `master`

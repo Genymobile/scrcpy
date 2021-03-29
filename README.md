@@ -44,7 +44,10 @@ control it using keyboard and mouse.
  - Windows: [download][direct-win64]
  - macOS: `brew install scrcpy`
 
-Build from sources: [BUILD]
+Build from sources: [BUILD] ([simplified process][BUILD_simple])
+
+[BUILD]: BUILD.md
+[BUILD_simple]: BUILD.md#simple
 
 
 ### Linux
@@ -76,9 +79,8 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
-You could also [build the app manually][BUILD] (don't worry, it's not that
-hard).
-
+You could also [build the app manually][BUILD] ([simplified
+process][BUILD_simple]).
 
 
 ### Windows
@@ -762,8 +764,6 @@ A colleague challenged me to find a name as unpronounceable as [gnirehtet].
 ## How to build?
 
 See [BUILD].
-
-[BUILD]: BUILD.md
 
 
 ## Common issues
