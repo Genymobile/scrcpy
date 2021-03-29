@@ -255,7 +255,7 @@ You can then [run](README.md#run) _scrcpy_.
 ## Prebuilt server
 
  - [`scrcpy-server-v1.17`][direct-scrcpy-server]  
-   _(SHA-256: 11b5ad2d1bc9b9730fb7254a78efd71a8ff46b1938ff468e47a21b653a1b6725_
+   _(SHA-256: 11b5ad2d1bc9b9730fb7254a78efd71a8ff46b1938ff468e47a21b653a1b6725)_
 
 [direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.17/scrcpy-server-v1.17
 
