@@ -12,11 +12,7 @@
 # define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
-# ifdef _WIN64
-#   define PRIsizet PRIu64
-# else
-#   define PRIsizet PRIu32
-# endif
+# define PRIsizet "Iu"
 # define PROCESS_NONE NULL
 # define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
@@ -42,6 +38,11 @@ enum process_result {
     PROCESS_ERROR_GENERIC,
     PROCESS_ERROR_MISSING_BINARY,
 };
+
+#ifndef __WINDOWS__
+bool
+cmd_search(const char *file);
+#endif
 
 enum process_result
 cmd_execute(const char *const argv[], process_t *process);

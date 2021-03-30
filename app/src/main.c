@@ -1,5 +1,6 @@
 #include "scrcpy.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
@@ -33,6 +34,24 @@ print_version(void) {
                                                LIBSWSCALE_VERSION_MICRO);
 }
 
+static SDL_LogPriority
+convert_log_level_to_sdl(enum sc_log_level level) {
+    switch (level) {
+        case SC_LOG_LEVEL_DEBUG:
+            return SDL_LOG_PRIORITY_DEBUG;
+        case SC_LOG_LEVEL_INFO:
+            return SDL_LOG_PRIORITY_INFO;
+        case SC_LOG_LEVEL_WARN:
+            return SDL_LOG_PRIORITY_WARN;
+        case SC_LOG_LEVEL_ERROR:
+            return SDL_LOG_PRIORITY_ERROR;
+        default:
+            assert(!"unexpected log level");
+            return SDL_LOG_PRIORITY_INFO;
+    }
+}
+
+
 int
 main(int argc, char *argv[]) {
 #ifdef __WINDOWS__
@@ -53,9 +72,16 @@ main(int argc, char *argv[]) {
         .version = false,
     };
 
+#ifndef NDEBUG
+    args.opts.log_level = SC_LOG_LEVEL_DEBUG;
+#endif
+
     if (!scrcpy_parse_args(&args, argc, argv)) {
         return 1;
     }
+
+    SDL_LogPriority sdl_log = convert_log_level_to_sdl(args.opts.log_level);
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
@@ -81,11 +107,5 @@ main(int argc, char *argv[]) {
 
     avformat_network_deinit(); // ignore failure
 
-#if defined (__WINDOWS__) && ! defined (WINDOWS_NOCONSOLE)
-    if (res != 0) {
-        fprintf(stderr, "Press any key to continue...\n");
-        getchar();
-    }
-#endif
     return res;
 }

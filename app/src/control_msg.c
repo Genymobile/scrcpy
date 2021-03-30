@@ -20,9 +20,9 @@ write_position(uint8_t *buf, const struct position *position) {
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = utf8_truncation_index(utf8, max_len);
-    buffer_write16be(buf, (uint16_t) len);
-    memcpy(&buf[2], utf8, len);
-    return 2 + len;
+    buffer_write32be(buf, len);
+    memcpy(&buf[4], utf8, len);
+    return 4 + len;
 }
 
 static uint16_t
@@ -42,11 +42,13 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_INJECT_KEYCODE:
             buf[1] = msg->inject_keycode.action;
             buffer_write32be(&buf[2], msg->inject_keycode.keycode);
-            buffer_write32be(&buf[6], msg->inject_keycode.metastate);
-            return 10;
+            buffer_write32be(&buf[6], msg->inject_keycode.repeat);
+            buffer_write32be(&buf[10], msg->inject_keycode.metastate);
+            return 14;
         case CONTROL_MSG_TYPE_INJECT_TEXT: {
-            size_t len = write_string(msg->inject_text.text,
-                                      CONTROL_MSG_TEXT_MAX_LENGTH, &buf[1]);
+            size_t len =
+                write_string(msg->inject_text.text,
+                             CONTROL_MSG_INJECT_TEXT_MAX_LENGTH, &buf[1]);
             return 1 + len;
         }
         case CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
@@ -66,10 +68,11 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
                              (uint32_t) msg->inject_scroll_event.vscroll);
             return 21;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
-            size_t len = write_string(msg->inject_text.text,
+            buf[1] = !!msg->set_clipboard.paste;
+            size_t len = write_string(msg->set_clipboard.text,
                                       CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
-                                      &buf[1]);
-            return 1 + len;
+                                      &buf[2]);
+            return 2 + len;
         }
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;

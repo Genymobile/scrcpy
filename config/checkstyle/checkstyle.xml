@@ -129,11 +129,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
     </module>
     <module name="IllegalInstantiation" />
     <module name="InnerAssignment" />
-    <module name="MagicNumber">
-      <property name="severity" value="info" />
-      <property name="ignoreHashCodeMethod" value="true" />
-      <property name="ignoreAnnotation" value="true" />
-    </module>
     <module name="MissingSwitchDefault" />
     <module name="SimplifyBooleanExpression" />
     <module name="SimplifyBooleanReturn" />

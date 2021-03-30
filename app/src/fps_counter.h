@@ -1,9 +1,9 @@
 #ifndef FPSCOUNTER_H
 #define FPSCOUNTER_H
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_atomic.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
 
@@ -16,7 +16,7 @@ struct fps_counter {
 
     // atomic so that we can check without locking the mutex
     // if the FPS counter is disabled, we don't want to lock unnecessarily
-    SDL_atomic_t started;
+    atomic_bool started;
 
     // the following fields are protected by the mutex
     bool interrupted;
