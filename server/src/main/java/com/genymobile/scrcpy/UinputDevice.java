@@ -162,33 +162,34 @@ public abstract class UinputDevice {
     private int fd = -1;
 
     public interface LibC extends Library {
-        LibC FN = (LibC) Native.load("c", LibC.class);
-
         int open(String pathname, int flags);
         int ioctl(int fd, long request, Object... args);
         long write(int fd, Pointer buf, long count);
         int close(int fd);
     }
 
+    private static LibC libC;
+
+    /// Must be the first method called
     public static void loadNativeLibraries() {
-        UinputDevice.LibC.FN.write(1, null, 0);
+        libC = (LibC) Native.load("c", LibC.class);
     }
 
     protected void setup() {
-        fd = LibC.FN.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+        fd = libC.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
         if (fd == -1) {
             throw new RuntimeException("Couldn't open uinput device.");
         }
 
         if (hasKeys())
         {
-            LibC.FN.ioctl(fd, UI_SET_EVBIT, EV_KEY);
+            libC.ioctl(fd, UI_SET_EVBIT, EV_KEY);
             setupKeys();
         }
 
         if (hasAbs())
         {
-            LibC.FN.ioctl(fd, UI_SET_EVBIT, EV_ABS);
+            libC.ioctl(fd, UI_SET_EVBIT, EV_ABS);
             setupAbs();
         }
 
@@ -199,12 +200,12 @@ public abstract class UinputDevice {
         byte[] name = getName().getBytes();
         System.arraycopy(name, 0, usetup.name, 0, name.length);
 
-        if (LibC.FN.ioctl(fd, UI_DEV_SETUP, usetup) == -1) {
+        if (libC.ioctl(fd, UI_DEV_SETUP, usetup) == -1) {
             close();
             throw new RuntimeException("Couldn't setup uinput device.");
         }
 
-        if (LibC.FN.ioctl(fd, UI_DEV_CREATE) == -1) {
+        if (libC.ioctl(fd, UI_DEV_CREATE) == -1) {
             close();
             throw new RuntimeException("Couldn't create uinput device.");
         }
@@ -212,8 +213,8 @@ public abstract class UinputDevice {
 
     public void close() {
         if (fd != -1) {
-            LibC.FN.ioctl(fd, UI_DEV_DESTROY);
-            LibC.FN.close(fd);
+            libC.ioctl(fd, UI_DEV_DESTROY);
+            libC.close(fd);
             fd = -1;
         }
     }
@@ -227,13 +228,13 @@ public abstract class UinputDevice {
     protected abstract String getName();
 
     protected void addKey(int key) {
-        if (LibC.FN.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
+        if (libC.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
             Ln.e("Could not add key event.");
         }
     }
 
     protected void addAbs(short code, int minimum, int maximum, int fuzz, int flat) {
-        if (LibC.FN.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
+        if (libC.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
             Ln.e("Could not add absolute event.");
         }
 
@@ -245,7 +246,7 @@ public abstract class UinputDevice {
         absSetup.absinfo.fuzz = fuzz;
         absSetup.absinfo.flat = flat;
 
-        if (LibC.FN.ioctl(fd, UI_ABS_SETUP, absSetup) == -1) {
+        if (libC.ioctl(fd, UI_ABS_SETUP, absSetup) == -1) {
             Ln.e("Could not set absolute event info.");
         }
     }
@@ -259,7 +260,7 @@ public abstract class UinputDevice {
 
         ie.write();
 
-        LibC.FN.write(fd, ie.getPointer(), ie.size());
+        libC.write(fd, ie.getPointer(), ie.size());
     }
 
     private static void emit64(int fd, short type, short code, int val) {
@@ -271,7 +272,7 @@ public abstract class UinputDevice {
 
         ie.write();
 
-        LibC.FN.write(fd, ie.getPointer(), ie.size());
+        libC.write(fd, ie.getPointer(), ie.size());
     }
 
     private static void emit(int fd, short type, short code, int val) {
