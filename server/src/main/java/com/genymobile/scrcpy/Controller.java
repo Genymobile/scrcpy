@@ -42,7 +42,7 @@ public class Controller {
         sender = new DeviceMessageSender(connection);
 
         try {
-            GameController.loadNativeLibraries();
+            UinputDevice.loadNativeLibraries();
             gameControllersEnabled = true;
         } catch (UnsatisfiedLinkError e) {
             Ln.e("Could not load native libraries. Game controllers will be disabled.", e);
