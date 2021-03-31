@@ -1,4 +1,9 @@
 build/
 /dist/
+/build-*/
+/build_*/
+/release-*/
 .idea/
 .gradle/
+/x/
+local.properties

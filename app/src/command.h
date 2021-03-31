@@ -12,12 +12,9 @@
 # define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
-# ifdef _WIN64
-#   define PRIsizet PRIu64
-# else
-#   define PRIsizet PRIu32
-# endif
+# define PRIsizet "Iu"
 # define PROCESS_NONE NULL
+# define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
   typedef DWORD exit_code_t;
 
@@ -28,6 +25,7 @@
 # define PRIsizet "zu"
 # define PRIexitcode "d"
 # define PROCESS_NONE -1
+# define NO_EXIT_CODE -1
   typedef pid_t process_t;
   typedef int exit_code_t;
 
@@ -35,16 +33,19 @@
 
 #include "config.h"
 
-# define NO_EXIT_CODE -1
-
 enum process_result {
     PROCESS_SUCCESS,
     PROCESS_ERROR_GENERIC,
     PROCESS_ERROR_MISSING_BINARY,
 };
 
+#ifndef __WINDOWS__
+bool
+cmd_search(const char *file);
+#endif
+
 enum process_result
-cmd_execute(const char *path, const char *const argv[], process_t *process);
+cmd_execute(const char *const argv[], process_t *process);
 
 bool
 cmd_terminate(process_t pid);
@@ -84,5 +85,9 @@ process_check_success(process_t proc, const char *name);
 // may be NULL on error; to be freed by SDL_free
 char *
 get_executable_path(void);
+
+// returns true if the file exists and is not a directory
+bool
+is_regular_file(const char *path);
 
 #endif

@@ -1,12 +1,12 @@
 #include "recorder.h"
 
+#include <assert.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_assert.h>
 
 #include "config.h"
 #include "compat.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
@@ -63,7 +63,7 @@ recorder_queue_clear(struct recorder_queue *queue) {
 bool
 recorder_init(struct recorder *recorder,
               const char *filename,
-              enum recorder_format format,
+              enum sc_record_format format,
               struct size declared_frame_size) {
     recorder->filename = SDL_strdup(filename);
     if (!recorder->filename) {
@@ -105,10 +105,10 @@ recorder_destroy(struct recorder *recorder) {
 }
 
 static const char *
-recorder_get_format_name(enum recorder_format format) {
+recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
-        case RECORDER_FORMAT_MP4: return "mp4";
-        case RECORDER_FORMAT_MKV: return "matroska";
+        case SC_RECORD_FORMAT_MP4: return "mp4";
+        case SC_RECORD_FORMAT_MKV: return "matroska";
         default: return NULL;
     }
 }
@@ -116,7 +116,7 @@ recorder_get_format_name(enum recorder_format format) {
 bool
 recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const char *format_name = recorder_get_format_name(recorder->format);
-    SDL_assert(format_name);
+    assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
@@ -134,6 +134,9 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     // still expects a pointer-to-non-const (it has not be updated accordingly)
     // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
     recorder->ctx->oformat = (AVOutputFormat *) format;
+
+    av_dict_set(&recorder->ctx->metadata, "comment",
+                "Recorded by scrcpy " SCRCPY_VERSION, 0);
 
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
@@ -171,9 +174,14 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
 void
 recorder_close(struct recorder *recorder) {
-    int ret = av_write_trailer(recorder->ctx);
-    if (ret < 0) {
-        LOGE("Failed to write trailer to %s", recorder->filename);
+    if (recorder->header_written) {
+        int ret = av_write_trailer(recorder->ctx);
+        if (ret < 0) {
+            LOGE("Failed to write trailer to %s", recorder->filename);
+            recorder->failed = true;
+        }
+    } else {
+        // the recorded file is empty
         recorder->failed = true;
     }
     avio_close(recorder->ctx->pb);
@@ -293,8 +301,12 @@ run_recorder(void *data) {
             continue;
         }
 
-        // we now know the duration of the previous packet
-        previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        // config packets have no PTS, we must ignore them
+        if (rec->packet.pts != AV_NOPTS_VALUE
+            && previous->packet.pts != AV_NOPTS_VALUE) {
+            // we now know the duration of the previous packet
+            previous->packet.duration = rec->packet.pts - previous->packet.pts;
+        }
 
         bool ok = recorder_write(recorder, &previous->packet);
         record_packet_delete(previous);
@@ -345,16 +357,18 @@ recorder_join(struct recorder *recorder) {
 bool
 recorder_push(struct recorder *recorder, const AVPacket *packet) {
     mutex_lock(recorder->mutex);
-    SDL_assert(!recorder->stopped);
+    assert(!recorder->stopped);
 
     if (recorder->failed) {
         // reject any new packet (this will stop the stream)
+        mutex_unlock(recorder->mutex);
         return false;
     }
 
     struct record_packet *rec = record_packet_new(packet);
     if (!rec) {
         LOGC("Could not allocate record packet");
+        mutex_unlock(recorder->mutex);
         return false;
     }
 

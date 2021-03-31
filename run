@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Run scrcpy generated in the specified BUILDDIR.
 #
 # This provides the same feature as "ninja run", except that it is possible to
@@ -20,4 +20,4 @@ then
     exit 1
 fi
 
-SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server.jar" "$BUILDDIR/app/scrcpy" "$@"
+SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server" "$BUILDDIR/app/scrcpy" "$@"

@@ -17,35 +17,35 @@ public class StatusBarManager {
         this.manager = manager;
     }
 
-    public void expandNotificationsPanel() {
+    private Method getExpandNotificationsPanelMethod() throws NoSuchMethodException {
         if (expandNotificationsPanelMethod == null) {
-            try {
-                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
-            } catch (NoSuchMethodException e) {
-                Ln.e("ServiceBarManager.expandNotificationsPanel() is not available on this device");
-                return;
-            }
+            expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
         }
+        return expandNotificationsPanelMethod;
+    }
+
+    private Method getCollapsePanelsMethod() throws NoSuchMethodException {
+        if (collapsePanelsMethod == null) {
+            collapsePanelsMethod = manager.getClass().getMethod("collapsePanels");
+        }
+        return collapsePanelsMethod;
+    }
+
+    public void expandNotificationsPanel() {
         try {
-            expandNotificationsPanelMethod.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke ServiceBarManager.expandNotificationsPanel()", e);
+            Method method = getExpandNotificationsPanelMethod();
+            method.invoke(manager);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 
     public void collapsePanels() {
-        if (collapsePanelsMethod == null) {
-            try {
-                collapsePanelsMethod = manager.getClass().getMethod("collapsePanels");
-            } catch (NoSuchMethodException e) {
-                Ln.e("ServiceBarManager.collapsePanels() is not available on this device");
-                return;
-            }
-        }
         try {
-            collapsePanelsMethod.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            Ln.e("Could not invoke ServiceBarManager.collapsePanels()", e);
+            Method method = getCollapsePanelsMethod();
+            method.invoke(manager);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 }

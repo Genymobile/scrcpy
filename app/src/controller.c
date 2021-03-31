@@ -1,10 +1,10 @@
 #include "controller.h"
 
-#include <SDL2/SDL_assert.h>
+#include <assert.h>
 
 #include "config.h"
-#include "lock_util.h"
-#include "log.h"
+#include "util/lock.h"
+#include "util/log.h"
 
 bool
 controller_init(struct controller *controller, socket_t control_socket) {
@@ -60,7 +60,7 @@ controller_push_msg(struct controller *controller,
 static bool
 process_msg(struct controller *controller,
               const struct control_msg *msg) {
-    unsigned char serialized_msg[CONTROL_MSG_SERIALIZED_MAX_SIZE];
+    static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
     int length = control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
@@ -85,7 +85,8 @@ run_controller(void *data) {
         }
         struct control_msg msg;
         bool non_empty = cbuf_take(&controller->queue, &msg);
-        SDL_assert(non_empty);
+        assert(non_empty);
+        (void) non_empty;
         mutex_unlock(controller->mutex);
 
         bool ok = process_msg(controller, &msg);

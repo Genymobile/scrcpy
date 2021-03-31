@@ -1,6 +1,6 @@
 #include <assert.h>
 
-#include <queue.h>
+#include "util/queue.h"
 
 struct foo {
     int value;
@@ -32,7 +32,10 @@ static void test_queue(void) {
     assert(queue_is_empty(&queue));
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_queue();
     return 0;
 }

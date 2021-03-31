@@ -6,8 +6,12 @@ import android.os.IInterface;
 
 import java.lang.reflect.Method;
 
-@SuppressLint("PrivateApi")
+@SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ServiceManager {
+
+    public static final String PACKAGE_NAME = "com.android.shell";
+    public static final int USER_ID = 0;
+
     private final Method getServiceMethod;
 
     private WindowManager windowManager;
@@ -16,6 +20,7 @@ public final class ServiceManager {
     private PowerManager powerManager;
     private StatusBarManager statusBarManager;
     private ClipboardManager clipboardManager;
+    private ActivityManager activityManager;
 
     public ServiceManager() {
         try {
@@ -72,8 +77,32 @@ public final class ServiceManager {
 
     public ClipboardManager getClipboardManager() {
         if (clipboardManager == null) {
-            clipboardManager = new ClipboardManager(getService("clipboard", "android.content.IClipboard"));
+            IInterface clipboard = getService("clipboard", "android.content.IClipboard");
+            if (clipboard == null) {
+                // Some devices have no clipboard manager
+                // <https://github.com/Genymobile/scrcpy/issues/1440>
+                // <https://github.com/Genymobile/scrcpy/issues/1556>
+                return null;
+            }
+            clipboardManager = new ClipboardManager(clipboard);
         }
         return clipboardManager;
+    }
+
+    public ActivityManager getActivityManager() {
+        if (activityManager == null) {
+            try {
+                // On old Android versions, the ActivityManager is not exposed via AIDL,
+                // so use ActivityManagerNative.getDefault()
+                Class<?> cls = Class.forName("android.app.ActivityManagerNative");
+                Method getDefaultMethod = cls.getDeclaredMethod("getDefault");
+                IInterface am = (IInterface) getDefaultMethod.invoke(null);
+                activityManager = new ActivityManager(am);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        return activityManager;
     }
 }

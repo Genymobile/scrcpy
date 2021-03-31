@@ -1,8 +1,8 @@
 #include "stream.h"
 
+#include <assert.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_assert.h>
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
@@ -10,12 +10,11 @@
 
 #include "config.h"
 #include "compat.h"
-#include "buffer_util.h"
 #include "decoder.h"
 #include "events.h"
-#include "lock_util.h"
-#include "log.h"
 #include "recorder.h"
+#include "util/buffer_util.h"
+#include "util/log.h"
 
 #define BUFSIZE 0x10000
 
@@ -44,7 +43,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     uint64_t pts = buffer_read64be(header);
     uint32_t len = buffer_read32be(&header[8]);
-    SDL_assert(len);
+    assert(pts == NO_PTS || (pts & 0x8000000000000000) == 0);
+    assert(len);
 
     if (av_new_packet(packet, len)) {
         LOGE("Could not allocate packet");
@@ -52,12 +52,12 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     }
 
     r = net_recv_all(stream->socket, packet->data, len);
-    if (r < len) {
+    if (r < 0 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
     }
 
-    packet->pts = pts != NO_PTS ? pts : AV_NOPTS_VALUE;
+    packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
     return true;
 }
@@ -107,8 +107,9 @@ stream_parse(struct stream *stream, AVPacket *packet) {
                              AV_NOPTS_VALUE, AV_NOPTS_VALUE, -1);
 
     // PARSER_FLAG_COMPLETE_FRAMES is set
-    SDL_assert(r == in_len);
-    SDL_assert(out_len == in_len);
+    assert(r == in_len);
+    (void) r;
+    assert(out_len == in_len);
 
     if (stream->parser->key_frame == 1) {
         packet->flags |= AV_PKT_FLAG_KEY;

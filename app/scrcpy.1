@@ -1,0 +1,384 @@
+.TH "scrcpy" "1"
+.SH NAME
+scrcpy \- Display and control your Android device
+
+
+.SH SYNOPSIS
+.B scrcpy
+.RI [ options ]
+
+
+.SH DESCRIPTION
+.B scrcpy
+provides display and control of Android devices connected on USB (or over TCP/IP). It does not require any root access.
+
+
+.SH OPTIONS
+
+.TP
+.B \-\-always\-on\-top
+Make scrcpy window always on top (above other windows).
+
+.TP
+.BI "\-b, \-\-bit\-rate " value
+Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
+
+Default is 8000000.
+
+.TP
+.BI "\-\-codec\-options " key[:type]=value[,...]
+Set a list of comma-separated key:type=value options for the device encoder.
+
+The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
+
+The list of possible codec options is available in the Android documentation
+.UR https://d.android.com/reference/android/media/MediaFormat
+.UE .
+
+.TP
+.BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
+Crop the device screen on the server.
+
+The values are expressed in the device natural orientation (typically, portrait for a phone, landscape for a tablet). Any
+.B \-\-max\-size
+value is computed on the cropped size.
+
+.TP
+.BI "\-\-disable-screensaver"
+Disable screensaver while scrcpy is running.
+
+.TP
+.BI "\-\-display " id
+Specify the display id to mirror.
+
+The list of possible display ids can be listed by "adb shell dumpsys display"
+(search "mDisplayId=" in the output).
+
+Default is 0.
+
+.TP
+.BI "\-\-encoder " name
+Use a specific MediaCodec encoder (must be a H.264 encoder).
+
+.TP
+.B \-\-force\-adb\-forward
+Do not attempt to use "adb reverse" to connect to the device.
+
+.TP
+.B \-\-forward\-all\-clicks
+By default, right-click triggers BACK (or POWER on) and middle-click triggers HOME. This option disables these shortcuts and forward the clicks to the device instead.
+
+.TP
+.B \-f, \-\-fullscreen
+Start in fullscreen.
+
+.TP
+.B \-h, \-\-help
+Print this help.
+
+.TP
+.B \-\-legacy\-paste
+Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
+
+This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
+
+.TP
+.BI "\-\-lock\-video\-orientation " value
+Lock video orientation to \fIvalue\fR. Possible values are -1 (unlocked), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees otation counterclockwise.
+
+Default is -1 (unlocked).
+
+.TP
+.BI "\-\-max\-fps " value
+Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
+
+.TP
+.BI "\-m, \-\-max\-size " value
+Limit both the width and height of the video to \fIvalue\fR. The other dimension is computed so that the device aspect\-ratio is preserved.
+
+Default is 0 (unlimited).
+
+.TP
+.B \-n, \-\-no\-control
+Disable device control (mirror the device in read\-only).
+
+.TP
+.B \-N, \-\-no\-display
+Do not display device (only when screen recording is enabled).
+
+.TP
+.B \-\-no\-key\-repeat
+Do not forward repeated key events when a key is held down.
+
+.TP
+.B \-\-no\-mipmaps
+If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
+
+.TP
+.BI "\-p, \-\-port " port[:port]
+Set the TCP port (range) used by the client to listen.
+
+Default is 27183:27199.
+
+.TP
+.B \-\-prefer\-text
+Inject alpha characters and space as text events instead of key events.
+
+This avoids issues when combining multiple keys to enter special characters,
+but breaks the expected behavior of alpha keys in games (typically WASD).
+
+.TP
+.BI "\-\-push\-target " path
+Set the target directory for pushing files to the device by drag & drop. It is passed as\-is to "adb push".
+
+Default is "/sdcard/".
+
+.TP
+.BI "\-r, \-\-record " file
+Record screen to
+.IR file .
+
+The format is determined by the
+.B \-\-record\-format
+option if set, or by the file extension (.mp4 or .mkv).
+
+.TP
+.BI "\-\-record\-format " format
+Force recording format (either mp4 or mkv).
+
+.TP
+.BI "\-\-render\-driver " name
+Request SDL to use the given render driver (this is just a hint).
+
+Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "metal" and "software".
+
+.UR https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER
+.UE
+
+.TP
+.B \-\-render\-expired\-frames
+By default, to minimize latency, scrcpy always renders the last available decoded frame, and drops any previous ones. This flag forces to render all frames, at a cost of a possible increased latency.
+
+.TP
+.BI "\-\-rotation " value
+Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
+
+.TP
+.BI "\-s, \-\-serial " number
+The device serial number. Mandatory only if several devices are connected to adb.
+
+.TP
+.BI "\-\-shortcut\-mod " key[+...]][,...]
+Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lsuper" and "rsuper".
+
+A shortcut can consist in several keys, separated by '+'. Several shortcuts can be specified, separated by ','.
+
+For example, to use either LCtrl+LAlt or LSuper for scrcpy shortcuts, pass "lctrl+lalt,lsuper".
+
+Default is "lalt,lsuper" (left-Alt or left-Super).
+
+.TP
+.B \-S, \-\-turn\-screen\-off
+Turn the device screen off immediately.
+
+.TP
+.B \-t, \-\-show\-touches
+Enable "show touches" on start, restore the initial value on exit.
+
+It only shows physical touches (not clicks from scrcpy).
+
+.TP
+.B \-v, \-\-version
+Print the version of scrcpy.
+
+.TP
+.BI "\-V, \-\-verbosity " value
+Set the log level ("debug", "info", "warn" or "error").
+
+Default is "info" for release builds, "debug" for debug builds.
+
+.TP
+.B \-w, \-\-stay-awake
+Keep the device on while scrcpy is running, when the device is plugged in.
+
+.TP
+.B \-\-window\-borderless
+Disable window decorations (display borderless window).
+
+.TP
+.BI "\-\-window\-title " text
+Set a custom window title.
+
+.TP
+.BI "\-\-window\-x " value
+Set the initial window horizontal position.
+
+Default is "auto".
+
+.TP
+.BI "\-\-window\-y " value
+Set the initial window vertical position.
+
+Default is "auto".
+
+.TP
+.BI "\-\-window\-width " value
+Set the initial window width.
+
+Default is 0 (automatic).
+
+.TP
+.BI "\-\-window\-height " value
+Set the initial window height.
+
+Default is 0 (automatic).
+
+.SH SHORTCUTS
+
+In the following list, MOD is the shortcut modifier. By default, it's (left)
+Alt or (left) Super, but it can be configured by \-\-shortcut-mod (see above).
+
+.TP
+.B MOD+f
+Switch fullscreen mode
+
+.TP
+.B MOD+Left
+Rotate display left
+
+.TP
+.B MOD+Right
+Rotate display right
+
+.TP
+.B MOD+g
+Resize window to 1:1 (pixel\-perfect)
+
+.TP
+.B MOD+w, Double\-click on black borders
+Resize window to remove black borders
+
+.TP
+.B MOD+h, Home, Middle\-click
+Click on HOME
+
+.TP
+.B MOD+b, MOD+Backspace, Right\-click (when screen is on)
+Click on BACK
+
+.TP
+.B MOD+s
+Click on APP_SWITCH
+
+.TP
+.B MOD+m
+Click on MENU
+
+.TP
+.B MOD+Up
+Click on VOLUME_UP
+
+.TP
+.B MOD+Down
+Click on VOLUME_DOWN
+
+.TP
+.B MOD+p
+Click on POWER (turn screen on/off)
+
+.TP
+.B Right\-click (when screen is off)
+Turn screen on
+
+.TP
+.B MOD+o
+Turn device screen off (keep mirroring)
+
+.TP
+.B MOD+Shift+o
+Turn device screen on
+
+.TP
+.B MOD+r
+Rotate device screen
+
+.TP
+.B MOD+n
+Expand notification panel
+
+.TP
+.B MOD+Shift+n
+Collapse notification panel
+
+.TP
+.B Mod+c
+Copy to clipboard (inject COPY keycode, Android >= 7 only)
+
+.TP
+.B Mod+x
+Cut to clipboard (inject CUT keycode, Android >= 7 only)
+
+.TP
+.B MOD+v
+Copy computer clipboard to device, then paste (inject PASTE keycode, Android >= 7 only)
+
+.TP
+.B MOD+Shift+v
+Inject computer clipboard text as a sequence of key events
+
+.TP
+.B MOD+i
+Enable/disable FPS counter (print frames/second in logs)
+
+.TP
+.B Ctrl+click-and-move
+Pinch-to-zoom from the center of the screen
+
+.TP
+.B Drag & drop APK file
+Install APK from computer
+
+
+.SH Environment variables
+
+.TP
+.B ADB
+Specify the path to adb.
+
+.TP
+.B SCRCPY_SERVER_PATH
+Specify the path to server binary.
+
+
+.SH AUTHORS
+.B scrcpy
+is written by Romain Vimont.
+
+This manual page was written by
+.MT mmyangfl@gmail.com
+Yangfl
+.ME
+for the Debian Project (and may be used by others).
+
+
+.SH "REPORTING BUGS"
+Report bugs to
+.UR https://github.com/Genymobile/scrcpy/issues
+.UE .
+
+.SH COPYRIGHT
+Copyright \(co 2018 Genymobile
+.UR https://www.genymobile.com
+Genymobile
+.UE
+
+Copyright \(co 2018\-2020
+.MT rom@rom1v.com
+Romain Vimont
+.ME
+
+Licensed under the Apache License, Version 2.0.
+
+.SH WWW
+.UR https://github.com/Genymobile/scrcpy
+.UE
