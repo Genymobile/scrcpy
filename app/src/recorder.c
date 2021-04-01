@@ -252,7 +252,13 @@ recorder_write(struct recorder *recorder, AVPacket *packet) {
     }
 
     recorder_rescale_packet(recorder, packet);
-    return av_write_frame(recorder->ctx, packet) >= 0;
+    int ret = av_write_frame(recorder->ctx, packet);
+    if (ret < 0) {
+        LOGE("Could not write frame: %d\n", ret);
+        return false;
+    }
+
+    return true;
 }
 
 static int
