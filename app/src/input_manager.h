@@ -24,6 +24,7 @@ struct input_manager {
     unsigned repeat;
 
     bool control;
+    bool forward_game_controllers;
     bool forward_key_repeat;
     bool prefer_text;
     bool forward_all_clicks;

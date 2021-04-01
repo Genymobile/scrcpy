@@ -61,6 +61,7 @@ input_manager_init(struct input_manager *im, struct controller *controller,
     im->repeat = 0;
 
     im->control = options->control;
+    im->forward_game_controllers = options->forward_game_controllers;
     im->forward_key_repeat = options->forward_key_repeat;
     im->prefer_text = options->prefer_text;
     im->forward_all_clicks = options->forward_all_clicks;
@@ -953,14 +954,14 @@ input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
             input_manager_process_touch(im, &event->tfinger);
             return true;
         case SDL_CONTROLLERAXISMOTION:
-            if (!im->control) {
+            if (!im->control || !im->forward_game_controllers) {
                 break;
             }
             input_manager_process_controller_axis(im, &event->caxis);
             break;
         case SDL_CONTROLLERBUTTONDOWN:
         case SDL_CONTROLLERBUTTONUP:
-            if (!im->control) {
+            if (!im->control || !im->forward_game_controllers) {
                 break;
             }
             input_manager_process_controller_button(im, &event->cbutton);
@@ -968,7 +969,7 @@ input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
         case SDL_CONTROLLERDEVICEADDED:
         // case SDL_CONTROLLERDEVICEREMAPPED:
         case SDL_CONTROLLERDEVICEREMOVED:
-            if (!im->control) {
+            if (!im->control || !im->forward_game_controllers) {
                 break;
             }
             input_manager_process_controller_device(im, &event->cdevice);

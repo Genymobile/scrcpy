@@ -112,6 +112,9 @@ scrcpy_print_usage(const char *arg0) {
         "        Do not display device (only when screen recording is\n"
         "        enabled).\n"
         "\n"
+        "    --no-game-controller\n"
+        "        Disable game controller support.\n"
+        "\n"
         "    --no-key-repeat\n"
         "        Do not forward repeated key events when a key is held down.\n"
         "\n"
@@ -719,6 +722,7 @@ guess_record_format(const char *filename) {
 #define OPT_V4L2_SINK              1027
 #define OPT_DISPLAY_BUFFER         1028
 #define OPT_V4L2_BUFFER            1029
+#define OPT_NO_GAME_CONTROLLER     1030
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -745,6 +749,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"max-size",               required_argument, NULL, 'm'},
         {"no-control",             no_argument,       NULL, 'n'},
         {"no-display",             no_argument,       NULL, 'N'},
+        {"no-game-controller",     no_argument,       NULL, OPT_NO_GAME_CONTROLLER},
         {"no-key-repeat",          no_argument,       NULL, OPT_NO_KEY_REPEAT},
         {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
         {"port",                   required_argument, NULL, 'p'},
@@ -919,6 +924,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_GAME_CONTROLLER:
+                opts->forward_game_controllers = false;
                 break;
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;
