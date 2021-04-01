@@ -33,6 +33,12 @@ git pull
 ./install_release.sh
 ```
 
+To uninstall:
+
+```bash
+sudo ninja -Cbuild-auto uninstall
+```
+
 
 ## Branches
 
@@ -295,11 +301,16 @@ After a successful build, you can install _scrcpy_ on the system:
 sudo ninja -Cx install    # without sudo on Windows
 ```
 
-This installs two files:
+This installs three files:
 
  - `/usr/local/bin/scrcpy`
  - `/usr/local/share/scrcpy/scrcpy-server`
-
-Just remove them to "uninstall" the application.
+ - `/usr/local/share/man/man1/scrcpy.1`
 
 You can then [run](README.md#run) _scrcpy_.
+
+### Uninstall
+
+```bash
+sudo ninja -Cx uninstall  # without sudo on Windows
+```
