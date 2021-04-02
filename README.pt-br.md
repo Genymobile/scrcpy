@@ -114,7 +114,7 @@ Você precisa do `adb`, acessível pelo seu `PATH`. Se você ainda não o tem:
 
 ```bash
 # Homebrew >= 2.6.0
-brew install --cask android-platform-tools
+brew install android-platform-tools
 
 # Homebrew < 2.6.0
 brew cask install android-platform-tools

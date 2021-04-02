@@ -115,7 +115,7 @@ brew install scrcpy
 
 ```bash
 # Homebrew >= 2.6.0
-brew install --cask android-platform-tools
+brew install android-platform-tools
 
 # Homebrew < 2.6.0
 brew cask install android-platform-tools

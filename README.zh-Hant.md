@@ -116,7 +116,7 @@ brew install scrcpy
 由於執行期間需要可以藉由 `PATH` 存取 `adb` 。如果還沒有安裝 `adb` 可以使用下列方式安裝:
 
 ```bash
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
 
 你也可以自己[編譯 _Scrcpy_][BUILD]。

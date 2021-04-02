@@ -87,7 +87,7 @@ brew install scrcpy
 `PATH` 로부터 접근 가능한 `adb` 가 필요합니다. 아직 설치하지 않았다면 다음을 따라 설치해야 합니다 :
 
 ```bash
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
 
 [어플을 직접 설치][BUILD] 할 수도 있습니다.
