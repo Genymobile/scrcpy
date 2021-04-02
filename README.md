@@ -127,11 +127,7 @@ brew install scrcpy
 You need `adb`, accessible from your `PATH`. If you don't have it yet:
 
 ```bash
-# Homebrew >= 2.6.0
-brew install --cask android-platform-tools
-
-# Homebrew < 2.6.0
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
 
 You can also [build the app manually][BUILD].
