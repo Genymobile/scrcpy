@@ -104,7 +104,7 @@ brew install scrcpy
 Anda membutuhkan `adb`, dapat diakses dari `PATH` Anda. Jika Anda belum memilikinya:
 
 ```bash
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
 
 Anda juga dapat [membangun aplikasi secara manual][BUILD].
