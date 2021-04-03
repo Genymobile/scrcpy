@@ -186,6 +186,12 @@ Enable "show touches" on start, restore the initial value on exit.
 It only shows physical touches (not clicks from scrcpy).
 
 .TP
+.BI "\-\-v4l2_sink " /dev/videoN
+Output to v4l2loopback device.
+
+It requires to lock the video orientation (see --lock-video-orientation).
+
+.TP
 .BI "\-V, \-\-verbosity " value
 Set the log level ("debug", "info", "warn" or "error").
 

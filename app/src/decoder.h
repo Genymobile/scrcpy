@@ -8,7 +8,7 @@
 #include <stdbool.h>
 #include <libavformat/avformat.h>
 
-#define DECODER_MAX_SINKS 1
+#define DECODER_MAX_SINKS 2
 
 struct decoder {
     struct sc_packet_sink packet_sink; // packet sink trait

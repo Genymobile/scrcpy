@@ -176,6 +176,13 @@ scrcpy_print_usage(const char *arg0) {
         "        on exit.\n"
         "        It only shows physical touches (not clicks from scrcpy).\n"
         "\n"
+#ifdef HAVE_V4L2
+        "    --v4l2_sink /dev/videoN\n"
+        "        Output to v4l2loopback device.\n"
+        "        It requires to lock the video orientation (see\n"
+        "        --lock-video-orientation).\n"
+        "\n"
+#endif
         "    -V, --verbosity value\n"
         "        Set the log level (debug, info, warn or error).\n"
 #ifndef NDEBUG
@@ -676,6 +683,7 @@ guess_record_format(const char *filename) {
 #define OPT_LEGACY_PASTE           1024
 #define OPT_ENCODER_NAME           1025
 #define OPT_POWER_OFF_ON_CLOSE     1026
+#define OPT_V4L2_SINK              1027
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -717,6 +725,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"show-touches",           no_argument,       NULL, 't'},
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
+#ifdef HAVE_V4L2
+        {"v4l2_sink",              required_argument, NULL, OPT_V4L2_SINK},
+#endif
         {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
         {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
@@ -901,16 +912,36 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case OPT_POWER_OFF_ON_CLOSE:
                 opts->power_off_on_close = true;
                 break;
+#ifdef HAVE_V4L2
+            case OPT_V4L2_SINK:
+                opts->v4l2_device = optarg;
+                break;
+#endif
             default:
                 // getopt prints the error message on stderr
                 return false;
         }
     }
 
+#ifdef HAVE_V4L2
+    if (!opts->display && !opts->record_filename && !opts->v4l2_device) {
+        LOGE("-N/--no-display requires either screen recording (-r/--record)"
+             " or sink to v4l2loopback device (--v4l2_sink)");
+        return false;
+    }
+
+    if (opts->v4l2_device && opts->lock_video_orientation
+                             == SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+        LOGI("Video orientation is locked for v4l2 sink. "
+             "See --lock-video-orientation.");
+        opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
+    }
+#else
     if (!opts->display && !opts->record_filename) {
         LOGE("-N/--no-display requires screen recording (-r/--record)");
         return false;
     }
+#endif
 
     int index = optind;
     if (index < argc) {
