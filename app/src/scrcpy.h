@@ -62,6 +62,7 @@ struct scrcpy_options {
     const char *render_driver;
     const char *codec_options;
     const char *encoder_name;
+    const char *v4l2_device;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     struct sc_port_range port_range;
@@ -103,6 +104,7 @@ struct scrcpy_options {
     .render_driver = NULL, \
     .codec_options = NULL, \
     .encoder_name = NULL, \
+    .v4l2_device = NULL, \
     .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = SC_RECORD_FORMAT_AUTO, \
     .port_range = { \

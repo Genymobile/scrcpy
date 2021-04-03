@@ -27,6 +27,9 @@
 #include "tiny_xpm.h"
 #include "util/log.h"
 #include "util/net.h"
+#ifdef HAVE_V4L2
+# include "v4l2_sink.h"
+#endif
 
 static struct server server;
 static struct screen screen;
@@ -34,6 +37,9 @@ static struct fps_counter fps_counter;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
+#ifdef HAVE_V4L2
+static struct sc_v4l2_sink v4l2_sink;
+#endif
 static struct controller controller;
 static struct file_handler file_handler;
 
@@ -247,6 +253,9 @@ scrcpy(const struct scrcpy_options *options) {
     bool fps_counter_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
+#ifdef HAVE_V4L2
+    bool v4l2_sink_initialized = false;
+#endif
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
@@ -295,7 +304,6 @@ scrcpy(const struct scrcpy_options *options) {
         goto end;
     }
 
-    struct decoder *dec = NULL;
     if (options->display) {
         if (!fps_counter_init(&fps_counter)) {
             goto end;
@@ -309,7 +317,14 @@ scrcpy(const struct scrcpy_options *options) {
             }
             file_handler_initialized = true;
         }
+    }
 
+    struct decoder *dec = NULL;
+    bool needs_decoder = options->display;
+#ifdef HAVE_V4L2
+    needs_decoder |= !!options->v4l2_device;
+#endif
+    if (needs_decoder) {
         decoder_init(&decoder);
         dec = &decoder;
     }
@@ -386,6 +401,18 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
+#ifdef HAVE_V4L2
+    if (options->v4l2_device) {
+        if (!sc_v4l2_sink_init(&v4l2_sink, options->v4l2_device, frame_size)) {
+            goto end;
+        }
+
+        decoder_add_sink(&decoder, &v4l2_sink.frame_sink);
+
+        v4l2_sink_initialized = true;
+    }
+#endif
+
     // now we consumed the header values, the socket receives the video stream
     // start the stream
     if (!stream_start(&stream)) {
@@ -425,6 +452,12 @@ end:
     if (stream_started) {
         stream_join(&stream);
     }
+
+#ifdef HAVE_V4L2
+    if (v4l2_sink_initialized) {
+        sc_v4l2_sink_destroy(&v4l2_sink);
+    }
+#endif
 
     // Destroy the screen only after the stream is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
