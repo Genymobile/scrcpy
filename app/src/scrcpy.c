@@ -26,6 +26,7 @@
 #include "stream.h"
 #include "tiny_xpm.h"
 #include "video_buffer.h"
+#include "v4l2sink.h"
 #include "util/log.h"
 #include "util/net.h"
 
@@ -38,6 +39,9 @@ static struct decoder decoder;
 static struct recorder recorder;
 static struct controller controller;
 static struct file_handler file_handler;
+#ifdef V4L2SINK
+static struct v4l2sink v4l2sink;
+#endif
 
 static struct input_manager input_manager = {
     .controller = &controller,
@@ -285,6 +289,12 @@ scrcpy(const struct scrcpy_options *options) {
     bool controller_started = false;
 
     bool record = !!options->record_filename;
+
+#ifdef V4L2SINK
+    bool v4l2sink_initialized = false;
+    bool v4l2 = !!options->v4l2sink_device;
+#endif
+
     struct server_params params = {
         .log_level = options->log_level,
         .crop = options->crop,
@@ -363,9 +373,22 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
+    struct v4l2sink *sink = NULL;
+#ifdef V4L2SINK
+    if (v4l2) {
+        if (!v4l2sink_init(&v4l2sink,
+                           options->v4l2sink_device,
+                           frame_size)) {
+            goto end;
+        }
+        sink = &v4l2sink;
+        v4l2sink_initialized = true;
+    }
+#endif
+
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    stream_init(&stream, server.video_socket, dec, rec, sink);
 
     if (options->display) {
         if (options->control) {
@@ -466,6 +489,12 @@ end:
     if (recorder_initialized) {
         recorder_destroy(&recorder);
     }
+
+#ifdef V4L2SINK
+    if (v4l2sink_initialized) {
+        v4l2sink_destroy(&v4l2sink);
+    }
+#endif
 
     if (file_handler_initialized) {
         file_handler_join(&file_handler);

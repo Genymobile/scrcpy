@@ -18,6 +18,7 @@ struct stream {
     sc_thread thread;
     struct decoder *decoder;
     struct recorder *recorder;
+    struct v4l2sink *v4l2sink;
     AVCodecContext *codec_ctx;
     AVCodecParserContext *parser;
     // successive packets may need to be concatenated, until a non-config
@@ -28,7 +29,7 @@ struct stream {
 
 void
 stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder);
+            struct decoder *decoder, struct recorder *recorder, struct v4l2sink *v4l2sink);
 
 bool
 stream_start(struct stream *stream);

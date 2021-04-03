@@ -9,6 +9,7 @@
 #include "decoder.h"
 #include "events.h"
 #include "recorder.h"
+#include "v4l2sink.h"
 #include "util/buffer_util.h"
 #include "util/log.h"
 
@@ -88,6 +89,17 @@ process_frame(struct stream *stream, AVPacket *packet) {
             return false;
         }
     }
+
+#ifdef V4L2SINK
+    if (stream->v4l2sink) {
+        packet->dts = packet->pts;
+
+        if (!v4l2sink_push(stream->v4l2sink, packet)) {
+            LOGE("Could not send packet to v4l2sink");
+            return false;
+        }
+    }
+#endif
 
     return true;
 }
@@ -210,6 +222,20 @@ run_stream(void *data) {
         }
     }
 
+#ifdef V4L2SINK
+    if (stream->v4l2sink) {
+        if (!v4l2sink_open(stream->v4l2sink, codec)) {
+            LOGE("Could not open v4l2sink");
+            goto finally_close_decoder;
+        }
+
+        if (!v4l2sink_start(stream->v4l2sink)) {
+            LOGE("Could not start v4l2sink");
+            goto finally_close_v4l2sink;
+        }
+    }
+#endif
+
     stream->parser = av_parser_init(AV_CODEC_ID_H264);
     if (!stream->parser) {
         LOGE("Could not initialize parser");
@@ -253,6 +279,16 @@ finally_close_recorder:
     if (stream->recorder) {
         recorder_close(stream->recorder);
     }
+#ifdef V4L2SINK
+finally_close_v4l2sink:
+    if (stream->v4l2sink) {
+        v4l2sink_stop(stream->v4l2sink);
+        LOGI("Finishing v4l2sink...");
+        v4l2sink_join(stream->v4l2sink);
+
+        v4l2sink_close(stream->v4l2sink);
+    }
+#endif
 finally_close_decoder:
     if (stream->decoder) {
         decoder_close(stream->decoder);
@@ -266,10 +302,11 @@ end:
 
 void
 stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder) {
+            struct decoder *decoder, struct recorder *recorder, struct v4l2sink *v4l2sink) {
     stream->socket = socket;
     stream->decoder = decoder,
     stream->recorder = recorder;
+    stream->v4l2sink = v4l2sink;
     stream->has_pending = false;
 }
 

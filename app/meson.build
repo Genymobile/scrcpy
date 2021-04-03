@@ -21,11 +21,14 @@ src = [
     'src/stream.c',
     'src/tiny_xpm.c',
     'src/video_buffer.c',
+    'src/v4l2sink.c',
     'src/util/net.c',
     'src/util/process.c',
     'src/util/str_util.c',
     'src/util/thread.c',
 ]
+
+conf = configuration_data()
 
 if host_machine.system() == 'windows'
     src += [ 'src/sys/win/process.c' ]
@@ -48,6 +51,11 @@ if not get_option('crossbuild_windows')
         dependency('libavutil'),
         dependency('sdl2'),
     ]
+
+    if host_machine.system() == 'linux'
+        dependencies += dependency('libavdevice')
+        conf.set('V4L2SINK', '1')
+    endif
 
 else
 
@@ -89,8 +97,6 @@ endif
 if host_machine.system() == 'windows'
     dependencies += cc.find_library('ws2_32')
 endif
-
-conf = configuration_data()
 
 foreach f : check_functions
   if cc.has_function(f)
