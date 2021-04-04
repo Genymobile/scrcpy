@@ -208,8 +208,8 @@ make it avaliable from the `PATH`:
 
 ```bash
 brew tap homebrew/cask-versions
-brew install adoptopenjdk/openjdk/adoptopenjdk8
-export JAVA_HOME="$(/usr/libexec/java_home --version 1.8)"
+brew install adoptopenjdk/openjdk/adoptopenjdk11
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.11)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
