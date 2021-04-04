@@ -269,10 +269,9 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     struct size window_size = get_initial_optimal_size(content_size,
                                                        params->window_width,
                                                        params->window_height);
-    uint32_t window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_RESIZABLE;
-#ifdef HIDPI_SUPPORT
-    window_flags |= SDL_WINDOW_ALLOW_HIGHDPI;
-#endif
+    uint32_t window_flags = SDL_WINDOW_HIDDEN
+                          | SDL_WINDOW_RESIZABLE
+                          | SDL_WINDOW_ALLOW_HIGHDPI;
     if (params->always_on_top) {
 #ifdef SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
