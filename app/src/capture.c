@@ -93,7 +93,7 @@ static bool in_frame_to_png(
     SWS_FAST_BILINEAR, 0, 0, 0);
 
   AVFrame * rgbFrame = av_frame_alloc();
-  LOGV("Image frame width: %d height: %d scaling to %d x %d", codecCtx->width, codecCtx->height, targetWidth, targetHeight);
+  LOGV("Image frame width: %d height: %d scaling to %d x %d", *inframe->linesize, inframe->height, targetWidth, targetHeight);
   rgbFrame->width = targetWidth;
   rgbFrame->height = targetHeight;
   rgbFrame->format = AV_PIX_FMT_RGB24;
