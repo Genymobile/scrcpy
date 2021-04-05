@@ -15,7 +15,7 @@
 
 static void
 print_version(void) {
-    fprintf(stderr, "scrcpy %s\n\n", SCRCPY_VERSION);
+    fprintf(stderr, "scrcpy %s (with Mobot extensions)\n\n", SCRCPY_VERSION);
 
     fprintf(stderr, "dependencies:\n");
     fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
