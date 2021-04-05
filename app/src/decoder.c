@@ -61,7 +61,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
 #else
     int got_picture;
     int len = avcodec_decode_video2(decoder->codec_ctx,
-                                    decoder->video_buffer->decoding_frame,
+                                    decoder->video_buffer->producer_frame,
                                     &got_picture,
                                     packet);
     if (len < 0) {
@@ -69,7 +69,7 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         return false;
     }
     if (got_picture) {
-        push_frame(decoder);
+        video_buffer_producer_offer_frame(decoder->video_buffer);
     }
 #endif
     return true;
