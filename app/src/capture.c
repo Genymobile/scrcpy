@@ -100,7 +100,10 @@ static bool in_frame_to_png(
   av_image_alloc(
     rgbFrame->data, rgbFrame->linesize, targetWidth, targetHeight, AV_PIX_FMT_RGB24, 1);
   sws_scale(
-    swCtx, inframe->data, inframe->linesize, 0,
+    swCtx,
+    // const_cast<const uint8_t * const*>(inframe->data)
+    (const uint8_t * const*)(inframe->data),
+    inframe->linesize, 0,
     inframe->height, rgbFrame->data, rgbFrame->linesize);
 
   LOGV("Scaling image: %llu", get_timestamp() - start);
