@@ -90,7 +90,11 @@ static bool in_frame_to_png(
     targetWidth,
     targetHeight,
     AV_PIX_FMT_RGB24,
-    SWS_FAST_BILINEAR, 0, 0, 0);
+    // NOTE(frankleonrose): These options offer better picture
+    // quality in case of scaling, according to https://stackoverflow.com/a/46169884
+    // SWS_BILINEAR | SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND,
+    SWS_FAST_BILINEAR,
+    0, 0, 0);
 
   AVFrame * rgbFrame = av_frame_alloc();
   LOGV("Image frame width: %d height: %d scaling to %d x %d", *inframe->linesize, inframe->height, targetWidth, targetHeight);
