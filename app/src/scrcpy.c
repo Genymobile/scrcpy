@@ -24,6 +24,7 @@
 #include "file_handler.h"
 #include "fps_counter.h"
 #include "input_manager.h"
+#include "capture.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
@@ -41,6 +42,7 @@ static struct video_buffer video_buffer;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
+static struct capture capture;
 static struct controller controller;
 static struct file_handler file_handler;
 
@@ -175,6 +177,9 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
             return EVENT_RESULT_STOPPED_BY_EOS;
+        case EVENT_SCREEN_CAPTURE_COMPLETE:
+            LOGD("Screen capture completed");
+            return EVENT_RESULT_STOPPED_BY_USER;
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
@@ -304,6 +309,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 
 bool
 scrcpy(const struct scrcpy_options *options) {
+    log_timestamp("scrcpy Started");
     if (!server_init(&server)) {
         return false;
     }
@@ -315,11 +321,13 @@ scrcpy(const struct scrcpy_options *options) {
     bool video_buffer_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
+    bool capture_initialized = false;
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
 
     bool record = !!options->record_filename;
+    bool captures = !!options->capture_filename;
     struct server_params params = {
         .log_level = options->log_level,
         .crop = options->crop,
@@ -336,17 +344,20 @@ scrcpy(const struct scrcpy_options *options) {
         .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
     };
+    log_timestamp("server_start");
     if (!server_start(&server, options->serial, &params)) {
         goto end;
     }
 
     server_started = true;
 
+    log_timestamp("sdl_init_and_configure");
     if (!sdl_init_and_configure(options->display, options->render_driver,
                                 options->disable_screensaver)) {
         goto end;
     }
 
+    log_timestamp("server_connect_to");
     if (!server_connect_to(&server)) {
         goto end;
     }
@@ -357,12 +368,14 @@ scrcpy(const struct scrcpy_options *options) {
     // screenrecord does not send frames when the screen content does not
     // change therefore, we transmit the screen size before the video stream,
     // to be able to init the window immediately
+    log_timestamp("device_read_info");
     if (!device_read_info(server.video_socket, device_name, &frame_size)) {
         goto end;
     }
 
     struct decoder *dec = NULL;
     if (options->display) {
+        log_timestamp("Display and fps_counter_init");
         if (!fps_counter_init(&fps_counter)) {
             goto end;
         }
@@ -398,9 +411,20 @@ scrcpy(const struct scrcpy_options *options) {
         recorder_initialized = true;
     }
 
+    struct capture *cap = NULL;
+    if (captures) {
+        if (!capture_init(&capture,
+                           options->capture_filename)) {
+            goto end;
+        }
+        cap = &capture;
+        capture_initialized = true;
+    }
+
+    log_timestamp("stream_init");
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    stream_init(&stream, server.video_socket, dec, rec, cap);
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
@@ -451,9 +475,12 @@ scrcpy(const struct scrcpy_options *options) {
 
     input_manager_init(&input_manager, options);
 
+    log_timestamp("Starting event_loop");
     ret = event_loop(options);
+    log_timestamp("Terminated event_loop");
     LOGD("quit...");
 
+    log_timestamp("screen_destroy");
     screen_destroy(&screen);
 
 end:
@@ -493,6 +520,9 @@ end:
         recorder_destroy(&recorder);
     }
 
+    if (capture_initialized) {
+        capture_destroy(&capture);
+    }
     if (file_handler_initialized) {
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);

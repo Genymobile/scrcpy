@@ -18,6 +18,7 @@ enum sc_record_format {
     SC_RECORD_FORMAT_AUTO,
     SC_RECORD_FORMAT_MP4,
     SC_RECORD_FORMAT_MKV,
+    SC_RECORD_FORMAT_H264,
 };
 
 #define SC_MAX_SHORTCUT_MODS 8
@@ -46,6 +47,7 @@ struct sc_port_range {
 struct scrcpy_options {
     const char *serial;
     const char *crop;
+    const char *capture_filename;
     const char *record_filename;
     const char *window_title;
     const char *push_target;
@@ -87,6 +89,7 @@ struct scrcpy_options {
 #define SCRCPY_OPTIONS_DEFAULT { \
     .serial = NULL, \
     .crop = NULL, \
+    .capture_filename = NULL, \
     .record_filename = NULL, \
     .window_title = NULL, \
     .push_target = NULL, \

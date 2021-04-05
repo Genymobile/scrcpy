@@ -120,6 +120,7 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     cmd[len + i] = NULL;
     enum process_result r = cmd_execute(cmd, &process);
     if (r != PROCESS_SUCCESS) {
+        LOGE("adb process execution returned an error.");
         show_adb_err_msg(r, cmd);
         return PROCESS_NONE;
     }

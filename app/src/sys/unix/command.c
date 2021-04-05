@@ -18,6 +18,8 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <sys/gmon.h>
+#include <sys/time.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -25,6 +27,21 @@
 #include <unistd.h>
 
 #include "util/log.h"
+
+uint64_t get_timestamp() {
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return tv.tv_sec*(uint64_t)1000000+tv.tv_usec;
+}
+
+static uint64_t StartTime = 0;
+void log_timestamp(const char *tag) {
+    uint64_t now = get_timestamp();
+    if (StartTime==0) {
+        StartTime = now;
+    }
+    LOGV("Timestamp: %llu ms %s", (now-StartTime) / 1000, tag);
+}
 
 bool
 cmd_search(const char *file) {
@@ -66,6 +83,8 @@ enum process_result
 cmd_execute(const char *const argv[], pid_t *pid) {
     int fd[2];
 
+    uint64_t start = get_timestamp();
+
     if (pipe(fd) == -1) {
         perror("pipe");
         return PROCESS_ERROR_GENERIC;
@@ -73,6 +92,7 @@ cmd_execute(const char *const argv[], pid_t *pid) {
 
     enum process_result ret = PROCESS_SUCCESS;
 
+    log_timestamp("Running command");
     *pid = fork();
     if (*pid == -1) {
         perror("fork");
@@ -90,6 +110,7 @@ cmd_execute(const char *const argv[], pid_t *pid) {
             ret = PROCESS_ERROR_GENERIC;
             goto end;
         }
+        LOGV("Command microseconds: %s %llu ms", argv[0], (get_timestamp()-start)/1000);
     } else if (*pid == 0) {
         // child close read side
         close(fd[0]);

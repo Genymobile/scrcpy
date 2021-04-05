@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
@@ -14,7 +15,7 @@
 
 static void
 print_version(void) {
-    fprintf(stderr, "scrcpy %s\n\n", SCRCPY_VERSION);
+    fprintf(stderr, "scrcpy %s (with Mobot extensions)\n\n", SCRCPY_VERSION);
 
     fprintf(stderr, "dependencies:\n");
     fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
@@ -28,6 +29,9 @@ print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
                                                LIBAVUTIL_VERSION_MINOR,
                                                LIBAVUTIL_VERSION_MICRO);
+    fprintf(stderr, " - libswscale %d.%d.%d\n", LIBSWSCALE_VERSION_MAJOR,
+                                               LIBSWSCALE_VERSION_MINOR,
+                                               LIBSWSCALE_VERSION_MICRO);
 }
 
 static SDL_LogPriority
@@ -56,6 +60,11 @@ main(int argc, char *argv[]) {
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);
 #endif
+
+#ifndef NDEBUG
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
+#endif
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
     struct scrcpy_cli_args args = {
         .opts = SCRCPY_OPTIONS_DEFAULT,

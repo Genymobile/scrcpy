@@ -107,6 +107,7 @@ recorder_destroy(struct recorder *recorder) {
 static const char *
 recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
+        case SC_RECORD_FORMAT_H264: return "h264";
         case SC_RECORD_FORMAT_MP4: return "mp4";
         case SC_RECORD_FORMAT_MKV: return "matroska";
         default: return NULL;

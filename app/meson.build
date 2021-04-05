@@ -1,5 +1,6 @@
 src = [
     'src/main.c',
+    'src/capture.c',
     'src/cli.c',
     'src/command.c',
     'src/control_msg.c',
@@ -31,6 +32,8 @@ if not get_option('crossbuild_windows')
         dependency('libavformat'),
         dependency('libavcodec'),
         dependency('libavutil'),
+        dependency('libswscale'),
+        dependency('libpng'),
         dependency('sdl2'),
     ]
 
@@ -167,7 +170,8 @@ if get_option('buildtype') == 'debug'
             'tests/test_queue.c',
         ]],
         ['test_strutil', [
-            'tests/test_strutil.c',
+            'tests/test_s
+            til.c',
             'src/util/str_util.c',
         ]],
     ]

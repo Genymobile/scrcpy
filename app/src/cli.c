@@ -622,6 +622,10 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
         *format = SC_RECORD_FORMAT_MKV;
         return true;
     }
+    if (!strcmp(optarg, "h264")) {
+        *format = SC_RECORD_FORMAT_H264;
+        return true;
+    }
     LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
     return false;
 }
@@ -704,6 +708,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"render-expired-frames",  no_argument,       NULL,
                                                   OPT_RENDER_EXPIRED_FRAMES},
         {"rotation",               required_argument, NULL, OPT_ROTATION},
+        {"screen-capture",        required_argument, NULL, 'C'},
         {"serial",                 required_argument, NULL, 's'},
         {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
         {"show-touches",           no_argument,       NULL, 't'},
@@ -726,13 +731,16 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvV:w",
+    while ((c = getopt_long(argc, argv, "b:cC:fF:hm:nNp:r:s:StTvV:w",
                             long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->bit_rate)) {
                     return false;
                 }
+                break;
+            case 'C':
+                opts->capture_filename = optarg;
                 break;
             case 'c':
                 LOGW("Deprecated option -c. Use --crop instead.");
@@ -892,8 +900,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         }
     }
 
-    if (!opts->display && !opts->record_filename) {
-        LOGE("-N/--no-display requires screen recording (-r/--record)");
+    if (!opts->display && !opts->record_filename && !opts->capture_filename) {
+        LOGE("-N/--no-display requires screen recording (-r/--record) or screen capture (-C/--screen-capture)");
         return false;
     }
 
