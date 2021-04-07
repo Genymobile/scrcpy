@@ -228,7 +228,7 @@ recorder_rescale_packet(struct recorder *recorder, AVPacket *packet) {
     av_packet_rescale_ts(packet, SCRCPY_TIME_BASE, ostream->time_base);
 }
 
-bool
+static bool
 recorder_write(struct recorder *recorder, AVPacket *packet) {
     if (!recorder->header_written) {
         if (packet->pts != AV_NOPTS_VALUE) {
