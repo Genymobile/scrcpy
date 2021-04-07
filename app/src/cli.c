@@ -210,7 +210,7 @@ scrcpy_print_usage(const char *arg0) {
         "        Default is 0 (automatic).\n"
         "\n"
         "    --window-height value\n"
-        "        Set the initial window width.\n"
+        "        Set the initial window height.\n"
         "        Default is 0 (automatic).\n"
         "\n"
         "Shortcuts:\n"
