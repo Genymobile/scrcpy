@@ -1,14 +1,9 @@
 #include "decoder.h"
 
 #include <libavformat/avformat.h>
-#include <libavutil/time.h>
-#include <SDL2/SDL_events.h>
-#include <unistd.h>
 
 #include "events.h"
-#include "recorder.h"
 #include "video_buffer.h"
-#include "util/buffer_util.h"
 #include "util/log.h"
 
 void
