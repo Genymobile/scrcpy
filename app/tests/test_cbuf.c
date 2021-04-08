@@ -65,7 +65,10 @@ static void test_cbuf_push_take(void) {
     assert(item == 35);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_cbuf_empty();
     test_cbuf_full();
     test_cbuf_push_take();

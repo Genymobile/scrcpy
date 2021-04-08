@@ -28,15 +28,18 @@ public final class ControlMessage {
     private Position position;
     private int hScroll;
     private int vScroll;
+    private boolean paste;
+    private int repeat;
 
     private ControlMessage() {
     }
 
-    public static ControlMessage createInjectKeycode(int action, int keycode, int metaState) {
+    public static ControlMessage createInjectKeycode(int action, int keycode, int repeat, int metaState) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_KEYCODE;
         msg.action = action;
         msg.keycode = keycode;
+        msg.repeat = repeat;
         msg.metaState = metaState;
         return msg;
     }
@@ -68,10 +71,11 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createSetClipboard(String text) {
+    public static ControlMessage createSetClipboard(String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
         msg.text = text;
+        msg.paste = paste;
         return msg;
     }
 
@@ -133,5 +137,13 @@ public final class ControlMessage {
 
     public int getVScroll() {
         return vScroll;
+    }
+
+    public boolean getPaste() {
+        return paste;
+    }
+
+    public int getRepeat() {
+        return repeat;
     }
 }

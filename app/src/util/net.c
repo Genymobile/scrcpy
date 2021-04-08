@@ -1,6 +1,7 @@
 #include "net.h"
 
 #include <stdio.h>
+#include <SDL2/SDL_platform.h>
 
 #include "config.h"
 #include "log.h"
@@ -114,4 +115,33 @@ net_send_all(socket_t socket, const void *buf, size_t len) {
 bool
 net_shutdown(socket_t socket, int how) {
     return !shutdown(socket, how);
+}
+
+bool
+net_init(void) {
+#ifdef __WINDOWS__
+    WSADATA wsa;
+    int res = WSAStartup(MAKEWORD(2, 2), &wsa) < 0;
+    if (res < 0) {
+        LOGC("WSAStartup failed with error %d", res);
+        return false;
+    }
+#endif
+    return true;
+}
+
+void
+net_cleanup(void) {
+#ifdef __WINDOWS__
+    WSACleanup();
+#endif
+}
+
+bool
+net_close(socket_t socket) {
+#ifdef __WINDOWS__
+    return !closesocket(socket);
+#else
+    return !close(socket);
+#endif
 }

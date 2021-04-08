@@ -189,7 +189,7 @@ The client uses 4 threads:
    recording,
  - the **controller** thread, sending _control messages_ to the server,
  - the **receiver** thread (managed by the controller), receiving _device
-   messages_ from the client.
+   messages_ from the server.
 
 In addition, another thread can be started if necessary to handle APK
 installation or file push requests (via drag&drop on the main window) or to
@@ -214,7 +214,7 @@ When a new decoded frame is available, the decoder _swaps_ the decoding and
 rendering frame (with proper synchronization). Thus, it immediatly starts
 to decode a new frame while the main thread renders the last one.
 
-If a [recorder] is present (i.e. `--record` is enabled), then its muxes the raw
+If a [recorder] is present (i.e. `--record` is enabled), then it muxes the raw
 H.264 packet to the output video file.
 
 [stream]: https://github.com/Genymobile/scrcpy/blob/ffe0417228fb78ab45b7ee4e202fc06fc8875bf3/app/src/stream.h
@@ -280,6 +280,15 @@ To debug it, enable the server debugger during configuration:
 meson x -Dserver_debugger=true
 # or, if x is already configured
 meson configure x -Dserver_debugger=true
+```
+
+If your device runs Android 8 or below, set the `server_debugger_method` to
+`old` in addition:
+
+```bash
+meson x -Dserver_debugger=true -Dserver_debugger_method=old
+# or, if x is already configured
+meson configure x -Dserver_debugger=true -Dserver_debugger_method=old
 ```
 
 Then recompile.

@@ -16,6 +16,7 @@ public final class Workarounds {
         // not instantiable
     }
 
+    @SuppressWarnings("deprecation")
     public static void prepareMainLooper() {
         // Some devices internally create a Handler when creating an input Surface, causing an exception:
         //   "Can't create handler inside thread that has not called Looper.prepare()"
@@ -28,7 +29,7 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    @SuppressLint("PrivateApi")
+    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     public static void fillAppInfo() {
         try {
             // ActivityThread activityThread = new ActivityThread();
@@ -73,7 +74,7 @@ public final class Workarounds {
             mInitialApplicationField.set(activityThread, app);
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
-            Ln.w("Could not fill app info: " + throwable.getMessage());
+            Ln.d("Could not fill app info: " + throwable.getMessage());
         }
     }
 }

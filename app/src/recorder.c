@@ -63,7 +63,7 @@ recorder_queue_clear(struct recorder_queue *queue) {
 bool
 recorder_init(struct recorder *recorder,
               const char *filename,
-              enum recorder_format format,
+              enum sc_record_format format,
               struct size declared_frame_size) {
     recorder->filename = SDL_strdup(filename);
     if (!recorder->filename) {
@@ -105,10 +105,11 @@ recorder_destroy(struct recorder *recorder) {
 }
 
 static const char *
-recorder_get_format_name(enum recorder_format format) {
+recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
-        case RECORDER_FORMAT_MP4: return "mp4";
-        case RECORDER_FORMAT_MKV: return "matroska";
+        case SC_RECORD_FORMAT_H264: return "h264";
+        case SC_RECORD_FORMAT_MP4: return "mp4";
+        case SC_RECORD_FORMAT_MKV: return "matroska";
         default: return NULL;
     }
 }
@@ -361,12 +362,14 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
 
     if (recorder->failed) {
         // reject any new packet (this will stop the stream)
+        mutex_unlock(recorder->mutex);
         return false;
     }
 
     struct record_packet *rec = record_packet_new(packet);
     if (!rec) {
         LOGC("Could not allocate record packet");
+        mutex_unlock(recorder->mutex);
         return false;
     }
 

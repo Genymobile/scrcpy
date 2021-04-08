@@ -1,8 +1,10 @@
 #include "scrcpy.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
@@ -13,7 +15,7 @@
 
 static void
 print_version(void) {
-    fprintf(stderr, "scrcpy %s\n\n", SCRCPY_VERSION);
+    fprintf(stderr, "scrcpy %s (with Mobot extensions)\n\n", SCRCPY_VERSION);
 
     fprintf(stderr, "dependencies:\n");
     fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
@@ -27,7 +29,28 @@ print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
                                                LIBAVUTIL_VERSION_MINOR,
                                                LIBAVUTIL_VERSION_MICRO);
+    fprintf(stderr, " - libswscale %d.%d.%d\n", LIBSWSCALE_VERSION_MAJOR,
+                                               LIBSWSCALE_VERSION_MINOR,
+                                               LIBSWSCALE_VERSION_MICRO);
 }
+
+static SDL_LogPriority
+convert_log_level_to_sdl(enum sc_log_level level) {
+    switch (level) {
+        case SC_LOG_LEVEL_DEBUG:
+            return SDL_LOG_PRIORITY_DEBUG;
+        case SC_LOG_LEVEL_INFO:
+            return SDL_LOG_PRIORITY_INFO;
+        case SC_LOG_LEVEL_WARN:
+            return SDL_LOG_PRIORITY_WARN;
+        case SC_LOG_LEVEL_ERROR:
+            return SDL_LOG_PRIORITY_ERROR;
+        default:
+            assert(!"unexpected log level");
+            return SDL_LOG_PRIORITY_INFO;
+    }
+}
+
 
 int
 main(int argc, char *argv[]) {
@@ -41,6 +64,7 @@ main(int argc, char *argv[]) {
 #ifndef NDEBUG
     SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 #endif
+    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_VERBOSE);
 
     struct scrcpy_cli_args args = {
         .opts = SCRCPY_OPTIONS_DEFAULT,
@@ -48,9 +72,16 @@ main(int argc, char *argv[]) {
         .version = false,
     };
 
+#ifndef NDEBUG
+    args.opts.log_level = SC_LOG_LEVEL_DEBUG;
+#endif
+
     if (!scrcpy_parse_args(&args, argc, argv)) {
         return 1;
     }
+
+    SDL_LogPriority sdl_log = convert_log_level_to_sdl(args.opts.log_level);
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
@@ -76,11 +107,5 @@ main(int argc, char *argv[]) {
 
     avformat_network_deinit(); // ignore failure
 
-#if defined (__WINDOWS__) && ! defined (WINDOWS_NOCONSOLE)
-    if (res != 0) {
-        fprintf(stderr, "Press any key to continue...\n");
-        getchar();
-    }
-#endif
     return res;
 }

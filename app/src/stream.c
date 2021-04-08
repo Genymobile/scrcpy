@@ -12,6 +12,7 @@
 #include "compat.h"
 #include "decoder.h"
 #include "events.h"
+#include "capture.h"
 #include "recorder.h"
 #include "util/buffer_util.h"
 #include "util/log.h"
@@ -59,6 +60,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
+    log_timestamp("Received packet via socket stream");
+
     return true;
 }
 
@@ -71,6 +74,10 @@ notify_stopped(void) {
 
 static bool
 process_config_packet(struct stream *stream, AVPacket *packet) {
+    if (stream->capture && !capture_push(stream->capture, packet)) {
+        LOGW("Could not send config packet to capture");
+        return true;  // We're Ok. Keep sending packets.
+    }
     if (stream->recorder && !recorder_push(stream->recorder, packet)) {
         LOGE("Could not send config packet to recorder");
         return false;
@@ -89,6 +96,15 @@ process_frame(struct stream *stream, AVPacket *packet) {
 
         if (!recorder_push(stream->recorder, packet)) {
             LOGE("Could not send packet to recorder");
+            return false;
+        }
+    }
+
+    if (stream->capture) {
+        packet->dts = packet->pts;
+
+        if (!capture_push(stream->capture, packet)) {
+            LOGE("Could not send packet to capture");
             return false;
         }
     }
@@ -214,10 +230,17 @@ run_stream(void *data) {
         }
     }
 
+    if (stream->capture) {
+        if (!capture_start(stream->capture)) {
+            LOGE("Could not start capture");
+            goto finally_stop_and_join_recorder;
+        }
+    }
+
     stream->parser = av_parser_init(AV_CODEC_ID_H264);
     if (!stream->parser) {
         LOGE("Could not initialize parser");
-        goto finally_stop_and_join_recorder;
+        goto finally_stop_and_join_capture;
     }
 
     // We must only pass complete frames to av_parser_parse2()!
@@ -247,6 +270,12 @@ run_stream(void *data) {
     }
 
     av_parser_close(stream->parser);
+finally_stop_and_join_capture:
+    if (stream->capture) {
+        capture_stop(stream->capture);
+        LOGI("Finishing capture...");
+        capture_join(stream->capture);
+    }
 finally_stop_and_join_recorder:
     if (stream->recorder) {
         recorder_stop(stream->recorder);
@@ -270,16 +299,18 @@ end:
 
 void
 stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder) {
+            struct decoder *decoder, struct recorder *recorder,
+            struct capture *capture) {
     stream->socket = socket;
     stream->decoder = decoder,
+    stream->capture = capture;
     stream->recorder = recorder;
     stream->has_pending = false;
 }
 
 bool
 stream_start(struct stream *stream) {
-    LOGD("Starting stream thread");
+    log_timestamp("Starting stream thread");
 
     stream->thread = SDL_CreateThread(run_stream, "stream", stream);
     if (!stream->thread) {

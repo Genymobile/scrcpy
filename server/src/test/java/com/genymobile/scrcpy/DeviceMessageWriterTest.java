@@ -19,7 +19,7 @@ public class DeviceMessageWriterTest {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(DeviceMessage.TYPE_CLIPBOARD);
-        dos.writeShort(data.length);
+        dos.writeInt(data.length);
         dos.write(data);
 
         byte[] expected = bos.toByteArray();

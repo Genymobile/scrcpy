@@ -1,5 +1,7 @@
 #include "command.h"
 
+#include <sys/stat.h>
+
 #include "config.h"
 #include "util/log.h"
 #include "util/str_util.h"
@@ -37,12 +39,7 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
         return PROCESS_ERROR_GENERIC;
     }
 
-#ifdef WINDOWS_NOCONSOLE
-    int flags = CREATE_NO_WINDOW;
-#else
-    int flags = 0;
-#endif
-    if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, flags, NULL, NULL, &si,
+    if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, 0, NULL, NULL, &si,
                         &pi)) {
         SDL_free(wide);
         *handle = NULL;
@@ -59,7 +56,7 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
 
 bool
 cmd_terminate(HANDLE handle) {
-    return TerminateProcess(handle, 1) && CloseHandle(handle);
+    return TerminateProcess(handle, 1);
 }
 
 bool
@@ -73,6 +70,7 @@ cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
     if (exit_code) {
         *exit_code = code;
     }
+    CloseHandle(handle);
     return !code;
 }
 
@@ -89,4 +87,23 @@ get_executable_path(void) {
     }
     buf[len] = '\0';
     return utf8_from_wide_char(buf);
+}
+
+bool
+is_regular_file(const char *path) {
+    wchar_t *wide_path = utf8_to_wide_char(path);
+    if (!wide_path) {
+        LOGC("Could not allocate wide char string");
+        return false;
+    }
+
+    struct _stat path_stat;
+    int r = _wstat(wide_path, &path_stat);
+    SDL_free(wide_path);
+
+    if (r) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }
