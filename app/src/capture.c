@@ -112,6 +112,9 @@ static bool in_frame_to_png(
 
   LOGV("Scaling image: %llu", get_timestamp() - start);
 
+  av_dict_set(&rgbFrame->metadata,
+              "Software", "scrcpy/" SCRCPY_VERSION, 0);
+
   AVCodec *outCodec = avcodec_find_encoder(AV_CODEC_ID_PNG);
   if (!outCodec) {
     LOGE("Failed to find PNG codec");
