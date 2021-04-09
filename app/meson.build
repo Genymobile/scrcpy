@@ -25,14 +25,29 @@ src = [
     'src/util/str_util.c'
 ]
 
+cc = meson.get_compiler('c')
+
 if not get_option('crossbuild_windows')
+
+    libdir = get_option('local_libav')
+    if libdir != ''
+        lib_avformat = cc.find_library('avformat', dirs : libdir)
+        lib_avcodec = cc.find_library('avcodec', dirs : libdir)
+        lib_avutil = cc.find_library('avutil', dirs : libdir)
+        lib_swscale = cc.find_library('swscale', dirs : libdir)
+    else
+        lib_avformat = dependency('avformat')
+        lib_avcodec = dependency('avcodec')
+        lib_avutil = dependency('avutil')
+        lib_swscale = dependency('swscale')
+    endif
 
     # native build
     dependencies = [
-        dependency('libavformat'),
-        dependency('libavcodec'),
-        dependency('libavutil'),
-        dependency('libswscale'),
+        lib_avformat,
+        lib_avcodec,
+        lib_avutil,
+        lib_swscale,
         dependency('libpng'),
         dependency('sdl2'),
     ]
@@ -75,8 +90,6 @@ else
     ]
 
 endif
-
-cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
     src += [ 'src/sys/win/command.c' ]
