@@ -11,8 +11,6 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-struct video_buffer;
-
 struct stream {
     socket_t socket;
     sc_thread thread;
