@@ -41,7 +41,6 @@ static struct file_handler file_handler;
 
 static struct input_manager input_manager = {
     .controller = &controller,
-    .video_buffer = &video_buffer,
     .fps_counter = &fps_counter,
     .screen = &screen,
     .repeat = 0,

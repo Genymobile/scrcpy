@@ -11,11 +11,9 @@
 #include "fps_counter.h"
 #include "scrcpy.h"
 #include "screen.h"
-#include "video_buffer.h"
 
 struct input_manager {
     struct controller *controller;
-    struct video_buffer *video_buffer;
     struct fps_counter *fps_counter;
     struct screen *screen;
 
