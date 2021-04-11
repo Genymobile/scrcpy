@@ -224,6 +224,9 @@ static bool
 screen_frame_sink_open(struct sc_frame_sink *sink) {
     struct screen *screen = DOWNCAST(sink);
     (void) screen;
+#ifndef NDEBUG
+    screen->open = true;
+#endif
 
     // nothing to do, the screen is already open on the main thread
     return true;
@@ -233,6 +236,9 @@ static void
 screen_frame_sink_close(struct sc_frame_sink *sink) {
     struct screen *screen = DOWNCAST(sink);
     (void) screen;
+#ifndef NDEBUG
+    screen->open = false;
+#endif
 
     // nothing to do, the screen lifecycle is not managed by the frame producer
 }
@@ -404,6 +410,10 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
 
     screen->frame_sink.ops = &ops;
 
+#ifndef NDEBUG
+    screen->open = false;
+#endif
+
     return true;
 }
 
@@ -414,6 +424,9 @@ screen_show_window(struct screen *screen) {
 
 void
 screen_destroy(struct screen *screen) {
+#ifndef NDEBUG
+    assert(!screen->open);
+#endif
     av_frame_free(&screen->frame);
     SDL_DestroyTexture(screen->texture);
     SDL_DestroyRenderer(screen->renderer);
