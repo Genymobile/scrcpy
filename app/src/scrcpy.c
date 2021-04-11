@@ -318,7 +318,7 @@ scrcpy(const struct scrcpy_options *options) {
             file_handler_initialized = true;
         }
 
-        decoder_init(&decoder, &video_buffer);
+        decoder_init(&decoder);
         dec = &decoder;
     }
 
@@ -381,6 +381,8 @@ scrcpy(const struct scrcpy_options *options) {
             goto end;
         }
         screen_initialized = true;
+
+        decoder_add_sink(&decoder, &screen.frame_sink);
 
         if (options->turn_screen_off) {
             struct control_msg msg;
