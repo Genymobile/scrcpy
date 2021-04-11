@@ -286,13 +286,6 @@ stream_start(struct stream *stream) {
 }
 
 void
-stream_stop(struct stream *stream) {
-    if (stream->decoder) {
-        decoder_interrupt(stream->decoder);
-    }
-}
-
-void
 stream_join(struct stream *stream) {
     sc_thread_join(&stream->thread, NULL);
 }

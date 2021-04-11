@@ -143,12 +143,6 @@ scrcpy_print_usage(const char *arg0) {
         "        \"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
         "        <https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>\n"
         "\n"
-        "    --render-expired-frames\n"
-        "        By default, to minimize latency, scrcpy always renders the\n"
-        "        last available decoded frame, and drops any previous ones.\n"
-        "        This flag forces to render all frames, at a cost of a\n"
-        "        possible increased latency.\n"
-        "\n"
         "    --rotation value\n"
         "        Set the initial display rotation.\n"
         "        Possibles values are 0, 1, 2 and 3. Each increment adds a 90\n"
@@ -816,7 +810,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->stay_awake = true;
                 break;
             case OPT_RENDER_EXPIRED_FRAMES:
-                opts->render_expired_frames = true;
+                LOGW("Option --render-expired-frames has been removed. This "
+                     "flag has been ignored.");
                 break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
