@@ -33,19 +33,6 @@ struct video_buffer {
     sc_mutex mutex;
 
     bool pending_frame_consumed;
-
-    const struct video_buffer_callbacks *cbs;
-    void *cbs_userdata;
-};
-
-struct video_buffer_callbacks {
-    // Called when a new frame can be consumed.
-    // This callback is mandatory (it must not be NULL).
-    void (*on_frame_available)(struct video_buffer *vb, void *userdata);
-
-    // Called when a pending frame has been overwritten by the producer.
-    // This callback is optional (it may be NULL).
-    void (*on_frame_skipped)(struct video_buffer *vb, void *userdata);
 };
 
 bool
@@ -54,13 +41,8 @@ video_buffer_init(struct video_buffer *vb);
 void
 video_buffer_destroy(struct video_buffer *vb);
 
-void
-video_buffer_set_consumer_callbacks(struct video_buffer *vb,
-                                    const struct video_buffer_callbacks *cbs,
-                                    void *cbs_userdata);
-
 bool
-video_buffer_push(struct video_buffer *vb, const AVFrame *frame);
+video_buffer_push(struct video_buffer *vb, const AVFrame *frame, bool *skipped);
 
 void
 video_buffer_consume(struct video_buffer *vb, AVFrame *dst);
