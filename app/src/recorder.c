@@ -5,6 +5,9 @@
 
 #include "util/log.h"
 
+/** Downcast packet_sink to recorder */
+#define DOWNCAST(SINK) container_of(SINK, struct recorder, packet_sink)
+
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *
@@ -312,6 +315,24 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
     return true;
 }
 
+static bool
+recorder_packet_sink_open(struct sc_packet_sink *sink, const AVCodec *codec) {
+    struct recorder *recorder = DOWNCAST(sink);
+    return recorder_open(recorder, codec);
+}
+
+static void
+recorder_packet_sink_close(struct sc_packet_sink *sink) {
+    struct recorder *recorder = DOWNCAST(sink);
+    recorder_close(recorder);
+}
+
+static bool
+recorder_packet_sink_push(struct sc_packet_sink *sink, const AVPacket *packet) {
+    struct recorder *recorder = DOWNCAST(sink);
+    return recorder_push(recorder, packet);
+}
+
 bool
 recorder_init(struct recorder *recorder,
               const char *filename,
@@ -345,6 +366,14 @@ recorder_init(struct recorder *recorder,
     recorder->declared_frame_size = declared_frame_size;
     recorder->header_written = false;
     recorder->previous = NULL;
+
+    static const struct sc_packet_sink_ops ops = {
+        .open = recorder_packet_sink_open,
+        .close = recorder_packet_sink_close,
+        .push = recorder_packet_sink_push,
+    };
+
+    recorder->packet_sink.ops = &ops;
 
     return true;
 }
