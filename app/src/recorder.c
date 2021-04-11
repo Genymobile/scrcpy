@@ -216,7 +216,7 @@ run_recorder(void *data) {
     return 0;
 }
 
-bool
+static bool
 recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const char *format_name = recorder_get_format_name(recorder->format);
     assert(format_name);
@@ -277,7 +277,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     return true;
 }
 
-void
+static void
 recorder_close(struct recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
     recorder->stopped = true;
@@ -290,7 +290,7 @@ recorder_close(struct recorder *recorder) {
     avformat_free_context(recorder->ctx);
 }
 
-bool
+static bool
 recorder_push(struct recorder *recorder, const AVPacket *packet) {
     sc_mutex_lock(&recorder->mutex);
     assert(!recorder->stopped);
