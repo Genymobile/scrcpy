@@ -25,14 +25,12 @@
 #include "server.h"
 #include "stream.h"
 #include "tiny_xpm.h"
-#include "video_buffer.h"
 #include "util/log.h"
 #include "util/net.h"
 
 static struct server server;
 static struct screen screen;
 static struct fps_counter fps_counter;
-static struct video_buffer video_buffer;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
@@ -247,7 +245,6 @@ scrcpy(const struct scrcpy_options *options) {
 
     bool server_started = false;
     bool fps_counter_initialized = false;
-    bool video_buffer_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
     bool stream_started = false;
@@ -304,11 +301,6 @@ scrcpy(const struct scrcpy_options *options) {
             goto end;
         }
         fps_counter_initialized = true;
-
-        if (!video_buffer_init(&video_buffer)) {
-            goto end;
-        }
-        video_buffer_initialized = true;
 
         if (options->control) {
             if (!file_handler_init(&file_handler, server.serial,
@@ -376,8 +368,7 @@ scrcpy(const struct scrcpy_options *options) {
             .fullscreen = options->fullscreen,
         };
 
-        if (!screen_init(&screen, &video_buffer, &fps_counter,
-                         &screen_params)) {
+        if (!screen_init(&screen, &fps_counter, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
@@ -451,10 +442,6 @@ end:
     if (file_handler_initialized) {
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);
-    }
-
-    if (video_buffer_initialized) {
-        video_buffer_destroy(&video_buffer);
     }
 
     if (fps_counter_initialized) {

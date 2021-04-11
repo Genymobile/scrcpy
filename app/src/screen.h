@@ -10,13 +10,12 @@
 #include "coords.h"
 #include "opengl.h"
 #include "trait/frame_sink.h"
-
-struct video_buffer;
+#include "video_buffer.h"
 
 struct screen {
     struct sc_frame_sink frame_sink; // frame sink trait
 
-    struct video_buffer *vb;
+    struct video_buffer vb;
     struct fps_counter *fps_counter;
 
     SDL_Window *window;
@@ -63,8 +62,7 @@ struct screen_params {
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init(struct screen *screen, struct video_buffer *vb,
-            struct fps_counter *fps_counter,
+screen_init(struct screen *screen, struct fps_counter *fps_counter,
             const struct screen_params *params);
 
 // destroy window, renderer and texture (if any)
