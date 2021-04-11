@@ -141,19 +141,11 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
         return false;
     }
 
-#ifdef SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     ostream->codecpar->codec_id = input_codec->id;
     ostream->codecpar->format = AV_PIX_FMT_YUV420P;
     ostream->codecpar->width = recorder->declared_frame_size.width;
     ostream->codecpar->height = recorder->declared_frame_size.height;
-#else
-    ostream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    ostream->codec->codec_id = input_codec->id;
-    ostream->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-    ostream->codec->width = recorder->declared_frame_size.width;
-    ostream->codec->height = recorder->declared_frame_size.height;
-#endif
 
     int ret = avio_open(&recorder->ctx->pb, recorder->filename,
                         AVIO_FLAG_WRITE);
@@ -188,13 +180,8 @@ recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
     // copy the first packet to the extra data
     memcpy(extradata, packet->data, packet->size);
 
-#ifdef SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
     ostream->codecpar->extradata = extradata;
     ostream->codecpar->extradata_size = packet->size;
-#else
-    ostream->codec->extradata = extradata;
-    ostream->codec->extradata_size = packet->size;
-#endif
 
     int ret = avformat_write_header(recorder->ctx, NULL);
     if (ret < 0) {
