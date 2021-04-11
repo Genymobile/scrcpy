@@ -261,14 +261,12 @@ screen_frame_sink_close(struct sc_frame_sink *sink) {
 static bool
 screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct screen *screen = DOWNCAST(sink);
-    return video_buffer_push(screen->vb, frame);
+    return video_buffer_push(&screen->vb, frame);
 }
 
 bool
-screen_init(struct screen *screen, struct video_buffer *vb,
-            struct fps_counter *fps_counter,
+screen_init(struct screen *screen, struct fps_counter *fps_counter,
             const struct screen_params *params) {
-    screen->vb = vb;
     screen->fps_counter = fps_counter;
 
     screen->resize_pending = false;
@@ -276,11 +274,17 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     screen->fullscreen = false;
     screen->maximized = false;
 
+    bool ok = video_buffer_init(&screen->vb);
+    if (!ok) {
+        LOGE("Could not initialize video buffer");
+        return false;
+    }
+
     static const struct video_buffer_callbacks cbs = {
         .on_frame_available = on_frame_available,
         .on_frame_skipped = on_frame_skipped,
     };
-    video_buffer_set_consumer_callbacks(vb, &cbs, screen);
+    video_buffer_set_consumer_callbacks(&screen->vb, &cbs, screen);
 
     screen->frame_size = params->frame_size;
     screen->rotation = params->rotation;
@@ -326,6 +330,7 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     if (!screen->renderer) {
         LOGC("Could not create renderer: %s", SDL_GetError());
         SDL_DestroyWindow(screen->window);
+        video_buffer_destroy(&screen->vb);
         return false;
     }
 
@@ -377,6 +382,7 @@ screen_init(struct screen *screen, struct video_buffer *vb,
         LOGC("Could not create texture: %s", SDL_GetError());
         SDL_DestroyRenderer(screen->renderer);
         SDL_DestroyWindow(screen->window);
+        video_buffer_destroy(&screen->vb);
         return false;
     }
 
@@ -386,6 +392,7 @@ screen_init(struct screen *screen, struct video_buffer *vb,
         SDL_DestroyTexture(screen->texture);
         SDL_DestroyRenderer(screen->renderer);
         SDL_DestroyWindow(screen->window);
+        video_buffer_destroy(&screen->vb);
         return false;
     }
 
@@ -418,6 +425,7 @@ screen_destroy(struct screen *screen) {
     SDL_DestroyTexture(screen->texture);
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
+    video_buffer_destroy(&screen->vb);
 }
 
 static void
@@ -523,7 +531,7 @@ update_texture(struct screen *screen, const AVFrame *frame) {
 static bool
 screen_update_frame(struct screen *screen) {
     av_frame_unref(screen->frame);
-    video_buffer_consume(screen->vb, screen->frame);
+    video_buffer_consume(&screen->vb, screen->frame);
     AVFrame *frame = screen->frame;
 
     fps_counter_add_rendered_frame(screen->fps_counter);
