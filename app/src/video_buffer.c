@@ -7,7 +7,7 @@
 #include "util/log.h"
 
 bool
-video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
+video_buffer_init(struct video_buffer *vb) {
     vb->producer_frame = av_frame_alloc();
     if (!vb->producer_frame) {
         goto error_0;
@@ -26,18 +26,6 @@ video_buffer_init(struct video_buffer *vb, bool wait_consumer) {
     bool ok = sc_mutex_init(&vb->mutex);
     if (!ok) {
         goto error_3;
-    }
-
-    vb->wait_consumer = wait_consumer;
-    if (wait_consumer) {
-        ok = sc_cond_init(&vb->pending_frame_consumed_cond);
-        if (!ok) {
-            sc_mutex_destroy(&vb->mutex);
-            goto error_2;
-        }
-        // interrupted is not used if wait_consumer is disabled since offering
-        // a frame will never block
-        vb->interrupted = false;
     }
 
     // there is initially no frame, so consider it has already been consumed
@@ -61,9 +49,6 @@ error_0:
 
 void
 video_buffer_destroy(struct video_buffer *vb) {
-    if (vb->wait_consumer) {
-        sc_cond_destroy(&vb->pending_frame_consumed_cond);
-    }
     sc_mutex_destroy(&vb->mutex);
     av_frame_free(&vb->consumer_frame);
     av_frame_free(&vb->pending_frame);
@@ -93,12 +78,6 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
     assert(vb->cbs);
 
     sc_mutex_lock(&vb->mutex);
-    if (vb->wait_consumer) {
-        // wait for the current (expired) frame to be consumed
-        while (!vb->pending_frame_consumed && !vb->interrupted) {
-            sc_cond_wait(&vb->pending_frame_consumed_cond, &vb->mutex);
-        }
-    }
 
     av_frame_unref(vb->pending_frame);
     swap_frames(&vb->producer_frame, &vb->pending_frame);
@@ -125,23 +104,8 @@ video_buffer_consumer_take_frame(struct video_buffer *vb) {
     swap_frames(&vb->consumer_frame, &vb->pending_frame);
     av_frame_unref(vb->pending_frame);
 
-    if (vb->wait_consumer) {
-        // unblock video_buffer_offer_decoded_frame()
-        sc_cond_signal(&vb->pending_frame_consumed_cond);
-    }
     sc_mutex_unlock(&vb->mutex);
 
     // consumer_frame is only written from this thread, no need to lock
     return vb->consumer_frame;
-}
-
-void
-video_buffer_interrupt(struct video_buffer *vb) {
-    if (vb->wait_consumer) {
-        sc_mutex_lock(&vb->mutex);
-        vb->interrupted = true;
-        sc_mutex_unlock(&vb->mutex);
-        // wake up blocking wait
-        sc_cond_signal(&vb->pending_frame_consumed_cond);
-    }
 }

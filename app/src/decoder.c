@@ -69,8 +69,3 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
 #endif
     return true;
 }
-
-void
-decoder_interrupt(struct decoder *decoder) {
-    video_buffer_interrupt(decoder->video_buffer);
-}

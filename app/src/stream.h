@@ -32,9 +32,6 @@ bool
 stream_start(struct stream *stream);
 
 void
-stream_stop(struct stream *stream);
-
-void
 stream_join(struct stream *stream);
 
 #endif
