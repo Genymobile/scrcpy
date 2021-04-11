@@ -305,7 +305,7 @@ scrcpy(const struct scrcpy_options *options) {
         }
         fps_counter_initialized = true;
 
-        if (!video_buffer_init(&video_buffer, options->render_expired_frames)) {
+        if (!video_buffer_init(&video_buffer)) {
             goto end;
         }
         video_buffer_initialized = true;
@@ -398,11 +398,8 @@ scrcpy(const struct scrcpy_options *options) {
     LOGD("quit...");
 
 end:
-    // stop stream and controller so that they don't continue once their socket
-    // is shutdown
-    if (stream_started) {
-        stream_stop(&stream);
-    }
+    // The stream is not stopped explicitly, because it will stop by itself on
+    // end-of-stream
     if (controller_started) {
         controller_stop(&controller);
     }

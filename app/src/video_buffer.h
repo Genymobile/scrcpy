@@ -34,10 +34,7 @@ struct video_buffer {
     AVFrame *consumer_frame;
 
     sc_mutex mutex;
-    bool wait_consumer; // never overwrite a pending frame if it is not consumed
-    bool interrupted;
 
-    sc_cond pending_frame_consumed_cond;
     bool pending_frame_consumed;
 
     const struct video_buffer_callbacks *cbs;
@@ -56,7 +53,7 @@ struct video_buffer_callbacks {
 };
 
 bool
-video_buffer_init(struct video_buffer *vb, bool wait_consumer);
+video_buffer_init(struct video_buffer *vb);
 
 void
 video_buffer_destroy(struct video_buffer *vb);
@@ -74,9 +71,5 @@ video_buffer_producer_offer_frame(struct video_buffer *vb);
 // the frame is valid until the next call to this function
 const AVFrame *
 video_buffer_consumer_take_frame(struct video_buffer *vb);
-
-// wake up and avoid any blocking call
-void
-video_buffer_interrupt(struct video_buffer *vb);
 
 #endif
