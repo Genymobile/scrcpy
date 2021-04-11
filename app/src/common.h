@@ -8,4 +8,7 @@
 #define MIN(X,Y) (X) < (Y) ? (X) : (Y)
 #define MAX(X,Y) (X) > (Y) ? (X) : (Y)
 
+#define container_of(ptr, type, member) \
+    ((type *) (((char *) (ptr)) - offsetof(type, member)))
+
 #endif
