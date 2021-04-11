@@ -49,13 +49,4 @@ recorder_init(struct recorder *recorder, const char *filename,
 void
 recorder_destroy(struct recorder *recorder);
 
-bool
-recorder_open(struct recorder *recorder, const AVCodec *input_codec);
-
-void
-recorder_close(struct recorder *recorder);
-
-bool
-recorder_push(struct recorder *recorder, const AVPacket *packet);
-
 #endif

@@ -336,7 +336,15 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket, dec, rec);
+    stream_init(&stream, server.video_socket);
+
+    if (dec) {
+        stream_add_sink(&stream, &dec->packet_sink);
+    }
+
+    if (rec) {
+        stream_add_sink(&stream, &rec->packet_sink);
+    }
 
     if (options->display) {
         if (options->control) {
