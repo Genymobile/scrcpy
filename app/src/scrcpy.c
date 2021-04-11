@@ -282,6 +282,7 @@ scrcpy(const struct scrcpy_options *options) {
     bool stream_started = false;
     bool controller_initialized = false;
     bool controller_started = false;
+    bool screen_initialized = false;
 
     bool record = !!options->record_filename;
     struct server_params params = {
@@ -399,6 +400,7 @@ scrcpy(const struct scrcpy_options *options) {
                          &screen_params)) {
             goto end;
         }
+        screen_initialized = true;
 
         if (options->turn_screen_off) {
             struct control_msg msg;
@@ -427,9 +429,11 @@ scrcpy(const struct scrcpy_options *options) {
     ret = event_loop(options);
     LOGD("quit...");
 
-    screen_destroy(&screen);
-
 end:
+    if (screen_initialized) {
+        screen_destroy(&screen);
+    }
+
     // stop stream and controller so that they don't continue once their socket
     // is shutdown
     if (stream_started) {
