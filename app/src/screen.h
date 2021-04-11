@@ -36,6 +36,8 @@ struct screen {
     bool fullscreen;
     bool maximized;
     bool mipmaps;
+
+    AVFrame *frame;
 };
 
 struct screen_params {
