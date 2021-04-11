@@ -8,7 +8,6 @@
 # define _DARWIN_C_SOURCE
 #endif
 
-#include <libavcodec/version.h>
 #include <libavformat/version.h>
 #include <SDL2/SDL_version.h>
 
@@ -31,15 +30,6 @@
 # define SCRCPY_LAVF_HAS_NEW_MUXER_ITERATOR_API
 #else
 # define SCRCPY_LAVF_REQUIRES_REGISTER_ALL
-#endif
-
-// In ffmpeg/doc/APIchanges:
-// 2016-04-21 - 7fc329e - lavc 57.37.100 - avcodec.h
-//   Add a new audio/video encoding and decoding API with decoupled input
-//   and output -- avcodec_send_packet(), avcodec_receive_frame(),
-//   avcodec_send_frame() and avcodec_receive_packet().
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-# define SCRCPY_LAVF_HAS_NEW_ENCODING_DECODING_API
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 5)
