@@ -430,10 +430,6 @@ scrcpy(const struct scrcpy_options *options) {
     LOGD("quit...");
 
 end:
-    if (screen_initialized) {
-        screen_destroy(&screen);
-    }
-
     // stop stream and controller so that they don't continue once their socket
     // is shutdown
     if (stream_started) {
@@ -459,6 +455,13 @@ end:
     if (stream_started) {
         stream_join(&stream);
     }
+
+    // Destroy the screen only after the stream is guaranteed to be finished,
+    // because otherwise the screen could receive new frames after destruction
+    if (screen_initialized) {
+        screen_destroy(&screen);
+    }
+
     if (controller_started) {
         controller_join(&controller);
     }
