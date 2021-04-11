@@ -171,25 +171,8 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
 void
 recorder_close(struct recorder *recorder) {
-    if (recorder->header_written) {
-        int ret = av_write_trailer(recorder->ctx);
-        if (ret < 0) {
-            LOGE("Failed to write trailer to %s", recorder->filename);
-            recorder->failed = true;
-        }
-    } else {
-        // the recorded file is empty
-        recorder->failed = true;
-    }
     avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
-
-    if (recorder->failed) {
-        LOGE("Recording failed to %s", recorder->filename);
-    } else {
-        const char *format_name = recorder_get_format_name(recorder->format);
-        LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
-    }
 }
 
 static bool
@@ -317,7 +300,26 @@ run_recorder(void *data) {
             sc_mutex_unlock(&recorder->mutex);
             break;
         }
+    }
 
+    if (!recorder->failed) {
+        if (recorder->header_written) {
+            int ret = av_write_trailer(recorder->ctx);
+            if (ret < 0) {
+                LOGE("Failed to write trailer to %s", recorder->filename);
+                recorder->failed = true;
+            }
+        } else {
+            // the recorded file is empty
+            recorder->failed = true;
+        }
+    }
+
+    if (recorder->failed) {
+        LOGE("Recording failed to %s", recorder->filename);
+    } else {
+        const char *format_name = recorder_get_format_name(recorder->format);
+        LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
     }
 
     LOGD("Recorder thread ended");
