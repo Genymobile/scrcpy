@@ -6,11 +6,6 @@
 #include "video_buffer.h"
 #include "util/log.h"
 
-void
-decoder_init(struct decoder *decoder, struct video_buffer *vb) {
-    decoder->video_buffer = vb;
-}
-
 bool
 decoder_open(struct decoder *decoder, const AVCodec *codec) {
     decoder->codec_ctx = avcodec_alloc_context3(codec);
@@ -62,4 +57,9 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         return false;
     }
     return true;
+}
+
+void
+decoder_init(struct decoder *decoder, struct video_buffer *vb) {
+    decoder->video_buffer = vb;
 }
