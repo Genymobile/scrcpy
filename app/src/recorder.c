@@ -259,6 +259,16 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
         return false;
     }
 
+    LOGD("Starting recorder thread");
+    bool ok = sc_thread_create(&recorder->thread, run_recorder, "recorder",
+                               recorder);
+    if (!ok) {
+        LOGC("Could not start recorder thread");
+        avio_close(recorder->ctx->pb);
+        avformat_free_context(recorder->ctx);
+        return false;
+    }
+
     LOGI("Recording started to %s file: %s", format_name, recorder->filename);
 
     return true;
@@ -266,35 +276,15 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
 void
 recorder_close(struct recorder *recorder) {
-    avio_close(recorder->ctx->pb);
-    avformat_free_context(recorder->ctx);
-}
-
-bool
-recorder_start(struct recorder *recorder) {
-    LOGD("Starting recorder thread");
-
-    bool ok = sc_thread_create(&recorder->thread, run_recorder, "recorder",
-                               recorder);
-    if (!ok) {
-        LOGC("Could not start recorder thread");
-        return false;
-    }
-
-    return true;
-}
-
-void
-recorder_stop(struct recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
     recorder->stopped = true;
     sc_cond_signal(&recorder->queue_cond);
     sc_mutex_unlock(&recorder->mutex);
-}
 
-void
-recorder_join(struct recorder *recorder) {
     sc_thread_join(&recorder->thread, NULL);
+
+    avio_close(recorder->ctx->pb);
+    avformat_free_context(recorder->ctx);
 }
 
 bool
