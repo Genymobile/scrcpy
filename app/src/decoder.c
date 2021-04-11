@@ -41,8 +41,14 @@ decoder_close(struct decoder *decoder) {
     avcodec_free_context(&decoder->codec_ctx);
 }
 
-bool
+static bool
 decoder_push(struct decoder *decoder, const AVPacket *packet) {
+    bool is_config = packet->pts == AV_NOPTS_VALUE;
+    if (is_config) {
+        // nothing to do
+        return true;
+    }
+
     int ret;
     if ((ret = avcodec_send_packet(decoder->codec_ctx, packet)) < 0) {
         LOGE("Could not send video packet: %d", ret);
