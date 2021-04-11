@@ -8,14 +8,19 @@
 #include <libavformat/avformat.h>
 #include <SDL2/SDL_atomic.h>
 
+#include "trait/packet_sink.h"
 #include "util/net.h"
 #include "util/thread.h"
+
+#define STREAM_MAX_SINKS 2
 
 struct stream {
     socket_t socket;
     sc_thread thread;
-    struct decoder *decoder;
-    struct recorder *recorder;
+
+    struct sc_packet_sink *sinks[STREAM_MAX_SINKS];
+    unsigned sink_count;
+
     AVCodecContext *codec_ctx;
     AVCodecParserContext *parser;
     // successive packets may need to be concatenated, until a non-config
@@ -25,8 +30,10 @@ struct stream {
 };
 
 void
-stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder);
+stream_init(struct stream *stream, socket_t socket);
+
+void
+stream_add_sink(struct stream *stream, struct sc_packet_sink *sink);
 
 bool
 stream_start(struct stream *stream);
