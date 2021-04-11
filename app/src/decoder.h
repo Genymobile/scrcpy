@@ -26,7 +26,4 @@ decoder_close(struct decoder *decoder);
 bool
 decoder_push(struct decoder *decoder, const AVPacket *packet);
 
-void
-decoder_interrupt(struct decoder *decoder);
-
 #endif
