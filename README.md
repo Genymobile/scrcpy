@@ -491,18 +491,6 @@ scrcpy -Sw
 ```
 
 
-#### Render expired frames
-
-By default, to minimize latency, _scrcpy_ always renders the last decoded frame
-available, and drops any previous one.
-
-To force the rendering of all frames (at a cost of a possible increased
-latency), use:
-
-```bash
-scrcpy --render-expired-frames
-```
-
 #### Show touches
 
 For presentations, it may be useful to show physical touches (on the physical
