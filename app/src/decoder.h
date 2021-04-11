@@ -8,24 +8,22 @@
 #include <stdbool.h>
 #include <libavformat/avformat.h>
 
-struct video_buffer;
+#define DECODER_MAX_SINKS 1
 
 struct decoder {
     struct sc_packet_sink packet_sink; // packet sink trait
 
-    struct video_buffer *video_buffer;
+    struct sc_frame_sink *sinks[DECODER_MAX_SINKS];
+    unsigned sink_count;
 
     AVCodecContext *codec_ctx;
     AVFrame *frame;
 };
 
 void
-decoder_init(struct decoder *decoder, struct video_buffer *vb);
-
-bool
-decoder_open(struct decoder *decoder, const AVCodec *codec);
+decoder_init(struct decoder *decoder);
 
 void
-decoder_close(struct decoder *decoder);
+decoder_add_sink(struct decoder *decoder, struct sc_frame_sink *sink);
 
 #endif
