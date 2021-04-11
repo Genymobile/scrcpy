@@ -12,26 +12,23 @@
 typedef struct AVFrame AVFrame;
 
 /**
- * There are 3 frames in memory:
- *  - one frame is held by the producer (producer_frame)
- *  - one frame is held by the consumer (consumer_frame)
- *  - one frame is shared between the producer and the consumer (pending_frame)
+ * A video buffer holds 1 pending frame, which is the last frame received from
+ * the producer (typically, the decoder).
  *
- * The producer generates a frame into the producer_frame (it may takes time).
+ * If a pending frame has not been consumed when the producer pushes a new
+ * frame, then it is lost. The intent is to always provide access to the very
+ * last frame to minimize latency.
  *
- * Once the frame is produced, it calls video_buffer_producer_offer_frame(),
- * which swaps the producer and pending frames.
- *
- * When the consumer is notified that a new frame is available, it calls
- * video_buffer_consumer_take_frame() to retrieve it, which swaps the pending
- * and consumer frames. The frame is valid until the next call, without
- * blocking the producer.
+ * The producer and the consumer typically do not live in the same thread.
+ * That's the reason why the callback on_frame_available() does not provide the
+ * frame as parameter: the consumer might post an event to its own thread to
+ * retrieve the pending frame from there, and that frame may have changed since
+ * the callback if producer pushed a new one in between.
  */
 
 struct video_buffer {
-    AVFrame *producer_frame;
     AVFrame *pending_frame;
-    AVFrame *consumer_frame;
+    AVFrame *tmp_frame; // To preserve the pending frame on error
 
     sc_mutex mutex;
 
@@ -42,12 +39,11 @@ struct video_buffer {
 };
 
 struct video_buffer_callbacks {
-    // Called when a new frame can be consumed by
-    // video_buffer_consumer_take_frame(vb)
+    // Called when a new frame can be consumed.
     // This callback is mandatory (it must not be NULL).
     void (*on_frame_available)(struct video_buffer *vb, void *userdata);
 
-    // Called when a pending frame has been overwritten by the producer
+    // Called when a pending frame has been overwritten by the producer.
     // This callback is optional (it may be NULL).
     void (*on_frame_skipped)(struct video_buffer *vb, void *userdata);
 };
@@ -63,13 +59,10 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
                                     const struct video_buffer_callbacks *cbs,
                                     void *cbs_userdata);
 
-// set the producer frame as ready for consuming
-void
-video_buffer_producer_offer_frame(struct video_buffer *vb);
+bool
+video_buffer_push(struct video_buffer *vb, const AVFrame *frame);
 
-// mark the consumer frame as consumed and return it
-// the frame is valid until the next call to this function
-const AVFrame *
-video_buffer_consumer_take_frame(struct video_buffer *vb);
+void
+video_buffer_consume(struct video_buffer *vb, AVFrame *dst);
 
 #endif

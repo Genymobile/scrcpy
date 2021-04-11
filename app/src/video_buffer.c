@@ -8,24 +8,22 @@
 
 bool
 video_buffer_init(struct video_buffer *vb) {
-    vb->producer_frame = av_frame_alloc();
-    if (!vb->producer_frame) {
-        goto error_0;
-    }
-
     vb->pending_frame = av_frame_alloc();
     if (!vb->pending_frame) {
-        goto error_1;
+        return false;
     }
 
-    vb->consumer_frame = av_frame_alloc();
-    if (!vb->consumer_frame) {
-        goto error_2;
+    vb->tmp_frame = av_frame_alloc();
+    if (!vb->tmp_frame) {
+        av_frame_free(&vb->pending_frame);
+        return false;
     }
 
     bool ok = sc_mutex_init(&vb->mutex);
     if (!ok) {
-        goto error_3;
+        av_frame_free(&vb->pending_frame);
+        av_frame_free(&vb->tmp_frame);
+        return false;
     }
 
     // there is initially no frame, so consider it has already been consumed
@@ -36,23 +34,13 @@ video_buffer_init(struct video_buffer *vb) {
     vb->cbs = NULL;
 
     return true;
-
-error_3:
-    av_frame_free(&vb->consumer_frame);
-error_2:
-    av_frame_free(&vb->pending_frame);
-error_1:
-    av_frame_free(&vb->producer_frame);
-error_0:
-    return false;
 }
 
 void
 video_buffer_destroy(struct video_buffer *vb) {
     sc_mutex_destroy(&vb->mutex);
-    av_frame_free(&vb->consumer_frame);
     av_frame_free(&vb->pending_frame);
-    av_frame_free(&vb->producer_frame);
+    av_frame_free(&vb->tmp_frame);
 }
 
 static inline void
@@ -73,14 +61,24 @@ video_buffer_set_consumer_callbacks(struct video_buffer *vb,
     vb->cbs_userdata = cbs_userdata;
 }
 
-void
-video_buffer_producer_offer_frame(struct video_buffer *vb) {
+bool
+video_buffer_push(struct video_buffer *vb, const AVFrame *frame) {
     assert(vb->cbs);
 
     sc_mutex_lock(&vb->mutex);
 
-    av_frame_unref(vb->pending_frame);
-    swap_frames(&vb->producer_frame, &vb->pending_frame);
+    // Use a temporary frame to preserve pending_frame in case of error.
+    // tmp_frame is an empty frame, no need to call av_frame_unref() beforehand.
+    int r = av_frame_ref(vb->tmp_frame, frame);
+    if (r) {
+        LOGE("Could not ref frame: %d", r);
+        return false;
+    }
+
+    // Now that av_frame_ref() succeeded, we can replace the previous
+    // pending_frame
+    swap_frames(&vb->pending_frame, &vb->tmp_frame);
+    av_frame_unref(vb->tmp_frame);
 
     bool skipped = !vb->pending_frame_consumed;
     vb->pending_frame_consumed = false;
@@ -93,19 +91,19 @@ video_buffer_producer_offer_frame(struct video_buffer *vb) {
     } else {
         vb->cbs->on_frame_available(vb, vb->cbs_userdata);
     }
+
+    return true;
 }
 
-const AVFrame *
-video_buffer_consumer_take_frame(struct video_buffer *vb) {
+void
+video_buffer_consume(struct video_buffer *vb, AVFrame *dst) {
     sc_mutex_lock(&vb->mutex);
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
 
-    swap_frames(&vb->consumer_frame, &vb->pending_frame);
-    av_frame_unref(vb->pending_frame);
+    av_frame_move_ref(dst, vb->pending_frame);
+    // av_frame_move_ref() resets its source frame, so no need to call
+    // av_frame_unref()
 
     sc_mutex_unlock(&vb->mutex);
-
-    // consumer_frame is only written from this thread, no need to lock
-    return vb->consumer_frame;
 }
