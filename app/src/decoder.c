@@ -36,9 +36,6 @@ decoder_close(struct decoder *decoder) {
 
 bool
 decoder_push(struct decoder *decoder, const AVPacket *packet) {
-// the new decoding/encoding API has been introduced by:
-// <http://git.videolan.org/?p=ffmpeg.git;a=commitdiff;h=7fc329e2dd6226dfecaa4a1d7adf353bf2773726>
-#ifdef SCRCPY_LAVF_HAS_NEW_ENCODING_DECODING_API
     int ret;
     if ((ret = avcodec_send_packet(decoder->codec_ctx, packet)) < 0) {
         LOGE("Could not send video packet: %d", ret);
@@ -53,19 +50,5 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         LOGE("Could not receive video frame: %d", ret);
         return false;
     }
-#else
-    int got_picture;
-    int len = avcodec_decode_video2(decoder->codec_ctx,
-                                    decoder->video_buffer->producer_frame,
-                                    &got_picture,
-                                    packet);
-    if (len < 0) {
-        LOGE("Could not decode video packet: %d", len);
-        return false;
-    }
-    if (got_picture) {
-        video_buffer_producer_offer_frame(decoder->video_buffer);
-    }
-#endif
     return true;
 }
