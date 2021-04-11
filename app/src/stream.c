@@ -203,17 +203,12 @@ run_stream(void *data) {
             LOGE("Could not open recorder");
             goto finally_close_decoder;
         }
-
-        if (!recorder_start(stream->recorder)) {
-            LOGE("Could not start recorder");
-            goto finally_close_recorder;
-        }
     }
 
     stream->parser = av_parser_init(AV_CODEC_ID_H264);
     if (!stream->parser) {
         LOGE("Could not initialize parser");
-        goto finally_stop_and_join_recorder;
+        goto finally_close_recorder;
     }
 
     // We must only pass complete frames to av_parser_parse2()!
@@ -243,12 +238,6 @@ run_stream(void *data) {
     }
 
     av_parser_close(stream->parser);
-finally_stop_and_join_recorder:
-    if (stream->recorder) {
-        recorder_stop(stream->recorder);
-        LOGI("Finishing recording...");
-        recorder_join(stream->recorder);
-    }
 finally_close_recorder:
     if (stream->recorder) {
         recorder_close(stream->recorder);
