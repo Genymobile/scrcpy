@@ -13,6 +13,8 @@
 
 #define DISPLAY_MARGINS 96
 
+#define DOWNCAST(SINK) container_of(SINK, struct screen, frame_sink)
+
 static inline struct size
 get_rotated_size(struct size size, int rotation) {
     struct size rotated_size;
@@ -239,6 +241,29 @@ create_texture(struct screen *screen) {
     return texture;
 }
 
+static bool
+screen_frame_sink_open(struct sc_frame_sink *sink) {
+    struct screen *screen = DOWNCAST(sink);
+    (void) screen;
+
+    // nothing to do, the screen is already open on the main thread
+    return true;
+}
+
+static void
+screen_frame_sink_close(struct sc_frame_sink *sink) {
+    struct screen *screen = DOWNCAST(sink);
+    (void) screen;
+
+    // nothing to do, the screen lifecycle is not managed by the frame producer
+}
+
+static bool
+screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
+    struct screen *screen = DOWNCAST(sink);
+    return video_buffer_push(screen->vb, frame);
+}
+
 bool
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter,
@@ -370,6 +395,14 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     SDL_SetWindowSize(screen->window, window_size.width, window_size.height);
 
     screen_update_content_rect(screen);
+
+    static const struct sc_frame_sink_ops ops = {
+        .open = screen_frame_sink_open,
+        .close = screen_frame_sink_close,
+        .push = screen_frame_sink_push,
+    };
+
+    screen->frame_sink.ops = &ops;
 
     return true;
 }
