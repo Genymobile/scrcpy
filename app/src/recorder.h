@@ -8,6 +8,7 @@
 
 #include "coords.h"
 #include "scrcpy.h"
+#include "trait/packet_sink.h"
 #include "util/queue.h"
 #include "util/thread.h"
 
@@ -19,6 +20,8 @@ struct record_packet {
 struct recorder_queue QUEUE(struct record_packet);
 
 struct recorder {
+    struct sc_packet_sink packet_sink; // packet sink trait
+
     char *filename;
     enum sc_record_format format;
     AVFormatContext *ctx;
