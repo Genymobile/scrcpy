@@ -193,27 +193,6 @@ screen_update_content_rect(struct screen *screen) {
     }
 }
 
-static void
-on_frame_available(struct video_buffer *vb, void *userdata) {
-    (void) vb;
-    (void) userdata;
-
-    static SDL_Event new_frame_event = {
-        .type = EVENT_NEW_FRAME,
-    };
-
-    // Post the event on the UI thread
-    SDL_PushEvent(&new_frame_event);
-}
-
-static void
-on_frame_skipped(struct video_buffer *vb, void *userdata) {
-    (void) vb;
-
-    struct screen *screen = userdata;
-    fps_counter_add_skipped_frame(screen->fps_counter);
-}
-
 static inline SDL_Texture *
 create_texture(struct screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
@@ -284,7 +263,27 @@ screen_frame_sink_close(struct sc_frame_sink *sink) {
 static bool
 screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct screen *screen = DOWNCAST(sink);
-    return video_buffer_push(&screen->vb, frame);
+
+    bool previous_frame_skipped;
+    bool ok = video_buffer_push(&screen->vb, frame, &previous_frame_skipped);
+    if (!ok) {
+        return false;
+    }
+
+    if (previous_frame_skipped) {
+        fps_counter_add_skipped_frame(screen->fps_counter);
+        // The EVENT_NEW_FRAME triggered for the previous frame will consume
+        // this new frame instead
+    } else {
+        static SDL_Event new_frame_event = {
+            .type = EVENT_NEW_FRAME,
+        };
+
+        // Post the event on the UI thread
+        SDL_PushEvent(&new_frame_event);
+    }
+
+    return true;
 }
 
 bool
@@ -302,12 +301,6 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
         LOGE("Could not initialize video buffer");
         return false;
     }
-
-    static const struct video_buffer_callbacks cbs = {
-        .on_frame_available = on_frame_available,
-        .on_frame_skipped = on_frame_skipped,
-    };
-    video_buffer_set_consumer_callbacks(&screen->vb, &cbs, screen);
 
     screen->frame_size = params->frame_size;
     screen->rotation = params->rotation;
