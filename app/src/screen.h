@@ -15,6 +15,10 @@
 struct screen {
     struct sc_frame_sink frame_sink; // frame sink trait
 
+#ifndef NDEBUG
+    bool open; // track the open/close state to assert correct behavior
+#endif
+
     struct video_buffer vb;
     struct fps_counter *fps_counter;
 
