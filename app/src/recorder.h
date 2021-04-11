@@ -28,7 +28,7 @@ struct recorder {
     sc_thread thread;
     sc_mutex mutex;
     sc_cond queue_cond;
-    bool stopped; // set on recorder_stop() by the stream reader
+    bool stopped; // set on recorder_close()
     bool failed; // set on packet write failure
     struct recorder_queue queue;
 
@@ -51,15 +51,6 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec);
 
 void
 recorder_close(struct recorder *recorder);
-
-bool
-recorder_start(struct recorder *recorder);
-
-void
-recorder_stop(struct recorder *recorder);
-
-void
-recorder_join(struct recorder *recorder);
 
 bool
 recorder_push(struct recorder *recorder, const AVPacket *packet);
