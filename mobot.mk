@@ -7,6 +7,9 @@
 #  sudo snap install scrcpy (for server .jar)
 # On Raspberry Pi it may be necessary to install
 #  sudo apt-get install ninja-build meson libudev1 libsdl2-dev
+# On macOS, if for some reason you have libiconv via Mac Ports, deactivate it
+# before building
+#  sudo port deactivate libiconv
 
 .DEFAULT_GOAL := scrcpy
 
@@ -14,12 +17,22 @@ AVDIR:=build-libav
 AVLIBDIR:=$(AVDIR)/lib
 AVLIBS:=$(AVLIBDIR)/libavformat.a $(AVLIBDIR)/libavcodec.a $(AVLIBDIR)/libavutil.a $(AVLIBDIR)/libswscale.a
 
+OS := $(shell uname -s)
+ifeq ($(OS),Darwin)
+	MAC_LDFLAGS :=  -Wl,-framework -Wl,CoreVideo \
+					-Wl,-framework -Wl,CoreMedia \
+					-Wl,-framework -Wl,Foundation \
+					-Wl,-framework -Wl,VideoToolbox \
+					-Wl,-liconv
+endif
+
 build-ffmpeg:
 	git clone https://github.com/team-mobot/FFmpeg.git build-ffmpeg
 
 $(AVLIBS): build-ffmpeg
 	# Build Mobot version of FFmpeg and install in subdir libav
 	cd build-ffmpeg && \
+	git pull && \
 	git checkout release/4.3 && \
 	./configure --prefix="../build-libav" \
 				--pkg-config-flags="--static" \
@@ -36,7 +49,7 @@ $(AVLIBS): build-ffmpeg
 	make install-libs install-headers
 
 build-app: $(AVLIBS)
-	LDFLAGS="-Wl,-lm -Wl,-lpthread" \
+	LDFLAGS="-Wl,-lm -Wl,-lpthread $(MAC_LDFLAGS)" \
 		meson build-app --buildtype release --strip -Db_lto=true \
 		-Dlocal_libav=$(AVDIR) \
 		-Dcompile_server=false \
