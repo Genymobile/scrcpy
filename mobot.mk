@@ -35,7 +35,6 @@ build-app: $(AVLIBS)
 		meson build-app --buildtype release --strip -Db_lto=true \
 		-Dlocal_libav=$(AVDIR) \
 		-Dcompile_server=false \
-		-Dportable=true \
 		|| (ret=$$?; rm -rf $@ && exit $$ret)
 
 scrcpy: build-app
