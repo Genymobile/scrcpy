@@ -283,6 +283,13 @@ screen_init_rendering(struct screen *screen, const char *window_title,
     const char *renderer_name = r ? NULL : renderer_info.name;
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
 
+    // NOTE(frankleonrose): Despite setting flags on window construction,
+    // version 1.17 of scrcpy on macOS was showing the title bar when
+    // --window-borderless flag was used. Explicitly setting border
+    // property here solved the problem.
+    LOGI("Borderless: %s", window_borderless ? "Yes" : "No");
+    SDL_SetWindowBordered(screen->window, !window_borderless);
+
     // starts with "opengl"
     screen->use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (screen->use_opengl) {
