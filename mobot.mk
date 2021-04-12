@@ -14,7 +14,7 @@ build-ffmpeg:
 $(AVLIBS): build-ffmpeg
 	# Build Mobot version of FFmpeg and install in subdir libav
 	cd build-ffmpeg && \
-	git checkout encode-png-metadata && \
+	git checkout release/4.3 && \
 	./configure --prefix="../build-libav" \
 				--pkg-config-flags="--static" \
 				--enable-gpl --enable-nonfree \
