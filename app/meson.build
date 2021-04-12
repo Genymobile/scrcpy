@@ -29,25 +29,34 @@ cc = meson.get_compiler('c')
 
 if not get_option('crossbuild_windows')
 
-    libdir = get_option('local_libav')
-    if libdir != ''
-        lib_avformat = cc.find_library('avformat', dirs : libdir)
-        lib_avcodec = cc.find_library('avcodec', dirs : libdir)
-        lib_avutil = cc.find_library('avutil', dirs : libdir)
-        lib_swscale = cc.find_library('swscale', dirs : libdir)
+    avdir = get_option('local_libav')
+    if avdir != ''
+        message('Using local libav at ' + avdir)
+        libdir = meson.current_source_dir() + '/../' + avdir + '/lib'
+        incdir = '../' + avdir + '/include'
+        ffmpeg = declare_dependency(
+            dependencies: [
+                cc.find_library('avformat', dirs : libdir),
+                cc.find_library('avcodec', dirs : libdir),
+                cc.find_library('avutil', dirs : libdir),
+                cc.find_library('swscale', dirs : libdir)
+            ],
+            include_directories: include_directories(incdir)
+        )
     else
-        lib_avformat = dependency('avformat')
-        lib_avcodec = dependency('avcodec')
-        lib_avutil = dependency('avutil')
-        lib_swscale = dependency('swscale')
+        ffmpeg = declare_dependency(
+            dependencies: [
+                dependency('avformat'),
+                dependency('avcodec'),
+                dependency('avutil'),
+                dependency('swscale')
+            ]
+        )
     endif
 
     # native build
     dependencies = [
-        lib_avformat,
-        lib_avcodec,
-        lib_avutil,
-        lib_swscale,
+        ffmpeg,
         dependency('libpng'),
         dependency('sdl2'),
     ]
