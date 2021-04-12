@@ -25,6 +25,11 @@ $(AVLIBS): build-ffmpeg
 				--pkg-config-flags="--static" \
 				--enable-gpl --enable-nonfree \
 				--disable-bsfs --disable-filters \
+				--disable-indevs --disable-outdevs \
+				--disable-protocols --enable-protocol=file \
+				--disable-muxers --enable-muxer=h264 \
+				--disable-demuxers --enable-demuxer=h264 \
+				--disable-parsers --enable-parser=h264,png \
 				--disable-encoders --enable-encoder=png \
 				--disable-decoders --enable-decoder=h264 \
 				--enable-libx264 && \
