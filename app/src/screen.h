@@ -73,6 +73,13 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
 void
 screen_destroy(struct screen *screen);
 
+// hide the window
+//
+// It is used to hide the window immediately on closing without waiting for
+// screen_destroy()
+void
+screen_hide_window(struct screen *screen);
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
