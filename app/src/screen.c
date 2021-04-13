@@ -454,6 +454,11 @@ screen_show_window(struct screen *screen) {
 }
 
 void
+screen_hide_window(struct screen *screen) {
+    SDL_HideWindow(screen->window);
+}
+
+void
 screen_destroy(struct screen *screen) {
 #ifndef NDEBUG
     assert(!screen->open);
