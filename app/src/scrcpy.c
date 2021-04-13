@@ -167,7 +167,7 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
                 action = ACTION_PUSH_FILE;
             }
             file_handler_request(&file_handler, action, file);
-            break;
+            goto end;
         }
     }
 
