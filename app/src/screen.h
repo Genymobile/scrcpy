@@ -60,10 +60,6 @@ screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter,
             const struct screen_params *params);
 
-// show the window
-void
-screen_show_window(struct screen *screen);
-
 // destroy window, renderer and texture (if any)
 void
 screen_destroy(struct screen *screen);

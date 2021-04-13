@@ -365,7 +365,7 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     return true;
 }
 
-void
+static void
 screen_show_window(struct screen *screen) {
     SDL_ShowWindow(screen->window);
 }
