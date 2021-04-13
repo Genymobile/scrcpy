@@ -128,30 +128,6 @@ sdl_init_and_configure(bool display, const char *render_driver,
     return true;
 }
 
-
-#if defined(__APPLE__) || defined(__WINDOWS__)
-# define CONTINUOUS_RESIZING_WORKAROUND
-#endif
-
-#ifdef CONTINUOUS_RESIZING_WORKAROUND
-// On Windows and MacOS, resizing blocks the event loop, so resizing events are
-// not triggered. As a workaround, handle them in an event handler.
-//
-// <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
-// <https://stackoverflow.com/a/40693139/1987178>
-static int
-event_watcher(void *data, SDL_Event *event) {
-    (void) data;
-    if (event->type == SDL_WINDOWEVENT
-            && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // In practice, it seems to always be called from the same thread in
-        // that specific case. Anyway, it's just a workaround.
-        screen_render(&screen, true);
-    }
-    return 0;
-}
-#endif
-
 static bool
 is_apk(const char *file) {
     const char *ext = strrchr(file, '.');
@@ -209,11 +185,6 @@ end:
 
 static bool
 event_loop(const struct scrcpy_options *options) {
-#ifdef CONTINUOUS_RESIZING_WORKAROUND
-    if (options->display) {
-        SDL_AddEventWatch(event_watcher, NULL);
-    }
-#endif
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         enum event_result result = handle_event(&event, options);

@@ -239,6 +239,29 @@ create_texture(struct screen *screen) {
     return texture;
 }
 
+#if defined(__APPLE__) || defined(__WINDOWS__)
+# define CONTINUOUS_RESIZING_WORKAROUND
+#endif
+
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+// On Windows and MacOS, resizing blocks the event loop, so resizing events are
+// not triggered. As a workaround, handle them in an event handler.
+//
+// <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
+// <https://stackoverflow.com/a/40693139/1987178>
+static int
+event_watcher(void *data, SDL_Event *event) {
+    struct screen *screen = data;
+    if (event->type == SDL_WINDOWEVENT
+            && event->window.event == SDL_WINDOWEVENT_RESIZED) {
+        // In practice, it seems to always be called from the same thread in
+        // that specific case. Anyway, it's just a workaround.
+        screen_render(screen, true);
+    }
+    return 0;
+}
+#endif
+
 bool
 screen_init(struct screen *screen, struct video_buffer *vb,
             struct fps_counter *fps_counter,
@@ -365,6 +388,10 @@ screen_init(struct screen *screen, struct video_buffer *vb,
     if (params->fullscreen) {
         screen_switch_fullscreen(screen);
     }
+
+#ifdef CONTINUOUS_RESIZING_WORKAROUND
+    SDL_AddEventWatch(event_watcher, screen);
+#endif
 
     return true;
 }
