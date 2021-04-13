@@ -52,6 +52,8 @@ struct screen_params {
 
     uint8_t rotation;
     bool mipmaps;
+
+    bool fullscreen;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

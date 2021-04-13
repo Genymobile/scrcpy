@@ -362,6 +362,10 @@ screen_init(struct screen *screen, struct video_buffer *vb,
 
     screen_update_content_rect(screen);
 
+    if (params->fullscreen) {
+        screen_switch_fullscreen(screen);
+    }
+
     return true;
 }
 

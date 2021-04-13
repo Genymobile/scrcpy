@@ -394,6 +394,7 @@ scrcpy(const struct scrcpy_options *options) {
             .window_borderless = options->window_borderless,
             .rotation = options->rotation,
             .mipmaps = options->mipmaps,
+            .fullscreen = options->fullscreen,
         };
 
         if (!screen_init(&screen, &video_buffer, &fps_counter,
@@ -410,10 +411,6 @@ scrcpy(const struct scrcpy_options *options) {
             if (!controller_push_msg(&controller, &msg)) {
                 LOGW("Could not request 'set screen power mode'");
             }
-        }
-
-        if (options->fullscreen) {
-            screen_switch_fullscreen(&screen);
         }
     }
 
