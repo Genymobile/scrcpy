@@ -2,7 +2,7 @@
 # Build the Mobot version of scrcpy with Mobot's FFmpeg
 #  make -f mobot.mk
 # On Linux it may be necessary to install dependencies
-#  sudo apt-get install cmake ninja libpng-dev libsdl2-dev
+#  sudo apt-get install cmake ninja libpng-dev libsdl2-dev libx264-dev
 #  pip3 install meson
 #  sudo snap install scrcpy (for server .jar)
 # On Raspberry Pi it may be necessary to install
@@ -57,3 +57,9 @@ build-app: $(AVLIBS)
 
 scrcpy: build-app
 	ninja -Cbuild-app
+
+clean:
+	rm -rf build-ffmpeg build-libav build-app
+
+install: scrcpy
+	ninja -Cbuild-app install
