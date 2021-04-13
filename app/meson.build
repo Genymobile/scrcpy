@@ -25,14 +25,38 @@ src = [
     'src/util/str_util.c'
 ]
 
+cc = meson.get_compiler('c')
+
 if not get_option('crossbuild_windows')
+
+    avdir = get_option('local_libav')
+    if avdir != ''
+        message('Using local libav at ' + avdir)
+        libdir = meson.current_source_dir() + '/../' + avdir + '/lib'
+        incdir = '../' + avdir + '/include'
+        ffmpeg = declare_dependency(
+            dependencies: [
+                cc.find_library('avformat', dirs : libdir),
+                cc.find_library('avcodec', dirs : libdir),
+                cc.find_library('avutil', dirs : libdir),
+                cc.find_library('swscale', dirs : libdir)
+            ],
+            include_directories: include_directories(incdir)
+        )
+    else
+        ffmpeg = declare_dependency(
+            dependencies: [
+                dependency('avformat'),
+                dependency('avcodec'),
+                dependency('avutil'),
+                dependency('swscale')
+            ]
+        )
+    endif
 
     # native build
     dependencies = [
-        dependency('libavformat'),
-        dependency('libavcodec'),
-        dependency('libavutil'),
-        dependency('libswscale'),
+        ffmpeg,
         dependency('libpng'),
         dependency('sdl2'),
     ]
@@ -75,8 +99,6 @@ else
     ]
 
 endif
-
-cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
     src += [ 'src/sys/win/command.c' ]

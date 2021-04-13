@@ -6,3 +6,4 @@ option('portable', type: 'boolean', value: false, description: 'Use scrcpy-serve
 option('hidpi_support', type: 'boolean', value: true, description: 'Enable High DPI support')
 option('server_debugger', type: 'boolean', value: false, description: 'Run a server debugger and wait for a client to be attached')
 option('server_debugger_method', type: 'combo', choices: ['old', 'new'], value: 'new', description: 'Select the debugger method (Android < 9: "old", Android >= 9: "new")')
+option('local_libav', type: 'string', value: '', description: 'Path to local installation of libav (ffmpeg)')
