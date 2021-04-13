@@ -398,6 +398,10 @@ scrcpy(const struct scrcpy_options *options) {
     ret = event_loop(options);
     LOGD("quit...");
 
+    // Close the window immediately on closing, because screen_destroy() may
+    // only be called once the stream thread is joined (it may take time)
+    screen_hide_window(&screen);
+
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
