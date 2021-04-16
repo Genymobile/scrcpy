@@ -11,6 +11,7 @@ public class ControlMessageReader {
     static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int BACK_OR_SCREEN_ON_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
@@ -66,13 +67,15 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 msg = parseInjectScrollEvent();
                 break;
+            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
+                msg = parseBackOrScreenOnEvent();
+                break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 msg = parseSetClipboard();
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 msg = parseSetScreenPowerMode();
                 break;
-            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_GET_CLIPBOARD:
@@ -148,6 +151,14 @@ public class ControlMessageReader {
         int hScroll = buffer.getInt();
         int vScroll = buffer.getInt();
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll);
+    }
+
+    private ControlMessage parseBackOrScreenOnEvent() {
+        if (buffer.remaining() < BACK_OR_SCREEN_ON_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        return ControlMessage.createBackOrScreenOn(action);
     }
 
     private ControlMessage parseSetClipboard() {

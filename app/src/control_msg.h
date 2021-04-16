@@ -65,6 +65,10 @@ struct control_msg {
             int32_t vscroll;
         } inject_scroll_event;
         struct {
+            enum android_keyevent_action action; // action for the BACK key
+            // screen may only be turned on on ACTION_DOWN
+        } back_or_screen_on;
+        struct {
             char *text; // owned, to be freed by free()
             bool paste;
         } set_clipboard;

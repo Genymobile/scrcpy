@@ -146,14 +146,18 @@ static void test_serialize_inject_scroll_event(void) {
 static void test_serialize_back_or_screen_on(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
+        .back_or_screen_on = {
+            .action = AKEY_EVENT_ACTION_UP,
+        },
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     size_t size = control_msg_serialize(&msg, buf);
-    assert(size == 1);
+    assert(size == 2);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
+        0x01, // AKEY_EVENT_ACTION_UP
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
