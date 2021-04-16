@@ -179,9 +179,6 @@ scrcpy_print_usage(const char *arg0) {
         "        on exit.\n"
         "        It only shows physical touches (not clicks from scrcpy).\n"
         "\n"
-        "    -v, --version\n"
-        "        Print the version of scrcpy.\n"
-        "\n"
         "    -V, --verbosity value\n"
         "        Set the log level (debug, info, warn or error).\n"
 #ifndef NDEBUG
@@ -189,6 +186,9 @@ scrcpy_print_usage(const char *arg0) {
 #else
         "        Default is info.\n"
 #endif
+        "\n"
+        "    -v, --version\n"
+        "        Print the version of scrcpy.\n"
         "\n"
         "    -w, --stay-awake\n"
         "        Keep the device on while scrcpy is running, when the device\n"
