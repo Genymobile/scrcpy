@@ -6,6 +6,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#ifdef HAVE_V4L2
+# include <libavdevice/avdevice.h>
+#endif
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
@@ -28,6 +31,11 @@ print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
                                                LIBAVUTIL_VERSION_MINOR,
                                                LIBAVUTIL_VERSION_MICRO);
+#ifdef HAVE_V4L2
+    fprintf(stderr, " - libavdevice %d.%d.%d\n", LIBAVDEVICE_VERSION_MAJOR,
+                                                 LIBAVDEVICE_VERSION_MINOR,
+                                                 LIBAVDEVICE_VERSION_MICRO);
+#endif
 }
 
 static SDL_LogPriority
@@ -88,6 +96,12 @@ main(int argc, char *argv[]) {
 
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
+#endif
+
+#ifdef HAVE_V4L2
+    if (args.opts.v4l2_device) {
+        avdevice_register_all();
+    }
 #endif
 
     if (avformat_network_init()) {

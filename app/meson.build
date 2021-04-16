@@ -33,6 +33,11 @@ else
     src += [ 'src/sys/unix/process.c' ]
 endif
 
+v4l2_support = host_machine.system() == 'linux'
+if v4l2_support
+    src += [ 'src/v4l2_sink.c' ]
+endif
+
 check_functions = [
     'strdup'
 ]
@@ -48,6 +53,10 @@ if not get_option('crossbuild_windows')
         dependency('libavutil'),
         dependency('sdl2'),
     ]
+
+    if v4l2_support
+        dependencies += dependency('libavdevice')
+    endif
 
 else
 
@@ -123,6 +132,9 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
 # select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
 conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == 'new')
+
+# enable V4L2 support (linux only)
+conf.set('HAVE_V4L2', v4l2_support)
 
 configure_file(configuration: conf, output: 'config.h')
 
