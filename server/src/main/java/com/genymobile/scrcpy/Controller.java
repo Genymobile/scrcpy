@@ -101,7 +101,7 @@ public class Controller {
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
                 if (device.supportsInputEvents()) {
-                    pressBackOrTurnScreenOn();
+                    pressBackOrTurnScreenOn(msg.getAction());
                 }
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
@@ -255,12 +255,22 @@ public class Controller {
         }, 200, TimeUnit.MILLISECONDS);
     }
 
-    private boolean pressBackOrTurnScreenOn() {
-        int keycode = Device.isScreenOn() ? KeyEvent.KEYCODE_BACK : KeyEvent.KEYCODE_POWER;
-        if (keepPowerModeOff && keycode == KeyEvent.KEYCODE_POWER) {
+    private boolean pressBackOrTurnScreenOn(int action) {
+        if (Device.isScreenOn()) {
+            return device.injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0);
+        }
+
+        // Screen is off
+        // Only press POWER on ACTION_DOWN
+        if (action != KeyEvent.ACTION_DOWN) {
+            // do nothing,
+            return true;
+        }
+
+        if (keepPowerModeOff) {
             schedulePowerModeOff();
         }
-        return device.injectKeycode(keycode);
+        return device.injectKeycode(KeyEvent.KEYCODE_POWER);
     }
 
     private boolean setClipboard(String text, boolean paste) {
