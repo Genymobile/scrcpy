@@ -646,13 +646,17 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
-    if (!im->forward_all_clicks && down) {
+    if (!im->forward_all_clicks) {
         if (control && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(im->controller);
+            if (down) {
+                press_back_or_turn_screen_on(im->controller);
+            }
             return;
         }
         if (control && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(im->controller, ACTION_DOWN | ACTION_UP);
+            if (down) {
+                action_home(im->controller, ACTION_DOWN | ACTION_UP);
+            }
             return;
         }
 
@@ -665,7 +669,9 @@ input_manager_process_mouse_button(struct input_manager *im,
             bool outside = x < r->x || x >= r->x + r->w
                         || y < r->y || y >= r->y + r->h;
             if (outside) {
-                screen_resize_to_fit(im->screen);
+                if (down) {
+                    screen_resize_to_fit(im->screen);
+                }
                 return;
             }
         }
