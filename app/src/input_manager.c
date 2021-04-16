@@ -647,6 +647,8 @@ input_manager_process_mouse_button(struct input_manager *im,
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
     if (!im->forward_all_clicks) {
+        int action = down ? ACTION_DOWN : ACTION_UP;
+
         if (control && event->button == SDL_BUTTON_RIGHT) {
             if (down) {
                 press_back_or_turn_screen_on(im->controller);
@@ -654,9 +656,7 @@ input_manager_process_mouse_button(struct input_manager *im,
             return;
         }
         if (control && event->button == SDL_BUTTON_MIDDLE) {
-            if (down) {
-                action_home(im->controller, ACTION_DOWN | ACTION_UP);
-            }
+            action_home(im->controller, action);
             return;
         }
 
