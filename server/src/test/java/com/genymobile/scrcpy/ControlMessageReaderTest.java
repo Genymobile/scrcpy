@@ -182,19 +182,19 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    public void testParseCollapseNotificationPanelEvent() throws IOException {
+    public void testParseCollapsePanelsEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        dos.writeByte(ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL);
+        dos.writeByte(ControlMessage.TYPE_COLLAPSE_PANELS);
 
         byte[] packet = bos.toByteArray();
 
         reader.readFrom(new ByteArrayInputStream(packet));
         ControlMessage event = reader.next();
 
-        Assert.assertEquals(ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL, event.getType());
+        Assert.assertEquals(ControlMessage.TYPE_COLLAPSE_PANELS, event.getType());
     }
 
     @Test

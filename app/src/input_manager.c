@@ -179,9 +179,9 @@ expand_notification_panel(struct controller *controller) {
 }
 
 static void
-collapse_notification_panel(struct controller *controller) {
+collapse_panels(struct controller *controller) {
     struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL;
+    msg.type = CONTROL_MSG_TYPE_COLLAPSE_PANELS;
 
     if (!controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'collapse notification panel'");
@@ -498,7 +498,7 @@ input_manager_process_key(struct input_manager *im,
             case SDLK_n:
                 if (control && !repeat && down) {
                     if (shift) {
-                        collapse_notification_panel(controller);
+                        collapse_panels(controller);
                     } else {
                         expand_notification_panel(controller);
                     }
