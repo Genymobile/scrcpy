@@ -12,6 +12,7 @@ public class StatusBarManager {
     private final IInterface manager;
     private Method expandNotificationsPanelMethod;
     private Method expandSettingsPanelMethod;
+    private Object[] expandSettingsPanelArgs;
     private Method collapsePanelsMethod;
 
     public StatusBarManager(IInterface manager) {
@@ -27,7 +28,19 @@ public class StatusBarManager {
 
     private Method getExpandSettingsPanel() throws NoSuchMethodException {
         if (expandSettingsPanelMethod == null) {
-            expandSettingsPanelMethod = manager.getClass().getMethod("expandSettingsPanel");
+            try{
+                expandSettingsPanelMethod = manager.getClass().getMethod("expandSettingsPanel");
+                expandSettingsPanelArgs = new Object[] {};
+            } catch (NoSuchMethodException e){
+                try{
+                    expandSettingsPanelMethod = manager.getClass().getMethod("expandSettingsPanel", String.class);
+                    expandSettingsPanelArgs = new Object[] {null};
+                } catch (NoSuchMethodException f){
+                    f.initCause(e);
+                    throw f;
+                }
+            }
+
         }
         return expandSettingsPanelMethod;
     }
@@ -50,7 +63,7 @@ public class StatusBarManager {
     public void expandSettingsPanel() {
         try {
             Method method = getExpandSettingsPanel();
-            method.invoke(manager);
+            method.invoke(manager, expandSettingsPanelArgs);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
         }
