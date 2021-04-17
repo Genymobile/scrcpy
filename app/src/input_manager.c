@@ -664,9 +664,11 @@ input_manager_process_mouse_button(struct input_manager *im,
         if (control && event->button == SDL_BUTTON_X1) {
             action_app_switch(im->controller, action);
             return;
-        }
-        if (control && event->button == SDL_BUTTON_RIGHT && down) {
-            expand_notification_panel(im->controller);
+        } 
+        if (control && event->button == SDL_BUTTON_X2) {
+            if(down) {
+                expand_notification_panel(im->controller);
+            }
             return;
         }
         if (control && event->button == SDL_BUTTON_RIGHT) {
