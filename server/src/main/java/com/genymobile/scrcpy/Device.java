@@ -227,6 +227,10 @@ public final class Device {
         SERVICE_MANAGER.getStatusBarManager().expandNotificationsPanel();
     }
 
+    public static void expandSettingsPanel() {
+        SERVICE_MANAGER.getStatusBarManager().expandSettingsPanel();
+    }
+
     public static void collapsePanels() {
         SERVICE_MANAGER.getStatusBarManager().collapsePanels();
     }

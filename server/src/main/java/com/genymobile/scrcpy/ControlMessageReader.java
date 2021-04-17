@@ -77,6 +77,7 @@ public class ControlMessageReader {
                 msg = parseSetScreenPowerMode();
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
+            case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
             case ControlMessage.TYPE_COLLAPSE_PANELS:
             case ControlMessage.TYPE_GET_CLIPBOARD:
             case ControlMessage.TYPE_ROTATE_DEVICE:

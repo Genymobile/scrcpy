@@ -177,6 +177,21 @@ static void test_serialize_expand_notification_panel(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_expand_settings_panel(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
+    };
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == 1);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 static void test_serialize_collapse_panels(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_COLLAPSE_PANELS,
@@ -274,6 +289,7 @@ int main(int argc, char *argv[]) {
     test_serialize_inject_scroll_event();
     test_serialize_back_or_screen_on();
     test_serialize_expand_notification_panel();
+    test_serialize_expand_settings_panel();
     test_serialize_collapse_panels();
     test_serialize_get_clipboard();
     test_serialize_set_clipboard();

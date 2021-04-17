@@ -182,6 +182,22 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseExpandSettingsPanelEvent() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_EXPAND_SETTINGS_PANEL);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_EXPAND_SETTINGS_PANEL, event.getType());
+    }
+
+    @Test
     public void testParseCollapsePanelsEvent() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 
