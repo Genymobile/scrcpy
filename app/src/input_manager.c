@@ -183,6 +183,16 @@ expand_notification_panel(struct controller *controller) {
 }
 
 static void
+expand_settings_panel(struct controller *controller) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'expand settings panel'");
+    }
+}
+
+static void
 collapse_panels(struct controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_COLLAPSE_PANELS;
