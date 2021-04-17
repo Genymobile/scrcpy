@@ -33,6 +33,13 @@ struct input_manager {
     } sdl_shortcut_mods;
 
     bool vfinger_down;
+
+    // Tracks the number of identical consecutive shortcut key down events.
+    // Not to be confused with event->repeat, which counts the number of
+    // system-generated repeated key presses.
+    unsigned key_repeat;
+    SDL_Keycode last_keycode;
+    uint16_t last_mod;
 };
 
 void
