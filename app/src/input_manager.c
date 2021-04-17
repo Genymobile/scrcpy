@@ -394,6 +394,19 @@ input_manager_process_key(struct input_manager *im,
     bool shift = event->keysym.mod & KMOD_SHIFT;
     bool repeat = event->repeat;
 
+    static SDL_Keycode lastKeycode = -1;
+    static Uint16 lastMod = -1;
+    static int repeatCount = 0;
+    
+    if (down && keycode == lastKeycode && event->keysym.mod == lastMod) {
+        repeatCount++;
+        LOGD("Repeat %d -> %d", keycode, repeatCount);
+    } else if(down) {
+        repeatCount = 0;
+        lastKeycode = keycode;
+        lastMod = event->keysym.mod;
+    }
+
     // The shortcut modifier is pressed
     if (smod) {
         int action = down ? ACTION_DOWN : ACTION_UP;
