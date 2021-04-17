@@ -72,6 +72,10 @@ input_manager_init(struct input_manager *im,
     im->sdl_shortcut_mods.count = shortcut_mods->count;
 
     im->vfinger_down = false;
+
+    im->last_keycode = SDLK_UNKNOWN;
+    im->last_mod = 0;
+    im->key_repeat = 0;
 }
 
 static void
@@ -384,15 +388,26 @@ input_manager_process_key(struct input_manager *im,
     // control: indicates the state of the command-line option --no-control
     bool control = im->control;
 
-    bool smod = is_shortcut_mod(im, event->keysym.mod);
-
     struct controller *controller = im->controller;
 
     SDL_Keycode keycode = event->keysym.sym;
+    uint16_t mod = event->keysym.mod;
     bool down = event->type == SDL_KEYDOWN;
     bool ctrl = event->keysym.mod & KMOD_CTRL;
     bool shift = event->keysym.mod & KMOD_SHIFT;
     bool repeat = event->repeat;
+
+    bool smod = is_shortcut_mod(im, mod);
+
+    if (down && !repeat) {
+        if (keycode == im->last_keycode && mod == im->last_mod) {
+            ++im->key_repeat;
+        } else {
+            im->key_repeat = 0;
+            im->last_keycode = keycode;
+            im->last_mod = mod;
+        }
+    }
 
     // The shortcut modifier is pressed
     if (smod) {
