@@ -177,9 +177,9 @@ static void test_serialize_expand_notification_panel(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_collapse_notification_panel(void) {
+static void test_serialize_collapse_panels(void) {
     struct control_msg msg = {
-        .type = CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL,
+        .type = CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
@@ -187,7 +187,7 @@ static void test_serialize_collapse_notification_panel(void) {
     assert(size == 1);
 
     const unsigned char expected[] = {
-        CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL,
+        CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }

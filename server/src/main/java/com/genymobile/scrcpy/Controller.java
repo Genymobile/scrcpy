@@ -107,7 +107,7 @@ public class Controller {
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
                 Device.expandNotificationPanel();
                 break;
-            case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+            case ControlMessage.TYPE_COLLAPSE_PANELS:
                 Device.collapsePanels();
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
