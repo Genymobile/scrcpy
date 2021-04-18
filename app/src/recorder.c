@@ -22,7 +22,7 @@ find_muxer(const char *name) {
 #else
         oformat = av_oformat_next(oformat);
 #endif
-        // until null or with name "mp4"
+        // until null or with having the requested name
     } while (oformat && strcmp(oformat->name, name));
     return oformat;
 }
