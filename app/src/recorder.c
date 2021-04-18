@@ -227,8 +227,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     ok = sc_cond_init(&recorder->queue_cond);
     if (!ok) {
         LOGC("Could not create cond");
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_mutex_destroy;
     }
 
     queue_init(&recorder->queue);
@@ -242,17 +241,13 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
-        sc_cond_destroy(&recorder->queue_cond);
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_cond_destroy;
     }
 
     recorder->ctx = avformat_alloc_context();
     if (!recorder->ctx) {
         LOGE("Could not allocate output context");
-        sc_cond_destroy(&recorder->queue_cond);
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_cond_destroy;
     }
 
     // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
@@ -266,10 +261,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
 
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
-        avformat_free_context(recorder->ctx);
-        sc_cond_destroy(&recorder->queue_cond);
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_avformat_free_context;
     }
 
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -283,10 +275,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     if (ret < 0) {
         LOGE("Failed to open output file: %s", recorder->filename);
         // ostream will be cleaned up during context cleaning
-        avformat_free_context(recorder->ctx);
-        sc_cond_destroy(&recorder->queue_cond);
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_avformat_free_context;
     }
 
     LOGD("Starting recorder thread");
@@ -294,16 +283,23 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
                                recorder);
     if (!ok) {
         LOGC("Could not start recorder thread");
-        avio_close(recorder->ctx->pb);
-        avformat_free_context(recorder->ctx);
-        sc_cond_destroy(&recorder->queue_cond);
-        sc_mutex_destroy(&recorder->mutex);
-        return false;
+        goto error_avio_close;
     }
 
     LOGI("Recording started to %s file: %s", format_name, recorder->filename);
 
     return true;
+
+error_avio_close:
+    avio_close(recorder->ctx->pb);
+error_avformat_free_context:
+    avformat_free_context(recorder->ctx);
+error_cond_destroy:
+    sc_cond_destroy(&recorder->queue_cond);
+error_mutex_destroy:
+    sc_mutex_destroy(&recorder->mutex);
+
+    return false;
 }
 
 static void
