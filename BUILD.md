@@ -204,7 +204,7 @@ brew install pkg-config meson
 ```
 
 Additionally, if you want to build the server, install Java 8 from Caskroom, and
-make it avaliable from the `PATH`:
+make it available from the `PATH`:
 
 ```bash
 brew tap homebrew/cask-versions
