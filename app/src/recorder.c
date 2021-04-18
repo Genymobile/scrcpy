@@ -218,17 +218,40 @@ run_recorder(void *data) {
 
 static bool
 recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
+    bool ok = sc_mutex_init(&recorder->mutex);
+    if (!ok) {
+        LOGC("Could not create mutex");
+        return false;
+    }
+
+    ok = sc_cond_init(&recorder->queue_cond);
+    if (!ok) {
+        LOGC("Could not create cond");
+        sc_mutex_destroy(&recorder->mutex);
+        return false;
+    }
+
+    queue_init(&recorder->queue);
+    recorder->stopped = false;
+    recorder->failed = false;
+    recorder->header_written = false;
+    recorder->previous = NULL;
+
     const char *format_name = recorder_get_format_name(recorder->format);
     assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
+        sc_cond_destroy(&recorder->queue_cond);
+        sc_mutex_destroy(&recorder->mutex);
         return false;
     }
 
     recorder->ctx = avformat_alloc_context();
     if (!recorder->ctx) {
         LOGE("Could not allocate output context");
+        sc_cond_destroy(&recorder->queue_cond);
+        sc_mutex_destroy(&recorder->mutex);
         return false;
     }
 
@@ -244,6 +267,8 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
     if (!ostream) {
         avformat_free_context(recorder->ctx);
+        sc_cond_destroy(&recorder->queue_cond);
+        sc_mutex_destroy(&recorder->mutex);
         return false;
     }
 
@@ -259,16 +284,20 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
         LOGE("Failed to open output file: %s", recorder->filename);
         // ostream will be cleaned up during context cleaning
         avformat_free_context(recorder->ctx);
+        sc_cond_destroy(&recorder->queue_cond);
+        sc_mutex_destroy(&recorder->mutex);
         return false;
     }
 
     LOGD("Starting recorder thread");
-    bool ok = sc_thread_create(&recorder->thread, run_recorder, "recorder",
+    ok = sc_thread_create(&recorder->thread, run_recorder, "recorder",
                                recorder);
     if (!ok) {
         LOGC("Could not start recorder thread");
         avio_close(recorder->ctx->pb);
         avformat_free_context(recorder->ctx);
+        sc_cond_destroy(&recorder->queue_cond);
+        sc_mutex_destroy(&recorder->mutex);
         return false;
     }
 
@@ -288,6 +317,8 @@ recorder_close(struct recorder *recorder) {
 
     avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
+    sc_cond_destroy(&recorder->queue_cond);
+    sc_mutex_destroy(&recorder->mutex);
 }
 
 static bool
@@ -344,28 +375,8 @@ recorder_init(struct recorder *recorder,
         return false;
     }
 
-    bool ok = sc_mutex_init(&recorder->mutex);
-    if (!ok) {
-        LOGC("Could not create mutex");
-        free(recorder->filename);
-        return false;
-    }
-
-    ok = sc_cond_init(&recorder->queue_cond);
-    if (!ok) {
-        LOGC("Could not create cond");
-        sc_mutex_destroy(&recorder->mutex);
-        free(recorder->filename);
-        return false;
-    }
-
-    queue_init(&recorder->queue);
-    recorder->stopped = false;
-    recorder->failed = false;
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
-    recorder->header_written = false;
-    recorder->previous = NULL;
 
     static const struct sc_packet_sink_ops ops = {
         .open = recorder_packet_sink_open,
@@ -380,7 +391,5 @@ recorder_init(struct recorder *recorder,
 
 void
 recorder_destroy(struct recorder *recorder) {
-    sc_cond_destroy(&recorder->queue_cond);
-    sc_mutex_destroy(&recorder->mutex);
     free(recorder->filename);
 }
