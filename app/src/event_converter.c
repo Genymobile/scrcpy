@@ -16,7 +16,7 @@ convert_keycode_action(SDL_EventType from, enum android_keyevent_action *to) {
 
 static enum android_metastate
 autocomplete_metastate(enum android_metastate metastate) {
-    // fill dependant flags
+    // fill dependent flags
     if (metastate & (AMETA_SHIFT_LEFT_ON | AMETA_SHIFT_RIGHT_ON)) {
         metastate |= AMETA_SHIFT_ON;
     }

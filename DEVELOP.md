@@ -211,7 +211,7 @@ There are two [frames][video_buffer] simultaneously in memory:
  - the **rendering** frame, rendered in a texture from the main thread.
 
 When a new decoded frame is available, the decoder _swaps_ the decoding and
-rendering frame (with proper synchronization). Thus, it immediatly starts
+rendering frame (with proper synchronization). Thus, it immediately starts
 to decode a new frame while the main thread renders the last one.
 
 If a [recorder] is present (i.e. `--record` is enabled), then it muxes the raw
