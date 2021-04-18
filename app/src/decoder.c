@@ -99,8 +99,8 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         return true;
     }
 
-    int ret;
-    if ((ret = avcodec_send_packet(decoder->codec_ctx, packet)) < 0) {
+    int ret = avcodec_send_packet(decoder->codec_ctx, packet);
+    if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Could not send video packet: %d", ret);
         return false;
     }
