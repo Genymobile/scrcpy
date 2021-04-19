@@ -79,13 +79,15 @@ scrcpy_print_usage(const char *arg0) {
         "        This is a workaround for some devices not behaving as\n"
         "        expected when setting the device clipboard programmatically.\n"
         "\n"
-        "    --lock-video-orientation value\n"
+        "    --lock-video-orientation [value]\n"
         "        Lock video orientation to value.\n"
         "        Possible values are \"unlocked\", \"initial\" (locked to the\n"
         "        initial orientation), 0, 1, 2 and 3.\n"
         "        Natural device orientation is 0, and each increment adds a\n"
         "        90 degrees rotation counterclockwise.\n"
         "        Default is \"unlocked\".\n"
+        "        Passing the option without argument is equivalent to passing\n"
+        "        \"initial\".\n"
         "\n"
         "    --max-fps value\n"
         "        Limit the frame rate of screen capture (officially supported\n"
@@ -386,7 +388,7 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 static bool
 parse_lock_video_orientation(const char *s,
                              enum sc_lock_video_orientation *lock_mode) {
-    if (!strcmp(s, "initial")) {
+    if (!s || !strcmp(s, "initial")) {
         // Without argument, lock the initial orientation
         *lock_mode = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
         return true;
@@ -693,7 +695,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
         {"legacy-paste",           no_argument,       NULL, OPT_LEGACY_PASTE},
-        {"lock-video-orientation", required_argument, NULL,
+        {"lock-video-orientation", optional_argument, NULL,
                                                   OPT_LOCK_VIDEO_ORIENTATION},
         {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
         {"max-size",               required_argument, NULL, 'm'},
