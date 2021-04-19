@@ -140,6 +140,24 @@ parse_integer_with_suffix(const char *s, long *out) {
     return true;
 }
 
+bool
+strlist_contains(const char *list, char sep, const char *s) {
+    char *p;
+    do {
+        p = strchr(list, sep);
+
+        size_t token_len = p ? (size_t) (p - list) : strlen(list);
+        if (!strncmp(list, s, token_len)) {
+            return true;
+        }
+
+        if (p) {
+            list = p + 1;
+        }
+    } while (p);
+    return false;
+}
+
 size_t
 utf8_truncation_index(const char *utf8, size_t max_len) {
     size_t len = strlen(utf8);
