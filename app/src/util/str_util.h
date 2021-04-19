@@ -43,6 +43,11 @@ parse_integers(const char *s, const char sep, size_t max_items, long *out);
 bool
 parse_integer_with_suffix(const char *s, long *out);
 
+// search s in the list separated by sep
+// for example, strlist_contains("a,bc,def", ',', "bc") returns true
+bool
+strlist_contains(const char *list, char sep, const char *s);
+
 // return the index to truncate a UTF-8 string at a valid position
 size_t
 utf8_truncation_index(const char *utf8, size_t max_len);
