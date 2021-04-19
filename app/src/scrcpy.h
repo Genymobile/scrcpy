@@ -20,6 +20,16 @@ enum sc_record_format {
     SC_RECORD_FORMAT_MKV,
 };
 
+enum sc_lock_video_orientation {
+    SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
+    // lock the current orientation when scrcpy starts
+    SC_LOCK_VIDEO_ORIENTATION_INITIAL = -2,
+    SC_LOCK_VIDEO_ORIENTATION_0 = 0,
+    SC_LOCK_VIDEO_ORIENTATION_1,
+    SC_LOCK_VIDEO_ORIENTATION_2,
+    SC_LOCK_VIDEO_ORIENTATION_3,
+};
+
 #define SC_MAX_SHORTCUT_MODS 8
 
 enum sc_shortcut_mod {
@@ -59,7 +69,7 @@ struct scrcpy_options {
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
-    int8_t lock_video_orientation;
+    enum sc_lock_video_orientation lock_video_orientation;
     uint8_t rotation;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
@@ -106,7 +116,7 @@ struct scrcpy_options {
     .max_size = 0, \
     .bit_rate = DEFAULT_BIT_RATE, \
     .max_fps = 0, \
-    .lock_video_orientation = -1, \
+    .lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED, \
     .rotation = 0, \
     .window_x = SC_WINDOW_POSITION_UNDEFINED, \
     .window_y = SC_WINDOW_POSITION_UNDEFINED, \

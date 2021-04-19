@@ -81,10 +81,11 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    --lock-video-orientation value\n"
         "        Lock video orientation to value.\n"
-        "        Possible values are -1 (unlocked), 0, 1, 2 and 3.\n"
+        "        Possible values are \"unlocked\", \"initial\" (locked to the\n"
+        "        initial orientation), 0, 1, 2 and 3.\n"
         "        Natural device orientation is 0, and each increment adds a\n"
         "        90 degrees rotation counterclockwise.\n"
-        "        Default is -1 (unlocked).\n"
+        "        Default is \"unlocked\".\n"
         "\n"
         "    --max-fps value\n"
         "        Limit the frame rate of screen capture (officially supported\n"
@@ -383,15 +384,27 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 }
 
 static bool
-parse_lock_video_orientation(const char *s, int8_t *lock_video_orientation) {
+parse_lock_video_orientation(const char *s,
+                             enum sc_lock_video_orientation *lock_mode) {
+    if (!strcmp(s, "initial")) {
+        // Without argument, lock the initial orientation
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
+        return true;
+    }
+
+    if (!strcmp(s, "unlocked")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED;
+        return true;
+    }
+
     long value;
-    bool ok = parse_integer_arg(s, &value, false, -1, 3,
+    bool ok = parse_integer_arg(s, &value, false, 0, 3,
                                 "lock video orientation");
     if (!ok) {
         return false;
     }
 
-    *lock_video_orientation = (int8_t) value;
+    *lock_mode = (enum sc_lock_video_orientation) value;
     return true;
 }
 
@@ -765,7 +778,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 }
                 break;
             case OPT_LOCK_VIDEO_ORIENTATION:
-                if (!parse_lock_video_orientation(optarg, &opts->lock_video_orientation)) {
+                if (!parse_lock_video_orientation(optarg,
+                        &opts->lock_video_orientation)) {
                     return false;
                 }
                 break;
