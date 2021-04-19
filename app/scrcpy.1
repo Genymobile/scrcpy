@@ -83,10 +83,12 @@ Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+S
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
 
 .TP
-.BI "\-\-lock\-video\-orientation " value
+.BI "\-\-lock\-video\-orientation " [value]
 Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees otation counterclockwise.
 
 Default is "unlocked".
+
+Passing the option without argument is equivalent to passing "initial".
 
 .TP
 .BI "\-\-max\-fps " value
