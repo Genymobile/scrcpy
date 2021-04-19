@@ -226,7 +226,9 @@ error will give the available encoders:
 scrcpy --encoder _
 ```
 
-### Recording
+### Capture
+
+#### Recording
 
 It is possible to record the screen while mirroring:
 
@@ -248,6 +250,58 @@ performance reasons). Frames are _timestamped_ on the device, so [packet delay
 variation] does not impact the recorded file.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+
+
+#### v4l2loopback
+
+On Linux, it is possible to send the video stream to a v4l2 loopback device, so
+that the Android device can be opened like a webcam by any v4l2-capable tool.
+
+The module `v4l2loopback` must be installed:
+
+```bash
+sudo apt install v4l2loopback-dkms
+```
+
+To create a v4l2 device:
+
+```bash
+sudo modprobe v4l2loopback
+```
+
+This will create a new video device in `/dev/videoN`, where `N` is an integer
+(more [options](https://github.com/umlaeute/v4l2loopback#options) are available
+to create several devices or devices with specific IDs).
+
+To list the enabled devices:
+
+```bash
+# requires v4l-utils package
+v4l2-ctl --list-devices
+
+# simple but might be sufficient
+ls /dev/video*
+```
+
+To start scrcpy using a v4l2 sink:
+
+```bash
+scrcpy --v4l2-sink=/dev/videoN
+scrcpy --v4l2-sink=/dev/videoN -N  # --no-display to disable mirroring window
+```
+
+(replace `N` by the device ID, check with `ls /dev/video*`)
+
+Once enabled, you can open your video stream with a v4l2-capable tool:
+
+```bash
+ffplay -i /dev/videoN
+vlc v4l2:///dev/videoN   # VLC might add some buffering delay
+```
+
+For example, you could capture the video within [OBS].
+
+[OBS]: https://obsproject.com/fr
 
 
 ### Connection
