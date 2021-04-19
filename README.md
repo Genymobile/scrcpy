@@ -198,6 +198,7 @@ If `--max-size` is also specified, resizing is applied after cropping.
 To lock the orientation of the mirroring:
 
 ```bash
+scrcpy --lock-video-orientation initial   # initial (current) orientation
 scrcpy --lock-video-orientation 0   # natural orientation
 scrcpy --lock-video-orientation 1   # 90° counterclockwise
 scrcpy --lock-video-orientation 2   # 180°
