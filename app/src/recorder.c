@@ -4,6 +4,7 @@
 #include <libavutil/time.h>
 
 #include "util/log.h"
+#include "util/str_util.h"
 
 /** Downcast packet_sink to recorder */
 #define DOWNCAST(SINK) container_of(SINK, struct recorder, packet_sink)
@@ -22,8 +23,8 @@ find_muxer(const char *name) {
 #else
         oformat = av_oformat_next(oformat);
 #endif
-        // until null or with having the requested name
-    } while (oformat && strcmp(oformat->name, name));
+        // until null or containing the requested name
+    } while (oformat && !strlist_contains(oformat->name, ',', name));
     return oformat;
 }
 
