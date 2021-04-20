@@ -524,8 +524,10 @@ input_manager_process_key(struct input_manager *im,
                 if (control && !repeat && down) {
                     if (shift) {
                         collapse_panels(controller);
-                    } else {
+                    } else if (im->key_repeat == 0) {
                         expand_notification_panel(controller);
+                    } else {
+                        expand_settings_panel(controller);
                     }
                 }
                 return;
