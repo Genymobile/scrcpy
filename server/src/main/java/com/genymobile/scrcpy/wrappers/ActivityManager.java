@@ -14,7 +14,7 @@ public class ActivityManager {
 
     private final IInterface manager;
     private Method getContentProviderExternalMethod;
-    private boolean getContentProviderExternalMethodLegacy;
+    private boolean getContentProviderExternalMethodNewVersion = true;
     private Method removeContentProviderExternalMethod;
 
     public ActivityManager(IInterface manager) {
@@ -29,7 +29,7 @@ public class ActivityManager {
             } catch (NoSuchMethodException e) {
                 // old version
                 getContentProviderExternalMethod = manager.getClass().getMethod("getContentProviderExternal", String.class, int.class, IBinder.class);
-                getContentProviderExternalMethodLegacy = true;
+                getContentProviderExternalMethodNewVersion = false;
             }
         }
         return getContentProviderExternalMethod;
@@ -46,7 +46,7 @@ public class ActivityManager {
         try {
             Method method = getGetContentProviderExternalMethod();
             Object[] args;
-            if (!getContentProviderExternalMethodLegacy) {
+            if (getContentProviderExternalMethodNewVersion) {
                 // new version
                 args = new Object[]{name, ServiceManager.USER_ID, token, null};
             } else {
