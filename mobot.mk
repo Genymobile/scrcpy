@@ -26,6 +26,9 @@ ifeq ($(OS),Darwin)
 					-Wl,-liconv
 endif
 
+GIT_DESCRIBE := $(shell git describe)
+ARCH := $(shell gcc -dumpmachine)
+
 build-ffmpeg:
 	git clone https://github.com/team-mobot/FFmpeg.git build-ffmpeg
 
@@ -49,6 +52,7 @@ $(AVLIBS): build-ffmpeg
 	make install-libs install-headers
 
 build-app: $(AVLIBS)
+	CFLAGS="-DMOBOT_VERSION='\"$(GIT_DESCRIBE)/$(ARCH)\"'" \
 	LDFLAGS="-Wl,-lm -Wl,-lpthread $(MAC_LDFLAGS)" \
 		meson build-app --buildtype release --strip -Db_lto=true \
 		-Dlocal_libav=$(AVDIR) \
