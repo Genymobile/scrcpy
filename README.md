@@ -698,10 +698,10 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Rotate display left                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
  | Rotate display right                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
  | Resize window to 1:1 (pixel-perfect)        | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-click¹_
+ | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-left-click¹_
  | Click on `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Middle-click_
  | Click on `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Right-click²_
- | Click on `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | Click on `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _4th-click³_
  | Click on `MENU` (unlock screen)             | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Click on `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
  | Click on `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
@@ -710,18 +710,27 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Turn device screen off (keep mirroring)     | <kbd>MOD</kbd>+<kbd>o</kbd>
  | Turn device screen on                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
  | Rotate device screen                        | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Expand notification panel                   | <kbd>MOD</kbd>+<kbd>n</kbd>
- | Collapse notification panel                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copy to clipboard³                          | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Cut to clipboard³                           | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Synchronize clipboards and paste³           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Expand notification panel                   | <kbd>MOD</kbd>+<kbd>n</kbd> \| _5th-click³_
+ | Expand settings panel                       |  <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Double-5th-click³_
+ | Collapse panels                             | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copy to clipboard⁴                          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Cut to clipboard⁴                           | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Synchronize clipboards and paste⁴           | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Inject computer clipboard text              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pinch-to-zoom                               | <kbd>Ctrl</kbd>+_click-and-move_
 
 _¹Double-click on black borders to remove them._  
 _²Right-click turns the screen on if it was off, presses BACK otherwise._  
-_³Only on Android >= 7._
+_³4th and 5th mouse buttons, if your mouse has them._  
+_⁴Only on Android >= 7._
+
+Shortcuts with repeated keys are executted by releasing and pressing the key a
+second time. For example, to execute "Expand settings panel":
+
+ 1. Press and keep pressing <kbd>MOD</kbd>.
+ 2. Then double-press <kbd>n</kbd>.
+ 3. Finally, release <kbd>MOD</kbd>.
 
 All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
 handled by the active application.
