@@ -58,7 +58,7 @@ get_server_path(void) {
         LOGE("Could not get executable path, "
              "using " SERVER_FILENAME " from current directory");
         // not found, use current directory
-        return SERVER_FILENAME;
+        return strdup(SERVER_FILENAME);
     }
     char *dir = dirname(executable_path);
     size_t dirlen = strlen(dir);
@@ -70,7 +70,7 @@ get_server_path(void) {
         LOGE("Could not alloc server path string, "
              "using " SERVER_FILENAME " from current directory");
         free(executable_path);
-        return SERVER_FILENAME;
+        return strdup(SERVER_FILENAME);
     }
 
     memcpy(server_path, dir, dirlen);
