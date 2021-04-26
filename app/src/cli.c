@@ -177,7 +177,7 @@ scrcpy_print_usage(const char *arg0) {
         "        It only shows physical touches (not clicks from scrcpy).\n"
         "\n"
 #ifdef HAVE_V4L2
-        "    --v4l2_sink /dev/videoN\n"
+        "    --v4l2-sink /dev/videoN\n"
         "        Output to v4l2loopback device.\n"
         "        It requires to lock the video orientation (see\n"
         "        --lock-video-orientation).\n"
@@ -726,7 +726,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"stay-awake",             no_argument,       NULL, 'w'},
         {"turn-screen-off",        no_argument,       NULL, 'S'},
 #ifdef HAVE_V4L2
-        {"v4l2_sink",              required_argument, NULL, OPT_V4L2_SINK},
+        {"v4l2-sink",              required_argument, NULL, OPT_V4L2_SINK},
 #endif
         {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
@@ -926,7 +926,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
 #ifdef HAVE_V4L2
     if (!opts->display && !opts->record_filename && !opts->v4l2_device) {
         LOGE("-N/--no-display requires either screen recording (-r/--record)"
-             " or sink to v4l2loopback device (--v4l2_sink)");
+             " or sink to v4l2loopback device (--v4l2-sink)");
         return false;
     }
 
