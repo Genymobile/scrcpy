@@ -111,6 +111,8 @@ decoder_push(struct decoder *decoder, const AVPacket *packet) {
         // A frame lost should not make the whole pipeline fail. The error, if
         // any, is already logged.
         (void) ok;
+
+        av_frame_unref(decoder->frame);
     } else if (ret != AVERROR(EAGAIN)) {
         LOGE("Could not receive video frame: %d", ret);
         return false;
