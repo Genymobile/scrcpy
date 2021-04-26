@@ -125,6 +125,7 @@ run_v4l2_sink(void *data) {
 
         video_buffer_consume(&vs->vb, vs->frame);
         bool ok = encode_and_write_frame(vs, vs->frame);
+        av_frame_unref(vs->frame);
         if (!ok) {
             LOGE("Could not send frame to v4l2 sink");
             break;
