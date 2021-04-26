@@ -225,7 +225,7 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private static IBinder createDisplay() {
-        return SurfaceControl.createDisplay("scrcpy", true);
+        return SurfaceControl.createDisplay("scrcpy", false);
     }
 
     private static void configure(MediaCodec codec, MediaFormat format) {
