@@ -92,11 +92,11 @@ encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
         // A packet was received
 
         bool ok = write_packet(vs, packet);
+        av_packet_unref(packet);
         if (!ok) {
             LOGW("Could not send packet to v4l2 sink");
             return false;
         }
-        av_packet_unref(packet);
     } else if (ret != AVERROR(EAGAIN)) {
         LOGE("Could not receive v4l2 video packet: %d", ret);
         return false;
