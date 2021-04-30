@@ -164,39 +164,27 @@ public final class Device {
         return supportsInputEvents;
     }
 
-    public static boolean injectEvent(InputEvent inputEvent, int mode, int displayId) {
+    public static boolean injectEvent(InputEvent inputEvent, int displayId) {
         if (!supportsInputEvents(displayId)) {
-            return false;
+            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
         }
 
         if (displayId != 0 && !InputManager.setDisplayId(inputEvent, displayId)) {
             return false;
         }
 
-        return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, mode);
-    }
-
-    public boolean injectEvent(InputEvent inputEvent, int mode) {
-        if (!supportsInputEvents()) {
-            throw new AssertionError("Could not inject input event if !supportsInputEvents()");
-        }
-
-        return injectEvent(inputEvent, mode, displayId);
-    }
-
-    public static boolean injectEventOnDisplay(InputEvent event, int displayId) {
-        return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC, displayId);
+        return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
     }
 
     public boolean injectEvent(InputEvent event) {
-        return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+        return injectEvent(event, displayId);
     }
 
     public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId) {
         long now = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
                 InputDevice.SOURCE_KEYBOARD);
-        return injectEventOnDisplay(event, displayId);
+        return injectEvent(event, displayId);
     }
 
     public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
