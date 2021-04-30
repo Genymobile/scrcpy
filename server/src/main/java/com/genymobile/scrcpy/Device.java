@@ -188,10 +188,7 @@ public final class Device {
     }
 
     public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
-        long now = SystemClock.uptimeMillis();
-        KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
-                InputDevice.SOURCE_KEYBOARD);
-        return injectEvent(event);
+        return injectKeyEvent(action, keyCode, repeat, metaState, displayId);
     }
 
     public static boolean injectKeycode(int keyCode, int displayId) {
@@ -199,7 +196,7 @@ public final class Device {
     }
 
     public boolean injectKeycode(int keyCode) {
-        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0);
+        return injectKeycode(keyCode, displayId);
     }
 
     public static boolean isScreenOn() {
