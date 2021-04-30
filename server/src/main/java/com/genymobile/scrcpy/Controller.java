@@ -55,7 +55,7 @@ public class Controller {
     public void control() throws IOException {
         // on start, power on the device
         if (!Device.isScreenOn()) {
-            device.injectKeycode(KeyEvent.KEYCODE_POWER);
+            device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -273,7 +273,7 @@ public class Controller {
         if (keepPowerModeOff) {
             schedulePowerModeOff();
         }
-        return device.injectKeycode(KeyEvent.KEYCODE_POWER);
+        return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER);
     }
 
     private boolean setClipboard(String text, boolean paste) {
@@ -284,7 +284,7 @@ public class Controller {
 
         // On Android >= 7, also press the PASTE key if requested
         if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
-            device.injectKeycode(KeyEvent.KEYCODE_PASTE);
+            device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE);
         }
 
         return ok;

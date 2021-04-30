@@ -191,12 +191,12 @@ public final class Device {
         return injectKeyEvent(action, keyCode, repeat, metaState, displayId);
     }
 
-    public static boolean injectKeycode(int keyCode, int displayId) {
+    public static boolean pressReleaseKeycode(int keyCode, int displayId) {
         return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0, displayId) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0, displayId);
     }
 
-    public boolean injectKeycode(int keyCode) {
-        return injectKeycode(keyCode, displayId);
+    public boolean pressReleaseKeycode(int keyCode) {
+        return pressReleaseKeycode(keyCode, displayId);
     }
 
     public static boolean isScreenOn() {
@@ -272,7 +272,7 @@ public final class Device {
         if (!isScreenOn()) {
             return true;
         }
-        return injectKeycode(KeyEvent.KEYCODE_POWER, displayId);
+        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId);
     }
 
     /**
