@@ -186,8 +186,8 @@ execute_server(struct sc_server *server,
     cmd[count++] = serial;
     cmd[count++] = "shell";
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
-    cmd[count++] = "LD_LIBRARY_PATH=" SC_DEVICE_SERVER_DIR;
     cmd[count++] = "app_process";
+    cmd[count++] = "-Djna.boot.library.path=/data/local/tmp";
 
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
