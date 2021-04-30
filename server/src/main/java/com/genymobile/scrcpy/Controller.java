@@ -185,7 +185,12 @@ public class Controller {
 
                     switch (event) {
                         case GameController.DEVICE_ADDED:
-                            gameControllers.append(id, new GameController());
+                            try {
+                                gameControllers.append(id, new GameController());
+                            } catch (Exception e) {
+                                Ln.e("It seems your phone doesn't support this feature without root. Game controllers will be disabled.", e);
+                                gameControllersEnabled = false;
+                            }
                             break;
 
                         case GameController.DEVICE_REMOVED:
