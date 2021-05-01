@@ -181,14 +181,12 @@ public abstract class UinputDevice {
             throw new RuntimeException("Couldn't open uinput device.");
         }
 
-        if (hasKeys())
-        {
+        if (hasKeys()) {
             libC.ioctl(fd, UI_SET_EVBIT, EV_KEY);
             setupKeys();
         }
 
-        if (hasAbs())
-        {
+        if (hasAbs()) {
             libC.ioctl(fd, UI_SET_EVBIT, EV_ABS);
             setupAbs();
         }

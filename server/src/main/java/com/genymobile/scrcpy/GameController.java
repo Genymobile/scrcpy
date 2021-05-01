@@ -1,14 +1,5 @@
 package com.genymobile.scrcpy;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Platform;
-import com.sun.jna.Pointer;
-import com.sun.jna.Structure;
-
-import java.util.Arrays;
-import java.util.List;
-
 public final class GameController extends UinputDevice {
     private static final short XBOX_BTN_A = BTN_A;
     private static final short XBOX_BTN_B = BTN_B;
