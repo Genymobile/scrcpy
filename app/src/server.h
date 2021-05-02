@@ -47,16 +47,18 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+
+    // The internal allocated strings are copies owned by the server
+    struct server_params params;
 };
 
-// init default values
+// init server fields
 bool
-server_init(struct server *server);
+server_init(struct server *server, const struct server_params *params);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server, const char *serial,
-             const struct server_params *params);
+server_start(struct server *server, const char *serial);
 
 // block until the communication with the server is established
 bool

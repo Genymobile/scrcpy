@@ -243,10 +243,6 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 
 bool
 scrcpy(const struct scrcpy_options *options) {
-    if (!server_init(&server)) {
-        return false;
-    }
-
     bool ret = false;
 
     bool server_started = false;
@@ -279,7 +275,12 @@ scrcpy(const struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
     };
-    if (!server_start(&server, options->serial, &params)) {
+
+    if (!server_init(&server, &params)) {
+        return false;
+    }
+
+    if (!server_start(&server, options->serial)) {
         goto end;
     }
 

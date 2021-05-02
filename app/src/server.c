@@ -352,8 +352,61 @@ close_socket(socket_t socket) {
     }
 }
 
+static void
+server_params_destroy(struct server_params *params) {
+    // The server stores a copy of the params provided by the user
+    free((char *) params->crop);
+    free((char *) params->codec_options);
+    free((char *) params->encoder_name);
+}
+
+static bool
+server_params_copy(struct server_params *dst, const struct server_params *src) {
+    // params reference user-allocated memory, so we must copy them to handle
+    // them from a separate thread
+
+    *dst = *src;
+
+    dst->crop = NULL;
+    dst->codec_options = NULL;
+    dst->encoder_name = NULL;
+
+    if (src->crop) {
+        dst->crop = strdup(src->crop);
+        if (!dst->crop) {
+            goto error;
+        }
+    }
+
+    if (src->codec_options) {
+        dst->codec_options = strdup(src->codec_options);
+        if (!dst->codec_options) {
+            goto error;
+        }
+    }
+
+    if (src->encoder_name) {
+        dst->encoder_name = strdup(src->encoder_name);
+        if (!dst->encoder_name) {
+            goto error;
+        }
+    }
+
+    return true;
+
+error:
+    server_params_destroy(dst);
+    return false;
+};
+
+
 bool
-server_init(struct server *server) {
+server_init(struct server *server, const struct server_params *params) {
+    if (!server_params_copy(&server->params, params)) {
+        LOGE("Could not copy server params");
+        return false;
+    }
+
     server->serial = NULL;
     server->process = PROCESS_NONE;
     atomic_flag_clear_explicit(&server->server_socket_closed,
@@ -361,12 +414,14 @@ server_init(struct server *server) {
 
     bool ok = sc_mutex_init(&server->mutex);
     if (!ok) {
+        server_params_destroy(&server->params);
         return false;
     }
 
     ok = sc_cond_init(&server->process_terminated_cond);
     if (!ok) {
         sc_mutex_destroy(&server->mutex);
+        server_params_destroy(&server->params);
         return false;
     }
 
@@ -407,8 +462,9 @@ run_wait_server(void *data) {
 }
 
 bool
-server_start(struct server *server, const char *serial,
-             const struct server_params *params) {
+server_start(struct server *server, const char *serial) {
+    const struct server_params *params = &server->params;
+
     if (serial) {
         server->serial = strdup(serial);
         if (!server->serial) {
@@ -558,4 +614,5 @@ server_destroy(struct server *server) {
     free(server->serial);
     sc_cond_destroy(&server->process_terminated_cond);
     sc_mutex_destroy(&server->mutex);
+    server_params_destroy(&server->params);
 }
