@@ -128,9 +128,10 @@ disable_tunnel_forward(const char *serial, uint16_t local_port) {
 static bool
 disable_tunnel(struct server *server) {
     if (server->tunnel_forward) {
-        return disable_tunnel_forward(server->serial, server->local_port);
+        return disable_tunnel_forward(server->params.serial,
+                                      server->local_port);
     }
-    return disable_tunnel_reverse(server->serial);
+    return disable_tunnel_reverse(server->params.serial);
 }
 
 static socket_t
@@ -144,7 +145,7 @@ enable_tunnel_reverse_any_port(struct server *server,
                                struct sc_port_range port_range) {
     uint16_t port = port_range.first;
     for (;;) {
-        if (!enable_tunnel_reverse(server->serial, port)) {
+        if (!enable_tunnel_reverse(server->params.serial, port)) {
             // the command itself failed, it will fail on any port
             return false;
         }
@@ -163,7 +164,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         }
 
         // failure, disable tunnel and try another port
-        if (!disable_tunnel_reverse(server->serial)) {
+        if (!disable_tunnel_reverse(server->params.serial)) {
             LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
         }
 
@@ -191,7 +192,7 @@ enable_tunnel_forward_any_port(struct server *server,
     server->tunnel_forward = true;
     uint16_t port = port_range.first;
     for (;;) {
-        if (enable_tunnel_forward(server->serial, port)) {
+        if (enable_tunnel_forward(server->params.serial, port)) {
             // success
             server->local_port = port;
             return true;
@@ -306,7 +307,7 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
+    return adb_execute(server->params.serial, cmd, ARRAY_LEN(cmd));
 }
 
 static socket_t
@@ -407,7 +408,6 @@ server_init(struct server *server, const struct server_params *params) {
         return false;
     }
 
-    server->serial = NULL;
     server->process = PROCESS_NONE;
     atomic_flag_clear_explicit(&server->server_socket_closed,
                                memory_order_relaxed);
@@ -462,29 +462,22 @@ run_wait_server(void *data) {
 }
 
 bool
-server_start(struct server *server, const char *serial) {
+server_start(struct server *server) {
     const struct server_params *params = &server->params;
 
-    if (serial) {
-        server->serial = strdup(serial);
-        if (!server->serial) {
-            return false;
-        }
-    }
-
-    if (!push_server(serial)) {
-        goto error1;
+    if (!push_server(params->serial)) {
+        return false;
     }
 
     if (!enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
-        goto error1;
+        return false;
     }
 
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
-        goto error2;
+        goto error;
     }
 
     // If the server process dies before connecting to the server socket, then
@@ -498,14 +491,14 @@ server_start(struct server *server, const char *serial) {
     if (!ok) {
         process_terminate(server->process);
         process_wait(server->process, true); // ignore exit code
-        goto error2;
+        goto error;
     }
 
     server->tunnel_enabled = true;
 
     return true;
 
-error2:
+error:
     if (!server->tunnel_forward) {
         bool was_closed =
             atomic_flag_test_and_set(&server->server_socket_closed);
@@ -515,8 +508,7 @@ error2:
         close_socket(server->server_socket);
     }
     disable_tunnel(server);
-error1:
-    free(server->serial);
+
     return false;
 }
 

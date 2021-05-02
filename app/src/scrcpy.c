@@ -259,6 +259,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     bool record = !!options->record_filename;
     struct server_params params = {
+        .serial = options->serial,
         .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,
@@ -280,7 +281,7 @@ scrcpy(const struct scrcpy_options *options) {
         return false;
     }
 
-    if (!server_start(&server, options->serial)) {
+    if (!server_start(&server)) {
         goto end;
     }
 
@@ -312,7 +313,7 @@ scrcpy(const struct scrcpy_options *options) {
         fps_counter_initialized = true;
 
         if (options->control) {
-            if (!file_handler_init(&file_handler, server.serial,
+            if (!file_handler_init(&file_handler, options->serial,
                                    options->push_target)) {
                 goto end;
             }

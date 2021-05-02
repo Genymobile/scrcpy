@@ -15,6 +15,7 @@
 
 struct server_params {
     enum sc_log_level log_level;
+    const char *serial;
     const char *crop;
     const char *codec_options;
     const char *encoder_name;
@@ -58,7 +59,7 @@ server_init(struct server *server, const struct server_params *params);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server, const char *serial);
+server_start(struct server *server);
 
 // block until the communication with the server is established
 bool
