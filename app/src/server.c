@@ -461,24 +461,40 @@ run_wait_server(void *data) {
     return 0;
 }
 
-bool
-server_start(struct server *server) {
+static int
+run_server(void *data) {
+    struct server *server = data;
+
     const struct server_params *params = &server->params;
+    const struct server_callbacks *cbs = &server->cbs;
+    void *userdata = server->userdata;
 
     if (!push_server(params->serial)) {
-        return false;
+        cbs->on_connection_failed(server);
+        goto end;
     }
 
     if (!enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
-        return false;
+        cbs->on_connection_failed(server);
+        goto end;
     }
 
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
-        goto error;
+        cbs->on_connection_failed(server);
+        goto end;
     }
+
+    process_wait(server->process, false); // ignore exit code
+
+end:
+    return 0;
+}
+
+bool
+server_start(struct server *server) {
 
     // If the server process dies before connecting to the server socket, then
     // the client will be stuck forever on accept(). To avoid the problem, we

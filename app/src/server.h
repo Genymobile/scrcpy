@@ -51,6 +51,16 @@ struct server {
 
     // The internal allocated strings are copies owned by the server
     struct server_params params;
+
+    const struct server_callbacks *cbs;
+    void *userdata;
+};
+
+struct server_callbacks {
+    void (*on_connection_failed)(struct server *server);
+    void (*on_connected)(struct server *server, const char *name,
+                         struct size size, void *userdata);
+    void (*on_disconnected)(struct server *server, void *userdata);
 };
 
 // init server fields
@@ -59,7 +69,8 @@ server_init(struct server *server, const struct server_params *params);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server);
+server_start(struct server *server, const struct server_callbacks *cbs,
+             void *userdata);
 
 // block until the communication with the server is established
 bool
