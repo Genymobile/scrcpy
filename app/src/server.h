@@ -13,24 +13,6 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-struct server {
-    char *serial;
-    process_t process;
-    sc_thread wait_server_thread;
-    atomic_flag server_socket_closed;
-
-    sc_mutex mutex;
-    sc_cond process_terminated_cond;
-    bool process_terminated;
-
-    socket_t server_socket; // only used if !tunnel_forward
-    socket_t video_socket;
-    socket_t control_socket;
-    uint16_t local_port; // selected from port_range
-    bool tunnel_enabled;
-    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
-};
-
 struct server_params {
     enum sc_log_level log_level;
     const char *crop;
@@ -47,6 +29,24 @@ struct server_params {
     bool stay_awake;
     bool force_adb_forward;
     bool power_off_on_close;
+};
+
+struct server {
+    char *serial;
+    process_t process;
+    sc_thread wait_server_thread;
+    atomic_flag server_socket_closed;
+
+    sc_mutex mutex;
+    sc_cond process_terminated_cond;
+    bool process_terminated;
+
+    socket_t server_socket; // only used if !tunnel_forward
+    socket_t video_socket;
+    socket_t control_socket;
+    uint16_t local_port; // selected from port_range
+    bool tunnel_enabled;
+    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 };
 
 // init default values
