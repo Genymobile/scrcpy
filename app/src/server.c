@@ -417,18 +417,19 @@ server_start(struct server *server, const char *serial,
     }
 
     if (!push_server(serial)) {
-        goto error1;
+        /* server->serial will be freed on server_destroy() */
+        return false;
     }
 
     if (!enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
-        goto error1;
+        return false;
     }
 
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
-        goto error2;
+        goto error;
     }
 
     // If the server process dies before connecting to the server socket, then
@@ -442,14 +443,14 @@ server_start(struct server *server, const char *serial,
     if (!ok) {
         process_terminate(server->process);
         process_wait(server->process, true); // ignore exit code
-        goto error2;
+        goto error;
     }
 
     server->tunnel_enabled = true;
 
     return true;
 
-error2:
+error:
     if (!server->tunnel_forward) {
         bool was_closed =
             atomic_flag_test_and_set(&server->server_socket_closed);
@@ -459,8 +460,7 @@ error2:
         close_socket(server->server_socket);
     }
     disable_tunnel(server);
-error1:
-    free(server->serial);
+
     return false;
 }
 
