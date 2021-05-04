@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.sun.jna.LastErrorException;
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Platform;
@@ -162,10 +163,10 @@ public abstract class UinputDevice {
     private int fd = -1;
 
     public interface LibC extends Library {
-        int open(String pathname, int flags);
-        int ioctl(int fd, long request, Object... args);
-        long write(int fd, Pointer buf, long count);
-        int close(int fd);
+        int open(String pathname, int flags) throws LastErrorException;
+        int ioctl(int fd, long request, Object... args) throws LastErrorException;
+        long write(int fd, Pointer buf, long count) throws LastErrorException;
+        int close(int fd) throws LastErrorException;
     }
 
     private static LibC libC;
@@ -176,18 +177,27 @@ public abstract class UinputDevice {
     }
 
     protected void setup() {
-        fd = libC.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
-        if (fd == -1) {
-            throw new RuntimeException("Couldn't open uinput device.");
+        try {
+            fd = libC.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
+        } catch (LastErrorException e) {
+            throw new UinputUnsupportedException(e);
         }
 
         if (hasKeys()) {
-            libC.ioctl(fd, UI_SET_EVBIT, EV_KEY);
+            try {
+                libC.ioctl(fd, UI_SET_EVBIT, EV_KEY);
+            } catch (LastErrorException e) {
+                throw new RuntimeException("Could not enable key events.", e);
+            }
             setupKeys();
         }
 
         if (hasAbs()) {
-            libC.ioctl(fd, UI_SET_EVBIT, EV_ABS);
+            try {
+                libC.ioctl(fd, UI_SET_EVBIT, EV_ABS);
+            } catch (LastErrorException e) {
+                throw new RuntimeException("Could not enable absolute events.", e);
+            }
             setupAbs();
         }
 
@@ -198,21 +208,33 @@ public abstract class UinputDevice {
         byte[] name = getName().getBytes();
         System.arraycopy(name, 0, usetup.name, 0, name.length);
 
-        if (libC.ioctl(fd, UI_DEV_SETUP, usetup) == -1) {
+        try {
+            libC.ioctl(fd, UI_DEV_SETUP, usetup);
+        } catch (LastErrorException e) {
             close();
-            throw new RuntimeException("Couldn't setup uinput device.");
+            throw new RuntimeException("Couldn't setup uinput device.", e);
         }
 
-        if (libC.ioctl(fd, UI_DEV_CREATE) == -1) {
+        try {
+            libC.ioctl(fd, UI_DEV_CREATE);
+        } catch (LastErrorException e) {
             close();
-            throw new RuntimeException("Couldn't create uinput device.");
+            throw new RuntimeException("Couldn't create uinput device.", e);
         }
     }
 
     public void close() {
         if (fd != -1) {
-            libC.ioctl(fd, UI_DEV_DESTROY);
-            libC.close(fd);
+            try {
+                libC.ioctl(fd, UI_DEV_DESTROY);
+            } catch (LastErrorException e) {
+                Ln.e("Could not destroy uinput device.", e);
+            }
+            try {
+                libC.close(fd);
+            } catch (LastErrorException e) {
+                Ln.e("Could not close uinput device.", e);
+            }
             fd = -1;
         }
     }
@@ -226,14 +248,18 @@ public abstract class UinputDevice {
     protected abstract String getName();
 
     protected void addKey(int key) {
-        if (libC.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
-            Ln.e("Could not add key event.");
+        try {
+            libC.ioctl(fd, UI_SET_KEYBIT, key);
+        } catch (LastErrorException e) {
+            Ln.e("Could not add key event.", e);
         }
     }
 
     protected void addAbs(short code, int minimum, int maximum, int fuzz, int flat) {
-        if (libC.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
-            Ln.e("Could not add absolute event.");
+        try {
+            libC.ioctl(fd, UI_SET_ABSBIT, code);
+        } catch (LastErrorException e) {
+            Ln.e("Could not add absolute event.", e);
         }
 
         UinputAbsSetup absSetup = new UinputAbsSetup();
@@ -244,8 +270,10 @@ public abstract class UinputDevice {
         absSetup.absinfo.fuzz = fuzz;
         absSetup.absinfo.flat = flat;
 
-        if (libC.ioctl(fd, UI_ABS_SETUP, absSetup) == -1) {
-            Ln.e("Could not set absolute event info.");
+        try {
+            libC.ioctl(fd, UI_ABS_SETUP, absSetup);
+        } catch (LastErrorException e) {
+            Ln.e("Could not set absolute event info.", e);
         }
     }
 
@@ -274,10 +302,14 @@ public abstract class UinputDevice {
     }
 
     private static void emit(int fd, short type, short code, int val) {
-        if (Platform.is64Bit()) {
-            emit64(fd, type, code, val);
-        } else {
-            emit32(fd, type, code, val);
+        try {
+            if (Platform.is64Bit()) {
+                emit64(fd, type, code, val);
+            } else {
+                emit32(fd, type, code, val);
+            }
+        } catch (LastErrorException e) {
+            Ln.e("Could not emit event.", e);
         }
     }
 

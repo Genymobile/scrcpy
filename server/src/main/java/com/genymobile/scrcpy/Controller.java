@@ -188,7 +188,7 @@ public class Controller {
                             try {
                                 gameControllers.append(id, new GameController());
                             } catch (Exception e) {
-                                Ln.e("It seems your phone doesn't support this feature without root. Game controllers will be disabled.", e);
+                                Ln.e("Failed to add new game controller. Game controllers will be disabled.", e);
                                 gameControllersEnabled = false;
                             }
                             break;
