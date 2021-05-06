@@ -130,6 +130,15 @@ You need `adb`, accessible from your `PATH`. If you don't have it yet:
 brew install android-platform-tools
 ```
 
+It's also available in [MacPorts], which sets up adb for you:
+
+```bash
+sudo port install scrcpy
+```
+
+[MacPorts]: https://www.macports.org/
+
+
 You can also [build the app manually][BUILD].
 
 
