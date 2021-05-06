@@ -116,7 +116,15 @@ You can also [build the app manually][BUILD].
 
 ### macOS
 
-The application is available in [Homebrew]. Just install it:
+The application is available in [MacPorts], which sets up adb for you:
+
+```bash
+sudo port install scrcpy
+```
+
+[MacPorts]: https://www.macports.org/
+
+It's also available in [Homebrew]. Just install it:
 
 [Homebrew]: https://brew.sh/
 
