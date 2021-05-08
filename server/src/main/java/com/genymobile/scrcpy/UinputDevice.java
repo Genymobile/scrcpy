@@ -6,6 +6,7 @@ import com.sun.jna.Native;
 import com.sun.jna.Platform;
 import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
+import com.sun.jna.ptr.IntByReference;
 
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +16,8 @@ public abstract class UinputDevice {
     public static final int DEVICE_REMOVED = 1;
 
     private static final int UINPUT_MAX_NAME_SIZE = 80;
+    private static final int ABS_MAX = 0x3f;
+    private static final int ABS_CNT = ABS_MAX + 1;
 
     @SuppressWarnings("checkstyle:VisibilityModifier")
     public static class InputId extends Structure {
@@ -40,6 +43,22 @@ public abstract class UinputDevice {
             return Arrays.asList("id", "name", "ffEffectsMax");
         }
     }
+
+    @SuppressWarnings("checkstyle:VisibilityModifier")
+    public static class UinputUserDev extends Structure {
+        public byte[] name = new byte[UINPUT_MAX_NAME_SIZE];
+        public InputId id;
+        public int ffEffectsMax = 0;
+        public int[] absmax = new int[ABS_CNT];
+        public int[] absmin = new int[ABS_CNT];
+        public int[] absfuzz = new int[ABS_CNT];
+        public int[] absflat = new int[ABS_CNT];
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("name", "id", "ffEffectsMax", "absmax", "absmin", "absfuzz", "absflat");
+        }
+    };
 
     @SuppressWarnings("checkstyle:VisibilityModifier")
     public static class InputAbsinfo extends Structure {
@@ -96,6 +115,7 @@ public abstract class UinputDevice {
 
     private static final int IOC_NONE = 0;
     private static final int IOC_WRITE = 1;
+    private static final int IOC_READ = 2;
 
     private static final int IOC_DIRSHIFT = 30;
     private static final int IOC_TYPESHIFT = 8;
@@ -113,6 +133,10 @@ public abstract class UinputDevice {
         return ioc(IOC_NONE, type, nr, size);
     }
 
+    private static int ior(int type, int nr, int size) {
+        return ioc(IOC_READ, type, nr, size);
+    }
+
     private static int iow(int type, int nr, int size) {
         return ioc(IOC_WRITE, type, nr, size);
     }
@@ -124,12 +148,13 @@ public abstract class UinputDevice {
 
     private static final int UINPUT_IOCTL_BASE = 'U';
 
+    private static final int UI_GET_VERSION = ior(UINPUT_IOCTL_BASE, 45, 4);  // 0.5+
     private static final int UI_SET_EVBIT = iow(UINPUT_IOCTL_BASE, 100, 4);
     private static final int UI_SET_KEYBIT = iow(UINPUT_IOCTL_BASE, 101, 4);
     private static final int UI_SET_ABSBIT = iow(UINPUT_IOCTL_BASE, 103, 4);
-    private static final int UI_ABS_SETUP = iow(UINPUT_IOCTL_BASE, 4, new UinputAbsSetup().size());
+    private static final int UI_ABS_SETUP = iow(UINPUT_IOCTL_BASE, 4, new UinputAbsSetup().size());  // 0.5+
 
-    private static final int UI_DEV_SETUP = iow(UINPUT_IOCTL_BASE, 3, new UinputSetup().size());
+    private static final int UI_DEV_SETUP = iow(UINPUT_IOCTL_BASE, 3, new UinputSetup().size());  // 0.5+
     private static final int UI_DEV_CREATE = io(UINPUT_IOCTL_BASE, 1, 0);
     private static final int UI_DEV_DESTROY = io(UINPUT_IOCTL_BASE, 2, 0);
 
@@ -161,15 +186,20 @@ public abstract class UinputDevice {
     protected static final short ABS_HAT0Y = 0x11;
 
     private int fd = -1;
-
+    private int[] absmax;
+    private int[] absmin;
+    private int[] absfuzz;
+    private int[] absflat;
+    
     public interface LibC extends Library {
         int open(String pathname, int flags) throws LastErrorException;
         int ioctl(int fd, long request, Object... args) throws LastErrorException;
         long write(int fd, Pointer buf, long count) throws LastErrorException;
         int close(int fd) throws LastErrorException;
     }
-
+    
     private static LibC libC;
+    private static int version = 0;
 
     /// Must be the first method called
     public static void loadNativeLibraries() {
@@ -181,6 +211,22 @@ public abstract class UinputDevice {
             fd = libC.open("/dev/uinput", O_WRONLY | O_NONBLOCK);
         } catch (LastErrorException e) {
             throw new UinputUnsupportedException(e);
+        }
+
+        if (version == 0) {
+            try {
+                IntByReference versionRef = new IntByReference();
+                libC.ioctl(fd, UI_GET_VERSION, versionRef);
+                version = versionRef.getValue();
+            } catch (LastErrorException e) {
+                version = -1;
+            }
+
+            if (version >= 0) {
+                Ln.i(String.format("Using uinput version 0.%d", version));
+            } else {
+                Ln.i(String.format("Using unknown uinput version. Assuming at least 0.3."));
+            }
         }
 
         if (hasKeys()) {
@@ -198,28 +244,59 @@ public abstract class UinputDevice {
             } catch (LastErrorException e) {
                 throw new RuntimeException("Could not enable absolute events.", e);
             }
+
+            if (version < 5) {
+                absmax = new int[ABS_CNT];
+                absmin = new int[ABS_CNT];
+                absfuzz = new int[ABS_CNT];
+                absflat = new int[ABS_CNT];
+            }
+
             setupAbs();
         }
 
-        UinputSetup usetup = new UinputSetup();
-        usetup.id.bustype = BUS_USB;
-        usetup.id.vendor = getVendor();
-        usetup.id.product = getProduct();
-        byte[] name = getName().getBytes();
-        System.arraycopy(name, 0, usetup.name, 0, name.length);
+        if (version >= 5) {
+            UinputSetup usetup = new UinputSetup();
+            usetup.id.bustype = BUS_USB;
+            usetup.id.vendor = getVendor();
+            usetup.id.product = getProduct();
+            byte[] name = getName().getBytes();
+            System.arraycopy(name, 0, usetup.name, 0, name.length);
 
-        try {
-            libC.ioctl(fd, UI_DEV_SETUP, usetup);
-        } catch (LastErrorException e) {
-            close();
-            throw new RuntimeException("Couldn't setup uinput device.", e);
+            try {
+                libC.ioctl(fd, UI_DEV_SETUP, usetup);
+            } catch (LastErrorException e) {
+                close();
+                throw new RuntimeException("Could not setup uinput device.", e);
+            }
+        } else {
+            UinputUserDev userDev = new UinputUserDev();
+            userDev.id.bustype = BUS_USB;
+            userDev.id.vendor = getVendor();
+            userDev.id.product = getProduct();
+            byte[] name = getName().getBytes();
+            System.arraycopy(name, 0, userDev.name, 0, name.length);
+
+            userDev.absmax = absmax;
+            userDev.absmin = absmin;
+            userDev.absfuzz = absfuzz;
+            userDev.absflat = absflat;
+
+            userDev.write();
+
+            try {
+                libC.write(fd, userDev.getPointer(), userDev.size());
+            } catch (LastErrorException e) {
+                close();
+                throw new RuntimeException("Could not setup uinput device using legacy method.", e);
+            }
         }
 
         try {
             libC.ioctl(fd, UI_DEV_CREATE);
         } catch (LastErrorException e) {
             close();
-            throw new RuntimeException("Couldn't create uinput device.", e);
+            throw new RuntimeException("Could not create uinput device.", e);
         }
     }
 
@@ -262,18 +339,25 @@ public abstract class UinputDevice {
             Ln.e("Could not add absolute event.", e);
         }
 
-        UinputAbsSetup absSetup = new UinputAbsSetup();
+        if (version >= 5) {
+            UinputAbsSetup absSetup = new UinputAbsSetup();
 
-        absSetup.code = code;
-        absSetup.absinfo.minimum = minimum;
-        absSetup.absinfo.maximum = maximum;
-        absSetup.absinfo.fuzz = fuzz;
-        absSetup.absinfo.flat = flat;
+            absSetup.code = code;
+            absSetup.absinfo.minimum = minimum;
+            absSetup.absinfo.maximum = maximum;
+            absSetup.absinfo.fuzz = fuzz;
+            absSetup.absinfo.flat = flat;
 
-        try {
-            libC.ioctl(fd, UI_ABS_SETUP, absSetup);
-        } catch (LastErrorException e) {
-            Ln.e("Could not set absolute event info.", e);
+            try {
+                libC.ioctl(fd, UI_ABS_SETUP, absSetup);
+            } catch (LastErrorException e) {
+                Ln.e("Could not set absolute event info.", e);
+            }
+        } else {
+            absmin[code] = minimum;
+            absmax[code] = maximum;
+            absfuzz[code] = fuzz;
+            absflat[code] = flat;
         }
     }
 
