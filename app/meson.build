@@ -6,7 +6,6 @@ src = [
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
-    'src/device.c',
     'src/device_msg.c',
     'src/event_converter.c',
     'src/file_handler.c',

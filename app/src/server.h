@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "adb.h"
+#include "coords.h"
 #include "scrcpy.h"
 #include "util/log.h"
 #include "util/net.h"
@@ -58,9 +59,11 @@ bool
 server_start(struct server *server, const char *serial,
              const struct server_params *params);
 
+#define DEVICE_NAME_FIELD_LENGTH 64
 // block until the communication with the server is established
+// device_name must point to a buffer of at least DEVICE_NAME_FIELD_LENGTH bytes
 bool
-server_connect_to(struct server *server);
+server_connect_to(struct server *server, char *device_name, struct size *size);
 
 // disconnect and kill the server process
 void

@@ -15,7 +15,6 @@
 
 #include "controller.h"
 #include "decoder.h"
-#include "device.h"
 #include "events.h"
 #include "file_handler.h"
 #include "input_manager.h"
@@ -284,17 +283,10 @@ scrcpy(const struct scrcpy_options *options) {
         goto end;
     }
 
-    if (!server_connect_to(&server)) {
-        goto end;
-    }
-
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct size frame_size;
 
-    // screenrecord does not send frames when the screen content does not
-    // change therefore, we transmit the screen size before the video stream,
-    // to be able to init the window immediately
-    if (!device_read_info(server.video_socket, device_name, &frame_size)) {
+    if (!server_connect_to(&server, device_name, &frame_size)) {
         goto end;
     }
 
