@@ -13,8 +13,8 @@ First, you need to install the required packages:
 ```bash
 # for Debian/Ubuntu
 sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
-                 gcc git pkg-config meson ninja-build \
-                 libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev
+                 gcc git pkg-config meson ninja-build libsdl2-dev \
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
 ```
 
 Then clone the repo and execute the installation script
@@ -91,8 +91,8 @@ Install the required packages from your package manager.
 sudo apt install ffmpeg libsdl2-2.0-0 adb
 
 # client build dependencies
-sudo apt install gcc git pkg-config meson ninja-build \
-                 libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev
+sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
 
 # server build dependencies
 sudo apt install openjdk-11-jdk
