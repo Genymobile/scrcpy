@@ -306,7 +306,7 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, sizeof(cmd) / sizeof(cmd[0]));
+    return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
 }
 
 static socket_t
