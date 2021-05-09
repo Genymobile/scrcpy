@@ -1,16 +1,16 @@
-_Only the original [README](README.md) is guaranteed to be up-to-date._
+_Apenas o [README](README.md) original é garantido estar atualizado._
 
-# scrcpy (v1.12.1)
+# scrcpy (v1.17)
 
-Esta aplicação fornece visualização e controle de dispositivos Android conectados via
-USB (ou [via TCP/IP][article-tcpip]). Não requer nenhum acesso root.
+Esta aplicação fornece exibição e controle de dispositivos Android conectados via
+USB (ou [via TCP/IP][article-tcpip]). Não requer nenhum acesso _root_.
 Funciona em _GNU/Linux_, _Windows_ e _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 Foco em:
 
- - **leveza** (Nativo, mostra apenas a tela do dispositivo)
+ - **leveza** (nativo, mostra apenas a tela do dispositivo)
  - **performance** (30~60fps)
  - **qualidade** (1920×1080 ou acima)
  - **baixa latência** ([35~70ms][lowlatency])
@@ -22,35 +22,40 @@ Foco em:
 
 ## Requisitos
 
-O Dispositivo Android requer pelo menos a API 21 (Android 5.0).
+O dispositivo Android requer pelo menos a API 21 (Android 5.0).
 
-
-Tenha certeza de ter [ativado a depuração USB][enable-adb] no(s) seu(s) dispositivo(s).
+Tenha certeza de ter [ativado a depuração adb][enable-adb] no(s) seu(s) dispositivo(s).
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 
-
-Em alguns dispositivos, você também precisará ativar [uma opção adicional][control] para controlá-lo usando o teclado e mouse.
+Em alguns dispositivos, você também precisa ativar [uma opção adicional][control] para
+controlá-lo usando teclado e mouse.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
-## Obtendo o app
+## Obter o app
 
+<a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
 ### Linux
 
-No Debian (_em testes_ e _sid_ por enquanto):
+No Debian (_testing_ e _sid_ por enquanto) e Ubuntu (20.04):
 
 ```
 apt install scrcpy
 ```
 
-O pacote [Snap] está disponível: [`scrcpy`][snap-link].
+Um pacote [Snap] está disponível: [`scrcpy`][snap-link].
 
 [snap-link]: https://snapstats.org/snaps/scrcpy
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+
+Para Fedora, um pacote [COPR] está disponível: [`scrcpy`][copr-link].
+
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
 Para Arch Linux, um pacote [AUR] está disponível: [`scrcpy`][aur-link].
 
@@ -62,21 +67,19 @@ Para Gentoo, uma [Ebuild] está disponível: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
+Você também pode [compilar o app manualmente][BUILD] (não se preocupe, não é tão
+difícil).
 
-Você também pode [compilar a aplicação manualmente][BUILD] (não se preocupe, não é tão difícil).
 
 
 ### Windows
 
-Para Windows, para simplicidade, um arquivo pré-compilado com todas as dependências
+Para Windows, por simplicidade, um arquivo pré-compilado com todas as dependências
 (incluindo `adb`) está disponível:
 
- - [`scrcpy-win64-v1.12.1.zip`][direct-win64]  
-   _(SHA-256: 57d34b6d16cfd9fe169bc37c4df58ebd256d05c1ea3febc63d9cb0a027ab47c9)_
+ - [README](README.md#windows)
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.12.1/scrcpy-win64-v1.12.1.zip
-
-Também disponível em [Chocolatey]:
+Também está disponível em [Chocolatey]:
 
 [Chocolatey]: https://chocolatey.org/
 
@@ -94,12 +97,12 @@ scoop install adb    # se você ainda não o tem
 
 [Scoop]: https://scoop.sh
 
-Você também pode [compilar a aplicação manualmente][BUILD].
+Você também pode [compilar o app manualmente][BUILD].
 
 
 ### macOS
 
-A aplicação está disponível em [Homebrew]. Apenas a instale:
+A aplicação está disponível em [Homebrew]. Apenas instale-a:
 
 [Homebrew]: https://brew.sh/
 
@@ -107,18 +110,22 @@ A aplicação está disponível em [Homebrew]. Apenas a instale:
 brew install scrcpy
 ```
 
-Você precisa do `adb`, acessível através do seu `PATH`. Se você ainda não o tem:
+Você precisa do `adb`, acessível pelo seu `PATH`. Se você ainda não o tem:
 
 ```bash
+# Homebrew >= 2.6.0
+brew install --cask android-platform-tools
+
+# Homebrew < 2.6.0
 brew cask install android-platform-tools
 ```
 
-Você também pode [compilar a aplicação manualmente][BUILD].
+Você também pode [compilar o app manualmente][BUILD].
 
 
 ## Executar
 
-Plugue um dispositivo Android e execute:
+Conecte um dispositivo Android e execute:
 
 ```bash
 scrcpy
@@ -134,51 +141,86 @@ scrcpy --help
 
 ### Configuração de captura
 
-#### Redução de tamanho
+#### Reduzir tamanho
 
 Algumas vezes, é útil espelhar um dispositivo Android em uma resolução menor para
-aumentar performance.
+aumentar a performance.
 
-Para limitar ambos(largura e altura) para algum valor (ex: 1024):
+Para limitar ambos (largura e altura) para algum valor (ex: 1024):
 
 ```bash
 scrcpy --max-size 1024
-scrcpy -m 1024  # versão reduzida
+scrcpy -m 1024  # versão curta
 ```
 
 A outra dimensão é calculada para que a proporção do dispositivo seja preservada.
-Dessa forma, um dispositivo em 1920x1080 será espelhado em 1024x576.
+Dessa forma, um dispositivo de 1920x1080 será espelhado em 1024x576.
 
 
-#### Mudanças no bit-rate
+#### Mudar bit-rate
 
-O Padrão de bit-rate é 8 mbps. Para mudar o bitrate do vídeo (ex: para 2 Mbps):
+O bit-rate padrão é 8 Mbps. Para mudar o bit-rate do vídeo (ex: para 2 Mbps):
 
 ```bash
 scrcpy --bit-rate 2M
-scrcpy -b 2M  # versão reduzida
+scrcpy -b 2M  # versão curta
 ```
 
-#### Limitar frame rates
+#### Limitar frame rate
 
-Em dispositivos com Android >= 10, a captura de frame rate pode ser limitada:
+O frame rate de captura pode ser limitado:
 
 ```bash
 scrcpy --max-fps 15
 ```
 
+Isso é oficialmente suportado desde o Android 10, mas pode funcionar em versões anteriores.
+
 #### Cortar
 
 A tela do dispositivo pode ser cortada para espelhar apenas uma parte da tela.
 
-Isso é útil por exemplo, ao espelhar apenas um olho do Oculus Go:
+Isso é útil por exemplo, para espelhar apenas um olho do Oculus Go:
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 no deslocamento (0,0)
 ```
 
-Se `--max-size` também for especificado, redimensionar é aplicado após os cortes.
+Se `--max-size` também for especificado, o redimensionamento é aplicado após o corte.
 
+
+#### Travar orientação do vídeo
+
+
+Para travar a orientação do espelhamento:
+
+```bash
+scrcpy --lock-video-orientation 0   # orientação natural
+scrcpy --lock-video-orientation 1   # 90° sentido anti-horário
+scrcpy --lock-video-orientation 2   # 180°
+scrcpy --lock-video-orientation 3   # 90° sentido horário
+```
+
+Isso afeta a orientação de gravação.
+
+A [janela também pode ser rotacionada](#rotação) independentemente.
+
+
+#### Encoder
+
+Alguns dispositivos têm mais de um encoder, e alguns deles podem causar problemas ou
+travar. É possível selecionar um encoder diferente:
+
+```bash
+scrcpy --encoder OMX.qcom.video.encoder.avc
+```
+
+Para listar os encoders disponíveis, você pode passar um nome de encoder inválido, o
+erro dará os encoders disponíveis:
+
+```bash
+scrcpy --encoder _
+```
 
 ### Gravando
 
@@ -194,65 +236,84 @@ Para desativar o espelhamento durante a gravação:
 ```bash
 scrcpy --no-display --record file.mp4
 scrcpy -Nr file.mkv
-# interrompe a gravação com Ctrl+C
-# Ctrl+C não encerrar propriamente no Windows, então desconecte o dispositivo
+# interrompa a gravação com Ctrl+C
 ```
 
-"Frames pulados" são gravados, mesmo que não sejam mostrado em tempo real (por motivos de performance).
-Frames tem seu _horário_ _carimbado_ no dispositivo, então [Variação de atraso nos pacotes] não impacta na gravação do arquivo.
+"Frames pulados" são gravados, mesmo que não sejam exibidos em tempo real (por
+motivos de performance). Frames têm seu _horário carimbado_ no dispositivo, então [variação de atraso nos
+pacotes][packet delay variation] não impacta o arquivo gravado.
 
-[Variação de atraso de pacote]: https://en.wikipedia.org/wiki/Packet_delay_variation
+[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
 ### Conexão
 
-#### Wireless/Sem fio
+#### Sem fio
 
-_Scrcpy_ usa `adb` para se comunicar com o dispositivo, e `adb` pode [conectar-se] à um dispositivo via TCP/IP:
+_Scrcpy_ usa `adb` para se comunicar com o dispositivo, e `adb` pode [conectar-se][connect] a um
+dispositivo via TCP/IP:
 
-1. Conecte o dispositivo a mesma rede Wi-Fi do seu computador.
-2. Pegue o endereço de IP do seu dispositivo (Em Configurações → Sobre o Telefone → Status).
+1. Conecte o dispositivo no mesmo Wi-Fi do seu computador.
+2. Pegue o endereço IP do seu dispositivo, em Configurações → Sobre o telefone → Status, ou
+   executando este comando:
+
+    ```bash
+    adb shell ip route | awk '{print $9}'
+    ```
+
 3. Ative o adb via TCP/IP no seu dispositivo: `adb tcpip 5555`.
-4. Desplugue seu dispositivo.
-5. Conecte-se ao seu dispositivo: `adb connect DEVICE_IP:5555` _(substitua o `DEVICE_IP`)_.
+4. Desconecte seu dispositivo.
+5. Conecte-se ao seu dispositivo: `adb connect DEVICE_IP:5555` _(substitua `DEVICE_IP`)_.
 6. Execute `scrcpy` como de costume.
 
 Pode ser útil diminuir o bit-rate e a resolução:
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # versão reduzida
+scrcpy -b2M -m800  # versão curta
 ```
 
-[conectar-se]: https://developer.android.com/studio/command-line/adb.html#wireless
+[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 
-#### N-dispositivos
+#### Múltiplos dispositivos
 
-Se alguns dispositivos estão listados em `adb devices`, você precisa especificar o _serial_:
+Se vários dispositivos são listados em `adb devices`, você deve especificar o _serial_:
 
 ```bash
 scrcpy --serial 0123456789abcdef
-scrcpy -s 0123456789abcdef  # versão reduzida
+scrcpy -s 0123456789abcdef  # versão curta
 ```
 
 Se o dispositivo está conectado via TCP/IP:
 
 ```bash
 scrcpy --serial 192.168.0.1:5555
-scrcpy -s 192.168.0.1:5555  # versão reduzida
+scrcpy -s 192.168.0.1:5555  # versão curta
 ```
 
-Você pode iniciar algumas instâncias do _scrcpy_ para alguns dispositivos.
+Você pode iniciar várias instâncias do _scrcpy_ para vários dispositivos.
 
-#### Conexão via SSH
+#### Iniciar automaticamente quando dispositivo é conectado
 
-Para conectar-se à um dispositivo remoto, é possível se conectar um cliente local `adb`  à um servidor `adb` remoto (contanto que eles usem a mesma versão do protocolo _adb_):
+Você pode usar [AutoAdb]:
 
 ```bash
-adb kill-server    # encerra o servidor local na 5037
+autoadb scrcpy -s '{}'
+```
+
+[AutoAdb]: https://github.com/rom1v/autoadb
+
+#### Túnel SSH
+
+Para conectar-se a um dispositivo remoto, é possível conectar um cliente `adb` local a
+um servidor `adb` remoto (contanto que eles usem a mesma versão do protocolo
+_adb_):
+
+```bash
+adb kill-server    # encerra o servidor adb local em 5037
 ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
-# mantém isso aberto
+# mantenha isso aberto
 ```
 
 De outro terminal:
@@ -261,17 +322,33 @@ De outro terminal:
 scrcpy
 ```
 
-Igual para conexões sem fio, pode ser útil reduzir a qualidade:
+Para evitar ativar o encaminhamento de porta remota, você pode forçar uma conexão
+de encaminhamento (note o `-L` em vez de `-R`):
+
+```bash
+adb kill-server    # encerra o servidor adb local em 5037
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# mantenha isso aberto
+```
+
+De outro terminal:
+
+```bash
+scrcpy --force-adb-forward
+```
+
+
+Igual a conexões sem fio, pode ser útil reduzir a qualidade:
 
 ```
 scrcpy -b2M -m800 --max-fps 15
 ```
 
-### Configurações de Janela
+### Configuração de janela
 
 #### Título
 
-Por padrão, o título da janela é o modelo do dispositivo. Isto pode ser mudado:
+Por padrão, o título da janela é o modelo do dispositivo. Isso pode ser mudado:
 
 ```bash
 scrcpy --window-title 'Meu dispositivo'
@@ -287,15 +364,15 @@ scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
 
 #### Sem bordas
 
-Para desativar decorações da janela:
+Para desativar decorações de janela:
 
 ```bash
 scrcpy --window-borderless
 ```
 
-#### Sempre visível
+#### Sempre no topo
 
-Para manter a janela do scrcpy sempre visível:
+Para manter a janela do scrcpy sempre no topo:
 
 ```bash
 scrcpy --always-on-top
@@ -307,41 +384,117 @@ A aplicação pode ser iniciada diretamente em tela cheia:
 
 ```bash
 scrcpy --fullscreen
-scrcpy -f  # versão reduzida
+scrcpy -f  # versão curta
 ```
 
-Tela cheia pode ser alternada dinamicamente com `Ctrl`+`f`.
+Tela cheia pode ser alternada dinamicamente com <kbd>MOD</kbd>+<kbd>f</kbd>.
+
+#### Rotação
+
+A janela pode ser rotacionada:
+
+```bash
+scrcpy --rotation 1
+```
+
+Valores possíveis são:
+ - `0`: sem rotação
+ - `1`: 90 graus sentido anti-horário
+ - `2`: 180 graus
+ - `3`: 90 graus sentido horário
+
+A rotação também pode ser mudada dinamicamente com <kbd>MOD</kbd>+<kbd>←</kbd>
+_(esquerda)_ e <kbd>MOD</kbd>+<kbd>→</kbd> _(direita)_.
+
+Note que _scrcpy_ controla 3 rotações diferentes:
+ - <kbd>MOD</kbd>+<kbd>r</kbd> requisita ao dispositivo para mudar entre retrato
+   e paisagem (a aplicação em execução pode se recusar, se ela não suporta a
+   orientação requisitada).
+ - [`--lock-video-orientation`](#travar-orientação-do-vídeo) muda a orientação de
+   espelhamento (a orientação do vídeo enviado pelo dispositivo para o
+   computador). Isso afeta a gravação.
+ - `--rotation` (ou <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>)
+   rotaciona apenas o conteúdo da janela. Isso afeta apenas a exibição, não a
+   gravação.
 
 
 ### Outras opções de espelhamento
 
 #### Apenas leitura
 
-Para desativar controles (tudo que possa interagir com o dispositivo: teclas de entrada, eventos de mouse, arrastar e soltar arquivos):
+Para desativar controles (tudo que possa interagir com o dispositivo: teclas de entrada,
+eventos de mouse, arrastar e soltar arquivos):
 
 ```bash
 scrcpy --no-control
 scrcpy -n
 ```
 
-#### Desligar a tela
+#### Display
 
-É possível desligar a tela do dispositivo durante o início do espelhamento com uma opção de linha de comando:
+Se vários displays estão disponíveis, é possível selecionar o display para
+espelhar:
+
+```bash
+scrcpy --display 1
+```
+
+A lista de IDs dos displays pode ser obtida por:
+
+```
+adb shell dumpsys display   # busca "mDisplayId=" na saída
+```
+
+O display secundário pode apenas ser controlado se o dispositivo roda pelo menos Android
+10 (caso contrário é espelhado como apenas leitura).
+
+
+#### Permanecer ativo
+
+Para evitar que o dispositivo seja suspenso após um delay quando o dispositivo é conectado:
+
+```bash
+scrcpy --stay-awake
+scrcpy -w
+```
+
+O estado inicial é restaurado quando o scrcpy é fechado.
+
+
+#### Desligar tela
+
+É possível desligar a tela do dispositivo durante o início do espelhamento com uma
+opção de linha de comando:
 
 ```bash
 scrcpy --turn-screen-off
 scrcpy -S
 ```
 
-Ou apertando `Ctrl`+`o` durante qualquer momento.
+Ou apertando <kbd>MOD</kbd>+<kbd>o</kbd> a qualquer momento.
 
-Para ligar novamente, pressione `POWER` (ou `Ctrl`+`p`).
+Para ligar novamente, pressione <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
 
-#### Frames expirados de renderização
+No Android, o botão de `POWER` sempre liga a tela. Por conveniência, se
+`POWER` é enviado via scrcpy (via clique-direito ou <kbd>MOD</kbd>+<kbd>p</kbd>), ele
+forçará a desligar a tela após um delay pequeno (numa base de melhor esforço).
+O botão `POWER` físico ainda causará a tela ser ligada.
 
-Por padrão, para minimizar a latência, _scrcpy_ sempre renderiza o último frame decodificado disponível e descarta o anterior.
+Também pode ser útil evitar que o dispositivo seja suspenso:
 
-Para forçar a renderização de todos os frames ( com o custo de aumento de latência), use:
+```bash
+scrcpy --turn-screen-off --stay-awake
+scrcpy -Sw
+```
+
+
+#### Renderizar frames expirados
+
+Por padrão, para minimizar a latência, _scrcpy_ sempre renderiza o último frame decodificado
+disponível, e descarta o anterior.
+
+Para forçar a renderização de todos os frames (com o custo de um possível aumento de
+latência), use:
 
 ```bash
 scrcpy --render-expired-frames
@@ -349,11 +502,13 @@ scrcpy --render-expired-frames
 
 #### Mostrar toques
 
-Para apresentações, pode ser útil mostrar toques físicos(dispositivo físico).
+Para apresentações, pode ser útil mostrar toques físicos (no dispositivo
+físico).
 
-Android fornece esta funcionalidade nas _Opções do Desenvolvedor_.
+Android fornece esta funcionalidade nas _Opções do desenvolvedor_.
 
-_Scrcpy_ fornece esta opção de ativar esta funcionalidade no início e desativar no encerramento:
+_Scrcpy_ fornece esta opção de ativar esta funcionalidade no início e restaurar o
+valor inicial no encerramento:
 
 ```bash
 scrcpy --show-touches
@@ -363,59 +518,137 @@ scrcpy -t
 Note que isto mostra apenas toques _físicos_ (com o dedo no dispositivo).
 
 
+#### Desativar descanso de tela
+
+Por padrão, scrcpy não evita que o descanso de tela rode no computador.
+
+Para desativá-lo:
+
+```bash
+scrcpy --disable-screensaver
+```
+
+
 ### Controle de entrada
 
 #### Rotacionar a tela do dispositivo
 
-Pressione `Ctrl`+`r` para mudar entre os modos Retrato e Paisagem.
+Pressione <kbd>MOD</kbd>+<kbd>r</kbd> para mudar entre os modos retrato e
+paisagem.
 
-Note que só será rotacionado se a aplicação em primeiro plano tiver suporte para o modo requisitado.
+Note que só será rotacionado se a aplicação em primeiro plano suportar a
+orientação requisitada.
 
-#### Copiar-Colar
+#### Copiar-colar
 
-É possível sincronizar áreas de transferência entre computador e o dispositivo,
-para ambas direções:
+Sempre que a área de transferência do Android muda, é automaticamente sincronizada com a
+área de transferência do computador.
 
- - `Ctrl`+`c` copia a área de transferência do dispositivo para a área de trasferência do computador;
- - `Ctrl`+`Shift`+`v` copia a área de transferência do computador para a área de transferência do dispositivo;
- - `Ctrl`+`v` _cola_ a área de transferência do computador como uma sequência de eventos de texto (mas
-   quebra caracteres não-ASCII).
+Qualquer atalho com <kbd>Ctrl</kbd> é encaminhado para o dispositivo. Em particular:
+ - <kbd>Ctrl</kbd>+<kbd>c</kbd> tipicamente copia
+ - <kbd>Ctrl</kbd>+<kbd>x</kbd> tipicamente recorta
+ - <kbd>Ctrl</kbd>+<kbd>v</kbd> tipicamente cola (após a sincronização de área de transferência
+   computador-para-dispositivo)
 
-#### Preferências de injeção de texto
+Isso tipicamente funciona como esperado.
 
-Existe dois tipos de [eventos][textevents] gerados ao digitar um texto:
- - _eventos de teclas_, sinalizando que a tecla foi pressionada ou solta;
+O comportamento de fato depende da aplicação ativa, no entanto. Por exemplo,
+_Termux_ envia SIGINT com <kbd>Ctrl</kbd>+<kbd>c</kbd>, e _K-9 Mail_
+compõe uma nova mensagem.
+
+Para copiar, recortar e colar em tais casos (mas apenas suportado no Android >= 7):
+ - <kbd>MOD</kbd>+<kbd>c</kbd> injeta `COPY`
+ - <kbd>MOD</kbd>+<kbd>x</kbd> injeta `CUT`
+ - <kbd>MOD</kbd>+<kbd>v</kbd> injeta `PASTE` (após a sincronização de área de transferência
+   computador-para-dispositivo)
+
+Em adição, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permite injetar o
+texto da área de transferência do computador como uma sequência de eventos de tecla. Isso é útil quando o
+componente não aceita colar texto (por exemplo no _Termux_), mas pode
+quebrar conteúdo não-ASCII.
+
+**ADVERTÊNCIA:** Colar a área de transferência do computador para o dispositivo (tanto via
+<kbd>Ctrl</kbd>+<kbd>v</kbd> quanto <kbd>MOD</kbd>+<kbd>v</kbd>) copia o conteúdo
+para a área de transferência do dispositivo. Como consequência, qualquer aplicação Android pode ler
+o seu conteúdo. Você deve evitar colar conteúdo sensível (como senhas) dessa
+forma.
+
+Alguns dispositivos não se comportam como esperado quando a área de transferência é definida
+programaticamente. Uma opção `--legacy-paste` é fornecida para mudar o comportamento
+de <kbd>Ctrl</kbd>+<kbd>v</kbd> e <kbd>MOD</kbd>+<kbd>v</kbd> para que eles
+também injetem o texto da área de transferência do computador como uma sequência de eventos de tecla (da mesma
+forma que <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
+
+#### Pinçar para dar zoom
+
+Para simular "pinçar para dar zoom": <kbd>Ctrl</kbd>+_clicar-e-mover_.
+
+Mais precisamente, segure <kbd>Ctrl</kbd> enquanto pressiona o botão de clique-esquerdo. Até que
+o botão de clique-esquerdo seja liberado, todos os movimentos do mouse ampliar e rotacionam o
+conteúdo (se suportado pelo app) relativo ao centro da tela.
+
+Concretamente, scrcpy gera eventos adicionais de toque de um "dedo virtual" em
+uma posição invertida em relação ao centro da tela.
+
+
+#### Preferência de injeção de texto
+
+Existem dois tipos de [eventos][textevents] gerados ao digitar um texto:
+ - _eventos de tecla_, sinalizando que a tecla foi pressionada ou solta;
  - _eventos de texto_, sinalizando que o texto foi inserido.
 
-Por padrão, letras são injetadas usando eventos de teclas, assim teclados comportam-se
-como esperado em jogos (normalmente para tecladas WASD)
+Por padrão, letras são injetadas usando eventos de tecla, assim o teclado comporta-se
+como esperado em jogos (normalmente para teclas WASD).
 
-Mas isto pode [causar problemas][prefertext]. Se você encontrar tal problema,
-pode evitá-lo usando:
+Mas isso pode [causar problemas][prefertext]. Se você encontrar tal problema, você
+pode evitá-lo com:
 
 ```bash
 scrcpy --prefer-text
 ```
 
-(mas isto vai quebrar o comportamento do teclado em jogos)
+(mas isso vai quebrar o comportamento do teclado em jogos)
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
-### Transferência de arquivo
+#### Repetir tecla
+
+Por padrão, segurar uma tecla gera eventos de tecla repetidos. Isso pode causar
+problemas de performance em alguns jogos, onde esses eventos são inúteis de qualquer forma.
+
+Para evitar o encaminhamento eventos de tecla repetidos:
+
+```bash
+scrcpy --no-key-repeat
+```
+
+
+#### Clique-direito e clique-do-meio
+
+Por padrão, clique-direito dispara BACK (ou POWER) e clique-do-meio dispara
+HOME. Para desabilitar esses atalhos e encaminhar os cliques para o dispositivo:
+
+```bash
+scrcpy --forward-all-clicks
+```
+
+
+### Soltar arquivo
 
 #### Instalar APK
 
-Para instalar um APK, arraste e solte o arquivo APK(com extensão `.apk`) na janela _scrcpy_.
+Para instalar um APK, arraste e solte o arquivo APK (com extensão `.apk`) na janela
+_scrcpy_.
 
 Não existe feedback visual, um log é imprimido no console.
 
 
-#### Enviar arquivo para o dispositivo
+#### Enviar arquivo para dispositivo
 
-Para enviar um arquivo para o diretório `/sdcard/` no dispositivo, arraste e solte um arquivo não APK para a janela do
-_scrcpy_.
+Para enviar um arquivo para `/sdcard/` no dispositivo, arraste e solte um arquivo (não-APK) para a
+janela do _scrcpy_.
 
 Não existe feedback visual, um log é imprimido no console.
 
@@ -428,45 +661,73 @@ scrcpy --push-target /sdcard/foo/bar/
 
 ### Encaminhamento de áudio
 
-Áudio não é encaminhando pelo _scrcpy_. Use [USBaudio] (Apenas linux).
+Áudio não é encaminhado pelo _scrcpy_. Use [sndcpy].
 
 Também veja [issue #14].
 
-[USBaudio]: https://github.com/rom1v/usbaudio
+[sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Atalhos
 
- | Ação                                                          |   Atalho                        |   Atalho (macOS)
- | ------------------------------------------------------------- |:------------------------------- |:-----------------------------
- | Alternar para modo de tela cheia                              | `Ctrl`+`f`                      | `Cmd`+`f`
- | Redimensionar janela para pixel-perfect(Escala 1:1)           | `Ctrl`+`g`                      | `Cmd`+`g`
- | Redimensionar janela para tirar as bordas pretas              | `Ctrl`+`x` \| _Clique-duplo¹_   | `Cmd`+`x`  \| _Clique-duplo¹_
- | Clicar em `HOME`                                              | `Ctrl`+`h` \| _Clique-central_  | `Ctrl`+`h` \| _Clique-central_
- | Clicar em `BACK`                                              | `Ctrl`+`b` \| _Clique-direito²_ | `Cmd`+`b`  \| _Clique-direito²_
- | Clicar em `APP_SWITCH`                                        | `Ctrl`+`s`                      | `Cmd`+`s`
- | Clicar em `MENU`                                              | `Ctrl`+`m`                      | `Ctrl`+`m`
- | Clicar em `VOLUME_UP`                                         | `Ctrl`+`↑` _(cima)_             | `Cmd`+`↑` _(cima)_
- | Clicar em `VOLUME_DOWN`                                       | `Ctrl`+`↓` _(baixo)_            | `Cmd`+`↓` _(baixo)_
- | Clicar em `POWER`                                             | `Ctrl`+`p`                      | `Cmd`+`p`
- | Ligar                                                         | _Clique-direito²_               | _Clique-direito²_
- | Desligar a tela do dispositivo                                | `Ctrl`+`o`                      | `Cmd`+`o`
- | Rotacionar tela do dispositivo                                | `Ctrl`+`r`                      | `Cmd`+`r`
- | Expandir painel de notificação                                | `Ctrl`+`n`                      | `Cmd`+`n`
- | Esconder painel de notificação                                | `Ctrl`+`Shift`+`n`              | `Cmd`+`Shift`+`n`
- | Copiar área de transferência do dispositivo para o computador | `Ctrl`+`c`                      | `Cmd`+`c`
- | Colar área de transferência do computador para o dispositivo  | `Ctrl`+`v`                      | `Cmd`+`v`
- | Copiar área de transferência do computador para dispositivo   | `Ctrl`+`Shift`+`v`              | `Cmd`+`Shift`+`v`
- | Ativar/desativar contador de FPS(Frames por segundo)          | `Ctrl`+`i`                      | `Cmd`+`i`
+Na lista a seguir, <kbd>MOD</kbd> é o modificador de atalho. Por padrão, é
+<kbd>Alt</kbd> (esquerdo) ou <kbd>Super</kbd> (esquerdo).
+
+Ele pode ser mudado usando `--shortcut-mod`. Possíveis teclas são `lctrl`, `rctrl`,
+`lalt`, `ralt`, `lsuper` e `rsuper`. Por exemplo:
+
+```bash
+# usar RCtrl para atalhos
+scrcpy --shortcut-mod=rctrl
+
+# usar tanto LCtrl+LAlt quanto LSuper para atalhos
+scrcpy --shortcut-mod=lctrl+lalt,lsuper
+```
+
+_<kbd>[Super]</kbd> é tipicamente a tecla <kbd>Windows</kbd> ou <kbd>Cmd</kbd>._
+
+[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+
+ | Ação                                        |   Atalho
+ | ------------------------------------------- |:-----------------------------
+ | Mudar modo de tela cheia                    | <kbd>MOD</kbd>+<kbd>f</kbd>
+ | Rotacionar display para esquerda            | <kbd>MOD</kbd>+<kbd>←</kbd> _(esquerda)_
+ | Rotacionar display para direita             | <kbd>MOD</kbd>+<kbd>→</kbd> _(direita)_
+ | Redimensionar janela para 1:1 (pixel-perfect) | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Redimensionar janela para remover bordas pretas | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Clique-duplo¹_
+ | Clicar em `HOME`                            | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Clique-do-meio_
+ | Clicar em `BACK`                            | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Clique-direito²_
+ | Clicar em `APP_SWITCH`                      | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | Clicar em `MENU` (desbloquear tela          | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Clicar em `VOLUME_UP`                       | <kbd>MOD</kbd>+<kbd>↑</kbd> _(cima)_
+ | Clicar em `VOLUME_DOWN`                     | <kbd>MOD</kbd>+<kbd>↓</kbd> _(baixo)_
+ | Clicar em `POWER`                           | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | Ligar                                       | _Clique-direito²_
+ | Desligar tela do dispositivo (continuar espelhando) | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | Ligar tela do dispositivo                   | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
+ | Rotacionar tela do dispositivo              | <kbd>MOD</kbd>+<kbd>r</kbd>
+ | Expandir painel de notificação              | <kbd>MOD</kbd>+<kbd>n</kbd>
+ | Colapsar painel de notificação              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copiar para área de transferência³          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Recortar para área de transferência³        | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Sincronizar áreas de transferência e colar³ | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Injetar texto da área de transferência do computador | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | Ativar/desativar contador de FPS (em stdout) | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | Pinçar para dar zoom                        | <kbd>Ctrl</kbd>+_clicar-e-mover_
 
 _¹Clique-duplo em bordas pretas para removê-las._  
-_²Botão direito liga a tela se ela estiver desligada, clique BACK para o contrário._
+_²Clique-direito liga a tela se ela estiver desligada, pressiona BACK caso contrário._
+_³Apenas em Android >= 7._
+
+Todos os atalhos <kbd>Ctrl</kbd>+_tecla_ são encaminhados para o dispositivo, para que eles sejam
+tratados pela aplicação ativa.
 
 
 ## Caminhos personalizados
 
-Para usar um binário específico _adb_, configure seu caminho na variável de ambiente `ADB`:
+Para usar um binário _adb_ específico, configure seu caminho na variável de ambiente
+`ADB`:
 
     ADB=/caminho/para/adb scrcpy
 
@@ -478,7 +739,7 @@ Para sobrepor o caminho do arquivo `scrcpy-server`, configure seu caminho em
 
 ## Por quê _scrcpy_?
 
-Um colega me desafiou a encontrar um nome impronunciável como [gnirehtet].
+Um colega me desafiou a encontrar um nome tão impronunciável quanto [gnirehtet].
 
 [`strcpy`] copia uma **str**ing; `scrcpy` copia uma **scr**een.
 
@@ -495,12 +756,12 @@ Veja [BUILD].
 
 ## Problemas comuns
 
-Veja [FAQ](FAQ.md).
+Veja o [FAQ](FAQ.md).
 
 
 ## Desenvolvedores
 
-Leia a  [developers page].
+Leia a [página dos desenvolvedores][developers page].
 
 [developers page]: DEVELOP.md
 

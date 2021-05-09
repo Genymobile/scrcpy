@@ -80,10 +80,7 @@ apt install scrcpy
 
 為了保持簡單，Windows 用戶可以下載一個包含所有必需軟體 (包含 `adb`) 的壓縮包:
 
-- [`scrcpy-win64-v1.15.zip`][direct-win64]  
-   _(SHA-256: dd514bb591e63ef4cd52a53c30f1153a28f59722d64690eb07bd017849edcba2)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.15/scrcpy-win64-v1.15.zip
+ - [README](README.md#windows)
 
 [Chocolatey] 上也可以下載:
 

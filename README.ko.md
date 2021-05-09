@@ -68,9 +68,7 @@ Gentoo에서 ,[Ebuild] 가 가능합니다 : [`scrcpy/`][ebuild-link].
 
 윈도우 상에서, 간단하게 설치하기 위해 종속성이 있는 사전 구축된 아카이브가 제공됩니다 (`adb` 포함) :
 해당 파일은 Readme원본 링크를 통해서 다운로드가 가능합니다.
- - [`scrcpy-win`][direct-win]
-
-[direct-win]: https://github.com/Genymobile/scrcpy/blob/master/README.md#windows
+ - [README](README.md#windows)
 
 
 [어플을 직접 설치][BUILD] 할 수도 있습니다.
