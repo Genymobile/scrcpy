@@ -1,6 +1,6 @@
 _Apri il [README](README.md) originale e sempre aggiornato._
 
-# scrcpy (v1.17)???
+# scrcpy (v1.17)
 
 Questa applicazione fornisce la visualizzazione e il controllo dei dispositivi Android collegati via USB (o [via TCP/IP][article-tcpip]). Non richiede alcun accesso _root_.
 Funziona su _GNU/Linux_, _Windows_ e _macOS_.

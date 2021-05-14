@@ -1,3 +1,5 @@
+_Apri le [FAQ](FAQ.md) originali e sempre aggiornate._
+
 # Domande Frequenti (FAQ)
 
 Questi sono i problemi più comuni riportati e i loro stati.
