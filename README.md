@@ -460,7 +460,7 @@ scrcpy --display 1
 
 The list of display ids can be retrieved by:
 
-```
+```bash
 adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
