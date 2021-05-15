@@ -3,7 +3,7 @@ Solo se garantiza que el archivo [README](README.md) original esté actualizado.
 # scrcpy (v1.17)
 
 Esta aplicación proporciona imagen y control de un dispositivo Android conectado
-por USB (o [por TCP/IP][article-tcpip]). No requiere accesso _root_.
+por USB (o [por TCP/IP][article-tcpip]). No requiere acceso _root_.
 Compatible con _GNU/Linux_, _Windows_ y _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -11,7 +11,7 @@ Compatible con _GNU/Linux_, _Windows_ y _macOS_.
 Sus características principales son:
 
  - **ligero** (nativo, solo muestra la imagen del dispositivo)
- - **performancia** (30~60fps)
+ - **desempeño** (30~60fps)
  - **calidad** (1920×1080 o superior)
  - **baja latencia** ([35~70ms][lowlatency])
  - **corto tiempo de inicio** (~1 segundo para mostrar la primera imagen)
@@ -148,7 +148,7 @@ Enchufa el dispositivo Android, y ejecuta:
 scrcpy
 ```
 
-Acepta argumentos desde la línea de comandos, enlistados en:
+Acepta argumentos desde la línea de comandos, listados en:
 
 ```bash
 scrcpy --help
@@ -160,7 +160,7 @@ scrcpy --help
 
 #### Reducir la definición
 
-A veces es útil reducir la definición de la imagen del dispositivo Android para aumentar la performancia.
+A veces es útil reducir la definición de la imagen del dispositivo Android para aumentar el desempeño.
 
 Para limitar el ancho y la altura a un valor específico (ej. 1024):
 
@@ -212,7 +212,7 @@ Para fijar la rotación de la transmisión:
 
 ```bash
 scrcpy --lock-video-orientation 0   # orientación normal
-scrcpy --lock-video-orientation 1   # 90° contrareloj
+scrcpy --lock-video-orientation 1   # 90° contrarreloj
 scrcpy --lock-video-orientation 2   # 180°
 scrcpy --lock-video-orientation 3   # 90° sentido de las agujas del reloj
 ```
@@ -253,17 +253,17 @@ scrcpy -Nr file.mkv
 # interrumpe la grabación con Ctrl+C
 ```
 
-"Skipped frames" son grabados, incluso si no son mostrados en tiempo real (por razones de performancia). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
+"Skipped frames" son grabados, incluso si no son mostrados en tiempo real (por razones de desempeño). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
 variation]" no impacta el archivo grabado.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
-### Conección
+### Conexión
 
 #### Inalámbrica
 
-_Scrcpy_ usa `adb` para comunicarse con el dispositivo, y `adb` puede [conectarse] via TCP/IP:
+_Scrcpy_ usa `adb` para comunicarse con el dispositivo, y `adb` puede [conectarse] vía TCP/IP:
 
 1. Conecta el dispositivo al mismo Wi-Fi que tu computadora.
 2. Obtén la dirección IP del dispositivo, en Ajustes → Acerca del dispositivo → Estado, o ejecutando este comando:
@@ -272,7 +272,7 @@ _Scrcpy_ usa `adb` para comunicarse con el dispositivo, y `adb` puede [conectars
     adb shell ip route | awk '{print $9}'
     ```
 
-3. Habilita adb via TCP/IP en el dispositivo: `adb tcpip 5555`.
+3. Habilita adb vía TCP/IP en el dispositivo: `adb tcpip 5555`.
 4. Desenchufa el dispositivo.
 5. Conéctate a tu dispositivo: `adb connect IP_DEL_DISPOSITIVO:5555` _(reemplaza `IP_DEL_DISPOSITIVO`)_.
 6. Ejecuta `scrcpy` con normalidad.
@@ -289,7 +289,7 @@ scrcpy -b2M -m800  # versión breve
 
 #### Múltiples dispositivos
 
-Si hay muchos dispositivos enlistados en `adb devices`, será necesario especificar el _número de serie_:
+Si hay muchos dispositivos listados en `adb devices`, será necesario especificar el _número de serie_:
 
 ```bash
 scrcpy --serial 0123456789abcdef
@@ -346,7 +346,7 @@ scrcpy --force-adb-forward
 ```
 
 
-Al igual que las conecciones inalámbricas, puede resultar útil reducir la calidad:
+Al igual que las conexiones inalámbricas, puede resultar útil reducir la calidad:
 
 ```
 scrcpy -b2M -m800 --max-fps 15
@@ -372,7 +372,7 @@ scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
 
 #### Sin bordes
 
-Para desabilitar el diseño de la ventana:
+Para deshabilitar el diseño de la ventana:
 
 ```bash
 scrcpy --window-borderless
@@ -407,14 +407,14 @@ scrcpy --rotation 1
 
 Los valores posibles son:
  - `0`: sin rotación
- - `1`: 90 grados contrareloj
+ - `1`: 90 grados contrarreloj
  - `2`: 180 grados
  - `3`: 90 grados en sentido de las agujas del reloj
 
 La rotación también puede ser modificada con la combinación de teclas <kbd>MOD</kbd>+<kbd>←</kbd> _(izquierda)_ y <kbd>MOD</kbd>+<kbd>→</kbd> _(derecha)_.
 
 Nótese que _scrcpy_ maneja 3 diferentes rotaciones:
- - <kbd>MOD</kbd>+<kbd>r</kbd> solicita al dispositivo cambiar entre vertical y horizontal (la aplicación en uso puede rechazarlo si no soporta la horientación solicitada).
+ - <kbd>MOD</kbd>+<kbd>r</kbd> solicita al dispositivo cambiar entre vertical y horizontal (la aplicación en uso puede rechazarlo si no soporta la orientación solicitada).
  - [`--lock-video-orientation`](#lock-video-orientation) cambia la rotación de la transmisión (la orientación del video enviado a la PC). Esto afecta a la grabación.
  - `--rotation` (o <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>) rota solo el contenido de la imagen. Esto solo afecta a la imagen mostrada, no a la grabación.
 
@@ -472,7 +472,7 @@ O presionando <kbd>MOD</kbd>+<kbd>o</kbd> en cualquier momento.
 
 Para volver a prenderla, presione <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
 
-En Android, el botón de `POWER` siempre prende la pantalla. Por conveniencia, si `POWER` es enviado via scrcpy (con click-derecho o <kbd>MOD</kbd>+<kbd>p</kbd>), esto forzará a apagar la pantalla con un poco de atraso (en la mejor de las situaciones). El botón físico `POWER` seguirá prendiendo la pantalla.
+En Android, el botón de `POWER` siempre prende la pantalla. Por conveniencia, si `POWER` es enviado vía scrcpy (con click-derecho o <kbd>MOD</kbd>+<kbd>p</kbd>), esto forzará a apagar la pantalla con un poco de atraso (en la mejor de las situaciones). El botón físico `POWER` seguirá prendiendo la pantalla.
 
 También puede resultar útil para evitar que el dispositivo entre en inactividad:
 
@@ -496,16 +496,16 @@ scrcpy --render-expired-frames
 
 Para presentaciones, puede resultar útil mostrar los clicks físicos (en el dispositivo físicamente).
 
-Android provée esta opción en _Opciones para desarroladores_.
+Android provee esta opción en _Opciones para desarrolladores_.
 
-_Scrcpy_ provée una opción para habilitar esta función al iniciar la aplicación y restaurar el valor original al salir:
+_Scrcpy_ provee una opción para habilitar esta función al iniciar la aplicación y restaurar el valor original al salir:
 
 ```bash
 scrcpy --show-touches
 scrcpy -t  # versión breve
 ```
 
-Nótese que solo muestra los clicks _fisicos_ (con el dedo en el dispositivo).
+Nótese que solo muestra los clicks _físicos_ (con el dedo en el dispositivo).
 
 
 #### Desactivar protector de pantalla
@@ -534,39 +534,39 @@ Cuando que el portapapeles de Android cambia, automáticamente se sincroniza al 
 Cualquier shortcut con <kbd>Ctrl</kbd> es enviado al dispositivo. En particular:
  - <kbd>Ctrl</kbd>+<kbd>c</kbd> normalmente copia
  - <kbd>Ctrl</kbd>+<kbd>x</kbd> normalmente corta
- - <kbd>Ctrl</kbd>+<kbd>v</kbd> normalmente pega (después de la sinconización de portapapeles entre la computadora y el dispositivo)
+ - <kbd>Ctrl</kbd>+<kbd>v</kbd> normalmente pega (después de la sincronización de portapapeles entre la computadora y el dispositivo)
 
 Esto normalmente funciona como es esperado.
 
 Sin embargo, este comportamiento depende de la aplicación en uso. Por ejemplo, _Termux_ envía SIGINT con <kbd>Ctrl</kbd>+<kbd>c</kbd>, y _K-9 Mail_ crea un nuevo mensaje.
 
 Para copiar, cortar y pegar, en tales casos (solo soportado en Android >= 7):
- - <kbd>MOD</kbd>+<kbd>c</kbd> injecta `COPY`
- - <kbd>MOD</kbd>+<kbd>x</kbd> injecta `CUT`
- - <kbd>MOD</kbd>+<kbd>v</kbd> injecta `PASTE` (después de la sinconización de portapapeles entre la computadora y el dispositivo)
+ - <kbd>MOD</kbd>+<kbd>c</kbd> inyecta `COPY`
+ - <kbd>MOD</kbd>+<kbd>x</kbd> inyecta `CUT`
+ - <kbd>MOD</kbd>+<kbd>v</kbd> inyecta `PASTE` (después de la sincronización de portapapeles entre la computadora y el dispositivo)
 
-Además, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permite injectar el texto en el portapapeles de la computadora como una secuencia de teclas. Esto es útil cuando el componente no acepta pegado de texto (por ejemplo en _Termux_), pero puede romper caracteres no pertenecientes a ASCII.
+Además, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permite inyectar el texto en el portapapeles de la computadora como una secuencia de teclas. Esto es útil cuando el componente no acepta pegado de texto (por ejemplo en _Termux_), pero puede romper caracteres no pertenecientes a ASCII.
 
 **AVISO:** Pegar de la computadora al dispositivo (tanto con <kbd>Ctrl</kbd>+<kbd>v</kbd> o <kbd>MOD</kbd>+<kbd>v</kbd>) copia el contenido al portapapeles del dispositivo. Como consecuencia, cualquier aplicación de Android puede leer su contenido. Debería evitar pegar contenido sensible (como contraseñas) de esta forma.
 
-Algunos dispositivos no se comportan como es esperado al establecer el portapapeles programáticamente. La opción `--legacy-paste` está disponible para cambiar el comportamiento de <kbd>Ctrl</kbd>+<kbd>v</kbd> y <kbd>MOD</kbd>+<kbd>v</kbd> para que también injecten el texto del portapapeles de la computadora como una secuencia de teclas (de la misma forma que <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
+Algunos dispositivos no se comportan como es esperado al establecer el portapapeles programáticamente. La opción `--legacy-paste` está disponible para cambiar el comportamiento de <kbd>Ctrl</kbd>+<kbd>v</kbd> y <kbd>MOD</kbd>+<kbd>v</kbd> para que también inyecten el texto del portapapeles de la computadora como una secuencia de teclas (de la misma forma que <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
 
 #### Pellizcar para zoom
 
 Para simular "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-y-mover_.
 
-Más precisamente, manten <kbd>Ctrl</kbd> mientras presionas botón izquerdo. Hasta que no se suelte el botón, todos los movimientos del mouse cambiarán el tamaño y rotación del contenido (si es soportado por la app en uso) respecto al centro de la pantalla.
+Más precisamente, mantén <kbd>Ctrl</kbd> mientras presionas botón izquierdo. Hasta que no se suelte el botón, todos los movimientos del mouse cambiarán el tamaño y rotación del contenido (si es soportado por la app en uso) respecto al centro de la pantalla.
 
 Concretamente, scrcpy genera clicks adicionales con un "dedo virtual" en la posición invertida respecto al centro de la pantalla.
 
 
-#### Preferencias de injección de texto
+#### Preferencias de inyección de texto
 
 Existen dos tipos de [eventos][textevents] generados al escribir texto:
  - _key events_, marcando si la tecla es presionada o soltada;
  - _text events_, marcando si un texto fue introducido.
 
-Por defecto, las letras son injectadas usando _key events_, para que el teclado funcione como es esperado en juegos (tipicamente las teclas WASD).
+Por defecto, las letras son inyectadas usando _key events_, para que el teclado funcione como es esperado en juegos (típicamente las teclas WASD).
 
 Pero esto puede [causar problemas][prefertext]. Si encuentras tales problemas, los puedes evitar con:
 
@@ -582,7 +582,7 @@ scrcpy --prefer-text
 
 #### Repetir tecla
 
-Por defecto, mantener una tecla presionada genera múltiples _key events_. Esto puede causar problemas de performancia en algunos juegos, donde estos eventos no tienen sentido de todos modos.
+Por defecto, mantener una tecla presionada genera múltiples _key events_. Esto puede causar problemas de desempeño en algunos juegos, donde estos eventos no tienen sentido de todos modos.
 
 Para evitar enviar _key events_ repetidos:
 
@@ -656,11 +656,11 @@ _<kbd>[Super]</kbd> es generalmente la tecla <kbd>Windows</kbd> o <kbd>Cmd</kbd>
  | Rotar pantalla hacia la izquierda           | <kbd>MOD</kbd>+<kbd>←</kbd> _(izquierda)_
  | Rotar pantalla hacia la derecha             | <kbd>MOD</kbd>+<kbd>→</kbd> _(derecha)_
  | Ajustar ventana a 1:1 ("pixel-perfect")     | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Resize window to remove black borders       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doble click¹_
+ | Ajustar ventana para quitar los bordes negros| <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doble click¹_
  | Click en `INICIO`                           | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Botón del medio_
  | Click en `RETROCEDER`                       | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Botón derecho²_
  | Click en `CAMBIAR APLICACIÓN`               | <kbd>MOD</kbd>+<kbd>s</kbd>
- | Click en `MENU` (desbloquear pantalla)      | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Click en `MENÚ` (desbloquear pantalla)      | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Click en `SUBIR VOLUMEN`                    | <kbd>MOD</kbd>+<kbd>↑</kbd> _(arriba)_
  | Click en `BAJAR VOLUME`                     | <kbd>MOD</kbd>+<kbd>↓</kbd> _(abajo)_
  | Click en `ENCENDIDO`                        | <kbd>MOD</kbd>+<kbd>p</kbd>
@@ -673,9 +673,9 @@ _<kbd>[Super]</kbd> es generalmente la tecla <kbd>Windows</kbd> o <kbd>Cmd</kbd>
  | Copiar al portapapeles³                     | <kbd>MOD</kbd>+<kbd>c</kbd>
  | Cortar al portapapeles³                     | <kbd>MOD</kbd>+<kbd>x</kbd>
  | Synchronizar portapapeles y pegar³          | <kbd>MOD</kbd>+<kbd>v</kbd>
- | Injectar texto del portapapeles de la PC    | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | inyectar texto del portapapeles de la PC    | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Habilitar/Deshabilitar contador de FPS (en stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
- | Pellizcar para zoom                         | <kbd>Ctrl</kbd>+_click-and-move_
+ | Pellizcar para zoom                         | <kbd>Ctrl</kbd>+_click-y-mover_
 
 _¹Doble click en los bordes negros para eliminarlos._  
 _²Botón derecho enciende la pantalla si estaba apagada, sino ejecuta RETROCEDER._  
@@ -697,7 +697,7 @@ Para sobreescribir el path del archivo `scrcpy-server`, configure el path en `SC
 
 ## ¿Por qué _scrcpy_?
 
-Un colega me retó a encontrar un nombre tan inpronunciable como [gnirehtet].
+Un colega me retó a encontrar un nombre tan impronunciable como [gnirehtet].
 
 [`strcpy`] copia un **str**ing; `scrcpy` copia un **scr**een.
 
@@ -712,7 +712,7 @@ Véase [BUILD] (en inglés).
 
 ## Problemas generales
 
-Vea las [preguntas frequentes (en inglés)](FAQ.md).
+Vea las [preguntas frecuentes (en inglés)](FAQ.md).
 
 
 ## Desarrolladores
