@@ -737,7 +737,7 @@ Lea la [hoja de desarrolladores (en inglés)](DEVELOP.md).
     See the License for the specific language governing permissions and
     limitations under the License.
 
-## Articlulos
+## Artículos
 
 - [Introducing scrcpy][article-intro] (en inglés)
 - [Scrcpy now works wirelessly][article-tcpip] (en inglés)
