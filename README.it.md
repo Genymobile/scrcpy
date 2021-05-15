@@ -83,10 +83,7 @@ Puoi anche [compilare l'app manualmente][BUILD] (in inglese) ([procedimento semp
 
 Per Windows, per semplicità è disponibile un archivio precompilato con tutte le dipendenze (incluso `adb`):
 
- - [`scrcpy-win64-v1.17.zip`][direct-win64]  
-   _(SHA-256: 8b9e57993c707367ed10ebfe0e1ef563c7a29d9af4a355cd8b6a52a317c73eea)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.17/scrcpy-win64-v1.17.zip
+ - [README](README.md#windows) (Link al README originale per l'ultima versione)
 
 È anche disponibile in [Chocolatey]:
 
