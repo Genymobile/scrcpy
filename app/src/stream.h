@@ -6,7 +6,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <libavformat/avformat.h>
-#include <SDL2/SDL_atomic.h>
 
 #include "trait/packet_sink.h"
 #include "util/net.h"
@@ -27,10 +26,18 @@ struct stream {
     // packet is available
     bool has_pending;
     AVPacket pending;
+
+    const struct stream_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct stream_callbacks {
+    void (*on_eos)(struct stream *stream, void *userdata);
 };
 
 void
-stream_init(struct stream *stream, socket_t socket);
+stream_init(struct stream *stream, socket_t socket,
+            const struct stream_callbacks *cbs, void *cbs_userdata);
 
 void
 stream_add_sink(struct stream *stream, struct sc_packet_sink *sink);

@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_events.h>
 #include <unistd.h>
 
 #include "decoder.h"
@@ -56,13 +55,6 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
     return true;
-}
-
-static void
-notify_stopped(void) {
-    SDL_Event stop_event;
-    stop_event.type = EVENT_STREAM_STOPPED;
-    SDL_PushEvent(&stop_event);
 }
 
 static bool
@@ -251,15 +243,22 @@ finally_close_sinks:
 finally_free_codec_ctx:
     avcodec_free_context(&stream->codec_ctx);
 end:
-    notify_stopped();
+    stream->cbs->on_eos(stream, stream->cbs_userdata);
+
     return 0;
 }
 
 void
-stream_init(struct stream *stream, socket_t socket) {
+stream_init(struct stream *stream, socket_t socket,
+            const struct stream_callbacks *cbs, void *cbs_userdata) {
     stream->socket = socket;
     stream->has_pending = false;
     stream->sink_count = 0;
+
+    assert(cbs && cbs->on_eos);
+
+    stream->cbs = cbs;
+    stream->cbs_userdata = cbs_userdata;
 }
 
 void

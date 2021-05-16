@@ -241,6 +241,16 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     free(local_fmt);
 }
 
+static void
+stream_on_eos(struct stream *stream, void *userdata) {
+    (void) stream;
+    (void) userdata;
+
+    SDL_Event stop_event;
+    stop_event.type = EVENT_STREAM_STOPPED;
+    SDL_PushEvent(&stop_event);
+}
+
 bool
 scrcpy(const struct scrcpy_options *options) {
     if (!server_init(&server)) {
@@ -343,7 +353,10 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    stream_init(&stream, server.video_socket);
+    const struct stream_callbacks stream_cbs = {
+        .on_eos = stream_on_eos,
+    };
+    stream_init(&stream, server.video_socket, &stream_cbs, NULL);
 
     if (dec) {
         stream_add_sink(&stream, &dec->packet_sink);
