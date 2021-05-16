@@ -307,8 +307,7 @@ screen_init(struct screen *screen, const struct screen_params *params) {
 
     if (!fps_counter_init(&screen->fps_counter)) {
         LOGE("Could not initialize FPS counter");
-        video_buffer_destroy(&screen->vb);
-        return false;
+        goto error_destroy_video_buffer;
     }
 
     screen->frame_size = params->frame_size;
@@ -347,19 +346,14 @@ screen_init(struct screen *screen, const struct screen_params *params) {
                                       window_flags);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
-        fps_counter_destroy(&screen->fps_counter);
-        video_buffer_destroy(&screen->vb);
-        return false;
+        goto error_destroy_fps_counter;
     }
 
     screen->renderer = SDL_CreateRenderer(screen->window, -1,
                                           SDL_RENDERER_ACCELERATED);
     if (!screen->renderer) {
         LOGC("Could not create renderer: %s", SDL_GetError());
-        SDL_DestroyWindow(screen->window);
-        fps_counter_destroy(&screen->fps_counter);
-        video_buffer_destroy(&screen->vb);
-        return false;
+        goto error_destroy_window;
     }
 
     SDL_RendererInfo renderer_info;
@@ -408,22 +402,13 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     screen->texture = create_texture(screen);
     if (!screen->texture) {
         LOGC("Could not create texture: %s", SDL_GetError());
-        SDL_DestroyRenderer(screen->renderer);
-        SDL_DestroyWindow(screen->window);
-        fps_counter_destroy(&screen->fps_counter);
-        video_buffer_destroy(&screen->vb);
-        return false;
+        goto error_destroy_renderer;
     }
 
     screen->frame = av_frame_alloc();
     if (!screen->frame) {
         LOGC("Could not create screen frame");
-        SDL_DestroyTexture(screen->texture);
-        SDL_DestroyRenderer(screen->renderer);
-        SDL_DestroyWindow(screen->window);
-        fps_counter_destroy(&screen->fps_counter);
-        video_buffer_destroy(&screen->vb);
-        return false;
+        goto error_destroy_texture;
     }
 
     // Reset the window size to trigger a SIZE_CHANGED event, to workaround
@@ -454,6 +439,19 @@ screen_init(struct screen *screen, const struct screen_params *params) {
 #endif
 
     return true;
+
+error_destroy_texture:
+    SDL_DestroyTexture(screen->texture);
+error_destroy_renderer:
+    SDL_DestroyRenderer(screen->renderer);
+error_destroy_window:
+    SDL_DestroyWindow(screen->window);
+error_destroy_fps_counter:
+    fps_counter_destroy(&screen->fps_counter);
+error_destroy_video_buffer:
+    video_buffer_destroy(&screen->vb);
+
+    return false;
 }
 
 static void
