@@ -344,6 +344,7 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
                                       window_flags);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
+        video_buffer_destroy(&screen->vb);
         return false;
     }
 
