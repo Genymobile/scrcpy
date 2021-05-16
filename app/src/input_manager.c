@@ -517,7 +517,7 @@ input_manager_process_key(struct input_manager *im,
                 return;
             case SDLK_i:
                 if (!shift && !repeat && down) {
-                    switch_fps_counter_state(im->fps_counter);
+                    switch_fps_counter_state(&im->screen->fps_counter);
                 }
                 return;
             case SDLK_n:

@@ -14,7 +14,6 @@
 
 struct input_manager {
     struct controller *controller;
-    struct fps_counter *fps_counter;
     struct screen *screen;
 
     // SDL reports repeated events as a boolean, but Android expects the actual

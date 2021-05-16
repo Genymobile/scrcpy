@@ -20,7 +20,7 @@ struct screen {
 #endif
 
     struct video_buffer vb;
-    struct fps_counter *fps_counter;
+    struct fps_counter fps_counter;
 
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -66,8 +66,16 @@ struct screen_params {
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init(struct screen *screen, struct fps_counter *fps_counter,
-            const struct screen_params *params);
+screen_init(struct screen *screen, const struct screen_params *params);
+
+// request to interrupt any inner thread
+// must be called before screen_join()
+void
+screen_interrupt(struct screen *screen);
+
+// join any inner thread
+void
+screen_join(struct screen *screen);
 
 // destroy window, renderer and texture (if any)
 void

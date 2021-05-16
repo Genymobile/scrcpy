@@ -277,7 +277,7 @@ screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     }
 
     if (previous_frame_skipped) {
-        fps_counter_add_skipped_frame(screen->fps_counter);
+        fps_counter_add_skipped_frame(&screen->fps_counter);
         // The EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead
     } else {
@@ -293,10 +293,7 @@ screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
 }
 
 bool
-screen_init(struct screen *screen, struct fps_counter *fps_counter,
-            const struct screen_params *params) {
-    screen->fps_counter = fps_counter;
-
+screen_init(struct screen *screen, const struct screen_params *params) {
     screen->resize_pending = false;
     screen->has_frame = false;
     screen->fullscreen = false;
@@ -305,6 +302,12 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
     bool ok = video_buffer_init(&screen->vb);
     if (!ok) {
         LOGE("Could not initialize video buffer");
+        return false;
+    }
+
+    if (!fps_counter_init(&screen->fps_counter)) {
+        LOGE("Could not initialize FPS counter");
+        video_buffer_destroy(&screen->vb);
         return false;
     }
 
@@ -344,6 +347,7 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
                                       window_flags);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
+        fps_counter_destroy(&screen->fps_counter);
         video_buffer_destroy(&screen->vb);
         return false;
     }
@@ -353,6 +357,7 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
     if (!screen->renderer) {
         LOGC("Could not create renderer: %s", SDL_GetError());
         SDL_DestroyWindow(screen->window);
+        fps_counter_destroy(&screen->fps_counter);
         video_buffer_destroy(&screen->vb);
         return false;
     }
@@ -405,6 +410,7 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
         LOGC("Could not create texture: %s", SDL_GetError());
         SDL_DestroyRenderer(screen->renderer);
         SDL_DestroyWindow(screen->window);
+        fps_counter_destroy(&screen->fps_counter);
         video_buffer_destroy(&screen->vb);
         return false;
     }
@@ -415,6 +421,7 @@ screen_init(struct screen *screen, struct fps_counter *fps_counter,
         SDL_DestroyTexture(screen->texture);
         SDL_DestroyRenderer(screen->renderer);
         SDL_DestroyWindow(screen->window);
+        fps_counter_destroy(&screen->fps_counter);
         video_buffer_destroy(&screen->vb);
         return false;
     }
@@ -460,6 +467,16 @@ screen_hide_window(struct screen *screen) {
 }
 
 void
+screen_interrupt(struct screen *screen) {
+    fps_counter_interrupt(&screen->fps_counter);
+}
+
+void
+screen_join(struct screen *screen) {
+    fps_counter_join(&screen->fps_counter);
+}
+
+void
 screen_destroy(struct screen *screen) {
 #ifndef NDEBUG
     assert(!screen->open);
@@ -468,6 +485,7 @@ screen_destroy(struct screen *screen) {
     SDL_DestroyTexture(screen->texture);
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
+    fps_counter_destroy(&screen->fps_counter);
     video_buffer_destroy(&screen->vb);
 }
 
@@ -577,7 +595,7 @@ screen_update_frame(struct screen *screen) {
     video_buffer_consume(&screen->vb, screen->frame);
     AVFrame *frame = screen->frame;
 
-    fps_counter_add_rendered_frame(screen->fps_counter);
+    fps_counter_add_rendered_frame(&screen->fps_counter);
 
     struct size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {

@@ -150,6 +150,10 @@ fps_counter_interrupt(struct fps_counter *counter) {
 void
 fps_counter_join(struct fps_counter *counter) {
     if (counter->thread_started) {
+        // interrupted must be set by the thread calling join(), so no need to
+        // lock for the assertion
+        assert(counter->interrupted);
+
         sc_thread_join(&counter->thread, NULL);
     }
 }

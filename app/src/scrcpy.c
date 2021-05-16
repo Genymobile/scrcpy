@@ -18,7 +18,6 @@
 #include "device.h"
 #include "events.h"
 #include "file_handler.h"
-#include "fps_counter.h"
 #include "input_manager.h"
 #include "recorder.h"
 #include "screen.h"
@@ -33,7 +32,6 @@
 
 static struct server server;
 static struct screen screen;
-static struct fps_counter fps_counter;
 static struct stream stream;
 static struct decoder decoder;
 static struct recorder recorder;
@@ -45,7 +43,6 @@ static struct file_handler file_handler;
 
 static struct input_manager input_manager = {
     .controller = &controller,
-    .fps_counter = &fps_counter,
     .screen = &screen,
     .repeat = 0,
 
@@ -260,7 +257,6 @@ scrcpy(const struct scrcpy_options *options) {
     bool ret = false;
 
     bool server_started = false;
-    bool fps_counter_initialized = false;
     bool file_handler_initialized = false;
     bool recorder_initialized = false;
 #ifdef HAVE_V4L2
@@ -314,19 +310,12 @@ scrcpy(const struct scrcpy_options *options) {
         goto end;
     }
 
-    if (options->display) {
-        if (!fps_counter_init(&fps_counter)) {
+    if (options->display && options->control) {
+        if (!file_handler_init(&file_handler, server.serial,
+                               options->push_target)) {
             goto end;
         }
-        fps_counter_initialized = true;
-
-        if (options->control) {
-            if (!file_handler_init(&file_handler, server.serial,
-                                   options->push_target)) {
-                goto end;
-            }
-            file_handler_initialized = true;
-        }
+        file_handler_initialized = true;
     }
 
     struct decoder *dec = NULL;
@@ -396,7 +385,7 @@ scrcpy(const struct scrcpy_options *options) {
             .fullscreen = options->fullscreen,
         };
 
-        if (!screen_init(&screen, &fps_counter, &screen_params)) {
+        if (!screen_init(&screen, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
@@ -451,8 +440,8 @@ end:
     if (file_handler_initialized) {
         file_handler_stop(&file_handler);
     }
-    if (fps_counter_initialized) {
-        fps_counter_interrupt(&fps_counter);
+    if (screen_initialized) {
+        screen_interrupt(&screen);
     }
 
     if (server_started) {
@@ -475,6 +464,7 @@ end:
     // Destroy the screen only after the stream is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
     if (screen_initialized) {
+        screen_join(&screen);
         screen_destroy(&screen);
     }
 
@@ -492,11 +482,6 @@ end:
     if (file_handler_initialized) {
         file_handler_join(&file_handler);
         file_handler_destroy(&file_handler);
-    }
-
-    if (fps_counter_initialized) {
-        fps_counter_join(&fps_counter);
-        fps_counter_destroy(&fps_counter);
     }
 
     server_destroy(&server);
