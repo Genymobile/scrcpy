@@ -40,19 +40,7 @@ static struct sc_v4l2_sink v4l2_sink;
 #endif
 static struct controller controller;
 static struct file_handler file_handler;
-
-static struct input_manager input_manager = {
-    .controller = &controller,
-    .screen = &screen,
-    .repeat = 0,
-
-    // initialized later
-    .prefer_text = false,
-    .sdl_shortcut_mods = {
-        .data = {0},
-        .count = 0,
-    },
-};
+static struct input_manager input_manager;
 
 #ifdef _WIN32
 BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
@@ -422,7 +410,7 @@ scrcpy(const struct scrcpy_options *options) {
     }
     stream_started = true;
 
-    input_manager_init(&input_manager, options);
+    input_manager_init(&input_manager, &controller, &screen, options);
 
     ret = event_loop(options);
     LOGD("quit...");

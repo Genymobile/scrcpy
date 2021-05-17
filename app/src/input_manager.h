@@ -42,8 +42,8 @@ struct input_manager {
 };
 
 void
-input_manager_init(struct input_manager *im,
-                   const struct scrcpy_options *options);
+input_manager_init(struct input_manager *im, struct controller *controller,
+                   struct screen *screen, const struct scrcpy_options *options);
 
 bool
 input_manager_handle_event(struct input_manager *im, SDL_Event *event);

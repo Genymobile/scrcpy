@@ -52,9 +52,13 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 }
 
 void
-input_manager_init(struct input_manager *im,
-                   const struct scrcpy_options *options)
-{
+input_manager_init(struct input_manager *im, struct controller *controller,
+                   struct screen *screen,
+                   const struct scrcpy_options *options) {
+    im->controller = controller;
+    im->screen = screen;
+    im->repeat = 0;
+
     im->control = options->control;
     im->forward_key_repeat = options->forward_key_repeat;
     im->prefer_text = options->prefer_text;
