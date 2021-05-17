@@ -33,6 +33,7 @@ struct server {
 };
 
 struct server_params {
+    const char *serial;
     enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
@@ -56,8 +57,7 @@ server_init(struct server *server);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server, const char *serial,
-             const struct server_params *params);
+server_start(struct server *server, const struct server_params *params);
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 // block until the communication with the server is established

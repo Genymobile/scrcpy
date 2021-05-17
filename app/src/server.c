@@ -407,16 +407,15 @@ run_wait_server(void *data) {
 }
 
 bool
-server_start(struct server *server, const char *serial,
-             const struct server_params *params) {
-    if (serial) {
-        server->serial = strdup(serial);
+server_start(struct server *server, const struct server_params *params) {
+    if (params->serial) {
+        server->serial = strdup(params->serial);
         if (!server->serial) {
             return false;
         }
     }
 
-    if (!push_server(serial)) {
+    if (!push_server(params->serial)) {
         /* server->serial will be freed on server_destroy() */
         return false;
     }

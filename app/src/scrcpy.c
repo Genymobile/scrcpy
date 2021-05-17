@@ -256,6 +256,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     bool record = !!options->record_filename;
     struct server_params params = {
+        .serial = options->serial,
         .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,
@@ -272,7 +273,7 @@ scrcpy(const struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
     };
-    if (!server_start(&server, options->serial, &params)) {
+    if (!server_start(&server, &params)) {
         goto end;
     }
 
