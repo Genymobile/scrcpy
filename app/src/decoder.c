@@ -140,6 +140,8 @@ decoder_packet_sink_push(struct sc_packet_sink *sink, const AVPacket *packet) {
 
 void
 decoder_init(struct decoder *decoder) {
+    decoder->sink_count = 0;
+
     static const struct sc_packet_sink_ops ops = {
         .open = decoder_packet_sink_open,
         .close = decoder_packet_sink_close,
