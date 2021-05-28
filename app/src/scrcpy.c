@@ -29,17 +29,19 @@
 # include "v4l2_sink.h"
 #endif
 
-static struct server server;
-static struct screen screen;
-static struct stream stream;
-static struct decoder decoder;
-static struct recorder recorder;
+struct scrcpy {
+    struct server server;
+    struct screen screen;
+    struct stream stream;
+    struct decoder decoder;
+    struct recorder recorder;
 #ifdef HAVE_V4L2
-static struct sc_v4l2_sink v4l2_sink;
+    struct sc_v4l2_sink v4l2_sink;
 #endif
-static struct controller controller;
-static struct file_handler file_handler;
-static struct input_manager input_manager;
+    struct controller controller;
+    struct file_handler file_handler;
+    struct input_manager input_manager;
+};
 
 #ifdef _WIN32
 BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
@@ -129,7 +131,8 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(SDL_Event *event, const struct scrcpy_options *options) {
+handle_event(struct scrcpy *s, const struct scrcpy_options *options,
+             SDL_Event *event) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -154,17 +157,17 @@ handle_event(SDL_Event *event, const struct scrcpy_options *options) {
             } else {
                 action = ACTION_PUSH_FILE;
             }
-            file_handler_request(&file_handler, action, file);
+            file_handler_request(&s->file_handler, action, file);
             goto end;
         }
     }
 
-    bool consumed = screen_handle_event(&screen, event);
+    bool consumed = screen_handle_event(&s->screen, event);
     if (consumed) {
         goto end;
     }
 
-    consumed = input_manager_handle_event(&input_manager, event);
+    consumed = input_manager_handle_event(&s->input_manager, event);
     (void) consumed;
 
 end:
@@ -172,10 +175,10 @@ end:
 }
 
 static bool
-event_loop(const struct scrcpy_options *options) {
+event_loop(struct scrcpy *s, const struct scrcpy_options *options) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(&event, options);
+        enum event_result result = handle_event(s, options, &event);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
@@ -237,7 +240,10 @@ stream_on_eos(struct stream *stream, void *userdata) {
 
 bool
 scrcpy(const struct scrcpy_options *options) {
-    if (!server_init(&server)) {
+    static struct scrcpy scrcpy;
+    struct scrcpy *s = &scrcpy;
+
+    if (!server_init(&s->server)) {
         return false;
     }
 
@@ -273,7 +279,7 @@ scrcpy(const struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
     };
-    if (!server_start(&server, &params)) {
+    if (!server_start(&s->server, &params)) {
         goto end;
     }
 
@@ -287,12 +293,12 @@ scrcpy(const struct scrcpy_options *options) {
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct size frame_size;
 
-    if (!server_connect_to(&server, device_name, &frame_size)) {
+    if (!server_connect_to(&s->server, device_name, &frame_size)) {
         goto end;
     }
 
     if (options->display && options->control) {
-        if (!file_handler_init(&file_handler, server.serial,
+        if (!file_handler_init(&s->file_handler, s->server.serial,
                                options->push_target)) {
             goto end;
         }
@@ -305,19 +311,19 @@ scrcpy(const struct scrcpy_options *options) {
     needs_decoder |= !!options->v4l2_device;
 #endif
     if (needs_decoder) {
-        decoder_init(&decoder);
-        dec = &decoder;
+        decoder_init(&s->decoder);
+        dec = &s->decoder;
     }
 
     struct recorder *rec = NULL;
     if (record) {
-        if (!recorder_init(&recorder,
+        if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
                            frame_size)) {
             goto end;
         }
-        rec = &recorder;
+        rec = &s->recorder;
         recorder_initialized = true;
     }
 
@@ -326,24 +332,24 @@ scrcpy(const struct scrcpy_options *options) {
     const struct stream_callbacks stream_cbs = {
         .on_eos = stream_on_eos,
     };
-    stream_init(&stream, server.video_socket, &stream_cbs, NULL);
+    stream_init(&s->stream, s->server.video_socket, &stream_cbs, NULL);
 
     if (dec) {
-        stream_add_sink(&stream, &dec->packet_sink);
+        stream_add_sink(&s->stream, &dec->packet_sink);
     }
 
     if (rec) {
-        stream_add_sink(&stream, &rec->packet_sink);
+        stream_add_sink(&s->stream, &rec->packet_sink);
     }
 
     if (options->display) {
         if (options->control) {
-            if (!controller_init(&controller, server.control_socket)) {
+            if (!controller_init(&s->controller, s->server.control_socket)) {
                 goto end;
             }
             controller_initialized = true;
 
-            if (!controller_start(&controller)) {
+            if (!controller_start(&s->controller)) {
                 goto end;
             }
             controller_started = true;
@@ -366,19 +372,19 @@ scrcpy(const struct scrcpy_options *options) {
             .fullscreen = options->fullscreen,
         };
 
-        if (!screen_init(&screen, &screen_params)) {
+        if (!screen_init(&s->screen, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
 
-        decoder_add_sink(&decoder, &screen.frame_sink);
+        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
 
         if (options->turn_screen_off) {
             struct control_msg msg;
             msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
             msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
 
-            if (!controller_push_msg(&controller, &msg)) {
+            if (!controller_push_msg(&s->controller, &msg)) {
                 LOGW("Could not request 'set screen power mode'");
             }
         }
@@ -386,11 +392,11 @@ scrcpy(const struct scrcpy_options *options) {
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&v4l2_sink, options->v4l2_device, frame_size)) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size)) {
             goto end;
         }
 
-        decoder_add_sink(&decoder, &v4l2_sink.frame_sink);
+        decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }
@@ -398,74 +404,74 @@ scrcpy(const struct scrcpy_options *options) {
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
-    if (!stream_start(&stream)) {
+    if (!stream_start(&s->stream)) {
         goto end;
     }
     stream_started = true;
 
-    input_manager_init(&input_manager, &controller, &screen, options);
+    input_manager_init(&s->input_manager, &s->controller, &s->screen, options);
 
-    ret = event_loop(options);
+    ret = event_loop(s, options);
     LOGD("quit...");
 
     // Close the window immediately on closing, because screen_destroy() may
     // only be called once the stream thread is joined (it may take time)
-    screen_hide_window(&screen);
+    screen_hide_window(&s->screen);
 
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
     if (controller_started) {
-        controller_stop(&controller);
+        controller_stop(&s->controller);
     }
     if (file_handler_initialized) {
-        file_handler_stop(&file_handler);
+        file_handler_stop(&s->file_handler);
     }
     if (screen_initialized) {
-        screen_interrupt(&screen);
+        screen_interrupt(&s->screen);
     }
 
     if (server_started) {
         // shutdown the sockets and kill the server
-        server_stop(&server);
+        server_stop(&s->server);
     }
 
     // now that the sockets are shutdown, the stream and controller are
     // interrupted, we can join them
     if (stream_started) {
-        stream_join(&stream);
+        stream_join(&s->stream);
     }
 
 #ifdef HAVE_V4L2
     if (v4l2_sink_initialized) {
-        sc_v4l2_sink_destroy(&v4l2_sink);
+        sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
 #endif
 
     // Destroy the screen only after the stream is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
     if (screen_initialized) {
-        screen_join(&screen);
-        screen_destroy(&screen);
+        screen_join(&s->screen);
+        screen_destroy(&s->screen);
     }
 
     if (controller_started) {
-        controller_join(&controller);
+        controller_join(&s->controller);
     }
     if (controller_initialized) {
-        controller_destroy(&controller);
+        controller_destroy(&s->controller);
     }
 
     if (recorder_initialized) {
-        recorder_destroy(&recorder);
+        recorder_destroy(&s->recorder);
     }
 
     if (file_handler_initialized) {
-        file_handler_join(&file_handler);
-        file_handler_destroy(&file_handler);
+        file_handler_join(&s->file_handler);
+        file_handler_destroy(&s->file_handler);
     }
 
-    server_destroy(&server);
+    server_destroy(&s->server);
 
     return ret;
 }
