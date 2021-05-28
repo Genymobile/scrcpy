@@ -748,7 +748,9 @@ handled by the active application.
 To use a specific _adb_ binary, configure its path in the environment variable
 `ADB`:
 
-    ADB=/path/to/adb scrcpy
+```bash
+ADB=/path/to/adb scrcpy
+```
 
 To override the path of the `scrcpy-server` file, configure its path in
 `SCRCPY_SERVER_PATH`.
