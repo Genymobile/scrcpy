@@ -369,7 +369,7 @@ scrcpy(const struct scrcpy_options *options) {
         fps_counter_initialized = true;
 
         if (!video_buffer_init(&video_buffer, &fps_counter,
-                               options->render_expired_frames)) {
+                               options->render_expired_frames, &frame_size)) {
             goto end;
         }
         video_buffer_initialized = true;

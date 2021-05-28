@@ -203,7 +203,7 @@ static inline SDL_Texture *
 create_texture(struct screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
     struct size size = screen->frame_size;
-    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
+    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_NV12,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              size.width, size.height);
     if (!texture) {
@@ -442,10 +442,8 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 // write the frame into the texture
 static void
 update_texture(struct screen *screen, const AVFrame *frame) {
-    SDL_UpdateYUVTexture(screen->texture, NULL,
-            frame->data[0], frame->linesize[0],
-            frame->data[1], frame->linesize[1],
-            frame->data[2], frame->linesize[2]);
+    SDL_UpdateTexture(screen->texture, NULL,
+            frame->data[0], frame->linesize[0]);
 
     if (screen->mipmaps) {
         assert(screen->use_opengl);

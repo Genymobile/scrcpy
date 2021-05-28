@@ -5,14 +5,17 @@
 #include <SDL2/SDL_mutex.h>
 
 #include "config.h"
+#include "common.h"
 #include "fps_counter.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
 
 struct video_buffer {
+    AVFrame *hw_frame;
     AVFrame *decoding_frame;
     AVFrame *rendering_frame;
+    void *out_buffer;
     SDL_mutex *mutex;
     bool render_expired_frames;
     bool interrupted;
@@ -23,7 +26,7 @@ struct video_buffer {
 
 bool
 video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames);
+                  bool render_expired_frames, struct size *size);
 
 void
 video_buffer_destroy(struct video_buffer *vb);
