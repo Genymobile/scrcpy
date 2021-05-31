@@ -230,7 +230,7 @@ public final class Server {
             if (encoders != null && encoders.length > 0) {
                 Ln.e("Try to use one of the available encoders:");
                 for (MediaCodecInfo encoder : encoders) {
-                    Ln.e("    scrcpy --encoder-name '" + encoder.getName() + "'");
+                    Ln.e("    scrcpy --encoder '" + encoder.getName() + "'");
                 }
             }
         }
