@@ -1,0 +1,36 @@
+build:
+    name: Build
+    agent:
+        type: Unity::VM
+        image: slough-ops/ubuntu-20.04-base:stable
+        flavor: b1.large
+    commands:
+        - sudo -n apt-get update
+        - sudo -n apt install -y ffmpeg libsdl2-2.0-0 adb gcc git pkg-config meson ninja-build libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev openjdk-11-jdk mingw-w64 mingw-w64-tools make zip
+        
+        # Get latest Android cmdline tools
+        - mkdir ~/android-sdk
+        - export ANDROID_SDK_ROOT=~/android-sdk
+        - wget -O ~/android-sdk.zip https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
+        - unzip ~/android-sdk.zip -d $ANDROID_SDK_ROOT
+        
+        # accept all licenses
+        - yes | ~/android-sdk/cmdline-tools/bin/sdkmanager --licenses --sdk_root=$ANDROID_SDK_ROOT
+
+        # Build for Linux
+        - meson x --buildtype release --strip -Db_lto=true
+        - ninja -Cx
+        
+        # Build for Windows
+        - ./release.sh
+        
+    artifacts:
+        win32:
+            paths:
+                - dist/scrcpy-win32-*
+        win64:
+            paths:
+                - dist/scrcpy-win64-*
+        server:
+            paths:
+                - release-*/scrcpy-server-*
