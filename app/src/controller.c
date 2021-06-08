@@ -48,6 +48,7 @@ controller_destroy(struct controller *controller) {
 bool
 controller_push_msg(struct controller *controller,
                       const struct control_msg *msg) {
+    control_msg_log(msg);
     sc_mutex_lock(&controller->mutex);
     bool was_empty = cbuf_is_empty(&controller->queue);
     bool res = cbuf_push(&controller->queue, *msg);

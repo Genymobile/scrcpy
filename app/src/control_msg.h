@@ -85,6 +85,9 @@ size_t
 control_msg_serialize(const struct control_msg *msg, unsigned char *buf);
 
 void
+control_msg_log(const struct control_msg *msg);
+
+void
 control_msg_destroy(struct control_msg *msg);
 
 #endif

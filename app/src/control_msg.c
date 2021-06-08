@@ -1,12 +1,59 @@
 #include "control_msg.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "util/buffer_util.h"
 #include "util/log.h"
 #include "util/str_util.h"
+
+/**
+ * Map an enum value to a string based on an array, without crashing on an
+ * out-of-bounds index.
+ */
+#define ENUM_TO_LABEL(labels, value) \
+    ((size_t) (value) < ARRAY_LEN(labels) ? labels[value] : "???")
+
+#define KEYEVENT_ACTION_LABEL(value) \
+    ENUM_TO_LABEL(android_keyevent_action_labels, value)
+
+#define MOTIONEVENT_ACTION_LABEL(value) \
+    ENUM_TO_LABEL(android_motionevent_action_labels, value)
+
+#define SCREEN_POWER_MODE_LABEL(value) \
+    ENUM_TO_LABEL(screen_power_mode_labels, value)
+
+static const char *const android_keyevent_action_labels[] = {
+    "down",
+    "up",
+    "multi",
+};
+
+static const char *const android_motionevent_action_labels[] = {
+    "down",
+    "up",
+    "move",
+    "cancel",
+    "outside",
+    "ponter-down",
+    "pointer-up",
+    "hover-move",
+    "scroll",
+    "hover-enter"
+    "hover-exit",
+    "btn-press",
+    "btn-release",
+};
+
+static const char *const screen_power_mode_labels[] = {
+    "off",
+    "doze",
+    "normal",
+    "doze-suspend",
+    "suspend",
+};
 
 static void
 write_position(uint8_t *buf, const struct position *position) {
@@ -90,6 +137,89 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         default:
             LOGW("Unknown message type: %u", (unsigned) msg->type);
             return 0;
+    }
+}
+
+void
+control_msg_log(const struct control_msg *msg) {
+#define LOG_CMSG(fmt, ...) LOGV("input: " fmt, ## __VA_ARGS__)
+    switch (msg->type) {
+        case CONTROL_MSG_TYPE_INJECT_KEYCODE:
+            LOG_CMSG("key %-4s code=%d repeat=%" PRIu32 " meta=%06lx",
+                     KEYEVENT_ACTION_LABEL(msg->inject_keycode.action),
+                     (int) msg->inject_keycode.keycode,
+                     msg->inject_keycode.repeat,
+                     (long) msg->inject_keycode.metastate);
+            break;
+        case CONTROL_MSG_TYPE_INJECT_TEXT:
+            LOG_CMSG("text \"%s\"", msg->inject_text.text);
+            break;
+        case CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT: {
+            int action = msg->inject_touch_event.action
+                       & AMOTION_EVENT_ACTION_MASK;
+            uint64_t id = msg->inject_touch_event.pointer_id;
+            if (id == POINTER_ID_MOUSE || id == POINTER_ID_VIRTUAL_FINGER) {
+                // string pointer id
+                LOG_CMSG("touch [id=%s] %-4s position=%" PRIi32 ",%" PRIi32
+                             " pressure=%g buttons=%06lx",
+                         id == POINTER_ID_MOUSE ? "mouse" : "vfinger",
+                         MOTIONEVENT_ACTION_LABEL(action),
+                         msg->inject_touch_event.position.point.x,
+                         msg->inject_touch_event.position.point.y,
+                         msg->inject_touch_event.pressure,
+                         (long) msg->inject_touch_event.buttons);
+            } else {
+                // numeric pointer id
+                LOG_CMSG("touch [id=%" PRIu64 "] %-4s position=%" PRIi32 ",%"
+                             PRIi32 " pressure=%g buttons=%06lx",
+                         id,
+                         MOTIONEVENT_ACTION_LABEL(action),
+                         msg->inject_touch_event.position.point.x,
+                         msg->inject_touch_event.position.point.y,
+                         msg->inject_touch_event.pressure,
+                         (long) msg->inject_touch_event.buttons);
+            }
+            break;
+        }
+        case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
+            LOG_CMSG("scroll position=%" PRIi32 ",%" PRIi32 " hscroll=%" PRIi32
+                         " vscroll=%" PRIi32,
+                     msg->inject_scroll_event.position.point.x,
+                     msg->inject_scroll_event.position.point.y,
+                     msg->inject_scroll_event.hscroll,
+                     msg->inject_scroll_event.vscroll);
+            break;
+        case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
+            LOG_CMSG("back-or-screen-on %s",
+                     KEYEVENT_ACTION_LABEL(msg->inject_keycode.action));
+            break;
+        case CONTROL_MSG_TYPE_SET_CLIPBOARD:
+            LOG_CMSG("clipboard %s \"%s\"",
+                     msg->set_clipboard.paste ? "paste" : "copy",
+                     msg->set_clipboard.text);
+            break;
+        case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
+            LOG_CMSG("power mode %s",
+                     SCREEN_POWER_MODE_LABEL(msg->set_screen_power_mode.mode));
+            break;
+        case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
+            LOG_CMSG("expand notification panel");
+            break;
+        case CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
+            LOG_CMSG("expand settings panel");
+            break;
+        case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
+            LOG_CMSG("collapse panels");
+            break;
+        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+            LOG_CMSG("get clipboard");
+            break;
+        case CONTROL_MSG_TYPE_ROTATE_DEVICE:
+            LOG_CMSG("rotate device");
+            break;
+        default:
+            LOG_CMSG("unknown type: %u", (unsigned) msg->type);
+            break;
     }
 }
 
