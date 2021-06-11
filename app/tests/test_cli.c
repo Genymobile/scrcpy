@@ -51,7 +51,7 @@ static void test_options(void) {
         "--fullscreen",
         "--max-fps", "30",
         "--max-size", "1024",
-        "--lock-video-orientation", "2",
+        "--lock-video-orientation=2", // optional arguments require '='
         // "--no-control" is not compatible with "--turn-screen-off"
         // "--no-display" is not compatible with "--fulscreen"
         "--port", "1234:1236",
