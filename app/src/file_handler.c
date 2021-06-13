@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "adb.h"
+#include "control_msg.h"
+#include "controller.h"
 #include "util/log.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/"
@@ -14,7 +16,8 @@ file_handler_request_destroy(struct file_handler_request *req) {
 }
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial,
+file_handler_init(struct file_handler *file_handler,
+                  struct controller *controller, const char *serial,
                   const char *push_target) {
 
     cbuf_init(&file_handler->queue);
@@ -49,6 +52,8 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
     file_handler->current_process = PROCESS_NONE;
 
     file_handler->push_target = push_target ? push_target : DEFAULT_PUSH_TARGET;
+
+    file_handler->controller = controller;
 
     return true;
 }
@@ -103,6 +108,24 @@ file_handler_request(struct file_handler *file_handler,
     return res;
 }
 
+static bool
+request_scan_media(struct file_handler *file_handler) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_SCAN_MEDIA;
+    msg.scan_media.path = strdup(file_handler->push_target);
+    if (!msg.scan_media.path) {
+        LOGW("Could not strdup() media path");
+        return false;
+    }
+
+    if (!controller_push_msg(file_handler->controller, &msg)) {
+        LOGW("Could not request 'scan media'");
+        return false;
+    }
+
+    return true;
+}
+
 static int
 run_file_handler(void *data) {
     struct file_handler *file_handler = data;
@@ -145,6 +168,7 @@ run_file_handler(void *data) {
             if (process_check_success(process, "adb push", false)) {
                 LOGI("%s successfully pushed to %s", req.file,
                                                      file_handler->push_target);
+                request_scan_media(file_handler);
             } else {
                 LOGE("Failed to push %s to %s", req.file,
                                                 file_handler->push_target);

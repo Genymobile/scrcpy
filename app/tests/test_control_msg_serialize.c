@@ -278,6 +278,28 @@ static void test_serialize_rotate_device(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_scan_media(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_SCAN_MEDIA,
+        .scan_media = {
+            .path = "/sdcard/Download/",
+        },
+    };
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == 22);
+
+    const unsigned char expected[] = {
+        CONTROL_MSG_TYPE_SCAN_MEDIA,
+        0x00, 0x00, 0x00, 0x11, // path length
+        '/', 's', 'd', 'c', 'a', 'r', 'd', '/',
+        'D', 'o', 'w', 'n', 'l', 'o', 'a', 'd',
+        '/' // path
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -295,5 +317,6 @@ int main(int argc, char *argv[]) {
     test_serialize_set_clipboard();
     test_serialize_set_screen_power_mode();
     test_serialize_rotate_device();
+    test_serialize_scan_media();
     return 0;
 }

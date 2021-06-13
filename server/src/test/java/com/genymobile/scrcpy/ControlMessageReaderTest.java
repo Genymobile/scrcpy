@@ -315,6 +315,26 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testScanMedia() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_SCAN_MEDIA);
+        byte[] text = "/sdcard/Download/".getBytes(StandardCharsets.UTF_8);
+        dos.writeInt(text.length);
+        dos.write(text);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_SCAN_MEDIA, event.getType());
+        Assert.assertEquals("/sdcard/Download/", event.getText());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 

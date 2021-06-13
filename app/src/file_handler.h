@@ -22,6 +22,7 @@ struct file_handler_request {
 struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 
 struct file_handler {
+    struct controller *controller;
     char *serial;
     const char *push_target;
     sc_thread thread;
@@ -34,7 +35,8 @@ struct file_handler {
 };
 
 bool
-file_handler_init(struct file_handler *file_handler, const char *serial,
+file_handler_init(struct file_handler *file_handler,
+                  struct controller *controller, const char *serial,
                   const char *push_target);
 
 void

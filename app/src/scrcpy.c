@@ -346,8 +346,8 @@ scrcpy(const struct scrcpy_options *options) {
             }
             controller_started = true;
 
-            if (!file_handler_init(&s->file_handler, s->server.serial,
-                                   options->push_target)) {
+            if (!file_handler_init(&s->file_handler, &s->controller,
+                                   s->server.serial, options->push_target)) {
                 goto end;
             }
             file_handler_initialized = true;
