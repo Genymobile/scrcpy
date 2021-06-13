@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -7,6 +9,7 @@ import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -134,6 +137,12 @@ public class Controller {
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 Device.rotateDevice();
+                break;
+            case ControlMessage.TYPE_SCAN_MEDIA:
+                String path = msg.getText();
+                Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                intent.setData(Uri.fromFile(new File(path)));
+                Device.sendBroadcast(intent);
                 break;
             default:
                 // do nothing

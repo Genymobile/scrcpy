@@ -76,6 +76,9 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 msg = parseSetScreenPowerMode();
                 break;
+            case ControlMessage.TYPE_SCAN_MEDIA:
+                msg = parseScanMedia();
+                break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
             case ControlMessage.TYPE_COLLAPSE_PANELS:
@@ -180,6 +183,14 @@ public class ControlMessageReader {
         }
         int mode = buffer.get();
         return ControlMessage.createSetScreenPowerMode(mode);
+    }
+
+    private ControlMessage parseScanMedia() {
+        String path = parseString();
+        if (path == null) {
+            return null;
+        }
+        return ControlMessage.createScanMedia(path);
     }
 
     private static Position readPosition(ByteBuffer buffer) {
