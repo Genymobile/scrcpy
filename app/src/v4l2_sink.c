@@ -180,7 +180,12 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
     // still expects a pointer-to-non-const (it has not be updated accordingly)
     // <https://github.com/FFmpeg/FFmpeg/commit/0694d8702421e7aff1340038559c438b61bb30dd>
     vs->format_ctx->oformat = (AVOutputFormat *) format;
-    vs->format_ctx->url = strdup(vs->device_name);
+#ifdef SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
+# define CTX_URL_FIELD url
+#else
+# define CTX_URL_FIELD filename
+#endif
+    vs->format_ctx->CTX_URL_FIELD = strdup(vs->device_name);
     if (!vs->format_ctx->url) {
         LOGE("Could not strdup v4l2 device name");
         goto error_avformat_free_context;
