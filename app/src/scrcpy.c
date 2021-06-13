@@ -297,14 +297,6 @@ scrcpy(const struct scrcpy_options *options) {
         goto end;
     }
 
-    if (options->display && options->control) {
-        if (!file_handler_init(&s->file_handler, s->server.serial,
-                               options->push_target)) {
-            goto end;
-        }
-        file_handler_initialized = true;
-    }
-
     struct decoder *dec = NULL;
     bool needs_decoder = options->display;
 #ifdef HAVE_V4L2
@@ -353,6 +345,12 @@ scrcpy(const struct scrcpy_options *options) {
                 goto end;
             }
             controller_started = true;
+
+            if (!file_handler_init(&s->file_handler, s->server.serial,
+                                   options->push_target)) {
+                goto end;
+            }
+            file_handler_initialized = true;
         }
 
         const char *window_title =
