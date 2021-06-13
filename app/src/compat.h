@@ -22,6 +22,18 @@
 # define SCRCPY_LAVF_REQUIRES_REGISTER_ALL
 #endif
 
+
+// In ffmpeg/doc/APIchanges:
+// 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+//   Deprecate AVFormatContext filename field which had limited length, use the
+//   new dynamically allocated url field instead.
+//
+// 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+//   Add url field to AVFormatContext and add ff_format_set_url helper function.
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 7, 100)
+# define SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
+#endif
+
 #if SDL_VERSION_ATLEAST(2, 0, 5)
 // <https://wiki.libsdl.org/SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH>
 # define SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
