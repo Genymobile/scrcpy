@@ -129,7 +129,7 @@ scrcpy_print_usage(const char *arg0) {
         "    --push-target path\n"
         "        Set the target directory for pushing files to the device by\n"
         "        drag & drop. It is passed as-is to \"adb push\".\n"
-        "        Default is \"/sdcard/\".\n"
+        "        Default is \"/sdcard/Download/\".\n"
         "\n"
         "    -r, --record file.mp4\n"
         "        Record screen to file.\n"

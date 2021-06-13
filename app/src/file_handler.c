@@ -6,7 +6,7 @@
 #include "adb.h"
 #include "util/log.h"
 
-#define DEFAULT_PUSH_TARGET "/sdcard/"
+#define DEFAULT_PUSH_TARGET "/sdcard/Download/"
 
 static void
 file_handler_request_destroy(struct file_handler_request *req) {
