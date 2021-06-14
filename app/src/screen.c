@@ -41,6 +41,18 @@ get_window_size(const struct screen *screen) {
     return size;
 }
 
+static struct point
+get_window_position(const struct screen *screen) {
+    int x;
+    int y;
+    SDL_GetWindowPosition(screen->window, &x, &y);
+
+    struct point point;
+    point.x = x;
+    point.y = y;
+    return point;
+}
+
 // set the window size to be applied when fullscreen is disabled
 static void
 set_window_size(struct screen *screen, struct size new_size) {
@@ -120,13 +132,6 @@ get_optimal_size(struct size current_size, struct size content_size) {
     }
 
     return window_size;
-}
-
-// same as get_optimal_size(), but read the current size from the window
-static inline struct size
-get_optimal_window_size(const struct screen *screen, struct size content_size) {
-    struct size window_size = get_window_size(screen);
-    return get_optimal_size(window_size, content_size);
 }
 
 // initially, there is no current size, so use the frame size as current size
@@ -662,9 +667,20 @@ screen_resize_to_fit(struct screen *screen) {
         return;
     }
 
+    struct point point = get_window_position(screen);
+    struct size window_size = get_window_size(screen);
+
     struct size optimal_size =
-        get_optimal_window_size(screen, screen->content_size);
+        get_optimal_size(window_size, screen->content_size);
+
+    // Center the window related to the device screen
+    assert(optimal_size.width <= window_size.width);
+    assert(optimal_size.height <= window_size.height);
+    uint32_t new_x = point.x + (window_size.width - optimal_size.width) / 2;
+    uint32_t new_y = point.y + (window_size.height - optimal_size.height) / 2;
+
     SDL_SetWindowSize(screen->window, optimal_size.width, optimal_size.height);
+    SDL_SetWindowPosition(screen->window, new_x, new_y);
     LOGD("Resized to optimal size: %ux%u", optimal_size.width,
                                            optimal_size.height);
 }
