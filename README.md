@@ -303,7 +303,8 @@ To start scrcpy using a v4l2 sink:
 
 ```bash
 scrcpy --v4l2-sink=/dev/videoN
-scrcpy --v4l2-sink=/dev/videoN -N  # --no-display to disable mirroring window
+scrcpy --v4l2-sink=/dev/videoN --no-display  # disable mirroring window
+scrcpy --v4l2-sink=/dev/videoN -N            # short version
 ```
 
 (replace `N` by the device ID, check with `ls /dev/video*`)
