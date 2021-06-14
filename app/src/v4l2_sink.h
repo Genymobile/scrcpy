@@ -26,7 +26,7 @@ struct sc_v4l2_sink {
     bool header_written;
 
     AVFrame *frame;
-    AVPacket packet;
+    AVPacket *packet;
 };
 
 bool

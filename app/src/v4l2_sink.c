@@ -86,7 +86,7 @@ encode_and_write_frame(struct sc_v4l2_sink *vs, const AVFrame *frame) {
         return false;
     }
 
-    AVPacket *packet = &vs->packet;
+    AVPacket *packet = vs->packet;
     ret = avcodec_receive_packet(vs->encoder_ctx, packet);
     if (ret == 0) {
         // A packet was received
@@ -235,11 +235,17 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
         goto error_avcodec_close;
     }
 
+    vs->packet = av_packet_alloc();
+    if (!vs->packet) {
+        LOGE("Could not allocate packet");
+        goto error_av_frame_free;
+    }
+
     LOGD("Starting v4l2 thread");
     ok = sc_thread_create(&vs->thread, run_v4l2_sink, "v4l2", vs);
     if (!ok) {
         LOGC("Could not start v4l2 thread");
-        goto error_av_frame_free;
+        goto error_av_packet_free;
     }
 
     vs->header_written = false;
@@ -249,6 +255,8 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     return true;
 
+error_av_packet_free:
+    av_packet_free(&vs->packet);
 error_av_frame_free:
     av_frame_free(&vs->frame);
 error_avcodec_close:
@@ -278,6 +286,7 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
     sc_thread_join(&vs->thread, NULL);
 
+    av_packet_free(&vs->packet);
     av_frame_free(&vs->frame);
     avcodec_close(vs->encoder_ctx);
     avcodec_free_context(&vs->encoder_ctx);
