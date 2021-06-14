@@ -13,7 +13,7 @@
 #include "util/thread.h"
 
 struct record_packet {
-    AVPacket packet;
+    AVPacket *packet;
     struct record_packet *next;
 };
 

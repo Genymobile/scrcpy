@@ -35,11 +35,14 @@ record_packet_new(const AVPacket *packet) {
         return NULL;
     }
 
-    // av_packet_ref() does not initialize all fields in old FFmpeg versions
-    // See <https://github.com/Genymobile/scrcpy/issues/707>
-    av_init_packet(&rec->packet);
+    rec->packet = av_packet_alloc();
+    if (!rec->packet) {
+        free(rec);
+        return NULL;
+    }
 
-    if (av_packet_ref(&rec->packet, packet)) {
+    if (av_packet_ref(rec->packet, packet)) {
+        av_packet_free(&rec->packet);
         free(rec);
         return NULL;
     }
@@ -48,7 +51,8 @@ record_packet_new(const AVPacket *packet) {
 
 static void
 record_packet_delete(struct record_packet *rec) {
-    av_packet_unref(&rec->packet);
+    av_packet_unref(rec->packet);
+    av_packet_free(&rec->packet);
     free(rec);
 }
 
@@ -144,8 +148,8 @@ run_recorder(void *data) {
             struct record_packet *last = recorder->previous;
             if (last) {
                 // assign an arbitrary duration to the last packet
-                last->packet.duration = 100000;
-                bool ok = recorder_write(recorder, &last->packet);
+                last->packet->duration = 100000;
+                bool ok = recorder_write(recorder, last->packet);
                 if (!ok) {
                     // failing to write the last frame is not very serious, no
                     // future frame may depend on it, so the resulting file
@@ -172,13 +176,14 @@ run_recorder(void *data) {
         }
 
         // config packets have no PTS, we must ignore them
-        if (rec->packet.pts != AV_NOPTS_VALUE
-            && previous->packet.pts != AV_NOPTS_VALUE) {
+        if (rec->packet->pts != AV_NOPTS_VALUE
+            && previous->packet->pts != AV_NOPTS_VALUE) {
             // we now know the duration of the previous packet
-            previous->packet.duration = rec->packet.pts - previous->packet.pts;
+            previous->packet->duration =
+                rec->packet->pts - previous->packet->pts;
         }
 
-        bool ok = recorder_write(recorder, &previous->packet);
+        bool ok = recorder_write(recorder, previous->packet);
         record_packet_delete(previous);
         if (!ok) {
             LOGE("Could not record packet");
