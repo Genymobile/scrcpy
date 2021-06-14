@@ -24,8 +24,7 @@ struct stream {
     AVCodecParserContext *parser;
     // successive packets may need to be concatenated, until a non-config
     // packet is available
-    bool has_pending;
-    AVPacket pending;
+    AVPacket *pending;
 
     const struct stream_callbacks *cbs;
     void *cbs_userdata;

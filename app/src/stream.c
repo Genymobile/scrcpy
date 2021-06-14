@@ -104,33 +104,38 @@ static bool
 stream_push_packet(struct stream *stream, AVPacket *packet) {
     bool is_config = packet->pts == AV_NOPTS_VALUE;
 
-    // A config packet must not be decoded immetiately (it contains no
+    // A config packet must not be decoded immediately (it contains no
     // frame); instead, it must be concatenated with the future data packet.
-    if (stream->has_pending || is_config) {
+    if (stream->pending || is_config) {
         size_t offset;
-        if (stream->has_pending) {
-            offset = stream->pending.size;
-            if (av_grow_packet(&stream->pending, packet->size)) {
+        if (stream->pending) {
+            offset = stream->pending->size;
+            if (av_grow_packet(stream->pending, packet->size)) {
                 LOGE("Could not grow packet");
                 return false;
             }
         } else {
             offset = 0;
-            if (av_new_packet(&stream->pending, packet->size)) {
-                LOGE("Could not create packet");
+            stream->pending = av_packet_alloc();
+            if (!stream->pending) {
+                LOGE("Could not allocate packet");
                 return false;
             }
-            stream->has_pending = true;
+            if (av_new_packet(stream->pending, packet->size)) {
+                LOGE("Could not create packet");
+                av_packet_free(&stream->pending);
+                return false;
+            }
         }
 
-        memcpy(stream->pending.data + offset, packet->data, packet->size);
+        memcpy(stream->pending->data + offset, packet->data, packet->size);
 
         if (!is_config) {
             // prepare the concat packet to send to the decoder
-            stream->pending.pts = packet->pts;
-            stream->pending.dts = packet->dts;
-            stream->pending.flags = packet->flags;
-            packet = &stream->pending;
+            stream->pending->pts = packet->pts;
+            stream->pending->dts = packet->dts;
+            stream->pending->flags = packet->flags;
+            packet = stream->pending;
         }
     }
 
@@ -144,10 +149,10 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
         // data packet
         bool ok = stream_parse(stream, packet);
 
-        if (stream->has_pending) {
+        if (stream->pending) {
             // the pending packet must be discarded (consumed or error)
-            stream->has_pending = false;
-            av_packet_unref(&stream->pending);
+            av_packet_unref(stream->pending);
+            av_packet_free(&stream->pending);
         }
 
         if (!ok) {
@@ -233,8 +238,9 @@ run_stream(void *data) {
 
     LOGD("End of frames");
 
-    if (stream->has_pending) {
-        av_packet_unref(&stream->pending);
+    if (stream->pending) {
+        av_packet_unref(stream->pending);
+        av_packet_free(&stream->pending);
     }
 
     av_parser_close(stream->parser);
@@ -252,7 +258,7 @@ void
 stream_init(struct stream *stream, socket_t socket,
             const struct stream_callbacks *cbs, void *cbs_userdata) {
     stream->socket = socket;
-    stream->has_pending = false;
+    stream->pending = NULL;
     stream->sink_count = 0;
 
     assert(cbs && cbs->on_eos);
