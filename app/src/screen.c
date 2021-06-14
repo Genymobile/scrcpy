@@ -726,6 +726,7 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
                     }
                     screen->maximized = false;
                     apply_pending_resize(screen);
+                    screen_render(screen, true);
                     break;
             }
             return true;
