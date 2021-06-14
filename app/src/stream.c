@@ -220,16 +220,21 @@ run_stream(void *data) {
     // It's more complicated, but this allows to reduce the latency by 1 frame!
     stream->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
 
+    AVPacket *packet = av_packet_alloc();
+    if (!packet) {
+        LOGE("Could not allocate packet");
+        goto finally_close_parser;
+    }
+
     for (;;) {
-        AVPacket packet;
-        bool ok = stream_recv_packet(stream, &packet);
+        bool ok = stream_recv_packet(stream, packet);
         if (!ok) {
             // end of stream
             break;
         }
 
-        ok = stream_push_packet(stream, &packet);
-        av_packet_unref(&packet);
+        ok = stream_push_packet(stream, packet);
+        av_packet_unref(packet);
         if (!ok) {
             // cannot process packet (error already logged)
             break;
@@ -243,6 +248,8 @@ run_stream(void *data) {
         av_packet_free(&stream->pending);
     }
 
+    av_packet_free(&packet);
+finally_close_parser:
     av_parser_close(stream->parser);
 finally_close_sinks:
     stream_close_sinks(stream);
