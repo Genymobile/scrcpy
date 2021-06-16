@@ -4,7 +4,6 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #include "config.h"
 #include "scrcpy.h"

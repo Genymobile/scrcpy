@@ -3,7 +3,6 @@
 #define CBUF_H
 
 #include <stdbool.h>
-#include <unistd.h>
 
 #include "config.h"
 
@@ -29,24 +28,26 @@
 #define cbuf_init(PCBUF) \
     (void) ((PCBUF)->head = (PCBUF)->tail = 0)
 
-#define cbuf_push(PCBUF, ITEM) \
-    ({ \
-        bool ok = !cbuf_is_full(PCBUF); \
-        if (ok) { \
-            (PCBUF)->data[(PCBUF)->head] = (ITEM); \
-            (PCBUF)->head = ((PCBUF)->head + 1) % cbuf_size_(PCBUF); \
-        } \
-        ok; \
-    })
+#define cbuf_push(PCBUF, ITEM)                                             \
+    (                                                                      \
+        (!cbuf_is_full(PCBUF))                                             \
+            ? (                                                            \
+                  (PCBUF)->data[(PCBUF)->head] = (ITEM),                   \
+                  (PCBUF)->head = ((PCBUF)->head + 1) % cbuf_size_(PCBUF), \
+                  1                                                        \
+              )                                                            \
+            : 0                                                            \
+    )
 
-#define cbuf_take(PCBUF, PITEM) \
-    ({ \
-        bool ok = !cbuf_is_empty(PCBUF); \
-        if (ok) { \
-            *(PITEM) = (PCBUF)->data[(PCBUF)->tail]; \
-            (PCBUF)->tail = ((PCBUF)->tail + 1) % cbuf_size_(PCBUF); \
-        } \
-        ok; \
-    })
+#define cbuf_take(PCBUF, PITEM)                                            \
+    (                                                                      \
+        cbuf_is_empty(PCBUF)                                               \
+            ? (                                                            \
+                  *(PITEM) = (PCBUF)->data[(PCBUF)->tail],                 \
+                  (PCBUF)->tail = ((PCBUF)->tail + 1) % cbuf_size_(PCBUF), \
+                  1                                                        \
+              )                                                            \
+            : 0                                                            \
+    )
 
 #endif

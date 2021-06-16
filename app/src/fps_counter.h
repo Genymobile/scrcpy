@@ -1,11 +1,12 @@
 #ifndef FPSCOUNTER_H
 #define FPSCOUNTER_H
 
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
+/* todo: this */
+#define atomic_bool bool
 
 #include "config.h"
 

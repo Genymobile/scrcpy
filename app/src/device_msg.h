@@ -3,7 +3,6 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <unistd.h>
 
 #include "config.h"
 
@@ -25,7 +24,7 @@ struct device_msg {
 };
 
 // return the number of bytes consumed (0 for no msg available, -1 on error)
-ssize_t
+size_t
 device_msg_deserialize(const unsigned char *buf, size_t len,
                        struct device_msg *msg);
 

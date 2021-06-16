@@ -83,24 +83,24 @@ net_accept(socket_t server_socket) {
     return accept(server_socket, (SOCKADDR *) &csin, &sinsize);
 }
 
-ssize_t
+size_t
 net_recv(socket_t socket, void *buf, size_t len) {
     return recv(socket, buf, len, 0);
 }
 
-ssize_t
+size_t
 net_recv_all(socket_t socket, void *buf, size_t len) {
     return recv(socket, buf, len, MSG_WAITALL);
 }
 
-ssize_t
+size_t
 net_send(socket_t socket, const void *buf, size_t len) {
     return send(socket, buf, len, 0);
 }
 
-ssize_t
+size_t
 net_send_all(socket_t socket, const void *buf, size_t len) {
-    ssize_t w = 0;
+    size_t w = 0;
     while (len > 0) {
         w = send(socket, buf, len, 0);
         if (w == -1) {

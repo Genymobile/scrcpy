@@ -1,0 +1,62 @@
+#ifndef SCRCPY_CONFIG_H_IN_H
+#define SCRCPY_CONFIG_H_IN_H
+
+
+// expose the build type
+/*conf.set('NDEBUG', get_option('buildtype') != 'debug')*/
+
+// the version, updated on release
+#define SCRCPY_VERSION "${SCRCPY_VERSION}"
+// the prefix used during configuration (meson --prefix=PREFIX)
+#define PREFIX "${PREFIX}"
+
+// build a "portable" version (with scrcpy-server accessible from the same
+// directory as the executable)
+#cmakedefine01 PORTABLE
+
+// the default client TCP port range for the "adb reverse" tunnel
+// overridden by option --port
+#cmakedefine DEFAULT_LOCAL_PORT_RANGE_FIRST ${DEFAULT_LOCAL_PORT_RANGE_FIRST}
+#ifndef DEFAULT_LOCAL_PORT_RANGE_FIRST
+    #define DEFAULT_LOCAL_PORT_RANGE_FIRST 27183
+#endif
+
+#cmakedefine DEFAULT_LOCAL_PORT_RANGE_LAST ${DEFAULT_LOCAL_PORT_RANGE_LAST}
+#ifndef DEFAULT_LOCAL_PORT_RANGE_LAST
+    #define DEFAULT_LOCAL_PORT_RANGE_LAST 27199
+#endif
+
+
+// the default max video size for both dimensions, in pixels
+// overridden by option --max-size
+#cmakedefine DEFAULT_MAX_SIZE ${DEFAULT_MAX_SIZE}
+#ifndef DEFAULT_MAX_SIZE
+    #define DEFAULT_MAX_SIZE 0 /* 0 - unlimited */
+#endif
+
+// the default video orientation
+// natural device orientation is 0 and each increment adds 90 degrees
+// counterclockwise
+// overridden by option --lock-video-orientation
+#cmakedefine DEFAULT_LOCK_VIDEO_ORIENTATION ${DEFAULT_LOCK_VIDEO_ORIENTATION}
+#ifndef DEFAULT_LOCK_VIDEO_ORIENTATION
+    #define DEFAULT_LOCK_VIDEO_ORIENTATION -1 /* -1 - unlocked */
+#endif
+
+// the default video bitrate, in bits/second
+// overridden by option --bit-rate
+#cmakedefine DEFAULT_BIT_RATE ${DEFAULT_BIT_RATE}
+#ifndef DEFAULT_BIT_RATE
+    #define DEFAULT_BIT_RATE 8000000  // 8Mbps
+#endif
+// enable High DPI support
+#define HIDPI_SUPPORT ${HIDPI_SUPPORT}
+
+// run a server debugger and wait for a client to be attached
+#define SERVER_DEBUGGER ${SERVER_DEBUGGER}
+
+// select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
+#cmakedefine01 SERVER_DEBUGGER_METHOD_NEW
+
+
+#endif //SCRCPY_CONFIG_H_IN_H

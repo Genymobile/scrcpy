@@ -1,0 +1,17 @@
+{
+  "name": "scrcpy",
+  "version-string": "0.0.1",
+  "dependencies": [
+    "sdl2",
+    "opengl",
+    {
+      "name": "ffmpeg",
+      "default-features": false,
+      "features": [
+        "avformat",
+        "avcodec",
+        "avutil"
+      ]
+    }
+  ]
+}

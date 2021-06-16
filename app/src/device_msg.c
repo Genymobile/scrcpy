@@ -6,7 +6,7 @@
 #include "util/buffer_util.h"
 #include "util/log.h"
 
-ssize_t
+size_t
 device_msg_deserialize(const unsigned char *buf, size_t len,
                        struct device_msg *msg) {
     if (len < 5) {

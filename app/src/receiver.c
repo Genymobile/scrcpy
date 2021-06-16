@@ -41,12 +41,12 @@ process_msg(struct device_msg *msg) {
     }
 }
 
-static ssize_t
+static size_t
 process_msgs(const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
-        ssize_t r = device_msg_deserialize(&buf[head], len - head, &msg);
+        size_t r = device_msg_deserialize(&buf[head], len - head, &msg);
         if (r == -1) {
             return -1;
         }
@@ -74,7 +74,7 @@ run_receiver(void *data) {
 
     for (;;) {
         assert(head < DEVICE_MSG_MAX_SIZE);
-        ssize_t r = net_recv(receiver->control_socket, buf + head,
+        size_t r = net_recv(receiver->control_socket, buf + head,
                              DEVICE_MSG_MAX_SIZE - head);
         if (r <= 0) {
             LOGD("Receiver stopped");
@@ -82,7 +82,7 @@ run_receiver(void *data) {
         }
 
         head += r;
-        ssize_t consumed = process_msgs(buf, head);
+        size_t consumed = process_msgs(buf, head);
         if (consumed == -1) {
             // an error occurred
             break;

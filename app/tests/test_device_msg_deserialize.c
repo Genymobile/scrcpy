@@ -13,7 +13,7 @@ static void test_deserialize_clipboard(void) {
     };
 
     struct device_msg msg;
-    ssize_t r = device_msg_deserialize(input, sizeof(input), &msg);
+    size_t r = device_msg_deserialize(input, sizeof(input), &msg);
     assert(r == 8);
 
     assert(msg.type == DEVICE_MSG_TYPE_CLIPBOARD);
@@ -34,7 +34,7 @@ static void test_deserialize_clipboard_big(void) {
     memset(input + 5, 'a', DEVICE_MSG_TEXT_MAX_LENGTH);
 
     struct device_msg msg;
-    ssize_t r = device_msg_deserialize(input, sizeof(input), &msg);
+    size_t r = device_msg_deserialize(input, sizeof(input), &msg);
     assert(r == DEVICE_MSG_MAX_SIZE);
 
     assert(msg.type == DEVICE_MSG_TYPE_CLIPBOARD);
