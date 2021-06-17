@@ -184,7 +184,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
 #endif
         "    -V, --verbosity value\n"
-        "        Set the log level (debug, info, warn or error).\n"
+        "        Set the log level (verbose, debug, info, warn or error).\n"
 #ifndef NDEBUG
         "        Default is debug.\n"
 #else
@@ -505,6 +505,11 @@ parse_display_id(const char *s, uint32_t *display_id) {
 
 static bool
 parse_log_level(const char *s, enum sc_log_level *log_level) {
+    if (!strcmp(s, "verbose")) {
+        *log_level = SC_LOG_LEVEL_VERBOSE;
+        return true;
+    }
+
     if (!strcmp(s, "debug")) {
         *log_level = SC_LOG_LEVEL_DEBUG;
         return true;

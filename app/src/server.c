@@ -235,6 +235,8 @@ enable_tunnel_any_port(struct server *server, struct sc_port_range port_range,
 static const char *
 log_level_to_server_string(enum sc_log_level level) {
     switch (level) {
+        case SC_LOG_LEVEL_VERBOSE:
+            return "verbose";
         case SC_LOG_LEVEL_DEBUG:
             return "debug";
         case SC_LOG_LEVEL_INFO:

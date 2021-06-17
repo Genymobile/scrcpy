@@ -12,7 +12,7 @@ public final class Ln {
     private static final String PREFIX = "[server] ";
 
     enum Level {
-        DEBUG, INFO, WARN, ERROR
+        VERBOSE, DEBUG, INFO, WARN, ERROR
     }
 
     private static Level threshold = Level.INFO;
@@ -34,6 +34,13 @@ public final class Ln {
 
     public static boolean isEnabled(Level level) {
         return level.ordinal() >= threshold.ordinal();
+    }
+
+    public static void v(String message) {
+        if (isEnabled(Level.VERBOSE)) {
+            Log.v(TAG, message);
+            System.out.println(PREFIX + "VERBOSE: " + message);
+        }
     }
 
     public static void d(String message) {

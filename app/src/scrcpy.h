@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 enum sc_log_level {
+    SC_LOG_LEVEL_VERBOSE,
     SC_LOG_LEVEL_DEBUG,
     SC_LOG_LEVEL_INFO,
     SC_LOG_LEVEL_WARN,

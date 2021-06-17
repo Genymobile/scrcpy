@@ -41,6 +41,8 @@ print_version(void) {
 static SDL_LogPriority
 convert_log_level_to_sdl(enum sc_log_level level) {
     switch (level) {
+        case SC_LOG_LEVEL_VERBOSE:
+            return SDL_LOG_PRIORITY_VERBOSE;
         case SC_LOG_LEVEL_DEBUG:
             return SDL_LOG_PRIORITY_DEBUG;
         case SC_LOG_LEVEL_INFO:
