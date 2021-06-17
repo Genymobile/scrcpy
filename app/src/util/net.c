@@ -103,7 +103,7 @@ net_send_all(socket_t socket, const void *buf, size_t len) {
     size_t w = 0;
     while (len > 0) {
         w = send(socket, buf, len, 0);
-        if (w == -1) {
+        if (w == (size_t)-1) {
             return -1;
         }
         len -= w;

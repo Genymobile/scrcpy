@@ -47,7 +47,7 @@ process_msgs(const unsigned char *buf, size_t len) {
     for (;;) {
         struct device_msg msg;
         size_t r = device_msg_deserialize(&buf[head], len - head, &msg);
-        if (r == -1) {
+        if (r == (size_t)-1) {
             return -1;
         }
         if (r == 0) {
@@ -76,14 +76,14 @@ run_receiver(void *data) {
         assert(head < DEVICE_MSG_MAX_SIZE);
         size_t r = net_recv(receiver->control_socket, buf + head,
                              DEVICE_MSG_MAX_SIZE - head);
-        if (!r || r == -1) {
+        if (!r || r == (size_t)-1) {
             LOGD("Receiver stopped");
             break;
         }
 
         head += r;
         size_t consumed = process_msgs(buf, head);
-        if (consumed == -1) {
+        if (consumed == (size_t)-1) {
             // an error occurred
             break;
         }

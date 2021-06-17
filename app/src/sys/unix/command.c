@@ -156,7 +156,7 @@ get_executable_path(void) {
 #ifdef __linux__
     char buf[PATH_MAX + 1]; // +1 for the null byte
     size_t len = readlink("/proc/self/exe", buf, PATH_MAX);
-    if (len == -1) {
+    if (len == (size_t)-1) {
         perror("readlink");
         return NULL;
     }

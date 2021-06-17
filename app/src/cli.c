@@ -10,6 +10,10 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+#ifndef static_assert
+    #define static_assert(x, msg) (void) sizeof(struct {int a[(x) ? 1 : -1]})
+#endif
+
 void
 scrcpy_print_usage(const char *arg0) {
     fprintf(stderr,

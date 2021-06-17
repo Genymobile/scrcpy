@@ -51,7 +51,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     }
 
     r = net_recv_all(stream->socket, packet->data, len);
-    if (r == -1 || ((uint32_t) r) < len) {
+    if (r == (size_t)-1 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
     }
