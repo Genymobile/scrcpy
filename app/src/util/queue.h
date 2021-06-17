@@ -19,7 +19,7 @@
     (void) ((PQ)->first = (PQ)->last = NULL)
 
 #define queue_is_empty(PQ) \
-    !(PQ)->first
+    (!(PQ)->first)
 
 // NEXTFIELD is the field in the ITEM type used for intrusive linked-list
 //
@@ -50,28 +50,29 @@
 //
 
 // push a new item into the queue
-#define queue_push(PQ, NEXTFIELD, ITEM) \
-    (void) ({ \
-        (ITEM)->NEXTFIELD = NULL; \
-        if (queue_is_empty(PQ)) { \
-            (PQ)->first = (PQ)->last = (ITEM); \
-        } else { \
-            (PQ)->last->NEXTFIELD = (ITEM); \
-            (PQ)->last = (ITEM); \
-        } \
-    })
+#define queue_push(PQ, NEXTFIELD, ITEM)           \
+    (void) (                                      \
+        (ITEM)->NEXTFIELD = NULL,                 \
+        (queue_is_empty(PQ))                      \
+            ? (PQ)->first = (PQ)->last = (ITEM)   \
+            : (                                   \
+                  (PQ)->last->NEXTFIELD = (ITEM), \
+                  (PQ)->last = (ITEM)             \
+              )                                   \
+                                                  \
+    )
 
 // take the next item and remove it from the queue (the queue must not be empty)
 // the result is stored in *(PITEM)
 // (without typeof(), we could not store a local variable having the correct
 // type so that we can "return" it)
-#define queue_take(PQ, NEXTFIELD, PITEM) \
-    (void) ({ \
-        assert(!queue_is_empty(PQ)); \
-        *(PITEM) = (PQ)->first; \
-        (PQ)->first = (PQ)->first->NEXTFIELD; \
-    })
-    // no need to update (PQ)->last if the queue is left empty:
-    // (PQ)->last is undefined if !(PQ)->first anyway
+#define queue_take(PQ, NEXTFIELD, PITEM)         \
+    (void) (                                     \
+        assert(!queue_is_empty(PQ)),             \
+            *(PITEM) = (PQ)->first,              \
+            (PQ)->first = (PQ)->first->NEXTFIELD \
+    )
+// no need to update (PQ)->last if the queue is left empty:
+// (PQ)->last is undefined if !(PQ)->first anyway
 
 #endif

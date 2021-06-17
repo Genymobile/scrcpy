@@ -76,7 +76,7 @@ run_receiver(void *data) {
         assert(head < DEVICE_MSG_MAX_SIZE);
         size_t r = net_recv(receiver->control_socket, buf + head,
                              DEVICE_MSG_MAX_SIZE - head);
-        if (r <= 0) {
+        if (!r || r == -1) {
             LOGD("Receiver stopped");
             break;
         }

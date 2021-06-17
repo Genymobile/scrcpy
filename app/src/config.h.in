@@ -12,7 +12,7 @@
 
 // build a "portable" version (with scrcpy-server accessible from the same
 // directory as the executable)
-#cmakedefine01 PORTABLE
+#cmakedefine PORTABLE
 
 // the default client TCP port range for the "adb reverse" tunnel
 // overridden by option --port
@@ -40,7 +40,7 @@
 // overridden by option --lock-video-orientation
 #cmakedefine DEFAULT_LOCK_VIDEO_ORIENTATION ${DEFAULT_LOCK_VIDEO_ORIENTATION}
 #ifndef DEFAULT_LOCK_VIDEO_ORIENTATION
-    #define DEFAULT_LOCK_VIDEO_ORIENTATION -1 /* -1 - unlocked */
+    #define DEFAULT_LOCK_VIDEO_ORIENTATION (-1) /* -1 - unlocked */
 #endif
 
 // the default video bitrate, in bits/second
@@ -53,10 +53,10 @@
 #define HIDPI_SUPPORT ${HIDPI_SUPPORT}
 
 // run a server debugger and wait for a client to be attached
-#define SERVER_DEBUGGER ${SERVER_DEBUGGER}
+#cmakedefine SERVER_DEBUGGER
 
 // select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
-#cmakedefine01 SERVER_DEBUGGER_METHOD_NEW
+#cmakedefine SERVER_DEBUGGER_METHOD_NEW
 
 
 #endif //SCRCPY_CONFIG_H_IN_H

@@ -23,7 +23,7 @@ fps_counter_init(struct fps_counter *counter) {
     }
 
     counter->thread = NULL;
-    atomic_init(&counter->started, 0);
+    SDL_AtomicSet(&counter->started, 0);
     // no need to initialize the other fields, they are unused until started
 
     return true;
@@ -37,12 +37,12 @@ fps_counter_destroy(struct fps_counter *counter) {
 
 static inline bool
 is_started(struct fps_counter *counter) {
-    return atomic_load_explicit(&counter->started, memory_order_acquire);
+    return SDL_AtomicGet(&counter->started);
 }
 
 static inline void
 set_started(struct fps_counter *counter, bool started) {
-    atomic_store_explicit(&counter->started, started, memory_order_release);
+    SDL_AtomicSet(&counter->started, started);
 }
 
 // must be called with mutex locked

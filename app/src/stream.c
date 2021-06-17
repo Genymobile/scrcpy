@@ -6,7 +6,6 @@
 #include <SDL2/SDL_events.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
-#include <unistd.h>
 
 #include "config.h"
 #include "compat.h"
@@ -43,7 +42,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     uint64_t pts = buffer_read64be(header);
     uint32_t len = buffer_read32be(&header[8]);
-    assert(pts == NO_PTS || (pts & 0x8000000000000000) == 0);
+    assert(pts == NO_PTS || (pts >> 63) == 0);
     assert(len);
 
     if (av_new_packet(packet, len)) {
@@ -52,7 +51,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     }
 
     r = net_recv_all(stream->socket, packet->data, len);
-    if (r < 0 || ((uint32_t) r) < len) {
+    if (r == -1 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
     }

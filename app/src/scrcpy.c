@@ -2,15 +2,13 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <libavformat/avformat.h>
-#include <sys/time.h>
 #include <SDL2/SDL.h>
 
 #ifdef _WIN32
 // not needed here, but winsock2.h must never be included AFTER windows.h
 # include <winsock2.h>
-# include <windows.h>
+# include <Windows.h>
 #endif
 
 #include "config.h"
@@ -74,7 +72,7 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 static bool
 sdl_init_and_configure(bool display, const char *render_driver,
                        bool disable_screensaver) {
-    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
+    uint32_t flags = SDL_INIT_EVENTS | (display ? SDL_INIT_VIDEO : 0);
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
         return false;
@@ -462,6 +460,7 @@ end:
     if (stream_started) {
         stream_stop(&stream);
     }
+
     if (controller_started) {
         controller_stop(&controller);
     }

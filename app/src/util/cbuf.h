@@ -41,7 +41,7 @@
 
 #define cbuf_take(PCBUF, PITEM)                                            \
     (                                                                      \
-        cbuf_is_empty(PCBUF)                                               \
+        (!cbuf_is_empty(PCBUF))                                            \
             ? (                                                            \
                   *(PITEM) = (PCBUF)->data[(PCBUF)->tail],                 \
                   (PCBUF)->tail = ((PCBUF)->tail + 1) % cbuf_size_(PCBUF), \

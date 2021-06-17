@@ -1,7 +1,6 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <SDL2/SDL_thread.h>
@@ -17,7 +16,7 @@ struct server {
     char *serial;
     process_t process;
     SDL_Thread *wait_server_thread;
-    atomic_flag server_socket_closed;
+    SDL_atomic_t server_socket_closed;
 
     SDL_mutex *mutex;
     SDL_cond *process_terminated_cond;

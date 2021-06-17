@@ -1,7 +1,18 @@
 cmake_minimum_required(VERSION 3.14)
-project(scrcpy C)
+project(scrcpy LANGUAGES C VERSION 1.17)
+
+set(SCRCPY_VERSION ${PROJECT_VERSION})
+
+option(PORTABLE "Whether should search scrcpy-server in the same dir" ON)
 
 configure_file(src/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+
+if (CMAKE_SYSTEM_NAME MATCHES "Windows")
+    set(SYSDIR ${CMAKE_CURRENT_LIST_DIR}/src/sys/win/)
+else ()
+    set(SYSDIR ${CMAKE_CURRENT_LIST_DIR}/src/sys/unix/)
+endif ()
+
 
 add_executable(scrcpy
         src/main.c
@@ -27,16 +38,29 @@ add_executable(scrcpy
         src/video_buffer.c
         src/util/net.c
         src/util/str_util.c
-        $<$<PLATFORM_ID:Windows>:
-        ${CMAKE_CURRENT_LIST_DIR}/src/sys/win/getopt.c
-        >)
+        ${SYSDIR}/command.c
 
-find_package(SDL2 CONFIG REQUIRED)
+        $<$<PLATFORM_ID:Windows>:
+        ${SYSDIR}/getopt.c
+        >
+        ${CMAKE_CURRENT_BINARY_DIR}/config.h
+)
+
+find_package(SDL2 REQUIRED)
 find_package(FFMPEG COMPONENTS avformat avcodec avutil REQUIRED)
 
 target_include_directories(scrcpy
         PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}/src
         ${CMAKE_CURRENT_BINARY_DIR}
         ${FFMPEG_INCLUDE_DIRS}
-        $<$<PLATFORM_ID:Windows>:${CMAKE_CURRENT_LIST_DIR}/src/sys/win/>)
-target_link_libraries(scrcpy SDL2::SDL2 SDL2::SDL2main ${FFMPEG_LIBRARIES})
+        ${SYSDIR}
+)
+
+target_link_libraries(scrcpy
+        PRIVATE
+        SDL2::SDL2
+        SDL2::SDL2main
+        ${FFMPEG_LIBRARIES}
+        $<$<PLATFORM_ID:Windows>:ws2_32>
+)

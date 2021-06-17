@@ -6,6 +6,11 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
+
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
@@ -27,7 +32,7 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
 
-    char cmd[256];
+    char cmd[512];
     if (build_cmd(cmd, sizeof(cmd), argv)) {
         *handle = NULL;
         return PROCESS_ERROR_GENERIC;

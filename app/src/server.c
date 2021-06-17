@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_thread.h>
 #include <SDL2/SDL_timer.h>
@@ -21,6 +20,20 @@
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
 #define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+
+#ifdef _MSC_VER
+    #include <string.h>
+    char *dirname(char *path){
+        char *iter = path, *base = path;
+        while ((iter = strpbrk(iter, "/\\"))){
+            path = iter++;
+        }
+        *path = '\0';
+        return base;
+    }
+#else
+    #include <libgen.h>
+#endif
 
 static char *
 get_server_path(void) {
@@ -359,8 +372,7 @@ server_init(struct server *server) {
     server->serial = NULL;
     server->process = PROCESS_NONE;
     server->wait_server_thread = NULL;
-    atomic_flag_clear_explicit(&server->server_socket_closed,
-                               memory_order_relaxed);
+    SDL_AtomicSet(&server->server_socket_closed, 0);
 
     server->mutex = SDL_CreateMutex();
     if (!server->mutex) {
@@ -402,7 +414,7 @@ run_wait_server(void *data) {
     // no need for synchronization, server_socket is initialized before this
     // thread was created
     if (server->server_socket != INVALID_SOCKET
-            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
+            && !SDL_AtomicSet(&server->server_socket_closed, 1)) {
         // On Linux, accept() is unblocked by shutdown(), but on Windows, it is
         // unblocked by closesocket(). Therefore, call both (close_socket()).
         close_socket(server->server_socket);
@@ -459,7 +471,7 @@ server_start(struct server *server, const char *serial,
 error2:
     if (!server->tunnel_forward) {
         bool was_closed =
-            atomic_flag_test_and_set(&server->server_socket_closed);
+            SDL_AtomicSet(&server->server_socket_closed, 1);
         // the thread is not started, the flag could not be already set
         assert(!was_closed);
         (void) was_closed;
@@ -486,7 +498,7 @@ server_connect_to(struct server *server) {
         }
 
         // we don't need the server socket anymore
-        if (!atomic_flag_test_and_set(&server->server_socket_closed)) {
+        if (!SDL_AtomicSet(&server->server_socket_closed, 1)) {
             // close it from here
             close_socket(server->server_socket);
             // otherwise, it is closed by run_wait_server()
@@ -518,7 +530,7 @@ server_connect_to(struct server *server) {
 void
 server_stop(struct server *server) {
     if (server->server_socket != INVALID_SOCKET
-            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
+            && !SDL_AtomicSet(&server->server_socket_closed, 1)) {
         close_socket(server->server_socket);
     }
     if (server->video_socket != INVALID_SOCKET) {

@@ -60,7 +60,7 @@ read_xpm(char *xpm[]) {
     (void) chars;
 
     // init index
-    struct index index[colors];
+    struct index *index = SDL_malloc(sizeof(*index) * colors);
     for (int i = 0; i < colors; ++i) {
         const char *line = xpm[1+i];
         index[i].c = line[0];
@@ -116,5 +116,6 @@ read_xpm(char *xpm[]) {
     }
     // make the surface own the raw pixels
     surface->flags &= ~SDL_PREALLOC;
+    SDL_free(index);
     return surface;
 }
