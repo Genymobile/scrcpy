@@ -36,7 +36,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     uint8_t header[HEADER_SIZE];
     size_t r = net_recv_all(stream->socket, header, HEADER_SIZE);
-    if (r < HEADER_SIZE) {
+    if (r == (size_t)-1 || r < HEADER_SIZE) {
         return false;
     }
 
