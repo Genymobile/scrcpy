@@ -49,6 +49,7 @@ struct server_params {
     bool stay_awake;
     bool force_adb_forward;
     bool power_off_on_close;
+    bool intent_broadcast;
 };
 
 // init default values

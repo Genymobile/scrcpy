@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.content.Intent;
+import android.net.Uri;
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
@@ -37,6 +39,7 @@ public final class CleanUp {
         private static final int FLAG_DISABLE_SHOW_TOUCHES = 1 << 0;
         private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 1 << 1;
         private static final int FLAG_POWER_OFF_SCREEN = 1 << 2;
+        private static final int FLAG_BROADCAST_STOPPED = 1 << 3;
 
         private int displayId;
 
@@ -47,6 +50,7 @@ public final class CleanUp {
         private boolean disableShowTouches;
         private boolean restoreNormalPowerMode;
         private boolean powerOffScreen;
+        private boolean broadcastStopped;
 
         public Config() {
             // Default constructor, the fields are initialized by CleanUp.configure()
@@ -59,6 +63,7 @@ public final class CleanUp {
             disableShowTouches = (options & FLAG_DISABLE_SHOW_TOUCHES) != 0;
             restoreNormalPowerMode = (options & FLAG_RESTORE_NORMAL_POWER_MODE) != 0;
             powerOffScreen = (options & FLAG_POWER_OFF_SCREEN) != 0;
+            broadcastStopped = (options & FLAG_BROADCAST_STOPPED) != 0;
         }
 
         @Override
@@ -75,11 +80,14 @@ public final class CleanUp {
             if (powerOffScreen) {
                 options |= FLAG_POWER_OFF_SCREEN;
             }
+            if (broadcastStopped) {
+                options |= FLAG_BROADCAST_STOPPED;
+            }
             dest.writeByte(options);
         }
 
         private boolean hasWork() {
-            return disableShowTouches || restoreStayOn != -1 || restoreNormalPowerMode || powerOffScreen;
+            return disableShowTouches || restoreStayOn != -1 || restoreNormalPowerMode || powerOffScreen || broadcastStopped;
         }
 
         @Override
@@ -117,7 +125,9 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode, boolean powerOffScreen)
+    public static void configure(int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode,
+            boolean powerOffScreen, boolean broadcastStopped
+    )
             throws IOException {
         Config config = new Config();
         config.displayId = displayId;
@@ -125,6 +135,7 @@ public final class CleanUp {
         config.restoreStayOn = restoreStayOn;
         config.restoreNormalPowerMode = restoreNormalPowerMode;
         config.powerOffScreen = powerOffScreen;
+        config.broadcastStopped = broadcastStopped;
 
         if (config.hasWork()) {
             startProcess(config);
@@ -187,5 +198,17 @@ public final class CleanUp {
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }
+
+        if(config.broadcastStopped){
+            Ln.i("Announce stopped");
+            announceScrcpyStopped();
+        }
+    }
+
+    private static void announceScrcpyStopped() {
+
+        Intent cleaned = new Intent(Server.scrcpyPrefix("STOPPED"));
+        cleaned.setData(Uri.parse("scrcpy-status:stopped"));
+        Device.sendBroadcast(cleaned);
     }
 }

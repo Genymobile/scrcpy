@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.content.Intent;
+import android.net.Uri;
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import android.graphics.Rect;
@@ -14,6 +16,8 @@ import java.util.Locale;
 
 public final class Server {
 
+
+    public static final String SCRCPY_PREFIX = "com.genymobile.scrcpy.";
 
     private Server() {
         // not instantiable
@@ -50,7 +54,8 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose(),
+                            options.getBroadcastIntents());
 
         boolean tunnelForward = options.isTunnelForward();
 
@@ -75,6 +80,10 @@ public final class Server {
                 });
             }
 
+            if(options.getBroadcastIntents()){
+                announceScrcpyStarting();
+            }
+
             try {
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
@@ -92,6 +101,12 @@ public final class Server {
         }
     }
 
+    private static void announceScrcpyStarting() {
+
+        Intent starting = new Intent(scrcpyPrefix("STARTED"));
+        starting.setData(Uri.parse("scrcpy-status:started"));
+        Device.sendBroadcast(starting);
+    }
     private static Thread startController(final Controller controller) {
         Thread thread = new Thread(new Runnable() {
             @Override
@@ -135,7 +150,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 16;
+        final int expectedParameters = 17;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -187,6 +202,9 @@ public final class Server {
 
         boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
         options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+
+        boolean broadcastIntents = Boolean.parseBoolean(args[16]);
+        options.setBroadcastIntents(broadcastIntents);
 
         return options;
     }
@@ -253,5 +271,9 @@ public final class Server {
         Ln.initLogLevel(options.getLogLevel());
 
         scrcpy(options);
+    }
+
+    public static String scrcpyPrefix(String unprefixed){
+        return SCRCPY_PREFIX + unprefixed;
     }
 }

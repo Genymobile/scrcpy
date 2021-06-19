@@ -294,6 +294,7 @@ execute_server(struct server *server, const struct server_params *params) {
         params->codec_options ? params->codec_options : "-",
         params->encoder_name ? params->encoder_name : "-",
         params->power_off_on_close ? "true" : "false",
+        params->intent_broadcast ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "

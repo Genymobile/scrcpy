@@ -2,6 +2,9 @@ package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
 
+import java.util.BitSet;
+import java.util.EnumSet;
+
 public class Options {
     private Ln.Level logLevel;
     private int maxSize;
@@ -18,6 +21,7 @@ public class Options {
     private String codecOptions;
     private String encoderName;
     private boolean powerOffScreenOnClose;
+    private boolean broadcastIntents;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -83,6 +87,10 @@ public class Options {
         this.sendFrameMeta = sendFrameMeta;
     }
 
+    public void setBroadcastIntents(boolean broadcastIntents) {
+        this.broadcastIntents = broadcastIntents;
+    }
+
     public boolean getControl() {
         return control;
     }
@@ -137,5 +145,9 @@ public class Options {
 
     public boolean getPowerOffScreenOnClose() {
         return this.powerOffScreenOnClose;
+    }
+
+    public boolean getBroadcastIntents() {
+        return broadcastIntents;
     }
 }
