@@ -735,11 +735,12 @@ If no value is provided with this argument, all intents are turned on.
 
 Currently, the only events that exist are:
 
- | Option    | Description                                   | [Intent Action]                           | [Intent Extras]
- | ----------|:----------------------------------------------|:---------------------------------|:-----------------------------
- | `start`   | scrcpy starts                                 |  `com.genymobile.scrcpy.START`   | STARTUP: true
- | `stop`    | scrcpy stops (best effort)                    |  `com.genymobile.scrcpy.STOP`    | SHUTDOWN: true
- | `cleaned` | scrcpy has finished cleaning up (best effort) |  `com.genymobile.scrcpy.CLEANED` | SHUTDOWN: true 
+ | Option    | Description                                       | [Intent Action]                  | [Intent Extras]
+ | ----------|:----------------------------------------------    |:---------------------------------|:---------------
+ | `start`   | scrcpy starts                                     |  `com.genymobile.scrcpy.START`   | STARTUP: true
+ | `socket`  | a socket for the duration of scrcpy's run created |  `com.genymobile.scrcpy.SOCKET`  | SOCKET: int
+ | `stop`    | scrcpy stops (best effort)                        |  `com.genymobile.scrcpy.STOP`    | SHUTDOWN: true
+ | `cleaned` | scrcpy has finished cleaning up (best effort)     |  `com.genymobile.scrcpy.CLEANED` | SHUTDOWN: true 
 
 [Intent Action]: https://developer.android.com/reference/android/content/Intent#setAction(java.lang.String)
 [Intent Extras]: https://developer.android.com/reference/android/content/Intent#putExtra(java.lang.String,%20android.os.Parcelable)
@@ -748,11 +749,13 @@ Currently, the only events that exist are:
 **Important:**
 1. `stop` and `cleaned` **may not happen** in specific cases. For example, 
    if debugging is turned off, scrcpy process is immediately killed without a chance to cleanup.
-2. This option is intended for advanced users. By using this 
+2. The only guaranteed way to know if scrcpy has exited is by listening for a connection reset on
+   the socket
+3. This option is intended **for advanced users**. By using this 
    feature, all apps on your phone will know scrcpy has connected
    Unless that is what you want, and you know what that means
    do not use this feature
-3. In order for this argument to produce visible results you must create
+4. In order for this argument to produce visible results you must create
    some automation to listen to android broadcast intents. 
    Such as with your own app or with automation apps such as [Tasker].
 
@@ -770,8 +773,17 @@ Additionally, there are two boolean fields (that may not be present) in the extr
 
 1. `com.genymobile.scrcpy.STARTUP` if present and `true`, scrcpy is starting up.
 2. `com.genymobile.scrcpy.SHUTDOWN` if present and `true`, scrcpy is shutting down.
+3. `com.genymobile.scrcpy.SOCKET` if present and an int, scrcpy has created a socket on the specified
+   port and you can listen to it to confirm when scrcpy exits
 
 More extra fields will be present in the future.
+
+In case you listen to the socket provided by `com.genymobile.scrcpy.SOCKET`, note that **no information will
+be exchanged through it**. Even though bytes will be transmitted through it, they are only a test to
+ensure the connection is still alive and have no meaning.  
+A connection reset followed by connection refused when trying to reestablish the connection is the
+only infallible way to ensure that scrcpy has turned off.
+
 
 For convinience with automation tools such as [Tasker], scrcpy also writes to the data field of the intents.
 The scheme is `scrcpy-status`.
