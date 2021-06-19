@@ -710,13 +710,15 @@ parse_intent_broadcast(const char *s, uint32_t *intents) {
 
         if (STREQ("start", s, limit)) {
             *intents |= SC_INTENT_BROADCAST_START;
+        } else if (STREQ("socket", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_SOCKET;
         } else if (STREQ("stop", s, limit)) {
             *intents |= SC_INTENT_BROADCAST_STOP;
         } else if (STREQ("cleaned", s, limit)) {
             *intents |= SC_INTENT_BROADCAST_CLEANED;
         } else {
             LOGE("Unknown broadcast intent: %.*s "
-                 "(must be one of: start, stop, cleaned)",
+                 "(must be one of: start, socket, stop, cleaned)",
                  (int) limit, s);
             return false;
         }

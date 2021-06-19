@@ -56,6 +56,7 @@ struct sc_port_range {
 
 enum sc_intent_broadcast {
     SC_INTENT_BROADCAST_START = 1 << 0,
+    SC_INTENT_BROADCAST_SOCKET = 1 << 1,
     SC_INTENT_BROADCAST_STOP = 1 << 30,
     SC_INTENT_BROADCAST_CLEANED = 1 << 31,
 };
