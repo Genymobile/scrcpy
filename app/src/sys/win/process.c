@@ -6,6 +6,11 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+#define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+
+
 static int
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
@@ -24,34 +29,43 @@ enum process_result
 process_execute(const char *const argv[], HANDLE *handle) {
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
+    enum process_result res = PROCESS_SUCCESS;
+    wchar_t *wide = NULL;
+    char *cmd = NULL;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
 
-    char cmd[256];
-    if (build_cmd(cmd, sizeof(cmd), argv)) {
+    cmd = malloc(CMD_MAX);
+    if (cmd == NULL || build_cmd(cmd, CMD_MAX, argv) != 0) {
         *handle = NULL;
-        return PROCESS_ERROR_GENERIC;
+        res = PROCESS_ERROR_GENERIC;
+        goto end;
     }
 
-    wchar_t *wide = utf8_to_wide_char(cmd);
+    wide = utf8_to_wide_char(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");
-        return PROCESS_ERROR_GENERIC;
+        res = PROCESS_ERROR_GENERIC;
+        goto end;
     }
 
     if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, 0, NULL, NULL, &si,
                         &pi)) {
-        free(wide);
         *handle = NULL;
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-            return PROCESS_ERROR_MISSING_BINARY;
+            res = PROCESS_ERROR_MISSING_BINARY;
+        } else {
+            res = PROCESS_ERROR_GENERIC;
         }
-        return PROCESS_ERROR_GENERIC;
+        goto end;
     }
 
-    free(wide);
     *handle = pi.hProcess;
-    return PROCESS_SUCCESS;
+
+    end:
+    free(wide);
+    free(cmd);
+    return res;
 }
 
 bool

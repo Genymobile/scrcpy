@@ -81,14 +81,15 @@ show_adb_installation_msg() {
 
 static void
 show_adb_err_msg(enum process_result err, const char *const argv[]) {
-    char buf[512];
+    char *buf = malloc(CMD_MAX);
+    if (!buf) return;
     switch (err) {
         case PROCESS_ERROR_GENERIC:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, CMD_MAX);
             LOGE("Failed to execute: %s", buf);
             break;
         case PROCESS_ERROR_MISSING_BINARY:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, CMD_MAX);
             LOGE("Command not found: %s", buf);
             LOGE("(make 'adb' accessible from your PATH or define its full"
                  "path in the ADB environment variable)");
@@ -98,29 +99,33 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
             // do nothing
             break;
     }
+    free(buf);
 }
 
 process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
-    const char *cmd[len + 4];
+    const char **argv;
     int i;
     process_t process;
-    cmd[0] = get_adb_command();
+    argv = malloc(sizeof(char *) * (len + 3 + 1));
+    if (!argv) return PROCESS_NONE;
+    argv[0] = get_adb_command();
     if (serial) {
-        cmd[1] = "-s";
-        cmd[2] = serial;
+        argv[1] = "-s";
+        argv[2] = serial;
         i = 3;
     } else {
         i = 1;
     }
 
-    memcpy(&cmd[i], adb_cmd, len * sizeof(const char *));
-    cmd[len + i] = NULL;
-    enum process_result r = process_execute(cmd, &process);
+    memcpy(&argv[i], adb_cmd, len * sizeof(const char *));
+    argv[len + i] = NULL;
+    enum process_result r = process_execute(argv, &process);
     if (r != PROCESS_SUCCESS) {
-        show_adb_err_msg(r, cmd);
-        return PROCESS_NONE;
+        show_adb_err_msg(r, argv);
+        process = PROCESS_NONE;
     }
+    free(argv);
     return process;
 }
 

@@ -18,7 +18,6 @@
 # define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
   typedef DWORD exit_code_t;
-
 #else
 
 # include <sys/types.h>
@@ -31,6 +30,8 @@
   typedef int exit_code_t;
 
 #endif
+
+#define CMD_MAX 8192
 
 enum process_result {
     PROCESS_SUCCESS,
