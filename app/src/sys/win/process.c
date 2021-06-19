@@ -6,7 +6,7 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
-static int
+static bool
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
     // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
@@ -15,9 +15,9 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
     size_t ret = xstrjoin(cmd, argv, ' ', len);
     if (ret >= len) {
         LOGE("Command too long (%" PRIsizet " chars)", len - 1);
-        return -1;
+        return false;
     }
-    return 0;
+    return true;
 }
 
 enum process_result
@@ -28,7 +28,7 @@ process_execute(const char *const argv[], HANDLE *handle) {
     si.cb = sizeof(si);
 
     char cmd[256];
-    if (build_cmd(cmd, sizeof(cmd), argv)) {
+    if (!build_cmd(cmd, sizeof(cmd), argv)) {
         *handle = NULL;
         return PROCESS_ERROR_GENERIC;
     }
