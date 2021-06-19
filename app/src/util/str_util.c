@@ -11,18 +11,6 @@
 #endif
 
 size_t
-xargvlen(const char *const *argv, size_t *n_args) {
-    size_t i, len = 0;
-    for (i = 0; argv[i]; i++) {
-        len += strlen(argv[i]);
-        if(i != 0) len += 1; /* extra for space */
-    }
-    if (n_args) *n_args = i;
-
-    return len;
-}
-
-size_t
 xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;
     for (i = 0; i < n - 1 && src[i] != '\0'; ++i)
