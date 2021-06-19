@@ -721,6 +721,77 @@ The target directory can be changed on start:
 scrcpy --push-target=/sdcard/Download/
 ```
 
+### Android features
+
+#### Announce scrcpy state of execution
+
+**(Advanced feature)**
+
+Turn on the announcement of scrcpy current status.  
+Those announcements are done using the [broadcast intents] feature of Android.  
+If no value is provided with this argument, all intents are turned on.
+
+[broadcast intents]: https://developer.android.com/reference/android/content/Intent
+
+Currently, the only events that exist are:
+
+ | Option    | Description                                   | [Intent Action]                           | [Intent Extras]
+ | ----------|:----------------------------------------------|:---------------------------------|:-----------------------------
+ | `start`   | scrcpy starts                                 |  `com.genymobile.scrcpy.START`   | STARTUP: true
+ | `stop`    | scrcpy stops (best effort)                    |  `com.genymobile.scrcpy.STOP`    | SHUTDOWN: true
+ | `cleaned` | scrcpy has finished cleaning up (best effort) |  `com.genymobile.scrcpy.CLEANED` | SHUTDOWN: true 
+
+[Intent Action]: https://developer.android.com/reference/android/content/Intent#setAction(java.lang.String)
+[Intent Extras]: https://developer.android.com/reference/android/content/Intent#putExtra(java.lang.String,%20android.os.Parcelable)
+
+
+**Important:**
+1. `stop` and `cleaned` **may not happen** in specific cases. For example, 
+   if debugging is turned off, scrcpy process is immediately killed without a chance to cleanup.
+2. This option is intended for advanced users. By using this 
+   feature, all apps on your phone will know scrcpy has connected
+   Unless that is what you want, and you know what that means
+   do not use this feature
+3. In order for this argument to produce visible results you must create
+   some automation to listen to android broadcast intents. 
+   Such as with your own app or with automation apps such as [Tasker].
+
+
+Following [Android intent rules], all intents fields/keys prefixed with: 
+`com.genymobile.scrcpy.`
+In case of Actions, it is followed by the intent name in caps. For example,
+the 'start' intent has the action:  
+`com.genymobile.scrcpy.START`
+
+
+[Android intent rules]: https://developer.android.com/reference/android/content/Intent#setAction(java.lang.String)
+
+Additionally, there are two boolean fields (that may not be present) in the extra data section of the intents:
+
+1. `com.genymobile.scrcpy.STARTUP` if present and `true`, scrcpy is starting up.
+2. `com.genymobile.scrcpy.SHUTDOWN` if present and `true`, scrcpy is shutting down.
+
+More extra fields will be present in the future.
+
+For convinience with automation tools such as [Tasker], scrcpy also writes to the data field of the intents.
+The scheme is `scrcpy-status`.
+
+[Tasker]: https://tasker.joaoapps.com/
+
+**Example usages:**
+
+```bash
+scrcpy --broadcast-intents
+```
+
+```bash
+scrcpy --broadcast-intents=start
+```
+
+```bash
+scrcpy --broadcast-intents start,cleaned
+```
+
 
 ### Audio forwarding
 
