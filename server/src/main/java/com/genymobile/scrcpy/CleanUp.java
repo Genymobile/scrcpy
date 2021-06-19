@@ -34,9 +34,9 @@ public final class CleanUp {
             }
         };
 
-        private static final int FLAG_DISABLE_SHOW_TOUCHES = 1;
-        private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 2;
-        private static final int FLAG_POWER_OFF_SCREEN = 4;
+        private static final int FLAG_DISABLE_SHOW_TOUCHES = 1 << 0;
+        private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 1 << 1;
+        private static final int FLAG_POWER_OFF_SCREEN = 1 << 2;
 
         private int displayId;
 
