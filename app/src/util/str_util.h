@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// returns the flat buffer size large enough to store all argv elements (excluding nul terminator) plus separating spaces
+size_t
+xargvlen(const char * const argv[], size_t *n_args);
+
 // like strncpy, except:
 //  - it copies at most n-1 chars
 //  - the dest string is nul-terminated
