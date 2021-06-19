@@ -656,6 +656,51 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+
+static bool
+parse_intent_broadcast(const char *s, uint32_t *intents) {
+    
+    // if no arg provided activates all intents for all intents and purposes
+    if(!s){
+        *intents = -1;
+        return true;
+    }
+
+    for (;;) {
+        char *comma = strchr(s, ',');
+        
+        assert(!comma || comma > s);
+        size_t limit = comma ? (size_t) (comma - s) : strlen(s);
+
+
+#define STREQ(literal, s, len) \
+    ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
+
+        if (STREQ("start", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_START;
+        } else if (STREQ("stop", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_STOP;
+        } else if (STREQ("cleaned", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_CLEANED;
+        } else {
+            LOGE("Unknown broadcast intent: %.*s "
+                 "(must be one of: start, stop, cleaned)",
+                 (int) limit, s);
+            return false;
+        }
+#undef STREQ
+
+        if (!comma) {
+            break;
+        }
+
+        s = comma + 1;
+    }
+
+    return true;
+}
+
+
 #define OPT_RENDER_EXPIRED_FRAMES  1000
 #define OPT_WINDOW_TITLE           1001
 #define OPT_PUSH_TARGET            1002
@@ -684,6 +729,7 @@ guess_record_format(const char *filename) {
 #define OPT_ENCODER_NAME           1025
 #define OPT_POWER_OFF_ON_CLOSE     1026
 #define OPT_V4L2_SINK              1027
+#define OPT_INTENT_BROADCAST       1028
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -739,6 +785,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_WINDOW_BORDERLESS},
         {"power-off-on-close",     no_argument,       NULL,
                                                   OPT_POWER_OFF_ON_CLOSE},
+        {"intent-broadcast",       optional_argument, NULL,
+                                                  OPT_INTENT_BROADCAST},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -917,6 +965,12 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->v4l2_device = optarg;
                 break;
 #endif
+
+            case OPT_INTENT_BROADCAST:
+                if (!parse_intent_broadcast(optarg, &opts->intent_broadcasts)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
