@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -37,6 +38,8 @@ public class ContentProvider implements Closeable {
     private Method callMethod;
     private int callMethodVersion;
 
+    private Object attributionSource;
+
     ContentProvider(ActivityManager manager, Object provider, String name, IBinder token) {
         this.manager = manager;
         this.provider = provider;
@@ -44,25 +47,44 @@ public class ContentProvider implements Closeable {
         this.token = token;
     }
 
+    @SuppressLint("PrivateApi")
     private Method getCallMethod() throws NoSuchMethodException {
         if (callMethod == null) {
-
             try {
-                callMethod = provider.getClass()
-                        .getMethod("call", String.class, String.class, String.class, String.class, String.class, Bundle.class);
+                Class<?> attributionSourceClass = Class.forName("android.content.AttributionSource");
+                callMethod = provider.getClass().getMethod("call", attributionSourceClass, String.class, String.class, String.class, Bundle.class);
                 callMethodVersion = 0;
-            } catch (NoSuchMethodException e) {
+            } catch (NoSuchMethodException | ClassNotFoundException e0) {
                 // old versions
                 try {
-                    callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, String.class, Bundle.class);
+                    callMethod = provider.getClass()
+                            .getMethod("call", String.class, String.class, String.class, String.class, String.class, Bundle.class);
                     callMethodVersion = 1;
-                } catch (NoSuchMethodException e2) {
-                    callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, Bundle.class);
-                    callMethodVersion = 2;
+                } catch (NoSuchMethodException e1) {
+                    try {
+                        callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, String.class, Bundle.class);
+                        callMethodVersion = 2;
+                    } catch (NoSuchMethodException e2) {
+                        callMethod = provider.getClass().getMethod("call", String.class, String.class, String.class, Bundle.class);
+                        callMethodVersion = 3;
+                    }
                 }
             }
         }
         return callMethod;
+    }
+
+    @SuppressLint("PrivateApi")
+    private Object getAttributionSource()
+            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        if (attributionSource == null) {
+            Class<?> cl = Class.forName("android.content.AttributionSource$Builder");
+            Object builder = cl.getConstructor(int.class).newInstance(ServiceManager.USER_ID);
+            cl.getDeclaredMethod("setPackageName", String.class).invoke(builder, ServiceManager.PACKAGE_NAME);
+            attributionSource = cl.getDeclaredMethod("build").invoke(builder);
+        }
+
+        return attributionSource;
     }
 
     private Bundle call(String callMethod, String arg, Bundle extras) {
@@ -71,9 +93,12 @@ public class ContentProvider implements Closeable {
             Object[] args;
             switch (callMethodVersion) {
                 case 0:
-                    args = new Object[]{ServiceManager.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
+                    args = new Object[]{getAttributionSource(), "settings", callMethod, arg, extras};
                     break;
                 case 1:
+                    args = new Object[]{ServiceManager.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
+                    break;
+                case 2:
                     args = new Object[]{ServiceManager.PACKAGE_NAME, "settings", callMethod, arg, extras};
                     break;
                 default:
@@ -81,7 +106,7 @@ public class ContentProvider implements Closeable {
                     break;
             }
             return (Bundle) method.invoke(provider, args);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException | InstantiationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
