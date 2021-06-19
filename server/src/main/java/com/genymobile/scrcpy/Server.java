@@ -79,6 +79,10 @@ public final class Server {
                 });
             }
 
+            if(options.getBroadcastIntents().contains(Intents.START)){
+                announceScrcpyStarting();
+            }
+
             try {
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
@@ -92,8 +96,30 @@ public final class Server {
                 if (deviceMessageSenderThread != null) {
                     deviceMessageSenderThread.interrupt();
                 }
+
+                if(options.getBroadcastIntents().contains(Intents.STOP)){
+                    Ln.i("Announcing stopped");
+                    announceScrcpyStopping();
+                }
             }
         }
+    }
+
+    private static void announceScrcpyStarting() {
+
+        Intent starting = new Intent(Intents.scrcpyPrefix("START"));
+        starting.setData(Uri.parse("scrcpy-status:start"));
+        starting.putExtra(Intents.scrcpyPrefix("STARTUP"), true);
+        starting.putExtra(Intents.scrcpyPrefix("SHUTDOWN"), false);
+        Device.sendBroadcast(starting);
+    }
+    private static void announceScrcpyStopping() {
+
+        Intent stopping = new Intent(Intents.scrcpyPrefix("STOP"));
+        stopping.setData(Uri.parse("scrcpy-status:stop"));
+        stopping.putExtra(Intents.scrcpyPrefix("STARTUP"), false);
+        stopping.putExtra(Intents.scrcpyPrefix("SHUTDOWN"), true);
+        Device.sendBroadcast(stopping);
     }
 
     private static Thread startController(final Controller controller) {
