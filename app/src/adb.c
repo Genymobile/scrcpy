@@ -81,14 +81,18 @@ show_adb_installation_msg() {
 
 static void
 show_adb_err_msg(enum process_result err, const char *const argv[]) {
-    char buf[512];
+    size_t n_args, len;
+    char *buf = NULL;
+    len = xargvlen(argv, &n_args) + (n_args * 3 - 1) + 1;
+    /* buffer large enough to store argv_to_string repr + nul terminator */
+    buf = malloc(len);
     switch (err) {
         case PROCESS_ERROR_GENERIC:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, len);
             LOGE("Failed to execute: %s", buf);
             break;
         case PROCESS_ERROR_MISSING_BINARY:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, len);
             LOGE("Command not found: %s", buf);
             LOGE("(make 'adb' accessible from your PATH or define its full"
                  "path in the ADB environment variable)");
@@ -98,6 +102,7 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
             // do nothing
             break;
     }
+    free(buf);
 }
 
 process_t
