@@ -6,6 +6,8 @@
 #include "util/log.h"
 #include "util/str_util.h"
 
+#define CMD_MAX_LEN 8192
+
 static bool
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
@@ -27,13 +29,14 @@ process_execute(const char *const argv[], HANDLE *handle) {
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
 
-    char cmd[256];
-    if (!build_cmd(cmd, sizeof(cmd), argv)) {
+    char *cmd = malloc(CMD_MAX_LEN);
+    if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
         *handle = NULL;
         return PROCESS_ERROR_GENERIC;
     }
 
     wchar_t *wide = utf8_to_wide_char(cmd);
+    free(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");
         return PROCESS_ERROR_GENERIC;

@@ -81,14 +81,20 @@ show_adb_installation_msg() {
 
 static void
 show_adb_err_msg(enum process_result err, const char *const argv[]) {
-    char buf[512];
+#define MAX_COMMAND_STRING_LEN 1024
+    char *buf = malloc(MAX_COMMAND_STRING_LEN);
+    if (!buf) {
+        LOGE("Failed to execute (could not allocate error message)");
+        return;
+    }
+
     switch (err) {
         case PROCESS_ERROR_GENERIC:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, MAX_COMMAND_STRING_LEN);
             LOGE("Failed to execute: %s", buf);
             break;
         case PROCESS_ERROR_MISSING_BINARY:
-            argv_to_string(argv, buf, sizeof(buf));
+            argv_to_string(argv, buf, MAX_COMMAND_STRING_LEN);
             LOGE("Command not found: %s", buf);
             LOGE("(make 'adb' accessible from your PATH or define its full"
                  "path in the ADB environment variable)");
@@ -98,13 +104,20 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
             // do nothing
             break;
     }
+
+    free(buf);
 }
 
 process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
-    const char *argv[len + 4];
     int i;
     process_t process;
+
+    const char **argv = malloc((len + 4) * sizeof(*argv));
+    if (!argv) {
+        return PROCESS_NONE;
+    }
+
     argv[0] = get_adb_command();
     if (serial) {
         argv[1] = "-s";
@@ -119,8 +132,10 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     enum process_result r = process_execute(argv, &process);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, argv);
-        return PROCESS_NONE;
+        process = PROCESS_NONE;
     }
+
+    free(argv);
     return process;
 }
 
