@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import android.content.Intent;
+import android.net.Uri;
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import android.graphics.Rect;
@@ -9,6 +11,8 @@ import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
+import java.util.BitSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -135,7 +139,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 16;
+        final int expectedParameters = 17;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -187,6 +191,9 @@ public final class Server {
 
         boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
         options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+
+        EnumSet<Intents> broadcastIntents = Intents.fromBitSet(BitSet.valueOf(new long[]{Long.parseLong(args[16])}));
+        options.setBroadcastIntents(broadcastIntents);
 
         return options;
     }
