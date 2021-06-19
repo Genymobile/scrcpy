@@ -656,6 +656,7 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+
 #define OPT_RENDER_EXPIRED_FRAMES  1000
 #define OPT_WINDOW_TITLE           1001
 #define OPT_PUSH_TARGET            1002
@@ -684,6 +685,7 @@ guess_record_format(const char *filename) {
 #define OPT_ENCODER_NAME           1025
 #define OPT_POWER_OFF_ON_CLOSE     1026
 #define OPT_V4L2_SINK              1027
+#define OPT_INTENT_BROADCAST       1028
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -739,6 +741,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_WINDOW_BORDERLESS},
         {"power-off-on-close",     no_argument,       NULL,
                                                   OPT_POWER_OFF_ON_CLOSE},
+        {"intent-broadcast",       optional_argument, NULL,
+                                                  OPT_INTENT_BROADCAST},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -917,6 +921,10 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->v4l2_device = optarg;
                 break;
 #endif
+
+            case OPT_INTENT_BROADCAST:
+                opts->intent_broadcast = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;

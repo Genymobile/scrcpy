@@ -278,6 +278,7 @@ scrcpy(const struct scrcpy_options *options) {
         .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
+        .intent_broadcast = options->intent_broadcast,
     };
     if (!server_start(&s->server, &params)) {
         goto end;
