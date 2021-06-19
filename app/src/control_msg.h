@@ -17,8 +17,8 @@
 // type: 1 byte; paste flag: 1 byte; length: 4 bytes
 #define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 6)
 
-#define POINTER_ID_MOUSE UINT64_C(-1);
-#define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2);
+#define POINTER_ID_MOUSE UINT64_C(-1)
+#define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2)
 
 enum control_msg_type {
     CONTROL_MSG_TYPE_INJECT_KEYCODE,
