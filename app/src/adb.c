@@ -107,7 +107,7 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
 
 process_t
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
-    const char **cmd = malloc(sizeof(*cmd) * (len + 4));
+    const char *cmd[len + 4];
     int i;
     process_t process;
     cmd[0] = get_adb_command();
@@ -124,9 +124,8 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     enum process_result r = process_execute(cmd, &process);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, cmd);
-        process = PROCESS_NONE;
+        return PROCESS_NONE;
     }
-    free(cmd);
     return process;
 }
 
