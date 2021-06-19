@@ -1,20 +1,20 @@
 package com.genymobile.scrcpy;
 
 import android.content.Intent;
-import android.net.Uri;
-import com.genymobile.scrcpy.wrappers.ContentProvider;
-
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
+import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import java.io.IOException;
-import java.util.BitSet;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Locale;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.*;
 
 public final class Server {
 
@@ -121,6 +121,66 @@ public final class Server {
         stopping.putExtra(Intents.scrcpyPrefix("STARTUP"), false);
         stopping.putExtra(Intents.scrcpyPrefix("SHUTDOWN"), true);
         Device.sendBroadcast(stopping);
+    }
+
+    private static Thread scrcpyRunningSocket() {
+
+        // Thread runs until scrcpy exits and doesn't block exiting
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                while(true) {
+
+                    ArrayList<Socket> acceptedSockets = new ArrayList<>();
+                    try (ServerSocket ss = new ServerSocket(0, -1, InetAddress.getLocalHost())) {
+                        int localPort = ss.getLocalPort();
+                        Ln.i("Running socket on " + localPort);
+
+                        Intent starting = new Intent(Intents.scrcpyPrefix("SOCKET"));
+                        starting.setData(Uri.parse("scrcpy-status:socket"));
+                        starting.putExtra(Intents.scrcpyPrefix("SOCKET"), localPort);
+                        Device.sendBroadcast(starting);
+
+                        while (true) {
+                            Socket accepted = ss.accept();
+                            if (acceptedSockets.size() < 50) {
+                                acceptedSockets.add(accepted);
+                                Ln.d("Running socket: Added listener");
+                            }
+                            ListIterator<Socket> iter = acceptedSockets.listIterator();
+                            for (Socket s = iter.next(); iter.hasNext(); s = iter.next()) {
+                                try {
+                                    s.getOutputStream().write(1);
+                                } catch (SocketException e) {
+                                    iter.remove();
+                                    Ln.d("Running socket: Removed listener");
+                                    try {
+                                        s.close();
+                                    } catch (IOException ignored) {
+                                    }
+                                }
+                            }
+
+                        }
+                    } catch (IOException e) {
+                        Ln.e("Running socket: Cannot start server", e);
+                    } catch (Exception e) {
+                        Ln.e("Running socket: failed with an unexpected exception", e);
+                    }
+
+                    try {
+                        // Avoid wasting resources in case of infinite loop
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+        });
+        thread.setName("Running socket");
+        thread.setDaemon(true);
+        thread.start();
+        return thread;
     }
 
     private static Thread startController(final Controller controller) {
