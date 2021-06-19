@@ -54,7 +54,8 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose(),
+                            options.getBroadcastIntents().contains(Intents.CLEANED));
 
         boolean tunnelForward = options.isTunnelForward();
 
