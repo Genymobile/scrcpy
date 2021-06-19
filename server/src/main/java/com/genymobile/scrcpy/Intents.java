@@ -5,6 +5,7 @@ import java.util.*;
 
 enum Intents {
 	START(1),
+	SOCKET(2),
 	STOP(30),
 	CLEANED(31),
 	;

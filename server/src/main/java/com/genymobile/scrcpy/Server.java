@@ -83,6 +83,9 @@ public final class Server {
             if(options.getBroadcastIntents().contains(Intents.START)){
                 announceScrcpyStarting();
             }
+            if(options.getBroadcastIntents().contains(Intents.SOCKET)){
+                scrcpyRunningSocket();
+            }
 
             try {
                 // synchronous
