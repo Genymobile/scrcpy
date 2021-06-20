@@ -962,7 +962,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     if (opts->record_filename && !opts->record_format) {
         opts->record_format = guess_record_format(opts->record_filename);
         if (!opts->record_format) {
-            LOGE("No format specified for \"%s\" (try with -F mkv)",
+            LOGE("No format specified for \"%s\" "
+                 "(try with --record-format=mkv)",
                  opts->record_filename);
             return false;
         }
