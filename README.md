@@ -516,7 +516,7 @@ scrcpy --display 1
 
 The list of display ids can be retrieved by:
 
-```
+```bash
 adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
@@ -801,7 +801,9 @@ handled by the active application.
 To use a specific _adb_ binary, configure its path in the environment variable
 `ADB`:
 
-    ADB=/path/to/adb scrcpy
+```bash
+ADB=/path/to/adb scrcpy
+```
 
 To override the path of the `scrcpy-server` file, configure its path in
 `SCRCPY_SERVER_PATH`.
@@ -866,9 +868,11 @@ Read the [developers page].
 This README is available in other languages:
 
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
+- [Italiano (Italiano, `it`) - v1.17](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.17](README.jp.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.17](README.pt-br.md)
+- [Español (Spanish, `sp`) - v1.17](README.sp.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.17](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
 
