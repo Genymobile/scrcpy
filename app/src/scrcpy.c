@@ -216,14 +216,15 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     if (priority == 0) {
         return;
     }
-    char *local_fmt = malloc(strlen(fmt) + 10);
+
+    size_t fmt_len = strlen(fmt);
+    char *local_fmt = malloc(fmt_len + 10);
     if (!local_fmt) {
         LOGC("Could not allocate string");
         return;
     }
-    // strcpy is safe here, the destination is large enough
-    strcpy(local_fmt, "[FFmpeg] ");
-    strcpy(local_fmt + 9, fmt);
+    memcpy(local_fmt, "[FFmpeg] ", 9); // do not write the final '\0'
+    memcpy(local_fmt + 9, fmt, fmt_len + 1); // include '\0'
     SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
     free(local_fmt);
 }
