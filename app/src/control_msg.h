@@ -17,6 +17,8 @@
 // type: 1 byte; paste flag: 1 byte; length: 4 bytes
 #define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 6)
 
+#define CONTROL_MSG_SCAN_MEDIA_PATH_MAX_LENGTH 256
+
 #define POINTER_ID_MOUSE UINT64_C(-1);
 #define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2);
 
@@ -33,6 +35,7 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
     CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    CONTROL_MSG_TYPE_SCAN_MEDIA,
 };
 
 enum screen_power_mode {
@@ -76,6 +79,9 @@ struct control_msg {
         struct {
             enum screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            char *path; // owned, to be freed by free()
+        } scan_media;
     };
 };
 

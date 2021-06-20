@@ -80,6 +80,13 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
             return 2;
+        case CONTROL_MSG_TYPE_SCAN_MEDIA:
+        {
+            size_t len = write_string(msg->scan_media.path,
+                                      CONTROL_MSG_SCAN_MEDIA_PATH_MAX_LENGTH,
+                                      &buf[1]);
+            return 1 + len;
+        }
         case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -101,6 +108,9 @@ control_msg_destroy(struct control_msg *msg) {
             break;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD:
             free(msg->set_clipboard.text);
+            break;
+        case CONTROL_MSG_TYPE_SCAN_MEDIA:
+            free(msg->scan_media.path);
             break;
         default:
             // do nothing

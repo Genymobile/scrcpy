@@ -17,6 +17,7 @@ public final class ControlMessage {
     public static final int TYPE_SET_CLIPBOARD = 9;
     public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
     public static final int TYPE_ROTATE_DEVICE = 11;
+    public static final int TYPE_SCAN_MEDIA = 12;
 
     private int type;
     private String text;
@@ -94,6 +95,13 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_SCREEN_POWER_MODE;
         msg.action = mode;
+        return msg;
+    }
+
+    public static ControlMessage createScanMedia(String path) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SCAN_MEDIA;
+        msg.text = path;
         return msg;
     }
 
