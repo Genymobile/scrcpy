@@ -17,4 +17,7 @@
 void
 sc_set_log_level(enum sc_log_level level);
 
+enum sc_log_level
+sc_get_log_level(void);
+
 #endif
