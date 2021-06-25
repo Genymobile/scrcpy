@@ -343,19 +343,29 @@ scrcpy(const struct scrcpy_options *options) {
         stream_add_sink(&s->stream, &rec->packet_sink);
     }
 
-    if (options->display) {
-        if (options->control) {
-            if (!controller_init(&s->controller, s->server.control_socket)) {
-                goto end;
-            }
-            controller_initialized = true;
-
-            if (!controller_start(&s->controller)) {
-                goto end;
-            }
-            controller_started = true;
+    if (options->control) {
+        if (!controller_init(&s->controller, s->server.control_socket)) {
+            goto end;
         }
+        controller_initialized = true;
 
+        if (!controller_start(&s->controller)) {
+            goto end;
+        }
+        controller_started = true;
+
+        if (options->turn_screen_off) {
+            struct control_msg msg;
+            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
+
+            if (!controller_push_msg(&s->controller, &msg)) {
+                LOGW("Could not request 'set screen power mode'");
+            }
+        }
+    }
+
+    if (options->display) {
         const char *window_title =
             options->window_title ? options->window_title : device_name;
 
@@ -379,16 +389,6 @@ scrcpy(const struct scrcpy_options *options) {
         screen_initialized = true;
 
         decoder_add_sink(&s->decoder, &s->screen.frame_sink);
-
-        if (options->turn_screen_off) {
-            struct control_msg msg;
-            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
-
-            if (!controller_push_msg(&s->controller, &msg)) {
-                LOGW("Could not request 'set screen power mode'");
-            }
-        }
     }
 
 #ifdef HAVE_V4L2
