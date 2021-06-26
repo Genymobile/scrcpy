@@ -8,6 +8,7 @@
 #include <libavformat/avformat.h>
 
 #include "coords.h"
+#include "fps_counter.h"
 #include "opengl.h"
 #include "trait/frame_sink.h"
 #include "video_buffer.h"
