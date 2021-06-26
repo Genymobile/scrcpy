@@ -18,12 +18,6 @@ typedef struct AVFrame AVFrame;
  * If a pending frame has not been consumed when the producer pushes a new
  * frame, then it is lost. The intent is to always provide access to the very
  * last frame to minimize latency.
- *
- * The producer and the consumer typically do not live in the same thread.
- * That's the reason why the callback on_frame_available() does not provide the
- * frame as parameter: the consumer might post an event to its own thread to
- * retrieve the pending frame from there, and that frame may have changed since
- * the callback if producer pushed a new one in between.
  */
 
 struct video_buffer {
