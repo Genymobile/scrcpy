@@ -22,6 +22,7 @@ struct sc_v4l2_sink {
     sc_thread thread;
     sc_mutex mutex;
     sc_cond cond;
+    bool has_frame;
     bool stopped;
     bool header_written;
 

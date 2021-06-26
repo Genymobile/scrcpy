@@ -112,7 +112,7 @@ run_v4l2_sink(void *data) {
     for (;;) {
         sc_mutex_lock(&vs->mutex);
 
-        while (!vs->stopped && vs->vb.pending_frame_consumed) {
+        while (!vs->stopped && !vs->has_frame) {
             sc_cond_wait(&vs->cond, &vs->mutex);
         }
 
@@ -121,9 +121,11 @@ run_v4l2_sink(void *data) {
             break;
         }
 
+        video_buffer_consume(&vs->vb, vs->frame);
+        vs->has_frame = false;
+
         sc_mutex_unlock(&vs->mutex);
 
-        video_buffer_consume(&vs->vb, vs->frame);
         bool ok = encode_and_write_frame(vs, vs->frame);
         av_frame_unref(vs->frame);
         if (!ok) {
@@ -241,6 +243,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
         goto error_av_frame_free;
     }
 
+    vs->has_frame = false;
     vs->header_written = false;
     vs->stopped = false;
 
@@ -299,13 +302,17 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
 static bool
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
+    sc_mutex_lock(&vs->mutex);
+
     bool ok = video_buffer_push(&vs->vb, frame, NULL);
     if (!ok) {
         return false;
     }
 
-    // signal possible change of vs->vb.pending_frame_consumed
+    vs->has_frame = true;
     sc_cond_signal(&vs->cond);
+
+    sc_mutex_unlock(&vs->mutex);
 
     return true;
 }
