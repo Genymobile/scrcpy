@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -12,7 +13,8 @@ typedef struct SDL_mutex SDL_mutex;
 typedef struct SDL_cond SDL_cond;
 
 typedef int sc_thread_fn(void *);
-typedef unsigned int sc_thread_id;
+typedef unsigned sc_thread_id;
+typedef atomic_uint sc_atomic_thread_id;
 
 typedef struct sc_thread {
     SDL_Thread *thread;
@@ -21,7 +23,7 @@ typedef struct sc_thread {
 typedef struct sc_mutex {
     SDL_mutex *mutex;
 #ifndef NDEBUG
-    sc_thread_id locker;
+    sc_atomic_thread_id locker;
 #endif
 } sc_mutex;
 

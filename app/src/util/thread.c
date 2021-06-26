@@ -31,7 +31,7 @@ sc_mutex_init(sc_mutex *mutex) {
 
     mutex->mutex = sdl_mutex;
 #ifndef NDEBUG
-    mutex->locker = 0;
+    atomic_init(&mutex->locker, 0);
 #endif
     return true;
 }
@@ -52,7 +52,8 @@ sc_mutex_lock(sc_mutex *mutex) {
         abort();
     }
 
-    mutex->locker = sc_thread_get_id();
+    atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
+                          memory_order_relaxed);
 #else
     (void) r;
 #endif
@@ -62,7 +63,7 @@ void
 sc_mutex_unlock(sc_mutex *mutex) {
 #ifndef NDEBUG
     assert(sc_mutex_held(mutex));
-    mutex->locker = 0;
+    atomic_store_explicit(&mutex->locker, 0, memory_order_relaxed);
 #endif
     int r = SDL_UnlockMutex(mutex->mutex);
 #ifndef NDEBUG
@@ -83,7 +84,9 @@ sc_thread_get_id(void) {
 #ifndef NDEBUG
 bool
 sc_mutex_held(struct sc_mutex *mutex) {
-    return mutex->locker == sc_thread_get_id();
+    sc_thread_id locker_id =
+        atomic_load_explicit(&mutex->locker, memory_order_relaxed);
+    return locker_id == sc_thread_get_id();
 }
 #endif
 
@@ -112,7 +115,8 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
         abort();
     }
 
-    mutex->locker = sc_thread_get_id();
+    atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
+                          memory_order_relaxed);
 #else
     (void) r;
 #endif
@@ -127,7 +131,8 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms) {
         abort();
     }
 
-    mutex->locker = sc_thread_get_id();
+    atomic_store_explicit(&mutex->locker, sc_thread_get_id(),
+                          memory_order_relaxed);
 #endif
     assert(r == 0 || r == SDL_MUTEX_TIMEDOUT);
     return r == 0;
