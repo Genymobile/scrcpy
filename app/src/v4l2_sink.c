@@ -121,7 +121,7 @@ run_v4l2_sink(void *data) {
             break;
         }
 
-        video_buffer_consume(&vs->vb, vs->frame);
+        sc_video_buffer_consume(&vs->vb, vs->frame);
         vs->has_frame = false;
 
         sc_mutex_unlock(&vs->mutex);
@@ -141,7 +141,7 @@ run_v4l2_sink(void *data) {
 
 static bool
 sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
-    bool ok = video_buffer_init(&vs->vb);
+    bool ok = sc_video_buffer_init(&vs->vb);
     if (!ok) {
         return false;
     }
@@ -275,7 +275,7 @@ error_cond_destroy:
 error_mutex_destroy:
     sc_mutex_destroy(&vs->mutex);
 error_video_buffer_destroy:
-    video_buffer_destroy(&vs->vb);
+    sc_video_buffer_destroy(&vs->vb);
 
     return false;
 }
@@ -297,14 +297,14 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
     avformat_free_context(vs->format_ctx);
     sc_cond_destroy(&vs->cond);
     sc_mutex_destroy(&vs->mutex);
-    video_buffer_destroy(&vs->vb);
+    sc_video_buffer_destroy(&vs->vb);
 }
 
 static bool
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
     sc_mutex_lock(&vs->mutex);
 
-    bool ok = video_buffer_push(&vs->vb, frame, NULL);
+    bool ok = sc_video_buffer_push(&vs->vb, frame, NULL);
     if (!ok) {
         return false;
     }

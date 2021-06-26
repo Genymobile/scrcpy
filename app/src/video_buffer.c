@@ -7,7 +7,7 @@
 #include "util/log.h"
 
 bool
-video_buffer_init(struct video_buffer *vb) {
+sc_video_buffer_init(struct sc_video_buffer *vb) {
     vb->pending_frame = av_frame_alloc();
     if (!vb->pending_frame) {
         return false;
@@ -33,7 +33,7 @@ video_buffer_init(struct video_buffer *vb) {
 }
 
 void
-video_buffer_destroy(struct video_buffer *vb) {
+sc_video_buffer_destroy(struct sc_video_buffer *vb) {
     sc_mutex_destroy(&vb->mutex);
     av_frame_free(&vb->pending_frame);
     av_frame_free(&vb->tmp_frame);
@@ -47,7 +47,7 @@ swap_frames(AVFrame **lhs, AVFrame **rhs) {
 }
 
 bool
-video_buffer_push(struct video_buffer *vb, const AVFrame *frame,
+sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame,
                   bool *previous_frame_skipped) {
     sc_mutex_lock(&vb->mutex);
 
@@ -75,7 +75,7 @@ video_buffer_push(struct video_buffer *vb, const AVFrame *frame,
 }
 
 void
-video_buffer_consume(struct video_buffer *vb, AVFrame *dst) {
+sc_video_buffer_consume(struct sc_video_buffer *vb, AVFrame *dst) {
     sc_mutex_lock(&vb->mutex);
     assert(!vb->pending_frame_consumed);
     vb->pending_frame_consumed = true;
