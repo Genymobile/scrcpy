@@ -12,7 +12,7 @@
 struct sc_v4l2_sink {
     struct sc_frame_sink frame_sink; // frame sink trait
 
-    struct video_buffer vb;
+    struct sc_video_buffer vb;
     AVFormatContext *format_ctx;
     AVCodecContext *encoder_ctx;
 
