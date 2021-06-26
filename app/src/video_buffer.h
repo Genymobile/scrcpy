@@ -5,7 +5,6 @@
 
 #include <stdbool.h>
 
-#include "fps_counter.h"
 #include "util/thread.h"
 
 // forward declarations
