@@ -20,7 +20,7 @@ struct screen {
     bool open; // track the open/close state to assert correct behavior
 #endif
 
-    struct video_buffer vb;
+    struct sc_video_buffer vb;
     struct fps_counter fps_counter;
 
     SDL_Window *window;

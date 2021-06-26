@@ -1,5 +1,5 @@
-#ifndef VIDEO_BUFFER_H
-#define VIDEO_BUFFER_H
+#ifndef SC_VIDEO_BUFFER_H
+#define SC_VIDEO_BUFFER_H
 
 #include "common.h"
 
@@ -19,7 +19,7 @@ typedef struct AVFrame AVFrame;
  * last frame to minimize latency.
  */
 
-struct video_buffer {
+struct sc_video_buffer {
     AVFrame *pending_frame;
     AVFrame *tmp_frame; // To preserve the pending frame on error
 
@@ -29,15 +29,16 @@ struct video_buffer {
 };
 
 bool
-video_buffer_init(struct video_buffer *vb);
+sc_video_buffer_init(struct sc_video_buffer *vb);
 
 void
-video_buffer_destroy(struct video_buffer *vb);
+sc_video_buffer_destroy(struct sc_video_buffer *vb);
 
 bool
-video_buffer_push(struct video_buffer *vb, const AVFrame *frame, bool *skipped);
+sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame,
+                     bool *skipped);
 
 void
-video_buffer_consume(struct video_buffer *vb, AVFrame *dst);
+sc_video_buffer_consume(struct sc_video_buffer *vb, AVFrame *dst);
 
 #endif
