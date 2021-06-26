@@ -241,15 +241,15 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
         goto error_av_frame_free;
     }
 
+    vs->header_written = false;
+    vs->stopped = false;
+
     LOGD("Starting v4l2 thread");
     ok = sc_thread_create(&vs->thread, run_v4l2_sink, "v4l2", vs);
     if (!ok) {
         LOGC("Could not start v4l2 thread");
         goto error_av_packet_free;
     }
-
-    vs->header_written = false;
-    vs->stopped = false;
 
     LOGI("v4l2 sink started to device: %s", vs->device_name);
 
