@@ -5,27 +5,13 @@
 
 #include <stdbool.h>
 
-#include "util/thread.h"
+#include "frame_buffer.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
 
-/**
- * A video buffer holds 1 pending frame, which is the last frame received from
- * the producer (typically, the decoder).
- *
- * If a pending frame has not been consumed when the producer pushes a new
- * frame, then it is lost. The intent is to always provide access to the very
- * last frame to minimize latency.
- */
-
 struct sc_video_buffer {
-    AVFrame *pending_frame;
-    AVFrame *tmp_frame; // To preserve the pending frame on error
-
-    sc_mutex mutex;
-
-    bool pending_frame_consumed;
+    struct sc_frame_buffer fb;
 };
 
 bool
