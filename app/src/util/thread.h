@@ -73,7 +73,7 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex);
 
 // return true on signaled, false on timeout
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick ms);
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline);
 
 void
 sc_cond_signal(sc_cond *cond);

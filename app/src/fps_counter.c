@@ -84,11 +84,9 @@ run_fps_counter(void *data) {
             sc_tick now = sc_tick_now();
             check_interval_expired(counter, now);
 
-            assert(counter->next_timestamp > now);
-            sc_tick remaining = counter->next_timestamp - now;
-
             // ignore the reason (timeout or signaled), we just loop anyway
-            sc_cond_timedwait(&counter->state_cond, &counter->mutex, remaining);
+            sc_cond_timedwait(&counter->state_cond, &counter->mutex,
+                              counter->next_timestamp);
         }
     }
     sc_mutex_unlock(&counter->mutex);
