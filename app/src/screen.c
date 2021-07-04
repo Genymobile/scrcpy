@@ -274,14 +274,16 @@ screen_frame_sink_close(struct sc_frame_sink *sink) {
 static bool
 screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct screen *screen = DOWNCAST(sink);
+    return sc_video_buffer_push(&screen->vb, frame);
+}
 
-    bool previous_frame_skipped;
-    bool ok = sc_video_buffer_push(&screen->vb, frame, &previous_frame_skipped);
-    if (!ok) {
-        return false;
-    }
+static void
+sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
+                             void *userdata) {
+    (void) vb;
+    struct screen *screen = userdata;
 
-    if (previous_frame_skipped) {
+    if (previous_skipped) {
         fps_counter_add_skipped_frame(&screen->fps_counter);
         // The EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead
@@ -293,8 +295,6 @@ screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         // Post the event on the UI thread
         SDL_PushEvent(&new_frame_event);
     }
-
-    return true;
 }
 
 bool
@@ -304,7 +304,11 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     screen->fullscreen = false;
     screen->maximized = false;
 
-    bool ok = sc_video_buffer_init(&screen->vb);
+    static const struct sc_video_buffer_callbacks cbs = {
+        .on_new_frame = sc_video_buffer_on_new_frame,
+    };
+
+    bool ok = sc_video_buffer_init(&screen->vb, &cbs, screen);
     if (!ok) {
         LOGE("Could not initialize video buffer");
         return false;
