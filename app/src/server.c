@@ -554,10 +554,10 @@ server_stop(struct server *server) {
     sc_mutex_lock(&server->mutex);
     bool signaled = false;
     if (!server->process_terminated) {
-#define WATCHDOG_DELAY_MS 1000
+#define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
         signaled = sc_cond_timedwait(&server->process_terminated_cond,
                                      &server->mutex,
-                                     WATCHDOG_DELAY_MS);
+                                     WATCHDOG_DELAY);
     }
     sc_mutex_unlock(&server->mutex);
 

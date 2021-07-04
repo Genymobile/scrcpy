@@ -5,7 +5,8 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
-#include <stdint.h>
+
+#include "tick.h"
 
 /* Forward declarations */
 typedef struct SDL_Thread SDL_Thread;
@@ -72,7 +73,7 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex);
 
 // return true on signaled, false on timeout
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms);
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick ms);
 
 void
 sc_cond_signal(sc_cond *cond);
