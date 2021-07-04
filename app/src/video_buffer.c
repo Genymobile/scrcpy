@@ -6,6 +6,40 @@
 
 #include "util/log.h"
 
+struct sc_clock {
+    double coeff;
+    sc_tick offset;
+    unsigned range;
+
+    struct {
+        sc_tick system;
+        sc_tick stream;
+    } last;
+};
+
+static void
+sc_clock_init(struct sc_clock *clock) {
+    clock->coeff = 1;
+    clock->offset = 0;
+    clock->range = 0;
+
+    clock->last.system = 0;
+    clock->last.stream = 0;
+}
+
+static void
+sc_clock_update(struct sc_clock *clock, sc_tick now, sc_tick stream_ts) {
+    sc_tick system_delta = now - clock->last.system;
+    sc_tick stream_delta = stream_ts - clock->last.stream;
+    double instant_coeff = (double) system_delta / stream_delta;
+
+}
+
+static sc_tick
+sc_clock_get_system_ts(struct sc_clock *clock, sc_tick stream_ts) {
+    return (sc_tick) (stream_ts * clock->coeff) + clock->offset;
+}
+
 static struct sc_video_buffer_frame *
 sc_video_buffer_frame_new(const AVFrame *frame) {
     struct sc_video_buffer_frame *vb_frame = malloc(sizeof(*vb_frame));
