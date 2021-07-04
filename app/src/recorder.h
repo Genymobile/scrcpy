@@ -17,7 +17,7 @@ struct record_packet {
     struct record_packet *next;
 };
 
-struct recorder_queue QUEUE(struct record_packet);
+struct recorder_queue SC_QUEUE(struct record_packet);
 
 struct recorder {
     struct sc_packet_sink packet_sink; // packet sink trait

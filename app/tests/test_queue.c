@@ -10,28 +10,28 @@ struct foo {
 };
 
 static void test_queue(void) {
-    struct my_queue QUEUE(struct foo) queue;
-    queue_init(&queue);
+    struct my_queue SC_QUEUE(struct foo) queue;
+    sc_queue_init(&queue);
 
-    assert(queue_is_empty(&queue));
+    assert(sc_queue_is_empty(&queue));
 
     struct foo v1 = { .value = 42 };
     struct foo v2 = { .value = 27 };
 
-    queue_push(&queue, next, &v1);
-    queue_push(&queue, next, &v2);
+    sc_queue_push(&queue, next, &v1);
+    sc_queue_push(&queue, next, &v2);
 
     struct foo *foo;
 
-    assert(!queue_is_empty(&queue));
-    queue_take(&queue, next, &foo);
+    assert(!sc_queue_is_empty(&queue));
+    sc_queue_take(&queue, next, &foo);
     assert(foo->value == 42);
 
-    assert(!queue_is_empty(&queue));
-    queue_take(&queue, next, &foo);
+    assert(!sc_queue_is_empty(&queue));
+    sc_queue_take(&queue, next, &foo);
     assert(foo->value == 27);
 
-    assert(queue_is_empty(&queue));
+    assert(sc_queue_is_empty(&queue));
 }
 
 int main(int argc, char *argv[]) {

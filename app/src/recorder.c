@@ -57,9 +57,9 @@ record_packet_delete(struct record_packet *rec) {
 
 static void
 recorder_queue_clear(struct recorder_queue *queue) {
-    while (!queue_is_empty(queue)) {
+    while (!sc_queue_is_empty(queue)) {
         struct record_packet *rec;
-        queue_take(queue, next, &rec);
+        sc_queue_take(queue, next, &rec);
         record_packet_delete(rec);
     }
 }
@@ -135,14 +135,14 @@ run_recorder(void *data) {
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
 
-        while (!recorder->stopped && queue_is_empty(&recorder->queue)) {
+        while (!recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
             sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
         }
 
         // if stopped is set, continue to process the remaining events (to
         // finish the recording) before actually stopping
 
-        if (recorder->stopped && queue_is_empty(&recorder->queue)) {
+        if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
             sc_mutex_unlock(&recorder->mutex);
             struct record_packet *last = recorder->previous;
             if (last) {
@@ -161,7 +161,7 @@ run_recorder(void *data) {
         }
 
         struct record_packet *rec;
-        queue_take(&recorder->queue, next, &rec);
+        sc_queue_take(&recorder->queue, next, &rec);
 
         sc_mutex_unlock(&recorder->mutex);
 
@@ -235,7 +235,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
         goto error_mutex_destroy;
     }
 
-    queue_init(&recorder->queue);
+    sc_queue_init(&recorder->queue);
     recorder->stopped = false;
     recorder->failed = false;
     recorder->header_written = false;
@@ -340,7 +340,7 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
         return false;
     }
 
-    queue_push(&recorder->queue, next, rec);
+    sc_queue_push(&recorder->queue, next, rec);
     sc_cond_signal(&recorder->queue_cond);
 
     sc_mutex_unlock(&recorder->mutex);
