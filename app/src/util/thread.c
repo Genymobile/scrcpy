@@ -123,12 +123,13 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
 }
 
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick delay) {
-    if (delay < 0) {
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline) {
+    sc_tick now = sc_tick_now();
+    if (deadline <= now) {
         return false; // timeout
     }
 
-    uint32_t ms = SC_TICK_TO_MS(delay);
+    uint32_t ms = SC_TICK_TO_MS(deadline - now);
     int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, ms);
 #ifndef NDEBUG
     if (r < 0) {

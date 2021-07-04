@@ -557,7 +557,7 @@ server_stop(struct server *server) {
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
         signaled = sc_cond_timedwait(&server->process_terminated_cond,
                                      &server->mutex,
-                                     WATCHDOG_DELAY);
+                                     sc_tick_now() + WATCHDOG_DELAY);
     }
     sc_mutex_unlock(&server->mutex);
 
