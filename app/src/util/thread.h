@@ -16,6 +16,8 @@ typedef int sc_thread_fn(void *);
 typedef unsigned sc_thread_id;
 typedef atomic_uint sc_atomic_thread_id;
 
+typedef int64_t sc_tick;
+
 typedef struct sc_thread {
     SDL_Thread *thread;
 } sc_thread;
@@ -72,12 +74,15 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex);
 
 // return true on signaled, false on timeout
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms);
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick ms);
 
 void
 sc_cond_signal(sc_cond *cond);
 
 void
 sc_cond_broadcast(sc_cond *cond);
+
+sc_tick
+sc_tick_now(void);
 
 #endif

@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <SDL2/SDL_thread.h>
+#include <SDL2/SDL_timer.h>
 
 #include "log.h"
 
@@ -123,8 +124,12 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
 }
 
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms) {
-    int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, ms);
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick ms) {
+    if (ms < 0) {
+        return false; // timeout
+    }
+
+    int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, (uint32_t) ms);
 #ifndef NDEBUG
     if (r < 0) {
         LOGC("Could not wait on condition with timeout: %s", SDL_GetError());
@@ -162,4 +167,12 @@ sc_cond_broadcast(sc_cond *cond) {
 #else
     (void) r;
 #endif
+}
+
+sc_tick
+sc_tick_now(void) {
+    // SDL ticks is an unsigned 32 bits, but this is an implementation detail.
+    // It wraps if the program runs for more than ~49 days, but in practice we
+    // can assume it does not.
+    return (sc_tick) SDL_GetTicks();
 }
