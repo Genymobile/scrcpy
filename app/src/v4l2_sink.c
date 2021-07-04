@@ -121,10 +121,10 @@ run_v4l2_sink(void *data) {
             break;
         }
 
-        video_buffer_consume(&vs->vb, vs->frame);
         vs->has_frame = false;
-
         sc_mutex_unlock(&vs->mutex);
+
+        video_buffer_consume(&vs->vb, vs->frame);
 
         bool ok = encode_and_write_frame(vs, vs->frame);
         av_frame_unref(vs->frame);
@@ -303,17 +303,18 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
 static bool
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
-    sc_mutex_lock(&vs->mutex);
-
-    bool ok = video_buffer_push(&vs->vb, frame, NULL);
+    bool previous_skipped;
+    bool ok = video_buffer_push(&vs->vb, frame, &previous_skipped);
     if (!ok) {
         return false;
     }
 
-    vs->has_frame = true;
-    sc_cond_signal(&vs->cond);
-
-    sc_mutex_unlock(&vs->mutex);
+    if (!previous_skipped) {
+        sc_mutex_lock(&vs->mutex);
+        vs->has_frame = true;
+        sc_cond_signal(&vs->cond);
+        sc_mutex_unlock(&vs->mutex);
+    }
 
     return true;
 }
