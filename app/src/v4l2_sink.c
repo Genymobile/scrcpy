@@ -143,6 +143,7 @@ static bool
 sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
     bool ok = video_buffer_init(&vs->vb);
     if (!ok) {
+        LOGE("Could not initialize video buffer");
         return false;
     }
 
