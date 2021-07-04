@@ -1,10 +1,65 @@
 #include "video_buffer.h"
 
 #include <assert.h>
+#include <stdlib.h>
+
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
 
 #include "util/log.h"
+
+#define SC_CLOCK_AVERAGE_RANGE 32
+
+static void
+sc_clock_init(struct sc_clock *clock) {
+    clock->coeff = 1;
+    clock->offset = 0;
+    clock->weight = 0;
+
+    clock->last.system = 0;
+    clock->last.stream = 0;
+}
+
+static sc_tick
+sc_clock_to_system_ts(struct sc_clock *clock, sc_tick stream_ts) {
+    assert(clock->weight); // sc_clock_update() must have been called
+    return (sc_tick) (stream_ts * clock->coeff) + clock->offset;
+}
+
+static void
+sc_clock_update(struct sc_clock *clock, sc_tick now, sc_tick stream_ts) {
+    double instant_coeff;
+    sc_tick mad;
+    if (clock->weight) {
+        sc_tick system_delta = now - clock->last.system;
+        sc_tick stream_delta = stream_ts - clock->last.stream;
+        instant_coeff = (double) system_delta / stream_delta;
+        sc_tick system_pts = sc_clock_to_system_ts(clock, stream_ts);
+        mad = llabs(now - system_pts);
+    } else {
+        // This is the first update, we cannot compute delta
+        instant_coeff = 1;
+        mad = 0;
+    }
+
+    if (clock->weight < SC_CLOCK_AVERAGE_RANGE) {
+        ++clock->weight;
+    }
+
+    // (1-t) * avg + t * new
+    clock->coeff = ((clock->weight - 1) * clock->coeff + instant_coeff)
+                 / clock->weight;
+
+    // FIXME it cannot change at every frame!
+    clock->offset = now - (sc_tick) (stream_ts * clock->coeff);
+
+    LOGD("%g x + %ld", clock->coeff, clock->offset);
+
+    clock->mad = ((clock->weight - 1) * clock->mad + mad) / clock->weight;
+
+    clock->last.system = now;
+    clock->last.stream = stream_ts;
+}
 
 static struct sc_video_buffer_frame *
 sc_video_buffer_frame_new(const AVFrame *frame) {
@@ -61,24 +116,51 @@ run_buffering(void *data) {
         }
 
         if (vb->b.stopped) {
-            // Flush queue
-            while (!sc_queue_is_empty(&vb->b.queue)) {
-                struct sc_video_buffer_frame *vb_frame;
-                sc_queue_take(&vb->b.queue, next, &vb_frame);
-                sc_video_buffer_frame_delete(vb_frame);
-            }
-            break;
+            sc_mutex_unlock(&vb->b.mutex);
+            goto stopped;
         }
 
         struct sc_video_buffer_frame *vb_frame;
         sc_queue_take(&vb->b.queue, next, &vb_frame);
 
-        sc_mutex_unlock(&vb->b.mutex);
+        sc_tick now = sc_tick_now();
+        // FIXME time_base units
+        int64_t pts = vb_frame->frame->pts; // micros to millis
+        LOGD("==== pts = %ld", pts);
+        sc_tick system_pts = sc_clock_to_system_ts(&vb->b.clock, pts);
+        if (now + vb->buffering_ms < system_pts) {
+            system_pts = now + vb->buffering_ms;
+        }
 
-        usleep(vb->buffering_ms * 1000);
+        sc_tick deadline = system_pts + vb->buffering_ms;
+
+        LOGD("==== %ld %ld %ld\n", now, system_pts, deadline);
+
+        LOGD("[WAITING FOR] %ld ", deadline-now);
+        bool timed_out = false;
+        while (!vb->b.stopped && !timed_out) {
+            timed_out =
+                !sc_cond_timedwait(&vb->b.wait_cond, &vb->b.mutex, deadline);
+        }
+
+        if (vb->b.stopped) {
+            sc_video_buffer_frame_delete(vb_frame);
+            sc_mutex_unlock(&vb->b.mutex);
+            goto stopped;
+        }
+
+        sc_mutex_unlock(&vb->b.mutex);
 
         sc_video_buffer_offer(vb, vb_frame->frame);
 
+        sc_video_buffer_frame_delete(vb_frame);
+    }
+
+stopped:
+    // Flush queue
+    while (!sc_queue_is_empty(&vb->b.queue)) {
+        struct sc_video_buffer_frame *vb_frame;
+        sc_queue_take(&vb->b.queue, next, &vb_frame);
         sc_video_buffer_frame_delete(vb_frame);
     }
 
@@ -112,6 +194,16 @@ sc_video_buffer_init(struct sc_video_buffer *vb, unsigned buffering_ms,
             return false;
         }
 
+        ok = sc_cond_init(&vb->b.wait_cond);
+        if (!ok) {
+            LOGC("Could not create wait cond");
+            sc_cond_destroy(&vb->b.queue_cond);
+            sc_mutex_destroy(&vb->b.mutex);
+            sc_frame_buffer_destroy(&vb->fb);
+            return false;
+        }
+
+        sc_clock_init(&vb->b.clock);
         sc_queue_init(&vb->b.queue);
     }
 
@@ -143,6 +235,8 @@ sc_video_buffer_stop(struct sc_video_buffer *vb) {
     if (vb->buffering_ms) {
         sc_mutex_lock(&vb->b.mutex);
         vb->b.stopped = true;
+        sc_cond_signal(&vb->b.queue_cond);
+        sc_cond_signal(&vb->b.wait_cond);
         sc_mutex_unlock(&vb->b.mutex);
     }
 }
@@ -158,6 +252,7 @@ void
 sc_video_buffer_destroy(struct sc_video_buffer *vb) {
     sc_frame_buffer_destroy(&vb->fb);
     if (vb->buffering_ms) {
+        sc_cond_destroy(&vb->b.wait_cond);
         sc_cond_destroy(&vb->b.queue_cond);
         sc_mutex_destroy(&vb->b.mutex);
     }
@@ -175,6 +270,8 @@ sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
         LOGE("Could not allocate frame");
         return false;
     }
+
+    sc_clock_update(&vb->b.clock, sc_tick_now(), vb_frame->frame->pts);
 
     sc_mutex_lock(&vb->b.mutex);
     sc_queue_push(&vb->b.queue, next, vb_frame);

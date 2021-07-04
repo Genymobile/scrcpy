@@ -14,10 +14,24 @@ typedef struct AVFrame AVFrame;
 
 struct sc_video_buffer_frame {
     AVFrame *frame;
+    sc_tick system_pts;
     struct sc_video_buffer_frame *next;
 };
 
 struct sc_video_buffer_frame_queue SC_QUEUE(struct sc_video_buffer_frame);
+
+struct sc_clock {
+    double coeff;
+    sc_tick offset;
+    unsigned weight;
+
+    struct {
+        sc_tick system;
+        sc_tick stream;
+    } last;
+
+    sc_tick mad; // mean absolute difference
+};
 
 struct sc_video_buffer {
     struct sc_frame_buffer fb;
@@ -29,6 +43,9 @@ struct sc_video_buffer {
         sc_thread thread;
         sc_mutex mutex;
         sc_cond queue_cond;
+        sc_cond wait_cond;
+
+        struct sc_clock clock;
         struct sc_video_buffer_frame_queue queue;
         bool stopped;
     } b; // buffering
