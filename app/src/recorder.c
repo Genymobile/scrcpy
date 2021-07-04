@@ -51,7 +51,6 @@ record_packet_new(const AVPacket *packet) {
 
 static void
 record_packet_delete(struct record_packet *rec) {
-    av_packet_unref(rec->packet);
     av_packet_free(&rec->packet);
     free(rec);
 }

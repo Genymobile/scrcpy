@@ -151,7 +151,6 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
 
         if (stream->pending) {
             // the pending packet must be discarded (consumed or error)
-            av_packet_unref(stream->pending);
             av_packet_free(&stream->pending);
         }
 
@@ -244,7 +243,6 @@ run_stream(void *data) {
     LOGD("End of frames");
 
     if (stream->pending) {
-        av_packet_unref(stream->pending);
         av_packet_free(&stream->pending);
     }
 
