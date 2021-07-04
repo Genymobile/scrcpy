@@ -24,7 +24,7 @@ struct fps_counter {
     bool interrupted;
     unsigned nr_rendered;
     unsigned nr_skipped;
-    uint32_t next_timestamp;
+    sc_tick next_timestamp;
 };
 
 bool

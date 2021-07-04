@@ -25,6 +25,7 @@ src = [
     'src/util/process.c',
     'src/util/str_util.c',
     'src/util/thread.c',
+    'src/util/tick.c',
 ]
 
 if host_machine.system() == 'windows'
