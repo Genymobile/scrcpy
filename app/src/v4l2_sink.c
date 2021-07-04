@@ -139,9 +139,27 @@ run_v4l2_sink(void *data) {
     return 0;
 }
 
+static void
+sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
+                             void *userdata) {
+    (void) vb;
+    struct sc_v4l2_sink *vs = userdata;
+
+    if (!previous_skipped) {
+        sc_mutex_lock(&vs->mutex);
+        vs->has_frame = true;
+        sc_cond_signal(&vs->cond);
+        sc_mutex_unlock(&vs->mutex);
+    }
+}
+
 static bool
 sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
-    bool ok = sc_video_buffer_init(&vs->vb);
+    static const struct sc_video_buffer_callbacks cbs = {
+        .on_new_frame = sc_video_buffer_on_new_frame,
+    };
+
+    bool ok = sc_video_buffer_init(&vs->vb, &cbs, vs);
     if (!ok) {
         LOGE("Could not initialize video buffer");
         return false;
@@ -303,20 +321,7 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
 static bool
 sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
-    bool previous_skipped;
-    bool ok = sc_video_buffer_push(&vs->vb, frame, &previous_skipped);
-    if (!ok) {
-        return false;
-    }
-
-    if (!previous_skipped) {
-        sc_mutex_lock(&vs->mutex);
-        vs->has_frame = true;
-        sc_cond_signal(&vs->cond);
-        sc_mutex_unlock(&vs->mutex);
-    }
-
-    return true;
+    return sc_video_buffer_push(&vs->vb, frame);
 }
 
 static bool
