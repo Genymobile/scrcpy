@@ -308,15 +308,21 @@ screen_init(struct screen *screen, const struct screen_params *params) {
         .on_new_frame = sc_video_buffer_on_new_frame,
     };
 
-    bool ok = sc_video_buffer_init(&screen->vb, &cbs, screen);
+    bool ok = sc_video_buffer_init(&screen->vb, 0, &cbs, screen);
     if (!ok) {
         LOGE("Could not initialize video buffer");
         return false;
     }
 
+    ok = sc_video_buffer_start(&screen->vb);
+    if (!ok) {
+        LOGE("Could not start video_buffer");
+        goto error_destroy_video_buffer;
+    }
+
     if (!fps_counter_init(&screen->fps_counter)) {
         LOGE("Could not initialize FPS counter");
-        goto error_destroy_video_buffer;
+        goto error_stop_and_join_video_buffer;
     }
 
     screen->frame_size = params->frame_size;
@@ -457,6 +463,9 @@ error_destroy_window:
     SDL_DestroyWindow(screen->window);
 error_destroy_fps_counter:
     fps_counter_destroy(&screen->fps_counter);
+error_stop_and_join_video_buffer:
+    sc_video_buffer_stop(&screen->vb);
+    sc_video_buffer_join(&screen->vb);
 error_destroy_video_buffer:
     sc_video_buffer_destroy(&screen->vb);
 
@@ -475,11 +484,13 @@ screen_hide_window(struct screen *screen) {
 
 void
 screen_interrupt(struct screen *screen) {
+    sc_video_buffer_stop(&screen->vb);
     fps_counter_interrupt(&screen->fps_counter);
 }
 
 void
 screen_join(struct screen *screen) {
+    sc_video_buffer_join(&screen->vb);
     fps_counter_join(&screen->fps_counter);
 }
 

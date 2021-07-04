@@ -159,16 +159,22 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
         .on_new_frame = sc_video_buffer_on_new_frame,
     };
 
-    bool ok = sc_video_buffer_init(&vs->vb, &cbs, vs);
+    bool ok = sc_video_buffer_init(&vs->vb, 0, &cbs, vs);
     if (!ok) {
         LOGE("Could not initialize video buffer");
         return false;
     }
 
+    ok = sc_video_buffer_start(&vs->vb);
+    if (!ok) {
+        LOGE("Could not start video buffer");
+        goto error_video_buffer_destroy;
+    }
+
     ok = sc_mutex_init(&vs->mutex);
     if (!ok) {
         LOGC("Could not create mutex");
-        goto error_video_buffer_destroy;
+        goto error_video_buffer_stop_and_join;
     }
 
     ok = sc_cond_init(&vs->cond);
@@ -293,6 +299,9 @@ error_cond_destroy:
     sc_cond_destroy(&vs->cond);
 error_mutex_destroy:
     sc_mutex_destroy(&vs->mutex);
+error_video_buffer_stop_and_join:
+    sc_video_buffer_stop(&vs->vb);
+    sc_video_buffer_join(&vs->vb);
 error_video_buffer_destroy:
     sc_video_buffer_destroy(&vs->vb);
 
@@ -306,7 +315,10 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
     sc_cond_signal(&vs->cond);
     sc_mutex_unlock(&vs->mutex);
 
+    sc_video_buffer_stop(&vs->vb);
+
     sc_thread_join(&vs->thread, NULL);
+    sc_video_buffer_join(&vs->vb);
 
     av_packet_free(&vs->packet);
     av_frame_free(&vs->frame);
