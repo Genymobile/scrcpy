@@ -12,17 +12,23 @@ static void
 sc_clock_history_init(struct sc_clock_history *history) {
     history->count = 0;
     history->head = 0;
-    history->system_sum = 0;
-    history->stream_sum = 0;
+    history->system_left_sum = 0;
+    history->stream_left_sum = 0;
+    history->system_right_sum = 0;
+    history->stream_right_sum = 0;
+    memset(history->points, 0, sizeof(history->points));
 }
 
 static void
 sc_clock_history_push(struct sc_clock_history *history,
                       sc_tick system, sc_tick stream) {
     struct sc_clock_point *point = &history->points[history->head];
+    struct sc_clock_point *mid_point = &history->points[(history->head + SC_CLOCK_RANGE/2) % SC_CLOCK_RANGE];
+        history->system_left_sum += mid_point->system - point->system;
+        history->stream_left_sum += mid_point->stream - point->stream;
+        history->system_right_sum -= mid_point->system;
+        history->stream_right_sum -= mid_point->stream;
     if (history->count == SC_CLOCK_RANGE) {
-        history->system_sum -= point->system;
-        history->stream_sum -= point->stream;
     } else {
         ++history->count;
     }
@@ -30,21 +36,39 @@ sc_clock_history_push(struct sc_clock_history *history,
     point->system = system;
     point->stream = stream;
 
-    history->system_sum += system;
-    history->stream_sum += stream;
-
-    LOGD("#### %ld %ld\n", history->stream_sum / history->count, history->system_sum / history->count);
+    history->system_right_sum += system;
+    history->stream_right_sum += stream;
 
     history->head = (history->head + 1) % SC_CLOCK_RANGE;
 }
 
 static void
-sc_clock_history_get_average_point(struct sc_clock_history *history,
-                                   struct sc_clock_point *point) {
-    assert(history->count);
-    point->system = history->system_sum / history->count;
-    point->stream = history->stream_sum / history->count;
+sc_clock_history_get_eq(struct sc_clock_history *history, double *coeff,
+                        sc_tick *offset) {
+    struct sc_clock_point p1 = {
+        .system = history->system_left_sum * 2 / SC_CLOCK_RANGE,
+        .stream = history->stream_left_sum * 2 / SC_CLOCK_RANGE,
+    };
+    struct sc_clock_point p2 = {
+        .system = history->system_right_sum * 2 / SC_CLOCK_RANGE,
+        .stream = history->stream_right_sum * 2 / SC_CLOCK_RANGE,
+    };
+    double a = (double) (p2.system - p1.system) / (p2.stream - p1.stream);
+    fprintf(stderr, "%ld %ld\n", history->system_left_sum, history->system_right_sum);
+    sc_tick b = (history->system_left_sum + history->system_right_sum) / SC_CLOCK_RANGE
+              - (sc_tick) ((history->stream_left_sum + history->stream_right_sum) / SC_CLOCK_RANGE * a);
+
+    *coeff = a;
+    *offset = b;
 }
+
+//static void
+//sc_clock_history_get_average_point(struct sc_clock_history *history,
+//                                   struct sc_clock_point *point) {
+//    assert(history->count);
+//    point->system = history->system_sum / history->count;
+//    point->stream = history->stream_sum / history->count;
+//}
 
 static void
 sc_clock_init(struct sc_clock *clock) {
@@ -82,15 +106,16 @@ sc_clock_update(struct sc_clock *clock, sc_tick now, sc_tick stream_ts) {
         ++clock->weight;
     }
 
-    // (1-t) * avg + t * new
-    clock->coeff = ((clock->weight - 1) * clock->coeff + instant_coeff)
-                 / clock->weight;
-
-    struct sc_clock_point center;
-    sc_clock_history_get_average_point(&clock->history, &center);
-
-    clock->offset = center.system - (sc_tick) (center.stream * clock->coeff);
-
+    sc_clock_history_get_eq(&clock->history, &clock->coeff, &clock->offset);
+//    // (1-t) * avg + t * new
+//    clock->coeff = ((clock->weight - 1) * clock->coeff + instant_coeff)
+//                 / clock->weight;
+//
+//    struct sc_clock_point center;
+//    sc_clock_history_get_average_point(&clock->history, &center);
+//
+//    clock->offset = center.system - (sc_tick) (center.stream * clock->coeff);
+//
     LOGD("%g x + %ld", clock->coeff, clock->offset);
 
     clock->last.system = now;
@@ -160,7 +185,7 @@ run_buffering(void *data) {
         sc_queue_take(&vb->b.queue, next, &vb_frame);
 
         sc_tick now = sc_tick_now();
-        int64_t pts = vb_frame->frame->pts / 1000;
+        int64_t pts = vb_frame->frame->pts;
         LOGD("==== pts = %ld", pts);
 
         bool timed_out = false;

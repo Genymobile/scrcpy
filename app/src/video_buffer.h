@@ -32,8 +32,11 @@ struct sc_clock_history {
     unsigned count;
     unsigned head;
 
-    sc_tick system_sum;
-    sc_tick stream_sum;
+    sc_tick system_left_sum;
+    sc_tick stream_left_sum;
+
+    sc_tick system_right_sum;
+    sc_tick stream_right_sum;
 };
 
 struct sc_clock {
