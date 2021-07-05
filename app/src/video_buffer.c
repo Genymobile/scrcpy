@@ -191,7 +191,7 @@ run_buffering(void *data) {
         bool timed_out = false;
         while (!vb->b.stopped && !timed_out) {
             sc_tick deadline = sc_clock_to_system_ts(&vb->b.clock, pts)
-                               + vb->buffering_ms / 2;
+                               + vb->buffering_ms;
             if (deadline > now + vb->buffering_ms) {
                 deadline = now + vb->buffering_ms;
             }
