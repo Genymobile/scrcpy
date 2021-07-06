@@ -79,7 +79,7 @@ scrcpy_print_usage(const char *arg0) {
         "        This is a workaround for some devices not behaving as\n"
         "        expected when setting the device clipboard programmatically.\n"
         "\n"
-        "    --lock-video-orientation [value]\n"
+        "    --lock-video-orientation[=value]\n"
         "        Lock video orientation to value.\n"
         "        Possible values are \"unlocked\", \"initial\" (locked to the\n"
         "        initial orientation), 0, 1, 2 and 3.\n"
