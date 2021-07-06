@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 public class StringUtilsTest {
 
     @Test
-    @SuppressWarnings("checkstyle:MagicNumber")
     public void testUtf8Truncate() {
         String s = "aÉbÔc";
         byte[] utf8 = s.getBytes(StandardCharsets.UTF_8);

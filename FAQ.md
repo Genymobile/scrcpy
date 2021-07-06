@@ -1,5 +1,7 @@
 # Frequently Asked Questions
 
+[Read in another language](#translations)
+
 Here are the common reported problems and their status.
 
 
@@ -37,8 +39,13 @@ Check [stackoverflow][device-unauthorized].
 
 ### Device not detected
 
+>     adb: error: failed to get feature set: no devices/emulators found
+
+Check that you correctly enabled [adb debugging][enable-adb].
+
 If your device is not detected, you may need some [drivers] (on Windows).
 
+[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
 
 
@@ -109,16 +116,6 @@ In developer options, enable:
 [simulating input]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
-### Mouse clicks at wrong location
-
-On MacOS, with HiDPI support and multiple screens, input location are wrongly
-scaled. See [#15].
-
-[#15]: https://github.com/Genymobile/scrcpy/issues/15
-
-Open _scrcpy_ directly on the monitor you use it.
-
-
 ### Special characters do not work
 
 Injecting text input is [limited to ASCII characters][text-input]. A trick
@@ -134,18 +131,27 @@ that's all. See [#37].
 
 ### The quality is low
 
-On Windows, you may need to configure the [scaling behavior].
+If the definition of your client window is smaller than that of your device
+screen, then you might get poor quality, especially visible on text (see [#40]).
+
+[#40]: https://github.com/Genymobile/scrcpy/issues/40
+
+To improve downscaling quality, trilinear filtering is enabled automatically
+if the renderer is OpenGL and if it supports mipmapping.
+
+On Windows, you might want to force OpenGL:
+
+```
+scrcpy --render-driver=opengl
+```
+
+You may also need to configure the [scaling behavior]:
 
 > `scrcpy.exe` > Properties > Compatibility > Change high DPI settings >
 > Override high DPI scaling behavior > Scaling performed by: _Application_.
 
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
 
-If the definition of your client window is far smaller than that of your device
-screen, then you'll get poor quality. This is especially visible on text. See
-[#40].
-
-[#40]: https://github.com/Genymobile/scrcpy/issues/40
 
 
 ### KWin compositor crashes
@@ -188,3 +194,49 @@ scrcpy -m 1920
 scrcpy -m 1024
 scrcpy -m 800
 ```
+
+You could also try another [encoder](README.md#encoder).
+
+
+## Command line on Windows
+
+Some Windows users are not familiar with the command line. Here is how to open a
+terminal and run `scrcpy` with arguments:
+
+ 1. Press <kbd>Windows</kbd>+<kbd>r</kbd>, this opens a dialog box.
+ 2. Type `cmd` and press <kbd>Enter</kbd>, this opens a terminal.
+ 3. Go to your _scrcpy_ directory, by typing (adapt the path):
+
+    ```bat
+    cd C:\Users\user\Downloads\scrcpy-win64-xxx
+    ```
+
+    and press <kbd>Enter</kbd>
+ 4. Type your command. For example:
+
+    ```bat
+    scrcpy --record file.mkv
+    ```
+
+If you plan to always use the same arguments, create a file `myscrcpy.bat`
+(enable [show file extensions] to avoid confusion) in the `scrcpy` directory,
+containing your command. For example:
+
+```bat
+scrcpy --prefer-text --turn-screen-off --stay-awake
+```
+
+Then just double-click on that file.
+
+You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
+to add some arguments.
+
+[show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
+
+
+## Translations
+
+This FAQ is available in other languages:
+
+ - [Italiano (Italiano, `it`) - v1.17](FAQ.it.md)
+ - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)

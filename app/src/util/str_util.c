@@ -10,10 +10,6 @@
 # include <tchar.h>
 #endif
 
-#include <SDL2/SDL_stdinc.h>
-
-#include "config.h"
-
 size_t
 xstrncpy(char *dest, const char *src, size_t n) {
     size_t i;
@@ -51,7 +47,7 @@ truncated:
 char *
 strquote(const char *src) {
     size_t len = strlen(src);
-    char *quoted = SDL_malloc(len + 3);
+    char *quoted = malloc(len + 3);
     if (!quoted) {
         return NULL;
     }
@@ -79,6 +75,35 @@ parse_integer(const char *s, long *out) {
 
     *out = value;
     return true;
+}
+
+size_t
+parse_integers(const char *s, const char sep, size_t max_items, long *out) {
+    size_t count = 0;
+    char *endptr;
+    do {
+        errno = 0;
+        long value = strtol(s, &endptr, 0);
+        if (errno == ERANGE) {
+            return 0;
+        }
+
+        if (endptr == s || (*endptr != sep && *endptr != '\0')) {
+            return 0;
+        }
+
+        out[count++] = value;
+        if (*endptr == sep) {
+            if (count >= max_items) {
+                // max items already reached, could not accept a new item
+                return 0;
+            }
+            // parse the next token during the next iteration
+            s = endptr + 1;
+        }
+    } while (*endptr != '\0');
+
+    return count;
 }
 
 bool
@@ -115,6 +140,24 @@ parse_integer_with_suffix(const char *s, long *out) {
     return true;
 }
 
+bool
+strlist_contains(const char *list, char sep, const char *s) {
+    char *p;
+    do {
+        p = strchr(list, sep);
+
+        size_t token_len = p ? (size_t) (p - list) : strlen(list);
+        if (!strncmp(list, s, token_len)) {
+            return true;
+        }
+
+        if (p) {
+            list = p + 1;
+        }
+    } while (p);
+    return false;
+}
+
 size_t
 utf8_truncation_index(const char *utf8, size_t max_len) {
     size_t len = strlen(utf8);
@@ -140,7 +183,7 @@ utf8_to_wide_char(const char *utf8) {
         return NULL;
     }
 
-    wchar_t *wide = SDL_malloc(len * sizeof(wchar_t));
+    wchar_t *wide = malloc(len * sizeof(wchar_t));
     if (!wide) {
         return NULL;
     }
@@ -156,7 +199,7 @@ utf8_from_wide_char(const wchar_t *ws) {
         return NULL;
     }
 
-    char *utf8 = SDL_malloc(len);
+    char *utf8 = malloc(len);
     if (!utf8) {
         return NULL;
     }

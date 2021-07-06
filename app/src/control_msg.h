@@ -1,21 +1,24 @@
 #ifndef CONTROLMSG_H
 #define CONTROLMSG_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "config.h"
 #include "android/input.h"
 #include "android/keycodes.h"
-#include "common.h"
+#include "coords.h"
 
-#define CONTROL_MSG_TEXT_MAX_LENGTH 300
-#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH 4093
-#define CONTROL_MSG_SERIALIZED_MAX_SIZE \
-    (3 + CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH)
+#define CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 
-#define POINTER_ID_MOUSE UINT64_C(-1);
+#define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
+// type: 1 byte; paste flag: 1 byte; length: 4 bytes
+#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 6)
+
+#define POINTER_ID_MOUSE UINT64_C(-1)
+#define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2)
 
 enum control_msg_type {
     CONTROL_MSG_TYPE_INJECT_KEYCODE,
@@ -24,7 +27,8 @@ enum control_msg_type {
     CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
     CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
     CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
-    CONTROL_MSG_TYPE_COLLAPSE_NOTIFICATION_PANEL,
+    CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
+    CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     CONTROL_MSG_TYPE_GET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_CLIPBOARD,
     CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
@@ -43,10 +47,11 @@ struct control_msg {
         struct {
             enum android_keyevent_action action;
             enum android_keycode keycode;
+            uint32_t repeat;
             enum android_metastate metastate;
         } inject_keycode;
         struct {
-            char *text; // owned, to be freed by SDL_free()
+            char *text; // owned, to be freed by free()
         } inject_text;
         struct {
             enum android_motionevent_action action;
@@ -61,7 +66,12 @@ struct control_msg {
             int32_t vscroll;
         } inject_scroll_event;
         struct {
-            char *text; // owned, to be freed by SDL_free()
+            enum android_keyevent_action action; // action for the BACK key
+            // screen may only be turned on on ACTION_DOWN
+        } back_or_screen_on;
+        struct {
+            char *text; // owned, to be freed by free()
+            bool paste;
         } set_clipboard;
         struct {
             enum screen_power_mode mode;
@@ -69,10 +79,13 @@ struct control_msg {
     };
 };
 
-// buf size must be at least CONTROL_MSG_SERIALIZED_MAX_SIZE
+// buf size must be at least CONTROL_MSG_MAX_SIZE
 // return the number of bytes written
 size_t
 control_msg_serialize(const struct control_msg *msg, unsigned char *buf);
+
+void
+control_msg_log(const struct control_msg *msg);
 
 void
 control_msg_destroy(struct control_msg *msg);

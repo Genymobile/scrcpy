@@ -1,10 +1,10 @@
 #ifndef BUFFER_UTIL_H
 #define BUFFER_UTIL_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "config.h"
 
 static inline void
 buffer_write16be(uint8_t *buf, uint16_t value) {
@@ -33,7 +33,7 @@ buffer_read16be(const uint8_t *buf) {
 
 static inline uint32_t
 buffer_read32be(const uint8_t *buf) {
-    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
+    return ((uint32_t) buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 }
 
 static inline uint64_t

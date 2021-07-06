@@ -2,11 +2,11 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
+#include "common.h"
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "config.h"
 
 // To define a queue type of "struct foo":
 //    struct queue_foo QUEUE(struct foo);

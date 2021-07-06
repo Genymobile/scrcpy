@@ -1,9 +1,10 @@
 project('scrcpy', 'c',
-        version: '1.12.1',
-        meson_version: '>= 0.37',
+        version: '1.18',
+        meson_version: '>= 0.48',
         default_options: [
             'c_std=c11',
             'warning_level=2',
+            'b_ndebug=if-release',
         ])
 
 if get_option('compile_app')

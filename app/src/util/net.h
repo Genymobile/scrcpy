@@ -1,6 +1,8 @@
 #ifndef NET_H
 #define NET_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <SDL2/SDL_platform.h>
@@ -16,8 +18,6 @@
 # define INVALID_SOCKET -1
   typedef int socket_t;
 #endif
-
-#include "config.h"
 
 bool
 net_init(void);

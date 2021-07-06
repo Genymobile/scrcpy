@@ -1,10 +1,11 @@
 #ifndef CONVERT_H
 #define CONVERT_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_events.h>
 
-#include "config.h"
 #include "control_msg.h"
 
 bool

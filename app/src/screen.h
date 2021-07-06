@@ -1,79 +1,99 @@
 #ifndef SCREEN_H
 #define SCREEN_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
-#include "config.h"
-#include "common.h"
-
-struct video_buffer;
+#include "coords.h"
+#include "opengl.h"
+#include "trait/frame_sink.h"
+#include "video_buffer.h"
 
 struct screen {
+    struct sc_frame_sink frame_sink; // frame sink trait
+
+#ifndef NDEBUG
+    bool open; // track the open/close state to assert correct behavior
+#endif
+
+    struct video_buffer vb;
+    struct fps_counter fps_counter;
+
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;
+    struct sc_opengl gl;
     struct size frame_size;
-    // The window size the last time it was not maximized or fullscreen.
-    struct size windowed_window_size;
-    // Since we receive the event SIZE_CHANGED before MAXIMIZED, we must be
-    // able to revert the size to its non-maximized value.
-    struct size windowed_window_size_backup;
+    struct size content_size; // rotated frame_size
+
+    bool resize_pending; // resize requested while fullscreen or maximized
+    // The content size the last time the window was not maximized or
+    // fullscreen (meaningful only when resize_pending is true)
+    struct size windowed_content_size;
+
+    // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
+    unsigned rotation;
+    // rectangle of the content (excluding black borders)
+    struct SDL_Rect rect;
     bool has_frame;
     bool fullscreen;
     bool maximized;
-    bool no_window;
+    bool mipmaps;
+
+    AVFrame *frame;
 };
 
-#define SCREEN_INITIALIZER { \
-    .window = NULL, \
-    .renderer = NULL, \
-    .texture = NULL, \
-    .frame_size = { \
-        .width = 0,  \
-        .height = 0, \
-    }, \
-    .windowed_window_size = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .windowed_window_size_backup = { \
-        .width = 0, \
-        .height = 0, \
-    }, \
-    .has_frame = false, \
-    .fullscreen = false, \
-    .maximized = false, \
-    .no_window = false, \
-}
+struct screen_params {
+    const char *window_title;
+    struct size frame_size;
+    bool always_on_top;
 
-// initialize default values
-void
-screen_init(struct screen *screen);
+    int16_t window_x;
+    int16_t window_y;
+    uint16_t window_width;  // accepts SC_WINDOW_POSITION_UNDEFINED
+    uint16_t window_height; // accepts SC_WINDOW_POSITION_UNDEFINED
+
+    bool window_borderless;
+
+    uint8_t rotation;
+    bool mipmaps;
+
+    bool fullscreen;
+};
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init_rendering(struct screen *screen, const char *window_title,
-                      struct size frame_size, bool always_on_top,
-                      int16_t window_x, int16_t window_y, uint16_t window_width,
-                      uint16_t window_height, bool window_borderless);
+screen_init(struct screen *screen, const struct screen_params *params);
 
-// show the window
+// request to interrupt any inner thread
+// must be called before screen_join()
 void
-screen_show_window(struct screen *screen);
+screen_interrupt(struct screen *screen);
+
+// join any inner thread
+void
+screen_join(struct screen *screen);
 
 // destroy window, renderer and texture (if any)
 void
 screen_destroy(struct screen *screen);
 
-// resize if necessary and write the rendered frame into the texture
-bool
-screen_update_frame(struct screen *screen, struct video_buffer *vb);
+// hide the window
+//
+// It is used to hide the window immediately on closing without waiting for
+// screen_destroy()
+void
+screen_hide_window(struct screen *screen);
 
 // render the texture to the renderer
+//
+// Set the update_content_rect flag if the window or content size may have
+// changed, so that the content rectangle is recomputed
 void
-screen_render(struct screen *screen);
+screen_render(struct screen *screen, bool update_content_rect);
 
 // switch the fullscreen mode
 void
@@ -87,8 +107,31 @@ screen_resize_to_fit(struct screen *screen);
 void
 screen_resize_to_pixel_perfect(struct screen *screen);
 
-// react to window events
+// set the display rotation (0, 1, 2 or 3, x90 degrees counterclockwise)
 void
-screen_handle_window_event(struct screen *screen, const SDL_WindowEvent *event);
+screen_set_rotation(struct screen *screen, unsigned rotation);
+
+// react to SDL events
+bool
+screen_handle_event(struct screen *screen, SDL_Event *event);
+
+// convert point from window coordinates to frame coordinates
+// x and y are expressed in pixels
+struct point
+screen_convert_window_to_frame_coords(struct screen *screen,
+                                      int32_t x, int32_t y);
+
+// convert point from drawable coordinates to frame coordinates
+// x and y are expressed in pixels
+struct point
+screen_convert_drawable_to_frame_coords(struct screen *screen,
+                                        int32_t x, int32_t y);
+
+// Convert coordinates from window to drawable.
+// Events are expressed in window coordinates, but content is expressed in
+// drawable coordinates. They are the same if HiDPI scaling is 1, but differ
+// otherwise.
+void
+screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y);
 
 #endif

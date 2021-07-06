@@ -1,14 +1,18 @@
 #include "scrcpy.h"
 
+#include "common.h"
+
+#include <assert.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <libavformat/avformat.h>
+#ifdef HAVE_V4L2
+# include <libavdevice/avdevice.h>
+#endif
 #define SDL_MAIN_HANDLED // avoid link error on Linux Windows Subsystem
 #include <SDL2/SDL.h>
 
-#include "config.h"
 #include "cli.h"
-#include "compat.h"
 #include "util/log.h"
 
 static void
@@ -27,6 +31,11 @@ print_version(void) {
     fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
                                                LIBAVUTIL_VERSION_MINOR,
                                                LIBAVUTIL_VERSION_MICRO);
+#ifdef HAVE_V4L2
+    fprintf(stderr, " - libavdevice %d.%d.%d\n", LIBAVDEVICE_VERSION_MAJOR,
+                                                 LIBAVDEVICE_VERSION_MINOR,
+                                                 LIBAVDEVICE_VERSION_MICRO);
+#endif
 }
 
 int
@@ -38,19 +47,21 @@ main(int argc, char *argv[]) {
     setbuf(stderr, NULL);
 #endif
 
-#ifndef NDEBUG
-    SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
-#endif
-
     struct scrcpy_cli_args args = {
         .opts = SCRCPY_OPTIONS_DEFAULT,
         .help = false,
         .version = false,
     };
 
+#ifndef NDEBUG
+    args.opts.log_level = SC_LOG_LEVEL_DEBUG;
+#endif
+
     if (!scrcpy_parse_args(&args, argc, argv)) {
         return 1;
     }
+
+    sc_set_log_level(args.opts.log_level);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
@@ -68,6 +79,12 @@ main(int argc, char *argv[]) {
     av_register_all();
 #endif
 
+#ifdef HAVE_V4L2
+    if (args.opts.v4l2_device) {
+        avdevice_register_all();
+    }
+#endif
+
     if (avformat_network_init()) {
         return 1;
     }
@@ -76,11 +93,5 @@ main(int argc, char *argv[]) {
 
     avformat_network_deinit(); // ignore failure
 
-#if defined (__WINDOWS__) && ! defined (WINDOWS_NOCONSOLE)
-    if (res != 0) {
-        fprintf(stderr, "Press any key to continue...\n");
-        getchar();
-    }
-#endif
     return res;
 }

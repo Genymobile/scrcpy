@@ -1,3 +1,5 @@
+#include "common.h"
+
 #include <assert.h>
 
 #include "util/buffer_util.h"
@@ -65,7 +67,10 @@ static void test_buffer_read64be(void) {
     assert(val == 0xABCD1234567890EF);
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_buffer_write16be();
     test_buffer_write32be();
     test_buffer_write64be();

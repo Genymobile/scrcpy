@@ -84,7 +84,6 @@ public final class DesktopConnection implements Closeable {
         controlSocket.close();
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private void send(String deviceName, int width, int height) throws IOException {
         byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
 

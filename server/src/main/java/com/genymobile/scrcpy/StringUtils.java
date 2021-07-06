@@ -5,7 +5,6 @@ public final class StringUtils {
         // not instantiable
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     public static int getUtf8TruncationIndex(byte[] utf8, int maxLength) {
         int len = utf8.length;
         if (len <= maxLength) {

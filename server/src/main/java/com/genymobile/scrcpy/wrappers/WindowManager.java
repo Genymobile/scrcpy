@@ -93,13 +93,13 @@ public final class WindowManager {
         }
     }
 
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher) {
+    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
         try {
             Class<?> cls = manager.getClass();
             try {
                 // display parameter added since this commit:
                 // https://android.googlesource.com/platform/frameworks/base/+/35fa3c26adcb5f6577849fd0df5228b1f67cf2c6%5E%21/#F1
-                cls.getMethod("watchRotation", IRotationWatcher.class, int.class).invoke(manager, rotationWatcher, 0);
+                cls.getMethod("watchRotation", IRotationWatcher.class, int.class).invoke(manager, rotationWatcher, displayId);
             } catch (NoSuchMethodException e) {
                 // old version
                 cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);

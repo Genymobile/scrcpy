@@ -1,8 +1,9 @@
+#include "common.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <SDL2/SDL.h>
 
 #include "util/str_util.h"
 
@@ -136,7 +137,7 @@ static void test_strquote(void) {
     // add '"' at the beginning and the end
     assert(!strcmp("\"abcde\"", out));
 
-    SDL_free(out);
+    free(out);
 }
 
 static void test_utf8_truncate(void) {
@@ -185,6 +186,55 @@ static void test_parse_integer(void) {
 
     ok = parse_integer("123456789876543212345678987654321", &value);
     assert(!ok); // out-of-range
+}
+
+static void test_parse_integers(void) {
+    long values[5];
+
+    size_t count = parse_integers("1234", ':', 5, values);
+    assert(count == 1);
+    assert(values[0] == 1234);
+
+    count = parse_integers("1234:5678", ':', 5, values);
+    assert(count == 2);
+    assert(values[0] == 1234);
+    assert(values[1] == 5678);
+
+    count = parse_integers("1234:5678", ':', 2, values);
+    assert(count == 2);
+    assert(values[0] == 1234);
+    assert(values[1] == 5678);
+
+    count = parse_integers("1234:-5678", ':', 2, values);
+    assert(count == 2);
+    assert(values[0] == 1234);
+    assert(values[1] == -5678);
+
+    count = parse_integers("1:2:3:4:5", ':', 5, values);
+    assert(count == 5);
+    assert(values[0] == 1);
+    assert(values[1] == 2);
+    assert(values[2] == 3);
+    assert(values[3] == 4);
+    assert(values[4] == 5);
+
+    count = parse_integers("1234:5678", ':', 1, values);
+    assert(count == 0); // max_items == 1
+
+    count = parse_integers("1:2:3:4:5", ':', 3, values);
+    assert(count == 0); // max_items == 3
+
+    count = parse_integers(":1234", ':', 5, values);
+    assert(count == 0); // invalid
+
+    count = parse_integers("1234:", ':', 5, values);
+    assert(count == 0); // invalid
+
+    count = parse_integers("1234:", ':', 1, values);
+    assert(count == 0); // invalid, even when max_items == 1
+
+    count = parse_integers("1234::5678", ':', 5, values);
+    assert(count == 0); // invalid
 }
 
 static void test_parse_integer_with_suffix(void) {
@@ -237,7 +287,22 @@ static void test_parse_integer_with_suffix(void) {
     assert(!ok);
 }
 
-int main(void) {
+static void test_strlist_contains(void) {
+    assert(strlist_contains("a,bc,def", ',', "bc"));
+    assert(!strlist_contains("a,bc,def", ',', "b"));
+    assert(strlist_contains("", ',', ""));
+    assert(strlist_contains("abc,", ',', ""));
+    assert(strlist_contains(",abc", ',', ""));
+    assert(strlist_contains("abc,,def", ',', ""));
+    assert(!strlist_contains("abc", ',', ""));
+    assert(strlist_contains(",,|x", '|', ",,"));
+    assert(strlist_contains("xyz", '\0', "xyz"));
+}
+
+int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     test_xstrncpy_simple();
     test_xstrncpy_just_fit();
     test_xstrncpy_truncated();
@@ -249,6 +314,8 @@ int main(void) {
     test_strquote();
     test_utf8_truncate();
     test_parse_integer();
+    test_parse_integers();
     test_parse_integer_with_suffix();
+    test_strlist_contains();
     return 0;
 }

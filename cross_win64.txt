@@ -2,11 +2,11 @@
 
 [binaries]
 name = 'mingw'
-c = '/usr/bin/x86_64-w64-mingw32-gcc'
-cpp = '/usr/bin/x86_64-w64-mingw32-g++'
-ar = '/usr/bin/x86_64-w64-mingw32-ar'
-strip = '/usr/bin/x86_64-w64-mingw32-strip'
-pkgconfig = '/usr/bin/x86_64-w64-mingw32-pkg-config'
+c = 'x86_64-w64-mingw32-gcc'
+cpp = 'x86_64-w64-mingw32-g++'
+ar = 'x86_64-w64-mingw32-ar'
+strip = 'x86_64-w64-mingw32-strip'
+pkgconfig = 'x86_64-w64-mingw32-pkg-config'
 
 [host_machine]
 system = 'windows'
@@ -15,6 +15,6 @@ cpu = 'x86_64'
 endian = 'little'
 
 [properties]
-prebuilt_ffmpeg_shared = 'ffmpeg-4.2.1-win64-shared'
-prebuilt_ffmpeg_dev = 'ffmpeg-4.2.1-win64-dev'
-prebuilt_sdl2 = 'SDL2-2.0.10/x86_64-w64-mingw32'
+prebuilt_ffmpeg_shared = 'ffmpeg-4.3.1-win64-shared'
+prebuilt_ffmpeg_dev = 'ffmpeg-4.3.1-win64-dev'
+prebuilt_sdl2 = 'SDL2-2.0.14/x86_64-w64-mingw32'

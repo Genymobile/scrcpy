@@ -1,18 +1,15 @@
 #ifndef COMPAT_H
 #define COMPAT_H
 
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
+#define _GNU_SOURCE
+#ifdef __APPLE__
+# define _DARWIN_C_SOURCE
+#endif
+
 #include <libavformat/version.h>
 #include <SDL2/SDL_version.h>
-
-// In ffmpeg/doc/APIchanges:
-// 2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
-//   Add AVStream.codecpar, deprecate AVStream.codec.
-#if    (LIBAVFORMAT_VERSION_MICRO >= 100 /* FFmpeg */ && \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 33, 100)) \
-    || (LIBAVFORMAT_VERSION_MICRO < 100 && /* Libav */ \
-        LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 5, 0))
-# define SCRCPY_LAVF_HAS_NEW_CODEC_PARAMS_API
-#endif
 
 // In ffmpeg/doc/APIchanges:
 // 2018-02-06 - 0694d87024 - lavf 58.9.100 - avformat.h
@@ -25,13 +22,16 @@
 # define SCRCPY_LAVF_REQUIRES_REGISTER_ALL
 #endif
 
+
 // In ffmpeg/doc/APIchanges:
-// 2016-04-21 - 7fc329e - lavc 57.37.100 - avcodec.h
-//   Add a new audio/video encoding and decoding API with decoupled input
-//   and output -- avcodec_send_packet(), avcodec_receive_frame(),
-//   avcodec_send_frame() and avcodec_receive_packet().
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 37, 100)
-# define SCRCPY_LAVF_HAS_NEW_ENCODING_DECODING_API
+// 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+//   Deprecate AVFormatContext filename field which had limited length, use the
+//   new dynamically allocated url field instead.
+//
+// 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+//   Add url field to AVFormatContext and add ff_format_set_url helper function.
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(58, 7, 100)
+# define SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 5)
@@ -46,6 +46,10 @@
 #if SDL_VERSION_ATLEAST(2, 0, 8)
 // <https://hg.libsdl.org/SDL/rev/dfde5d3f9781>
 # define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
+#endif
+
+#ifndef HAVE_STRDUP
+char *strdup(const char *s);
 #endif
 
 #endif

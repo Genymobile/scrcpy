@@ -1,16 +1,17 @@
 src = [
     'src/main.c',
+    'src/adb.c',
     'src/cli.c',
-    'src/command.c',
+    'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
-    'src/device.c',
     'src/device_msg.c',
     'src/event_converter.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/input_manager.c',
+    'src/opengl.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
@@ -19,9 +20,29 @@ src = [
     'src/stream.c',
     'src/tiny_xpm.c',
     'src/video_buffer.c',
+    'src/util/log.c',
     'src/util/net.c',
-    'src/util/str_util.c'
+    'src/util/process.c',
+    'src/util/str_util.c',
+    'src/util/thread.c',
 ]
+
+if host_machine.system() == 'windows'
+    src += [ 'src/sys/win/process.c' ]
+else
+    src += [ 'src/sys/unix/process.c' ]
+endif
+
+v4l2_support = host_machine.system() == 'linux'
+if v4l2_support
+    src += [ 'src/v4l2_sink.c' ]
+endif
+
+check_functions = [
+    'strdup'
+]
+
+cc = meson.get_compiler('c')
 
 if not get_option('crossbuild_windows')
 
@@ -33,11 +54,13 @@ if not get_option('crossbuild_windows')
         dependency('sdl2'),
     ]
 
+    if v4l2_support
+        dependencies += dependency('libavdevice')
+    endif
+
 else
 
     # cross-compile mingw32 build (from Linux to Windows)
-    cc = meson.get_compiler('c')
-
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
     sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/lib'
@@ -72,21 +95,18 @@ else
 
 endif
 
-cc = meson.get_compiler('c')
-
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/command.c' ]
-    src += [ 'src/sys/win/net.c' ]
     dependencies += cc.find_library('ws2_32')
-else
-    src += [ 'src/sys/unix/command.c' ]
-    src += [ 'src/sys/unix/net.c' ]
 endif
 
 conf = configuration_data()
 
-# expose the build type
-conf.set('NDEBUG', get_option('buildtype') != 'debug')
+foreach f : check_functions
+  if cc.has_function(f)
+    define = 'HAVE_' + f.underscorify().to_upper()
+    conf.set(define, true)
+  endif
+endforeach
 
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
@@ -98,43 +118,33 @@ conf.set_quoted('PREFIX', get_option('prefix'))
 # directory as the executable)
 conf.set('PORTABLE', get_option('portable'))
 
-# the default client TCP port for the "adb reverse" tunnel
+# the default client TCP port range for the "adb reverse" tunnel
 # overridden by option --port
-conf.set('DEFAULT_LOCAL_PORT', '27183')
-
-# the default max video size for both dimensions, in pixels
-# overridden by option --max-size
-conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
+conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
+conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
 
-# enable High DPI support
-conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
-
-# disable console on Windows
-conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
-
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
+
+# select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
+conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == 'new')
+
+# enable V4L2 support (linux only)
+conf.set('HAVE_V4L2', v4l2_support)
 
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-if get_option('windows_noconsole')
-    link_args = [ '-Wl,--subsystem,windows' ]
-else
-    link_args = []
-endif
-
 executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
-           c_args: [],
-           link_args: link_args)
+           c_args: [])
 
 install_man('scrcpy.1')
 
@@ -155,12 +165,12 @@ if get_option('buildtype') == 'debug'
             'src/cli.c',
             'src/util/str_util.c',
         ]],
-        ['test_control_event_serialize', [
+        ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
             'src/util/str_util.c',
         ]],
-        ['test_device_event_deserialize', [
+        ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
@@ -177,7 +187,7 @@ if get_option('buildtype') == 'debug'
         exe = executable(t[0], t[1],
                          include_directories: src_dir,
                          dependencies: dependencies,
-                         c_args: ['-DSDL_MAIN_HANDLED'])
+                         c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
         test(t[0], exe)
     endforeach
 endif

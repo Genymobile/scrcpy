@@ -1,10 +1,14 @@
-#include "command.h"
+#include "util/process.h"
 
-#include "config.h"
+#include <assert.h>
+#include <sys/stat.h>
+
 #include "util/log.h"
 #include "util/str_util.h"
 
-static int
+#define CMD_MAX_LEN 8192
+
+static bool
 build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // Windows command-line parsing is WTF:
     // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
@@ -13,38 +17,34 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
     size_t ret = xstrjoin(cmd, argv, ' ', len);
     if (ret >= len) {
         LOGE("Command too long (%" PRIsizet " chars)", len - 1);
-        return -1;
+        return false;
     }
-    return 0;
+    return true;
 }
 
 enum process_result
-cmd_execute(const char *const argv[], HANDLE *handle) {
+process_execute(const char *const argv[], HANDLE *handle) {
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
 
-    char cmd[256];
-    if (build_cmd(cmd, sizeof(cmd), argv)) {
+    char *cmd = malloc(CMD_MAX_LEN);
+    if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
         *handle = NULL;
         return PROCESS_ERROR_GENERIC;
     }
 
     wchar_t *wide = utf8_to_wide_char(cmd);
+    free(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");
         return PROCESS_ERROR_GENERIC;
     }
 
-#ifdef WINDOWS_NOCONSOLE
-    int flags = CREATE_NO_WINDOW;
-#else
-    int flags = 0;
-#endif
-    if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, flags, NULL, NULL, &si,
+    if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, 0, NULL, NULL, &si,
                         &pi)) {
-        SDL_free(wide);
+        free(wide);
         *handle = NULL;
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             return PROCESS_ERROR_MISSING_BINARY;
@@ -52,28 +52,35 @@ cmd_execute(const char *const argv[], HANDLE *handle) {
         return PROCESS_ERROR_GENERIC;
     }
 
-    SDL_free(wide);
+    free(wide);
     *handle = pi.hProcess;
     return PROCESS_SUCCESS;
 }
 
 bool
-cmd_terminate(HANDLE handle) {
-    return TerminateProcess(handle, 1) && CloseHandle(handle);
+process_terminate(HANDLE handle) {
+    return TerminateProcess(handle, 1);
 }
 
-bool
-cmd_simple_wait(HANDLE handle, DWORD *exit_code) {
+exit_code_t
+process_wait(HANDLE handle, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
         // could not wait or retrieve the exit code
-        code = -1; // max value, it's unsigned
+        code = NO_EXIT_CODE; // max value, it's unsigned
     }
-    if (exit_code) {
-        *exit_code = code;
+    if (close) {
+        CloseHandle(handle);
     }
-    return !code;
+    return code;
+}
+
+void
+process_close(HANDLE handle) {
+    bool closed = CloseHandle(handle);
+    assert(closed);
+    (void) closed;
 }
 
 char *
@@ -89,4 +96,23 @@ get_executable_path(void) {
     }
     buf[len] = '\0';
     return utf8_from_wide_char(buf);
+}
+
+bool
+is_regular_file(const char *path) {
+    wchar_t *wide_path = utf8_to_wide_char(path);
+    if (!wide_path) {
+        LOGC("Could not allocate wide char string");
+        return false;
+    }
+
+    struct _stat path_stat;
+    int r = _wstat(wide_path, &path_stat);
+    free(wide_path);
+
+    if (r) {
+        perror("stat");
+        return false;
+    }
+    return S_ISREG(path_stat.st_mode);
 }

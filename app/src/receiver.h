@@ -1,19 +1,19 @@
 #ifndef RECEIVER_H
 #define RECEIVER_H
 
-#include <stdbool.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
+#include "common.h"
 
-#include "config.h"
+#include <stdbool.h>
+
 #include "util/net.h"
+#include "util/thread.h"
 
 // receive events from the device
 // managed by the controller
 struct receiver {
     socket_t control_socket;
-    SDL_Thread *thread;
-    SDL_mutex *mutex;
+    sc_thread thread;
+    sc_mutex mutex;
 };
 
 bool

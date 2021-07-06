@@ -8,19 +8,20 @@ import java.nio.charset.StandardCharsets;
 
 public class ControlMessageReader {
 
-    private static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 9;
-    private static final int INJECT_MOUSE_EVENT_PAYLOAD_LENGTH = 17;
-    private static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 21;
-    private static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
-    private static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
+    static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
+    static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int BACK_OR_SCREEN_ON_LENGTH = 1;
+    static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
 
-    public static final int TEXT_MAX_LENGTH = 300;
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = 4093;
-    private static final int RAW_BUFFER_SIZE = 1024;
+    private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
-    private final byte[] rawBuffer = new byte[RAW_BUFFER_SIZE];
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 6; // type: 1 byte; paste flag: 1 byte; length: 4 bytes
+    public static final int INJECT_TEXT_MAX_LENGTH = 300;
+
+    private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
     private final ByteBuffer buffer = ByteBuffer.wrap(rawBuffer);
-    private final byte[] textBuffer = new byte[CLIPBOARD_TEXT_MAX_LENGTH];
 
     public ControlMessageReader() {
         // invariant: the buffer is always in "get" mode
@@ -66,15 +67,18 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
                 msg = parseInjectScrollEvent();
                 break;
+            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
+                msg = parseBackOrScreenOnEvent();
+                break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 msg = parseSetClipboard();
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 msg = parseSetScreenPowerMode();
                 break;
-            case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
-            case ControlMessage.TYPE_COLLAPSE_NOTIFICATION_PANEL:
+            case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
+            case ControlMessage.TYPE_COLLAPSE_PANELS:
             case ControlMessage.TYPE_GET_CLIPBOARD:
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 msg = ControlMessage.createEmpty(type);
@@ -98,20 +102,23 @@ public class ControlMessageReader {
         }
         int action = toUnsigned(buffer.get());
         int keycode = buffer.getInt();
+        int repeat = buffer.getInt();
         int metaState = buffer.getInt();
-        return ControlMessage.createInjectKeycode(action, keycode, metaState);
+        return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
     private String parseString() {
-        if (buffer.remaining() < 2) {
+        if (buffer.remaining() < 4) {
             return null;
         }
-        int len = toUnsigned(buffer.getShort());
+        int len = buffer.getInt();
         if (buffer.remaining() < len) {
             return null;
         }
-        buffer.get(textBuffer, 0, len);
-        return new String(textBuffer, 0, len, StandardCharsets.UTF_8);
+        int position = buffer.position();
+        // Move the buffer position to consume the text
+        buffer.position(position + len);
+        return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
     }
 
     private ControlMessage parseInjectText() {
@@ -122,7 +129,6 @@ public class ControlMessageReader {
         return ControlMessage.createInjectText(text);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private ControlMessage parseInjectTouchEvent() {
         if (buffer.remaining() < INJECT_TOUCH_EVENT_PAYLOAD_LENGTH) {
             return null;
@@ -148,12 +154,24 @@ public class ControlMessageReader {
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll);
     }
 
+    private ControlMessage parseBackOrScreenOnEvent() {
+        if (buffer.remaining() < BACK_OR_SCREEN_ON_LENGTH) {
+            return null;
+        }
+        int action = toUnsigned(buffer.get());
+        return ControlMessage.createBackOrScreenOn(action);
+    }
+
     private ControlMessage parseSetClipboard() {
+        if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
+            return null;
+        }
+        boolean paste = buffer.get() != 0;
         String text = parseString();
         if (text == null) {
             return null;
         }
-        return ControlMessage.createSetClipboard(text);
+        return ControlMessage.createSetClipboard(text, paste);
     }
 
     private ControlMessage parseSetScreenPowerMode() {
@@ -172,12 +190,10 @@ public class ControlMessageReader {
         return new Position(x, y, screenWidth, screenHeight);
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(short value) {
         return value & 0xffff;
     }
 
-    @SuppressWarnings("checkstyle:MagicNumber")
     private static int toUnsigned(byte value) {
         return value & 0xff;
     }

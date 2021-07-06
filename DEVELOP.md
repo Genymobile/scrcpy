@@ -211,7 +211,7 @@ There are two [frames][video_buffer] simultaneously in memory:
  - the **rendering** frame, rendered in a texture from the main thread.
 
 When a new decoded frame is available, the decoder _swaps_ the decoding and
-rendering frame (with proper synchronization). Thus, it immediatly starts
+rendering frame (with proper synchronization). Thus, it immediately starts
 to decode a new frame while the main thread renders the last one.
 
 If a [recorder] is present (i.e. `--record` is enabled), then it muxes the raw
@@ -280,6 +280,15 @@ To debug it, enable the server debugger during configuration:
 meson x -Dserver_debugger=true
 # or, if x is already configured
 meson configure x -Dserver_debugger=true
+```
+
+If your device runs Android 8 or below, set the `server_debugger_method` to
+`old` in addition:
+
+```bash
+meson x -Dserver_debugger=true -Dserver_debugger_method=old
+# or, if x is already configured
+meson configure x -Dserver_debugger=true -Dserver_debugger_method=old
 ```
 
 Then recompile.

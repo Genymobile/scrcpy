@@ -3,13 +3,8 @@
 #include <assert.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
 #include <unistd.h>
 
-#include "config.h"
-#include "compat.h"
 #include "decoder.h"
 #include "events.h"
 #include "recorder.h"
@@ -62,33 +57,12 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     return true;
 }
 
-static void
-notify_stopped(void) {
-    SDL_Event stop_event;
-    stop_event.type = EVENT_STREAM_STOPPED;
-    SDL_PushEvent(&stop_event);
-}
-
 static bool
-process_config_packet(struct stream *stream, AVPacket *packet) {
-    if (stream->recorder && !recorder_push(stream->recorder, packet)) {
-        LOGE("Could not send config packet to recorder");
-        return false;
-    }
-    return true;
-}
-
-static bool
-process_frame(struct stream *stream, AVPacket *packet) {
-    if (stream->decoder && !decoder_push(stream->decoder, packet)) {
-        return false;
-    }
-
-    if (stream->recorder) {
-        packet->dts = packet->pts;
-
-        if (!recorder_push(stream->recorder, packet)) {
-            LOGE("Could not send packet to recorder");
+push_packet_to_sinks(struct stream *stream, const AVPacket *packet) {
+    for (unsigned i = 0; i < stream->sink_count; ++i) {
+        struct sc_packet_sink *sink = stream->sinks[i];
+        if (!sink->ops->push(sink, packet)) {
+            LOGE("Could not send config packet to sink %d", i);
             return false;
         }
     }
@@ -115,9 +89,11 @@ stream_parse(struct stream *stream, AVPacket *packet) {
         packet->flags |= AV_PKT_FLAG_KEY;
     }
 
-    bool ok = process_frame(stream, packet);
+    packet->dts = packet->pts;
+
+    bool ok = push_packet_to_sinks(stream, packet);
     if (!ok) {
-        LOGE("Could not process frame");
+        LOGE("Could not process packet");
         return false;
     }
 
@@ -128,39 +104,44 @@ static bool
 stream_push_packet(struct stream *stream, AVPacket *packet) {
     bool is_config = packet->pts == AV_NOPTS_VALUE;
 
-    // A config packet must not be decoded immetiately (it contains no
+    // A config packet must not be decoded immediately (it contains no
     // frame); instead, it must be concatenated with the future data packet.
-    if (stream->has_pending || is_config) {
+    if (stream->pending || is_config) {
         size_t offset;
-        if (stream->has_pending) {
-            offset = stream->pending.size;
-            if (av_grow_packet(&stream->pending, packet->size)) {
+        if (stream->pending) {
+            offset = stream->pending->size;
+            if (av_grow_packet(stream->pending, packet->size)) {
                 LOGE("Could not grow packet");
                 return false;
             }
         } else {
             offset = 0;
-            if (av_new_packet(&stream->pending, packet->size)) {
-                LOGE("Could not create packet");
+            stream->pending = av_packet_alloc();
+            if (!stream->pending) {
+                LOGE("Could not allocate packet");
                 return false;
             }
-            stream->has_pending = true;
+            if (av_new_packet(stream->pending, packet->size)) {
+                LOGE("Could not create packet");
+                av_packet_free(&stream->pending);
+                return false;
+            }
         }
 
-        memcpy(stream->pending.data + offset, packet->data, packet->size);
+        memcpy(stream->pending->data + offset, packet->data, packet->size);
 
         if (!is_config) {
             // prepare the concat packet to send to the decoder
-            stream->pending.pts = packet->pts;
-            stream->pending.dts = packet->dts;
-            stream->pending.flags = packet->flags;
-            packet = &stream->pending;
+            stream->pending->pts = packet->pts;
+            stream->pending->dts = packet->dts;
+            stream->pending->flags = packet->flags;
+            packet = stream->pending;
         }
     }
 
     if (is_config) {
         // config packet
-        bool ok = process_config_packet(stream, packet);
+        bool ok = push_packet_to_sinks(stream, packet);
         if (!ok) {
             return false;
         }
@@ -168,16 +149,43 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
         // data packet
         bool ok = stream_parse(stream, packet);
 
-        if (stream->has_pending) {
+        if (stream->pending) {
             // the pending packet must be discarded (consumed or error)
-            stream->has_pending = false;
-            av_packet_unref(&stream->pending);
+            av_packet_unref(stream->pending);
+            av_packet_free(&stream->pending);
         }
 
         if (!ok) {
             return false;
         }
     }
+    return true;
+}
+
+static void
+stream_close_first_sinks(struct stream *stream, unsigned count) {
+    while (count) {
+        struct sc_packet_sink *sink = stream->sinks[--count];
+        sink->ops->close(sink);
+    }
+}
+
+static inline void
+stream_close_sinks(struct stream *stream) {
+    stream_close_first_sinks(stream, stream->sink_count);
+}
+
+static bool
+stream_open_sinks(struct stream *stream, const AVCodec *codec) {
+    for (unsigned i = 0; i < stream->sink_count; ++i) {
+        struct sc_packet_sink *sink = stream->sinks[i];
+        if (!sink->ops->open(sink, codec)) {
+            LOGE("Could not open packet sink %d", i);
+            stream_close_first_sinks(stream, i);
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -197,43 +205,36 @@ run_stream(void *data) {
         goto end;
     }
 
-    if (stream->decoder && !decoder_open(stream->decoder, codec)) {
-        LOGE("Could not open decoder");
+    if (!stream_open_sinks(stream, codec)) {
+        LOGE("Could not open stream sinks");
         goto finally_free_codec_ctx;
-    }
-
-    if (stream->recorder) {
-        if (!recorder_open(stream->recorder, codec)) {
-            LOGE("Could not open recorder");
-            goto finally_close_decoder;
-        }
-
-        if (!recorder_start(stream->recorder)) {
-            LOGE("Could not start recorder");
-            goto finally_close_recorder;
-        }
     }
 
     stream->parser = av_parser_init(AV_CODEC_ID_H264);
     if (!stream->parser) {
         LOGE("Could not initialize parser");
-        goto finally_stop_and_join_recorder;
+        goto finally_close_sinks;
     }
 
     // We must only pass complete frames to av_parser_parse2()!
     // It's more complicated, but this allows to reduce the latency by 1 frame!
     stream->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
 
+    AVPacket *packet = av_packet_alloc();
+    if (!packet) {
+        LOGE("Could not allocate packet");
+        goto finally_close_parser;
+    }
+
     for (;;) {
-        AVPacket packet;
-        bool ok = stream_recv_packet(stream, &packet);
+        bool ok = stream_recv_packet(stream, packet);
         if (!ok) {
             // end of stream
             break;
         }
 
-        ok = stream_push_packet(stream, &packet);
-        av_packet_unref(&packet);
+        ok = stream_push_packet(stream, packet);
+        av_packet_unref(packet);
         if (!ok) {
             // cannot process packet (error already logged)
             break;
@@ -242,47 +243,51 @@ run_stream(void *data) {
 
     LOGD("End of frames");
 
-    if (stream->has_pending) {
-        av_packet_unref(&stream->pending);
+    if (stream->pending) {
+        av_packet_unref(stream->pending);
+        av_packet_free(&stream->pending);
     }
 
+    av_packet_free(&packet);
+finally_close_parser:
     av_parser_close(stream->parser);
-finally_stop_and_join_recorder:
-    if (stream->recorder) {
-        recorder_stop(stream->recorder);
-        LOGI("Finishing recording...");
-        recorder_join(stream->recorder);
-    }
-finally_close_recorder:
-    if (stream->recorder) {
-        recorder_close(stream->recorder);
-    }
-finally_close_decoder:
-    if (stream->decoder) {
-        decoder_close(stream->decoder);
-    }
+finally_close_sinks:
+    stream_close_sinks(stream);
 finally_free_codec_ctx:
     avcodec_free_context(&stream->codec_ctx);
 end:
-    notify_stopped();
+    stream->cbs->on_eos(stream, stream->cbs_userdata);
+
     return 0;
 }
 
 void
 stream_init(struct stream *stream, socket_t socket,
-            struct decoder *decoder, struct recorder *recorder) {
+            const struct stream_callbacks *cbs, void *cbs_userdata) {
     stream->socket = socket;
-    stream->decoder = decoder,
-    stream->recorder = recorder;
-    stream->has_pending = false;
+    stream->pending = NULL;
+    stream->sink_count = 0;
+
+    assert(cbs && cbs->on_eos);
+
+    stream->cbs = cbs;
+    stream->cbs_userdata = cbs_userdata;
+}
+
+void
+stream_add_sink(struct stream *stream, struct sc_packet_sink *sink) {
+    assert(stream->sink_count < STREAM_MAX_SINKS);
+    assert(sink);
+    assert(sink->ops);
+    stream->sinks[stream->sink_count++] = sink;
 }
 
 bool
 stream_start(struct stream *stream) {
     LOGD("Starting stream thread");
 
-    stream->thread = SDL_CreateThread(run_stream, "stream", stream);
-    if (!stream->thread) {
+    bool ok = sc_thread_create(&stream->thread, run_stream, "stream", stream);
+    if (!ok) {
         LOGC("Could not start stream thread");
         return false;
     }
@@ -290,13 +295,6 @@ stream_start(struct stream *stream) {
 }
 
 void
-stream_stop(struct stream *stream) {
-    if (stream->decoder) {
-        decoder_interrupt(stream->decoder);
-    }
-}
-
-void
 stream_join(struct stream *stream) {
-    SDL_WaitThread(stream->thread, NULL);
+    sc_thread_join(&stream->thread, NULL);
 }

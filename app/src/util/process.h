@@ -1,8 +1,9 @@
-#ifndef COMMAND_H
-#define COMMAND_H
+#ifndef SC_PROCESS_H
+#define SC_PROCESS_H
+
+#include "common.h"
 
 #include <stdbool.h>
-#include <inttypes.h>
 
 #ifdef _WIN32
 
@@ -12,11 +13,7 @@
 # define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
-# ifdef _WIN64
-#   define PRIsizet PRIu64
-# else
-#   define PRIsizet PRIu32
-# endif
+# define PRIsizet "Iu"
 # define PROCESS_NONE NULL
 # define NO_EXIT_CODE -1u // max value as unsigned
   typedef HANDLE process_t;
@@ -35,53 +32,45 @@
 
 #endif
 
-#include "config.h"
-
 enum process_result {
     PROCESS_SUCCESS,
     PROCESS_ERROR_GENERIC,
     PROCESS_ERROR_MISSING_BINARY,
 };
 
+// execute the command and write the result to the output parameter "process"
 enum process_result
-cmd_execute(const char *const argv[], process_t *process);
+process_execute(const char *const argv[], process_t *process);
 
+// kill the process
 bool
-cmd_terminate(process_t pid);
+process_terminate(process_t pid);
 
-bool
-cmd_simple_wait(process_t pid, exit_code_t *exit_code);
+// wait and close the process (like waitpid())
+// the "close" flag indicates if the process must be "closed" (reaped)
+// (passing false is equivalent to enable WNOWAIT in waitid())
+exit_code_t
+process_wait(process_t pid, bool close);
 
-process_t
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
-
-process_t
-adb_forward(const char *serial, uint16_t local_port,
-            const char *device_socket_name);
-
-process_t
-adb_forward_remove(const char *serial, uint16_t local_port);
-
-process_t
-adb_reverse(const char *serial, const char *device_socket_name,
-            uint16_t local_port);
-
-process_t
-adb_reverse_remove(const char *serial, const char *device_socket_name);
-
-process_t
-adb_push(const char *serial, const char *local, const char *remote);
-
-process_t
-adb_install(const char *serial, const char *local);
+// close the process
+//
+// Semantically, process_wait(close) = process_wait(noclose) + process_close
+void
+process_close(process_t pid);
 
 // convenience function to wait for a successful process execution
 // automatically log process errors with the provided process name
 bool
-process_check_success(process_t proc, const char *name);
+process_check_success(process_t proc, const char *name, bool close);
+
+#ifndef _WIN32
+// only used to find package manager, not implemented for Windows
+bool
+search_executable(const char *file);
+#endif
 
 // return the absolute path of the executable (the scrcpy binary)
-// may be NULL on error; to be freed by SDL_free
+// may be NULL on error; to be freed by free()
 char *
 get_executable_path(void);
 

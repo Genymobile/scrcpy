@@ -1,13 +1,13 @@
 #ifndef FILE_HANDLER_H
 #define FILE_HANDLER_H
 
-#include <stdbool.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
+#include "common.h"
 
-#include "config.h"
-#include "command.h"
+#include <stdbool.h>
+
+#include "adb.h"
 #include "util/cbuf.h"
+#include "util/thread.h"
 
 typedef enum {
     ACTION_INSTALL_APK,
@@ -24,9 +24,9 @@ struct file_handler_request_queue CBUF(struct file_handler_request, 16);
 struct file_handler {
     char *serial;
     const char *push_target;
-    SDL_Thread *thread;
-    SDL_mutex *mutex;
-    SDL_cond *event_cond;
+    sc_thread thread;
+    sc_mutex mutex;
+    sc_cond event_cond;
     bool stopped;
     bool initialized;
     process_t current_process;
@@ -49,7 +49,7 @@ file_handler_stop(struct file_handler *file_handler);
 void
 file_handler_join(struct file_handler *file_handler);
 
-// take ownership of file, and will SDL_free() it
+// take ownership of file, and will free() it
 bool
 file_handler_request(struct file_handler *file_handler,
                      file_handler_action_t action,

@@ -1,49 +1,50 @@
 #ifndef VIDEO_BUFFER_H
 #define VIDEO_BUFFER_H
 
-#include <stdbool.h>
-#include <SDL2/SDL_mutex.h>
+#include "common.h"
 
-#include "config.h"
+#include <stdbool.h>
+
 #include "fps_counter.h"
+#include "util/thread.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
 
+/**
+ * A video buffer holds 1 pending frame, which is the last frame received from
+ * the producer (typically, the decoder).
+ *
+ * If a pending frame has not been consumed when the producer pushes a new
+ * frame, then it is lost. The intent is to always provide access to the very
+ * last frame to minimize latency.
+ *
+ * The producer and the consumer typically do not live in the same thread.
+ * That's the reason why the callback on_frame_available() does not provide the
+ * frame as parameter: the consumer might post an event to its own thread to
+ * retrieve the pending frame from there, and that frame may have changed since
+ * the callback if producer pushed a new one in between.
+ */
+
 struct video_buffer {
-    AVFrame *decoding_frame;
-    AVFrame *rendering_frame;
-    SDL_mutex *mutex;
-    bool render_expired_frames;
-    bool interrupted;
-    SDL_cond *rendering_frame_consumed_cond;
-    bool rendering_frame_consumed;
-    struct fps_counter *fps_counter;
+    AVFrame *pending_frame;
+    AVFrame *tmp_frame; // To preserve the pending frame on error
+
+    sc_mutex mutex;
+
+    bool pending_frame_consumed;
 };
 
 bool
-video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames);
+video_buffer_init(struct video_buffer *vb);
 
 void
 video_buffer_destroy(struct video_buffer *vb);
 
-// set the decoded frame as ready for rendering
-// this function locks frames->mutex during its execution
-// the output flag is set to report whether the previous frame has been skipped
-void
-video_buffer_offer_decoded_frame(struct video_buffer *vb,
-                                 bool *previous_frame_skipped);
+bool
+video_buffer_push(struct video_buffer *vb, const AVFrame *frame, bool *skipped);
 
-// mark the rendering frame as consumed and return it
-// MUST be called with frames->mutex locked!!!
-// the caller is expected to render the returned frame to some texture before
-// unlocking frames->mutex
-const AVFrame *
-video_buffer_consume_rendered_frame(struct video_buffer *vb);
-
-// wake up and avoid any blocking call
 void
-video_buffer_interrupt(struct video_buffer *vb);
+video_buffer_consume(struct video_buffer *vb, AVFrame *dst);
 
 #endif
