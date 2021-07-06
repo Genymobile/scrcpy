@@ -168,6 +168,10 @@ if get_option('buildtype') == 'debug'
             'src/cli.c',
             'src/util/str_util.c',
         ]],
+        ['test_clock', [
+            'tests/test_clock.c',
+            'src/clock.c',
+        ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
