@@ -381,6 +381,7 @@ scrcpy(const struct scrcpy_options *options) {
             .rotation = options->rotation,
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
+            .buffering_time = options->display_buffer,
         };
 
         if (!screen_init(&s->screen, &screen_params)) {
@@ -393,7 +394,8 @@ scrcpy(const struct scrcpy_options *options) {
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size)) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size,
+                               options->v4l2_buffer)) {
             goto end;
         }
 

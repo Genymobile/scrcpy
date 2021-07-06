@@ -7,6 +7,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "util/tick.h"
+
 enum sc_log_level {
     SC_LOG_LEVEL_VERBOSE,
     SC_LOG_LEVEL_DEBUG,
@@ -78,6 +80,8 @@ struct scrcpy_options {
     uint16_t window_width;
     uint16_t window_height;
     uint32_t display_id;
+    sc_tick display_buffer;
+    sc_tick v4l2_buffer;
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
@@ -126,6 +130,8 @@ struct scrcpy_options {
     .window_width = 0, \
     .window_height = 0, \
     .display_id = 0, \
+    .display_buffer = 0, \
+    .v4l2_buffer = 0, \
     .show_touches = false, \
     .fullscreen = false, \
     .always_on_top = false, \

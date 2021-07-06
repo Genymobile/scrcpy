@@ -6,6 +6,7 @@
 #include "coords.h"
 #include "trait/frame_sink.h"
 #include "video_buffer.h"
+#include "util/tick.h"
 
 #include <libavformat/avformat.h>
 
@@ -18,6 +19,7 @@ struct sc_v4l2_sink {
 
     char *device_name;
     struct size frame_size;
+    sc_tick buffering_time;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -32,7 +34,7 @@ struct sc_v4l2_sink {
 
 bool
 sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name,
-                  struct size frame_size);
+                  struct size frame_size, sc_tick buffering_time);
 
 void
 sc_v4l2_sink_destroy(struct sc_v4l2_sink *vs);

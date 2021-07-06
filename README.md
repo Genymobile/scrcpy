@@ -321,6 +321,24 @@ For example, you could capture the video within [OBS].
 [OBS]: https://obsproject.com/fr
 
 
+#### Buffering
+
+It is possible to add buffering. This increases latency but reduces jitter (see
+#2464).
+
+The option is available for display buffering:
+
+```bash
+scrcpy --display-buffer=50  # add 50 ms buffering for display
+```
+
+and V4L2 sink:
+
+```bash
+scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
+```
+
+
 ### Connection
 
 #### Wireless
