@@ -329,7 +329,7 @@ _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP:
 
 1. Plug the device into a USB port on your computer.
-2. Connect the device to the same Wi-Fi as your computer.
+2. Connect the device to the same Wi-Fi network as your computer.
 3. Get your device IP address, in Settings → About phone → Status, or by
    executing this command:
 
@@ -339,14 +339,18 @@ device over TCP/IP:
 
 4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
 5. Unplug your device.
-6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`)_.
-7. Run `scrcpy` as usual.
+6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP` with
+   the IP address you found)_.
+8. Run `scrcpy` as usual.
 
 _Scrcpy_ is also possible via hotspot or Bluetooth from the device:
 
 1. Plug the device into a USB port on your computer.
 2. Connect your computer to the device's hotspot or Bluetooth network.
-3. Find the **default gateway** IP address of the network from your computer.
+3. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+4. Unplug your device.
+5. Find the **default gateway** IP address of the hotspot or Bluetooth network from your
+computer.
     - Windows:
 
         GUI: Control Panel -> Network and Internet -> Network and Sharing
@@ -362,18 +366,26 @@ _Scrcpy_ is also possible via hotspot or Bluetooth from the device:
 
         Command line: `netstat -r -n` (Look for the line with `UG` flags)
 
-    - Linux: `arp -a`, `ip route | grep default`, `route -n` (Look for the line
-        with `UG` flags)
-4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
-5. Unplug your device.
+    - Linux: 
+        GUI: Generally "Connection Information" when right-clicking on the network
+        widget/applet. Depends on the desktop environment you are using. The IP
+        address might be labeled as "Default Route".
+        
+        Terminal: `arp -a`, `ip route | grep default`, or `ip neighbor`
+
 6. Connect to your device: `adb connect GATEWAY_IP:5555` _(replace
-    `GATEWAY_IP`)_.
+    `GATEWAY_IP` with the default gateway IP address you found)_.
 7. Run `scrcpy` as usual.
 
-If the connection randomly drops, run `scrcpy` to reconnect. If it says there
+If you see something like "ADB over network" in the developer options, you can toggle that
+option on to bypass having to physically connect your device directly to your computer.
+Step 5 can be done anytime during the process before reaching Step 6.
+
+
+If the connection randomly drops, run your `scrcpy` command to reconnect. If it says there
 are no devices/emulators found, try running
 `adb connect DEVICE/GATEWAY_IP:5555`, and then `scrcpy` as usual. If it still
-says there are none found, try running `adb kill-server` and then those two
+says there are none found, try running `adb kill-server` and then run those two
 commands again.
 
 It may be useful to decrease the bit-rate and the definition:
