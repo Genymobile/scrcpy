@@ -308,7 +308,8 @@ screen_init(struct screen *screen, const struct screen_params *params) {
         .on_new_frame = sc_video_buffer_on_new_frame,
     };
 
-    bool ok = sc_video_buffer_init(&screen->vb, 0, &cbs, screen);
+    bool ok = sc_video_buffer_init(&screen->vb, params->buffering_time, &cbs,
+                                   screen);
     if (!ok) {
         LOGE("Could not initialize video buffer");
         return false;

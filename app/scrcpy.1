@@ -57,6 +57,12 @@ The list of possible display ids can be listed by "adb shell dumpsys display"
 Default is 0.
 
 .TP
+.BI "\-\-display\-buffer ms
+Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
+
+Default is 0 (no buffering).
+
+.TP
 .BI "\-\-encoder " name
 Use a specific MediaCodec encoder (must be a H.264 encoder).
 
@@ -190,6 +196,14 @@ It only shows physical touches (not clicks from scrcpy).
 Output to v4l2loopback device.
 
 It requires to lock the video orientation (see \fB\-\-lock\-video\-orientation\fR).
+
+.TP
+.BI "\-\-v4l2-buffer " ms
+Add a buffering delay (in milliseconds) before pushing frames. This increases latency to compensate for jitter.
+
+This option is similar to \fB\-\-display\-buffer\fR, but specific to V4L2 sink.
+
+Default is 0 (no buffering).
 
 .TP
 .BI "\-V, \-\-verbosity " value

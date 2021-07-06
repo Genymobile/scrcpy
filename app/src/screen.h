@@ -63,6 +63,8 @@ struct screen_params {
     bool mipmaps;
 
     bool fullscreen;
+
+    sc_tick buffering_time;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

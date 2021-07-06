@@ -55,6 +55,12 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "        Default is 0.\n"
         "\n"
+        "    --display-buffer ms\n"
+        "        Add a buffering delay (in milliseconds) before displaying.\n"
+        "        This increases latency to compensate for jitter.\n"
+        "\n"
+        "        Default is 0 (no buffering).\n"
+        "\n"
         "    --encoder name\n"
         "        Use a specific MediaCodec encoder (must be a H.264 encoder).\n"
         "\n"
@@ -181,6 +187,15 @@ scrcpy_print_usage(const char *arg0) {
         "        Output to v4l2loopback device.\n"
         "        It requires to lock the video orientation (see\n"
         "        --lock-video-orientation).\n"
+        "\n"
+        "    --v4l2-buffer ms\n"
+        "        Add a buffering delay (in milliseconds) before pushing\n"
+        "        frames. This increases latency to compensate for jitter.\n"
+        "\n"
+        "        This option is similar to --display-buffer, but specific to\n"
+        "        V4L2 sink.\n"
+        "\n"
+        "        Default is 0 (no buffering).\n"
         "\n"
 #endif
         "    -V, --verbosity value\n"
@@ -389,6 +404,19 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
     }
 
     *max_fps = (uint16_t) value;
+    return true;
+}
+
+static bool
+parse_buffering_time(const char *s, sc_tick *tick) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF,
+                                "buffering time");
+    if (!ok) {
+        return false;
+    }
+
+    *tick = SC_TICK_FROM_MS(value);
     return true;
 }
 
@@ -689,6 +717,8 @@ guess_record_format(const char *filename) {
 #define OPT_ENCODER_NAME           1025
 #define OPT_POWER_OFF_ON_CLOSE     1026
 #define OPT_V4L2_SINK              1027
+#define OPT_DISPLAY_BUFFER         1028
+#define OPT_V4L2_BUFFER            1029
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -700,6 +730,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"disable-screensaver",    no_argument,       NULL,
                                                   OPT_DISABLE_SCREENSAVER},
         {"display",                required_argument, NULL, OPT_DISPLAY_ID},
+        {"display-buffer",         required_argument, NULL, OPT_DISPLAY_BUFFER},
         {"encoder",                required_argument, NULL, OPT_ENCODER_NAME},
         {"force-adb-forward",      no_argument,       NULL,
                                                   OPT_FORCE_ADB_FORWARD},
@@ -732,6 +763,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         {"turn-screen-off",        no_argument,       NULL, 'S'},
 #ifdef HAVE_V4L2
         {"v4l2-sink",              required_argument, NULL, OPT_V4L2_SINK},
+        {"v4l2-buffer",            required_argument, NULL, OPT_V4L2_BUFFER},
 #endif
         {"verbosity",              required_argument, NULL, 'V'},
         {"version",                no_argument,       NULL, 'v'},
@@ -917,9 +949,19 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case OPT_POWER_OFF_ON_CLOSE:
                 opts->power_off_on_close = true;
                 break;
+            case OPT_DISPLAY_BUFFER:
+                if (!parse_buffering_time(optarg, &opts->display_buffer)) {
+                    return false;
+                }
+                break;
 #ifdef HAVE_V4L2
             case OPT_V4L2_SINK:
                 opts->v4l2_device = optarg;
+                break;
+            case OPT_V4L2_BUFFER:
+                if (!parse_buffering_time(optarg, &opts->v4l2_buffer)) {
+                    return false;
+                }
                 break;
 #endif
             default:
@@ -940,6 +982,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
         LOGI("Video orientation is locked for v4l2 sink. "
              "See --lock-video-orientation.");
         opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
+    }
+
+    if (opts->v4l2_buffer && !opts->v4l2_device) {
+        LOGE("V4L2 buffer value without V4L2 sink\n");
+        return false;
     }
 #else
     if (!opts->display && !opts->record_filename) {
