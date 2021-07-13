@@ -8,6 +8,8 @@
 
 #include "util/log.h"
 
+#define SC_BUFFERING_NDEBUG // comment to debug
+
 static struct sc_video_buffer_frame *
 sc_video_buffer_frame_new(const AVFrame *frame) {
     struct sc_video_buffer_frame *vb_frame = malloc(sizeof(*vb_frame));
@@ -93,6 +95,11 @@ run_buffering(void *data) {
         }
 
         sc_mutex_unlock(&vb->b.mutex);
+
+#ifndef SC_BUFFERING_NDEBUG
+        LOGD("Buffering: %" PRItick ";%" PRItick ";%" PRItick,
+             pts, vb_frame->push_date, sc_tick_now());
+#endif
 
         sc_video_buffer_offer(vb, vb_frame->frame);
 
@@ -231,6 +238,9 @@ sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
         return false;
     }
 
+#ifndef SC_BUFFERING_NDEBUG
+    vb_frame->push_date = sc_tick_now();
+#endif
     sc_queue_push(&vb->b.queue, next, vb_frame);
     sc_cond_signal(&vb->b.queue_cond);
 

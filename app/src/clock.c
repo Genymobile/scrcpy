@@ -1,5 +1,9 @@
 #include "clock.h"
 
+#include "util/log.h"
+
+#define SC_CLOCK_NDEBUG // comment to debug
+
 void
 sc_clock_init(struct sc_clock *clock) {
     clock->count = 0;
@@ -80,6 +84,11 @@ sc_clock_update(struct sc_clock *clock, sc_tick system, sc_tick stream) {
     if (clock->count > 1) {
         // Update estimation
         sc_clock_estimate(clock, &clock->slope, &clock->offset);
+
+#ifndef SC_CLOCK_NDEBUG
+        LOGD("Clock estimation: %g * pts + %" PRItick,
+             clock->slope, clock->offset);
+#endif
     }
 }
 
