@@ -17,6 +17,9 @@ typedef struct AVFrame AVFrame;
 struct sc_video_buffer_frame {
     AVFrame *frame;
     struct sc_video_buffer_frame *next;
+#ifndef NDEBUG
+    sc_tick push_date;
+#endif
 };
 
 struct sc_video_buffer_frame_queue SC_QUEUE(struct sc_video_buffer_frame);
