@@ -19,6 +19,7 @@ static void
 sc_clock_estimate(struct sc_clock *clock,
                   double *out_slope, sc_tick *out_offset) {
     assert(clock->count > 1); // two points are necessary
+
     struct sc_clock_point left_avg = {
         .system = clock->left_sum.system / (clock->count / 2),
         .stream = clock->left_sum.stream / (clock->count / 2),
@@ -27,6 +28,19 @@ sc_clock_estimate(struct sc_clock *clock,
         .system = clock->right_sum.system / ((clock->count + 1) / 2),
         .stream = clock->right_sum.stream / ((clock->count + 1) / 2),
     };
+
+    double slope = (double) (right_avg.system - left_avg.system)
+                 / (right_avg.stream - left_avg.stream);
+
+    if (clock->count < SC_CLOCK_RANGE) {
+        /* The first frames are typically received and decoded with more delay
+         * than the others, causing a wrong slope estimation on start. To
+         * compensate, assume an initial slope of 1, then progressively use the
+         * estimated slope. */
+        slope = (clock->count * slope + (SC_CLOCK_RANGE - clock->count))
+              / SC_CLOCK_RANGE;
+    }
+
     struct sc_clock_point global_avg = {
         .system = (clock->left_sum.system + clock->right_sum.system)
                  / clock->count,
@@ -34,8 +48,6 @@ sc_clock_estimate(struct sc_clock *clock,
                  / clock->count,
     };
 
-    double slope = (double) (right_avg.system - left_avg.system)
-                 / (right_avg.stream - left_avg.stream);
     sc_tick offset = global_avg.system - (sc_tick) (global_avg.stream * slope);
 
     *out_slope = slope;
