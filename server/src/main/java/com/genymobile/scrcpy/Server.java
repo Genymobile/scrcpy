@@ -1,16 +1,20 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.ContentProvider;
-
+import android.content.Intent;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
+import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
+import com.genymobile.scrcpy.wrappers.ContentProvider;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.util.*;
 
 public final class Server {
 
@@ -50,7 +54,8 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose(),
+                            options.getBroadcastIntents().contains(Intents.CLEANED));
 
         boolean tunnelForward = options.isTunnelForward();
 
@@ -75,6 +80,13 @@ public final class Server {
                 });
             }
 
+            if(options.getBroadcastIntents().contains(Intents.START)){
+                announceScrcpyStarting();
+            }
+            if(options.getBroadcastIntents().contains(Intents.SOCKET)){
+                scrcpyRunningSocket();
+            }
+
             try {
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
@@ -88,8 +100,90 @@ public final class Server {
                 if (deviceMessageSenderThread != null) {
                     deviceMessageSenderThread.interrupt();
                 }
+
+                if(options.getBroadcastIntents().contains(Intents.STOP)){
+                    Ln.i("Announcing stopped");
+                    announceScrcpyStopping();
+                }
             }
         }
+    }
+
+    private static void announceScrcpyStarting() {
+
+        Intent starting = new Intent(Intents.scrcpyPrefix("START"));
+        starting.setData(Uri.parse("scrcpy-status:start"));
+        starting.putExtra(Intents.scrcpyPrefix("STARTUP"), true);
+        starting.putExtra(Intents.scrcpyPrefix("SHUTDOWN"), false);
+        Device.sendBroadcast(starting);
+    }
+    private static void announceScrcpyStopping() {
+
+        Intent stopping = new Intent(Intents.scrcpyPrefix("STOP"));
+        stopping.setData(Uri.parse("scrcpy-status:stop"));
+        stopping.putExtra(Intents.scrcpyPrefix("STARTUP"), false);
+        stopping.putExtra(Intents.scrcpyPrefix("SHUTDOWN"), true);
+        Device.sendBroadcast(stopping);
+    }
+
+    private static Thread scrcpyRunningSocket() {
+
+        // Thread runs until scrcpy exits and doesn't block exiting
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                while(true) {
+
+                    ArrayList<Socket> acceptedSockets = new ArrayList<>();
+                    try (ServerSocket ss = new ServerSocket(0, -1, InetAddress.getLocalHost())) {
+                        int localPort = ss.getLocalPort();
+                        Ln.i("Running socket on " + localPort);
+
+                        Intent starting = new Intent(Intents.scrcpyPrefix("SOCKET"));
+                        starting.setData(Uri.parse("scrcpy-status:socket"));
+                        starting.putExtra(Intents.scrcpyPrefix("SOCKET"), localPort);
+                        Device.sendBroadcast(starting);
+
+                        while (true) {
+                            Socket accepted = ss.accept();
+                            if (acceptedSockets.size() < 50) {
+                                acceptedSockets.add(accepted);
+                                Ln.d("Running socket: Added listener");
+                            }
+                            ListIterator<Socket> iter = acceptedSockets.listIterator();
+                            for (Socket s = iter.next(); iter.hasNext(); s = iter.next()) {
+                                try {
+                                    s.getOutputStream().write(1);
+                                } catch (SocketException e) {
+                                    iter.remove();
+                                    Ln.d("Running socket: Removed listener");
+                                    try {
+                                        s.close();
+                                    } catch (IOException ignored) {
+                                    }
+                                }
+                            }
+
+                        }
+                    } catch (IOException e) {
+                        Ln.e("Running socket: Cannot start server", e);
+                    } catch (Exception e) {
+                        Ln.e("Running socket: failed with an unexpected exception", e);
+                    }
+
+                    try {
+                        // Avoid wasting resources in case of infinite loop
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+        });
+        thread.setName("Running socket");
+        thread.setDaemon(true);
+        thread.start();
+        return thread;
     }
 
     private static Thread startController(final Controller controller) {
@@ -135,7 +229,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 16;
+        final int expectedParameters = 17;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -187,6 +281,9 @@ public final class Server {
 
         boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
         options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+
+        EnumSet<Intents> broadcastIntents = Intents.fromBitSet(BitSet.valueOf(new long[]{Long.parseLong(args[16])}));
+        options.setBroadcastIntents(broadcastIntents);
 
         return options;
     }

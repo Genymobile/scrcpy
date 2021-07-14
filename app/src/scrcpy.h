@@ -54,6 +54,15 @@ struct sc_port_range {
 
 #define SC_WINDOW_POSITION_UNDEFINED (-0x8000)
 
+
+enum sc_intent_broadcast {
+    SC_INTENT_BROADCAST_START = 1 << 0,
+    SC_INTENT_BROADCAST_SOCKET = 1 << 1,
+    SC_INTENT_BROADCAST_STOP = 1 << 30,
+    SC_INTENT_BROADCAST_CLEANED = 1 << 31,
+};
+
+
 struct scrcpy_options {
     const char *serial;
     const char *crop;
@@ -94,6 +103,7 @@ struct scrcpy_options {
     bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
+    uint32_t intent_broadcasts;
 };
 
 #define SCRCPY_OPTIONS_DEFAULT { \
@@ -142,6 +152,7 @@ struct scrcpy_options {
     .forward_all_clicks = false, \
     .legacy_paste = false, \
     .power_off_on_close = false, \
+    .intent_broadcasts = 0, \
 }
 
 bool

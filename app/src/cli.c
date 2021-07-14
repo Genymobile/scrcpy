@@ -28,6 +28,45 @@ scrcpy_print_usage(const char *arg0) {
         "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
         "        Default is " STR(DEFAULT_BIT_RATE) ".\n"
         "\n"
+        "    --broadcast-intents [value[, ...]]\n"
+        "        (Advanced feature)\n"
+        "        Turn on the broadcast of intents with the status of scrcpy \n"
+        "        options are: start, socket, stop, cleaned\n"
+        "        Each of these will arm the corresponding intent\n"
+        "        start: announce finished setting up\n"
+        "        socket: announce isAlive server port\n"
+        "        stop: announce shut down started (best effort)\n"
+        "        cleaned: announce cleanup finished (best effort)\n"
+        "        \n"
+        "        If you ommit the value, all intents are turned on\n"
+        "        \n"
+        "        All intents have the action and extra fields prefixed with: \n"
+        "        com.genymobile.scrcpy.\n"
+        "        Which is then followed by the intent name in caps. For example,\n"
+        "        the 'start' intent has the action:\n"
+        "        com.genymobile.scrcpy.START\n"
+        "\n"
+        "        There are two boolean extras use to ease\n"
+        "        the parsing process of the intents:\n"
+        "        1. com.genymobile.scrcpy.STARTUP if present and true,\n"
+        "           scrcpy is starting up.\n"
+        "        2. com.genymobile.scrcpy.SHUTDOWN if present and true,\n"
+        "           scrcpy is shutting down.\n"
+        "\n"
+        "        socket has a different extra\n"
+        "        com.genymobile.scrcpy.SOCKET which is the port where the socket\n"
+        "        listens to.\n"
+        "        Listening for a connection reset on the socket is the only\n"
+        "        guaranteed way to know when scrcpy disconnects or crashes\n"
+        "        \n"
+        "        Notes:\n"
+        "        1. stop and cleaned may not happen in specific cases. For example, \n"
+        "           if debugging is turned off, scrcpy process is immediately killed \n"
+        "        2. This option is intended for advanced users. By using this \n"
+        "           feature, all apps on your phone will know scrcpy has connected\n"
+        "           Unless that is what you want, and you know what that means\n"
+        "           do not use this feature\n"
+        "\n"
         "    --codec-options key[:type]=value[,...]\n"
         "        Set a list of comma-separated key:type=value options for the\n"
         "        device encoder.\n"
@@ -661,6 +700,53 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
+
+static bool
+parse_intent_broadcast(const char *s, uint32_t *intents) {
+    
+    // if no arg provided activates all intents for all intents and purposes
+    if(!s){
+        *intents = -1;
+        return true;
+    }
+
+    for (;;) {
+        char *comma = strchr(s, ',');
+        
+        assert(!comma || comma > s);
+        size_t limit = comma ? (size_t) (comma - s) : strlen(s);
+
+
+#define STREQ(literal, s, len) \
+    ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
+
+        if (STREQ("start", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_START;
+        } else if (STREQ("socket", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_SOCKET;
+        } else if (STREQ("stop", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_STOP;
+        } else if (STREQ("cleaned", s, limit)) {
+            *intents |= SC_INTENT_BROADCAST_CLEANED;
+        } else {
+            LOGE("Unknown broadcast intent: %.*s "
+                 "(must be one of: start, socket, stop, cleaned)",
+                 (int) limit, s);
+            return false;
+        }
+#undef STREQ
+
+        if (!comma) {
+            break;
+        }
+
+        s = comma + 1;
+    }
+
+    return true;
+}
+
+
 #define OPT_RENDER_EXPIRED_FRAMES  1000
 #define OPT_WINDOW_TITLE           1001
 #define OPT_PUSH_TARGET            1002
@@ -689,6 +775,7 @@ guess_record_format(const char *filename) {
 #define OPT_ENCODER_NAME           1025
 #define OPT_POWER_OFF_ON_CLOSE     1026
 #define OPT_V4L2_SINK              1027
+#define OPT_INTENT_BROADCAST       1028
 
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
@@ -744,6 +831,8 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_WINDOW_BORDERLESS},
         {"power-off-on-close",     no_argument,       NULL,
                                                   OPT_POWER_OFF_ON_CLOSE},
+        {"intent-broadcast",       optional_argument, NULL,
+                                                  OPT_INTENT_BROADCAST},
         {NULL,                     0,                 NULL, 0  },
     };
 
@@ -922,6 +1011,12 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 opts->v4l2_device = optarg;
                 break;
 #endif
+
+            case OPT_INTENT_BROADCAST:
+                if (!parse_intent_broadcast(optarg, &opts->intent_broadcasts)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;

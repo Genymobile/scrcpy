@@ -2,7 +2,9 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.content.Intent;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
 
@@ -16,6 +18,7 @@ public class ActivityManager {
     private Method getContentProviderExternalMethod;
     private boolean getContentProviderExternalMethodNewVersion = true;
     private Method removeContentProviderExternalMethod;
+    private Method broadcastIntentMethod;
 
     public ActivityManager(IInterface manager) {
         this.manager = manager;
@@ -40,6 +43,22 @@ public class ActivityManager {
             removeContentProviderExternalMethod = manager.getClass().getMethod("removeContentProviderExternal", String.class, IBinder.class);
         }
         return removeContentProviderExternalMethod;
+    }
+
+    private Method getBroadcastIntentMethod() throws NoSuchMethodException {
+        if (broadcastIntentMethod == null) {
+            try {
+                Class<?> iApplicationThreadClass = Class.forName("android.app.IApplicationThread");
+                Class<?> iIntentReceiverClass = Class.forName("android.content.IIntentReceiver");
+                broadcastIntentMethod = manager.getClass()
+                        .getMethod("broadcastIntent", iApplicationThreadClass, Intent.class, String.class, iIntentReceiverClass, int.class,
+                                String.class, Bundle.class, String[].class, int.class, Bundle.class, boolean.class, boolean.class, int.class);
+                return broadcastIntentMethod;
+            } catch (ClassNotFoundException e) {
+                throw new AssertionError(e);
+            }
+        }
+        return broadcastIntentMethod;
     }
 
     private ContentProvider getContentProviderExternal(String name, IBinder token) {
@@ -83,5 +102,14 @@ public class ActivityManager {
 
     public ContentProvider createSettingsProvider() {
         return getContentProviderExternal("settings", new Binder());
+    }
+
+    public void sendBroadcast(Intent intent) {
+        try {
+            Method method = getBroadcastIntentMethod();
+            method.invoke(manager, null, intent, null, null, 0, null, null, null, -1, null, true, false, ServiceManager.USER_ID);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
+        }
     }
 }
