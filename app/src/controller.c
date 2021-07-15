@@ -70,7 +70,7 @@ process_msg(struct controller *controller,
     if (!length) {
         return false;
     }
-    int w = net_send_all(controller->control_socket, serialized_msg, length);
+    ssize_t w = net_send_all(controller->control_socket, serialized_msg, length);
     return (size_t) w == length;
 }
 
