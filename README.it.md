@@ -71,7 +71,7 @@ Per Arch Linux, è disponibile un pacchetto [AUR]: [`scrcpy`][aur-link].
 [AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
 [aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
-Per Gentoo, è disponibile una [Ebuild]: [`scrcpy/`][ebuild-link].
+Per Gentoo, è disponibile una [Ebuild]: [`app-mobilephone/scrcpy`][ebuild-link].
 
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
