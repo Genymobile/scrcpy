@@ -213,7 +213,8 @@ run_recorder(void *data) {
         LOGE("Recording failed to %s", recorder->filename);
     } else {
         const char *format_name = recorder_get_format_name(recorder->format);
-        LOGI("Recording complete to %s file: %s", format_name, recorder->filename);
+        LOGI("Recording complete to %s file: %s", format_name,
+                                                  recorder->filename);
     }
 
     LOGD("Recorder thread ended");

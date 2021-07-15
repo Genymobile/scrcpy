@@ -261,7 +261,8 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(max_size_string, "%"PRIu16, params->max_size);
     sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
     sprintf(max_fps_string, "%"PRIu16, params->max_fps);
-    sprintf(lock_video_orientation_string, "%"PRIi8, params->lock_video_orientation);
+    sprintf(lock_video_orientation_string, "%"PRIi8,
+            params->lock_video_orientation);
     sprintf(display_id_string, "%"PRIu32, params->display_id);
     const char *const cmd[] = {
         "shell",
@@ -271,7 +272,8 @@ execute_server(struct server *server, const struct server_params *params) {
 # define SERVER_DEBUGGER_PORT "5005"
 # ifdef SERVER_DEBUGGER_METHOD_NEW
         /* Android 9 and above */
-        "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,server=y,address="
+        "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,"
+        "server=y,address="
 # else
         /* Android 8 and below */
         "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
