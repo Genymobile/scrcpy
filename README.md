@@ -867,6 +867,7 @@ Read the [developers page].
 
 This README is available in other languages:
 
+- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
 - [Italiano (Italiano, `it`) - v1.17](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.17](README.jp.md)
