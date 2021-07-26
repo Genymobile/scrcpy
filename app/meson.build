@@ -2,6 +2,7 @@ src = [
     'src/main.c',
     'src/adb.c',
     'src/cli.c',
+    'src/plugin.c',
     'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',

@@ -1,5 +1,5 @@
 #include "scrcpy.h"
-
+#include "plugin.h"
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -115,6 +115,7 @@ sdl_init_and_configure(bool display, const char *render_driver,
         SDL_EnableScreenSaver();
     }
 
+    plugin_init();
     return true;
 }
 
@@ -290,7 +291,7 @@ scrcpy(const struct scrcpy_options *options) {
                                 options->disable_screensaver)) {
         goto end;
     }
-
+    
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct size frame_size;
 
