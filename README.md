@@ -258,7 +258,7 @@ To disable mirroring while recording:
 ```bash
 scrcpy --no-display --record file.mp4
 scrcpy -Nr file.mkv
-# interrupt recording with Ctrl+C
+# interrupt recording with Ctrl+C or Cmd+C
 ```
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for
