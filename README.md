@@ -318,7 +318,7 @@ vlc v4l2:///dev/videoN   # VLC might add some buffering delay
 
 For example, you could capture the video within [OBS].
 
-[OBS]: https://obsproject.com/fr
+[OBS]: https://obsproject.com/
 
 
 ### Connection
