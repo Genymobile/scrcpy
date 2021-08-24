@@ -40,8 +40,10 @@
 #include <SDL2/SDL_events.h>
 
 #include "events.h"
-#include "util/lock.h"
 #include "util/log.h"
+
+/** Downcast packet_sink to capture */
+#define DOWNCAST(SINK) container_of(SINK, struct capture, packet_sink)
 
 static const char *string_error(int err) {
   switch (err) {
@@ -211,25 +213,61 @@ static bool decode_packet_to_png(
   return found;
 }
 
+bool
+capture_open(struct capture *capture);
+
+void
+capture_close(struct capture *capture);
+
+bool
+capture_push(struct capture *capture, const AVPacket *packet);
+
+static bool
+capture_packet_sink_open(struct sc_packet_sink *sink,
+                         const AVCodec *codec) {
+    struct capture *capture = DOWNCAST(sink);
+    return capture_open(capture);
+}
+
+static void
+capture_packet_sink_close(struct sc_packet_sink *sink) {
+    struct capture *capture = DOWNCAST(sink);
+    capture_close(capture);
+}
+
+static bool
+capture_packet_sink_push(struct sc_packet_sink *sink, const AVPacket *packet) {
+    struct capture *capture = DOWNCAST(sink);
+    return capture_push(capture, packet);
+}
+
 bool capture_init(struct capture *capture, const char *filename) {
-  capture->filename = SDL_strdup(filename);
+  static const struct sc_packet_sink_ops ops = {
+      .open = capture_packet_sink_open,
+      .close = capture_packet_sink_close,
+      .push = capture_packet_sink_push,
+  };
+
+  capture->packet_sink.ops = &ops;
+
+  capture->filename = strdup(filename);
   if (!capture->filename) {
     LOGE("Could not strdup filename");
     return false;
   }
 
-  capture->mutex = SDL_CreateMutex();
-  if (!capture->mutex) {
+  bool ok = sc_mutex_init(&capture->mutex);
+  if (!ok) {
     LOGC("Could not create mutex");
-    SDL_free(capture->filename);
+    free(capture->filename);
     return false;
   }
 
-  capture->queue_cond = SDL_CreateCond();
-  if (!capture->queue_cond) {
+  ok = sc_cond_init(&capture->queue_cond);
+  if (!ok) {
     LOGC("Could not create capture cond");
-    SDL_DestroyMutex(capture->mutex);
-    SDL_free(capture->filename);
+    sc_mutex_destroy(&capture->mutex);
+    free(capture->filename);
     return false;
   }
 
@@ -303,7 +341,7 @@ static bool capture_process(struct capture *capture, const AVPacket *packet) {
 
 static struct capture_packet *
 capture_packet_new(const AVPacket *packet) {
-    struct capture_packet *rec = SDL_malloc(sizeof(*rec));
+    struct capture_packet *rec = malloc(sizeof(*rec));
     if (!rec) {
         return NULL;
     }
@@ -313,7 +351,7 @@ capture_packet_new(const AVPacket *packet) {
     av_init_packet(&rec->packet);
 
     if (av_packet_ref(&rec->packet, packet)) {
-        SDL_free(rec);
+        free(rec);
         return NULL;
     }
     return rec;
@@ -322,7 +360,7 @@ capture_packet_new(const AVPacket *packet) {
 static void
 capture_packet_delete(struct capture_packet *rec) {
     av_packet_unref(&rec->packet);
-    SDL_free(rec);
+    free(rec);
 }
 
 static int
@@ -331,24 +369,24 @@ run_capture(void *data) {
     struct capture *capture = data;
 
     for (;;) {
-        mutex_lock(capture->mutex);
+        sc_mutex_lock(&capture->mutex);
 
         while (!capture->stopped && queue_is_empty(&capture->queue)) {
-            cond_wait(capture->queue_cond, capture->mutex);
+            sc_cond_wait(&capture->queue_cond, &capture->mutex);
         }
 
         // if stopped is set, continue to process the remaining events (to
         // finish the capture) before actually stopping
 
         if (capture->stopped && queue_is_empty(&capture->queue)) {
-            mutex_unlock(capture->mutex);
+            sc_mutex_unlock(&capture->mutex);
             break;
         }
 
         struct capture_packet *rec;
         queue_take(&capture->queue, next, &rec);
 
-        mutex_unlock(capture->mutex);
+        sc_mutex_unlock(&capture->mutex);
 
         bool ok = capture_process(capture, &rec->packet);
         capture_packet_delete(rec);
@@ -363,11 +401,11 @@ run_capture(void *data) {
 }
 
 bool
-capture_start(struct capture *capture) {
+capture_open(struct capture *capture) {
     log_timestamp("Starting capture thread");
 
-    capture->thread = SDL_CreateThread(run_capture, "capture", capture);
-    if (!capture->thread) {
+    bool ok = sc_thread_create(&capture->thread, run_capture, "capture", capture);
+    if (!ok) {
         LOGC("Could not start capture thread");
         return false;
     }
@@ -377,21 +415,26 @@ capture_start(struct capture *capture) {
 
 void
 capture_stop(struct capture *capture) {
-    mutex_lock(capture->mutex);
+    sc_mutex_lock(&capture->mutex);
     capture->stopped = true;
-    cond_signal(capture->queue_cond);
-    mutex_unlock(capture->mutex);
+    sc_cond_signal(&capture->queue_cond);
+    sc_mutex_unlock(&capture->mutex);
 }
 
 void
 capture_join(struct capture *capture) {
-    SDL_WaitThread(capture->thread, NULL);
+    sc_thread_join(&capture->thread, NULL);
+}
+
+void capture_close(struct capture *capture) {
+  capture_stop(capture);
+  capture_join(capture);
 }
 
 bool
 capture_push(struct capture *capture, const AVPacket *packet) {
     log_timestamp("Received packet");
-    mutex_lock(capture->mutex);
+    sc_mutex_lock(&capture->mutex);
     assert(!capture->stopped);
 
     if (capture->finished) {
@@ -406,8 +449,8 @@ capture_push(struct capture *capture, const AVPacket *packet) {
     }
 
     queue_push(&capture->queue, next, rec);
-    cond_signal(capture->queue_cond);
+    sc_cond_signal(&capture->queue_cond);
 
-    mutex_unlock(capture->mutex);
+    sc_mutex_unlock(&capture->mutex);
     return true;
 }
