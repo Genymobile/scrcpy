@@ -20,4 +20,7 @@ sc_set_log_level(enum sc_log_level level);
 enum sc_log_level
 sc_get_log_level(void);
 
+#include <time.h>
+uint64_t get_timestamp();
+void log_timestamp(const char *tag);
 #endif

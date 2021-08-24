@@ -253,6 +253,7 @@ log_level_to_server_string(enum sc_log_level level) {
 
 static process_t
 execute_server(struct server *server, const struct server_params *params) {
+    log_timestamp("Starting device server");
     char max_size_string[6];
     char bit_rate_string[11];
     char max_fps_string[6];
@@ -308,6 +309,7 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
+    LOGV("Executing ADB command");
     return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
 }
 
@@ -418,15 +420,18 @@ server_start(struct server *server, const struct server_params *params) {
     }
 
     if (!push_server(params->serial)) {
+        LOGE("Failed to push server to device.");
         /* server->serial will be freed on server_destroy() */
         return false;
     }
 
     if (!enable_tunnel_any_port(server, params->port_range,
                                 params->force_adb_forward)) {
+        LOGE("Failed to enable tunnel.");
         return false;
     }
 
+    LOGV("Executing server");
     // server will connect to our server socket
     server->process = execute_server(server, params);
     if (server->process == PROCESS_NONE) {
@@ -487,12 +492,15 @@ device_read_info(socket_t device_socket, char *device_name, struct size *size) {
 
 bool
 server_connect_to(struct server *server, char *device_name, struct size *size) {
+    log_timestamp("Starting server_connect_to");
     if (!server->tunnel_forward) {
+        log_timestamp("Accepting video socket");
         server->video_socket = net_accept(server->server_socket);
         if (server->video_socket == INVALID_SOCKET) {
             return false;
         }
 
+        log_timestamp("Accepting control socket");
         server->control_socket = net_accept(server->server_socket);
         if (server->control_socket == INVALID_SOCKET) {
             // the video_socket will be cleaned up on destroy
@@ -508,6 +516,7 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
+        log_timestamp("Connecting video socket");
         server->video_socket =
             connect_to_server(server->local_port, attempts, delay);
         if (server->video_socket == INVALID_SOCKET) {
@@ -515,6 +524,7 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
         }
 
         // we know that the device is listening, we don't need several attempts
+        log_timestamp("Connecting control socket");
         server->control_socket =
             net_connect(IPV4_LOCALHOST, server->local_port);
         if (server->control_socket == INVALID_SOCKET) {
@@ -527,6 +537,7 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
     server->tunnel_enabled = false;
 
     // The sockets will be closed on stop if device_read_info() fails
+    log_timestamp("Finishing server_connect_to with device_read_info");
     return device_read_info(server->video_socket, device_name, size);
 }
 

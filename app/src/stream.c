@@ -7,6 +7,7 @@
 
 #include "decoder.h"
 #include "events.h"
+#include "capture.h"
 #include "recorder.h"
 #include "util/buffer_util.h"
 #include "util/log.h"
@@ -54,6 +55,8 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
 
     packet->pts = pts != NO_PTS ? (int64_t) pts : AV_NOPTS_VALUE;
 
+    log_timestamp("Received packet via socket stream");
+
     return true;
 }
 
@@ -66,7 +69,6 @@ push_packet_to_sinks(struct stream *stream, const AVPacket *packet) {
             return false;
         }
     }
-
     return true;
 }
 
@@ -216,10 +218,6 @@ run_stream(void *data) {
         goto finally_close_sinks;
     }
 
-    // We must only pass complete frames to av_parser_parse2()!
-    // It's more complicated, but this allows to reduce the latency by 1 frame!
-    stream->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
         LOGE("Could not allocate packet");
@@ -284,7 +282,7 @@ stream_add_sink(struct stream *stream, struct sc_packet_sink *sink) {
 
 bool
 stream_start(struct stream *stream) {
-    LOGD("Starting stream thread");
+    log_timestamp("Starting stream thread");
 
     bool ok = sc_thread_create(&stream->thread, run_stream, "stream", stream);
     if (!ok) {

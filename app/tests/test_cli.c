@@ -58,6 +58,7 @@ static void test_options(void) {
         "--push-target", "/sdcard/Movies",
         "--record", "file",
         "--record-format", "mkv",
+        "--screen-capture", "filename.png",
         "--serial", "0123456789abcdef",
         "--show-touches",
         "--turn-screen-off",
@@ -86,6 +87,7 @@ static void test_options(void) {
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));
     assert(opts->record_format == SC_RECORD_FORMAT_MKV);
+    assert(!strcmp(opts->capture_filename, "filename.png"));
     assert(!strcmp(opts->serial, "0123456789abcdef"));
     assert(opts->show_touches);
     assert(opts->turn_screen_off);

@@ -1,6 +1,7 @@
 src = [
     'src/main.c',
     'src/adb.c',
+    'src/capture.c',
     'src/cli.c',
     'src/compat.c',
     'src/control_msg.c',
@@ -46,11 +47,35 @@ cc = meson.get_compiler('c')
 
 if not get_option('crossbuild_windows')
 
+    avdir = get_option('local_libav')
+    if avdir != ''
+        message('Using local libav at ' + avdir)
+        libdir = meson.current_source_dir() + '/../' + avdir + '/lib'
+        incdir = '../' + avdir + '/include'
+        ffmpeg = declare_dependency(
+            dependencies: [
+                cc.find_library('avformat', dirs : libdir),
+                cc.find_library('avcodec', dirs : libdir),
+                cc.find_library('avutil', dirs : libdir),
+                cc.find_library('swscale', dirs : libdir)
+            ],
+            include_directories: include_directories(incdir)
+        )
+    else
+        ffmpeg = declare_dependency(
+            dependencies: [
+                dependency('avformat'),
+                dependency('avcodec'),
+                dependency('avutil'),
+                dependency('swscale')
+            ]
+        )
+    endif
+
     # native build
     dependencies = [
-        dependency('libavformat'),
-        dependency('libavcodec'),
-        dependency('libavutil'),
+        ffmpeg,
+        dependency('libpng'),
         dependency('sdl2'),
     ]
 
@@ -178,7 +203,8 @@ if get_option('buildtype') == 'debug'
             'tests/test_queue.c',
         ]],
         ['test_strutil', [
-            'tests/test_strutil.c',
+            'tests/test_s
+            til.c',
             'src/util/str_util.c',
         ]],
     ]
