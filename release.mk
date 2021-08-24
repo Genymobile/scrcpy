@@ -109,7 +109,7 @@ dist-win64: build-server build-win64
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp data/scrcpy-console.bat "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)"	
+	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp prebuilt-deps/ffmpeg-4.4-full_build-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.4-full_build-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.4-full_build-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
