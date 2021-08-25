@@ -2,6 +2,7 @@
 #define SCRCPY_H
 
 #include "common.h"
+#include "coords.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -83,6 +84,7 @@ struct scrcpy_options {
     bool always_on_top;
     bool control;
     bool display;
+    bool force_decoder; // force scrcpy to always initialize a decoder
     bool turn_screen_off;
     bool prefer_text;
     bool window_borderless;
@@ -143,6 +145,28 @@ struct scrcpy_options {
     .legacy_paste = false, \
     .power_off_on_close = false, \
 }
+
+struct scrcpy_process {
+    // To be cast to (struct scrcpy *)
+    // don't use the real struct type, as it's internal and should not be interfered by outside process;
+    // also, JavaCPP is unable to parse struct scrcpy properly.
+    void *scrcpy_struct;
+    // other properties to be available to external systems
+    struct size frame_size;
+};
+
+struct scrcpy_process *
+scrcpy_start(const struct scrcpy_options *options);
+
+// add an external frame sink.
+bool
+scrcpy_add_sink(struct scrcpy_process *p,
+                bool (*open)(void *sink),
+                void (*close)(void *sink),
+                bool (*push)(void *sink, const void *avframe));
+
+void
+scrcpy_stop(struct scrcpy_process *p);
 
 bool
 scrcpy(const struct scrcpy_options *options);
