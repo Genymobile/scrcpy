@@ -149,6 +149,10 @@ executable('scrcpy', src,
            install: true,
            c_args: [])
 
+library('scrcpy', src,
+           dependencies: dependencies,
+           include_directories: src_dir)
+
 install_man('scrcpy.1')
 
 
