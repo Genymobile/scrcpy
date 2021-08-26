@@ -330,7 +330,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    const struct stream_callbacks stream_cbs = {
+    static const struct stream_callbacks stream_cbs = {
         .on_eos = stream_on_eos,
     };
     stream_init(&s->stream, s->server.video_socket, &stream_cbs, NULL);
