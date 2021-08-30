@@ -555,3 +555,10 @@ scrcpy_add_sink(struct scrcpy_process *p,
     decoder_add_sink(&s->decoder, sink);
     return true;
 }
+
+void
+scrcpy_push_event(struct scrcpy_process *p,
+                    const struct control_msg *msg) {
+    struct scrcpy *s = p->scrcpy_struct;
+    controller_push_msg(&s->controller, msg);
+}

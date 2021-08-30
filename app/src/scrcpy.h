@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "coords.h"
+#include "control_msg.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -170,6 +171,10 @@ scrcpy_add_sink(struct scrcpy_process *p,
                 bool (*open)(void *sink),
                 void (*close)(void *sink),
                 bool (*push)(void *sink, const void *avframe));
+
+void
+scrcpy_push_event(struct scrcpy_process *p,
+                    const struct control_msg *msg);
 
 void
 scrcpy_stop(struct scrcpy_process *p);
