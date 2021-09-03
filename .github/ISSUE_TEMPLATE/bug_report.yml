@@ -1,0 +1,59 @@
+name: Bug report
+description: Create a report to help us improve
+#title: ''
+#labels: ''
+#assignees: ''
+body:
+  - type: checkboxes
+    attributes:
+      options:
+        - label: I have read the [FAQ](https://github.com/Genymobile/scrcpy/blob/master/FAQ.md).
+          required: true
+        - label: I have searched in existing [issues](https://github.com/Genymobile/scrcpy/issues).
+          required: true
+  - type: markdown
+    attributes:
+      value: "## Environment"
+  - type: input
+    attributes:
+      label: Operating System
+      description: e.g. Debian, Windows, macOS
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: scrcpy version
+      description: e.g. 1.12.1
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Installation method
+      description: e.g. manual build, apt, snap, brew, Windows release...
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Device model
+      description: e.g. Pixel 4a
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Android version
+      description: e.g. 10
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Describe the bug
+      description: A clear and concise description of what the bug is.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: adb logcat
+      description: |
+        On errors, please provide the output of the console (and `adb logcat` if relevant).
+        Please do not post screenshots of your terminal, just post the content as text instead.
+      render: shell
