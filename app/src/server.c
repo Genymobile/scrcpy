@@ -60,7 +60,20 @@ get_server_path(void) {
         // not found, use current directory
         return strdup(SERVER_FILENAME);
     }
-    char *dir = dirname(executable_path);
+
+    // dirname() does not work correctly everywhere, so get the parent
+    // directory manually.
+    // See <https://github.com/Genymobile/scrcpy/issues/2619>
+    char *p = strrchr(executable_path, PATH_SEPARATOR);
+    if (!p) {
+        LOGE("Unexpected executable path: \"%s\" (it should contain a '%c')",
+             executable_path, PATH_SEPARATOR);
+        free(executable_path);
+        return strdup(SERVER_FILENAME);
+    }
+
+    *p = '\0'; // modify executable_path in place
+    char *dir = executable_path;
     size_t dirlen = strlen(dir);
 
     // sizeof(SERVER_FILENAME) gives statically the size including the null byte
