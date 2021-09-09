@@ -19,11 +19,27 @@
   typedef struct in_addr IN_ADDR;
 #endif
 
+static void
+net_perror(const char *s) {
+#ifdef _WIN32
+    int error = WSAGetLastError();
+    char *wsa_message;
+    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+            (char *) &wsa_message, 0, NULL);
+    // no explicit '\n', wsa_message already contains a trailing '\n'
+    fprintf(stderr, "%s: [%d] %s", s, error, wsa_message);
+    LocalFree(wsa_message);
+#else
+    perror(s);
+#endif
+}
+
 socket_t
 net_connect(uint32_t addr, uint16_t port) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
-        perror("socket");
+        net_perror("socket");
         return INVALID_SOCKET;
     }
 
@@ -33,7 +49,7 @@ net_connect(uint32_t addr, uint16_t port) {
     sin.sin_port = htons(port);
 
     if (connect(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
-        perror("connect");
+        net_perror("connect");
         net_close(sock);
         return INVALID_SOCKET;
     }
@@ -45,14 +61,14 @@ socket_t
 net_listen(uint32_t addr, uint16_t port, int backlog) {
     socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET) {
-        perror("socket");
+        net_perror("socket");
         return INVALID_SOCKET;
     }
 
     int reuse = 1;
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuse,
                    sizeof(reuse)) == -1) {
-        perror("setsockopt(SO_REUSEADDR)");
+        net_perror("setsockopt(SO_REUSEADDR)");
     }
 
     SOCKADDR_IN sin;
@@ -61,13 +77,13 @@ net_listen(uint32_t addr, uint16_t port, int backlog) {
     sin.sin_port = htons(port);
 
     if (bind(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
-        perror("bind");
+        net_perror("bind");
         net_close(sock);
         return INVALID_SOCKET;
     }
 
     if (listen(sock, backlog) == SOCKET_ERROR) {
-        perror("listen");
+        net_perror("listen");
         net_close(sock);
         return INVALID_SOCKET;
     }
