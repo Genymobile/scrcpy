@@ -318,7 +318,7 @@ vlc v4l2:///dev/videoN   # VLC might add some buffering delay
 
 For example, you could capture the video within [OBS].
 
-[OBS]: https://obsproject.com/fr
+[OBS]: https://obsproject.com/
 
 
 #### Buffering
@@ -893,5 +893,6 @@ This README is available in other languages:
 - [Español (Spanish, `sp`) - v1.17](README.sp.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.17](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
 
 Only this README file is guaranteed to be up-to-date.

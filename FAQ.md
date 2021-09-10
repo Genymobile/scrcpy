@@ -153,6 +153,26 @@ You may also need to configure the [scaling behavior]:
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
 
 
+### Issue with Wayland
+
+By default, SDL uses x11 on Linux. The [video driver] can be changed via the
+`SDL_VIDEODRIVER` environment variable:
+
+[video driver]: https://wiki.libsdl.org/FAQUsingSDL#how_do_i_choose_a_specific_video_driver
+
+```bash
+export SDL_VIDEODRIVER=wayland
+scrcpy
+```
+
+On some distributions (at least Fedora), the package `libdecor` must be
+installed manually.
+
+See issues [#2554] and [#2559].
+
+[#2554]: https://github.com/Genymobile/scrcpy/issues/2554
+[#2559]: https://github.com/Genymobile/scrcpy/issues/2559
+
 
 ### KWin compositor crashes
 
@@ -240,3 +260,4 @@ This FAQ is available in other languages:
 
  - [Italiano (Italiano, `it`) - v1.17](FAQ.it.md)
  - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
+ - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.18](FAQ.zh-Hans.md)
