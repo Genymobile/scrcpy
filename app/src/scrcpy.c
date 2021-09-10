@@ -18,6 +18,9 @@
 #include "events.h"
 #include "file_handler.h"
 #include "input_manager.h"
+#ifdef HAVE_AOA_HID
+# include "hid_keyboard.h"
+#endif
 #include "keyboard_inject.h"
 #include "mouse_inject.h"
 #include "recorder.h"
@@ -42,7 +45,15 @@ struct scrcpy {
 #endif
     struct controller controller;
     struct file_handler file_handler;
-    struct sc_keyboard_inject keyboard_inject;
+#ifdef HAVE_AOA_HID
+    struct aoa aoa;
+#endif
+    union {
+        struct sc_keyboard_inject keyboard_inject;
+#ifdef HAVE_AOA_HID
+        struct hid_keyboard keyboard_hid;
+#endif
+    };
     struct sc_mouse_inject mouse_inject;
     struct input_manager input_manager;
 };
@@ -244,7 +255,7 @@ stream_on_eos(struct stream *stream, void *userdata) {
 }
 
 bool
-scrcpy(const struct scrcpy_options *options) {
+scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
 
@@ -261,6 +272,9 @@ scrcpy(const struct scrcpy_options *options) {
     bool v4l2_sink_initialized = false;
 #endif
     bool stream_started = false;
+#ifdef HAVE_AOA_HID
+    bool aoa_hid_initialized = false;
+#endif
     bool controller_initialized = false;
     bool controller_started = false;
     bool screen_initialized = false;
@@ -420,8 +434,50 @@ scrcpy(const struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
-        sc_keyboard_inject_init(&s->keyboard_inject, &s->controller, options);
-        kp = &s->keyboard_inject.key_processor;
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
+#ifdef HAVE_AOA_HID
+            bool aoa_hid_ok = false;
+            if (!aoa_init(&s->aoa, options->serial)) {
+                goto aoa_hid_end;
+            }
+
+            if (!hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+                aoa_destroy(&s->aoa);
+                goto aoa_hid_end;
+            }
+
+            if (!aoa_start(&s->aoa)) {
+                hid_keyboard_destroy(&s->keyboard_hid);
+                aoa_destroy(&s->aoa);
+                goto aoa_hid_end;
+            }
+
+            aoa_hid_ok = true;
+            kp = &s->keyboard_hid.key_processor;
+
+            aoa_hid_initialized = true;
+
+aoa_hid_end:
+            if (!aoa_hid_ok) {
+                LOGE("Failed to enable HID over AOA, "
+                     "fallback to default keyboard injection method "
+                     "(-K/--keyboard-hid ignored)");
+                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+            }
+#else
+            LOGE("HID over AOA is not supported on this platform, "
+                 "fallback to default keyboard injection method "
+                 "(-K/--keyboard-hid ignored)");
+            options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+#endif
+        }
+
+        // keyboard_input_mode may have been reset if HID mode failed
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
+            sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
+                                    options);
+            kp = &s->keyboard_inject.key_processor;
+        }
 
         sc_mouse_inject_init(&s->mouse_inject, &s->controller, &s->screen);
         mp = &s->mouse_inject.mouse_processor;
@@ -440,6 +496,12 @@ scrcpy(const struct scrcpy_options *options) {
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
+#ifdef HAVE_AOA_HID
+    if (aoa_hid_initialized) {
+        hid_keyboard_destroy(&s->keyboard_hid);
+        aoa_stop(&s->aoa);
+    }
+#endif
     if (controller_started) {
         controller_stop(&s->controller);
     }
@@ -464,6 +526,13 @@ end:
 #ifdef HAVE_V4L2
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
+    }
+#endif
+
+#ifdef HAVE_AOA_HID
+    if (aoa_hid_initialized) {
+        aoa_join(&s->aoa);
+        aoa_destroy(&s->aoa);
     }
 #endif
 

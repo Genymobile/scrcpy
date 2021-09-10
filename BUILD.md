@@ -14,7 +14,8 @@ First, you need to install the required packages:
 # for Debian/Ubuntu
 sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
                  gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
+                 libusb-1.0-0 libusb-dev
 ```
 
 Then clone the repo and execute the installation script
@@ -88,11 +89,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0 adb
+sudo apt install ffmpeg libsdl2-2.0-0 adb libusb-1.0-0
 
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
+                 libusb-dev
 
 # server build dependencies
 sudo apt install openjdk-11-jdk
@@ -114,7 +116,7 @@ pip3 install meson
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 
 # client build dependencies
-sudo dnf install SDL2-devel ffms2-devel meson gcc make
+sudo dnf install SDL2-devel ffms2-devel libusb-devel meson gcc make
 
 # server build dependencies
 sudo dnf install java-devel
