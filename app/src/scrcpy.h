@@ -33,6 +33,11 @@ enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_3,
 };
 
+enum sc_keyboard_input_mode {
+    SC_KEYBOARD_INPUT_MODE_INJECT,
+    SC_KEYBOARD_INPUT_MODE_HID,
+};
+
 #define SC_MAX_SHORTCUT_MODS 8
 
 enum sc_shortcut_mod {
@@ -68,6 +73,7 @@ struct scrcpy_options {
     const char *v4l2_device;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
+    enum sc_keyboard_input_mode keyboard_input_mode;
     struct sc_port_range port_range;
     struct sc_shortcut_mods shortcut_mods;
     uint16_t max_size;
@@ -112,6 +118,7 @@ struct scrcpy_options {
     .v4l2_device = NULL, \
     .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = SC_RECORD_FORMAT_AUTO, \
+    .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \
@@ -151,6 +158,6 @@ struct scrcpy_options {
 }
 
 bool
-scrcpy(const struct scrcpy_options *options);
+scrcpy(struct scrcpy_options *options);
 
 #endif

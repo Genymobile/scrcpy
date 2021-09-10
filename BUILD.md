@@ -88,11 +88,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0 adb
+sudo apt install ffmpeg libsdl2-2.0-0 adb libusb-1.0-0
 
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev\
+                 libusb-dev
 
 # server build dependencies
 sudo apt install openjdk-11-jdk
@@ -114,7 +115,7 @@ pip3 install meson
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 
 # client build dependencies
-sudo dnf install SDL2-devel ffms2-devel meson gcc make
+sudo dnf install SDL2-devel ffms2-devel libusb-devel meson gcc make
 
 # server build dependencies
 sudo dnf install java-devel
@@ -159,7 +160,8 @@ install the required packages:
 ```bash
 # runtime dependencies
 pacman -S mingw-w64-x86_64-SDL2 \
-          mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-ffmpeg \
+          mingw-w64-x86_64-libusb
 
 # client build dependencies
 pacman -S mingw-w64-x86_64-make \
@@ -173,7 +175,8 @@ For a 32 bits version, replace `x86_64` by `i686`:
 ```bash
 # runtime dependencies
 pacman -S mingw-w64-i686-SDL2 \
-          mingw-w64-i686-ffmpeg
+          mingw-w64-i686-ffmpeg \
+          mingw-w64-i686-libusb
 
 # client build dependencies
 pacman -S mingw-w64-i686-make \
@@ -197,7 +200,7 @@ Install the packages with [Homebrew]:
 
 ```bash
 # runtime dependencies
-brew install sdl2 ffmpeg
+brew install sdl2 ffmpeg libusb
 
 # client build dependencies
 brew install pkg-config meson
