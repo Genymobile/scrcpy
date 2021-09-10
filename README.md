@@ -673,6 +673,39 @@ content (if supported by the app) relative to the center of the screen.
 Concretely, scrcpy generates additional touch events from a "virtual finger" at
 a location inverted through the center of the screen.
 
+#### Physical keyboard simulation (HID)
+
+By default, scrcpy uses Android key or text injection: it works everywhere, but
+is limited to ASCII.
+
+On Linux, scrcpy can simulate a USB physical keyboard on Android to provide a
+better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
+keyboard is disabled and it works for all characters and IME.
+
+[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
+
+However, it only works if the device is connected by USB, and is currently only
+supported on Linux.
+
+To enable this mode:
+
+```bash
+scrcpy --hid-keyboard
+scrcpy -K  # short version
+```
+
+If it fails for some reason (for example because the device is not connected via
+USB), it automatically fallbacks to the default mode (with a log in the
+console). This allows to use the same command line options when connected over
+USB and TCP/IP.
+
+In this mode, raw key events (scancodes) are sent to the device, independently
+of the host key mapping. Therefore, if your keyboard layout does not match, it
+must be configured on the Android device, in Settings → System → Languages and
+input → [Physical keyboard].
+
+[Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+
 
 #### Text injection preference
 
@@ -692,6 +725,9 @@ scrcpy --prefer-text
 
 (but this will break keyboard behavior in games)
 
+This option has no effect on HID keyboard (all key events are sent as
+scancodes in this mode).
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
@@ -706,6 +742,9 @@ To avoid forwarding repeated key events:
 ```bash
 scrcpy --no-key-repeat
 ```
+
+This option has no effect on HID keyboard (key repeat is handled by Android
+directly in this mode).
 
 
 #### Right-click and middle-click

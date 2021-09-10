@@ -42,6 +42,14 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+aoa_hid_support = host_machine.system() == 'linux'
+if aoa_hid_support
+    src += [
+        'src/aoa_hid.c',
+        'src/hid_keyboard.c',
+    ]
+endif
+
 check_functions = [
     'strdup'
 ]
@@ -62,8 +70,11 @@ if not get_option('crossbuild_windows')
         dependencies += dependency('libavdevice')
     endif
 
-else
+    if aoa_hid_support
+        dependencies += dependency('libusb-1.0')
+    endif
 
+else
     # cross-compile mingw32 build (from Linux to Windows)
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
@@ -139,6 +150,9 @@ conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == '
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable HID over AOA support (linux only)
+conf.set('HAVE_AOA_HID', aoa_hid_support)
 
 configure_file(configuration: conf, output: 'config.h')
 

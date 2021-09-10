@@ -83,6 +83,14 @@ Start in fullscreen.
 Print this help.
 
 .TP
+.B \-K, \-\-hid\-keyboard
+Simulate a physical keyboard by using HID over AOAv2.
+
+This provides a better experience for IME users, and allows to generate non-ASCII characters, contrary to the default injection method.
+
+It may only work over USB, and is currently only supported on Linux.
+
+.TP
 .B \-\-legacy\-paste
 Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
 

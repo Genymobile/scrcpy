@@ -76,6 +76,14 @@ scrcpy_print_usage(const char *arg0) {
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
         "\n"
+        "    -K, --hid-keyboard\n"
+        "        Simulate a physical keyboard by using HID over AOAv2.\n"
+        "        It provides a better experience for IME users, and allows to\n"
+        "        generate non-ASCII characters, contrary to the default\n"
+        "        injection method.\n"
+        "        It may only work over USB, and is currently only supported\n"
+        "        on Linux.\n"
+        "\n"
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
@@ -738,6 +746,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_FORWARD_ALL_CLICKS},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
+        {"hid-keyboard",           no_argument,       NULL, 'K'},
         {"legacy-paste",           no_argument,       NULL, OPT_LEGACY_PASTE},
         {"lock-video-orientation", optional_argument, NULL,
                                                   OPT_LOCK_VIDEO_ORIENTATION},
@@ -784,7 +793,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvV:w",
+    while ((c = getopt_long(argc, argv, "b:c:fF:hKm:nNp:r:s:StTvV:w",
                             long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -816,6 +825,9 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'h':
                 args->help = true;
+                break;
+            case 'K':
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
                 break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
