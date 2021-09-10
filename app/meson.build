@@ -1,6 +1,7 @@
 src = [
     'src/main.c',
     'src/adb.c',
+    'src/aoa_hid.c',
     'src/cli.c',
     'src/clock.c',
     'src/compat.c',
@@ -12,6 +13,7 @@ src = [
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/hid_keyboard.c',
     'src/input_manager.c',
     'src/opengl.c',
     'src/receiver.c',
@@ -54,6 +56,7 @@ if not get_option('crossbuild_windows')
         dependency('libavformat'),
         dependency('libavcodec'),
         dependency('libavutil'),
+        dependency('libusb-1.0'),
         dependency('sdl2'),
     ]
 
@@ -62,7 +65,7 @@ if not get_option('crossbuild_windows')
     endif
 
 else
-
+    # TODO: add libusb dependency for windows.
     # cross-compile mingw32 build (from Linux to Windows)
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'

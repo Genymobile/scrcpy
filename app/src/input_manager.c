@@ -4,6 +4,8 @@
 #include <SDL2/SDL_keycode.h>
 
 #include "event_converter.h"
+#include "aoa_hid.h"
+#include "hid_keyboard.h"
 #include "util/log.h"
 
 static const int ACTION_DOWN = 1;
@@ -53,11 +55,15 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 
 void
 input_manager_init(struct input_manager *im, struct controller *controller,
-                   struct screen *screen,
+                   struct screen *screen, struct aoa *aoa,
+                   struct hid_keyboard *hid_keyboard,
                    const struct scrcpy_options *options) {
     im->controller = controller;
     im->screen = screen;
     im->repeat = 0;
+
+    im->aoa = aoa;
+    im->hid_keyboard = hid_keyboard;
 
     im->control = options->control;
     im->forward_key_repeat = options->forward_key_repeat;
@@ -319,6 +325,11 @@ rotate_client_right(struct screen *screen) {
 static void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
+    // We don't need this if HID over AOAv2 is used.
+    if (im->hid_keyboard) {
+        return;
+    }
+
     if (is_shortcut_mod(im, SDL_GetModState())) {
         // A shortcut must never generate text events
         return;
@@ -394,6 +405,30 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
     to->inject_keycode.metastate = convert_meta_state(mod);
 
     return true;
+}
+
+static void
+input_manager_process_key_inject(struct input_manager *im,
+                                 const SDL_KeyboardEvent *event) {
+    struct controller *controller = im->controller;
+    struct control_msg msg;
+    if (convert_input_key(event, &msg, im->prefer_text, im->repeat)) {
+        if (!controller_push_msg(controller, &msg)) {
+            LOGW("Could not request 'inject keycode'");
+        }
+    }
+}
+
+static void
+input_manager_process_key_hid(struct input_manager *im,
+                              const SDL_KeyboardEvent *event) {
+    struct hid_event hid_event;
+    // Not all keys are supported, just ignore unsupported keys.
+    if (hid_keyboard_convert_event(im->hid_keyboard, &hid_event, event)) {
+        if (!aoa_push_hid_event(im->aoa, &hid_event)) {
+            LOGW("Could request HID event");
+        }
+    }
 }
 
 static void
@@ -541,7 +576,6 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
         }
-
         return;
     }
 
@@ -550,7 +584,9 @@ input_manager_process_key(struct input_manager *im,
     }
 
     if (event->repeat) {
-        if (!im->forward_key_repeat) {
+        // In USB HID protocol, key repeat is handle by host
+        // (Android in this case), so just ignore key repeat here.
+        if (im->hid_keyboard || !im->forward_key_repeat) {
             return;
         }
         ++im->repeat;
@@ -558,6 +594,7 @@ input_manager_process_key(struct input_manager *im,
         im->repeat = 0;
     }
 
+    // FIXME: Seems not work properly on Samsung Galaxy S9+?
     if (ctrl && !shift && keycode == SDLK_v && down && !repeat) {
         if (im->legacy_paste) {
             // inject the text as input events
@@ -569,11 +606,10 @@ input_manager_process_key(struct input_manager *im,
         set_device_clipboard(controller, false);
     }
 
-    struct control_msg msg;
-    if (convert_input_key(event, &msg, im->prefer_text, im->repeat)) {
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'inject keycode'");
-        }
+    if (im->hid_keyboard) {
+        input_manager_process_key_hid(im, event);
+    } else {
+        input_manager_process_key_inject(im, event);
     }
 }
 

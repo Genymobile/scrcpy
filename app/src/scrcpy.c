@@ -17,6 +17,7 @@
 #include "decoder.h"
 #include "events.h"
 #include "file_handler.h"
+#include "hid_keyboard.h"
 #include "input_manager.h"
 #include "recorder.h"
 #include "screen.h"
@@ -40,6 +41,8 @@ struct scrcpy {
 #endif
     struct controller controller;
     struct file_handler file_handler;
+    struct hid_keyboard hid_keyboard;
+    struct aoa aoa;
     struct input_manager input_manager;
 };
 
@@ -257,8 +260,11 @@ scrcpy(const struct scrcpy_options *options) {
     bool v4l2_sink_initialized = false;
 #endif
     bool stream_started = false;
+    bool hid_keyboard_initialized = false;
     bool controller_initialized = false;
     bool controller_started = false;
+    bool aoa_initialized = false;
+    bool aoa_thread_started = false;
     bool screen_initialized = false;
 
     bool record = !!options->record_filename;
@@ -412,7 +418,46 @@ scrcpy(const struct scrcpy_options *options) {
     }
     stream_started = true;
 
-    input_manager_init(&s->input_manager, &s->controller, &s->screen, options);
+    // We don't need HID over AOAv2 support if no control.
+    if (options->control) {
+        if (options->input_mode == SC_INPUT_MODE_INJECT) {
+            LOGD("Starting in inject mode because of --input-mode=inject");
+        } else {
+            LOGD("Starting in HID over AOAv2 mode");
+            aoa_initialized = aoa_init(&s->aoa, options);
+            if (aoa_initialized) {
+                hid_keyboard_initialized = hid_keyboard_init(&s->hid_keyboard,
+                    &s->aoa);
+            }
+            // Init HID keyboard before starting thread, this is thread safe.
+            if (hid_keyboard_initialized) {
+                aoa_thread_started = aoa_thread_start(&s->aoa);
+            }
+            if (aoa_thread_started) {
+                LOGD("Successfully set up HID over AOAv2 mode");
+            } else {
+                LOGW("Failed to set up HID over AOAv2 mode");
+                if (options->input_mode == SC_INPUT_MODE_HID) {
+                    // HID is specified explicitly, and will exit if failed.
+                    LOGE("Remove --input-mode=hid from parameters to allow input mode fallback");
+                    goto end;
+                }
+                LOGW("Fallback to inject mode");
+                if (hid_keyboard_initialized) {
+                    hid_keyboard_destroy(&s->hid_keyboard);
+                    hid_keyboard_initialized = false;
+                }
+                if (aoa_initialized) {
+                    aoa_destroy(&s->aoa);
+                    aoa_initialized = false;
+                }
+            }
+        }
+    }
+
+    input_manager_init(&s->input_manager, &s->controller, &s->screen,
+        aoa_thread_started ? &s->aoa : NULL,
+        hid_keyboard_initialized ? &s->hid_keyboard : NULL, options);
 
     ret = event_loop(s, options);
     LOGD("quit...");
@@ -422,6 +467,16 @@ scrcpy(const struct scrcpy_options *options) {
     screen_hide_window(&s->screen);
 
 end:
+    if (aoa_thread_started) {
+        aoa_thread_stop(&s->aoa);
+    }
+    if (hid_keyboard_initialized) {
+        hid_keyboard_destroy(&s->hid_keyboard);
+    }
+    if (aoa_initialized) {
+        aoa_destroy(&s->aoa);
+    }
+
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
     if (controller_started) {

@@ -44,6 +44,12 @@ enum sc_shortcut_mod {
     SC_MOD_RSUPER = 1 << 5,
 };
 
+enum sc_input_mode {
+    SC_INPUT_MODE_AUTO,
+    SC_INPUT_MODE_HID,
+    SC_INPUT_MODE_INJECT
+};
+
 struct sc_shortcut_mods {
     unsigned data[SC_MAX_SHORTCUT_MODS];
     unsigned count;
@@ -68,6 +74,7 @@ struct scrcpy_options {
     const char *v4l2_device;
     enum sc_log_level log_level;
     enum sc_record_format record_format;
+    enum sc_input_mode input_mode;
     struct sc_port_range port_range;
     struct sc_shortcut_mods shortcut_mods;
     uint16_t max_size;
@@ -112,6 +119,7 @@ struct scrcpy_options {
     .v4l2_device = NULL, \
     .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = SC_RECORD_FORMAT_AUTO, \
+    .input_mode = SC_INPUT_MODE_AUTO, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \

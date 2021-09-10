@@ -207,7 +207,6 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 
 If `--max-size` is also specified, resizing is applied after cropping.
 
-
 #### Lock video orientation
 
 

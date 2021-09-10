@@ -79,6 +79,17 @@ scrcpy_print_usage(const char *arg0) {
         "    -h, --help\n"
         "        Print this help.\n"
         "\n"
+        "    -i, --input-mode mode\n"
+        "        Select input mode for keyboard events.\n"
+        "        Possible values are \"auto\", \"hid\" and \"inject\".\n"
+        "        \"auto\" is default if not specified, which attemps \"hid\"\n"
+        "        first and will fallback to \"inject\" if failed.\n"
+        "        \"hid\" uses Android's USB HID over AOAv2 feature to\n"
+        "        simulate physical keyboard's events, which provides better\n"
+        "        experience for IME users if supported by you device.\n"
+        "        \"inject\" is the legacy scrcpy way by injecting keycode\n"
+        "        events on Android, works on most devices.\n"
+        "\n"
         "    --legacy-paste\n"
         "        Inject computer clipboard text as a sequence of key events\n"
         "        on Ctrl+v (like MOD+Shift+v).\n"
@@ -673,6 +684,23 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
     return false;
 }
 
+static bool
+parse_input_mode(const char *optarg, enum sc_input_mode *input_mode) {
+    if (!strcmp(optarg, "auto")) {
+        *input_mode = SC_INPUT_MODE_AUTO;
+        return true;
+    } else if (!strcmp(optarg, "hid")) {
+        *input_mode = SC_INPUT_MODE_HID;
+        return true;
+    } else if (!strcmp(optarg, "inject")) {
+        *input_mode = SC_INPUT_MODE_INJECT;
+        return true;
+    }
+    LOGE("Unsupported input mode: %s (expected auto, hid or inject)", optarg);
+    return false;
+}
+
+
 static enum sc_record_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
@@ -738,6 +766,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                                   OPT_FORWARD_ALL_CLICKS},
         {"fullscreen",             no_argument,       NULL, 'f'},
         {"help",                   no_argument,       NULL, 'h'},
+        {"input-mode",             required_argument, NULL, 'i'},
         {"legacy-paste",           no_argument,       NULL, OPT_LEGACY_PASTE},
         {"lock-video-orientation", optional_argument, NULL,
                                                   OPT_LOCK_VIDEO_ORIENTATION},
@@ -784,7 +813,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hm:nNp:r:s:StTvV:w",
+    while ((c = getopt_long(argc, argv, "b:c:fF:hi:m:nNp:r:s:StTvV:w",
                             long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -816,6 +845,11 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                 break;
             case 'h':
                 args->help = true;
+                break;
+            case 'i':
+                if (!parse_input_mode(optarg, &opts->input_mode)) {
+                    return false;
+                }
                 break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
