@@ -11,6 +11,7 @@ public class StatusBarManager {
 
     private final IInterface manager;
     private Method expandNotificationsPanelMethod;
+    private boolean expandNotificationPanelMethodCustomVersion;
     private Method expandSettingsPanelMethod;
     private boolean expandSettingsPanelMethodNewVersion = true;
     private Method collapsePanelsMethod;
@@ -21,7 +22,13 @@ public class StatusBarManager {
 
     private Method getExpandNotificationsPanelMethod() throws NoSuchMethodException {
         if (expandNotificationsPanelMethod == null) {
-            expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
+            try {
+                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
+            } catch (NoSuchMethodException e) {
+                // Custom version for custom vendor ROM: <https://github.com/Genymobile/scrcpy/issues/2551>
+                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel", int.class);
+                expandNotificationPanelMethodCustomVersion = true;
+            }
         }
         return expandNotificationsPanelMethod;
     }
@@ -50,7 +57,11 @@ public class StatusBarManager {
     public void expandNotificationsPanel() {
         try {
             Method method = getExpandNotificationsPanelMethod();
-            method.invoke(manager);
+            if (expandNotificationPanelMethodCustomVersion) {
+                method.invoke(manager, 0);
+            } else {
+                method.invoke(manager);
+            }
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
         }
