@@ -324,7 +324,9 @@ For example, you could capture the video within [OBS].
 #### Buffering
 
 It is possible to add buffering. This increases latency but reduces jitter (see
-#2464).
+[#2464]).
+
+[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
 
 The option is available for display buffering:
 
