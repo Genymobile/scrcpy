@@ -3,11 +3,14 @@
 	prepare-ffmpeg-dev-win32 \
 	prepare-ffmpeg-shared-win64 \
 	prepare-ffmpeg-dev-win64 \
+	prepare-libusb \
 	prepare-sdl2 \
 	prepare-adb
 
-prepare-win32: prepare-sdl2 prepare-ffmpeg-shared-win32 prepare-ffmpeg-dev-win32 prepare-adb
-prepare-win64: prepare-sdl2 prepare-ffmpeg-shared-win64 prepare-ffmpeg-dev-win64 prepare-adb
+LIBUSB_DIR := libusb-1.0.24
+
+prepare-win32: prepare-sdl2 prepare-ffmpeg-shared-win32 prepare-ffmpeg-dev-win32 prepare-libusb prepare-adb
+prepare-win64: prepare-sdl2 prepare-ffmpeg-shared-win64 prepare-ffmpeg-dev-win64 prepare-libusb prepare-adb
 
 prepare-ffmpeg-shared-win32:
 	@./prepare-dep https://github.com/Genymobile/scrcpy/releases/download/v1.16/ffmpeg-4.3.1-win32-shared.zip \
@@ -28,6 +31,17 @@ prepare-ffmpeg-dev-win64:
 	@./prepare-dep https://github.com/Genymobile/scrcpy/releases/download/v1.16/ffmpeg-4.3.1-win64-dev.zip \
 		2e8038242cf8e1bd095c2978f196ff0462b122cc6ef7e74626a6af15459d8b81 \
 		ffmpeg-4.3.1-win64-dev
+
+prepare-libusb:
+	# libusb put all things under the root of 7z file, so we pass the last
+	# argument which means creating extract dir manually.
+	@./prepare-dep https://github.com/libusb/libusb/releases/download/v1.0.24/libusb-1.0.24.7z \
+		620cec4dbe4868202949294157da5adb75c9fbb4f04266146fc833eef85f90fb \
+		"$(LIBUSB_DIR)" \
+		1
+	# Our code expects include dir under architechture dir.
+	cp -a "$(LIBUSB_DIR)"/include "$(LIBUSB_DIR)"/MinGW32
+	cp -a "$(LIBUSB_DIR)"/include "$(LIBUSB_DIR)"/MinGW64
 
 prepare-sdl2:
 	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.16-mingw.tar.gz \

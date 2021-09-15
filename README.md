@@ -207,6 +207,24 @@ scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
 
 If `--max-size` is also specified, resizing is applied after cropping.
 
+#### USB HID over AOAv2
+
+Scrcpy can simulate a USB physical keyboard on Android to provide better input
+experience, you need to connect your device via USB, not wireless.
+
+However, due to some limitation of libusb and WinUSB driver, you cannot use HID
+over AOAv2 on Windows.
+
+Currently a USB serial number is needed to use HID over AOAv2.
+
+```bash
+scrcpy --serial XXXXXXXXXXXXXXXX # try HID first and fallback to inject
+scrcpy --serial XXXXXXXXXXXXXXXX --input-mode hid # try HID and exit if failed
+scrcpy --serial XXXXXXXXXXXXXXXX --input-mode inject # don't use HID
+```
+
+Serial number can be found by `adb get-serialno`.
+
 #### Lock video orientation
 
 

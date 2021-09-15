@@ -1,6 +1,7 @@
 #include "util/log.h"
 
 #include <assert.h>
+#include <stdio.h>
 
 #include "aoa_hid.h"
 
@@ -108,6 +109,7 @@ aoa_open_usb_handle(libusb_device *device, libusb_device_handle **handle) {
 }
 
 bool aoa_init(struct aoa *aoa, const struct scrcpy_options *options) {
+    aoa->usb_context = NULL;
     aoa->usb_device = NULL;
     aoa->usb_handle = NULL;
     aoa->next_accessories_id = 0;
@@ -123,7 +125,7 @@ bool aoa_init(struct aoa *aoa, const struct scrcpy_options *options) {
         return false;
     }
 
-    libusb_init(NULL);
+    libusb_init(&aoa->usb_context);
 
     aoa->usb_device = aoa_find_usb_device(options->serial);
     if (!aoa->usb_device) {
@@ -313,6 +315,7 @@ void aoa_thread_join(struct aoa *aoa) {
 void aoa_destroy(struct aoa *aoa) {
     libusb_close(aoa->usb_handle);
     libusb_unref_device(aoa->usb_device);
+    libusb_exit(aoa->usb_context);
     sc_cond_destroy(&aoa->event_cond);
     sc_mutex_destroy(&aoa->mutex);
 }

@@ -25,6 +25,7 @@ struct hid_event {
 struct hid_event_queue CBUF(struct hid_event, 64);
 
 struct aoa {
+    libusb_context *usb_context;
     libusb_device *usb_device;
     libusb_device_handle *usb_handle;
     sc_thread thread;

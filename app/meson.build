@@ -65,7 +65,7 @@ if not get_option('crossbuild_windows')
     endif
 
 else
-    # TODO: add libusb dependency for windows.
+
     # cross-compile mingw32 build (from Linux to Windows)
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
@@ -93,8 +93,20 @@ else
         include_directories: include_directories(ffmpeg_include_dir)
     )
 
+    prebuilt_libusb = meson.get_cross_property('prebuilt_libusb')
+    libusb_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_libusb + '/dll'
+    libusb_include_dir = '../prebuilt-deps/' + prebuilt_libusb + '/include'
+
+    libusb = declare_dependency(
+        dependencies: [
+            cc.find_library('libusb-1.0', dirs: libusb_bin_dir),
+        ],
+        include_directories: include_directories(libusb_include_dir)
+    )
+
     dependencies = [
         ffmpeg,
+        libusb,
         sdl2,
         cc.find_library('mingw32')
     ]

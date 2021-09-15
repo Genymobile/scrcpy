@@ -3,6 +3,7 @@ set -e
 url="$1"
 sum="$2"
 dir="$3"
+create_extract_dir="$4"
 
 checksum() {
     local file="$1"
@@ -27,13 +28,32 @@ get_file() {
 
 extract() {
     local file="$1"
+    local create_extract_dir="$2"
     echo "Extracting $file..."
     if [[ "$file" == *.zip ]]
     then
-        unzip -q "$file"
+        if [[ -n "$create_extract_dir" ]]
+        then
+            unzip -q "$file" -d "$dir"
+        else
+            unzip -q "$file"
+        fi
     elif [[ "$file" == *.tar.gz ]]
     then
-        tar xf "$file"
+        if [[ -n "$create_extract_dir" ]]
+        then
+            tar xf "$file" --one-top-level="$dir"
+        else
+            tar xf "$file"
+        fi
+    elif [[ "$file" == *.7z ]]
+    then
+        if [[ -n "$create_extract_dir" ]]
+        then
+            7z x "$file" -o"$dir"
+        else
+            7z x "$file"
+        fi
     else
         echo "Unsupported file: $file"
         return 1
@@ -44,6 +64,7 @@ get_dep() {
     local url="$1"
     local sum="$2"
     local dir="$3"
+    local create_extract_dir="$4"
     local file="${url##*/}"
     if [[ -d "$dir" ]]
     then
@@ -51,8 +72,8 @@ get_dep() {
     else
         echo "$dir: not found"
         get_file "$url" "$file" "$sum"
-        extract "$file"
+        extract "$file" "$create_extract_dir"
     fi
 }
 
-get_dep "$url" "$sum" "$dir"
+get_dep "$url" "$sum" "$dir" "$create_extract_dir"
