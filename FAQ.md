@@ -258,6 +258,6 @@ to add some arguments.
 
 This FAQ is available in other languages:
 
- - [Italiano (Italiano, `it`) - v1.17](FAQ.it.md)
+ - [Italiano (Italiano, `it`) - v1.19](FAQ.it.md)
  - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
  - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.18](FAQ.zh-Hans.md)
