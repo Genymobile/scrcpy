@@ -1,5 +1,6 @@
 #include "decoder.h"
 
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
 #include "events.h"
