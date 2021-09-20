@@ -1,6 +1,6 @@
 _Apri il [README](README.md) originale e sempre aggiornato._
 
-# scrcpy (v1.17)
+# scrcpy (v1.19)
 
 Questa applicazione fornisce la visualizzazione e il controllo dei dispositivi Android collegati via USB (o [via TCP/IP][article-tcpip]). Non richiede alcun accesso _root_.
 Funziona su _GNU/Linux_, _Windows_ e _macOS_.
@@ -205,10 +205,11 @@ Se anche `--max-size` è specificata, il ridimensionamento è applicato dopo il 
 Per bloccare l'orientamento della trasmissione:
 
 ```bash
-scrcpy --lock-video-orientation 0   # orientamento naturale
-scrcpy --lock-video-orientation 1   # 90° antiorario
-scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° orario
+scrcpy --lock-video-orientation     # orientamento iniziale (corrente)
+scrcpy --lock-video-orientation=0   # orientamento naturale
+scrcpy --lock-video-orientation=1   # 90° antiorario
+scrcpy --lock-video-orientation=2   # 180°
+scrcpy --lock-video-orientation=3   # 90° orario
 ```
 
 Questo influisce sull'orientamento della registrazione.
@@ -231,7 +232,9 @@ Per elencare i codificatori disponibili puoi immettere un nome di codificatore n
 scrcpy --encoder _
 ```
 
-### Registrazione
+### Cattura
+
+#### Registrazione
 
 È possibile registrare lo schermo durante la trasmissione:
 
@@ -251,6 +254,75 @@ scrcpy -Nr file.mkv
 I "fotogrammi saltati" sono registrati nonostante non siano mostrati in tempo reale (per motivi di prestazioni). I fotogrammi sono _datati_ sul dispositivo, così una [variazione di latenza dei pacchetti][packet delay variation] non impatta il file registrato.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+
+
+#### v4l2loopback
+
+Su Linux è possibile inviare il flusso video ad un dispositivo v4l2 loopback, cosicchè un dispositivo Android possa essere aperto come una webcam da qualsiasi strumento compatibile con v4l2.
+
+Il modulo `v4l2loopback` deve essere installato:
+
+```bash
+sudo apt install v4l2loopback-dkms
+```
+
+Per creare un dispositvo v4l2:
+
+```bash
+sudo modprobe v4l2loopback
+```
+
+Questo creerà un nuovo dispositivo video in `/dev/videoN` dove `N` è un intero (più [opzioni](https://github.com/umlaeute/v4l2loopback#options) sono disponibili per crere più dispositivi o dispositivi con ID specifici).
+
+Per elencare i dispositvi attivati:
+
+```bash
+# necessita del pacchetto v4l-utils
+v4l2-ctl --list-devices
+
+# semplice ma potrebbe essere sufficiente
+ls /dev/video*
+```
+
+Per avviare scrcpy utilizzando un v4l2 sink:
+
+```bash
+scrcpy --v4l2-sink=/dev/videoN
+scrcpy --v4l2-sink=/dev/videoN --no-display  # disabilita la finestra di trasmissione
+scrcpy --v4l2-sink=/dev/videoN -N            # versione corta
+```
+
+(sostituisci `N` con l'ID del dispositivo, controlla con `ls /dev/video*`)
+
+Una volta abilitato, puoi aprire il tuo flusso video con uno strumento compatibile con v4l2:
+
+```bash
+ffplay -i /dev/videoN
+vlc v4l2:///dev/videoN   # VLC potrebbe aggiungere del ritardo per il buffer
+```
+
+Per esempio potresti catturare il video in [OBS].
+
+[OBS]: https://obsproject.com/
+
+
+#### Buffering
+
+È possibile aggiungere del buffer. Questo aumenta la latenza ma riduce il jitter (vedi [#2464]).
+
+[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+
+L'opzione è disponibile per il buffer della visualizzazione:
+
+```bash
+scrcpy --display-buffer=50  # aggiungi 50 ms di buffer per la visualizzazione
+```
+
+e per il V4L2 sink:
+
+```bash
+scrcpy --v4l2-buffer=500    #  aggiungi 50 ms di buffer per il v4l2 sink
+```
 
 
 ### Connessione
@@ -479,15 +551,6 @@ scrcpy --turn-screen-off --stay-awake
 scrcpy -Sw
 ```
 
-#### Renderizzare i fotogrammi scaduti
-
-Per minimizzare la latenza _scrcpy_ renderizza sempre l'ultimo fotogramma decodificato disponibile in maniera predefinita e tralascia quelli precedenti.
-
-Per forzare la renderizzazione di tutti i fotogrammi (a costo di una possibile latenza superiore), utilizzare:
-
-```bash
-scrcpy --render-expired-frames
-```
 
 #### Mostrare i tocchi
 
@@ -607,14 +670,14 @@ Non c'è alcuna risposta visiva, un log è stampato nella console.
 
 #### Trasferimento di file verso il dispositivo
 
-Per trasferire un file in `/sdcard/` del dispositivo trascina e rilascia un file (non APK) nella finestra di _scrcpy_.
+Per trasferire un file in `/sdcard/Download` del dispositivo trascina e rilascia un file (non APK) nella finestra di _scrcpy_.
 
 Non c'è alcuna risposta visiva, un log è stampato nella console.
 
 La cartella di destinazione può essere cambiata all'avvio:
 
 ```bash
-scrcpy --push-target=/sdcard/Download/
+scrcpy --push-target=/sdcard/Movies/
 ```
 
 
@@ -653,10 +716,10 @@ _<kbd>[Super]</kbd> è il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
  | Rotazione schermo a sinistra                         | <kbd>MOD</kbd>+<kbd>←</kbd> _(sinistra)_
  | Rotazione schermo a destra                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(destra)_
  | Ridimensiona finestra a 1:1 (pixel-perfect)        | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Ridimensiona la finestra per rimuovere i bordi neri       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doppio click¹_
+ | Ridimensiona la finestra per rimuovere i bordi neri       | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doppio click sinistro¹_
  | Premi il tasto `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Click centrale_
  | Premi il tasto `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Click destro²_
- | Premi il tasto `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | Premi il tasto `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _4° click³_
  | Premi il tasto `MENU` (sblocca lo schermo)             | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Premi il tasto `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(su)_
  | Premi il tasto `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(giù)_
@@ -665,18 +728,26 @@ _<kbd>[Super]</kbd> è il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
  | Spegni lo schermo del dispositivo (continua a trasmettere)     | <kbd>MOD</kbd>+<kbd>o</kbd>
  | Accendi lo schermo del dispositivo                       | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
  | Ruota lo schermo del dispositivo                        | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Espandi il pannello delle notifiche                   | <kbd>MOD</kbd>+<kbd>n</kbd>
- | Chiudi il pannello delle notifiche                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copia negli appunti³                          | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Taglia negli appunti³                           | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Sincronizza gli appunti e incolla³           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Espandi il pannello delle notifiche                   | <kbd>MOD</kbd>+<kbd>n</kbd> \| _5° click³_
+ | Espandi il pannello delle impostazioni                   | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Doppio 5° click³_
+ | Chiudi pannelli                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copia negli appunti⁴                          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Taglia negli appunti⁴                           | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Sincronizza gli appunti e incolla⁴           | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Inietta il testo degli appunti del computer              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Abilita/Disabilita il contatore FPS (su stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pizzica per zoomare                               | <kbd>Ctrl</kbd>+_click e trascina_
 
 _¹Doppio click sui bordi neri per rimuoverli._  
 _²Il tasto destro accende lo schermo se era spento, preme BACK in caso contrario._  
-_³Solo in Android >= 7._
+_³4° e 5° pulsante del mouse, se il tuo mouse ne dispone._  
+_⁴Solo in Android >= 7._
+
+Le scorciatoie con pulsanti ripetuti sono eseguite rilasciando e premendo il pulsante una seconda volta. Per esempio, per eseguire "Espandi il pannello delle impostazioni":
+
+1. Premi e tieni premuto <kbd>MOD</kbd>.
+2. Poi premi due volte <kbd>n</kbd>.
+3. Infine rilascia <kbd>MOD</kbd>.
 
 Tutte le scorciatoie <kbd>Ctrl</kbd>+_tasto_ sono inoltrate al dispositivo, così sono gestite dall'applicazione attiva.
 
