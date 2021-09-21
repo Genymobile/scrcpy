@@ -31,7 +31,4 @@ adb_push(const char *serial, const char *local, const char *remote);
 process_t
 adb_install(const char *serial, const char *local);
 
-process_t
-adb_get_serialno(const char *serial);
-
 #endif

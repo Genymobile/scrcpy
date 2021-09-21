@@ -224,10 +224,3 @@ adb_install(const char *serial, const char *local) {
 
     return proc;
 }
-
-process_t
-adb_get_serialno(const char *serial) {
-    const char *const adb_cmd[] = {"get-serialno"};
-    process_t proc = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
-    return proc;
-}
