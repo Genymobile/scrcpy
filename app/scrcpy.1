@@ -86,13 +86,11 @@ Print this help.
 .B \-i, \-\-input\-mode mode
 Select input mode for keyboard events.
 
-Possible values are "auto", "hid" and "inject".
-
-"auto" is default if not specified, which attemps "hid" first and will fallback to "inject" if failed.
+Possible values are "hid" and "inject".
 
 "hid" uses Android's USB HID over AOAv2 feature to simulate physical keyboard's events, which provides better experience for IME users if supported by you device.
 
-"inject" is the legacy scrcpy way by injecting keycode events on Android, works on most devices.
+"inject" is the legacy scrcpy way by injecting keycode events on Android, works on most devices and is the default.
 
 .TP
 .B \-\-legacy\-paste

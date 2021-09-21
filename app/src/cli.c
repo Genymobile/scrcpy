@@ -81,14 +81,12 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    -i, --input-mode mode\n"
         "        Select input mode for keyboard events.\n"
-        "        Possible values are \"auto\", \"hid\" and \"inject\".\n"
-        "        \"auto\" is default if not specified, which attemps \"hid\"\n"
-        "        first and will fallback to \"inject\" if failed.\n"
+        "        Possible values are \"hid\" and \"inject\".\n"
         "        \"hid\" uses Android's USB HID over AOAv2 feature to\n"
         "        simulate physical keyboard's events, which provides better\n"
         "        experience for IME users if supported by you device.\n"
         "        \"inject\" is the legacy scrcpy way by injecting keycode\n"
-        "        events on Android, works on most devices.\n"
+        "        events on Android, works on most devices and is the default.\n"
         "\n"
         "    --legacy-paste\n"
         "        Inject computer clipboard text as a sequence of key events\n"
@@ -686,17 +684,14 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
 
 static bool
 parse_input_mode(const char *optarg, enum sc_input_mode *input_mode) {
-    if (!strcmp(optarg, "auto")) {
-        *input_mode = SC_INPUT_MODE_AUTO;
-        return true;
-    } else if (!strcmp(optarg, "hid")) {
+    if (!strcmp(optarg, "hid")) {
         *input_mode = SC_INPUT_MODE_HID;
         return true;
     } else if (!strcmp(optarg, "inject")) {
         *input_mode = SC_INPUT_MODE_INJECT;
         return true;
     }
-    LOGE("Unsupported input mode: %s (expected auto, hid or inject)", optarg);
+    LOGE("Unsupported input mode: %s (expected hid or inject)", optarg);
     return false;
 }
 

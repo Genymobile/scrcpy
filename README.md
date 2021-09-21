@@ -218,9 +218,9 @@ over AOAv2 on Windows.
 Currently a USB serial number is needed to use HID over AOAv2.
 
 ```bash
-scrcpy --serial XXXXXXXXXXXXXXXX # try HID first and fallback to inject
-scrcpy --serial XXXXXXXXXXXXXXXX --input-mode hid # try HID and exit if failed
+scrcpy --serial XXXXXXXXXXXXXXXX # don't use HID
 scrcpy --serial XXXXXXXXXXXXXXXX --input-mode inject # don't use HID
+scrcpy --serial XXXXXXXXXXXXXXXX --input-mode hid # try HID and exit if failed
 ```
 
 Serial number can be found by `adb get-serialno`.

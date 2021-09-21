@@ -45,7 +45,6 @@ enum sc_shortcut_mod {
 };
 
 enum sc_input_mode {
-    SC_INPUT_MODE_AUTO,
     SC_INPUT_MODE_HID,
     SC_INPUT_MODE_INJECT
 };
@@ -119,7 +118,7 @@ struct scrcpy_options {
     .v4l2_device = NULL, \
     .log_level = SC_LOG_LEVEL_INFO, \
     .record_format = SC_RECORD_FORMAT_AUTO, \
-    .input_mode = SC_INPUT_MODE_AUTO, \
+    .input_mode = SC_INPUT_MODE_INJECT, \
     .port_range = { \
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \

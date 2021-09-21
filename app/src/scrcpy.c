@@ -420,10 +420,8 @@ scrcpy(const struct scrcpy_options *options) {
 
     // We don't need HID over AOAv2 support if no control.
     if (options->control) {
-        if (options->input_mode == SC_INPUT_MODE_INJECT) {
-            LOGD("Starting in inject mode because of --input-mode=inject");
-        } else {
-            LOGD("Starting in HID over AOAv2 mode");
+        if (options->input_mode == SC_INPUT_MODE_HID) {
+            LOGD("Starting in HID over AOAv2 mode because of --input-mode=hid");
             aoa_initialized = aoa_init(&s->aoa, options);
             if (aoa_initialized) {
                 hid_keyboard_initialized = hid_keyboard_init(&s->hid_keyboard,
@@ -437,21 +435,10 @@ scrcpy(const struct scrcpy_options *options) {
                 LOGD("Successfully set up HID over AOAv2 mode");
             } else {
                 LOGW("Failed to set up HID over AOAv2 mode");
-                if (options->input_mode == SC_INPUT_MODE_HID) {
-                    // HID is specified explicitly, and will exit if failed.
-                    LOGE("Remove --input-mode=hid from parameters to allow input mode fallback");
-                    goto end;
-                }
-                LOGW("Fallback to inject mode");
-                if (hid_keyboard_initialized) {
-                    hid_keyboard_destroy(&s->hid_keyboard);
-                    hid_keyboard_initialized = false;
-                }
-                if (aoa_initialized) {
-                    aoa_destroy(&s->aoa);
-                    aoa_initialized = false;
-                }
+                goto end;
             }
+        } else {
+            LOGD("Starting in inject mode");
         }
     }
 
