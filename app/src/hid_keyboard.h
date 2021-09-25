@@ -32,22 +32,6 @@
 #define HID_KEYBOARD_REPORT_ID 0x01
 #define HID_KEYBOARD_RESERVED 0x00
 #define HID_KEYBOARD_ERROR_ROLL_OVER 0x01
-#define HID_MEDIA_EVENT_SIZE 2
-#define HID_MEDIA_REPORT_ID 0x02
-#define HID_MEDIA_KEY_INDEX (HID_REPORT_ID_INDEX + 1)
-/**
- * Media keys handle as mask so we define them here.
- * Currently not used because desktop environment catches them before window.
- */
-#define HID_MEDIA_KEY_UNDEFINED 0x00
-#define HID_MEDIA_KEY_NEXT (1 << 0)
-#define HID_MEDIA_KEY_PREVIOUS (1 << 1)
-#define HID_MEDIA_KEY_STOP (1 << 2)
-#define HID_MEDIA_KEY_EJECT (1 << 3)
-#define HID_MEDIA_KEY_PLAY_PAUSE (1 << 4)
-#define HID_MEDIA_KEY_MUTE (1 << 5)
-#define HID_MEDIA_KEY_VOLUME_UP (1 << 6)
-#define HID_MEDIA_KEY_VOLUME_DOWN (1 << 7)
 
 // See "SDL2/SDL_scancode.h".
 // Maybe SDL_Keycode is used by most people,

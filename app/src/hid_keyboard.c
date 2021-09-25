@@ -34,7 +34,7 @@ unsigned char kb_report_desc_buffer[]  = {
     // Collection (Application)
     0xA1, 0x01,
     // Report ID (1)
-    0x85, 0x01,
+    0x85, HID_KEYBOARD_REPORT_ID,
 
     // Usage Page (Key Codes)
     0x05, 0x07,
@@ -98,48 +98,6 @@ unsigned char kb_report_desc_buffer[]  = {
     0x81, 0x00,
 
     // End Collection
-    0xC0,
-
-    // Usage Page (Consumer)
-    0x05, 0x0C,
-    // Usage (Consumer Control)
-    0x09, 0x01,
-
-    // Collection (Application)
-    0xA1, 0x01,
-    // Report ID (2)
-    0x85, 0x02,
-
-    // Usage Page (Consumer)
-    0x05, 0x0C,
-    // Usage (Scan Next Track)
-    0x09, 0xB5,
-    // Usage (Scan Previous Track)
-    0x09, 0xB6,
-    // Usage (Stop)
-    0x09, 0xB7,
-    // Usage (Eject)
-    0x09, 0xB8,
-    // Usage (Play/Pause)
-    0x09, 0xCD,
-    // Usage (Mute)
-    0x09, 0xE2,
-    // Usage (Volume Increment)
-    0x09, 0xE9,
-    // Usage (Volume Decrement)
-    0x09, 0xEA,
-    // Logical Minimum (0)
-    0x15, 0x00,
-    // Logical Maximum (1)
-    0x25, 0x01,
-    // Report Size (1)
-    0x75, 0x01,
-    // Report Count (8)
-    0x95, 0x08,
-    // Input (Data, Array)
-    0x81, 0x02,
-
-    // End Collection
     0xC0
 };
 
@@ -153,16 +111,6 @@ static unsigned char *create_hid_keyboard_event(void) {
     buffer[2] = HID_KEYBOARD_RESERVED;
     memset(buffer + HID_KEYBOARD_MODIFIER_INDEX + 2,
         HID_KEYBOARD_RESERVED, HID_KEYBOARD_MAX_KEYS);
-    return buffer;
-}
-
-static unsigned char *create_hid_media_event(void) {
-    unsigned char *buffer = malloc(sizeof(*buffer) * HID_MEDIA_EVENT_SIZE);
-    if (!buffer) {
-        return NULL;
-    }
-    buffer[0] = HID_MEDIA_REPORT_ID;
-    buffer[1] = HID_MEDIA_KEY_UNDEFINED;
     return buffer;
 }
 
@@ -268,56 +216,6 @@ convert_hid_keyboard_event(struct hid_keyboard *kb, struct hid_event *hid_event,
     return true;
 }
 
-inline static bool
-convert_hid_media_event(struct hid_event *hid_event,
-    const SDL_KeyboardEvent *event) {
-    // Re-calculate pressed keys every time.
-    unsigned char media_key = HID_MEDIA_KEY_UNDEFINED;
-
-    SDL_Scancode scancode = event->keysym.scancode;
-    if (scancode == SDL_SCANCODE_AUDIONEXT) {
-        media_key |= HID_MEDIA_KEY_NEXT;
-    }
-    if (scancode == SDL_SCANCODE_AUDIOPREV) {
-        media_key |= HID_MEDIA_KEY_PREVIOUS;
-    }
-    if (scancode == SDL_SCANCODE_AUDIOSTOP) {
-        media_key |= HID_MEDIA_KEY_STOP;
-    }
-    if (scancode == SDL_SCANCODE_EJECT) {
-        media_key |= HID_MEDIA_KEY_EJECT;
-    }
-    if (scancode == SDL_SCANCODE_AUDIOPLAY) {
-        media_key |= HID_MEDIA_KEY_PLAY_PAUSE;
-    }
-    if (scancode == SDL_SCANCODE_AUDIOMUTE) {
-        media_key |= HID_MEDIA_KEY_MUTE;
-    }
-    if (scancode == SDL_SCANCODE_AUDIOSTOP) {
-        media_key |= HID_MEDIA_KEY_STOP;
-    }
-    // SDL has no equivalence for HID_MEDIA_KEY_VOLUME_UP and
-    // HID_MEDIA_KEY_VOLUME_DOWN, it does have SDL_SCANCODE_VOLUMEUP and
-    // SDL_SCANCODE_VOLUMEDOWN, but they are under Usage Page (0x07),
-    // which should be a keyboard event.
-
-    // Not all other keys are Usage Page 0x0C,
-    // we return NULL for unsupported keys.
-    if (media_key == HID_MEDIA_KEY_UNDEFINED) {
-        return false;
-    }
-
-    hid_event->buffer = create_hid_media_event();
-    if (!hid_event->buffer) {
-        return false;
-    }
-    hid_event->size = HID_MEDIA_EVENT_SIZE;
-
-    hid_event->buffer[HID_MEDIA_KEY_INDEX] = media_key;
-
-    return true;
-}
-
 bool
 hid_keyboard_convert_event(struct hid_keyboard *kb,
     struct hid_event *hid_event, const SDL_KeyboardEvent *event) {
@@ -337,7 +235,7 @@ hid_keyboard_convert_event(struct hid_keyboard *kb,
         return convert_hid_keyboard_event(kb, hid_event, event);
     } else {
         // Others.
-        return convert_hid_media_event(hid_event, event);
+        return false;
     }
 }
 
