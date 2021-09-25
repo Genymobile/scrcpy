@@ -36,7 +36,7 @@ unsigned char kb_report_desc_buffer[]  = {
     // Report ID (1)
     0x85, 0x01,
 
-    // Usage Page (Keyboard)
+    // Usage Page (Key Codes)
     0x05, 0x07,
     // Usage Minimum (224)
     0x19, 0xE0,
