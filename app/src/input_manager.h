@@ -12,12 +12,14 @@
 #include "scrcpy.h"
 #include "screen.h"
 #include "trait/key_processor.h"
+#include "trait/mouse_processor.h"
 
 struct input_manager {
     struct controller *controller;
     struct screen *screen;
 
     struct sc_key_processor *kp;
+    struct sc_mouse_processor *mp;
 
     bool control;
     bool forward_all_clicks;
@@ -41,6 +43,7 @@ struct input_manager {
 void
 input_manager_init(struct input_manager *im, struct controller *controller,
                    struct screen *screen, struct sc_key_processor *kp,
+                   struct sc_mouse_processor *mp,
                    const struct scrcpy_options *options);
 
 bool
