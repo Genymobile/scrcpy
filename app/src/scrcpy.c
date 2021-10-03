@@ -18,6 +18,7 @@
 #include "events.h"
 #include "file_handler.h"
 #include "input_manager.h"
+#include "keyboard_inject.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
@@ -39,6 +40,7 @@ struct scrcpy {
 #endif
     struct controller controller;
     struct file_handler file_handler;
+    struct sc_keyboard_inject keyboard_inject;
     struct input_manager input_manager;
 };
 
@@ -411,7 +413,15 @@ scrcpy(const struct scrcpy_options *options) {
     }
     stream_started = true;
 
-    input_manager_init(&s->input_manager, &s->controller, &s->screen, options);
+    struct sc_key_processor *kp = NULL;
+
+    if (options->control) {
+        sc_keyboard_inject_init(&s->keyboard_inject, &s->controller, options);
+        kp = &s->keyboard_inject.key_processor;
+    }
+
+    input_manager_init(&s->input_manager, &s->controller, &s->screen, kp,
+                       options);
 
     ret = event_loop(s, options);
     LOGD("quit...");

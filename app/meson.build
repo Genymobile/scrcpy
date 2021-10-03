@@ -14,6 +14,7 @@ src = [
     'src/fps_counter.c',
     'src/frame_buffer.c',
     'src/input_manager.c',
+    'src/keyboard_inject.c',
     'src/opengl.c',
     'src/receiver.c',
     'src/recorder.c',
