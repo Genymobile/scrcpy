@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <SDL2/SDL_keycode.h>
 
-#include "event_converter.h"
 #include "util/log.h"
 
 static const int ACTION_DOWN = 1;
@@ -54,12 +53,15 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 void
 input_manager_init(struct input_manager *im, struct controller *controller,
                    struct screen *screen, struct sc_key_processor *kp,
+                   struct sc_mouse_processor *mp,
                    const struct scrcpy_options *options) {
     assert(!options->control || (kp && kp->ops));
+    assert(!options->control || (mp && mp->ops));
 
     im->controller = controller;
     im->screen = screen;
     im->kp = kp;
+    im->mp = mp;
 
     im->control = options->control;
     im->forward_all_clicks = options->forward_all_clicks;
@@ -524,21 +526,6 @@ input_manager_process_key(struct input_manager *im,
     im->kp->ops->process_key(im->kp, event);
 }
 
-static bool
-convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
-                     struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
-    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point =
-        screen_convert_window_to_frame_coords(screen, from->x, from->y);
-    to->inject_touch_event.pressure = 1.f;
-    to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
-
-    return true;
-}
-
 static void
 input_manager_process_mouse_motion(struct input_manager *im,
                                    const SDL_MouseMotionEvent *event) {
@@ -554,79 +541,22 @@ input_manager_process_mouse_motion(struct input_manager *im,
         // simulated from touch events, so it's a duplicate
         return;
     }
-    struct control_msg msg;
-    if (!convert_mouse_motion(event, im->screen, &msg)) {
-        return;
-    }
 
-    if (!controller_push_msg(im->controller, &msg)) {
-        LOGW("Could not request 'inject mouse motion event'");
-    }
+    im->mp->ops->process_mouse_motion(im->mp, event);
 
     if (im->vfinger_down) {
-        struct point mouse = msg.inject_touch_event.position.point;
+        struct point mouse =
+            screen_convert_window_to_frame_coords(im->screen, event->x,
+                                                  event->y);
         struct point vfinger = inverse_point(mouse, im->screen->frame_size);
         simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
 }
 
-static bool
-convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
-              struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-
-    if (!convert_touch_action(from->type, &to->inject_touch_event.action)) {
-        return false;
-    }
-
-    to->inject_touch_event.pointer_id = from->fingerId;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
-
-    int dw;
-    int dh;
-    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
-
-    // SDL touch event coordinates are normalized in the range [0; 1]
-    int32_t x = from->x * dw;
-    int32_t y = from->y * dh;
-    to->inject_touch_event.position.point =
-        screen_convert_drawable_to_frame_coords(screen, x, y);
-
-    to->inject_touch_event.pressure = from->pressure;
-    to->inject_touch_event.buttons = 0;
-    return true;
-}
-
 static void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
-    struct control_msg msg;
-    if (convert_touch(event, im->screen, &msg)) {
-        if (!controller_push_msg(im->controller, &msg)) {
-            LOGW("Could not request 'inject touch event'");
-        }
-    }
-}
-
-static bool
-convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
-                     struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-
-    if (!convert_mouse_action(from->type, &to->inject_touch_event.action)) {
-        return false;
-    }
-
-    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point =
-        screen_convert_window_to_frame_coords(screen, from->x, from->y);
-    to->inject_touch_event.pressure =
-        from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
-    to->inject_touch_event.buttons =
-        convert_mouse_buttons(SDL_BUTTON(from->button));
-
-    return true;
+    im->mp->ops->process_touch(im->mp, event);
 }
 
 static void
@@ -686,15 +616,7 @@ input_manager_process_mouse_button(struct input_manager *im,
         return;
     }
 
-    struct control_msg msg;
-    if (!convert_mouse_button(event, im->screen, &msg)) {
-        return;
-    }
-
-    if (!controller_push_msg(im->controller, &msg)) {
-        LOGW("Could not request 'inject mouse button event'");
-        return;
-    }
+    im->mp->ops->process_mouse_button(im->mp, event);
 
     // Pinch-to-zoom simulation.
     //
@@ -708,7 +630,9 @@ input_manager_process_mouse_button(struct input_manager *im,
 #define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
     if ((down && !im->vfinger_down && CTRL_PRESSED)
             || (!down && im->vfinger_down)) {
-        struct point mouse = msg.inject_touch_event.position.point;
+        struct point mouse =
+            screen_convert_window_to_frame_coords(im->screen, event->x,
+                                                              event->y);
         struct point vfinger = inverse_point(mouse, im->screen->frame_size);
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
@@ -720,39 +644,10 @@ input_manager_process_mouse_button(struct input_manager *im,
     }
 }
 
-static bool
-convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
-                    struct control_msg *to) {
-
-    // mouse_x and mouse_y are expressed in pixels relative to the window
-    int mouse_x;
-    int mouse_y;
-    SDL_GetMouseState(&mouse_x, &mouse_y);
-
-    struct position position = {
-        .screen_size = screen->frame_size,
-        .point = screen_convert_window_to_frame_coords(screen,
-                                                       mouse_x, mouse_y),
-    };
-
-    to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
-
-    to->inject_scroll_event.position = position;
-    to->inject_scroll_event.hscroll = from->x;
-    to->inject_scroll_event.vscroll = from->y;
-
-    return true;
-}
-
 static void
 input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
-    struct control_msg msg;
-    if (convert_mouse_wheel(event, im->screen, &msg)) {
-        if (!controller_push_msg(im->controller, &msg)) {
-            LOGW("Could not request 'inject mouse wheel event'");
-        }
-    }
+    im->mp->ops->process_mouse_wheel(im->mp, event);
 }
 
 bool
