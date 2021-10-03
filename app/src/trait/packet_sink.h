@@ -1,5 +1,5 @@
-#ifndef SC_PACKET_SINK
-#define SC_PACKET_SINK
+#ifndef SC_PACKET_SINK_H
+#define SC_PACKET_SINK_H
 
 #include "common.h"
 
