@@ -1,5 +1,5 @@
-#ifndef SC_FRAME_SINK
-#define SC_FRAME_SINK
+#ifndef SC_FRAME_SINK_H
+#define SC_FRAME_SINK_H
 
 #include "common.h"
 
