@@ -1,15 +1,10 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.ContentProvider;
-
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.os.BatteryManager;
 import android.os.Build;
 
-import java.io.IOException;
-import java.util.List;
 import java.util.Locale;
 
 public final class Server {
@@ -19,112 +14,7 @@ public final class Server {
         // not instantiable
     }
 
-    private static void scrcpy(Options options) throws IOException {
-        Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
-        final Device device = new Device(options);
-        List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
-
-        boolean mustDisableShowTouchesOnCleanUp = false;
-        int restoreStayOn = -1;
-        if (options.getShowTouches() || options.getStayAwake()) {
-            try (ContentProvider settings = Device.createSettingsProvider()) {
-                if (options.getShowTouches()) {
-                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
-                    // If "show touches" was disabled, it must be disabled back on clean up
-                    mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
-                }
-
-                if (options.getStayAwake()) {
-                    int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
-                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
-                    try {
-                        restoreStayOn = Integer.parseInt(oldValue);
-                        if (restoreStayOn == stayOn) {
-                            // No need to restore
-                            restoreStayOn = -1;
-                        }
-                    } catch (NumberFormatException e) {
-                        restoreStayOn = 0;
-                    }
-                }
-            }
-        }
-
-        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
-
-        boolean tunnelForward = options.isTunnelForward();
-
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName());
-
-            Thread controllerThread = null;
-            Thread deviceMessageSenderThread = null;
-            if (options.getControl()) {
-                final Controller controller = new Controller(device, connection);
-
-                // asynchronous
-                controllerThread = startController(controller);
-                deviceMessageSenderThread = startDeviceMessageSender(controller.getSender());
-
-                device.setClipboardListener(new Device.ClipboardListener() {
-                    @Override
-                    public void onClipboardTextChanged(String text) {
-                        controller.getSender().pushClipboardText(text);
-                    }
-                });
-            }
-
-            try {
-                // synchronous
-                screenEncoder.streamScreen(device, connection.getVideoFd());
-            } catch (IOException e) {
-                // this is expected on close
-                Ln.d("Screen streaming stopped");
-            } finally {
-                if (controllerThread != null) {
-                    controllerThread.interrupt();
-                }
-                if (deviceMessageSenderThread != null) {
-                    deviceMessageSenderThread.interrupt();
-                }
-            }
-        }
-    }
-
-    private static Thread startController(final Controller controller) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    controller.control();
-                } catch (IOException e) {
-                    // this is expected on close
-                    Ln.d("Controller stopped");
-                }
-            }
-        });
-        thread.start();
-        return thread;
-    }
-
-    private static Thread startDeviceMessageSender(final DeviceMessageSender sender) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    sender.loop();
-                } catch (IOException | InterruptedException e) {
-                    // this is expected on close
-                    Ln.d("Device message sender stopped");
-                }
-            }
-        });
-        thread.start();
-        return thread;
-    }
-
-    private static Options createOptions(String... args) {
+    private static void parseArguments(Options options, VideoSettings videoSettings, String... args) {
         if (args.length < 1) {
             throw new IllegalArgumentException("Missing client version");
         }
@@ -135,43 +25,60 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
+        if (args[1].toLowerCase().equals("web")) {
+            options.setServerType(Options.TYPE_WEB_SOCKET);
+            if (args.length > 2) {
+                Ln.Level level = Ln.Level.valueOf(args[2].toUpperCase(Locale.ENGLISH));
+                options.setLogLevel(level);
+            }
+            if (args.length > 3) {
+                int portNumber = Integer.parseInt(args[3]);
+                options.setPortNumber(portNumber);
+            }
+            if (args.length > 4) {
+                boolean listenOnAllInterfaces = Boolean.parseBoolean(args[4]);
+                options.setListenOnAllInterfaces(listenOnAllInterfaces);
+            }
+            return;
+        }
+
         final int expectedParameters = 16;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
 
-        Options options = new Options();
-
         Ln.Level level = Ln.Level.valueOf(args[1].toUpperCase(Locale.ENGLISH));
         options.setLogLevel(level);
 
-        int maxSize = Integer.parseInt(args[2]) & ~7; // multiple of 8
-        options.setMaxSize(maxSize);
+        int maxSize = Integer.parseInt(args[2]);
+        if (maxSize != 0) {
+            videoSettings.setBounds(maxSize, maxSize);
+        }
 
         int bitRate = Integer.parseInt(args[3]);
-        options.setBitRate(bitRate);
+        videoSettings.setBitRate(bitRate);
 
         int maxFps = Integer.parseInt(args[4]);
-        options.setMaxFps(maxFps);
+        videoSettings.setMaxFps(maxFps);
 
         int lockedVideoOrientation = Integer.parseInt(args[5]);
-        options.setLockedVideoOrientation(lockedVideoOrientation);
+        videoSettings.setLockedVideoOrientation(lockedVideoOrientation);
 
         // use "adb forward" instead of "adb tunnel"? (so the server must listen)
         boolean tunnelForward = Boolean.parseBoolean(args[6]);
         options.setTunnelForward(tunnelForward);
 
         Rect crop = parseCrop(args[7]);
-        options.setCrop(crop);
+        videoSettings.setCrop(crop);
 
         boolean sendFrameMeta = Boolean.parseBoolean(args[8]);
-        options.setSendFrameMeta(sendFrameMeta);
+        videoSettings.setSendFrameMeta(sendFrameMeta);
 
         boolean control = Boolean.parseBoolean(args[9]);
         options.setControl(control);
 
         int displayId = Integer.parseInt(args[10]);
-        options.setDisplayId(displayId);
+        videoSettings.setDisplayId(displayId);
 
         boolean showTouches = Boolean.parseBoolean(args[11]);
         options.setShowTouches(showTouches);
@@ -181,14 +88,13 @@ public final class Server {
 
         String codecOptions = args[13];
         options.setCodecOptions(codecOptions);
+        videoSettings.setCodecOptions(codecOptions);
 
         String encoderName = "-".equals(args[14]) ? null : args[14];
-        options.setEncoderName(encoderName);
+        videoSettings.setEncoderName(encoderName);
 
         boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
         options.setPowerOffScreenOnClose(powerOffScreenOnClose);
-
-        return options;
     }
 
     private static Rect parseCrop(String crop) {
@@ -248,10 +154,16 @@ public final class Server {
             }
         });
 
-        Options options = createOptions(args);
-
+        Options options = new Options();
+        VideoSettings videoSettings = new VideoSettings();
+        parseArguments(options, videoSettings, args);
         Ln.initLogLevel(options.getLogLevel());
-
-        scrcpy(options);
+        if (options.getServerType() == Options.TYPE_LOCAL_SOCKET) {
+            new DesktopConnection(options, videoSettings);
+        } else if (options.getServerType() == Options.TYPE_WEB_SOCKET) {
+            WSServer wsServer = new WSServer(options);
+            wsServer.setReuseAddr(true);
+            wsServer.run();
+        }
     }
 }

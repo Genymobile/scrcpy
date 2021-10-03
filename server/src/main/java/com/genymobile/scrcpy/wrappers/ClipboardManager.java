@@ -15,6 +15,7 @@ public class ClipboardManager {
     private Method getPrimaryClipMethod;
     private Method setPrimaryClipMethod;
     private Method addPrimaryClipChangedListener;
+    private Method removePrimaryClipChangedListener;
 
     public ClipboardManager(IInterface manager) {
         this.manager = manager;
@@ -116,4 +117,39 @@ public class ClipboardManager {
             return false;
         }
     }
+
+
+    private static void removePrimaryClipChangedListener(Method method, IInterface manager, IOnPrimaryClipChangedListener listener)
+            throws InvocationTargetException, IllegalAccessException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
+        } else {
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+        }
+    }
+
+    private Method getRemovePrimaryClipChangedListener() throws NoSuchMethodException {
+        if (removePrimaryClipChangedListener == null) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                removePrimaryClipChangedListener = manager.getClass()
+                        .getMethod("removePrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
+            } else {
+                removePrimaryClipChangedListener = manager.getClass()
+                        .getMethod("removePrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class, int.class);
+            }
+        }
+        return removePrimaryClipChangedListener;
+    }
+
+    public boolean removePrimaryClipChangedListener(IOnPrimaryClipChangedListener listener) {
+        try {
+            Method method = getRemovePrimaryClipChangedListener();
+            removePrimaryClipChangedListener(method, manager, listener);
+            return true;
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
+            return false;
+        }
+    }
+
 }

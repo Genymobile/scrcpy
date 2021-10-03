@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import java.nio.ByteBuffer;
+
 public final class DisplayInfo {
     private final int displayId;
     private final Size size;
@@ -36,5 +38,16 @@ public final class DisplayInfo {
     public int getFlags() {
         return flags;
     }
-}
 
+    public byte[] toByteArray() {
+        ByteBuffer temp = ByteBuffer.allocate(24);
+        temp.putInt(displayId);
+        temp.putInt(size.getWidth());
+        temp.putInt(size.getHeight());
+        temp.putInt(rotation);
+        temp.putInt(layerStack);
+        temp.putInt(flags);
+        temp.rewind();
+        return temp.array();
+    }
+}

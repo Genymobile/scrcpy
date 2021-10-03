@@ -14,6 +14,7 @@ public final class WindowManager {
     private Method freezeRotationMethod;
     private Method isRotationFrozenMethod;
     private Method thawRotationMethod;
+    private Method removeRotationWatcherMethod;
 
     public WindowManager(IInterface manager) {
         this.manager = manager;
@@ -53,6 +54,13 @@ public final class WindowManager {
             thawRotationMethod = manager.getClass().getMethod("thawRotation");
         }
         return thawRotationMethod;
+    }
+
+    private Method getRemoveRotationWatcherMethod() throws NoSuchMethodException {
+        if (removeRotationWatcherMethod == null) {
+            removeRotationWatcherMethod = manager.getClass().getMethod("removeRotationWatcher");
+        }
+        return removeRotationWatcherMethod;
     }
 
     public int getRotation() {
@@ -106,6 +114,15 @@ public final class WindowManager {
             }
         } catch (Exception e) {
             throw new AssertionError(e);
+        }
+    }
+
+    public void unregisterRotationWatcher(IRotationWatcher rotationWatcher) {
+        try {
+            Method method = getRemoveRotationWatcherMethod();
+            method.invoke(manager, rotationWatcher);
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 }

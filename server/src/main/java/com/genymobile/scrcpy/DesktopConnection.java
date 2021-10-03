@@ -3,17 +3,16 @@ package com.genymobile.scrcpy;
 import android.net.LocalServerSocket;
 import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
+import android.os.SystemClock;
 
-import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
-public final class DesktopConnection implements Closeable {
-
-    private static final int DEVICE_NAME_FIELD_LENGTH = 64;
+public final class DesktopConnection extends Connection {
 
     private static final String SOCKET_NAME = "scrcpy";
 
@@ -24,16 +23,7 @@ public final class DesktopConnection implements Closeable {
     private final InputStream controlInputStream;
     private final OutputStream controlOutputStream;
 
-    private final ControlMessageReader reader = new ControlMessageReader();
     private final DeviceMessageWriter writer = new DeviceMessageWriter();
-
-    private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
-        this.videoSocket = videoSocket;
-        this.controlSocket = controlSocket;
-        controlInputStream = controlSocket.getInputStream();
-        controlOutputStream = controlSocket.getOutputStream();
-        videoFd = videoSocket.getFileDescriptor();
-    }
 
     private static LocalSocket connect(String abstractName) throws IOException {
         LocalSocket localSocket = new LocalSocket();
@@ -41,9 +31,9 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
-        LocalSocket videoSocket;
-        LocalSocket controlSocket;
+    public DesktopConnection(Options options, VideoSettings videoSettings) throws IOException {
+        super(options, videoSettings);
+        boolean tunnelForward = options.isTunnelForward();
         if (tunnelForward) {
             LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
             try {
@@ -69,10 +59,18 @@ public final class DesktopConnection implements Closeable {
             }
         }
 
-        DesktopConnection connection = new DesktopConnection(videoSocket, controlSocket);
+        controlInputStream = controlSocket.getInputStream();
+        controlOutputStream = controlSocket.getOutputStream();
+        videoFd = videoSocket.getFileDescriptor();
+        if (options.getControl()) {
+            startEventController();
+        }
         Size videoSize = device.getScreenInfo().getVideoSize();
-        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
-        return connection;
+        send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+        screenEncoder = new ScreenEncoder(videoSettings);
+        screenEncoder.setDevice(device);
+        screenEncoder.setConnection(this);
+        screenEncoder.run();
     }
 
     public void close() throws IOException {
@@ -99,8 +97,54 @@ public final class DesktopConnection implements Closeable {
         IO.writeFully(videoFd, buffer, 0, buffer.length);
     }
 
+    public void send(ByteBuffer data) {
+        try {
+            IO.writeFully(videoFd, data);
+        } catch (IOException e) {
+            Ln.e("Failed to send data", e);
+        }
+    }
+
+    @Override
+    boolean hasConnections() {
+        return true;
+    }
+
     public FileDescriptor getVideoFd() {
         return videoFd;
+    }
+
+    private void startEventController() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // on start, power on the device
+                    if (!Device.isScreenOn()) {
+                        controller.turnScreenOn();
+
+                        // dirty hack
+                        // After POWER is injected, the device is powered on asynchronously.
+                        // To turn the device screen off while mirroring, the client will send a message that
+                        // would be handled before the device is actually powered on, so its effect would
+                        // be "canceled" once the device is turned back on.
+                        // Adding this delay prevents to handle the message before the device is actually
+                        // powered on.
+                        SystemClock.sleep(500);
+                    }
+                    while (true) {
+                        ControlMessage controlEvent = receiveControlMessage();
+                        if (controlEvent != null) {
+                            controller.handleEvent(controlEvent);
+                        }
+                    }
+
+                } catch (IOException e) {
+                    // this is expected on close
+                    Ln.d("Event controller stopped");
+                }
+            }
+        }).start();
     }
 
     public ControlMessage receiveControlMessage() throws IOException {

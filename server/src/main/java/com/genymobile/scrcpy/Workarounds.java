@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public final class Workarounds {
+    private static boolean looperPrepared = false;
     private Workarounds() {
         // not instantiable
     }
@@ -26,6 +27,10 @@ public final class Workarounds {
         //   "Attempt to read from field 'android.os.MessageQueue android.os.Looper.mQueue'
         //    on a null object reference"
         // <https://github.com/Genymobile/scrcpy/issues/921>
+        if (looperPrepared) {
+            return;
+        }
+        looperPrepared = true;
         Looper.prepareMainLooper();
     }
 

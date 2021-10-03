@@ -7,7 +7,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 11900
-        versionName "1.19"
+        versionName "1.19-ws1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -20,6 +20,9 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'org.java-websocket:Java-WebSocket:1.4.0'
+    implementation 'org.slf4j:slf4j-api:1.7.25'
+    implementation 'uk.uuid.slf4j:slf4j-android:1.7.25-1'
     testImplementation 'junit:junit:4.13'
 }
 

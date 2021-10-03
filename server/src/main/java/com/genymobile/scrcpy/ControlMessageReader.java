@@ -47,6 +47,10 @@ public class ControlMessageReader {
     }
 
     public ControlMessage next() {
+        return parseEvent(buffer);
+    }
+
+    public ControlMessage parseEvent(ByteBuffer buffer) {
         if (!buffer.hasRemaining()) {
             return null;
         }
@@ -56,25 +60,31 @@ public class ControlMessageReader {
         ControlMessage msg;
         switch (type) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
-                msg = parseInjectKeycode();
+                msg = parseInjectKeycode(buffer);
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
-                msg = parseInjectText();
+                msg = parseInjectText(buffer);
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                msg = parseInjectTouchEvent();
+                msg = parseInjectTouchEvent(buffer);
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
-                msg = parseInjectScrollEvent();
+                msg = parseInjectScrollEvent(buffer);
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
-                msg = parseBackOrScreenOnEvent();
+                msg = parseBackOrScreenOnEvent(buffer);
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                msg = parseSetClipboard();
+                msg = parseSetClipboard(buffer);
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
-                msg = parseSetScreenPowerMode();
+                msg = parseSetScreenPowerMode(buffer);
+                break;
+            case ControlMessage.TYPE_CHANGE_STREAM_PARAMETERS:
+                msg = parseChangeStreamParameters(buffer);
+                break;
+            case ControlMessage.TYPE_PUSH_FILE:
+                msg = parsePushFile(buffer);
                 break;
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
@@ -96,7 +106,25 @@ public class ControlMessageReader {
         return msg;
     }
 
-    private ControlMessage parseInjectKeycode() {
+    private ControlMessage parseChangeStreamParameters(ByteBuffer buffer) {
+        int re = buffer.remaining();
+        byte[] bytes = new byte[re];
+        if (re > 0) {
+            buffer.get(bytes, 0, re);
+        }
+        return ControlMessage.createChangeSteamParameters(bytes);
+    }
+
+    private ControlMessage parsePushFile(ByteBuffer buffer) {
+        int re = buffer.remaining();
+        byte[] bytes = new byte[re];
+        if (re > 0) {
+            buffer.get(bytes, 0, re);
+        }
+        return ControlMessage.createFilePush(bytes);
+    }
+
+    private ControlMessage parseInjectKeycode(ByteBuffer buffer) {
         if (buffer.remaining() < INJECT_KEYCODE_PAYLOAD_LENGTH) {
             return null;
         }
@@ -107,7 +135,7 @@ public class ControlMessageReader {
         return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
-    private String parseString() {
+    private String parseString(ByteBuffer buffer) {
         if (buffer.remaining() < 4) {
             return null;
         }
@@ -115,21 +143,19 @@ public class ControlMessageReader {
         if (buffer.remaining() < len) {
             return null;
         }
-        int position = buffer.position();
-        // Move the buffer position to consume the text
-        buffer.position(position + len);
-        return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
+        buffer.get(rawBuffer, 0, len);
+        return new String(rawBuffer, 0, len, StandardCharsets.UTF_8);
     }
 
-    private ControlMessage parseInjectText() {
-        String text = parseString();
+    private ControlMessage parseInjectText(ByteBuffer buffer) {
+        String text = parseString(buffer);
         if (text == null) {
             return null;
         }
         return ControlMessage.createInjectText(text);
     }
 
-    private ControlMessage parseInjectTouchEvent() {
+    private ControlMessage parseInjectTouchEvent(ByteBuffer buffer) {
         if (buffer.remaining() < INJECT_TOUCH_EVENT_PAYLOAD_LENGTH) {
             return null;
         }
@@ -144,7 +170,7 @@ public class ControlMessageReader {
         return ControlMessage.createInjectTouchEvent(action, pointerId, position, pressure, buttons);
     }
 
-    private ControlMessage parseInjectScrollEvent() {
+    private ControlMessage parseInjectScrollEvent(ByteBuffer buffer) {
         if (buffer.remaining() < INJECT_SCROLL_EVENT_PAYLOAD_LENGTH) {
             return null;
         }
@@ -154,7 +180,7 @@ public class ControlMessageReader {
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll);
     }
 
-    private ControlMessage parseBackOrScreenOnEvent() {
+    private ControlMessage parseBackOrScreenOnEvent(ByteBuffer buffer) {
         if (buffer.remaining() < BACK_OR_SCREEN_ON_LENGTH) {
             return null;
         }
@@ -162,19 +188,19 @@ public class ControlMessageReader {
         return ControlMessage.createBackOrScreenOn(action);
     }
 
-    private ControlMessage parseSetClipboard() {
+    private ControlMessage parseSetClipboard(ByteBuffer buffer) {
         if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
             return null;
         }
         boolean paste = buffer.get() != 0;
-        String text = parseString();
+        String text = parseString(buffer);
         if (text == null) {
             return null;
         }
         return ControlMessage.createSetClipboard(text, paste);
     }
 
-    private ControlMessage parseSetScreenPowerMode() {
+    private ControlMessage parseSetScreenPowerMode(ByteBuffer buffer) {
         if (buffer.remaining() < SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH) {
             return null;
         }

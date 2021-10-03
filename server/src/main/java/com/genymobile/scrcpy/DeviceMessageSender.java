@@ -4,11 +4,11 @@ import java.io.IOException;
 
 public final class DeviceMessageSender {
 
-    private final DesktopConnection connection;
+    private final Connection connection;
 
     private String clipboardText;
 
-    public DeviceMessageSender(DesktopConnection connection) {
+    public DeviceMessageSender(Connection connection) {
         this.connection = connection;
     }
 
