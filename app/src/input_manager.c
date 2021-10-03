@@ -53,15 +53,15 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 
 void
 input_manager_init(struct input_manager *im, struct controller *controller,
-                   struct screen *screen,
+                   struct screen *screen, struct sc_key_processor *kp,
                    const struct scrcpy_options *options) {
+    assert(!options->control || (kp && kp->ops));
+
     im->controller = controller;
     im->screen = screen;
-    im->repeat = 0;
+    im->kp = kp;
 
     im->control = options->control;
-    im->forward_key_repeat = options->forward_key_repeat;
-    im->prefer_text = options->prefer_text;
     im->forward_all_clicks = options->forward_all_clicks;
     im->legacy_paste = options->legacy_paste;
 
@@ -323,26 +323,8 @@ input_manager_process_text_input(struct input_manager *im,
         // A shortcut must never generate text events
         return;
     }
-    if (!im->prefer_text) {
-        char c = event->text[0];
-        if (isalpha(c) || c == ' ') {
-            assert(event->text[1] == '\0');
-            // letters and space are handled as raw key event
-            return;
-        }
-    }
 
-    struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
-    msg.inject_text.text = strdup(event->text);
-    if (!msg.inject_text.text) {
-        LOGW("Could not strdup input text");
-        return;
-    }
-    if (!controller_push_msg(im->controller, &msg)) {
-        free(msg.inject_text.text);
-        LOGW("Could not request 'inject text'");
-    }
+    im->kp->ops->process_text(im->kp, event);
 }
 
 static bool
@@ -373,27 +355,6 @@ inverse_point(struct point point, struct size size) {
     point.x = size.width - point.x;
     point.y = size.height - point.y;
     return point;
-}
-
-static bool
-convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
-                  bool prefer_text, uint32_t repeat) {
-    to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
-
-    if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
-        return false;
-    }
-
-    uint16_t mod = from->keysym.mod;
-    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod,
-                         prefer_text)) {
-        return false;
-    }
-
-    to->inject_keycode.repeat = repeat;
-    to->inject_keycode.metastate = convert_meta_state(mod);
-
-    return true;
 }
 
 static void
@@ -549,15 +510,6 @@ input_manager_process_key(struct input_manager *im,
         return;
     }
 
-    if (event->repeat) {
-        if (!im->forward_key_repeat) {
-            return;
-        }
-        ++im->repeat;
-    } else {
-        im->repeat = 0;
-    }
-
     if (ctrl && !shift && keycode == SDLK_v && down && !repeat) {
         if (im->legacy_paste) {
             // inject the text as input events
@@ -569,12 +521,7 @@ input_manager_process_key(struct input_manager *im,
         set_device_clipboard(controller, false);
     }
 
-    struct control_msg msg;
-    if (convert_input_key(event, &msg, im->prefer_text, im->repeat)) {
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'inject keycode'");
-        }
-    }
+    im->kp->ops->process_key(im->kp, event);
 }
 
 static bool
