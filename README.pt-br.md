@@ -87,10 +87,7 @@ Você também pode [compilar o app manualmente][BUILD] ([processo simplificado][
 Para Windows, por simplicidade, um arquivo pré-compilado com todas as dependências
 (incluindo `adb`) está disponível:
 
- - [`scrcpy-win64-v1.19.zip`][direct-win64]  
-   _(SHA-256: 383d6483f25ac0092d4bb9fef6c967351ecd50fc248e0c82932db97d6d32f11b)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.19/scrcpy-win64-v1.19.zip
+ - [README](README.md#windows)
 
 Também está disponível em [Chocolatey]:
 
@@ -214,10 +211,10 @@ Para travar a orientação do espelhamento:
 
 ```bash
 scrcpy --lock-video-orientation     # orientação inicial (Atual)
-scrcpy --lock-video-orientation 0   # orientação natural
-scrcpy --lock-video-orientation 1   # 90° sentido anti-horário
-scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° sentido horário
+scrcpy --lock-video-orientation=0   # orientação natural
+scrcpy --lock-video-orientation=1   # 90° sentido anti-horário
+scrcpy --lock-video-orientation=2   # 180°
+scrcpy --lock-video-orientation=3   # 90° sentido horário
 ```
 
 Isso afeta a orientação de gravação.
@@ -774,32 +771,32 @@ _<kbd>[Super]</kbd> é tipicamente a tecla <kbd>Windows</kbd> ou <kbd>Cmd</kbd>.
  | Ação                                         |   Atalho 
  | -------------------------------------------- |:-----------------------------
  | Mudar modo de tela cheia                     | <kbd>MOD</kbd>+<kbd>f</kbd>
- | Rotacionar display para esquerda                                       | <kbd>MOD</kbd>+<kbd>←</kbd> _(left)_
- | Rotacionar display para direita                                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_
- | Redimensionar janela para 1:1 (pixel-perfect)                                | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Redimensionar janela para remover bordas pretas                                         | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Double-left-click¹_
- | Clicar em `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Middle-click_
- | Clicar em `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Right-click²_
- | Clicar em `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _4th-click³_
- | Clicar em `MENU` (unlock screen)             | <kbd>MOD</kbd>+<kbd>m</kbd>
- | Clicar em `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(up)_
- | Clicar em `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(down)_
+ | Rotacionar display para esquerda                                       | <kbd>MOD</kbd>+<kbd>←</kbd> _(esquerda)_
+ | Rotacionar display para direita                                        | <kbd>MOD</kbd>+<kbd>→</kbd> _(direita)_
+ | Redimensionar janela para 1:1 (pixel-perfeito)                                | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Redimensionar janela para remover bordas pretas                                         | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Clique-duplo-esquerdo¹_
+ | Clicar em `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Clique-do-meio_
+ | Clicar em `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Clique-direito²_
+ | Clicar em `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _Clique-do-4.°³_
+ | Clicar em `MENU` (desbloquear tela)             | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Clicar em `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(cima)_
+ | Clicar em `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(baixo)_
  | Clicar em `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
- | Ligar                                        | _Right-click²_
- | TDesligar tela do dispositivo (continuar espelhando)     | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | Ligar                                        | _Clique-direito²_
+ | Desligar tela do dispositivo (continuar espelhando)     | <kbd>MOD</kbd>+<kbd>o</kbd>
  | Ligar tela do dispositivo                    | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
  | Rotacionar tela do dispositivo                                    | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Expandir painel de notificação               | <kbd>MOD</kbd>+<kbd>n</kbd> \| _5th-click³_
- | Expandir painel de configurção               |  <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Double-5th-click³_
+ | Expandir painel de notificação               | <kbd>MOD</kbd>+<kbd>n</kbd> \| _Clique-do-5.°³_
+ | Expandir painel de configurção               |  <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Clique-duplo-do-5.°³_
  | Colapsar paineis                             | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
  | Copiar para área de transferência⁴                                 | <kbd>MOD</kbd>+<kbd>c</kbd>
  | Recortar para área de transferência⁴                                 | <kbd>MOD</kbd>+<kbd>x</kbd>
  | Sincronizar áreas de transferência e colar⁴                                         | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Injetar texto da área de transferência do computador	                                    | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Ativar/desativar contador de FPS (em stdout) | <kbd>MOD</kbd>+<kbd>i</kbd>
- | Pinçar para dar zoom                                           | <kbd>Ctrl</kbd>+_click-and-move_
+ | Pinçar para dar zoom                                           | <kbd>Ctrl</kbd>+_Clicar-e-mover_
 
-_¹Clique-duplo na borda preta para remove-la._  
+_¹Clique-duplo-esquerdo na borda preta para remove-la._  
 _²Clique-direito liga a tela caso esteja desligada, pressione BACK caso contrário._  
 _³4.° and 5.° botões do mouse, caso o mouse possua._  
 _⁴Apenas em Android >= 7._
@@ -881,18 +878,3 @@ Leia a [página dos desenvolvedores][developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
-## Traduções
-
-Este README está disponivel em outras línguas:
-
-- [English (Inglês) - v1.16](README.md)
-- [Indonésio (Indonesia, `id`) - v1.16](README.id.md)
-- [Italiano (Italiano, `it`) - v1.17](README.it.md)
-- [日本語 (Japonês, `jp`) - v1.17](README.jp.md)
-- [한국어 (Coreano, `ko`) - v1.11](README.ko.md)
-- [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
-- [Español (Espanhol, `sp`) - v1.17](README.sp.md)
-- [简体中文 (Chinês Simplificado, `zh-Hans`) - v1.17](README.zh-Hans.md)
-- [繁體中文 (Chinês Tradicional, `zh-Hant`) - v1.15](README.zh-Hant.md)
-- [Turkish (Turco, `tr`) - v1.18](README.tr.md)
