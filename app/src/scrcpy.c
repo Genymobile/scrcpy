@@ -436,7 +436,23 @@ scrcpy(struct scrcpy_options *options) {
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
 #ifdef HAVE_AOA_HID
             bool aoa_hid_ok = false;
-            if (!sc_aoa_init(&s->aoa, options->serial)) {
+
+            char *serialno = NULL;
+
+            const char *serial = options->serial;
+            if (!serial) {
+                serialno = adb_get_serialno();
+                if (!serialno) {
+                    LOGE("Could not get device serial");
+                    goto aoa_hid_end;
+                }
+                serial = serialno;
+                LOGI("Device serial: %s", serial);
+            }
+
+            bool ok = sc_aoa_init(&s->aoa, serial);
+            free(serialno);
+            if (!ok) {
                 goto aoa_hid_end;
             }
 
