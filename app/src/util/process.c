@@ -61,3 +61,18 @@ get_local_file_path(const char *name) {
 
     return file_path;
 }
+
+ssize_t
+read_pipe_all(pipe_t pipe, char *data, size_t len) {
+    size_t copied = 0;
+    while (len > 0) {
+        ssize_t r = read_pipe(pipe, data, len);
+        if (r <= 0) {
+            return copied ? (ssize_t) copied : r;
+        }
+        len -= r;
+        data += r;
+        copied += r;
+    }
+    return copied;
+}

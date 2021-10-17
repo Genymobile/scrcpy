@@ -96,6 +96,9 @@ is_regular_file(const char *path);
 ssize_t
 read_pipe(pipe_t pipe, char *data, size_t len);
 
+ssize_t
+read_pipe_all(pipe_t pipe, char *data, size_t len);
+
 void
 close_pipe(pipe_t pipe);
 
