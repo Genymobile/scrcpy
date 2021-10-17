@@ -109,7 +109,9 @@ show_adb_err_msg(enum process_result err, const char *const argv[]) {
 }
 
 process_t
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
+adb_execute_redirect(const char *serial, const char *const adb_cmd[],
+                     size_t len, pipe_t *pipe_stdin, pipe_t *pipe_stdout,
+                     pipe_t *pipe_stderr) {
     int i;
     process_t process;
 
@@ -129,7 +131,9 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 
     memcpy(&argv[i], adb_cmd, len * sizeof(const char *));
     argv[len + i] = NULL;
-    enum process_result r = process_execute(argv, &process);
+    enum process_result r =
+        process_execute_redirect(argv, &process, pipe_stdin, pipe_stdout,
+                                 pipe_stderr);
     if (r != PROCESS_SUCCESS) {
         show_adb_err_msg(r, argv);
         process = PROCESS_NONE;
@@ -137,6 +141,11 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 
     free(argv);
     return process;
+}
+
+process_t
+adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
+    return adb_execute_redirect(serial, adb_cmd, len, NULL, NULL, NULL);
 }
 
 process_t
