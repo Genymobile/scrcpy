@@ -183,8 +183,11 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
         goto error_mutex_destroy;
     }
 
-    // FIXME
-    const AVOutputFormat *format = find_muxer("video4linux2,v4l2");
+    const AVOutputFormat *format = find_muxer("v4l2");
+    if (!format) {
+        // Alternative name
+        format = find_muxer("video4linux2");
+    }
     if (!format) {
         LOGE("Could not find v4l2 muxer");
         goto error_cond_destroy;
