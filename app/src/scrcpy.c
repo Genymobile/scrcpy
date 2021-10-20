@@ -462,7 +462,8 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            if (!hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+            unsigned mod = SC_MOD_CAPS_LOCK;
+            if (!hid_keyboard_init(&s->keyboard_hid, &s->aoa, mod)) {
                 aoa_join(&s->aoa);
                 aoa_stop(&s->aoa);
                 aoa_destroy(&s->aoa);

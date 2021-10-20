@@ -376,6 +376,8 @@ input_manager_process_key(struct input_manager *im,
 
     bool smod = is_shortcut_mod(im, mod);
 
+    LOGD("=== %x", (int) mod);
+
     if (down && !repeat) {
         if (keycode == im->last_keycode && mod == im->last_mod) {
             ++im->key_repeat;

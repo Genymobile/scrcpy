@@ -326,6 +326,7 @@ run_aoa_thread(void *data) {
         (void) non_empty;
         sc_mutex_unlock(&aoa->mutex);
 
+        LOGD("======= aoa_thread process event");
         bool ok = process_hid_event(aoa, &event);
         hid_event_destroy(&event);
         if (!ok) {

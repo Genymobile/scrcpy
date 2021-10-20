@@ -171,6 +171,21 @@ sdl_keymod_to_hid_modifiers(SDL_Keymod mod) {
 }
 
 static bool
+gen(struct hid_keyboard *kb, struct hid_event *hid_event) {
+    hid_event->from_accessory_id = HID_KEYBOARD_ACCESSORY_ID;
+    hid_event->buffer = create_hid_keyboard_event();
+    if (!hid_event->buffer) {
+        return false;
+    }
+    hid_event->size = HID_KEYBOARD_EVENT_SIZE;
+    hid_event->buffer[HID_KEYBOARD_INDEX_KEYS] = 57; //CAPSLOCK
+    for (int i = 0; i < HID_KEYBOARD_EVENT_SIZE; ++i)
+        printf("%02x ", hid_event->buffer[i]);
+    printf("\n");
+    return true;
+}
+
+static bool
 convert_hid_keyboard_event(struct hid_keyboard *kb, struct hid_event *hid_event,
                            const SDL_KeyboardEvent *event) {
     hid_event->buffer = create_hid_keyboard_event();
@@ -276,9 +291,14 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
 }
 
 bool
-hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa) {
+hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa, unsigned lock_mod) {
     kb->aoa = aoa;
 
+    // FIXME problem: aoa_setup_hid is executed from this thread, but events
+    // are sent from the aoa thread. Is this thread-safe?
+    // In practice, sending CAPS_LOCK immediately after fails with a Pipe error
+    // but we must know immediately if this fails or not
+    // TODO test with a simple mutex to confirm
     bool ok = aoa_setup_hid(aoa, HID_KEYBOARD_ACCESSORY_ID,
                             keyboard_report_desc,
                             ARRAY_LEN(keyboard_report_desc));
@@ -296,6 +316,17 @@ hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa) {
     };
 
     kb->key_processor.ops = &ops;
+
+    if (lock_mod & SC_MOD_CAPS_LOCK) {
+        struct hid_event event;
+        gen(kb, &event); // FIXME error handling
+        if (!aoa_push_hid_event(kb->aoa, &event)) {
+            LOGW("Could request HID event");
+        }
+    }
+    if (lock_mod & SC_MOD_NUM_LOCK) {
+        // TODO
+    }
 
     return true;
 }

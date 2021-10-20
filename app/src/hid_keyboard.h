@@ -16,6 +16,9 @@
 // 0x65 is Application, typically AT-101 Keyboard ends here.
 #define HID_KEYBOARD_KEYS 0x66
 
+#define SC_MOD_CAPS_LOCK 0x1
+#define SC_MOD_NUM_LOCK 0x2
+
 /**
  * HID keyboard events are sequence-based, every time keyboard state changes
  * it sends an array of currently pressed keys, the host is responsible for
@@ -36,7 +39,7 @@ struct hid_keyboard {
 };
 
 bool
-hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa);
+hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa, unsigned lock_mod);
 
 void
 hid_keyboard_destroy(struct hid_keyboard *kb);
