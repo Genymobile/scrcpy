@@ -254,6 +254,18 @@ stream_on_eos(struct stream *stream, void *userdata) {
     SDL_PushEvent(&stop_event);
 }
 
+static unsigned
+to_sc_mod(SDL_Keymod sdl_mod) {
+    unsigned mod = 0;
+    if (sdl_mod & KMOD_CAPS) {
+        mod |= SC_MOD_CAPSLOCK;
+    }
+    if (sdl_mod & KMOD_NUM) {
+        mod |= SC_MOD_NUMLOCK;
+    }
+    return mod;
+}
+
 bool
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -462,7 +474,9 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            if (!hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+            // FIXME: SDL_GetModState() always returns 0 here :/
+            unsigned mod = to_sc_mod(SDL_GetModState());
+            if (!hid_keyboard_init(&s->keyboard_hid, &s->aoa, mod)) {
                 aoa_join(&s->aoa);
                 aoa_stop(&s->aoa);
                 aoa_destroy(&s->aoa);

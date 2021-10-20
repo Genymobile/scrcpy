@@ -33,6 +33,9 @@
 #define HID_KEYBOARD_RESERVED 0x00
 #define HID_KEYBOARD_ERROR_ROLL_OVER 0x01
 
+#define SC_SCANCODE_CAPSLOCK 57
+#define SC_SCANCODE_NUMLOCK 83
+
 /**
  * For HID over AOAv2, only report descriptor is needed.
  *
@@ -171,6 +174,43 @@ sdl_keymod_to_hid_modifiers(SDL_Keymod mod) {
 }
 
 static bool
+send_mod_lock_state(struct hid_keyboard *kb, unsigned lock_mod) {
+    assert(!(lock_mod & ~SC_MOD_MASK));
+    if (!lock_mod) {
+        // Nothing to do
+        return true;
+    }
+
+    struct hid_event hid_event;
+    hid_event.from_accessory_id = HID_KEYBOARD_ACCESSORY_ID;
+    hid_event.buffer = create_hid_keyboard_event();
+    if (!hid_event.buffer) {
+        return false;
+    }
+    hid_event.size = HID_KEYBOARD_EVENT_SIZE;
+
+    unsigned i = 0;
+    if (lock_mod & SC_MOD_CAPSLOCK) {
+        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
+        ++i;
+    }
+    if (lock_mod & SC_MOD_NUMLOCK) {
+        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
+        ++i;
+    }
+
+//    for (int i = 0; i < HID_KEYBOARD_EVENT_SIZE; ++i)
+//        printf("%02x ", hid_event->buffer[i]);
+//    printf("\n");
+
+    if (!aoa_push_hid_event(kb->aoa, &hid_event)) {
+        LOGW("Could request HID event");
+    }
+
+    return true;
+}
+
+static bool
 convert_hid_keyboard_event(struct hid_keyboard *kb, struct hid_event *hid_event,
                            const SDL_KeyboardEvent *event) {
     hid_event->buffer = create_hid_keyboard_event();
@@ -276,9 +316,11 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
 }
 
 bool
-hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa) {
+hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa, unsigned lock_mod) {
     kb->aoa = aoa;
 
+    // FIXME In practice, sending CAPS_LOCK immediately after fails with a Pipe
+    // error but we must know immediately if this fails or not
     bool ok = aoa_setup_hid(aoa, HID_KEYBOARD_ACCESSORY_ID,
                             keyboard_report_desc,
                             ARRAY_LEN(keyboard_report_desc));
@@ -296,6 +338,10 @@ hid_keyboard_init(struct hid_keyboard *kb, struct aoa *aoa) {
     };
 
     kb->key_processor.ops = &ops;
+
+    // FIXME to avoid pipe error
+    usleep(100000);
+    send_mod_lock_state(kb, lock_mod);
 
     return true;
 }
