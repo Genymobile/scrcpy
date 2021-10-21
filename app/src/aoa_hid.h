@@ -9,11 +9,13 @@
 #include "scrcpy.h"
 #include "util/cbuf.h"
 #include "util/thread.h"
+#include "util/tick.h"
 
 struct sc_hid_event {
     uint16_t accessory_id;
     unsigned char *buffer;
     uint16_t size;
+    sc_tick delay;
 };
 
 // Takes ownership of buffer

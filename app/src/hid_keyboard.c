@@ -297,6 +297,19 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
                 kb->mod_lock_synchronized = true;
             }
         }
+
+        SDL_Keycode keycode = event->keysym.sym;
+        bool down = event->type == SDL_KEYDOWN;
+        bool ctrl = event->keysym.mod & KMOD_CTRL;
+        bool shift = event->keysym.mod & KMOD_SHIFT;
+        if (ctrl && !shift && keycode == SDLK_v && down) {
+            // Ctrl+v is pressed, so clipboard synchronization has been
+            // requested. Wait a bit so that the clipboard is set before
+            // injecting Ctrl+v via HID, otherwise it would paste the old
+            // clipboard content.
+            hid_event.delay = SC_TICK_FROM_MS(2);
+        }
+
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
             sc_hid_event_destroy(&hid_event);
             LOGW("Could request HID event");
