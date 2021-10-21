@@ -33,6 +33,8 @@ struct hid_keyboard {
 
     struct aoa *aoa;
     bool keys[HID_KEYBOARD_KEYS];
+
+    bool mod_lock_synchronized;
 };
 
 bool
