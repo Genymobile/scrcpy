@@ -35,6 +35,7 @@ hid_event_init(struct hid_event *hid_event, uint16_t accessory_id,
     hid_event->from_accessory_id = accessory_id;
     hid_event->buffer = buffer;
     hid_event->size = buffer_size;
+    hid_event->delay = 0;
 }
 
 void
@@ -327,6 +328,22 @@ run_aoa_thread(void *data) {
         bool non_empty = cbuf_take(&aoa->queue, &event);
         assert(non_empty);
         (void) non_empty;
+
+        assert(event.delay >= 0);
+        if (event.delay) {
+            // Wait during the specified delay before injecting the HID event
+            sc_tick deadline = sc_tick_now() + event.delay;
+            bool timed_out = false;
+            while (!aoa->stopped && !timed_out) {
+                timed_out = !sc_cond_timedwait(&aoa->event_cond, &aoa->mutex,
+                                               deadline);
+            }
+            if (aoa->stopped) {
+                sc_mutex_unlock(&aoa->mutex);
+                break;
+            }
+        }
+
         sc_mutex_unlock(&aoa->mutex);
 
         bool ok = aoa_send_hid_event(aoa, &event);
