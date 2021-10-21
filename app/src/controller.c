@@ -47,7 +47,7 @@ controller_destroy(struct controller *controller) {
 
 bool
 controller_push_msg(struct controller *controller,
-                      const struct control_msg *msg) {
+                    const struct control_msg *msg) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
         control_msg_log(msg);
     }
@@ -63,14 +63,14 @@ controller_push_msg(struct controller *controller,
 }
 
 static bool
-process_msg(struct controller *controller,
-              const struct control_msg *msg) {
+process_msg(struct controller *controller, const struct control_msg *msg) {
     static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
     size_t length = control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
     }
-    ssize_t w = net_send_all(controller->control_socket, serialized_msg, length);
+    ssize_t w =
+        net_send_all(controller->control_socket, serialized_msg, length);
     return (size_t) w == length;
 }
 
