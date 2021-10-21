@@ -31,6 +31,8 @@ struct sc_hid_keyboard {
 
     struct sc_aoa *aoa;
     bool keys[SC_HID_KEYBOARD_KEYS];
+
+    bool mod_lock_synchronized;
 };
 
 bool

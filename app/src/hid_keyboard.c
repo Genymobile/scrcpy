@@ -237,6 +237,45 @@ end:
     return true;
 }
 
+
+static bool
+push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t sdl_mod) {
+    bool capslock = sdl_mod & KMOD_CAPS;
+    bool numlock = sdl_mod & KMOD_NUM;
+    if (!capslock && !numlock) {
+        // Nothing to do
+        return true;
+    }
+
+    struct sc_hid_event hid_event;
+    if (!sc_hid_keyboard_event_init(&hid_event)) {
+        LOGW("Could not initialize HID keyboard event");
+        return false;
+    }
+
+#define SC_SCANCODE_CAPSLOCK SDL_SCANCODE_CAPSLOCK
+#define SC_SCANCODE_NUMLOCK SDL_SCANCODE_NUMLOCKCLEAR
+    unsigned i = 0;
+    if (capslock) {
+        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
+        ++i;
+    }
+    if (numlock) {
+        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
+        ++i;
+    }
+
+    if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
+        sc_hid_event_destroy(&hid_event);
+        LOGW("Could request HID event");
+        return false;
+    }
+
+    LOGD("HID keyboard state synchronized");
+
+    return true;
+}
+
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const SDL_KeyboardEvent *event) {
@@ -251,6 +290,13 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     struct sc_hid_event hid_event;
     // Not all keys are supported, just ignore unsupported keys
     if (convert_hid_keyboard_event(kb, &hid_event, event)) {
+        if (!kb->mod_lock_synchronized) {
+            // Inject CAPSLOCK and/or NUMLOCK if necessary to synchronize
+            // keyboard state
+            if (push_mod_lock_state(kb, event->keysym.mod)) {
+                kb->mod_lock_synchronized = true;
+            }
+        }
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
             sc_hid_event_destroy(&hid_event);
             LOGW("Could request HID event");
@@ -281,6 +327,8 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
 
     // Reset all states
     memset(kb->keys, false, SC_HID_KEYBOARD_KEYS);
+
+    kb->mod_lock_synchronized = false;
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
