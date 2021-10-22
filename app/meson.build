@@ -9,6 +9,7 @@ src = [
     'src/decoder.c',
     'src/device_msg.c',
     'src/event_converter.c',
+    'src/icon.c',
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
