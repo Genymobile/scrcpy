@@ -74,6 +74,11 @@ search_executable(const char *file);
 char *
 get_executable_path(void);
 
+// Return the absolute path of a file in the same directory as he executable.
+// May be NULL on error. To be freed by free().
+char *
+get_local_file_path(const char *name);
+
 // returns true if the file exists and is not a directory
 bool
 is_regular_file(const char *path);
