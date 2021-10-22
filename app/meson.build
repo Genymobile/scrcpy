@@ -21,7 +21,6 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/stream.c',
-    'src/tiny_xpm.c',
     'src/video_buffer.c',
     'src/util/log.c',
     'src/util/net.c',
