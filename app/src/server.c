@@ -3,7 +3,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
-#include <libgen.h>
 #include <stdio.h>
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
@@ -51,47 +50,12 @@ get_server_path(void) {
     // the absolute path is hardcoded
     return server_path;
 #else
-
-    // use scrcpy-server in the same directory as the executable
-    char *executable_path = get_executable_path();
-    if (!executable_path) {
-        LOGE("Could not get executable path, "
-             "using " SERVER_FILENAME " from current directory");
-        // not found, use current directory
-        return strdup(SERVER_FILENAME);
-    }
-
-    // dirname() does not work correctly everywhere, so get the parent
-    // directory manually.
-    // See <https://github.com/Genymobile/scrcpy/issues/2619>
-    char *p = strrchr(executable_path, PATH_SEPARATOR);
-    if (!p) {
-        LOGE("Unexpected executable path: \"%s\" (it should contain a '%c')",
-             executable_path, PATH_SEPARATOR);
-        free(executable_path);
-        return strdup(SERVER_FILENAME);
-    }
-
-    *p = '\0'; // modify executable_path in place
-    char *dir = executable_path;
-    size_t dirlen = strlen(dir);
-
-    // sizeof(SERVER_FILENAME) gives statically the size including the null byte
-    size_t len = dirlen + 1 + sizeof(SERVER_FILENAME);
-    char *server_path = malloc(len);
+    char *server_path = get_local_file_path(SERVER_FILENAME);
     if (!server_path) {
-        LOGE("Could not alloc server path string, "
+        LOGE("Could not get local file path, "
              "using " SERVER_FILENAME " from current directory");
-        free(executable_path);
         return strdup(SERVER_FILENAME);
     }
-
-    memcpy(server_path, dir, dirlen);
-    server_path[dirlen] = PATH_SEPARATOR;
-    memcpy(&server_path[dirlen + 1], SERVER_FILENAME, sizeof(SERVER_FILENAME));
-    // the final null byte has been copied with SERVER_FILENAME
-
-    free(executable_path);
 
     LOGD("Using server (portable): %s", server_path);
     return server_path;
