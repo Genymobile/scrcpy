@@ -22,7 +22,6 @@
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
-#include "tiny_xpm.h"
 #include "util/log.h"
 #include "util/net.h"
 #ifdef HAVE_V4L2
