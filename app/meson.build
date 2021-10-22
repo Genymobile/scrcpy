@@ -151,6 +151,12 @@ executable('scrcpy', src,
            c_args: [])
 
 install_man('scrcpy.1')
+install_data('../data/icon.svg',
+             rename: 'scrcpy.svg',
+             install_dir: 'share/icons/hicolor/scalable/apps')
+install_data('../data/icon_256x256.png',
+             rename: 'scrcpy.png',
+             install_dir: 'share/icons/hicolor/256x256/apps')
 
 
 ### TESTS

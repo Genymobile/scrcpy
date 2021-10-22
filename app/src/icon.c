@@ -14,9 +14,11 @@
 
 static const char *const scrcpy_icons[] = {
 #ifdef PORTABLE
-    NULL, // TODO
+    "icon.svg",
+    "icon.png",
 #else
-    NULL, // TODO
+    PREFIX "/share/icons/hicolor/scalable/apps/scrcpy.svg"
+    PREFIX "/share/icons/hicolor/256x256/apps/scrcpy.png"
 #endif
 };
 
