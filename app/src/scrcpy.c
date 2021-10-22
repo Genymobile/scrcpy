@@ -41,6 +41,24 @@ struct scrcpy {
     struct controller controller;
     struct file_handler file_handler;
     struct input_manager input_manager;
+    // do not allocate this on stack, keep it in the struct
+    struct stream_callbacks stream_cbs;
+
+    // status of scrcpy process
+    bool server_started;
+    bool file_handler_initialized;
+    bool recorder_initialized;
+#ifdef HAVE_V4L2
+    bool v4l2_sink_initialized;
+#endif
+    bool stream_started;
+    bool controller_initialized;
+    bool controller_started;
+    bool screen_initialized;
+
+    // External sinks- allocated on HEAP. Remember them so that they can be freed later.
+    struct sc_frame_sink *external_sinks[DECODER_MAX_SINKS];
+    unsigned external_sink_count;
 };
 
 #ifdef _WIN32
@@ -239,27 +257,15 @@ stream_on_eos(struct stream *stream, void *userdata) {
     SDL_PushEvent(&stop_event);
 }
 
-bool
-scrcpy(const struct scrcpy_options *options) {
-    static struct scrcpy scrcpy;
-    struct scrcpy *s = &scrcpy;
+struct scrcpy_process *
+scrcpy_start(const struct scrcpy_options *options) {
+    struct scrcpy *s = malloc(sizeof(struct scrcpy));
+    struct scrcpy_process *p = malloc(sizeof(struct scrcpy));
+    p->scrcpy_struct = s;
 
     if (!server_init(&s->server)) {
-        return false;
+        return NULL;
     }
-
-    bool ret = false;
-
-    bool server_started = false;
-    bool file_handler_initialized = false;
-    bool recorder_initialized = false;
-#ifdef HAVE_V4L2
-    bool v4l2_sink_initialized = false;
-#endif
-    bool stream_started = false;
-    bool controller_initialized = false;
-    bool controller_started = false;
-    bool screen_initialized = false;
 
     bool record = !!options->record_filename;
     struct server_params params = {
@@ -281,29 +287,32 @@ scrcpy(const struct scrcpy_options *options) {
         .power_off_on_close = options->power_off_on_close,
     };
     if (!server_start(&s->server, &params)) {
-        goto end;
+        scrcpy_stop(p);
+        return NULL;
     }
 
-    server_started = true;
+    s->server_started = true;
 
     if (!sdl_init_and_configure(options->display, options->render_driver,
                                 options->disable_screensaver)) {
-        goto end;
+        scrcpy_stop(p);
+        return NULL;
     }
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
-    struct size frame_size;
 
-    if (!server_connect_to(&s->server, device_name, &frame_size)) {
-        goto end;
+    if (!server_connect_to(&s->server, device_name, &p->frame_size)) {
+        scrcpy_stop(p);
+        return NULL;
     }
 
     if (options->display && options->control) {
         if (!file_handler_init(&s->file_handler, s->server.serial,
                                options->push_target)) {
-            goto end;
+            scrcpy_stop(p);
+            return NULL;
         }
-        file_handler_initialized = true;
+        s->file_handler_initialized = true;
     }
 
     struct decoder *dec = NULL;
@@ -311,6 +320,7 @@ scrcpy(const struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     needs_decoder |= !!options->v4l2_device;
 #endif
+    needs_decoder |= options->force_decoder;
     if (needs_decoder) {
         decoder_init(&s->decoder);
         dec = &s->decoder;
@@ -321,19 +331,19 @@ scrcpy(const struct scrcpy_options *options) {
         if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
-                           frame_size)) {
-            goto end;
+                           p->frame_size)) {
+            scrcpy_stop(p);
+            return NULL;
         }
         rec = &s->recorder;
-        recorder_initialized = true;
+        s->recorder_initialized = true;
     }
 
     av_log_set_callback(av_log_callback);
 
-    static const struct stream_callbacks stream_cbs = {
-        .on_eos = stream_on_eos,
-    };
-    stream_init(&s->stream, s->server.video_socket, &stream_cbs, NULL);
+    // don't allocate callbacks on stack
+    s->stream_cbs.on_eos = stream_on_eos;
+    stream_init(&s->stream, s->server.video_socket, &s->stream_cbs, NULL);
 
     if (dec) {
         stream_add_sink(&s->stream, &dec->packet_sink);
@@ -345,14 +355,16 @@ scrcpy(const struct scrcpy_options *options) {
 
     if (options->control) {
         if (!controller_init(&s->controller, s->server.control_socket)) {
-            goto end;
+                scrcpy_stop(p);
+                return NULL;
         }
-        controller_initialized = true;
+        s->controller_initialized = true;
 
         if (!controller_start(&s->controller)) {
-            goto end;
+                scrcpy_stop(p);
+                return NULL;
         }
-        controller_started = true;
+        s->controller_started = true;
 
         if (options->turn_screen_off) {
             struct control_msg msg;
@@ -371,7 +383,7 @@ scrcpy(const struct scrcpy_options *options) {
 
         struct screen_params screen_params = {
             .window_title = window_title,
-            .frame_size = frame_size,
+            .frame_size = p->frame_size,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
@@ -385,96 +397,168 @@ scrcpy(const struct scrcpy_options *options) {
         };
 
         if (!screen_init(&s->screen, &screen_params)) {
-            goto end;
+            scrcpy_stop(p);
+            return NULL;
         }
-        screen_initialized = true;
+        s->screen_initialized = true;
 
         decoder_add_sink(&s->decoder, &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size,
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, p->frame_size,
                                options->v4l2_buffer)) {
-            goto end;
+            scrcpy_stop(p);
+            return NULL;
         }
 
         decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
 
-        v4l2_sink_initialized = true;
+        s->v4l2_sink_initialized = true;
     }
 #endif
 
     // now we consumed the header values, the socket receives the video stream
     // start the stream
     if (!stream_start(&s->stream)) {
-        goto end;
+        scrcpy_stop(p);
+        return NULL;
     }
-    stream_started = true;
+    s->stream_started = true;
 
+    return p;
+}
+
+bool
+scrcpy_loop(struct scrcpy_process *p, const struct scrcpy_options *options) {
+    struct scrcpy *s = p->scrcpy_struct;
     input_manager_init(&s->input_manager, &s->controller, &s->screen, options);
 
-    ret = event_loop(s, options);
+    int ret = event_loop(s, options);
     LOGD("quit...");
+    return ret;
+}
 
-    // Close the window immediately on closing, because screen_destroy() may
-    // only be called once the stream thread is joined (it may take time)
-    screen_hide_window(&s->screen);
 
-end:
+void
+scrcpy_stop(struct scrcpy_process *p) {
+    struct scrcpy *s = p->scrcpy_struct;
+
+    if (s->screen_initialized) {
+        // Close the window immediately on closing, because screen_destroy() may
+        // only be called once the stream thread is joined (it may take time)
+        screen_hide_window(&s->screen);
+    }
+
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
-    if (controller_started) {
+    if (s->controller_started) {
         controller_stop(&s->controller);
     }
-    if (file_handler_initialized) {
+    if (s->file_handler_initialized) {
         file_handler_stop(&s->file_handler);
     }
-    if (screen_initialized) {
+    if (s->screen_initialized) {
         screen_interrupt(&s->screen);
     }
 
-    if (server_started) {
+    if (s->server_started) {
         // shutdown the sockets and kill the server
         server_stop(&s->server);
     }
 
     // now that the sockets are shutdown, the stream and controller are
     // interrupted, we can join them
-    if (stream_started) {
+    if (s->stream_started) {
         stream_join(&s->stream);
     }
 
 #ifdef HAVE_V4L2
-    if (v4l2_sink_initialized) {
+    if (s->v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
 #endif
 
     // Destroy the screen only after the stream is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
-    if (screen_initialized) {
+    if (s->screen_initialized) {
         screen_join(&s->screen);
         screen_destroy(&s->screen);
     }
 
-    if (controller_started) {
+    if (s->controller_started) {
         controller_join(&s->controller);
     }
-    if (controller_initialized) {
+    if (s->controller_initialized) {
         controller_destroy(&s->controller);
     }
 
-    if (recorder_initialized) {
+    if (s->recorder_initialized) {
         recorder_destroy(&s->recorder);
     }
 
-    if (file_handler_initialized) {
+    if (s->file_handler_initialized) {
         file_handler_join(&s->file_handler);
         file_handler_destroy(&s->file_handler);
     }
 
     server_destroy(&s->server);
 
+    // free up sinks
+    while (s->external_sink_count > 0) {
+        struct sc_frame_sink *sink = s->external_sinks[--s->external_sink_count];
+        const struct sc_frame_sink_ops *ops = sink->ops;
+        free((void*)ops);
+        free(sink);
+    }
+
+    // given that these structures were allocated in heap, free them
+    free(s);
+    free(p);
+}
+
+bool
+scrcpy(const struct scrcpy_options *options) {
+    struct scrcpy_process *p = scrcpy_start(options);
+    if (p == NULL) {
+        return false;
+    }
+    bool ret = scrcpy_loop(p, options);
+    scrcpy_stop(p);
     return ret;
+}
+
+// use void* so that external clients don't have to deal with scrcpy internals.
+// TODO: how do I force JavaCPP AVFrame to use AVFrame type it already has from ffmpeg library mapping?
+bool
+scrcpy_add_sink(struct scrcpy_process *p,
+                bool (*open)(void *sink),
+                void (*close)(void *sink),
+                bool (*push)(void *sink, const void *avframe)
+                ) {
+    struct scrcpy *s = p->scrcpy_struct;
+
+    if (s->external_sink_count >= DECODER_MAX_SINKS) {
+        return false;
+    }
+
+    struct sc_frame_sink *sink = malloc(sizeof(struct sc_frame_sink));
+    struct sc_frame_sink_ops *ops = malloc(sizeof(struct sc_frame_sink_ops));
+
+    ops->open = (bool (*)(struct sc_frame_sink *sink)) open;
+    ops->close = (void (*)(struct sc_frame_sink *sink)) close;
+    ops->push = (bool (*)(struct sc_frame_sink *sink, const AVFrame *frame))push;
+    sink->ops = ops;
+    s->external_sinks[s->external_sink_count++] = sink;
+
+    decoder_add_sink(&s->decoder, sink);
+    return true;
+}
+
+void
+scrcpy_push_event(struct scrcpy_process *p,
+                    const struct control_msg *msg) {
+    struct scrcpy *s = p->scrcpy_struct;
+    controller_push_msg(&s->controller, msg);
 }
