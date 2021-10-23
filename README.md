@@ -1,5 +1,7 @@
 # scrcpy (v1.19)
 
+![icon](data/icon.png)
+
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected on
