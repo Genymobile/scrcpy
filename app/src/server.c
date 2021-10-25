@@ -47,8 +47,6 @@ get_server_path(void) {
         LOGE("Could not allocate memory");
         return NULL;
     }
-    // the absolute path is hardcoded
-    return server_path;
 #else
     char *server_path = get_local_file_path(SERVER_FILENAME);
     if (!server_path) {
@@ -58,8 +56,9 @@ get_server_path(void) {
     }
 
     LOGD("Using server (portable): %s", server_path);
-    return server_path;
 #endif
+
+    return server_path;
 }
 
 static bool
