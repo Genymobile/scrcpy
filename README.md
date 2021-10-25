@@ -830,6 +830,8 @@ To override the path of the `scrcpy-server` file, configure its path in
 
 [useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
 
+To override the icon, configure its path in `SCRCPY_ICON_PATH`.
+
 
 ## Why _scrcpy_?
 
