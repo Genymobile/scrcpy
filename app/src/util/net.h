@@ -10,12 +10,11 @@
 #ifdef __WINDOWS__
 
 # include <winsock2.h>
-# define SHUT_RD SD_RECEIVE
-# define SHUT_WR SD_SEND
-# define SHUT_RDWR SD_BOTH
+# include <stdatomic.h>
 # define SC_INVALID_SOCKET NULL
   typedef struct sc_socket_windows {
       SOCKET socket;
+      atomic_flag closed;
   } *sc_socket;
 
 #else // not __WINDOWS__
@@ -53,10 +52,13 @@ net_send(sc_socket socket, const void *buf, size_t len);
 ssize_t
 net_send_all(sc_socket socket, const void *buf, size_t len);
 
-// how is SHUT_RD (read), SHUT_WR (write) or SHUT_RDWR (both)
+// Shutdown the socket (or close on Windows) so that any blocking send() or
+// recv() are interrupted.
 bool
-net_shutdown(sc_socket socket, int how);
+net_interrupt(sc_socket socket);
 
+// Close the socket.
+// A socket must always be closed, even if net_interrupt() has been called.
 bool
 net_close(sc_socket socket);
 

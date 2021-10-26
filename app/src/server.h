@@ -18,7 +18,6 @@ struct server {
     char *serial;
     process_t process;
     sc_thread wait_server_thread;
-    atomic_flag server_socket_closed;
 
     sc_mutex mutex;
     sc_cond process_terminated_cond;

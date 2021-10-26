@@ -1,5 +1,6 @@
 #include "net.h"
 
+#include <assert.h>
 #include <stdio.h>
 #include <SDL2/SDL_platform.h>
 
@@ -55,6 +56,7 @@ wrap(sc_raw_socket sock) {
     }
 
     socket->socket = sock;
+    socket->closed = (atomic_flag) ATOMIC_FLAG_INIT;
 
     return socket;
 #else
@@ -195,18 +197,33 @@ net_send_all(sc_socket socket, const void *buf, size_t len) {
 }
 
 bool
-net_shutdown(sc_socket socket, int how) {
+net_interrupt(sc_socket socket) {
+    assert(socket != SC_INVALID_SOCKET);
+
     sc_raw_socket raw_sock = unwrap(socket);
-    return !shutdown(raw_sock, how);
+
+#ifdef __WINDOWS__
+    if (!atomic_flag_test_and_set(&socket->closed)) {
+        return !closesocket(raw_sock);
+    }
+    return true;
+#else
+    return !shutdown(raw_sock, SHUT_RDWR);
+#endif
 }
 
+#include <errno.h>
 bool
 net_close(sc_socket socket) {
     sc_raw_socket raw_sock = unwrap(socket);
 
 #ifdef __WINDOWS__
+    bool ret = true;
+    if (!atomic_flag_test_and_set(&socket->closed)) {
+        ret = !closesocket(raw_sock);
+    }
     free(socket);
-    return !closesocket(raw_sock);
+    return ret;
 #else
     return !close(raw_sock);
 #endif
