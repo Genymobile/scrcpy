@@ -137,7 +137,7 @@ ssize_t
 net_send_all(sc_socket socket, const void *buf, size_t len) {
     size_t copied = 0;
     while (len > 0) {
-        ssize_t w = send(socket, buf, len, 0);
+        ssize_t w = net_send(socket, buf, len);
         if (w == -1) {
             return copied ? (ssize_t) copied : -1;
         }
