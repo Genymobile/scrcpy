@@ -323,21 +323,10 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
     return SC_INVALID_SOCKET;
 }
 
-static void
-close_socket(sc_socket socket) {
-    assert(socket != SC_INVALID_SOCKET);
-    net_shutdown(socket, SHUT_RDWR);
-    if (!net_close(socket)) {
-        LOGW("Could not close socket");
-    }
-}
-
 bool
 server_init(struct server *server) {
     server->serial = NULL;
     server->process = PROCESS_NONE;
-    atomic_flag_clear_explicit(&server->server_socket_closed,
-                               memory_order_relaxed);
 
     bool ok = sc_mutex_init(&server->mutex);
     if (!ok) {
@@ -376,12 +365,11 @@ run_wait_server(void *data) {
 
     // no need for synchronization, server_socket is initialized before this
     // thread was created
-    if (server->server_socket != SC_INVALID_SOCKET
-            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
-        // On Linux, accept() is unblocked by shutdown(), but on Windows, it is
-        // unblocked by closesocket(). Therefore, call both (close_socket()).
-        close_socket(server->server_socket);
+    if (server->server_socket != SC_INVALID_SOCKET) {
+        // Unblock any accept()
+        net_interrupt(server->server_socket);
     }
+
     LOGD("Server terminated");
     return 0;
 }
@@ -430,14 +418,8 @@ server_start(struct server *server, const struct server_params *params) {
     return true;
 
 error:
-    if (!server->tunnel_forward) {
-        bool was_closed =
-            atomic_flag_test_and_set(&server->server_socket_closed);
-        // the thread is not started, the flag could not be already set
-        assert(!was_closed);
-        (void) was_closed;
-        close_socket(server->server_socket);
-    }
+    // The server socket (if any) will be closed on server_destroy()
+
     disable_tunnel(server);
 
     return false;
@@ -479,11 +461,11 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
         }
 
         // we don't need the server socket anymore
-        if (!atomic_flag_test_and_set(&server->server_socket_closed)) {
-            // close it from here
-            close_socket(server->server_socket);
-            // otherwise, it is closed by run_wait_server()
+        if (!net_close(server->server_socket)) {
+            LOGW("Could not close server socket on connect");
         }
+        // Do not attempt to close it again on server_destroy()
+        server->server_socket = SC_INVALID_SOCKET;
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
@@ -511,15 +493,20 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
 
 void
 server_stop(struct server *server) {
-    if (server->server_socket != SC_INVALID_SOCKET
-            && !atomic_flag_test_and_set(&server->server_socket_closed)) {
-        close_socket(server->server_socket);
+    if (server->server_socket != SC_INVALID_SOCKET) {
+        if (!net_interrupt(server->server_socket)) {
+            LOGW("Could not interrupt server socket");
+        }
     }
     if (server->video_socket != SC_INVALID_SOCKET) {
-        close_socket(server->video_socket);
+        if (!net_interrupt(server->video_socket)) {
+            LOGW("Could not interrupt video socket");
+        }
     }
     if (server->control_socket != SC_INVALID_SOCKET) {
-        close_socket(server->control_socket);
+        if (!net_interrupt(server->control_socket)) {
+            LOGW("Could not interrupt control socket");
+        }
     }
 
     assert(server->process != PROCESS_NONE);
@@ -556,6 +543,21 @@ server_stop(struct server *server) {
 
 void
 server_destroy(struct server *server) {
+    if (server->server_socket != SC_INVALID_SOCKET) {
+        if (!net_close(server->server_socket)) {
+            LOGW("Could not close server socket");
+        }
+    }
+    if (server->video_socket != SC_INVALID_SOCKET) {
+        if (!net_close(server->video_socket)) {
+            LOGW("Could not close video socket");
+        }
+    }
+    if (server->control_socket != SC_INVALID_SOCKET) {
+        if (!net_close(server->control_socket)) {
+            LOGW("Could not close control socket");
+        }
+    }
     free(server->serial);
     sc_cond_destroy(&server->process_terminated_cond);
     sc_mutex_destroy(&server->mutex);
