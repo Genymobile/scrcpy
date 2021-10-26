@@ -13,8 +13,10 @@
 # define SHUT_RD SD_RECEIVE
 # define SHUT_WR SD_SEND
 # define SHUT_RDWR SD_BOTH
-# define SC_INVALID_SOCKET INVALID_SOCKET
-  typedef SOCKET sc_socket;
+# define SC_INVALID_SOCKET NULL
+  typedef struct sc_socket_windows {
+      SOCKET socket;
+  } *sc_socket;
 
 #else // not __WINDOWS__
 
