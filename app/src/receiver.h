@@ -11,13 +11,13 @@
 // receive events from the device
 // managed by the controller
 struct receiver {
-    socket_t control_socket;
+    sc_socket control_socket;
     sc_thread thread;
     sc_mutex mutex;
 };
 
 bool
-receiver_init(struct receiver *receiver, socket_t control_socket);
+receiver_init(struct receiver *receiver, sc_socket control_socket);
 
 void
 receiver_destroy(struct receiver *receiver);

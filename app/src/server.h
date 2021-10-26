@@ -24,9 +24,9 @@ struct server {
     sc_cond process_terminated_cond;
     bool process_terminated;
 
-    socket_t server_socket; // only used if !tunnel_forward
-    socket_t video_socket;
-    socket_t control_socket;
+    sc_socket server_socket; // only used if !tunnel_forward
+    sc_socket video_socket;
+    sc_socket control_socket;
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"

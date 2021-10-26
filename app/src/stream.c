@@ -260,7 +260,7 @@ end:
 }
 
 void
-stream_init(struct stream *stream, socket_t socket,
+stream_init(struct stream *stream, sc_socket socket,
             const struct stream_callbacks *cbs, void *cbs_userdata) {
     stream->socket = socket;
     stream->pending = NULL;

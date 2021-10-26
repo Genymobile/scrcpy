@@ -14,7 +14,7 @@
 #define STREAM_MAX_SINKS 2
 
 struct stream {
-    socket_t socket;
+    sc_socket socket;
     sc_thread thread;
 
     struct sc_packet_sink *sinks[STREAM_MAX_SINKS];
@@ -35,7 +35,7 @@ struct stream_callbacks {
 };
 
 void
-stream_init(struct stream *stream, socket_t socket,
+stream_init(struct stream *stream, sc_socket socket,
             const struct stream_callbacks *cbs, void *cbs_userdata);
 
 void

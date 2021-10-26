@@ -109,7 +109,7 @@ disable_tunnel(struct server *server) {
     return disable_tunnel_reverse(server->serial);
 }
 
-static socket_t
+static sc_socket
 listen_on_port(uint16_t port) {
 #define IPV4_LOCALHOST 0x7F000001
     return net_listen(IPV4_LOCALHOST, port, 1);
@@ -132,7 +132,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         // need to try to connect until the server socket is listening on the
         // device.
         server->server_socket = listen_on_port(port);
-        if (server->server_socket != INVALID_SOCKET) {
+        if (server->server_socket != SC_INVALID_SOCKET) {
             // success
             server->local_port = port;
             return true;
@@ -289,11 +289,11 @@ execute_server(struct server *server, const struct server_params *params) {
     return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
 }
 
-static socket_t
+static sc_socket
 connect_and_read_byte(uint16_t port) {
-    socket_t socket = net_connect(IPV4_LOCALHOST, port);
-    if (socket == INVALID_SOCKET) {
-        return INVALID_SOCKET;
+    sc_socket socket = net_connect(IPV4_LOCALHOST, port);
+    if (socket == SC_INVALID_SOCKET) {
+        return SC_INVALID_SOCKET;
     }
 
     char byte;
@@ -302,17 +302,17 @@ connect_and_read_byte(uint16_t port) {
     if (net_recv(socket, &byte, 1) != 1) {
         // the server is not listening yet behind the adb tunnel
         net_close(socket);
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
     return socket;
 }
 
-static socket_t
+static sc_socket
 connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
-        socket_t socket = connect_and_read_byte(port);
-        if (socket != INVALID_SOCKET) {
+        sc_socket socket = connect_and_read_byte(port);
+        if (socket != SC_INVALID_SOCKET) {
             // it worked!
             return socket;
         }
@@ -320,12 +320,12 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
             SDL_Delay(delay);
         }
     } while (--attempts > 0);
-    return INVALID_SOCKET;
+    return SC_INVALID_SOCKET;
 }
 
 static void
-close_socket(socket_t socket) {
-    assert(socket != INVALID_SOCKET);
+close_socket(sc_socket socket) {
+    assert(socket != SC_INVALID_SOCKET);
     net_shutdown(socket, SHUT_RDWR);
     if (!net_close(socket)) {
         LOGW("Could not close socket");
@@ -352,9 +352,9 @@ server_init(struct server *server) {
 
     server->process_terminated = false;
 
-    server->server_socket = INVALID_SOCKET;
-    server->video_socket = INVALID_SOCKET;
-    server->control_socket = INVALID_SOCKET;
+    server->server_socket = SC_INVALID_SOCKET;
+    server->video_socket = SC_INVALID_SOCKET;
+    server->control_socket = SC_INVALID_SOCKET;
 
     server->local_port = 0;
 
@@ -376,7 +376,7 @@ run_wait_server(void *data) {
 
     // no need for synchronization, server_socket is initialized before this
     // thread was created
-    if (server->server_socket != INVALID_SOCKET
+    if (server->server_socket != SC_INVALID_SOCKET
             && !atomic_flag_test_and_set(&server->server_socket_closed)) {
         // On Linux, accept() is unblocked by shutdown(), but on Windows, it is
         // unblocked by closesocket(). Therefore, call both (close_socket()).
@@ -444,7 +444,8 @@ error:
 }
 
 static bool
-device_read_info(socket_t device_socket, char *device_name, struct size *size) {
+device_read_info(sc_socket device_socket, char *device_name,
+                 struct size *size) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     ssize_t r = net_recv_all(device_socket, buf, sizeof(buf));
     if (r < DEVICE_NAME_FIELD_LENGTH + 4) {
@@ -467,12 +468,12 @@ bool
 server_connect_to(struct server *server, char *device_name, struct size *size) {
     if (!server->tunnel_forward) {
         server->video_socket = net_accept(server->server_socket);
-        if (server->video_socket == INVALID_SOCKET) {
+        if (server->video_socket == SC_INVALID_SOCKET) {
             return false;
         }
 
         server->control_socket = net_accept(server->server_socket);
-        if (server->control_socket == INVALID_SOCKET) {
+        if (server->control_socket == SC_INVALID_SOCKET) {
             // the video_socket will be cleaned up on destroy
             return false;
         }
@@ -488,14 +489,14 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
         uint32_t delay = 100; // ms
         server->video_socket =
             connect_to_server(server->local_port, attempts, delay);
-        if (server->video_socket == INVALID_SOCKET) {
+        if (server->video_socket == SC_INVALID_SOCKET) {
             return false;
         }
 
         // we know that the device is listening, we don't need several attempts
         server->control_socket =
             net_connect(IPV4_LOCALHOST, server->local_port);
-        if (server->control_socket == INVALID_SOCKET) {
+        if (server->control_socket == SC_INVALID_SOCKET) {
             return false;
         }
     }
@@ -510,14 +511,14 @@ server_connect_to(struct server *server, char *device_name, struct size *size) {
 
 void
 server_stop(struct server *server) {
-    if (server->server_socket != INVALID_SOCKET
+    if (server->server_socket != SC_INVALID_SOCKET
             && !atomic_flag_test_and_set(&server->server_socket_closed)) {
         close_socket(server->server_socket);
     }
-    if (server->video_socket != INVALID_SOCKET) {
+    if (server->video_socket != SC_INVALID_SOCKET) {
         close_socket(server->video_socket);
     }
-    if (server->control_socket != INVALID_SOCKET) {
+    if (server->control_socket != SC_INVALID_SOCKET) {
         close_socket(server->control_socket);
     }
 

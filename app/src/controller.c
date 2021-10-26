@@ -5,7 +5,7 @@
 #include "util/log.h"
 
 bool
-controller_init(struct controller *controller, socket_t control_socket) {
+controller_init(struct controller *controller, sc_socket control_socket) {
     cbuf_init(&controller->queue);
 
     bool ok = receiver_init(&controller->receiver, control_socket);

@@ -55,12 +55,12 @@ net_perror(const char *s) {
 #endif
 }
 
-socket_t
+sc_socket
 net_connect(uint32_t addr, uint16_t port) {
-    socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
+    sc_socket sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == SC_INVALID_SOCKET) {
         net_perror("socket");
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
 
     SOCKADDR_IN sin;
@@ -71,18 +71,18 @@ net_connect(uint32_t addr, uint16_t port) {
     if (connect(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         net_perror("connect");
         net_close(sock);
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
 
     return sock;
 }
 
-socket_t
+sc_socket
 net_listen(uint32_t addr, uint16_t port, int backlog) {
-    socket_t sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == INVALID_SOCKET) {
+    sc_socket sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == SC_INVALID_SOCKET) {
         net_perror("socket");
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
 
     int reuse = 1;
@@ -99,42 +99,42 @@ net_listen(uint32_t addr, uint16_t port, int backlog) {
     if (bind(sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         net_perror("bind");
         net_close(sock);
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
 
     if (listen(sock, backlog) == SOCKET_ERROR) {
         net_perror("listen");
         net_close(sock);
-        return INVALID_SOCKET;
+        return SC_INVALID_SOCKET;
     }
 
     return sock;
 }
 
-socket_t
-net_accept(socket_t server_socket) {
+sc_socket
+net_accept(sc_socket server_socket) {
     SOCKADDR_IN csin;
     socklen_t sinsize = sizeof(csin);
     return accept(server_socket, (SOCKADDR *) &csin, &sinsize);
 }
 
 ssize_t
-net_recv(socket_t socket, void *buf, size_t len) {
+net_recv(sc_socket socket, void *buf, size_t len) {
     return recv(socket, buf, len, 0);
 }
 
 ssize_t
-net_recv_all(socket_t socket, void *buf, size_t len) {
+net_recv_all(sc_socket socket, void *buf, size_t len) {
     return recv(socket, buf, len, MSG_WAITALL);
 }
 
 ssize_t
-net_send(socket_t socket, const void *buf, size_t len) {
+net_send(sc_socket socket, const void *buf, size_t len) {
     return send(socket, buf, len, 0);
 }
 
 ssize_t
-net_send_all(socket_t socket, const void *buf, size_t len) {
+net_send_all(sc_socket socket, const void *buf, size_t len) {
     size_t copied = 0;
     while (len > 0) {
         ssize_t w = send(socket, buf, len, 0);
@@ -149,12 +149,12 @@ net_send_all(socket_t socket, const void *buf, size_t len) {
 }
 
 bool
-net_shutdown(socket_t socket, int how) {
+net_shutdown(sc_socket socket, int how) {
     return !shutdown(socket, how);
 }
 
 bool
-net_close(socket_t socket) {
+net_close(sc_socket socket) {
 #ifdef __WINDOWS__
     return !closesocket(socket);
 #else
