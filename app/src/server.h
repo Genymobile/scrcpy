@@ -20,21 +20,6 @@ struct server_info {
     struct sc_size frame_size;
 };
 
-struct server {
-    char *serial;
-
-    sc_pid process;
-    // alive only between start() and stop()
-    struct sc_process_observer observer;
-
-    sc_socket server_socket; // only used if !tunnel_forward
-    sc_socket video_socket;
-    sc_socket control_socket;
-    uint16_t local_port; // selected from port_range
-    bool tunnel_enabled;
-    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
-};
-
 struct server_params {
     const char *serial;
     enum sc_log_level log_level;
@@ -52,6 +37,21 @@ struct server_params {
     bool stay_awake;
     bool force_adb_forward;
     bool power_off_on_close;
+};
+
+struct server {
+    char *serial;
+
+    sc_pid process;
+    // alive only between start() and stop()
+    struct sc_process_observer observer;
+
+    sc_socket server_socket; // only used if !tunnel_forward
+    sc_socket video_socket;
+    sc_socket control_socket;
+    uint16_t local_port; // selected from port_range
+    bool tunnel_enabled;
+    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 };
 
 // init default values
