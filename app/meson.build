@@ -16,6 +16,7 @@ src = [
     'src/keyboard_inject.c',
     'src/mouse_inject.c',
     'src/opengl.c',
+    'src/options.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
@@ -184,6 +185,7 @@ if get_option('buildtype') == 'debug'
         ['test_cli', [
             'tests/test_cli.c',
             'src/cli.c',
+            'src/options.c',
             'src/util/str_util.c',
         ]],
         ['test_clock', [

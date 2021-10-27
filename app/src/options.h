@@ -106,55 +106,6 @@ struct scrcpy_options {
     bool power_off_on_close;
 };
 
-#define SCRCPY_OPTIONS_DEFAULT { \
-    .serial = NULL, \
-    .crop = NULL, \
-    .record_filename = NULL, \
-    .window_title = NULL, \
-    .push_target = NULL, \
-    .render_driver = NULL, \
-    .codec_options = NULL, \
-    .encoder_name = NULL, \
-    .v4l2_device = NULL, \
-    .log_level = SC_LOG_LEVEL_INFO, \
-    .record_format = SC_RECORD_FORMAT_AUTO, \
-    .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT, \
-    .port_range = { \
-        .first = DEFAULT_LOCAL_PORT_RANGE_FIRST, \
-        .last = DEFAULT_LOCAL_PORT_RANGE_LAST, \
-    }, \
-    .shortcut_mods = { \
-        .data = {SC_MOD_LALT, SC_MOD_LSUPER}, \
-        .count = 2, \
-    }, \
-    .max_size = 0, \
-    .bit_rate = DEFAULT_BIT_RATE, \
-    .max_fps = 0, \
-    .lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED, \
-    .rotation = 0, \
-    .window_x = SC_WINDOW_POSITION_UNDEFINED, \
-    .window_y = SC_WINDOW_POSITION_UNDEFINED, \
-    .window_width = 0, \
-    .window_height = 0, \
-    .display_id = 0, \
-    .display_buffer = 0, \
-    .v4l2_buffer = 0, \
-    .show_touches = false, \
-    .fullscreen = false, \
-    .always_on_top = false, \
-    .control = true, \
-    .display = true, \
-    .turn_screen_off = false, \
-    .prefer_text = false, \
-    .window_borderless = false, \
-    .mipmaps = true, \
-    .stay_awake = false, \
-    .force_adb_forward = false, \
-    .disable_screensaver = false, \
-    .forward_key_repeat = true, \
-    .forward_all_clicks = false, \
-    .legacy_paste = false, \
-    .power_off_on_close = false, \
-}
+extern const struct scrcpy_options scrcpy_options_default;
 
 #endif

@@ -48,7 +48,7 @@ main(int argc, char *argv[]) {
 #endif
 
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
