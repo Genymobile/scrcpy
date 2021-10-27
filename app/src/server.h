@@ -34,7 +34,9 @@ struct server_params {
 };
 
 struct server {
-    char *serial;
+    // The internal allocated strings are copies owned by the server
+    struct server_params params;
+
     process_t process;
     sc_thread wait_server_thread;
 
@@ -50,13 +52,13 @@ struct server {
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 };
 
-// init default values
+// init the server with the given params
 bool
-server_init(struct server *server);
+server_init(struct server *server, const struct server_params *params);
 
 // push, enable tunnel et start the server
 bool
-server_start(struct server *server, const struct server_params *params);
+server_start(struct server *server);
 
 #define DEVICE_NAME_FIELD_LENGTH 64
 // block until the communication with the server is established
