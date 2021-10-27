@@ -61,6 +61,44 @@ get_server_path(void) {
     return server_path;
 }
 
+static void
+server_params_destroy(struct server_params *params) {
+    // The server stores a copy of the params provided by the user
+    free((char *) params->serial);
+    free((char *) params->crop);
+    free((char *) params->codec_options);
+    free((char *) params->encoder_name);
+}
+
+static bool
+server_params_copy(struct server_params *dst, const struct server_params *src) {
+    *dst = *src;
+
+    // The params reference user-allocated memory, so we must copy them to
+    // handle them from another thread
+
+#define COPY(FIELD) \
+    dst->FIELD = NULL; \
+    if (src->FIELD) { \
+        dst->FIELD = strdup(src->FIELD); \
+        if (!dst->FIELD) { \
+            goto error; \
+        } \
+    }
+
+    COPY(serial);
+    COPY(crop);
+    COPY(codec_options);
+    COPY(encoder_name);
+#undef COPY
+
+    return true;
+
+error:
+    server_params_destroy(dst);
+    return false;
+}
+
 static bool
 push_server(const char *serial) {
     char *server_path = get_server_path();
@@ -103,10 +141,11 @@ disable_tunnel_forward(const char *serial, uint16_t local_port) {
 
 static bool
 disable_tunnel(struct server *server) {
+    const char *serial = server->params.serial;
     if (server->tunnel_forward) {
-        return disable_tunnel_forward(server->serial, server->local_port);
+        return disable_tunnel_forward(serial, server->local_port);
     }
-    return disable_tunnel_reverse(server->serial);
+    return disable_tunnel_reverse(serial);
 }
 
 static sc_socket
@@ -118,9 +157,10 @@ listen_on_port(uint16_t port) {
 static bool
 enable_tunnel_reverse_any_port(struct server *server,
                                struct sc_port_range port_range) {
+    const char *serial = server->params.serial;
     uint16_t port = port_range.first;
     for (;;) {
-        if (!enable_tunnel_reverse(server->serial, port)) {
+        if (!enable_tunnel_reverse(serial, port)) {
             // the command itself failed, it will fail on any port
             return false;
         }
@@ -139,7 +179,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         }
 
         // failure, disable tunnel and try another port
-        if (!disable_tunnel_reverse(server->serial)) {
+        if (!disable_tunnel_reverse(serial)) {
             LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
         }
 
@@ -165,9 +205,11 @@ static bool
 enable_tunnel_forward_any_port(struct server *server,
                                struct sc_port_range port_range) {
     server->tunnel_forward = true;
+
+    const char *serial = server->params.serial;
     uint16_t port = port_range.first;
     for (;;) {
-        if (enable_tunnel_forward(server->serial, port)) {
+        if (enable_tunnel_forward(serial, port)) {
             // success
             server->local_port = port;
             return true;
@@ -229,6 +271,8 @@ log_level_to_server_string(enum sc_log_level level) {
 
 static process_t
 execute_server(struct server *server, const struct server_params *params) {
+    const char *serial = server->params.serial;
+
     char max_size_string[6];
     char bit_rate_string[11];
     char max_fps_string[6];
@@ -286,7 +330,7 @@ execute_server(struct server *server, const struct server_params *params) {
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
+    return adb_execute(serial, cmd, ARRAY_LEN(cmd));
 }
 
 static sc_socket
@@ -324,18 +368,25 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 }
 
 bool
-server_init(struct server *server) {
-    server->serial = NULL;
+server_init(struct server *server, const struct server_params *params) {
+    bool ok = server_params_copy(&server->params, params);
+    if (!ok) {
+        LOGE("Could not copy server params");
+        return false;
+    }
+
     server->process = PROCESS_NONE;
 
-    bool ok = sc_mutex_init(&server->mutex);
+    ok = sc_mutex_init(&server->mutex);
     if (!ok) {
+        server_params_destroy(&server->params);
         return false;
     }
 
     ok = sc_cond_init(&server->process_terminated_cond);
     if (!ok) {
         sc_mutex_destroy(&server->mutex);
+        server_params_destroy(&server->params);
         return false;
     }
 
@@ -375,13 +426,8 @@ run_wait_server(void *data) {
 }
 
 bool
-server_start(struct server *server, const struct server_params *params) {
-    if (params->serial) {
-        server->serial = strdup(params->serial);
-        if (!server->serial) {
-            return false;
-        }
-    }
+server_start(struct server *server) {
+    const struct server_params *params = &server->params;
 
     if (!push_server(params->serial)) {
         /* server->serial will be freed on server_destroy() */
@@ -559,7 +605,8 @@ server_destroy(struct server *server) {
             LOGW("Could not close control socket");
         }
     }
-    free(server->serial);
+
+    server_params_destroy(&server->params);
     sc_cond_destroy(&server->process_terminated_cond);
     sc_mutex_destroy(&server->mutex);
 }

@@ -266,10 +266,6 @@ scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
 
-    if (!server_init(&s->server)) {
-        return false;
-    }
-
     bool ret = false;
 
     bool server_started = false;
@@ -305,7 +301,12 @@ scrcpy(struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
     };
-    if (!server_start(&s->server, &params)) {
+
+    if (!server_init(&s->server, &params)) {
+        return false;
+    }
+
+    if (!server_start(&s->server)) {
         goto end;
     }
 
@@ -324,7 +325,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     if (options->display && options->control) {
-        if (!file_handler_init(&s->file_handler, s->server.serial,
+        if (!file_handler_init(&s->file_handler, options->serial,
                                options->push_target)) {
             goto end;
         }
