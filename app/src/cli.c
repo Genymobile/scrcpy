@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "scrcpy.h"
+#include "options.h"
 #include "util/log.h"
 #include "util/str_util.h"
 

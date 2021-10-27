@@ -6,7 +6,7 @@
 
 #include "events.h"
 #include "icon.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "video_buffer.h"
 #include "util/log.h"
 

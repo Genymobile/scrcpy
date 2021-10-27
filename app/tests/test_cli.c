@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "cli.h"
-#include "scrcpy.h"
+#include "options.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {

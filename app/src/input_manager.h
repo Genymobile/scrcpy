@@ -9,7 +9,7 @@
 
 #include "controller.h"
 #include "fps_counter.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "screen.h"
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"

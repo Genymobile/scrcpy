@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include "scrcpy.h"
+#include "options.h"
 
 struct scrcpy_cli_args {
     struct scrcpy_options opts;

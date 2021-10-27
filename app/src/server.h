@@ -9,7 +9,7 @@
 
 #include "adb.h"
 #include "coords.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/thread.h"

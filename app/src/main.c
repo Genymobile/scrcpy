@@ -1,5 +1,3 @@
-#include "scrcpy.h"
-
 #include "common.h"
 
 #include <assert.h>
@@ -13,6 +11,8 @@
 #include <SDL2/SDL.h>
 
 #include "cli.h"
+#include "options.h"
+#include "scrcpy.h"
 #include "util/log.h"
 
 static void

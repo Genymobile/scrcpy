@@ -7,7 +7,7 @@
 #include <libavformat/avformat.h>
 
 #include "coords.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "trait/packet_sink.h"
 #include "util/queue.h"
 #include "util/thread.h"

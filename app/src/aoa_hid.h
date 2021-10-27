@@ -6,7 +6,6 @@
 
 #include <libusb-1.0/libusb.h>
 
-#include "scrcpy.h"
 #include "util/cbuf.h"
 #include "util/thread.h"
 #include "util/tick.h"

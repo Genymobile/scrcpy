@@ -6,7 +6,7 @@
 #include <stdbool.h>
 
 #include "controller.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "trait/key_processor.h"
 
 struct sc_keyboard_inject {
