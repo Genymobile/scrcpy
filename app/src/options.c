@@ -9,7 +9,9 @@ const struct scrcpy_options scrcpy_options_default = {
     .render_driver = NULL,
     .codec_options = NULL,
     .encoder_name = NULL,
+#ifdef HAVE_V4L2
     .v4l2_device = NULL,
+#endif
     .log_level = SC_LOG_LEVEL_INFO,
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT,

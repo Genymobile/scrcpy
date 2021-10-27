@@ -70,7 +70,9 @@ struct scrcpy_options {
     const char *render_driver;
     const char *codec_options;
     const char *encoder_name;
+#ifdef HAVE_V4L2
     const char *v4l2_device;
+#endif
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
