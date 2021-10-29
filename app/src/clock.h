@@ -26,7 +26,7 @@ struct sc_clock_point {
  * array.
  *
  * To estimate the slope, it splits the last SC_CLOCK_RANGE points into two
- * sets of SC_CLOCK_RANGE/2 points, and compute their centroid ("average
+ * sets of SC_CLOCK_RANGE/2 points, and computes their centroid ("average
  * point"). The slope of the estimated affine function is that of the line
  * passing through these two points.
  *
