@@ -261,6 +261,24 @@ stream_on_eos(struct stream *stream, void *userdata) {
     PUSH_EVENT(EVENT_STREAM_STOPPED);
 }
 
+static void
+server_on_connection_failed(struct server *server, void *userdata) {
+    struct scrcpy *scrcpy = userdata;
+
+}
+
+static void
+server_on_connected(struct server *server, void *userdata) {
+    struct scrcpy *scrcpy = userdata;
+
+}
+
+static void
+server_on_disconnected(struct server *server, void *userdata) {
+    struct scrcpy *scrcpy = userdata;
+
+}
+
 bool
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -302,7 +320,12 @@ scrcpy(struct scrcpy_options *options) {
         .power_off_on_close = options->power_off_on_close,
     };
 
-    if (!server_init(&s->server, &params)) {
+    static const struct server_callbacks cbs = {
+        .on_connection_failed = server_on_connection_failed,
+        .on_connected = server_on_connected,
+        .on_disconnected = server_on_disconnected,
+    };
+    if (!server_init(&s->server, &params, &cbs, s)) {
         return false;
     }
 

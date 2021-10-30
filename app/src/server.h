@@ -56,11 +56,21 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+
+    const struct server_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct server_callbacks {
+    void (*on_connection_failed)(struct server *server, void *userdata);
+    void (*on_connected)(struct server *server, void *userdata);
+    void (*on_disconnected)(struct server *server, void *userdata);
 };
 
 // init the server with the given params
 bool
-server_init(struct server *server, const struct server_params *params);
+server_init(struct server *server, const struct server_params *params,
+            const struct server_callbacks *cbs, void *cbs_userdata);
 
 // push, enable tunnel et start the server
 bool

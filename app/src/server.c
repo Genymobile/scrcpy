@@ -368,7 +368,8 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 }
 
 bool
-server_init(struct server *server, const struct server_params *params) {
+server_init(struct server *server, const struct server_params *params,
+            const struct server_callbacks *cbs, void *cbs_userdata) {
     bool ok = server_params_copy(&server->params, params);
     if (!ok) {
         LOGE("Could not copy server params");
@@ -400,6 +401,9 @@ server_init(struct server *server, const struct server_params *params) {
 
     server->tunnel_enabled = false;
     server->tunnel_forward = false;
+
+    server->cbs = cbs;
+    server->cbs_userdata = cbs_userdata;
 
     return true;
 }
