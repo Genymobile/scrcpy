@@ -44,7 +44,7 @@ struct server {
     struct server_params params;
 
     process_t process;
-    sc_thread wait_server_thread;
+    sc_thread thread;
 
     sc_mutex mutex;
 
@@ -53,6 +53,8 @@ struct server {
 
     sc_cond stopped_cond;
     bool stopped;
+
+    bool connected; // written by connect_thread
 
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
