@@ -365,6 +365,7 @@ scrcpy(struct scrcpy_options *options) {
         return false;
     }
 
+    // TODO SDL_Init(SDL_INIT_EVENTS) before starting server
     if (!server_start(&s->server)) {
         goto end;
     }

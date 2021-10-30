@@ -360,6 +360,7 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
             // it worked!
             return socket;
         }
+        // TODO use mutex + condvar + bool stopped
         if (attempts) {
             SDL_Delay(delay);
         }
