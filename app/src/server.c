@@ -411,6 +411,7 @@ server_init(struct server *server, const struct server_params *params,
 
     server->process_terminated = false;
     server->stopped = false;
+    server->connected = false;
 
     server->server_socket = SC_INVALID_SOCKET;
     server->video_socket = SC_INVALID_SOCKET;
@@ -421,6 +422,11 @@ server_init(struct server *server, const struct server_params *params,
     server->tunnel_enabled = false;
     server->tunnel_forward = false;
 
+    assert(cbs);
+    assert(cbs->on_connection_failed);
+    assert(cbs->on_connected);
+    assert(cbs->on_disconnected);
+
     server->cbs = cbs;
     server->cbs_userdata = cbs_userdata;
 
@@ -428,9 +434,59 @@ server_init(struct server *server, const struct server_params *params,
 }
 
 static int
-run_wait_server(void *data) {
+run_server_connect(void *data) {
     struct server *server = data;
+
+    struct server_info info;
+
+    if (!server_connect_to(server, &info)) {
+        server->cbs->on_connection_failed(server, server->cbs_userdata);
+        goto end;
+    }
+
+    server->connected = true;
+    server->cbs->on_connected(server, server->cbs_userdata);
+
+end:
+    return 0;
+}
+
+static int
+run_server(void *data) {
+    struct server *server = data;
+
+    const struct server_params *params = &server->params;
+
+    if (!push_server(params->serial)) {
+        server->cbs->on_connection_failed(server, server->cbs_userdata);
+        goto end;
+    }
+
+    if (!enable_tunnel_any_port(server, params->port_range,
+                                params->force_adb_forward)) {
+        server->cbs->on_connection_failed(server, server->cbs_userdata);
+        goto end;
+    }
+
+    server->process = execute_server(server, params);
+    if (server->process == PROCESS_NONE) {
+        server->cbs->on_connection_failed(server, server->cbs_userdata);
+        goto end;
+    }
+
+    sc_thread connect_thread;
+    bool ok = sc_thread_create(&connect_thread, run_server_connect,
+                               "server-connect", server);
+    if (!ok) {
+        LOGW("Could not create thread, killing the server...");
+        process_terminate(server->process);
+        server->cbs->on_connection_failed(server, server->cbs_userdata);
+        process_wait(server->process, false); // ignore exit code
+        goto end;
+    }
+
     process_wait(server->process, false); // ignore exit code
+    LOGD("Server terminated");
 
     sc_mutex_lock(&server->mutex);
     server->process_terminated = true;
@@ -444,54 +500,22 @@ run_wait_server(void *data) {
         net_interrupt(server->server_socket);
     }
 
-    LOGD("Server terminated");
+    sc_thread_join(&connect_thread, NULL);
+
+    // Written by connect_thread, sc_thread_join() provides the necessary
+    // memory barrier
+    if (server->connected) {
+        server->cbs->on_disconnected(server, server->cbs_userdata);
+    }
+    // Otherwise, ->on_connection_failed() is already called
+
+end:
     return 0;
 }
 
 bool
 server_start(struct server *server) {
-    const struct server_params *params = &server->params;
-
-    if (!push_server(params->serial)) {
-        /* server->serial will be freed on server_destroy() */
-        return false;
-    }
-
-    if (!enable_tunnel_any_port(server, params->port_range,
-                                params->force_adb_forward)) {
-        return false;
-    }
-
-    // server will connect to our server socket
-    server->process = execute_server(server, params);
-    if (server->process == PROCESS_NONE) {
-        goto error;
-    }
-
-    // If the server process dies before connecting to the server socket, then
-    // the client will be stuck forever on accept(). To avoid the problem, we
-    // must be able to wake up the accept() call when the server dies. To keep
-    // things simple and multiplatform, just spawn a new thread waiting for the
-    // server process and calling shutdown()/close() on the server socket if
-    // necessary to wake up any accept() blocking call.
-    bool ok = sc_thread_create(&server->wait_server_thread, run_wait_server,
-                               "wait-server", server);
-    if (!ok) {
-        process_terminate(server->process);
-        process_wait(server->process, true); // ignore exit code
-        goto error;
-    }
-
-    server->tunnel_enabled = true;
-
-    return true;
-
-error:
-    // The server socket (if any) will be closed on server_destroy()
-
-    disable_tunnel(server);
-
-    return false;
+    return sc_thread_create(&server->thread, run_server, "server", server);
 }
 
 static bool
@@ -608,7 +632,7 @@ server_stop(struct server *server) {
         process_terminate(server->process);
     }
 
-    sc_thread_join(&server->wait_server_thread, NULL);
+    sc_thread_join(&server->thread, NULL);
     process_close(server->process);
 }
 
