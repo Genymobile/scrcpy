@@ -282,17 +282,33 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
     (void) vb;
     struct screen *screen = userdata;
 
+    // event_failed implies previous_skipped (the previous frame may not have
+    // been consumed if the event was not sent)
+    assert(!screen->event_failed || previous_skipped);
+
+    bool need_new_event;
     if (previous_skipped) {
         fps_counter_add_skipped_frame(&screen->fps_counter);
         // The EVENT_NEW_FRAME triggered for the previous frame will consume
-        // this new frame instead
+        // this new frame instead, unless the previous event failed
+        need_new_event = screen->event_failed;
     } else {
+        need_new_event = true;
+    }
+
+    if (need_new_event) {
         static SDL_Event new_frame_event = {
             .type = EVENT_NEW_FRAME,
         };
 
         // Post the event on the UI thread
-        SDL_PushEvent(&new_frame_event);
+        int ret = SDL_PushEvent(&new_frame_event);
+        if (ret < 0) {
+            LOGW("Could not post new frame event: %s", SDL_GetError());
+            screen->event_failed = true;
+        } else {
+            screen->event_failed = false;
+        }
     }
 }
 
@@ -302,6 +318,7 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     screen->has_frame = false;
     screen->fullscreen = false;
     screen->maximized = false;
+    screen->event_failed = false;
 
     static const struct sc_video_buffer_callbacks cbs = {
         .on_new_frame = sc_video_buffer_on_new_frame,
