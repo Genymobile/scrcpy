@@ -14,9 +14,9 @@
 
 #define DOWNCAST(SINK) container_of(SINK, struct screen, frame_sink)
 
-static inline struct size
-get_rotated_size(struct size size, int rotation) {
-    struct size rotated_size;
+static inline struct sc_size
+get_rotated_size(struct sc_size size, int rotation) {
+    struct sc_size rotated_size;
     if (rotation & 1) {
         rotated_size.width = size.height;
         rotated_size.height = size.width;
@@ -27,26 +27,26 @@ get_rotated_size(struct size size, int rotation) {
     return rotated_size;
 }
 
-// get the window size in a struct size
-static struct size
+// get the window size in a struct sc_size
+static struct sc_size
 get_window_size(const struct screen *screen) {
     int width;
     int height;
     SDL_GetWindowSize(screen->window, &width, &height);
 
-    struct size size;
+    struct sc_size size;
     size.width = width;
     size.height = height;
     return size;
 }
 
-static struct point
+static struct sc_point
 get_window_position(const struct screen *screen) {
     int x;
     int y;
     SDL_GetWindowPosition(screen->window, &x, &y);
 
-    struct point point;
+    struct sc_point point;
     point.x = x;
     point.y = y;
     return point;
@@ -54,7 +54,7 @@ get_window_position(const struct screen *screen) {
 
 // set the window size to be applied when fullscreen is disabled
 static void
-set_window_size(struct screen *screen, struct size new_size) {
+set_window_size(struct screen *screen, struct sc_size new_size) {
     assert(!screen->fullscreen);
     assert(!screen->maximized);
     SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
@@ -62,7 +62,7 @@ set_window_size(struct screen *screen, struct size new_size) {
 
 // get the preferred display bounds (i.e. the screen bounds with some margins)
 static bool
-get_preferred_display_bounds(struct size *bounds) {
+get_preferred_display_bounds(struct sc_size *bounds) {
     SDL_Rect rect;
 #ifdef SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
 # define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayUsableBounds((i), (r))
@@ -80,7 +80,7 @@ get_preferred_display_bounds(struct size *bounds) {
 }
 
 static bool
-is_optimal_size(struct size current_size, struct size content_size) {
+is_optimal_size(struct sc_size current_size, struct sc_size content_size) {
     // The size is optimal if we can recompute one dimension of the current
     // size from the other
     return current_size.height == current_size.width * content_size.height
@@ -94,16 +94,16 @@ is_optimal_size(struct size current_size, struct size content_size) {
 //    crops the black borders)
 //  - it keeps the aspect ratio
 //  - it scales down to make it fit in the display_size
-static struct size
-get_optimal_size(struct size current_size, struct size content_size) {
+static struct sc_size
+get_optimal_size(struct sc_size current_size, struct sc_size content_size) {
     if (content_size.width == 0 || content_size.height == 0) {
         // avoid division by 0
         return current_size;
     }
 
-    struct size window_size;
+    struct sc_size window_size;
 
-    struct size display_size;
+    struct sc_size display_size;
     if (!get_preferred_display_bounds(&display_size)) {
         // could not get display bounds, do not constraint the size
         window_size.width = current_size.width;
@@ -135,10 +135,10 @@ get_optimal_size(struct size current_size, struct size content_size) {
 
 // initially, there is no current size, so use the frame size as current size
 // req_width and req_height, if not 0, are the sizes requested by the user
-static inline struct size
-get_initial_optimal_size(struct size content_size, uint16_t req_width,
+static inline struct sc_size
+get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
                          uint16_t req_height) {
-    struct size window_size;
+    struct sc_size window_size;
     if (!req_width && !req_height) {
         window_size = get_optimal_size(content_size, content_size);
     } else {
@@ -166,9 +166,9 @@ screen_update_content_rect(struct screen *screen) {
     int dh;
     SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
 
-    struct size content_size = screen->content_size;
+    struct sc_size content_size = screen->content_size;
     // The drawable size is the window size * the HiDPI scale
-    struct size drawable_size = {dw, dh};
+    struct sc_size drawable_size = {dw, dh};
 
     SDL_Rect *rect = &screen->rect;
 
@@ -200,7 +200,7 @@ screen_update_content_rect(struct screen *screen) {
 static inline SDL_Texture *
 create_texture(struct screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
-    struct size size = screen->frame_size;
+    struct sc_size size = screen->frame_size;
     SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_YV12,
                                              SDL_TEXTUREACCESS_STREAMING,
                                              size.width, size.height);
@@ -330,13 +330,13 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     if (screen->rotation) {
         LOGI("Initial display rotation set to %u", screen->rotation);
     }
-    struct size content_size =
+    struct sc_size content_size =
         get_rotated_size(screen->frame_size, screen->rotation);
     screen->content_size = content_size;
 
-    struct size window_size = get_initial_optimal_size(content_size,
-                                                       params->window_width,
-                                                       params->window_height);
+    struct sc_size window_size =
+        get_initial_optimal_size(content_size,params->window_width,
+                                 params->window_height);
     uint32_t window_flags = SDL_WINDOW_HIDDEN
                           | SDL_WINDOW_RESIZABLE
                           | SDL_WINDOW_ALLOW_HIGHDPI;
@@ -508,10 +508,10 @@ screen_destroy(struct screen *screen) {
 }
 
 static void
-resize_for_content(struct screen *screen, struct size old_content_size,
-                                                 struct size new_content_size) {
-    struct size window_size = get_window_size(screen);
-    struct size target_size = {
+resize_for_content(struct screen *screen, struct sc_size old_content_size,
+                   struct sc_size new_content_size) {
+    struct sc_size window_size = get_window_size(screen);
+    struct sc_size target_size = {
         .width = (uint32_t) window_size.width * new_content_size.width
                 / old_content_size.width,
         .height = (uint32_t) window_size.height * new_content_size.height
@@ -522,7 +522,7 @@ resize_for_content(struct screen *screen, struct size old_content_size,
 }
 
 static void
-set_content_size(struct screen *screen, struct size new_content_size) {
+set_content_size(struct screen *screen, struct sc_size new_content_size) {
     if (!screen->fullscreen && !screen->maximized) {
         resize_for_content(screen, screen->content_size, new_content_size);
     } else if (!screen->resize_pending) {
@@ -553,7 +553,7 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
         return;
     }
 
-    struct size new_content_size =
+    struct sc_size new_content_size =
         get_rotated_size(screen->frame_size, rotation);
 
     set_content_size(screen, new_content_size);
@@ -566,7 +566,7 @@ screen_set_rotation(struct screen *screen, unsigned rotation) {
 
 // recreate the texture and resize the window if the frame size has changed
 static bool
-prepare_for_frame(struct screen *screen, struct size new_frame_size) {
+prepare_for_frame(struct screen *screen, struct sc_size new_frame_size) {
     if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
         // frame dimension changed, destroy texture
@@ -574,7 +574,7 @@ prepare_for_frame(struct screen *screen, struct size new_frame_size) {
 
         screen->frame_size = new_frame_size;
 
-        struct size new_content_size =
+        struct sc_size new_content_size =
             get_rotated_size(new_frame_size, screen->rotation);
         set_content_size(screen, new_content_size);
 
@@ -615,7 +615,7 @@ screen_update_frame(struct screen *screen) {
 
     fps_counter_add_rendered_frame(&screen->fps_counter);
 
-    struct size new_frame_size = {frame->width, frame->height};
+    struct sc_size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
         return false;
     }
@@ -682,10 +682,10 @@ screen_resize_to_fit(struct screen *screen) {
         return;
     }
 
-    struct point point = get_window_position(screen);
-    struct size window_size = get_window_size(screen);
+    struct sc_point point = get_window_position(screen);
+    struct sc_size window_size = get_window_size(screen);
 
-    struct size optimal_size =
+    struct sc_size optimal_size =
         get_optimal_size(window_size, screen->content_size);
 
     // Center the window related to the device screen
@@ -711,7 +711,7 @@ screen_resize_to_pixel_perfect(struct screen *screen) {
         screen->maximized = false;
     }
 
-    struct size content_size = screen->content_size;
+    struct sc_size content_size = screen->content_size;
     SDL_SetWindowSize(screen->window, content_size.width, content_size.height);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
@@ -766,7 +766,7 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
     return false;
 }
 
-struct point
+struct sc_point
 screen_convert_drawable_to_frame_coords(struct screen *screen,
                                         int32_t x, int32_t y) {
     unsigned rotation = screen->rotation;
@@ -780,7 +780,7 @@ screen_convert_drawable_to_frame_coords(struct screen *screen,
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
 
     // rotate
-    struct point result;
+    struct sc_point result;
     switch (rotation) {
         case 0:
             result.x = x;
@@ -803,7 +803,7 @@ screen_convert_drawable_to_frame_coords(struct screen *screen,
     return result;
 }
 
-struct point
+struct sc_point
 screen_convert_window_to_frame_coords(struct screen *screen,
                                       int32_t x, int32_t y) {
     screen_hidpi_scale_coords(screen, &x, &y);

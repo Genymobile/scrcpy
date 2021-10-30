@@ -25,7 +25,7 @@ struct recorder {
     char *filename;
     enum sc_record_format format;
     AVFormatContext *ctx;
-    struct size declared_frame_size;
+    struct sc_size declared_frame_size;
     bool header_written;
 
     sc_thread thread;
@@ -44,7 +44,7 @@ struct recorder {
 
 bool
 recorder_init(struct recorder *recorder, const char *filename,
-              enum sc_record_format format, struct size declared_frame_size);
+              enum sc_record_format format, struct sc_size declared_frame_size);
 
 void
 recorder_destroy(struct recorder *recorder);

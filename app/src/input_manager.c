@@ -332,7 +332,7 @@ input_manager_process_text_input(struct input_manager *im,
 static bool
 simulate_virtual_finger(struct input_manager *im,
                         enum android_motionevent_action action,
-                        struct point point) {
+                        struct sc_point point) {
     bool up = action == AMOTION_EVENT_ACTION_UP;
 
     struct control_msg msg;
@@ -352,8 +352,8 @@ simulate_virtual_finger(struct input_manager *im,
     return true;
 }
 
-static struct point
-inverse_point(struct point point, struct size size) {
+static struct sc_point
+inverse_point(struct sc_point point, struct sc_size size) {
     point.x = size.width - point.x;
     point.y = size.height - point.y;
     return point;
@@ -545,10 +545,10 @@ input_manager_process_mouse_motion(struct input_manager *im,
     im->mp->ops->process_mouse_motion(im->mp, event);
 
     if (im->vfinger_down) {
-        struct point mouse =
+        struct sc_point mouse =
             screen_convert_window_to_frame_coords(im->screen, event->x,
                                                   event->y);
-        struct point vfinger = inverse_point(mouse, im->screen->frame_size);
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
         simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
 }
@@ -630,10 +630,10 @@ input_manager_process_mouse_button(struct input_manager *im,
 #define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
     if ((down && !im->vfinger_down && CTRL_PRESSED)
             || (!down && im->vfinger_down)) {
-        struct point mouse =
+        struct sc_point mouse =
             screen_convert_window_to_frame_coords(im->screen, event->x,
                                                               event->y);
-        struct point vfinger = inverse_point(mouse, im->screen->frame_size);
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
                                                : AMOTION_EVENT_ACTION_UP;

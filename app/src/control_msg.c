@@ -56,7 +56,7 @@ static const char *const screen_power_mode_labels[] = {
 };
 
 static void
-write_position(uint8_t *buf, const struct position *position) {
+write_position(uint8_t *buf, const struct sc_position *position) {
     buffer_write32be(&buf[0], position->point.x);
     buffer_write32be(&buf[4], position->point.y);
     buffer_write16be(&buf[8], position->screen_size.width);

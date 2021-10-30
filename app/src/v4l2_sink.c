@@ -359,7 +359,7 @@ sc_v4l2_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
 
 bool
 sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name,
-                  struct size frame_size, sc_tick buffering_time) {
+                  struct sc_size frame_size, sc_tick buffering_time) {
     vs->device_name = strdup(device_name);
     if (!vs->device_name) {
         LOGE("Could not strdup v4l2 device name");

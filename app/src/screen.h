@@ -27,13 +27,13 @@ struct screen {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
     struct sc_opengl gl;
-    struct size frame_size;
-    struct size content_size; // rotated frame_size
+    struct sc_size frame_size;
+    struct sc_size content_size; // rotated frame_size
 
     bool resize_pending; // resize requested while fullscreen or maximized
     // The content size the last time the window was not maximized or
     // fullscreen (meaningful only when resize_pending is true)
-    struct size windowed_content_size;
+    struct sc_size windowed_content_size;
 
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
     unsigned rotation;
@@ -49,7 +49,7 @@ struct screen {
 
 struct screen_params {
     const char *window_title;
-    struct size frame_size;
+    struct sc_size frame_size;
     bool always_on_top;
 
     int16_t window_x;
@@ -120,13 +120,13 @@ screen_handle_event(struct screen *screen, SDL_Event *event);
 
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels
-struct point
+struct sc_point
 screen_convert_window_to_frame_coords(struct screen *screen,
                                       int32_t x, int32_t y);
 
 // convert point from drawable coordinates to frame coordinates
 // x and y are expressed in pixels
-struct point
+struct sc_point
 screen_convert_drawable_to_frame_coords(struct screen *screen,
                                         int32_t x, int32_t y);
 

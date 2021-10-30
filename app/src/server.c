@@ -427,7 +427,7 @@ error:
 
 static bool
 device_read_info(sc_socket device_socket, char *device_name,
-                 struct size *size) {
+                 struct sc_size *size) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     ssize_t r = net_recv_all(device_socket, buf, sizeof(buf));
     if (r < DEVICE_NAME_FIELD_LENGTH + 4) {
@@ -447,7 +447,8 @@ device_read_info(sc_socket device_socket, char *device_name,
 }
 
 bool
-server_connect_to(struct server *server, char *device_name, struct size *size) {
+server_connect_to(struct server *server, char *device_name,
+                  struct sc_size *size) {
     if (!server->tunnel_forward) {
         server->video_socket = net_accept(server->server_socket);
         if (server->video_socket == SC_INVALID_SOCKET) {

@@ -372,7 +372,7 @@ bool
 recorder_init(struct recorder *recorder,
               const char *filename,
               enum sc_record_format format,
-              struct size declared_frame_size) {
+              struct sc_size declared_frame_size) {
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOGE("Could not strdup filename");

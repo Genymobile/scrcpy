@@ -309,7 +309,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
-    struct size frame_size;
+    struct sc_size frame_size;
 
     if (!server_connect_to(&s->server, device_name, &frame_size)) {
         goto end;

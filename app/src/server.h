@@ -62,7 +62,8 @@ server_start(struct server *server, const struct server_params *params);
 // block until the communication with the server is established
 // device_name must point to a buffer of at least DEVICE_NAME_FIELD_LENGTH bytes
 bool
-server_connect_to(struct server *server, char *device_name, struct size *size);
+server_connect_to(struct server *server, char *device_name,
+                  struct sc_size *size);
 
 // disconnect and kill the server process
 void

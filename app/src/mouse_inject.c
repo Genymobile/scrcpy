@@ -125,7 +125,7 @@ convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
     int mouse_y;
     SDL_GetMouseState(&mouse_x, &mouse_y);
 
-    struct position position = {
+    struct sc_position position = {
         .screen_size = screen->frame_size,
         .point = screen_convert_window_to_frame_coords(screen,
                                                        mouse_x, mouse_y),
