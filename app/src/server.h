@@ -44,11 +44,12 @@ struct server {
     struct server_params params;
 
     process_t process;
-    sc_thread wait_server_thread;
+    sc_thread thread;
 
     sc_mutex mutex;
     sc_cond process_terminated_cond;
     bool process_terminated;
+    bool connected; // written by connect_thread
 
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
