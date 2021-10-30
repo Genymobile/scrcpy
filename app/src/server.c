@@ -426,8 +426,7 @@ error:
 }
 
 static bool
-device_read_info(sc_socket device_socket, char *device_name,
-                 struct sc_size *size) {
+device_read_info(sc_socket device_socket, struct server_info *info) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
     ssize_t r = net_recv_all(device_socket, buf, sizeof(buf));
     if (r < DEVICE_NAME_FIELD_LENGTH + 4) {
@@ -436,19 +435,17 @@ device_read_info(sc_socket device_socket, char *device_name,
     }
     // in case the client sends garbage
     buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
-    // strcpy is safe here, since name contains at least
-    // DEVICE_NAME_FIELD_LENGTH bytes and strlen(buf) < DEVICE_NAME_FIELD_LENGTH
-    strcpy(device_name, (char *) buf);
-    size->width = (buf[DEVICE_NAME_FIELD_LENGTH] << 8)
-            | buf[DEVICE_NAME_FIELD_LENGTH + 1];
-    size->height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8)
-            | buf[DEVICE_NAME_FIELD_LENGTH + 3];
+    memcpy(info->device_name, (char *) buf, sizeof(info->device_name));
+
+    info->frame_size.width = (buf[DEVICE_NAME_FIELD_LENGTH] << 8)
+                           | buf[DEVICE_NAME_FIELD_LENGTH + 1];
+    info->frame_size.height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8)
+                            | buf[DEVICE_NAME_FIELD_LENGTH + 3];
     return true;
 }
 
 bool
-server_connect_to(struct server *server, char *device_name,
-                  struct sc_size *size) {
+server_connect_to(struct server *server, struct server_info *info) {
     if (!server->tunnel_forward) {
         server->video_socket = net_accept(server->server_socket);
         if (server->video_socket == SC_INVALID_SOCKET) {
@@ -489,7 +486,7 @@ server_connect_to(struct server *server, char *device_name,
     server->tunnel_enabled = false;
 
     // The sockets will be closed on stop if device_read_info() fails
-    return device_read_info(server->video_socket, device_name, size);
+    return device_read_info(server->video_socket, info);
 }
 
 void

@@ -331,10 +331,9 @@ scrcpy(struct scrcpy_options *options) {
 
     sdl_configure(options->display, options->disable_screensaver);
 
-    char device_name[DEVICE_NAME_FIELD_LENGTH];
-    struct sc_size frame_size;
+    struct server_info info;
 
-    if (!server_connect_to(&s->server, device_name, &frame_size)) {
+    if (!server_connect_to(&s->server, &info)) {
         goto end;
     }
 
@@ -361,7 +360,7 @@ scrcpy(struct scrcpy_options *options) {
         if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
-                           frame_size)) {
+                           info.frame_size)) {
             goto end;
         }
         rec = &s->recorder;
@@ -407,11 +406,11 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->display) {
         const char *window_title =
-            options->window_title ? options->window_title : device_name;
+            options->window_title ? options->window_title : info.device_name;
 
         struct screen_params screen_params = {
             .window_title = window_title,
-            .frame_size = frame_size,
+            .frame_size = info.frame_size,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
@@ -434,8 +433,8 @@ scrcpy(struct scrcpy_options *options) {
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size,
-                               options->v4l2_buffer)) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
+                               info.frame_size, options->v4l2_buffer)) {
             goto end;
         }
 
