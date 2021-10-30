@@ -402,7 +402,8 @@ connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
 }
 
 bool
-server_init(struct server *server, const struct server_params *params) {
+server_init(struct server *server, const struct server_params *params,
+            const struct server_callbacks *cbs, void *cbs_userdata) {
     bool ok = server_params_copy(&server->params, params);
     if (!ok) {
         LOGE("Could not copy server params");
@@ -424,7 +425,6 @@ server_init(struct server *server, const struct server_params *params) {
         return false;
     }
 
-    server->process = SC_PROCESS_NONE;
     server->stopped = false;
 
     server->server_socket = SC_INVALID_SOCKET;
@@ -435,6 +435,14 @@ server_init(struct server *server, const struct server_params *params) {
 
     server->tunnel_enabled = false;
     server->tunnel_forward = false;
+
+    assert(cbs);
+    assert(cbs->on_connection_failed);
+    assert(cbs->on_connected);
+    assert(cbs->on_disconnected);
+
+    server->cbs = cbs;
+    server->cbs_userdata = cbs_userdata;
 
     return true;
 }
@@ -458,7 +466,7 @@ device_read_info(sc_socket device_socket, struct server_info *info) {
     return true;
 }
 
-bool
+static bool
 server_connect_to(struct server *server, struct server_info *info) {
     assert(server->tunnel_enabled);
 
@@ -531,6 +539,9 @@ fail:
         }
     }
 
+    // Always leave this function with tunnel disabled
+    disable_tunnel(server);
+
     return false;
 }
 
@@ -547,57 +558,68 @@ server_on_terminated(void *userdata) {
         net_interrupt(server->server_socket);
     }
 
+    server->cbs->on_disconnected(server, server->cbs_userdata);
+
     LOGD("Server terminated");
 }
 
-bool
-server_start(struct server *server) {
+static int
+run_server(void *data) {
+    struct server *server = data;
+
     const struct server_params *params = &server->params;
 
-    if (!push_server(params->serial)) {
-        /* server->serial will be freed on server_destroy() */
-        return false;
+    bool ok = push_server(params->serial);
+    if (!ok) {
+        goto error_connection_failed;
     }
 
-    if (!enable_tunnel_any_port(server, params->port_range,
-                                params->force_adb_forward)) {
-        return false;
+    ok = enable_tunnel_any_port(server, params->port_range,
+                                params->force_adb_forward);
+    if (!ok) {
+        goto error_connection_failed;
     }
 
     // server will connect to our server socket
-    server->process = execute_server(server, params);
-    if (server->process == SC_PROCESS_NONE) {
-        goto error;
+    sc_pid pid = execute_server(server, params);
+    if (pid == SC_PROCESS_NONE) {
+        disable_tunnel(server);
+        goto error_connection_failed;
     }
 
     static const struct sc_process_listener listener = {
         .on_terminated = server_on_terminated,
     };
-    bool ok = sc_process_observer_init(&server->observer, server->process,
-                                       &listener, server);
+    struct sc_process_observer observer;
+    ok = sc_process_observer_init(&observer, pid, &listener, server);
     if (!ok) {
-        sc_process_terminate(server->process);
-        sc_process_wait(server->process, true); // ignore exit code
-        goto error;
+        sc_process_terminate(pid);
+        sc_process_wait(pid, true); // ignore exit code
+        disable_tunnel(server);
+        goto error_connection_failed;
     }
 
-    return true;
+    ok = server_connect_to(server, &server->info);
+    // The tunnel is always closed by server_connect_to()
+    if (!ok) {
+        sc_process_terminate(pid);
+        sc_process_wait(pid, true); // ignore exit code
+        sc_process_observer_join(&observer);
+        sc_process_observer_destroy(&observer);
+        goto error_connection_failed;
+    }
 
-error:
-    // The server socket (if any) will be closed on server_destroy()
+    // Now connected
+    server->cbs->on_connected(server, server->cbs_userdata);
 
-    disable_tunnel(server);
-
-    return false;
-}
-
-void
-server_stop(struct server *server) {
+    // Wait for server_stop()
     sc_mutex_lock(&server->mutex);
-    server->stopped = true;
-    sc_cond_signal(&server->cond_stopped);
+    while (!server->stopped) {
+        sc_cond_wait(&server->cond_stopped, &server->mutex);
+    }
     sc_mutex_unlock(&server->mutex);
 
+    // Server stop has been requested
     if (server->server_socket != SC_INVALID_SOCKET) {
         if (!net_interrupt(server->server_socket)) {
             LOGW("Could not interrupt server socket");
@@ -614,18 +636,10 @@ server_stop(struct server *server) {
         }
     }
 
-    assert(server->process != SC_PROCESS_NONE);
-
-    if (server->tunnel_enabled) {
-        // ignore failure
-        disable_tunnel(server);
-    }
-
     // Give some delay for the server to terminate properly
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
     sc_tick deadline = sc_tick_now() + WATCHDOG_DELAY;
-    bool terminated =
-        sc_process_observer_timedwait(&server->observer, deadline);
+    bool terminated = sc_process_observer_timedwait(&observer, deadline);
 
     // After this delay, kill the server if it's not dead already.
     // On some devices, closing the sockets is not sufficient to wake up the
@@ -635,32 +649,44 @@ server_stop(struct server *server) {
         // reaped (closed) yet, so its PID is still valid, and it is ok to call
         // sc_process_terminate() even in that case.
         LOGW("Killing the server...");
-        sc_process_terminate(server->process);
+        sc_process_terminate(pid);
     }
 
-    sc_process_observer_join(&server->observer);
-    sc_process_observer_destroy(&server->observer);
+    sc_process_observer_join(&observer);
+    sc_process_observer_destroy(&observer);
 
-    sc_process_close(server->process);
+    sc_process_close(pid);
+
+    return 0;
+
+error_connection_failed:
+    server->cbs->on_connection_failed(server, server->cbs_userdata);
+    return -1;
+}
+
+bool
+server_start(struct server *server) {
+    bool ok = sc_thread_create(&server->thread, run_server, "server", server);
+    if (!ok) {
+        LOGE("Could not create server thread");
+        return false;
+    }
+
+    return true;
+}
+
+void
+server_stop(struct server *server) {
+    sc_mutex_lock(&server->mutex);
+    server->stopped = true;
+    sc_cond_signal(&server->cond_stopped);
+    sc_mutex_unlock(&server->mutex);
+
+    sc_thread_join(&server->thread, NULL);
 }
 
 void
 server_destroy(struct server *server) {
-    if (server->server_socket != SC_INVALID_SOCKET) {
-        if (!net_close(server->server_socket)) {
-            LOGW("Could not close server socket");
-        }
-    }
-    if (server->video_socket != SC_INVALID_SOCKET) {
-        if (!net_close(server->video_socket)) {
-            LOGW("Could not close video socket");
-        }
-    }
-    if (server->control_socket != SC_INVALID_SOCKET) {
-        if (!net_close(server->control_socket)) {
-            LOGW("Could not close control socket");
-        }
-    }
     server_params_destroy(&server->params);
     sc_cond_destroy(&server->cond_stopped);
     sc_mutex_destroy(&server->mutex);

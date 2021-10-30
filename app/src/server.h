@@ -43,9 +43,8 @@ struct server {
     // The internal allocated strings are copies owned by the server
     struct server_params params;
 
-    sc_pid process;
-    // alive only between start() and stop()
-    struct sc_process_observer observer;
+    sc_thread thread;
+    struct server_info info; // initialized once connected
 
     sc_mutex mutex;
     sc_cond cond_stopped;
@@ -57,19 +56,39 @@ struct server {
     uint16_t local_port; // selected from port_range
     bool tunnel_enabled;
     bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+
+    const struct server_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct server_callbacks {
+    /**
+     * Called when the server failed to connect
+     *
+     * If it is called, then on_connected() and on_disconnected() will never be
+     * called.
+     */
+    void (*on_connection_failed)(struct server *server, void *userdata);
+
+    /**
+     * Called on server connection
+     */
+    void (*on_connected)(struct server *server, void *userdata);
+
+    /**
+     * Called on server disconnection (after it has been connected)
+     */
+    void (*on_disconnected)(struct server *server, void *userdata);
 };
 
 // init the server with the given params
 bool
-server_init(struct server *server, const struct server_params *params);
+server_init(struct server *server, const struct server_params *params,
+            const struct server_callbacks *cbs, void *cbs_userdata);
 
-// push, enable tunnel et start the server
+// start the server asynchronously
 bool
 server_start(struct server *server);
-
-// block until the communication with the server is established
-bool
-server_connect_to(struct server *server, struct server_info *info);
 
 // disconnect and kill the server process
 void
