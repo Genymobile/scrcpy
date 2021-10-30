@@ -217,6 +217,29 @@ event_loop(struct scrcpy *s, const struct scrcpy_options *options) {
     return false;
 }
 
+static bool
+await_for_server(void) {
+    SDL_Event event;
+    while (SDL_WaitEvent(&event)) {
+        switch (event.type) {
+            case SDL_QUIT:
+                LOGD("User requested to quit");
+                return false;
+            case EVENT_SERVER_CONNECTION_FAILED:
+                LOGE("Server connection failed");
+                return false;
+            case EVENT_SERVER_CONNECTED:
+                LOGD("Server connected");
+                return true;
+            default:
+                break;
+        }
+    }
+
+    LOGE("SDL_WaitEvent() error: %s", SDL_GetError());
+    return false;
+}
+
 static SDL_LogPriority
 sdl_priority_from_av_level(int level) {
     switch (level) {
@@ -264,20 +287,27 @@ stream_on_eos(struct stream *stream, void *userdata) {
 
 static void
 server_on_connection_failed(struct server *server, void *userdata) {
-    struct scrcpy *scrcpy = userdata;
+    (void) server;
+    (void) userdata;
 
+    PUSH_EVENT(EVENT_SERVER_CONNECTION_FAILED);
 }
 
 static void
 server_on_connected(struct server *server, void *userdata) {
-    struct scrcpy *scrcpy = userdata;
+    (void) server;
+    (void) userdata;
 
+    PUSH_EVENT(EVENT_SERVER_CONNECTED);
 }
 
 static void
 server_on_disconnected(struct server *server, void *userdata) {
-    struct scrcpy *scrcpy = userdata;
+    (void) server;
+    (void) userdata;
 
+    LOGD("Server disconnected");
+    // Do nothing, will be managed by the "stream stopped" event
 }
 
 bool
@@ -333,7 +363,7 @@ scrcpy(struct scrcpy_options *options) {
         .on_connected = server_on_connected,
         .on_disconnected = server_on_disconnected,
     };
-    if (!server_init(&s->server, &params, &cbs, s)) {
+    if (!server_init(&s->server, &params, &cbs, NULL)) {
         return false;
     }
 
@@ -355,11 +385,12 @@ scrcpy(struct scrcpy_options *options) {
 
     sdl_configure(options->display, options->disable_screensaver);
 
-    struct server_info info;
-
-    if (!server_connect_to(&s->server, &info)) {
+    // Await for server without blocking Ctrl+C handling
+    if (!await_for_server()) {
         goto end;
     }
+
+    struct server_info *info = &s->server.info;
 
     if (options->display && options->control) {
         if (!file_handler_init(&s->file_handler, options->serial,
@@ -384,7 +415,7 @@ scrcpy(struct scrcpy_options *options) {
         if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
-                           info.frame_size)) {
+                           info->frame_size)) {
             goto end;
         }
         rec = &s->recorder;
@@ -430,11 +461,11 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->display) {
         const char *window_title =
-            options->window_title ? options->window_title : info.device_name;
+            options->window_title ? options->window_title : info->device_name;
 
         struct screen_params screen_params = {
             .window_title = window_title,
-            .frame_size = info.frame_size,
+            .frame_size = info->frame_size,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
@@ -458,7 +489,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
         if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
-                               info.frame_size, options->v4l2_buffer)) {
+                               info->frame_size, options->v4l2_buffer)) {
             goto end;
         }
 

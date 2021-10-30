@@ -361,6 +361,7 @@ connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
             // it worked!
             return socket;
         }
+        // TODO use mutex + condvar + bool stopped
         if (attempts) {
             sc_mutex_lock(&server->mutex);
             // Ignore timedwait return (spurious wake ups are harmless)
@@ -437,9 +438,7 @@ static int
 run_server_connect(void *data) {
     struct server *server = data;
 
-    struct server_info info;
-
-    if (!server_connect_to(server, &info)) {
+    if (!server_connect_to(server, &server->info)) {
         server->cbs->on_connection_failed(server, server->cbs_userdata);
         goto end;
     }
