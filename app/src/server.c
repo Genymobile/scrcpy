@@ -449,9 +449,7 @@ static int
 run_server_connect(void *data) {
     struct server *server = data;
 
-    struct server_info info;
-
-    if (!server_connect_to(server, &info)) {
+    if (!server_connect_to(server, &server->info)) {
         server->cbs->on_connection_failed(server, server->cbs_userdata);
         goto end;
     }
