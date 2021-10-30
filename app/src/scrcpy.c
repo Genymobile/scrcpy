@@ -57,15 +57,22 @@ struct scrcpy {
     struct input_manager input_manager;
 };
 
+static inline void
+push_event(uint32_t type, const char *name) {
+    SDL_Event event;
+    event.type = type;
+    int ret = SDL_PushEvent(&event);
+    if (ret < 0) {
+        LOGE("Could not post %s event: %s", name, SDL_GetError());
+        // What could we do?
+    }
+}
+#define PUSH_EVENT(TYPE) push_event(TYPE, # TYPE)
+
 #ifdef _WIN32
 BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
-        SDL_Event event;
-        event.type = SDL_QUIT;
-        int ret = SDL_PushEvent(&event);
-        if (ret < 0) {
-            LOGW("Could not post SDL_QUIT event: %s", SDL_GetError());
-        }
+        PUSH_EVENT(SDL_QUIT);
         return TRUE;
     }
     return FALSE;
@@ -251,13 +258,7 @@ stream_on_eos(struct stream *stream, void *userdata) {
     (void) stream;
     (void) userdata;
 
-    SDL_Event stop_event;
-    stop_event.type = EVENT_STREAM_STOPPED;
-    int ret = SDL_PushEvent(&stop_event);
-    if (ret < 0) {
-        LOGE("Could not post stream stopped event: %s", SDL_GetError());
-        // XXX What could we do?
-    }
+    PUSH_EVENT(EVENT_STREAM_STOPPED);
 }
 
 bool
