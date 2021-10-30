@@ -418,17 +418,13 @@ static int
 run_server_connect(void *data) {
     struct server *server = data;
 
-    char device_name[DEVICE_NAME_FIELD_LENGTH];
-    struct sc_size frame_size;
-
-    if (!server_connect_to(server, device_name, &frame_size)) {
+    if (!server_connect_to(server, &server->info)) {
         server->cbs->on_connection_failed(server, server->cbs_userdata);
         goto end;
     }
 
     server->connected = true;
-    server->cbs->on_connected(server, device_name, frame_size,
-                              server->cbs_userdata);
+    server->cbs->on_connected(server, server->cbs_userdata);
 
 end:
     return 0;
