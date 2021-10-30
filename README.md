@@ -889,7 +889,7 @@ This README is available in other languages:
 
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
 - [Italiano (Italiano, `it`) - v1.19](README.it.md)
-- [日本語 (Japanese, `jp`) - v1.17](README.jp.md)
+- [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
 - [Español (Spanish, `sp`) - v1.17](README.sp.md)
