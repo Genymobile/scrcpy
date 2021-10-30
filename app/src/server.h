@@ -14,6 +14,12 @@
 #include "util/net.h"
 #include "util/thread.h"
 
+#define DEVICE_NAME_FIELD_LENGTH 64
+struct server_info {
+    char device_name[DEVICE_NAME_FIELD_LENGTH];
+    struct sc_size frame_size;
+};
+
 struct server_params {
     const char *serial;
     enum sc_log_level log_level;
@@ -64,12 +70,10 @@ server_init(struct server *server, const struct server_params *params);
 bool
 server_start(struct server *server);
 
-#define DEVICE_NAME_FIELD_LENGTH 64
 // block until the communication with the server is established
 // device_name must point to a buffer of at least DEVICE_NAME_FIELD_LENGTH bytes
 bool
-server_connect_to(struct server *server, char *device_name,
-                  struct sc_size *size);
+server_connect_to(struct server *server, struct server_info *info);
 
 // disconnect and kill the server process
 void
