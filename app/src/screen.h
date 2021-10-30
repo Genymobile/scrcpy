@@ -44,6 +44,8 @@ struct screen {
     bool maximized;
     bool mipmaps;
 
+    bool event_failed; // in case SDL_PushEvent() returned an error
+
     AVFrame *frame;
 };
 

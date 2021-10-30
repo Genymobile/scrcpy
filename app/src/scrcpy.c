@@ -62,7 +62,10 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
         SDL_Event event;
         event.type = SDL_QUIT;
-        SDL_PushEvent(&event);
+        int ret = SDL_PushEvent(&event);
+        if (ret < 0) {
+            LOGW("Could not post SDL_QUIT event: %s", SDL_GetError());
+        }
         return TRUE;
     }
     return FALSE;
@@ -250,7 +253,11 @@ stream_on_eos(struct stream *stream, void *userdata) {
 
     SDL_Event stop_event;
     stop_event.type = EVENT_STREAM_STOPPED;
-    SDL_PushEvent(&stop_event);
+    int ret = SDL_PushEvent(&stop_event);
+    if (ret < 0) {
+        LOGE("Could not post stream stopped event: %s", SDL_GetError());
+        // XXX What could we do?
+    }
 }
 
 bool
