@@ -115,6 +115,10 @@ sdl_set_hints(const char *render_driver) {
 static bool
 sdl_init_and_configure(bool display, const char *render_driver,
                        bool disable_screensaver) {
+    if (display) {
+        sdl_set_hints(render_driver);
+    }
+
     uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
     if (SDL_Init(flags)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
@@ -134,8 +138,6 @@ sdl_init_and_configure(bool display, const char *render_driver,
     if (!display) {
         return true;
     }
-
-    sdl_set_hints(render_driver);
 
     if (disable_screensaver) {
         LOGD("Screensaver disabled");
