@@ -295,7 +295,6 @@ scrcpy(struct scrcpy_options *options) {
     bool controller_started = false;
     bool screen_initialized = false;
 
-    bool record = !!options->record_filename;
     struct server_params params = {
         .serial = options->serial,
         .log_level = options->log_level,
@@ -358,7 +357,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     struct recorder *rec = NULL;
-    if (record) {
+    if (options->record_filename) {
         if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
