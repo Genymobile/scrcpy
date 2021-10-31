@@ -364,7 +364,8 @@ connect_and_read_byte(uint16_t port) {
 }
 
 static sc_socket
-connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
+connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
+    uint16_t port = server->local_port;
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         sc_socket socket = connect_and_read_byte(port);
@@ -373,7 +374,16 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
             return socket;
         }
         if (attempts) {
-            SDL_Delay(delay);
+            sc_mutex_lock(&server->mutex);
+            // Ignore timedwait return (spurious wake ups are harmless)
+            sc_cond_timedwait(&server->stopped_cond, &server->mutex,
+                              sc_tick_now() + delay);
+            bool stopped = server->stopped;
+            sc_mutex_unlock(&server->mutex);
+            if (stopped) {
+                LOGI("Connection attempt stopped");
+                break;
+            }
         }
     } while (--attempts > 0);
     return SC_INVALID_SOCKET;
@@ -402,7 +412,16 @@ server_init(struct server *server, const struct server_params *params) {
         return false;
     }
 
+    ok = sc_cond_init(&server->stopped_cond);
+    if (!ok) {
+        sc_cond_destroy(&server->process_terminated_cond);
+        sc_mutex_destroy(&server->mutex);
+        server_params_destroy(&server->params);
+        return false;
+    }
+
     server->process_terminated = false;
+    server->stopped = false;
 
     server->server_socket = SC_INVALID_SOCKET;
     server->video_socket = SC_INVALID_SOCKET;
@@ -527,9 +546,8 @@ server_connect_to(struct server *server, char *device_name,
         server->server_socket = SC_INVALID_SOCKET;
     } else {
         uint32_t attempts = 100;
-        uint32_t delay = 100; // ms
-        server->video_socket =
-            connect_to_server(server->local_port, attempts, delay);
+        sc_tick delay = SC_TICK_FROM_MS(100);
+        server->video_socket = connect_to_server(server, attempts, delay);
         if (server->video_socket == SC_INVALID_SOCKET) {
             return false;
         }
@@ -557,6 +575,11 @@ server_connect_to(struct server *server, char *device_name,
 
 void
 server_stop(struct server *server) {
+    sc_mutex_lock(&server->mutex);
+    server->stopped = true;
+    sc_cond_signal(&server->stopped_cond);
+    sc_mutex_unlock(&server->mutex);
+
     if (server->server_socket != SC_INVALID_SOCKET) {
         if (!net_interrupt(server->server_socket)) {
             LOGW("Could not interrupt server socket");
@@ -624,6 +647,7 @@ server_destroy(struct server *server) {
     }
 
     server_params_destroy(&server->params);
+    sc_cond_destroy(&server->stopped_cond);
     sc_cond_destroy(&server->process_terminated_cond);
     sc_mutex_destroy(&server->mutex);
 }

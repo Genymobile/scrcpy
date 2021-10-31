@@ -41,8 +41,12 @@ struct server {
     sc_thread wait_server_thread;
 
     sc_mutex mutex;
+
     sc_cond process_terminated_cond;
     bool process_terminated;
+
+    sc_cond stopped_cond;
+    bool stopped;
 
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
