@@ -98,6 +98,15 @@ sdl_set_hints(const char *render_driver) {
     }
 #endif
 
+#ifdef SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
+    // Disable synthetic mouse events from touch events
+    // Touch events with id SDL_TOUCH_MOUSEID are ignored anyway, but it is
+    // better not to generate them in the first place.
+    if (!SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0")) {
+        LOGW("Could not disable synthetic mouse events");
+    }
+#endif
+
 #ifdef SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
     // Disable compositor bypassing on X11
     if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {

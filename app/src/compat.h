@@ -43,6 +43,11 @@
 # define SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
 #endif
 
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+// <https://github.com/libsdl-org/SDL/commit/d7a318de563125e5bb465b1000d6bc9576fbc6fc>
+# define SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
+#endif
+
 #if SDL_VERSION_ATLEAST(2, 0, 8)
 // <https://hg.libsdl.org/SDL/rev/dfde5d3f9781>
 # define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
