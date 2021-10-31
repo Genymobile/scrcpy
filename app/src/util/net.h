@@ -31,10 +31,13 @@ void
 net_cleanup(void);
 
 sc_socket
-net_connect(uint32_t addr, uint16_t port);
+net_socket(void);
 
-sc_socket
-net_listen(uint32_t addr, uint16_t port, int backlog);
+bool
+net_connect(sc_socket socket, uint32_t addr, uint16_t port);
+
+bool
+net_listen(sc_socket socket, uint32_t addr, uint16_t port, int backlog);
 
 sc_socket
 net_accept(sc_socket server_socket);

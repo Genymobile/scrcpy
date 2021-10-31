@@ -116,10 +116,10 @@ disable_tunnel(struct server *server) {
     return ok;
 }
 
-static sc_socket
-listen_on_port(uint16_t port) {
+static bool
+listen_on_port(sc_socket socket, uint16_t port) {
 #define IPV4_LOCALHOST 0x7F000001
-    return net_listen(IPV4_LOCALHOST, port, 1);
+    return net_listen(socket, IPV4_LOCALHOST, port, 1);
 }
 
 static bool
@@ -138,13 +138,18 @@ enable_tunnel_reverse_any_port(struct server *server,
         // client can listen before starting the server app, so there is no
         // need to try to connect until the server socket is listening on the
         // device.
-        sc_socket server_socket = listen_on_port(port);
+        sc_socket server_socket = net_socket();
         if (server_socket != SC_INVALID_SOCKET) {
-            // success
-            server->server_socket = server_socket;
-            server->local_port = port;
-            server->tunnel_enabled = true;
-            return true;
+            bool ok = listen_on_port(server_socket, port);
+            if (ok) {
+                // success
+                server->server_socket = server_socket;
+                server->local_port = port;
+                server->tunnel_enabled = true;
+                return true;
+            }
+
+            net_close(server_socket);
         }
 
         // failure, disable tunnel and try another port
@@ -299,11 +304,11 @@ execute_server(struct server *server, const struct server_params *params) {
     return adb_execute(server->serial, cmd, ARRAY_LEN(cmd));
 }
 
-static sc_socket
-connect_and_read_byte(uint16_t port) {
-    sc_socket socket = net_connect(IPV4_LOCALHOST, port);
-    if (socket == SC_INVALID_SOCKET) {
-        return SC_INVALID_SOCKET;
+static bool
+connect_and_read_byte(sc_socket socket, uint16_t port) {
+    bool ok = net_connect(socket, IPV4_LOCALHOST, port);
+    if (!ok) {
+        return false;
     }
 
     char byte;
@@ -311,20 +316,25 @@ connect_and_read_byte(uint16_t port) {
     // is not listening, so read one byte to detect a working connection
     if (net_recv(socket, &byte, 1) != 1) {
         // the server is not listening yet behind the adb tunnel
-        net_close(socket);
-        return SC_INVALID_SOCKET;
+        return false;
     }
-    return socket;
+
+    return true;
 }
 
 static sc_socket
 connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
-        sc_socket socket = connect_and_read_byte(port);
+        sc_socket socket = net_socket();
         if (socket != SC_INVALID_SOCKET) {
-            // it worked!
-            return socket;
+            bool ok = connect_and_read_byte(socket, port);
+            if (ok) {
+                // it worked!
+                return socket;
+            }
+
+            net_close(socket);
         }
         if (attempts) {
             SDL_Delay(delay);
@@ -463,8 +473,13 @@ server_connect_to(struct server *server, struct server_info *info) {
         }
 
         // we know that the device is listening, we don't need several attempts
-        control_socket = net_connect(IPV4_LOCALHOST, server->local_port);
+        control_socket = net_socket();
         if (control_socket == SC_INVALID_SOCKET) {
+            goto fail;
+        }
+        bool ok = net_connect(control_socket, IPV4_LOCALHOST,
+                              server->local_port);
+        if (!ok) {
             goto fail;
         }
     }
