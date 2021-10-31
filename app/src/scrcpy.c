@@ -111,22 +111,8 @@ sdl_set_hints(const char *render_driver) {
     }
 }
 
-// init SDL and set appropriate hints
-static bool
-sdl_init_and_configure(bool display, const char *render_driver,
-                       bool disable_screensaver) {
-    if (display) {
-        sdl_set_hints(render_driver);
-    }
-
-    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
-    if (SDL_Init(flags)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-
-    atexit(SDL_Quit);
-
+static void
+sdl_configure(bool display, bool disable_screensaver) {
 #ifdef _WIN32
     // Clean up properly on Ctrl+C on Windows
     bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
@@ -136,7 +122,7 @@ sdl_init_and_configure(bool display, const char *render_driver,
 #endif // _WIN32
 
     if (!display) {
-        return true;
+        return;
     }
 
     if (disable_screensaver) {
@@ -146,8 +132,6 @@ sdl_init_and_configure(bool display, const char *render_driver,
         LOGD("Screensaver enabled");
         SDL_EnableScreenSaver();
     }
-
-    return true;
 }
 
 static bool
@@ -319,10 +303,19 @@ scrcpy(struct scrcpy_options *options) {
 
     server_started = true;
 
-    if (!sdl_init_and_configure(options->display, options->render_driver,
-                                options->disable_screensaver)) {
+    if (options->display) {
+        sdl_set_hints(options->render_driver);
+    }
+
+    uint32_t flags = options->display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
+    if (SDL_Init(flags)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
         goto end;
     }
+
+    atexit(SDL_Quit);
+
+    sdl_configure(options->display, options->disable_screensaver);
 
     char device_name[DEVICE_NAME_FIELD_LENGTH];
     struct sc_size frame_size;
