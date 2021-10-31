@@ -79,29 +79,8 @@ BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 }
 #endif // _WIN32
 
-// init SDL and set appropriate hints
-static bool
-sdl_init_and_configure(bool display, const char *render_driver,
-                       bool disable_screensaver) {
-    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
-    if (SDL_Init(flags)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-
-    atexit(SDL_Quit);
-
-#ifdef _WIN32
-    // Clean up properly on Ctrl+C on Windows
-    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
-    if (!ok) {
-        LOGW("Could not set Ctrl+C handler");
-    }
-#endif // _WIN32
-
-    if (!display) {
-        return true;
-    }
+static void
+sdl_set_hints(const char *render_driver) {
 
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
@@ -130,6 +109,33 @@ sdl_init_and_configure(bool display, const char *render_driver,
     if (!SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0")) {
         LOGW("Could not disable minimize on focus loss");
     }
+}
+
+// init SDL and set appropriate hints
+static bool
+sdl_init_and_configure(bool display, const char *render_driver,
+                       bool disable_screensaver) {
+    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
+    if (SDL_Init(flags)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
+        return false;
+    }
+
+    atexit(SDL_Quit);
+
+#ifdef _WIN32
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+#endif // _WIN32
+
+    if (!display) {
+        return true;
+    }
+
+    sdl_set_hints(render_driver);
 
     if (disable_screensaver) {
         LOGD("Screensaver disabled");
