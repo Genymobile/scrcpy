@@ -109,10 +109,10 @@ disable_tunnel(struct server *server) {
     return disable_tunnel_reverse(server->serial);
 }
 
-static sc_socket
-listen_on_port(uint16_t port) {
+static bool
+listen_on_port(sc_socket socket, uint16_t port) {
 #define IPV4_LOCALHOST 0x7F000001
-    return net_listen(IPV4_LOCALHOST, port, 1);
+    return net_listen(socket, IPV4_LOCALHOST, port, 1);
 }
 
 static bool
@@ -131,11 +131,17 @@ enable_tunnel_reverse_any_port(struct server *server,
         // client can listen before starting the server app, so there is no
         // need to try to connect until the server socket is listening on the
         // device.
-        server->server_socket = listen_on_port(port);
-        if (server->server_socket != SC_INVALID_SOCKET) {
-            // success
-            server->local_port = port;
-            return true;
+        sc_socket server_socket = net_socket();
+        if (server_socket != SC_INVALID_SOCKET) {
+            bool ok = listen_on_port(server_socket, port);
+            if (ok) {
+                // success
+                server->server_socket = server_socket;
+                server->local_port = port;
+                return true;
+            }
+
+            net_close(server_socket);
         }
 
         // failure, disable tunnel and try another port
@@ -291,8 +297,14 @@ execute_server(struct server *server, const struct server_params *params) {
 
 static sc_socket
 connect_and_read_byte(uint16_t port) {
-    sc_socket socket = net_connect(IPV4_LOCALHOST, port);
+    sc_socket socket = net_socket();
     if (socket == SC_INVALID_SOCKET) {
+        return SC_INVALID_SOCKET;
+    }
+
+    bool ok = net_connect(socket, IPV4_LOCALHOST, port);
+    if (!ok) {
+        net_close(socket);
         return SC_INVALID_SOCKET;
     }
 
@@ -477,9 +489,14 @@ server_connect_to(struct server *server, char *device_name,
         }
 
         // we know that the device is listening, we don't need several attempts
-        server->control_socket =
-            net_connect(IPV4_LOCALHOST, server->local_port);
+        server->control_socket = net_socket();
         if (server->control_socket == SC_INVALID_SOCKET) {
+            return false;
+        }
+        bool ok = net_connect(server->control_socket, IPV4_LOCALHOST,
+                              server->local_port);
+        if (!ok) {
+            net_close(server->control_socket);
             return false;
         }
     }

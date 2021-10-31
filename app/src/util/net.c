@@ -94,13 +94,18 @@ net_perror(const char *s) {
 }
 
 sc_socket
-net_connect(uint32_t addr, uint16_t port) {
+net_socket(void) {
     sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
     sc_socket sock = wrap(raw_sock);
     if (sock == SC_INVALID_SOCKET) {
         net_perror("socket");
-        return SC_INVALID_SOCKET;
     }
+    return sock;
+}
+
+bool
+net_connect(sc_socket socket, uint32_t addr, uint16_t port) {
+    sc_raw_socket raw_sock = unwrap(socket);
 
     SOCKADDR_IN sin;
     sin.sin_family = AF_INET;
@@ -109,21 +114,15 @@ net_connect(uint32_t addr, uint16_t port) {
 
     if (connect(raw_sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         net_perror("connect");
-        net_close(sock);
-        return SC_INVALID_SOCKET;
+        return false;
     }
 
-    return sock;
+    return true;
 }
 
-sc_socket
-net_listen(uint32_t addr, uint16_t port, int backlog) {
-    sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
-    sc_socket sock = wrap(raw_sock);
-    if (sock == SC_INVALID_SOCKET) {
-        net_perror("socket");
-        return SC_INVALID_SOCKET;
-    }
+bool
+net_listen(sc_socket socket, uint32_t addr, uint16_t port, int backlog) {
+    sc_raw_socket raw_sock = unwrap(socket);
 
     int reuse = 1;
     if (setsockopt(raw_sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuse,
@@ -138,17 +137,15 @@ net_listen(uint32_t addr, uint16_t port, int backlog) {
 
     if (bind(raw_sock, (SOCKADDR *) &sin, sizeof(sin)) == SOCKET_ERROR) {
         net_perror("bind");
-        net_close(sock);
-        return SC_INVALID_SOCKET;
+        return false;
     }
 
     if (listen(raw_sock, backlog) == SOCKET_ERROR) {
         net_perror("listen");
-        net_close(sock);
-        return SC_INVALID_SOCKET;
+        return false;
     }
 
-    return sock;
+    return true;
 }
 
 sc_socket
