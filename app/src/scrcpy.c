@@ -258,6 +258,14 @@ scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
 
+    // Minimal SDL initialization
+    if (SDL_Init(SDL_INIT_EVENTS)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
+        return false;
+    }
+
+    atexit(SDL_Quit);
+
     if (!server_init(&s->server)) {
         return false;
     }
@@ -307,13 +315,11 @@ scrcpy(struct scrcpy_options *options) {
         sdl_set_hints(options->render_driver);
     }
 
-    uint32_t flags = options->display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
-    if (SDL_Init(flags)) {
+    // Initialize SDL video in addition if display is enabled
+    if (options->display && SDL_Init(SDL_INIT_VIDEO)) {
         LOGC("Could not initialize SDL: %s", SDL_GetError());
         goto end;
     }
-
-    atexit(SDL_Quit);
 
     sdl_configure(options->display, options->disable_screensaver);
 
