@@ -47,6 +47,10 @@ struct server {
     // alive only between start() and stop()
     struct sc_process_observer observer;
 
+    sc_mutex mutex;
+    sc_cond cond_stopped;
+    bool stopped;
+
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
     sc_socket control_socket;
