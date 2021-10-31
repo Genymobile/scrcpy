@@ -214,7 +214,9 @@ scrcpy --encoder OMX.qcom.video.encoder.avc
 scrcpy --encoder _
 ```
 
-### 録画
+### キャプチャ
+
+#### 録画
 
 ミラーリング中に画面の録画をすることが可能です:
 
