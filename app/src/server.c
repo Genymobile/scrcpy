@@ -138,9 +138,10 @@ enable_tunnel_reverse_any_port(struct server *server,
         // client can listen before starting the server app, so there is no
         // need to try to connect until the server socket is listening on the
         // device.
-        server->server_socket = listen_on_port(port);
-        if (server->server_socket != SC_INVALID_SOCKET) {
+        sc_socket server_socket = listen_on_port(port);
+        if (server_socket != SC_INVALID_SOCKET) {
             // success
+            server->server_socket = server_socket;
             server->local_port = port;
             server->tunnel_enabled = true;
             return true;
@@ -432,16 +433,19 @@ device_read_info(sc_socket device_socket, struct server_info *info) {
 
 bool
 server_connect_to(struct server *server, struct server_info *info) {
+    assert(server->tunnel_enabled);
+
+    sc_socket video_socket = SC_INVALID_SOCKET;
+    sc_socket control_socket = SC_INVALID_SOCKET;
     if (!server->tunnel_forward) {
-        server->video_socket = net_accept(server->server_socket);
-        if (server->video_socket == SC_INVALID_SOCKET) {
-            return false;
+        video_socket = net_accept(server->server_socket);
+        if (video_socket == SC_INVALID_SOCKET) {
+            goto fail;
         }
 
-        server->control_socket = net_accept(server->server_socket);
-        if (server->control_socket == SC_INVALID_SOCKET) {
-            // the video_socket will be cleaned up on destroy
-            return false;
+        control_socket = net_accept(server->server_socket);
+        if (control_socket == SC_INVALID_SOCKET) {
+            goto fail;
         }
 
         // we don't need the server socket anymore
@@ -453,17 +457,15 @@ server_connect_to(struct server *server, struct server_info *info) {
     } else {
         uint32_t attempts = 100;
         uint32_t delay = 100; // ms
-        server->video_socket =
-            connect_to_server(server->local_port, attempts, delay);
-        if (server->video_socket == SC_INVALID_SOCKET) {
-            return false;
+        video_socket = connect_to_server(server->local_port, attempts, delay);
+        if (video_socket == SC_INVALID_SOCKET) {
+            goto fail;
         }
 
         // we know that the device is listening, we don't need several attempts
-        server->control_socket =
-            net_connect(IPV4_LOCALHOST, server->local_port);
-        if (server->control_socket == SC_INVALID_SOCKET) {
-            return false;
+        control_socket = net_connect(IPV4_LOCALHOST, server->local_port);
+        if (control_socket == SC_INVALID_SOCKET) {
+            goto fail;
         }
     }
 
@@ -471,7 +473,33 @@ server_connect_to(struct server *server, struct server_info *info) {
     disable_tunnel(server); // ignore failure
 
     // The sockets will be closed on stop if device_read_info() fails
-    return device_read_info(server->video_socket, info);
+    bool ok = device_read_info(video_socket, info);
+    if (!ok) {
+        goto fail;
+    }
+
+    assert(video_socket != SC_INVALID_SOCKET);
+    assert(control_socket != SC_INVALID_SOCKET);
+
+    server->video_socket = video_socket;
+    server->control_socket = control_socket;
+
+    return true;
+
+fail:
+    if (video_socket != SC_INVALID_SOCKET) {
+        if (!net_close(video_socket)) {
+            LOGW("Could not close video socket");
+        }
+    }
+
+    if (control_socket != SC_INVALID_SOCKET) {
+        if (!net_close(control_socket)) {
+            LOGW("Could not close control socket");
+        }
+    }
+
+    return false;
 }
 
 void
