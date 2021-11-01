@@ -104,10 +104,16 @@ disable_tunnel_forward(const char *serial, uint16_t local_port) {
 
 static bool
 disable_tunnel(struct server *server) {
-    if (server->tunnel_forward) {
-        return disable_tunnel_forward(server->serial, server->local_port);
-    }
-    return disable_tunnel_reverse(server->serial);
+    assert(server->tunnel_enabled);
+
+    bool ok = server->tunnel_forward
+            ? disable_tunnel_forward(server->serial, server->local_port)
+            : disable_tunnel_reverse(server->serial);
+
+    // Consider tunnel disabled even if the command failed
+    server->tunnel_enabled = false;
+
+    return ok;
 }
 
 static sc_socket
@@ -136,6 +142,7 @@ enable_tunnel_reverse_any_port(struct server *server,
         if (server->server_socket != SC_INVALID_SOCKET) {
             // success
             server->local_port = port;
+            server->tunnel_enabled = true;
             return true;
         }
 
@@ -171,6 +178,7 @@ enable_tunnel_forward_any_port(struct server *server,
         if (enable_tunnel_forward(server->serial, port)) {
             // success
             server->local_port = port;
+            server->tunnel_enabled = true;
             return true;
         }
 
@@ -393,8 +401,6 @@ server_start(struct server *server, const struct server_params *params) {
         goto error;
     }
 
-    server->tunnel_enabled = true;
-
     return true;
 
 error:
@@ -463,7 +469,6 @@ server_connect_to(struct server *server, struct server_info *info) {
 
     // we don't need the adb tunnel anymore
     disable_tunnel(server); // ignore failure
-    server->tunnel_enabled = false;
 
     // The sockets will be closed on stop if device_read_info() fails
     return device_read_info(server->video_socket, info);
