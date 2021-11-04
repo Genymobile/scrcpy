@@ -4,7 +4,7 @@
 
 This application provides display and control of Android devices connected on
 USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
-It works on _GNU/Linux_, _Windows_ and _macOS_.
+It works on _GNU/Linux_, _FreeBSD_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -81,6 +81,30 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
 You could also [build the app manually][BUILD] ([simplified
 process][BUILD_simple]).
+
+
+### FreeBSD
+
+A [FreeBSD port][freebsdports] is available for [`scrcpy`][freebsdport-link]
+
+To install the port on a system with an up-to-date ports tree installed, run:
+
+```
+cd /usr/ports/comms/scrcpy
+make install clean
+```
+
+The application is also available as a [binary package][freebsdpkg].
+To install the binary package, run:
+
+```
+pkg install scrcpy
+```
+
+[freebsdports]: https://docs.freebsd.org/en/books/handbook/ports/#ports-using
+[freebsdport-link]: https://www.freebsd.org/cgi/ports.cgi?query=scrcpy&stype=all
+[freebsdpkg]: https://docs.freebsd.org/en/books/handbook/ports/#pkgng-intro
+
 
 
 ### Windows
