@@ -27,6 +27,7 @@ src = [
     'src/util/log.c',
     'src/util/net.c',
     'src/util/process.c',
+    'src/util/strbuf.c',
     'src/util/str_util.c',
     'src/util/thread.c',
     'src/util/tick.c',
@@ -203,6 +204,10 @@ if get_option('buildtype') == 'debug'
         ]],
         ['test_queue', [
             'tests/test_queue.c',
+        ]],
+        ['test_strbuf', [
+            'tests/test_strbuf.c',
+            'src/util/strbuf.c',
         ]],
         ['test_strutil', [
             'tests/test_strutil.c',
