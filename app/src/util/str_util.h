@@ -62,4 +62,8 @@ char *
 utf8_from_wide_char(const wchar_t *s);
 #endif
 
+// Wrap input lines at words boundaries (spaces) so that they fit in 'columns'
+// columns, left-indented by 'indent' spaces
+char *wrap_lines(const char *input, unsigned columns, unsigned indent);
+
 #endif
