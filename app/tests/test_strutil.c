@@ -299,6 +299,44 @@ static void test_strlist_contains(void) {
     assert(strlist_contains("xyz", '\0', "xyz"));
 }
 
+static void test_wrap_lines(void) {
+    const char *s = "This is a text to test line wrapping. The lines must be "
+                    "wrapped at a space or a line break.\n"
+                    "\n"
+                    "This rectangle must remains a rectangle because it is "
+                    "drawn in lines having lengths lower than the specified "
+                    "number of columns:\n"
+                    "  +----+\n"
+                    "  |    |\n"
+                    "  +----+\n";
+
+    //                     |----      1    1    2  2|
+    //                     |0    5    0    5    0  3| <-- 24 columns
+    const char *expected = "    This is a text to\n"
+                           "    test line wrapping.\n"
+                           "    The lines must be\n"
+                           "    wrapped at a space\n"
+                           "    or a line break.\n"
+                           "    \n"
+                           "    This rectangle must\n"
+                           "    remains a rectangle\n"
+                           "    because it is drawn\n"
+                           "    in lines having\n"
+                           "    lengths lower than\n"
+                           "    the specified number\n"
+                           "    of columns:\n"
+                           "      +----+\n"
+                           "      |    |\n"
+                           "      +----+\n";
+
+    char *formatted = sc_str_wrap_lines(s, 24, 4);
+    assert(formatted);
+
+    assert(!strcmp(formatted, expected));
+
+    free(formatted);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -317,5 +355,6 @@ int main(int argc, char *argv[]) {
     test_parse_integers();
     test_parse_integer_with_suffix();
     test_strlist_contains();
+    test_wrap_lines();
     return 0;
 }

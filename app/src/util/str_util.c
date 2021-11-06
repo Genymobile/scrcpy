@@ -1,9 +1,11 @@
 #include "str_util.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include "util/strbuf.h"
 
 #ifdef _WIN32
 # include <windows.h>
@@ -209,3 +211,81 @@ utf8_from_wide_char(const wchar_t *ws) {
 }
 
 #endif
+
+char *sc_str_wrap_lines(const char *input, unsigned columns, unsigned indent) {
+    assert(indent < columns);
+
+    struct sc_strbuf buf;
+
+    // The output string should not be much longer than the input string (just
+    // a few '\n' added), so this initial capacity should hopefully almost
+    // always avoid internal realloc() in string buffer
+    size_t cap = strlen(input) * 3 / 2;
+
+    if (!sc_strbuf_init(&buf, cap)) {
+        return false;
+    }
+
+#define APPEND(S,N) if (!sc_strbuf_append(&buf, S, N)) goto error
+#define APPEND_CHAR(C) if (!sc_strbuf_append_char(&buf, C)) goto error
+#define APPEND_N(C,N) if (!sc_strbuf_append_n(&buf, C, N)) goto error
+#define APPEND_INDENT() if (indent) APPEND_N(' ', indent)
+
+    APPEND_INDENT();
+
+    // The last separator encountered, it must be inserted only conditionnaly,
+    // depending on the next token
+    char pending = 0;
+
+    // col tracks the current column in the current line
+    size_t col = indent;
+    while (*input) {
+        size_t sep_idx = strcspn(input, "\n ");
+        size_t new_col = col + sep_idx;
+        if (pending == ' ') {
+            // The pending space counts
+            ++new_col;
+        }
+        bool wrap = new_col > columns;
+
+        char sep = input[sep_idx];
+        if (sep == ' ')
+            sep = ' ';
+
+        if (wrap) {
+            APPEND_CHAR('\n');
+            APPEND_INDENT();
+            col = indent;
+        } else if (pending) {
+            APPEND_CHAR(pending);
+            ++col;
+            if (pending == '\n')
+            {
+                APPEND_INDENT();
+                col = indent;
+            }
+        }
+
+        if (sep_idx) {
+            APPEND(input, sep_idx);
+            col += sep_idx;
+        }
+
+        pending = sep;
+
+        input += sep_idx;
+        if (*input != '\0') {
+            // Skip the separator
+            ++input;
+        }
+    }
+
+    if (pending)
+        APPEND_CHAR(pending);
+
+    return buf.s;
+
+error:
+    free(buf.s);
+    return NULL;
+}
