@@ -8,13 +8,243 @@
 
 #include "options.h"
 #include "util/log.h"
+#include "util/strbuf.h"
 #include "util/str_util.h"
 
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
 
+struct sc_option {
+    char shortopt;
+    const char *longopt;
+    const char *argdesc;
+    bool optional_arg;
+    const char *text;
+};
+
+static const struct sc_option options[] = {
+    {
+        .longopt = "always-on-top",
+        .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .shortopt = 'b',
+        .longopt = "bit-rate",
+        .argdesc = "value",
+        .text = "Encode the video at the gitven bit-rate, expressed in bits/s. "
+                "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
+                "Default is " STR(DEFAULT_BIT_RATE) ".",
+    },
+    {
+        .longopt = "codec-options",
+        .argdesc = "key[:type]=value[,...]",
+        .text = "Set a list of comma-separated key:type=value options for the "
+                "device encoder.\n"
+                "The possible values for 'type' are 'int' (default), 'long', "
+                "'float' and 'string'.\n"
+                "The list of possible codec options is available in the "
+                "Android documentation: "
+                "<https://d.android.com/reference/android/media/MediaFormat>",
+    },
+    {
+        .longopt = "crop",
+        .argdesc = "width:height:x:y",
+        .text = "Crop the device screen on the server.\n"
+                "The values are expressed in the device natural orientation "
+                "(typically, portrait for a phone, landscape for a tablet). "
+                "Any --max-size value is cmoputed on the cropped size.",
+    },
+    {
+        .longopt = "disable-screensaver",
+        .text = "Disable screensaver while scrcpy is running.",
+    },
+    {
+        .longopt = "display",
+        .argdesc = "id",
+        .text = "Specify the display id to mirror.\n"
+                "\n"
+                "The list of possible display ids can be listed by:\n"
+                "    adb shell dumpsys display\n"
+                "(search \"mDisplayId=\" in the output)\n"
+                "\n"
+                "Default is 0.",
+    },
+    {
+        .longopt = "display-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before displaying. "
+                "This increases latency to compensate for jitter.\n"
+                "Default is 0 (no buffering).",
+    },
+    {
+        .longopt = "encoder",
+        .argdesc = "name",
+        .text = "Use a specific MediaCodec encoder (must be a H.264 encoder).",
+    },
+    {
+        .longopt = "force-adb-forward",
+        .text = "Do not attempt to use \"adb reverse\" to connect to the "
+                "device.",
+    },
+    {
+        .longopt = "forward-all-clicks",
+        .text = "By default, right-click triggers BACK (or POWER on) and "
+                "middle-click triggers HOME. This option disables these "
+                "shortcuts and forwards the clicks to the device instead.",
+    },
+    {
+        .shortopt = 'f',
+        .longopt = "fullscreen",
+        .text = "Start in fullscreen.",
+    },
+    {
+        .shortopt = 'K',
+        .longopt = "hid-keyboard",
+        .text = "Simulate a physical keyboard by using HID over AOAv2.\n"
+                "It provides a better experience for IME users, and allows to "
+                "generate non-ASCII characters, contrary to the default "
+                "injection method.\n"
+                "It may only work over USB, and is currently only supported "
+                "on Linux.",
+    },
+    {
+        .shortopt = 'h',
+        .longopt = "help",
+        .text = "Print this help.",
+    },
+    {
+        .longopt = "legacy-paste",
+        .text = "Inject computer clipboard text as a sequence of key events "
+                "on Ctrl+v (like MOD+Shift+v).\n"
+                "This is a workaround for some devices not behaving as "
+                "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt = "lock-video-orientation",
+        .argdesc = "value",
+        .optional_arg = true,
+        .text = "Lock video orientation to value.\n"
+                "Possible values are \"unlocked\", \"initial\" (locked to the "
+                "initial orientation), 0, 1, 2 and 3. Natural device "
+                "orientation is 0, and each increment adds a 90 degrees "
+                "rotation counterclockwise.\n"
+                "Default is \"unlocked\".\n"
+                "Passing the option without argument is equivalent to passing "
+                "\"initial\".",
+    },
+    {
+        .longopt = "max-fps",
+        .argdesc = "value",
+        .text = "Limit the frame rate of screen capture (officially supported "
+                "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .shortopt = 'm',
+        .longopt = "max-size",
+        .argdesc = "value",
+        .text = "Limit both the width and height of the video to value. The "
+                "other dimension is computed so that the device aspect-ratio "
+                "is preserved.\n"
+                "Default is 0 (unlimited).",
+    },
+    {
+        .shortopt = 'n',
+        .longopt = "no-control",
+        .text = "Disable device control (mirror the device in read-only).",
+    },
+    {
+        .shortopt = 'N',
+        .longopt = "no-display",
+        .text = "Do not display device (only when screen recording).",
+    },
+};
+
+static void
+print_option_usage_header(const struct sc_option *opt) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 128)) {
+        goto error;
+    }
+
+    bool ok = true;
+    (void) ok; // only used for assertions
+
+    if (opt->shortopt) {
+        ok = sc_strbuf_append_char(&buf, '-');
+        assert(ok);
+
+
+        ok = sc_strbuf_append_char(&buf, opt->shortopt);
+        assert(ok);
+
+        if (opt->longopt) {
+            ok = sc_strbuf_append_staticstr(&buf, ", ");
+            assert(ok);
+        }
+    }
+
+    if (opt->longopt) {
+        ok = sc_strbuf_append_staticstr(&buf, "--");
+        assert(ok);
+
+        if (!sc_strbuf_append_str(&buf, opt->longopt)) {
+            goto error;
+        }
+    }
+
+    if (opt->argdesc) {
+        if (opt->optional_arg && !sc_strbuf_append_char(&buf, '[')) {
+            goto error;
+        }
+
+        if (!sc_strbuf_append_char(&buf, '=')) {
+            goto error;
+        }
+
+        if (!sc_strbuf_append_str(&buf, opt->argdesc)) {
+            goto error;
+        }
+
+        if (opt->optional_arg && !sc_strbuf_append_char(&buf, ']')) {
+            goto error;
+        }
+    }
+
+    fprintf(stderr, "    %s\n", buf.s);
+    free(buf.s);
+    return;
+
+error:
+    fprintf(stderr, "<ERROR>\n");
+}
+
+static void
+print_option_usage(const struct sc_option *opt, unsigned cols) {
+    assert(cols > 20); // We need some space
+    assert(opt->text);
+
+    print_option_usage_header(opt);
+
+    char *text = wrap_lines(opt->text, cols, 8);
+    if (!text) {
+        fprintf(stderr, "<ERROR>\n");
+        return;
+    }
+
+    fprintf(stderr, "%s\n", text);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
+    fprintf(stderr, "Usage: %s [options]\n"
+                    "\n"
+                    "Options:\n", arg0);
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        fprintf(stderr, "\n");
+        print_option_usage(&options[i], 80);
+    }
+    if (false)
     fprintf(stderr,
         "Usage: %s [options]\n"
         "\n"
@@ -66,12 +296,12 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    --force-adb-forward\n"
         "        Do not attempt to use \"adb reverse\" to connect to the\n"
-        "        the device.\n"
+        "        device.\n"
         "\n"
         "    --forward-all-clicks\n"
         "        By default, right-click triggers BACK (or POWER on) and\n"
         "        middle-click triggers HOME. This option disables these\n"
-        "        shortcuts and forward the clicks to the device instead.\n"
+        "        shortcuts and forwards the clicks to the device instead.\n"
         "\n"
         "    -f, --fullscreen\n"
         "        Start in fullscreen.\n"
@@ -118,7 +348,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    -N, --no-display\n"
         "        Do not display device (only when screen recording is\n"
-        "        enabled).\n"
+        "        enabled).\n" // or V4L2 sink
         "\n"
         "    --no-key-repeat\n"
         "        Do not forward repeated key events when a key is held down.\n"
