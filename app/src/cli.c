@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 #include "options.h"
@@ -22,6 +23,12 @@ struct sc_option {
     // required argument: argdesc != NULL && !optional_arg
     const char *argdesc;
     bool optional_arg;
+    const char *text;
+};
+
+#define MAX_EQUIVALENT_SHORTCUTS 3
+struct sc_shortcut {
+    const char *shortcuts[MAX_EQUIVALENT_SHORTCUTS + 1];
     const char *text;
 };
 
@@ -334,6 +341,118 @@ static const struct sc_option options[] = {
     },
 };
 
+static const struct sc_shortcut shortcuts[] = {
+    {
+        .shortcuts = { "MOD+f" },
+        .text = "Switch fullscreen mode",
+    },
+    {
+        .shortcuts = { "MOD+Left" },
+        .text = "Rotate display left",
+    },
+    {
+        .shortcuts = { "MOD+Right" },
+        .text = "Rotate display right",
+    },
+    {
+        .shortcuts = { "MOD+g" },
+        .text = "Resize window to 1:1 (pixel-perfect)",
+    },
+    {
+        .shortcuts = { "MOD+w", "Double-click on black borders" },
+        .text = "Resize window to remove black borders",
+    },
+    {
+        .shortcuts = { "MOD+h", "Middle-click" },
+        .text = "Click on HOME",
+    },
+    {
+        .shortcuts = {
+            "MOD+b",
+            "MOD+Backspace",
+            "Right-click (when screen is on)",
+        },
+        .text = "Click on BACK",
+    },
+    {
+        .shortcuts = { "MOD+s" },
+        .text = "Click on APP_SWITCH",
+    },
+    {
+        .shortcuts = { "MOD+m" },
+        .text = "Click on MENU",
+    },
+    {
+        .shortcuts = { "MOD+Up" },
+        .text = "Click on VOLUME_UP",
+    },
+    {
+        .shortcuts = { "MOD+Down" },
+        .text = "Click on VOLUME_DOWN",
+    },
+    {
+        .shortcuts = { "MOD+p" },
+        .text = "Click on POWER (turn screen on/off)",
+    },
+    {
+        .shortcuts = { "Right-click (when screen is off)" },
+        .text = "Power on",
+    },
+    {
+        .shortcuts = { "MOD+o" },
+        .text = "Turn device screen off (keep mirroring)",
+    },
+    {
+        .shortcuts = { "MOD+Shift+o" },
+        .text = "Turn device screen on",
+    },
+    {
+        .shortcuts = { "MOD+r" },
+        .text = "Rotate device screen",
+    },
+    {
+        .shortcuts = { "MOD+n" },
+        .text = "Expand notification panel",
+    },
+    {
+        .shortcuts = { "MOD+Shift+n" },
+        .text = "Collapse notification panel",
+    },
+    {
+        .shortcuts = { "MOD+c" },
+        .text = "Copy to clipboard (inject COPY keycode, Android >= 7 only)",
+    },
+    {
+        .shortcuts = { "MOD+x" },
+        .text = "Cut to clipboard (inject CUT keycode, Android >= 7 only)",
+    },
+    {
+        .shortcuts = { "MOD+v" },
+        .text = "Copy computer clipboard to device, then paste (inject PASTE "
+                "keycode, Android >= 7 only)",
+    },
+    {
+        .shortcuts = { "MOD+Shift+v" },
+        .text = "Inject computer clipboard text as a sequence of key events",
+    },
+    {
+        .shortcuts = { "MOD+i" },
+        .text = "Enable/disable FPS counter (print frames/second in logs)",
+    },
+    {
+        .shortcuts = { "Ctrl+click-and-move" },
+        .text = "Pinch-to-zoom from the center of the screen",
+    },
+    {
+        .shortcuts = { "Drag & drop APK file" },
+        .text = "Install APK from computer",
+    },
+    {
+        .shortcuts = { "Drag & drop non-APK file" },
+        .text = "Push file to device (see --push-target)",
+    },
+};
+
 static void
 print_option_usage_header(const struct sc_option *opt) {
     struct sc_strbuf buf;
@@ -409,6 +528,45 @@ print_option_usage(const struct sc_option *opt, unsigned cols) {
     free(text);
 }
 
+static void
+print_shortcuts_intro(unsigned cols) {
+    char *intro = sc_str_wrap_lines(
+        "In the following list, MOD is the shortcut modifier. By default, it's "
+        "(left) Alt or (left) Super, but it can be configured by "
+        "--shortcut-mod (see above).", cols, 4);
+    if (!intro) {
+        fprintf(stderr, "<ERROR>\n");
+        return;
+    }
+
+    fprintf(stderr, "%s\n", intro);
+    free(intro);
+}
+
+static void
+print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
+    assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
+    assert(shortcut->shortcuts[0]); // At least one shortcut
+    assert(shortcut->text);
+
+    fprintf(stderr, "\n");
+
+    unsigned i = 0;
+    while (shortcut->shortcuts[i]) {
+        fprintf(stderr, "    %s\n", shortcut->shortcuts[i]);
+        ++i;
+    };
+
+    char *text = sc_str_wrap_lines(shortcut->text, cols, 8);
+    if (!text) {
+        fprintf(stderr, "<ERROR>\n");
+        return;
+    }
+
+    fprintf(stderr, "%s\n", text);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
     const unsigned cols = 80; // For now, use a hardcoded value
@@ -420,96 +578,11 @@ scrcpy_print_usage(const char *arg0) {
     }
 
     // Print shortcuts section
-    fprintf(stderr, "\n"
-        "Shortcuts:\n"
-        "\n"
-        "    In the following list, MOD is the shortcut modifier. By default,\n"
-        "    it's (left) Alt or (left) Super, but it can be configured by\n"
-        "    --shortcut-mod (see above).\n"
-        "\n"
-        "    MOD+f\n"
-        "        Switch fullscreen mode\n"
-        "\n"
-        "    MOD+Left\n"
-        "        Rotate display left\n"
-        "\n"
-        "    MOD+Right\n"
-        "        Rotate display right\n"
-        "\n"
-        "    MOD+g\n"
-        "        Resize window to 1:1 (pixel-perfect)\n"
-        "\n"
-        "    MOD+w\n"
-        "    Double-click on black borders\n"
-        "        Resize window to remove black borders\n"
-        "\n"
-        "    MOD+h\n"
-        "    Middle-click\n"
-        "        Click on HOME\n"
-        "\n"
-        "    MOD+b\n"
-        "    MOD+Backspace\n"
-        "    Right-click (when screen is on)\n"
-        "        Click on BACK\n"
-        "\n"
-        "    MOD+s\n"
-        "        Click on APP_SWITCH\n"
-        "\n"
-        "    MOD+m\n"
-        "        Click on MENU\n"
-        "\n"
-        "    MOD+Up\n"
-        "        Click on VOLUME_UP\n"
-        "\n"
-        "    MOD+Down\n"
-        "        Click on VOLUME_DOWN\n"
-        "\n"
-        "    MOD+p\n"
-        "        Click on POWER (turn screen on/off)\n"
-        "\n"
-        "    Right-click (when screen is off)\n"
-        "        Power on\n"
-        "\n"
-        "    MOD+o\n"
-        "        Turn device screen off (keep mirroring)\n"
-        "\n"
-        "    MOD+Shift+o\n"
-        "        Turn device screen on\n"
-        "\n"
-        "    MOD+r\n"
-        "        Rotate device screen\n"
-        "\n"
-        "    MOD+n\n"
-        "        Expand notification panel\n"
-        "\n"
-        "    MOD+Shift+n\n"
-        "        Collapse notification panel\n"
-        "\n"
-        "    MOD+c\n"
-        "        Copy to clipboard (inject COPY keycode, Android >= 7 only)\n"
-        "\n"
-        "    MOD+x\n"
-        "        Cut to clipboard (inject CUT keycode, Android >= 7 only)\n"
-        "\n"
-        "    MOD+v\n"
-        "        Copy computer clipboard to device, then paste (inject PASTE\n"
-        "        keycode, Android >= 7 only)\n"
-        "\n"
-        "    MOD+Shift+v\n"
-        "        Inject computer clipboard text as a sequence of key events\n"
-        "\n"
-        "    MOD+i\n"
-        "        Enable/disable FPS counter (print frames/second in logs)\n"
-        "\n"
-        "    Ctrl+click-and-move\n"
-        "        Pinch-to-zoom from the center of the screen\n"
-        "\n"
-        "    Drag & drop APK file\n"
-        "        Install APK from computer\n"
-        "\n"
-        "    Drag & drop non-APK file\n"
-        "        Push file to device (see --push-target)\n"
-        "\n");
+    fprintf(stderr, "\nShortcuts:\n\n");
+    print_shortcuts_intro(cols);
+    for (size_t i = 0; i < ARRAY_LEN(shortcuts); ++i) {
+        print_shortcut(&shortcuts[i], cols);
+    }
 }
 
 static bool
