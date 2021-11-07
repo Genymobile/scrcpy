@@ -799,7 +799,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:fF:hKm:nNp:r:s:StTvV:w",
+    while ((c = getopt_long(argc, argv, "b:fF:hKm:nNp:r:s:StvV:w",
                             long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -871,9 +871,6 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
             case 't':
                 opts->show_touches = true;
                 break;
-            case 'T':
-                LOGW("Deprecated option -T. Use --always-on-top instead.");
-                // fall through
             case OPT_ALWAYS_ON_TOP:
                 opts->always_on_top = true;
                 break;
