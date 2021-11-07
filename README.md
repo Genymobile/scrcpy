@@ -582,6 +582,14 @@ scrcpy --turn-screen-off --stay-awake
 scrcpy -Sw
 ```
 
+#### Power off on close
+
+To turn the device screen off when closing scrcpy:
+
+```bash
+scrcpy --power-off-on-close
+```
+
 
 #### Show touches
 
