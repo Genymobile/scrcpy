@@ -799,7 +799,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:c:fF:hKm:nNp:r:s:StTvV:w",
+    while ((c = getopt_long(argc, argv, "b:fF:hKm:nNp:r:s:StTvV:w",
                             long_options, NULL)) != -1) {
         switch (c) {
             case 'b':
@@ -807,9 +807,6 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                     return false;
                 }
                 break;
-            case 'c':
-                LOGW("Deprecated option -c. Use --crop instead.");
-                // fall through
             case OPT_CROP:
                 opts->crop = optarg;
                 break;
