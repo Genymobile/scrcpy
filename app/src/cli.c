@@ -328,6 +328,9 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    Drag & drop APK file\n"
         "        Install APK from computer\n"
+        "\n"
+        "    Drag & drop non-APK file\n"
+        "        Push file to device (see --push-target)\n"
         "\n", arg0);
 }
 
