@@ -15,15 +15,47 @@
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
 
+#define OPT_RENDER_EXPIRED_FRAMES  1000
+#define OPT_WINDOW_TITLE           1001
+#define OPT_PUSH_TARGET            1002
+#define OPT_ALWAYS_ON_TOP          1003
+#define OPT_CROP                   1004
+#define OPT_RECORD_FORMAT          1005
+#define OPT_PREFER_TEXT            1006
+#define OPT_WINDOW_X               1007
+#define OPT_WINDOW_Y               1008
+#define OPT_WINDOW_WIDTH           1009
+#define OPT_WINDOW_HEIGHT          1010
+#define OPT_WINDOW_BORDERLESS      1011
+#define OPT_MAX_FPS                1012
+#define OPT_LOCK_VIDEO_ORIENTATION 1013
+#define OPT_DISPLAY_ID             1014
+#define OPT_ROTATION               1015
+#define OPT_RENDER_DRIVER          1016
+#define OPT_NO_MIPMAPS             1017
+#define OPT_CODEC_OPTIONS          1018
+#define OPT_FORCE_ADB_FORWARD      1019
+#define OPT_DISABLE_SCREENSAVER    1020
+#define OPT_SHORTCUT_MOD           1021
+#define OPT_NO_KEY_REPEAT          1022
+#define OPT_FORWARD_ALL_CLICKS     1023
+#define OPT_LEGACY_PASTE           1024
+#define OPT_ENCODER_NAME           1025
+#define OPT_POWER_OFF_ON_CLOSE     1026
+#define OPT_V4L2_SINK              1027
+#define OPT_DISPLAY_BUFFER         1028
+#define OPT_V4L2_BUFFER            1029
+
 struct sc_option {
     char shortopt;
+    int longopt_id; // either shortopt or longopt_id is non-zero
     const char *longopt;
     // no argument:       argdesc == NULL && !optional_arg
     // optional argument: argdesc != NULL && optional_arg
     // required argument: argdesc != NULL && !optional_arg
     const char *argdesc;
     bool optional_arg;
-    const char *text;
+    const char *text; // if NULL, the option does not appear in the help
 };
 
 #define MAX_EQUIVALENT_SHORTCUTS 3
@@ -32,8 +64,14 @@ struct sc_shortcut {
     const char *text;
 };
 
+struct sc_getopt_adapter {
+    char *optstring;
+    struct option *longopts;
+};
+
 static const struct sc_option options[] = {
     {
+        .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
         .text = "Make scrcpy window always on top (above other windows).",
     },
@@ -46,6 +84,7 @@ static const struct sc_option options[] = {
                 "Default is " STR(DEFAULT_BIT_RATE) ".",
     },
     {
+        .longopt_id = OPT_CODEC_OPTIONS,
         .longopt = "codec-options",
         .argdesc = "key[:type]=value[,...]",
         .text = "Set a list of comma-separated key:type=value options for the "
@@ -57,6 +96,7 @@ static const struct sc_option options[] = {
                 "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
+        .longopt_id = OPT_CROP,
         .longopt = "crop",
         .argdesc = "width:height:x:y",
         .text = "Crop the device screen on the server.\n"
@@ -65,10 +105,12 @@ static const struct sc_option options[] = {
                 "Any --max-size value is cmoputed on the cropped size.",
     },
     {
+        .longopt_id = OPT_DISABLE_SCREENSAVER,
         .longopt = "disable-screensaver",
         .text = "Disable screensaver while scrcpy is running.",
     },
     {
+        .longopt_id = OPT_DISPLAY_ID,
         .longopt = "display",
         .argdesc = "id",
         .text = "Specify the display id to mirror.\n"
@@ -78,6 +120,7 @@ static const struct sc_option options[] = {
                 "Default is 0.",
     },
     {
+        .longopt_id = OPT_DISPLAY_BUFFER,
         .longopt = "display-buffer",
         .argdesc = "ms",
         .text = "Add a buffering delay (in milliseconds) before displaying. "
@@ -85,16 +128,19 @@ static const struct sc_option options[] = {
                 "Default is 0 (no buffering).",
     },
     {
+        .longopt_id = OPT_ENCODER_NAME,
         .longopt = "encoder",
         .argdesc = "name",
         .text = "Use a specific MediaCodec encoder (must be a H.264 encoder).",
     },
     {
+        .longopt_id = OPT_FORCE_ADB_FORWARD,
         .longopt = "force-adb-forward",
         .text = "Do not attempt to use \"adb reverse\" to connect to the "
                 "device.",
     },
     {
+        .longopt_id = OPT_FORWARD_ALL_CLICKS,
         .longopt = "forward-all-clicks",
         .text = "By default, right-click triggers BACK (or POWER on) and "
                 "middle-click triggers HOME. This option disables these "
@@ -121,6 +167,7 @@ static const struct sc_option options[] = {
         .text = "Print this help.",
     },
     {
+        .longopt_id = OPT_LEGACY_PASTE,
         .longopt = "legacy-paste",
         .text = "Inject computer clipboard text as a sequence of key events "
                 "on Ctrl+v (like MOD+Shift+v).\n"
@@ -128,6 +175,7 @@ static const struct sc_option options[] = {
                 "expected when setting the device clipboard programmatically.",
     },
     {
+        .longopt_id = OPT_LOCK_VIDEO_ORIENTATION,
         .longopt = "lock-video-orientation",
         .argdesc = "value",
         .optional_arg = true,
@@ -141,6 +189,7 @@ static const struct sc_option options[] = {
                 "\"initial\".",
     },
     {
+        .longopt_id = OPT_MAX_FPS,
         .longopt = "max-fps",
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
@@ -170,10 +219,12 @@ static const struct sc_option options[] = {
                 "is enabled).",
     },
     {
+        .longopt_id = OPT_NO_KEY_REPEAT,
         .longopt = "no-key-repeat",
         .text = "Do not forward repeated key events when a key is held down.",
     },
     {
+        .longopt_id = OPT_NO_MIPMAPS,
         .longopt = "no-mipmaps",
         .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
                 "mipmaps are automatically generated to improve downscaling "
@@ -188,10 +239,12 @@ static const struct sc_option options[] = {
                               STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".",
     },
     {
+        .longopt_id = OPT_POWER_OFF_ON_CLOSE,
         .longopt = "power-off-on-close",
         .text = "Turn the device screen off when closing scrcpy.",
     },
     {
+        .longopt_id = OPT_PREFER_TEXT,
         .longopt = "prefer-text",
         .text = "Inject alpha characters and space as text events instead of"
                 "key events.\n"
@@ -200,6 +253,7 @@ static const struct sc_option options[] = {
                 "keys in games (typically WASD).",
     },
     {
+        .longopt_id = OPT_PUSH_TARGET,
         .longopt = "push-target",
         .argdesc = "path",
         .text = "Set the target directory for pushing files to the device by "
@@ -215,11 +269,13 @@ static const struct sc_option options[] = {
                 "set, or by the file extension (.mp4 or .mkv).",
     },
     {
+        .longopt_id = OPT_RECORD_FORMAT,
         .longopt = "record-format",
         .argdesc = "format",
         .text = "Force recording format (either mp4 or mkv).",
     },
     {
+        .longopt_id = OPT_RENDER_DRIVER,
         .longopt = "render-driver",
         .argdesc = "name",
         .text = "Request SDL to use the given render driver (this is just a "
@@ -229,6 +285,12 @@ static const struct sc_option options[] = {
                 "<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>",
     },
     {
+        // deprecated
+        .longopt_id = OPT_RENDER_EXPIRED_FRAMES,
+        .longopt = "render-expired-frames",
+    },
+    {
+        .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
         .text = "Set the initial display rotation.\n"
@@ -243,6 +305,7 @@ static const struct sc_option options[] = {
                 "are connected to adb.",
     },
     {
+        .longopt_id = OPT_SHORTCUT_MOD,
         .longopt = "shortcut-mod",
         .argdesc = "key[+...][,...]",
         .text = "Specify the modifiers to use for scrcpy shortcuts.\n"
@@ -268,6 +331,7 @@ static const struct sc_option options[] = {
     },
 #ifdef HAVE_V4L2
     {
+        .longopt_id = OPT_V4L2_SINK,
         .longopt = "v4l2-sink",
         .argdesc = "/dev/videoN",
         .text = "Output to v4l2loopback device.\n"
@@ -275,6 +339,7 @@ static const struct sc_option options[] = {
                 "--lock-video-orientation).",
     },
     {
+        .longopt_id = OPT_V4L2_BUFFER,
         .longopt = "v4l2-buffer",
         .argdesc = "ms",
         .text = "Add a buffering delay (in milliseconds) before pushing "
@@ -307,33 +372,39 @@ static const struct sc_option options[] = {
                 "is plugged in.",
     },
     {
+        .longopt_id = OPT_WINDOW_BORDERLESS,
         .longopt = "window-borderless",
         .text = "Disable window decorations (display borderless window)."
     },
     {
+        .longopt_id = OPT_WINDOW_TITLE,
         .longopt = "window-title",
         .argdesc = "text",
         .text = "Set a custom window title.",
     },
     {
+        .longopt_id = OPT_WINDOW_X,
         .longopt = "window-x",
         .argdesc = "value",
         .text = "Set the initial window horizontal position.\n"
                 "Default is \"auto\".",
     },
     {
+        .longopt_id = OPT_WINDOW_Y,
         .longopt = "window-y",
         .argdesc = "value",
         .text = "Set the initial window vertical position.\n"
                 "Default is \"auto\".",
     },
     {
+        .longopt_id = OPT_WINDOW_WIDTH,
         .longopt = "window-width",
         .argdesc = "value",
         .text = "Set the initial window width.\n"
                 "Default is 0 (automatic).",
     },
     {
+        .longopt_id = OPT_WINDOW_HEIGHT,
         .longopt = "window-height",
         .argdesc = "value",
         .text = "Set the initial window height.\n"
@@ -453,6 +524,102 @@ static const struct sc_shortcut shortcuts[] = {
     },
 };
 
+static char *
+sc_getopt_adapter_create_optstring(void) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 64)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        const struct sc_option *opt = &options[i];
+        if (opt->shortopt) {
+            if (!sc_strbuf_append_char(&buf, opt->shortopt)) {
+                goto error;
+            }
+            // If there is an argument, add ':'
+            if (opt->argdesc) {
+                if (!sc_strbuf_append_char(&buf, ':')) {
+                    goto error;
+                }
+                // If the argument is optional, add another ':'
+                if (opt->optional_arg && !sc_strbuf_append_char(&buf, ':')) {
+                    goto error;
+                }
+            }
+        }
+    }
+
+    return buf.s;
+
+error:
+    free(buf.s);
+    return NULL;
+}
+
+static struct option *
+sc_getopt_adapter_create_longopts(void) {
+    struct option *longopts =
+        malloc((ARRAY_LEN(options) + 1) * sizeof(*longopts));
+    if (!longopts) {
+        return NULL;
+    }
+
+    size_t out_idx = 0;
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        const struct sc_option *in = &options[i];
+        if (!in->longopt) {
+            // The longopts array must only contain long options
+            continue;
+        }
+        struct option *out = &longopts[out_idx++];
+
+        out->name = in->longopt;
+
+        if (!in->argdesc) {
+            assert(!in->optional_arg);
+            out->has_arg = no_argument;
+        } else if (in->optional_arg) {
+            out->has_arg = optional_argument;
+        } else {
+            out->has_arg = required_argument;
+        }
+
+        out->flag = NULL;
+
+        // Either shortopt or longopt_id is set, but not both
+        assert(!!in->shortopt ^ !!in->longopt_id);
+        out->val = in->shortopt ? in->shortopt : in->longopt_id;
+    }
+
+    // The array must be terminated by a NULL item
+    longopts[out_idx] = (struct option) {0};
+
+    return longopts;
+}
+
+static bool
+sc_getopt_adapter_init(struct sc_getopt_adapter *adapter) {
+    adapter->optstring = sc_getopt_adapter_create_optstring();
+    if (!adapter->optstring) {
+        return false;
+    }
+
+    adapter->longopts = sc_getopt_adapter_create_longopts();
+    if (!adapter->longopts) {
+        free(adapter->optstring);
+        return false;
+    }
+
+    return true;
+};
+
+static void
+sc_getopt_adapter_destroy(struct sc_getopt_adapter *adapter) {
+    free(adapter->optstring);
+    free(adapter->longopts);
+}
+
 static void
 print_option_usage_header(const struct sc_option *opt) {
     struct sc_strbuf buf;
@@ -514,7 +681,11 @@ error:
 static void
 print_option_usage(const struct sc_option *opt, unsigned cols) {
     assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
-    assert(opt->text);
+
+    if (!opt->text) {
+        // Option not documented in help (for example because it is deprecated)
+        return;
+    }
 
     print_option_usage_header(opt);
 
@@ -951,104 +1122,15 @@ guess_record_format(const char *filename) {
     return 0;
 }
 
-#define OPT_RENDER_EXPIRED_FRAMES  1000
-#define OPT_WINDOW_TITLE           1001
-#define OPT_PUSH_TARGET            1002
-#define OPT_ALWAYS_ON_TOP          1003
-#define OPT_CROP                   1004
-#define OPT_RECORD_FORMAT          1005
-#define OPT_PREFER_TEXT            1006
-#define OPT_WINDOW_X               1007
-#define OPT_WINDOW_Y               1008
-#define OPT_WINDOW_WIDTH           1009
-#define OPT_WINDOW_HEIGHT          1010
-#define OPT_WINDOW_BORDERLESS      1011
-#define OPT_MAX_FPS                1012
-#define OPT_LOCK_VIDEO_ORIENTATION 1013
-#define OPT_DISPLAY_ID             1014
-#define OPT_ROTATION               1015
-#define OPT_RENDER_DRIVER          1016
-#define OPT_NO_MIPMAPS             1017
-#define OPT_CODEC_OPTIONS          1018
-#define OPT_FORCE_ADB_FORWARD      1019
-#define OPT_DISABLE_SCREENSAVER    1020
-#define OPT_SHORTCUT_MOD           1021
-#define OPT_NO_KEY_REPEAT          1022
-#define OPT_FORWARD_ALL_CLICKS     1023
-#define OPT_LEGACY_PASTE           1024
-#define OPT_ENCODER_NAME           1025
-#define OPT_POWER_OFF_ON_CLOSE     1026
-#define OPT_V4L2_SINK              1027
-#define OPT_DISPLAY_BUFFER         1028
-#define OPT_V4L2_BUFFER            1029
-
-bool
-scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
-    static const struct option long_options[] = {
-        {"always-on-top",          no_argument,       NULL, OPT_ALWAYS_ON_TOP},
-        {"bit-rate",               required_argument, NULL, 'b'},
-        {"codec-options",          required_argument, NULL, OPT_CODEC_OPTIONS},
-        {"crop",                   required_argument, NULL, OPT_CROP},
-        {"disable-screensaver",    no_argument,       NULL,
-                                                  OPT_DISABLE_SCREENSAVER},
-        {"display",                required_argument, NULL, OPT_DISPLAY_ID},
-        {"display-buffer",         required_argument, NULL, OPT_DISPLAY_BUFFER},
-        {"encoder",                required_argument, NULL, OPT_ENCODER_NAME},
-        {"force-adb-forward",      no_argument,       NULL,
-                                                  OPT_FORCE_ADB_FORWARD},
-        {"forward-all-clicks",     no_argument,       NULL,
-                                                  OPT_FORWARD_ALL_CLICKS},
-        {"fullscreen",             no_argument,       NULL, 'f'},
-        {"help",                   no_argument,       NULL, 'h'},
-        {"hid-keyboard",           no_argument,       NULL, 'K'},
-        {"legacy-paste",           no_argument,       NULL, OPT_LEGACY_PASTE},
-        {"lock-video-orientation", optional_argument, NULL,
-                                                  OPT_LOCK_VIDEO_ORIENTATION},
-        {"max-fps",                required_argument, NULL, OPT_MAX_FPS},
-        {"max-size",               required_argument, NULL, 'm'},
-        {"no-control",             no_argument,       NULL, 'n'},
-        {"no-display",             no_argument,       NULL, 'N'},
-        {"no-key-repeat",          no_argument,       NULL, OPT_NO_KEY_REPEAT},
-        {"no-mipmaps",             no_argument,       NULL, OPT_NO_MIPMAPS},
-        {"port",                   required_argument, NULL, 'p'},
-        {"prefer-text",            no_argument,       NULL, OPT_PREFER_TEXT},
-        {"push-target",            required_argument, NULL, OPT_PUSH_TARGET},
-        {"record",                 required_argument, NULL, 'r'},
-        {"record-format",          required_argument, NULL, OPT_RECORD_FORMAT},
-        {"render-driver",          required_argument, NULL, OPT_RENDER_DRIVER},
-        {"render-expired-frames",  no_argument,       NULL,
-                                                  OPT_RENDER_EXPIRED_FRAMES},
-        {"rotation",               required_argument, NULL, OPT_ROTATION},
-        {"serial",                 required_argument, NULL, 's'},
-        {"shortcut-mod",           required_argument, NULL, OPT_SHORTCUT_MOD},
-        {"show-touches",           no_argument,       NULL, 't'},
-        {"stay-awake",             no_argument,       NULL, 'w'},
-        {"turn-screen-off",        no_argument,       NULL, 'S'},
-#ifdef HAVE_V4L2
-        {"v4l2-sink",              required_argument, NULL, OPT_V4L2_SINK},
-        {"v4l2-buffer",            required_argument, NULL, OPT_V4L2_BUFFER},
-#endif
-        {"verbosity",              required_argument, NULL, 'V'},
-        {"version",                no_argument,       NULL, 'v'},
-        {"window-title",           required_argument, NULL, OPT_WINDOW_TITLE},
-        {"window-x",               required_argument, NULL, OPT_WINDOW_X},
-        {"window-y",               required_argument, NULL, OPT_WINDOW_Y},
-        {"window-width",           required_argument, NULL, OPT_WINDOW_WIDTH},
-        {"window-height",          required_argument, NULL, OPT_WINDOW_HEIGHT},
-        {"window-borderless",      no_argument,       NULL,
-                                                  OPT_WINDOW_BORDERLESS},
-        {"power-off-on-close",     no_argument,       NULL,
-                                                  OPT_POWER_OFF_ON_CLOSE},
-        {NULL,                     0,                 NULL, 0  },
-    };
-
+static bool
+parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
+                       const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
 
     optind = 0; // reset to start from the first argument in tests
 
     int c;
-    while ((c = getopt_long(argc, argv, "b:fF:hKm:nNp:r:s:StvV:w",
-                            long_options, NULL)) != -1) {
+    while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->bit_rate)) {
@@ -1287,4 +1369,20 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     }
 
     return true;
+}
+
+bool
+scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
+    struct sc_getopt_adapter adapter;
+    if (!sc_getopt_adapter_init(&adapter)) {
+        LOGW("Could not create getopt adapter");
+        return false;
+    }
+
+    bool ret = parse_args_with_getopt(args, argc, argv, adapter.optstring,
+                                      adapter.longopts);
+
+    sc_getopt_adapter_destroy(&adapter);
+
+    return ret;
 }
