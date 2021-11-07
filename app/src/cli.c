@@ -8,244 +8,419 @@
 
 #include "options.h"
 #include "util/log.h"
+#include "util/strbuf.h"
 #include "util/str_util.h"
 
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
 
+struct sc_option {
+    char shortopt;
+    const char *longopt;
+    // no argument:       argdesc == NULL && !optional_arg
+    // optional argument: argdesc != NULL && optional_arg
+    // required argument: argdesc != NULL && !optional_arg
+    const char *argdesc;
+    bool optional_arg;
+    const char *text;
+};
+
+static const struct sc_option options[] = {
+    {
+        .longopt = "always-on-top",
+        .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .shortopt = 'b',
+        .longopt = "bit-rate",
+        .argdesc = "value",
+        .text = "Encode the video at the gitven bit-rate, expressed in bits/s. "
+                "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
+                "Default is " STR(DEFAULT_BIT_RATE) ".",
+    },
+    {
+        .longopt = "codec-options",
+        .argdesc = "key[:type]=value[,...]",
+        .text = "Set a list of comma-separated key:type=value options for the "
+                "device encoder.\n"
+                "The possible values for 'type' are 'int' (default), 'long', "
+                "'float' and 'string'.\n"
+                "The list of possible codec options is available in the "
+                "Android documentation: "
+                "<https://d.android.com/reference/android/media/MediaFormat>",
+    },
+    {
+        .longopt = "crop",
+        .argdesc = "width:height:x:y",
+        .text = "Crop the device screen on the server.\n"
+                "The values are expressed in the device natural orientation "
+                "(typically, portrait for a phone, landscape for a tablet). "
+                "Any --max-size value is cmoputed on the cropped size.",
+    },
+    {
+        .longopt = "disable-screensaver",
+        .text = "Disable screensaver while scrcpy is running.",
+    },
+    {
+        .longopt = "display",
+        .argdesc = "id",
+        .text = "Specify the display id to mirror.\n"
+                "The list of possible display ids can be listed by:\n"
+                "    adb shell dumpsys display\n"
+                "(search \"mDisplayId=\" in the output)\n"
+                "Default is 0.",
+    },
+    {
+        .longopt = "display-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before displaying. "
+                "This increases latency to compensate for jitter.\n"
+                "Default is 0 (no buffering).",
+    },
+    {
+        .longopt = "encoder",
+        .argdesc = "name",
+        .text = "Use a specific MediaCodec encoder (must be a H.264 encoder).",
+    },
+    {
+        .longopt = "force-adb-forward",
+        .text = "Do not attempt to use \"adb reverse\" to connect to the "
+                "device.",
+    },
+    {
+        .longopt = "forward-all-clicks",
+        .text = "By default, right-click triggers BACK (or POWER on) and "
+                "middle-click triggers HOME. This option disables these "
+                "shortcuts and forwards the clicks to the device instead.",
+    },
+    {
+        .shortopt = 'f',
+        .longopt = "fullscreen",
+        .text = "Start in fullscreen.",
+    },
+    {
+        .shortopt = 'K',
+        .longopt = "hid-keyboard",
+        .text = "Simulate a physical keyboard by using HID over AOAv2.\n"
+                "It provides a better experience for IME users, and allows to "
+                "generate non-ASCII characters, contrary to the default "
+                "injection method.\n"
+                "It may only work over USB, and is currently only supported "
+                "on Linux.",
+    },
+    {
+        .shortopt = 'h',
+        .longopt = "help",
+        .text = "Print this help.",
+    },
+    {
+        .longopt = "legacy-paste",
+        .text = "Inject computer clipboard text as a sequence of key events "
+                "on Ctrl+v (like MOD+Shift+v).\n"
+                "This is a workaround for some devices not behaving as "
+                "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt = "lock-video-orientation",
+        .argdesc = "value",
+        .optional_arg = true,
+        .text = "Lock video orientation to value.\n"
+                "Possible values are \"unlocked\", \"initial\" (locked to the "
+                "initial orientation), 0, 1, 2 and 3. Natural device "
+                "orientation is 0, and each increment adds a 90 degrees "
+                "rotation counterclockwise.\n"
+                "Default is \"unlocked\".\n"
+                "Passing the option without argument is equivalent to passing "
+                "\"initial\".",
+    },
+    {
+        .longopt = "max-fps",
+        .argdesc = "value",
+        .text = "Limit the frame rate of screen capture (officially supported "
+                "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .shortopt = 'm',
+        .longopt = "max-size",
+        .argdesc = "value",
+        .text = "Limit both the width and height of the video to value. The "
+                "other dimension is computed so that the device aspect-ratio "
+                "is preserved.\n"
+                "Default is 0 (unlimited).",
+    },
+    {
+        .shortopt = 'n',
+        .longopt = "no-control",
+        .text = "Disable device control (mirror the device in read-only).",
+    },
+    {
+        .shortopt = 'N',
+        .longopt = "no-display",
+        .text = "Do not display device (only when screen recording "
+#ifdef HAVE_V4L2
+                "or V4L2 sink "
+#endif
+                "is enabled).",
+    },
+    {
+        .longopt = "no-key-repeat",
+        .text = "Do not forward repeated key events when a key is held down.",
+    },
+    {
+        .longopt = "no-mipmaps",
+        .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
+                "mipmaps are automatically generated to improve downscaling "
+                "quality. This option disables the generation of mipmaps.",
+    },
+    {
+        .shortopt = 'p',
+        .longopt = "port",
+        .argdesc = "port[:port]",
+        .text = "Set the TCP port (range) used by the client to listen.\n"
+                "Default is " STR(DEFAULT_LOCAL_PORT_RANGE_FIRST) ":"
+                              STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".",
+    },
+    {
+        .longopt = "power-off-on-close",
+        .text = "Turn the device screen off when closing scrcpy.",
+    },
+    {
+        .longopt = "prefer-text",
+        .text = "Inject alpha characters and space as text events instead of"
+                "key events.\n"
+                "This avoids issues when combining multiple keys to enter a "
+                "special character, but breaks the expected behavior of alpha "
+                "keys in games (typically WASD).",
+    },
+    {
+        .longopt = "push-target",
+        .argdesc = "path",
+        .text = "Set the target directory for pushing files to the device by "
+                "drag & drop. It is passed as is to \"adb push\".\n"
+                "Default is \"/sdcard/Download/\".",
+    },
+    {
+        .shortopt = 'r',
+        .longopt = "record",
+        .argdesc = "file.mp4",
+        .text = "Record screen to file.\n"
+                "The format is determined by the --record-format option if "
+                "set, or by the file extension (.mp4 or .mkv).",
+    },
+    {
+        .longopt = "record-format",
+        .argdesc = "format",
+        .text = "Force recording format (either mp4 or mkv).",
+    },
+    {
+        .longopt = "render-driver",
+        .argdesc = "name",
+        .text = "Request SDL to use the given render driver (this is just a "
+                "hint).\n"
+                "Supported names are currently \"direct3d\", \"opengl\", "
+                "\"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
+                "<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>",
+    },
+    {
+        .longopt = "rotation",
+        .argdesc = "value",
+        .text = "Set the initial display rotation.\n"
+                "Possible values are 0, 1, 2 and 3. Each increment adds a 90 "
+                "degrees rotation counterclockwise.",
+    },
+    {
+        .shortopt = 's',
+        .longopt = "serial",
+        .argdesc = "serial",
+        .text = "The device serial number. Mandatory only if several devices "
+                "are connected to adb.",
+    },
+    {
+        .longopt = "shortcut-mod",
+        .argdesc = "key[+...][,...]",
+        .text = "Specify the modifiers to use for scrcpy shortcuts.\n"
+                "Possible keys are \"lctrl\", \"rctrl\", \"lalt\", \"ralt\", "
+                "\"lsuper\" and \"rsuper\".\n"
+                "A shortcut can consist in several keys, separated by '+'. "
+                "Several shortcuts can be specified, separated by ','.\n"
+                "For example, to use either LCtrl+LAlt or LSuper for scrcpy "
+                "shortcuts, pass \"lctrl+lalt,lsuper\".\n"
+                "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .shortopt = 'S',
+        .longopt = "turn-screen-off",
+        .text = "Turn the device screen off immediately.",
+    },
+    {
+        .shortopt = 't',
+        .longopt = "show-touches",
+        .text = "Enable \"show touches\" on start, restore the initial value "
+                "on exit.\n"
+                "It only shows physical touches (not clicks from scrcpy).",
+    },
+#ifdef HAVE_V4L2
+    {
+        .longopt = "v4l2-sink",
+        .argdesc = "/dev/videoN",
+        .text = "Output to v4l2loopback device.\n"
+                "It requires to lock the video orientation (see "
+                "--lock-video-orientation).",
+    },
+    {
+        .longopt = "v4l2-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before pushing "
+                "frames. This increases latency to compensate for jitter.\n"
+                "This option is similar to --display-buffer, but specific to "
+                "V4L2 sink.\n"
+                "Default is 0 (no buffering).",
+    },
+#endif
+    {
+        .shortopt = 'V',
+        .longopt = "verbosity",
+        .argdesc = "value",
+        .text = "Set the log level (verbose, debug, info, warn or error).\n"
+#ifndef NDEBUG
+                "Default is debug.",
+#else
+                "Default is info.",
+#endif
+    },
+    {
+        .shortopt = 'v',
+        .longopt = "version",
+        .text = "Print the version of scrcpy.",
+    },
+    {
+        .shortopt = 'w',
+        .longopt = "stay-awake",
+        .text = "Keep the device on while scrcpy is running, when the device "
+                "is plugged in.",
+    },
+    {
+        .longopt = "window-borderless",
+        .text = "Disable window decorations (display borderless window)."
+    },
+    {
+        .longopt = "window-title",
+        .argdesc = "text",
+        .text = "Set a custom window title.",
+    },
+    {
+        .longopt = "window-x",
+        .argdesc = "value",
+        .text = "Set the initial window horizontal position.\n"
+                "Default is \"auto\".",
+    },
+    {
+        .longopt = "window-y",
+        .argdesc = "value",
+        .text = "Set the initial window vertical position.\n"
+                "Default is \"auto\".",
+    },
+    {
+        .longopt = "window-width",
+        .argdesc = "value",
+        .text = "Set the initial window width.\n"
+                "Default is 0 (automatic).",
+    },
+    {
+        .longopt = "window-height",
+        .argdesc = "value",
+        .text = "Set the initial window height.\n"
+                "Default is 0 (automatic).",
+    },
+};
+
+static void
+print_option_usage_header(const struct sc_option *opt) {
+    struct sc_strbuf buf;
+    if (!sc_strbuf_init(&buf, 64)) {
+        goto error;
+    }
+
+    bool ok = true;
+    (void) ok; // only used for assertions
+
+    if (opt->shortopt) {
+        ok = sc_strbuf_append_char(&buf, '-');
+        assert(ok);
+
+        ok = sc_strbuf_append_char(&buf, opt->shortopt);
+        assert(ok);
+
+        if (opt->longopt) {
+            ok = sc_strbuf_append_staticstr(&buf, ", ");
+            assert(ok);
+        }
+    }
+
+    if (opt->longopt) {
+        ok = sc_strbuf_append_staticstr(&buf, "--");
+        assert(ok);
+
+        if (!sc_strbuf_append_str(&buf, opt->longopt)) {
+            goto error;
+        }
+    }
+
+    if (opt->argdesc) {
+        if (opt->optional_arg && !sc_strbuf_append_char(&buf, '[')) {
+            goto error;
+        }
+
+        if (!sc_strbuf_append_char(&buf, '=')) {
+            goto error;
+        }
+
+        if (!sc_strbuf_append_str(&buf, opt->argdesc)) {
+            goto error;
+        }
+
+        if (opt->optional_arg && !sc_strbuf_append_char(&buf, ']')) {
+            goto error;
+        }
+    }
+
+    fprintf(stderr, "\n    %s\n", buf.s);
+    free(buf.s);
+    return;
+
+error:
+    fprintf(stderr, "<ERROR>\n");
+}
+
+static void
+print_option_usage(const struct sc_option *opt, unsigned cols) {
+    assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
+    assert(opt->text);
+
+    print_option_usage_header(opt);
+
+    char *text = sc_str_wrap_lines(opt->text, cols, 8);
+    if (!text) {
+        fprintf(stderr, "<ERROR>\n");
+        return;
+    }
+
+    fprintf(stderr, "%s\n", text);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
-    fprintf(stderr,
-        "Usage: %s [options]\n"
-        "\n"
-        "Options:\n"
-        "\n"
-        "    --always-on-top\n"
-        "        Make scrcpy window always on top (above other windows).\n"
-        "\n"
-        "    -b, --bit-rate value\n"
-        "        Encode the video at the given bit-rate, expressed in bits/s.\n"
-        "        Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
-        "        Default is " STR(DEFAULT_BIT_RATE) ".\n"
-        "\n"
-        "    --codec-options key[:type]=value[,...]\n"
-        "        Set a list of comma-separated key:type=value options for the\n"
-        "        device encoder.\n"
-        "        The possible values for 'type' are 'int' (default), 'long',\n"
-        "        'float' and 'string'.\n"
-        "        The list of possible codec options is available in the\n"
-        "        Android documentation:\n"
-        "        <https://d.android.com/reference/android/media/MediaFormat>\n"
-        "\n"
-        "    --crop width:height:x:y\n"
-        "        Crop the device screen on the server.\n"
-        "        The values are expressed in the device natural orientation\n"
-        "        (typically, portrait for a phone, landscape for a tablet).\n"
-        "        Any --max-size value is computed on the cropped size.\n"
-        "\n"
-        "    --disable-screensaver\n"
-        "        Disable screensaver while scrcpy is running.\n"
-        "\n"
-        "    --display id\n"
-        "        Specify the display id to mirror.\n"
-        "\n"
-        "        The list of possible display ids can be listed by:\n"
-        "            adb shell dumpsys display\n"
-        "        (search \"mDisplayId=\" in the output)\n"
-        "\n"
-        "        Default is 0.\n"
-        "\n"
-        "    --display-buffer ms\n"
-        "        Add a buffering delay (in milliseconds) before displaying.\n"
-        "        This increases latency to compensate for jitter.\n"
-        "\n"
-        "        Default is 0 (no buffering).\n"
-        "\n"
-        "    --encoder name\n"
-        "        Use a specific MediaCodec encoder (must be a H.264 encoder).\n"
-        "\n"
-        "    --force-adb-forward\n"
-        "        Do not attempt to use \"adb reverse\" to connect to the\n"
-        "        device.\n"
-        "\n"
-        "    --forward-all-clicks\n"
-        "        By default, right-click triggers BACK (or POWER on) and\n"
-        "        middle-click triggers HOME. This option disables these\n"
-        "        shortcuts and forwards the clicks to the device instead.\n"
-        "\n"
-        "    -f, --fullscreen\n"
-        "        Start in fullscreen.\n"
-        "\n"
-        "    -K, --hid-keyboard\n"
-        "        Simulate a physical keyboard by using HID over AOAv2.\n"
-        "        It provides a better experience for IME users, and allows to\n"
-        "        generate non-ASCII characters, contrary to the default\n"
-        "        injection method.\n"
-        "        It may only work over USB, and is currently only supported\n"
-        "        on Linux.\n"
-        "\n"
-        "    -h, --help\n"
-        "        Print this help.\n"
-        "\n"
-        "    --legacy-paste\n"
-        "        Inject computer clipboard text as a sequence of key events\n"
-        "        on Ctrl+v (like MOD+Shift+v).\n"
-        "        This is a workaround for some devices not behaving as\n"
-        "        expected when setting the device clipboard programmatically.\n"
-        "\n"
-        "    --lock-video-orientation[=value]\n"
-        "        Lock video orientation to value.\n"
-        "        Possible values are \"unlocked\", \"initial\" (locked to the\n"
-        "        initial orientation), 0, 1, 2 and 3.\n"
-        "        Natural device orientation is 0, and each increment adds a\n"
-        "        90 degrees rotation counterclockwise.\n"
-        "        Default is \"unlocked\".\n"
-        "        Passing the option without argument is equivalent to passing\n"
-        "        \"initial\".\n"
-        "\n"
-        "    --max-fps value\n"
-        "        Limit the frame rate of screen capture (officially supported\n"
-        "        since Android 10, but may work on earlier versions).\n"
-        "\n"
-        "    -m, --max-size value\n"
-        "        Limit both the width and height of the video to value. The\n"
-        "        other dimension is computed so that the device aspect-ratio\n"
-        "        is preserved.\n"
-        "        Default is 0 (unlimited).\n"
-        "\n"
-        "    -n, --no-control\n"
-        "        Disable device control (mirror the device in read-only).\n"
-        "\n"
-        "    -N, --no-display\n"
-        "        Do not display device (only when screen recording is\n"
-        "        enabled).\n"
-        "\n"
-        "    --no-key-repeat\n"
-        "        Do not forward repeated key events when a key is held down.\n"
-        "\n"
-        "    --no-mipmaps\n"
-        "        If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then\n"
-        "        mipmaps are automatically generated to improve downscaling\n"
-        "        quality. This option disables the generation of mipmaps.\n"
-        "\n"
-        "    -p, --port port[:port]\n"
-        "        Set the TCP port (range) used by the client to listen.\n"
-        "        Default is " STR(DEFAULT_LOCAL_PORT_RANGE_FIRST) ":"
-                              STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".\n"
-        "\n"
-        "    --power-off-on-close\n"
-        "        Turn the device screen off when closing scrcpy.\n"
-        "\n"
-        "    --prefer-text\n"
-        "        Inject alpha characters and space as text events instead of\n"
-        "        key events.\n"
-        "        This avoids issues when combining multiple keys to enter a\n"
-        "        special character, but breaks the expected behavior of alpha\n"
-        "        keys in games (typically WASD).\n"
-        "\n"
-        "    --push-target path\n"
-        "        Set the target directory for pushing files to the device by\n"
-        "        drag & drop. It is passed as is to \"adb push\".\n"
-        "        Default is \"/sdcard/Download/\".\n"
-        "\n"
-        "    -r, --record file.mp4\n"
-        "        Record screen to file.\n"
-        "        The format is determined by the --record-format option if\n"
-        "        set, or by the file extension (.mp4 or .mkv).\n"
-        "\n"
-        "    --record-format format\n"
-        "        Force recording format (either mp4 or mkv).\n"
-        "\n"
-        "    --render-driver name\n"
-        "        Request SDL to use the given render driver (this is just a\n"
-        "        hint).\n"
-        "        Supported names are currently \"direct3d\", \"opengl\",\n"
-        "        \"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
-        "        <https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>\n"
-        "\n"
-        "    --rotation value\n"
-        "        Set the initial display rotation.\n"
-        "        Possible values are 0, 1, 2 and 3. Each increment adds a 90\n"
-        "        degrees rotation counterclockwise.\n"
-        "\n"
-        "    -s, --serial serial\n"
-        "        The device serial number. Mandatory only if several devices\n"
-        "        are connected to adb.\n"
-        "\n"
-        "    --shortcut-mod key[+...][,...]\n"
-        "        Specify the modifiers to use for scrcpy shortcuts.\n"
-        "        Possible keys are \"lctrl\", \"rctrl\", \"lalt\", \"ralt\",\n"
-        "        \"lsuper\" and \"rsuper\".\n"
-        "\n"
-        "        A shortcut can consist in several keys, separated by '+'.\n"
-        "        Several shortcuts can be specified, separated by ','.\n"
-        "\n"
-        "        For example, to use either LCtrl+LAlt or LSuper for scrcpy\n"
-        "        shortcuts, pass \"lctrl+lalt,lsuper\".\n"
-        "\n"
-        "        Default is \"lalt,lsuper\" (left-Alt or left-Super).\n"
-        "\n"
-        "    -S, --turn-screen-off\n"
-        "        Turn the device screen off immediately.\n"
-        "\n"
-        "    -t, --show-touches\n"
-        "        Enable \"show touches\" on start, restore the initial value\n"
-        "        on exit.\n"
-        "        It only shows physical touches (not clicks from scrcpy).\n"
-        "\n"
-#ifdef HAVE_V4L2
-        "    --v4l2-sink /dev/videoN\n"
-        "        Output to v4l2loopback device.\n"
-        "        It requires to lock the video orientation (see\n"
-        "        --lock-video-orientation).\n"
-        "\n"
-        "    --v4l2-buffer ms\n"
-        "        Add a buffering delay (in milliseconds) before pushing\n"
-        "        frames. This increases latency to compensate for jitter.\n"
-        "\n"
-        "        This option is similar to --display-buffer, but specific to\n"
-        "        V4L2 sink.\n"
-        "\n"
-        "        Default is 0 (no buffering).\n"
-        "\n"
-#endif
-        "    -V, --verbosity value\n"
-        "        Set the log level (verbose, debug, info, warn or error).\n"
-#ifndef NDEBUG
-        "        Default is debug.\n"
-#else
-        "        Default is info.\n"
-#endif
-        "\n"
-        "    -v, --version\n"
-        "        Print the version of scrcpy.\n"
-        "\n"
-        "    -w, --stay-awake\n"
-        "        Keep the device on while scrcpy is running, when the device\n"
-        "        is plugged in.\n"
-        "\n"
-        "    --window-borderless\n"
-        "        Disable window decorations (display borderless window).\n"
-        "\n"
-        "    --window-title text\n"
-        "        Set a custom window title.\n"
-        "\n"
-        "    --window-x value\n"
-        "        Set the initial window horizontal position.\n"
-        "        Default is \"auto\".\n"
-        "\n"
-        "    --window-y value\n"
-        "        Set the initial window vertical position.\n"
-        "        Default is \"auto\".\n"
-        "\n"
-        "    --window-width value\n"
-        "        Set the initial window width.\n"
-        "        Default is 0 (automatic).\n"
-        "\n"
-        "    --window-height value\n"
-        "        Set the initial window height.\n"
-        "        Default is 0 (automatic).\n"
-        "\n"
+    const unsigned cols = 80; // For now, use a hardcoded value
+
+    fprintf(stderr, "Usage: %s [options]\n\n"
+                    "Options:\n", arg0);
+    for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
+        print_option_usage(&options[i], cols);
+    }
+
+    // Print shortcuts section
+    fprintf(stderr, "\n"
         "Shortcuts:\n"
         "\n"
         "    In the following list, MOD is the shortcut modifier. By default,\n"
@@ -334,7 +509,7 @@ scrcpy_print_usage(const char *arg0) {
         "\n"
         "    Drag & drop non-APK file\n"
         "        Push file to device (see --push-target)\n"
-        "\n", arg0);
+        "\n");
 }
 
 static bool
