@@ -11,6 +11,9 @@
 #include "util/strbuf.h"
 #include "util/str_util.h"
 
+#include <termios.h>
+#include <sys/ioctl.h>
+
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
 
@@ -740,7 +743,15 @@ print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
 
 void
 scrcpy_print_usage(const char *arg0) {
-    const unsigned cols = 80; // For now, use an hardcoded value
+    unsigned cols = 80;
+
+    struct winsize ws;
+    if (ioctl(STDIN_FILENO, TIOCGWINSZ, &ws) != -1) {
+        cols = ws.ws_col;
+        if (cols < 20) {
+            cols = 20;
+        }
+    }
 
     fprintf(stderr, "Usage: %s [options]\n\n"
                     "Options:\n", arg0);
