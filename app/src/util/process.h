@@ -47,9 +47,6 @@ process_execute_redirect(const char *const argv[], process_t *process,
                          pipe_t *pipe_stdin, pipe_t *pipe_stdout,
                          pipe_t *pipe_stderr);
 
-bool
-process_terminate(process_t pid);
-
 // kill the process
 bool
 process_terminate(process_t pid);
