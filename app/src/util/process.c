@@ -3,21 +3,22 @@
 #include <libgen.h>
 #include "log.h"
 
-enum process_result
-process_execute(const char *const argv[], process_t *pid) {
-    return process_execute_redirect(argv, pid, NULL, NULL, NULL);
+enum sc_process_result
+sc_process_execute(const char *const argv[], sc_pid *pid) {
+    return sc_process_execute_p(argv, pid, NULL, NULL, NULL);
 }
 
 bool
-process_check_success(process_t proc, const char *name, bool close) {
-    if (proc == PROCESS_NONE) {
+sc_process_check_success(sc_pid pid, const char *name, bool close) {
+    if (pid == SC_PROCESS_NONE) {
         LOGE("Could not execute \"%s\"", name);
         return false;
     }
-    exit_code_t exit_code = process_wait(proc, close);
+    sc_exit_code exit_code = sc_process_wait(pid, close);
     if (exit_code) {
-        if (exit_code != NO_EXIT_CODE) {
-            LOGE("\"%s\" returned with value %" PRIexitcode, name, exit_code);
+        if (exit_code != SC_EXIT_CODE_NONE) {
+            LOGE("\"%s\" returned with value %" SC_PRIexitcode, name,
+                 exit_code);
         } else {
             LOGE("\"%s\" exited unexpectedly", name);
         }
@@ -27,10 +28,10 @@ process_check_success(process_t proc, const char *name, bool close) {
 }
 
 ssize_t
-read_pipe_all(pipe_t pipe, char *data, size_t len) {
+sc_pipe_read_all(sc_pipe pipe, char *data, size_t len) {
     size_t copied = 0;
     while (len > 0) {
-        ssize_t r = read_pipe(pipe, data, len);
+        ssize_t r = sc_pipe_read(pipe, data, len);
         if (r <= 0) {
             return copied ? (ssize_t) copied : r;
         }

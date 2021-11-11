@@ -15,17 +15,16 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // (don't handle escaping nor quotes)
     size_t ret = xstrjoin(cmd, argv, ' ', len);
     if (ret >= len) {
-        LOGE("Command too long (%" PRIsizet " chars)", len - 1);
+        LOGE("Command too long (%" SC_PRIsizet " chars)", len - 1);
         return false;
     }
     return true;
 }
 
-enum process_result
-process_execute_redirect(const char *const argv[], HANDLE *handle,
-                         HANDLE *pipe_stdin, HANDLE *pipe_stdout,
-                         HANDLE *pipe_stderr) {
-    enum process_result ret = PROCESS_ERROR_GENERIC;
+enum sc_process_result
+sc_process_execute_p(const char *const argv[], HANDLE *handle,
+                     HANDLE *pin, HANDLE *pout, HANDLE *perr) {
+    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
 
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -35,32 +34,32 @@ process_execute_redirect(const char *const argv[], HANDLE *handle,
     HANDLE stdin_read_handle;
     HANDLE stdout_write_handle;
     HANDLE stderr_write_handle;
-    if (pipe_stdin) {
-        if (!CreatePipe(&stdin_read_handle, pipe_stdin, &sa, 0)) {
+    if (pin) {
+        if (!CreatePipe(&stdin_read_handle, pin, &sa, 0)) {
             perror("pipe");
-            return PROCESS_ERROR_GENERIC;
+            return SC_PROCESS_ERROR_GENERIC;
         }
-        if (!SetHandleInformation(*pipe_stdin, HANDLE_FLAG_INHERIT, 0)) {
+        if (!SetHandleInformation(*pin, HANDLE_FLAG_INHERIT, 0)) {
             LOGE("SetHandleInformation stdin failed");
             goto error_close_stdin;
         }
     }
-    if (pipe_stdout) {
-        if (!CreatePipe(pipe_stdout, &stdout_write_handle, &sa, 0)) {
+    if (pout) {
+        if (!CreatePipe(pout, &stdout_write_handle, &sa, 0)) {
             perror("pipe");
             goto error_close_stdin;
         }
-        if (!SetHandleInformation(*pipe_stdout, HANDLE_FLAG_INHERIT, 0)) {
+        if (!SetHandleInformation(*pout, HANDLE_FLAG_INHERIT, 0)) {
             LOGE("SetHandleInformation stdout failed");
             goto error_close_stdout;
         }
     }
-    if (pipe_stderr) {
-        if (!CreatePipe(pipe_stderr, &stderr_write_handle, &sa, 0)) {
+    if (perr) {
+        if (!CreatePipe(perr, &stderr_write_handle, &sa, 0)) {
             perror("pipe");
             goto error_close_stdout;
         }
-        if (!SetHandleInformation(*pipe_stderr, HANDLE_FLAG_INHERIT, 0)) {
+        if (!SetHandleInformation(*perr, HANDLE_FLAG_INHERIT, 0)) {
             LOGE("SetHandleInformation stderr failed");
             goto error_close_stderr;
         }
@@ -70,15 +69,15 @@ process_execute_redirect(const char *const argv[], HANDLE *handle,
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
-    if (pipe_stdin || pipe_stdout || pipe_stderr) {
+    if (pin || pout || perr) {
         si.dwFlags = STARTF_USESTDHANDLES;
-        if (pipe_stdin) {
+        if (pin) {
             si.hStdInput = stdin_read_handle;
         }
-        if (pipe_stdout) {
+        if (pout) {
             si.hStdOutput = stdout_write_handle;
         }
-        if (pipe_stderr) {
+        if (perr) {
             si.hStdError = stderr_write_handle;
         }
     }
@@ -102,40 +101,40 @@ process_execute_redirect(const char *const argv[], HANDLE *handle,
         *handle = NULL;
 
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-            ret = PROCESS_ERROR_MISSING_BINARY;
+            ret = SC_PROCESS_ERROR_MISSING_BINARY;
         }
         goto error_close_stderr;
     }
 
     // These handles are used by the child process, close them for this process
-    if (pipe_stdin) {
+    if (pin) {
         CloseHandle(stdin_read_handle);
     }
-    if (pipe_stdout) {
+    if (pout) {
         CloseHandle(stdout_write_handle);
     }
-    if (pipe_stderr) {
+    if (perr) {
         CloseHandle(stderr_write_handle);
     }
 
     free(wide);
     *handle = pi.hProcess;
 
-    return PROCESS_SUCCESS;
+    return SC_PROCESS_SUCCESS;
 
 error_close_stderr:
-    if (pipe_stderr) {
-        CloseHandle(*pipe_stderr);
+    if (perr) {
+        CloseHandle(*perr);
         CloseHandle(stderr_write_handle);
     }
 error_close_stdout:
-    if (pipe_stdout) {
-        CloseHandle(*pipe_stdout);
+    if (pout) {
+        CloseHandle(*pout);
         CloseHandle(stdout_write_handle);
     }
 error_close_stdin:
-    if (pipe_stdin) {
-        CloseHandle(*pipe_stdin);
+    if (pin) {
+        CloseHandle(*pin);
         CloseHandle(stdin_read_handle);
     }
 
@@ -143,17 +142,17 @@ error_close_stdin:
 }
 
 bool
-process_terminate(HANDLE handle) {
+sc_process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
-exit_code_t
-process_wait(HANDLE handle, bool close) {
+sc_exit_code
+sc_process_wait(HANDLE handle, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
         // could not wait or retrieve the exit code
-        code = NO_EXIT_CODE; // max value, it's unsigned
+        code = SC_EXIT_CODE_NONE;
     }
     if (close) {
         CloseHandle(handle);
@@ -162,14 +161,14 @@ process_wait(HANDLE handle, bool close) {
 }
 
 void
-process_close(HANDLE handle) {
+sc_process_close(HANDLE handle) {
     bool closed = CloseHandle(handle);
     assert(closed);
     (void) closed;
 }
 
 ssize_t
-read_pipe(HANDLE pipe, char *data, size_t len) {
+sc_read_pipe(HANDLE pipe, char *data, size_t len) {
     DWORD r;
     if (!ReadFile(pipe, data, len, &r, NULL)) {
         return -1;
@@ -178,7 +177,7 @@ read_pipe(HANDLE pipe, char *data, size_t len) {
 }
 
 void
-close_pipe(HANDLE pipe) {
+sc_close_pipe(HANDLE pipe) {
     if (!CloseHandle(pipe)) {
         LOGW("Cannot close pipe");
     }

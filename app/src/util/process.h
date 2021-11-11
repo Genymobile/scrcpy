@@ -10,71 +10,100 @@
  // not needed here, but winsock2.h must never be included AFTER windows.h
 # include <winsock2.h>
 # include <windows.h>
-# define PRIexitcode "lu"
+# define SC_PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
-# define PRIsizet "Iu"
-# define PROCESS_NONE NULL
-# define NO_EXIT_CODE -1u // max value as unsigned
-  typedef HANDLE process_t;
-  typedef DWORD exit_code_t;
-  typedef HANDLE pipe_t;
+# define SC_PRIsizet "Iu"
+# define SC_PROCESS_NONE NULL
+# define SC_EXIT_CODE_NONE -1u // max value as unsigned
+  typedef HANDLE sc_pid;
+  typedef DWORD sc_exit_code;
+  typedef HANDLE sc_pipe;
 
 #else
 
 # include <sys/types.h>
-# define PRIsizet "zu"
-# define PRIexitcode "d"
-# define PROCESS_NONE -1
-# define NO_EXIT_CODE -1
-  typedef pid_t process_t;
-  typedef int exit_code_t;
-  typedef int pipe_t;
+# define SC_PRIsizet "zu"
+# define SC_PRIexitcode "d"
+# define SC_PROCESS_NONE -1
+# define SC_EXIT_CODE_NONE -1
+  typedef pid_t sc_pid;
+  typedef int sc_exit_code;
+  typedef int sc_pipe;
 
 #endif
 
-enum process_result {
-    PROCESS_SUCCESS,
-    PROCESS_ERROR_GENERIC,
-    PROCESS_ERROR_MISSING_BINARY,
+enum sc_process_result {
+    SC_PROCESS_SUCCESS,
+    SC_PROCESS_ERROR_GENERIC,
+    SC_PROCESS_ERROR_MISSING_BINARY,
 };
 
-// execute the command and write the result to the output parameter "process"
-enum process_result
-process_execute(const char *const argv[], process_t *process);
+/**
+ * Execute the command and write the process id to `pid`
+ */
+enum sc_process_result
+sc_process_execute(const char *const argv[], sc_pid *pid);
 
-enum process_result
-process_execute_redirect(const char *const argv[], process_t *process,
-                         pipe_t *pipe_stdin, pipe_t *pipe_stdout,
-                         pipe_t *pipe_stderr);
+/**
+ * Execute the command and write the process id to `pid`
+ *
+ * If not NULL, provide a pipe for stdin (`pin`), stdout (`pout`) and stderr
+ * (`perr`).
+ */
+enum sc_process_result
+sc_process_execute_p(const char *const argv[], sc_pid *pid,
+                     sc_pipe *pin, sc_pipe *pout, sc_pipe *perr);
 
-// kill the process
+/**
+ * Kill the process
+ */
 bool
-process_terminate(process_t pid);
+sc_process_terminate(sc_pid pid);
 
-// wait and close the process (like waitpid())
-// the "close" flag indicates if the process must be "closed" (reaped)
-// (passing false is equivalent to enable WNOWAIT in waitid())
-exit_code_t
-process_wait(process_t pid, bool close);
+/**
+ * Wait and close the process (similar to waitpid())
+ *
+ * The `close` flag indicates if the process must be _closed_ (reaped) (passing
+ * false is equivalent to enable WNOWAIT in waitid()).
+ */
+sc_exit_code
+sc_process_wait(sc_pid pid, bool close);
 
-// close the process
-//
-// Semantically, process_wait(close) = process_wait(noclose) + process_close
+/**
+ * Close (reap) the process
+ *
+ * Semantically:
+ *    sc_process_wait(close) = sc_process_wait(noclose) + sc_process_close()
+ */
 void
-process_close(process_t pid);
+sc_process_close(sc_pid pid);
 
-// convenience function to wait for a successful process execution
-// automatically log process errors with the provided process name
+/**
+ * Convenience function to wait for a successful process execution
+ *
+ * Automatically log process errors with the provided process name.
+ */
 bool
-process_check_success(process_t proc, const char *name, bool close);
+sc_process_check_success(sc_pid pid, const char *name, bool close);
 
+/**
+ * Read from the pipe
+ *
+ * Same semantic as read().
+ */
 ssize_t
-read_pipe(pipe_t pipe, char *data, size_t len);
+sc_pipe_read(sc_pipe pipe, char *data, size_t len);
 
+/**
+ * Read exactly `len` chars from a pipe (unless EOF)
+ */
 ssize_t
-read_pipe_all(pipe_t pipe, char *data, size_t len);
+sc_pipe_read_all(sc_pipe pipe, char *data, size_t len);
 
+/**
+ * Close the pipe
+ */
 void
-close_pipe(pipe_t pipe);
+sc_pipe_close(sc_pipe pipe);
 
 #endif

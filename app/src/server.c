@@ -73,33 +73,33 @@ push_server(const char *serial) {
         free(server_path);
         return false;
     }
-    process_t process = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    sc_pid pid = adb_push(serial, server_path, DEVICE_SERVER_PATH);
     free(server_path);
-    return process_check_success(process, "adb push", true);
+    return sc_process_check_success(pid, "adb push", true);
 }
 
 static bool
 enable_tunnel_reverse(const char *serial, uint16_t local_port) {
-    process_t process = adb_reverse(serial, SOCKET_NAME, local_port);
-    return process_check_success(process, "adb reverse", true);
+    sc_pid pid = adb_reverse(serial, SOCKET_NAME, local_port);
+    return sc_process_check_success(pid, "adb reverse", true);
 }
 
 static bool
 disable_tunnel_reverse(const char *serial) {
-    process_t process = adb_reverse_remove(serial, SOCKET_NAME);
-    return process_check_success(process, "adb reverse --remove", true);
+    sc_pid pid = adb_reverse_remove(serial, SOCKET_NAME);
+    return sc_process_check_success(pid, "adb reverse --remove", true);
 }
 
 static bool
 enable_tunnel_forward(const char *serial, uint16_t local_port) {
-    process_t process = adb_forward(serial, local_port, SOCKET_NAME);
-    return process_check_success(process, "adb forward", true);
+    sc_pid pid = adb_forward(serial, local_port, SOCKET_NAME);
+    return sc_process_check_success(pid, "adb forward", true);
 }
 
 static bool
 disable_tunnel_forward(const char *serial, uint16_t local_port) {
-    process_t process = adb_forward_remove(serial, local_port);
-    return process_check_success(process, "adb forward --remove", true);
+    sc_pid pid = adb_forward_remove(serial, local_port);
+    return sc_process_check_success(pid, "adb forward --remove", true);
 }
 
 static bool
@@ -228,7 +228,7 @@ log_level_to_server_string(enum sc_log_level level) {
     }
 }
 
-static process_t
+static sc_pid
 execute_server(struct server *server, const struct server_params *params) {
     char max_size_string[6];
     char bit_rate_string[11];
@@ -327,7 +327,7 @@ connect_to_server(uint16_t port, uint32_t attempts, uint32_t delay) {
 bool
 server_init(struct server *server) {
     server->serial = NULL;
-    server->process = PROCESS_NONE;
+    server->process = SC_PROCESS_NONE;
 
     bool ok = sc_mutex_init(&server->mutex);
     if (!ok) {
@@ -357,7 +357,7 @@ server_init(struct server *server) {
 static int
 run_wait_server(void *data) {
     struct server *server = data;
-    process_wait(server->process, false); // ignore exit code
+    sc_process_wait(server->process, false); // ignore exit code
 
     sc_mutex_lock(&server->mutex);
     server->process_terminated = true;
@@ -396,7 +396,7 @@ server_start(struct server *server, const struct server_params *params) {
 
     // server will connect to our server socket
     server->process = execute_server(server, params);
-    if (server->process == PROCESS_NONE) {
+    if (server->process == SC_PROCESS_NONE) {
         goto error;
     }
 
@@ -409,8 +409,8 @@ server_start(struct server *server, const struct server_params *params) {
     bool ok = sc_thread_create(&server->wait_server_thread, run_wait_server,
                                "wait-server", server);
     if (!ok) {
-        process_terminate(server->process);
-        process_wait(server->process, true); // ignore exit code
+        sc_process_terminate(server->process);
+        sc_process_wait(server->process, true); // ignore exit code
         goto error;
     }
 
@@ -508,7 +508,7 @@ server_stop(struct server *server) {
         }
     }
 
-    assert(server->process != PROCESS_NONE);
+    assert(server->process != SC_PROCESS_NONE);
 
     if (server->tunnel_enabled) {
         // ignore failure
@@ -533,11 +533,11 @@ server_stop(struct server *server) {
         // The process is terminated, but not reaped (closed) yet, so its PID
         // is still valid.
         LOGW("Killing the server...");
-        process_terminate(server->process);
+        sc_process_terminate(server->process);
     }
 
     sc_thread_join(&server->wait_server_thread, NULL);
-    process_close(server->process);
+    sc_process_close(server->process);
 }
 
 void
