@@ -11,6 +11,7 @@
 #include "util/log.h"
 #include "util/strbuf.h"
 #include "util/str_util.h"
+#include "util/term.h"
 
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
@@ -740,7 +741,23 @@ print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
 
 void
 scrcpy_print_usage(const char *arg0) {
-    const unsigned cols = 80; // For now, use a hardcoded value
+#define SC_TERM_COLS_DEFAULT 80
+    unsigned cols;
+
+    if (!isatty(STDERR_FILENO)) {
+        // Not a tty
+        cols = SC_TERM_COLS_DEFAULT;
+    } else {
+        bool ok = sc_term_get_size(NULL, &cols);
+        if (!ok) {
+            // Could not get the terminal size
+            cols = SC_TERM_COLS_DEFAULT;
+        }
+        if (cols < 20) {
+            // Do not accept a too small value
+            cols = 20;
+        }
+    }
 
     fprintf(stderr, "Usage: %s [options]\n\n"
                     "Options:\n", arg0);
