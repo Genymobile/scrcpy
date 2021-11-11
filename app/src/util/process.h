@@ -10,7 +10,6 @@
  // not needed here, but winsock2.h must never be included AFTER windows.h
 # include <winsock2.h>
 # include <windows.h>
-# define PATH_SEPARATOR '\\'
 # define PRIexitcode "lu"
 // <https://stackoverflow.com/a/44383330/1987178>
 # define PRIsizet "Iu"
@@ -23,7 +22,6 @@
 #else
 
 # include <sys/types.h>
-# define PATH_SEPARATOR '/'
 # define PRIsizet "zu"
 # define PRIexitcode "d"
 # define PROCESS_NONE -1
@@ -72,26 +70,6 @@ process_close(process_t pid);
 // automatically log process errors with the provided process name
 bool
 process_check_success(process_t proc, const char *name, bool close);
-
-#ifndef _WIN32
-// only used to find package manager, not implemented for Windows
-bool
-search_executable(const char *file);
-#endif
-
-// return the absolute path of the executable (the scrcpy binary)
-// may be NULL on error; to be freed by free()
-char *
-get_executable_path(void);
-
-// Return the absolute path of a file in the same directory as he executable.
-// May be NULL on error. To be freed by free().
-char *
-get_local_file_path(const char *name);
-
-// returns true if the file exists and is not a directory
-bool
-is_regular_file(const char *path);
 
 ssize_t
 read_pipe(pipe_t pipe, char *data, size_t len);

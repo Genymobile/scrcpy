@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "util/file.h"
 #include "util/log.h"
 #include "util/str_util.h"
 
