@@ -49,7 +49,7 @@ get_server_path(void) {
         return NULL;
     }
 #else
-    char *server_path = get_local_file_path(SERVER_FILENAME);
+    char *server_path = sc_file_get_local_path(SERVER_FILENAME);
     if (!server_path) {
         LOGE("Could not get local file path, "
              "using " SERVER_FILENAME " from current directory");
@@ -68,7 +68,7 @@ push_server(const char *serial) {
     if (!server_path) {
         return false;
     }
-    if (!is_regular_file(server_path)) {
+    if (!sc_file_is_regular(server_path)) {
         LOGE("'%s' does not exist or is not a regular file\n", server_path);
         free(server_path);
         return false;
