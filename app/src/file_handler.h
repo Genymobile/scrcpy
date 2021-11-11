@@ -29,7 +29,7 @@ struct file_handler {
     sc_cond event_cond;
     bool stopped;
     bool initialized;
-    process_t current_process;
+    sc_pid current_process;
     struct file_handler_request_queue queue;
 };
 

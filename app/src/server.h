@@ -22,7 +22,7 @@ struct server_info {
 
 struct server {
     char *serial;
-    process_t process;
+    sc_pid process;
     sc_thread wait_server_thread;
 
     sc_mutex mutex;
