@@ -6,29 +6,44 @@
 #include <stdbool.h>
 
 #ifdef _WIN32
-# define PATH_SEPARATOR '\\'
+# define SC_PATH_SEPARATOR '\\'
 #else
-# define PATH_SEPARATOR '/'
+# define SC_PATH_SEPARATOR '/'
 #endif
 
 #ifndef _WIN32
-// only used to find package manager, not implemented for Windows
+/**
+ * Indicate if an executable exists using $PATH
+ *
+ * In practice, it is only used to know if a package manager is available on
+ * the system. It is only implemented on Linux.
+ */
 bool
-search_executable(const char *file);
+sc_file_executable_exists(const char *file);
 #endif
 
-// return the absolute path of the executable (the scrcpy binary)
-// may be NULL on error; to be freed by free()
+/**
+ * Return the absolute path of the executable (the scrcpy binary)
+ *
+ * The result must be freed by the caller using free(). It may return NULL on
+ * error.
+ */
 char *
-get_executable_path(void);
+sc_file_get_executable_path(void);
 
-// Return the absolute path of a file in the same directory as he executable.
-// May be NULL on error. To be freed by free().
+/**
+ * Return the absolute path of a file in the same directory as the executable
+ *
+ * The result must be freed by the caller using free(). It may return NULL on
+ * error.
+ */
 char *
-get_local_file_path(const char *name);
+sc_file_get_local_path(const char *name);
 
-// returns true if the file exists and is not a directory
+/**
+ * Indicate if the file exists and is not a directory
+ */
 bool
-is_regular_file(const char *path);
+sc_file_is_regular(const char *path);
 
 #endif

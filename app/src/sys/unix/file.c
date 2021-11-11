@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 bool
-search_executable(const char *file) {
+sc_file_executable_exists(const char *file) {
     char *path = getenv("PATH");
     if (!path)
         return false;
@@ -43,7 +43,7 @@ search_executable(const char *file) {
 }
 
 char *
-get_executable_path(void) {
+sc_file_get_executable_path(void) {
 // <https://stackoverflow.com/a/1024937/1987178>
 #ifdef __linux__
     char buf[PATH_MAX + 1]; // +1 for the null byte
@@ -63,7 +63,7 @@ get_executable_path(void) {
 }
 
 bool
-is_regular_file(const char *path) {
+sc_file_is_regular(const char *path) {
     struct stat path_stat;
 
     if (stat(path, &path_stat)) {

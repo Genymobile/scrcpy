@@ -69,7 +69,7 @@ show_adb_installation_msg() {
         {"pacman", "pacman -S android-tools"},
     };
     for (size_t i = 0; i < ARRAY_LEN(pkg_managers); ++i) {
-        if (search_executable(pkg_managers[i].binary)) {
+        if (sc_file_executable_exists(pkg_managers[i].binary)) {
             LOGI("You may install 'adb' by \"%s\"", pkg_managers[i].command);
             return;
         }

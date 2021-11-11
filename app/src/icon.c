@@ -46,7 +46,7 @@ get_icon_path(void) {
         return NULL;
     }
 #else
-    char *icon_path = get_local_file_path(SCRCPY_PORTABLE_ICON_FILENAME);
+    char *icon_path = sc_file_get_local_path(SCRCPY_PORTABLE_ICON_FILENAME);
     if (!icon_path) {
         LOGE("Could not get icon path");
         return NULL;
