@@ -6,8 +6,8 @@
 #include "util/log.h"
 
 char *
-get_local_file_path(const char *name) {
-    char *executable_path = get_executable_path();
+sc_file_get_local_path(const char *name) {
+    char *executable_path = sc_file_get_executable_path();
     if (!executable_path) {
         return NULL;
     }
@@ -15,10 +15,10 @@ get_local_file_path(const char *name) {
     // dirname() does not work correctly everywhere, so get the parent
     // directory manually.
     // See <https://github.com/Genymobile/scrcpy/issues/2619>
-    char *p = strrchr(executable_path, PATH_SEPARATOR);
+    char *p = strrchr(executable_path, SC_PATH_SEPARATOR);
     if (!p) {
         LOGE("Unexpected executable path: \"%s\" (it should contain a '%c')",
-             executable_path, PATH_SEPARATOR);
+             executable_path, SC_PATH_SEPARATOR);
         free(executable_path);
         return NULL;
     }
@@ -37,7 +37,7 @@ get_local_file_path(const char *name) {
     }
 
     memcpy(file_path, dir, dirlen);
-    file_path[dirlen] = PATH_SEPARATOR;
+    file_path[dirlen] = SC_PATH_SEPARATOR;
     // namelen + 1 to copy the final '\0'
     memcpy(&file_path[dirlen + 1], name, namelen + 1);
 

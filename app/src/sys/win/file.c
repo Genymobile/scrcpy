@@ -8,7 +8,7 @@
 #include "util/str_util.h"
 
 char *
-get_executable_path(void) {
+sc_file_get_executable_path(void) {
     HMODULE hModule = GetModuleHandleW(NULL);
     if (!hModule) {
         return NULL;
@@ -23,7 +23,7 @@ get_executable_path(void) {
 }
 
 bool
-is_regular_file(const char *path) {
+sc_file_is_regular(const char *path) {
     wchar_t *wide_path = utf8_to_wide_char(path);
     if (!wide_path) {
         LOGC("Could not allocate wide char string");
