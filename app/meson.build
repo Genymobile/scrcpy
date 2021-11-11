@@ -29,6 +29,7 @@ src = [
     'src/util/process.c',
     'src/util/strbuf.c',
     'src/util/str_util.c',
+    'src/util/term.c',
     'src/util/thread.c',
     'src/util/tick.c',
 ]
@@ -189,6 +190,7 @@ if get_option('buildtype') == 'debug'
             'src/options.c',
             'src/util/strbuf.c',
             'src/util/str_util.c',
+            'src/util/term.c',
         ]],
         ['test_clock', [
             'tests/test_clock.c',
