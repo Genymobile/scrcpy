@@ -153,11 +153,6 @@ process_execute_redirect(const char *const argv[], pid_t *pid, int *pipe_stdin,
     return res;
 }
 
-enum process_result
-process_execute(const char *const argv[], pid_t *pid) {
-    return process_execute_redirect(argv, pid, NULL, NULL, NULL);
-}
-
 bool
 process_terminate(pid_t pid) {
     if (pid <= 0) {

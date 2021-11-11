@@ -142,11 +142,6 @@ error_close_stdin:
     return ret;
 }
 
-enum process_result
-process_execute(const char *const argv[], HANDLE *handle) {
-    return process_execute_redirect(argv, handle, NULL, NULL, NULL);
-}
-
 bool
 process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
