@@ -3,6 +3,11 @@
 #include <libgen.h>
 #include "log.h"
 
+enum process_result
+process_execute(const char *const argv[], process_t *pid) {
+    return process_execute_redirect(argv, pid, NULL, NULL, NULL);
+}
+
 bool
 process_check_success(process_t proc, const char *name, bool close) {
     if (proc == PROCESS_NONE) {
