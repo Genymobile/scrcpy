@@ -24,6 +24,7 @@ src = [
     'src/server.c',
     'src/stream.c',
     'src/video_buffer.c',
+    'src/util/file.c',
     'src/util/log.c',
     'src/util/net.c',
     'src/util/process.c',
@@ -35,9 +36,15 @@ src = [
 ]
 
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/process.c' ]
+    src += [
+        'src/sys/win/file.c',
+        'src/sys/win/process.c',
+    ]
 else
-    src += [ 'src/sys/unix/process.c' ]
+    src += [
+        'src/sys/unix/file.c',
+        'src/sys/unix/process.c',
+    ]
 endif
 
 v4l2_support = host_machine.system() == 'linux'

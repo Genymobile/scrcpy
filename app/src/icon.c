@@ -8,8 +8,8 @@
 
 #include "config.h"
 #include "compat.h"
+#include "util/file.h"
 #include "util/log.h"
-#include "util/process.h"
 #include "util/str_util.h"
 
 #define SCRCPY_PORTABLE_ICON_FILENAME "icon.png"

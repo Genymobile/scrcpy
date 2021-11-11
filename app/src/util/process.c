@@ -21,47 +21,6 @@ process_check_success(process_t proc, const char *name, bool close) {
     return true;
 }
 
-char *
-get_local_file_path(const char *name) {
-    char *executable_path = get_executable_path();
-    if (!executable_path) {
-        return NULL;
-    }
-
-    // dirname() does not work correctly everywhere, so get the parent
-    // directory manually.
-    // See <https://github.com/Genymobile/scrcpy/issues/2619>
-    char *p = strrchr(executable_path, PATH_SEPARATOR);
-    if (!p) {
-        LOGE("Unexpected executable path: \"%s\" (it should contain a '%c')",
-             executable_path, PATH_SEPARATOR);
-        free(executable_path);
-        return NULL;
-    }
-
-    *p = '\0'; // modify executable_path in place
-    char *dir = executable_path;
-    size_t dirlen = strlen(dir);
-    size_t namelen = strlen(name);
-
-    size_t len = dirlen + namelen + 2; // +2: '/' and '\0'
-    char *file_path = malloc(len);
-    if (!file_path) {
-        LOGE("Could not alloc path");
-        free(executable_path);
-        return NULL;
-    }
-
-    memcpy(file_path, dir, dirlen);
-    file_path[dirlen] = PATH_SEPARATOR;
-    // namelen + 1 to copy the final '\0'
-    memcpy(&file_path[dirlen + 1], name, namelen + 1);
-
-    free(executable_path);
-
-    return file_path;
-}
-
 ssize_t
 read_pipe_all(pipe_t pipe, char *data, size_t len) {
     size_t copied = 0;
