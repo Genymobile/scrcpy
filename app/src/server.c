@@ -161,7 +161,6 @@ disable_tunnel(struct server *server) {
 
 static bool
 listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {
-#define IPV4_LOCALHOST 0x7F000001
     return net_listen_intr(intr, socket, IPV4_LOCALHOST, port, 1);
 }
 

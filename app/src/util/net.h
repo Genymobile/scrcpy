@@ -22,7 +22,10 @@
 # include <sys/socket.h>
 # define SC_INVALID_SOCKET -1
   typedef int sc_socket;
+
 #endif
+
+#define IPV4_LOCALHOST 0x7F000001
 
 bool
 net_init(void);
