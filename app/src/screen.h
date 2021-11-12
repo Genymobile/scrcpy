@@ -93,13 +93,6 @@ screen_destroy(struct screen *screen);
 void
 screen_hide_window(struct screen *screen);
 
-// render the texture to the renderer
-//
-// Set the update_content_rect flag if the window or content size may have
-// changed, so that the content rectangle is recomputed
-void
-screen_render(struct screen *screen, bool update_content_rect);
-
 // switch the fullscreen mode
 void
 screen_switch_fullscreen(struct screen *screen);

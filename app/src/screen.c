@@ -224,6 +224,45 @@ create_texture(struct screen *screen) {
     return texture;
 }
 
+// render the texture to the renderer
+//
+// Set the update_content_rect flag if the window or content size may have
+// changed, so that the content rectangle is recomputed
+static void
+screen_render(struct screen *screen, bool update_content_rect) {
+    if (update_content_rect) {
+        screen_update_content_rect(screen);
+    }
+
+    SDL_RenderClear(screen->renderer);
+    if (screen->rotation == 0) {
+        SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
+    } else {
+        // rotation in RenderCopyEx() is clockwise, while screen->rotation is
+        // counterclockwise (to be consistent with --lock-video-orientation)
+        int cw_rotation = (4 - screen->rotation) % 4;
+        double angle = 90 * cw_rotation;
+
+        SDL_Rect *dstrect = NULL;
+        SDL_Rect rect;
+        if (screen->rotation & 1) {
+            rect.x = screen->rect.x + (screen->rect.w - screen->rect.h) / 2;
+            rect.y = screen->rect.y + (screen->rect.h - screen->rect.w) / 2;
+            rect.w = screen->rect.h;
+            rect.h = screen->rect.w;
+            dstrect = &rect;
+        } else {
+            assert(screen->rotation == 2);
+            dstrect = &screen->rect;
+        }
+
+        SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
+                         angle, NULL, 0);
+    }
+    SDL_RenderPresent(screen->renderer);
+}
+
+
 #if defined(__APPLE__) || defined(__WINDOWS__)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
@@ -640,40 +679,6 @@ screen_update_frame(struct screen *screen) {
 
     screen_render(screen, false);
     return true;
-}
-
-void
-screen_render(struct screen *screen, bool update_content_rect) {
-    if (update_content_rect) {
-        screen_update_content_rect(screen);
-    }
-
-    SDL_RenderClear(screen->renderer);
-    if (screen->rotation == 0) {
-        SDL_RenderCopy(screen->renderer, screen->texture, NULL, &screen->rect);
-    } else {
-        // rotation in RenderCopyEx() is clockwise, while screen->rotation is
-        // counterclockwise (to be consistent with --lock-video-orientation)
-        int cw_rotation = (4 - screen->rotation) % 4;
-        double angle = 90 * cw_rotation;
-
-        SDL_Rect *dstrect = NULL;
-        SDL_Rect rect;
-        if (screen->rotation & 1) {
-            rect.x = screen->rect.x + (screen->rect.w - screen->rect.h) / 2;
-            rect.y = screen->rect.y + (screen->rect.h - screen->rect.w) / 2;
-            rect.w = screen->rect.h;
-            rect.h = screen->rect.w;
-            dstrect = &rect;
-        } else {
-            assert(screen->rotation == 2);
-            dstrect = &screen->rect;
-        }
-
-        SDL_RenderCopyEx(screen->renderer, screen->texture, NULL, dstrect,
-                         angle, NULL, 0);
-    }
-    SDL_RenderPresent(screen->renderer);
 }
 
 void
