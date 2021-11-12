@@ -25,6 +25,7 @@ src = [
     'src/stream.c',
     'src/video_buffer.c',
     'src/util/file.c',
+    'src/util/intr.c',
     'src/util/log.c',
     'src/util/net.c',
     'src/util/process.c',
