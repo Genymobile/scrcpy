@@ -14,7 +14,6 @@
 #include "util/process_intr.h"
 #include "util/str_util.h"
 
-#define SOCKET_NAME "scrcpy"
 #define SERVER_FILENAME "scrcpy-server"
 
 #define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
@@ -117,167 +116,6 @@ push_server(struct sc_intr *intr, const char *serial) {
     return sc_process_check_success_intr(intr, pid, "adb push");
 }
 
-static bool
-enable_tunnel_reverse(struct sc_intr *intr, const char *serial,
-                      uint16_t local_port) {
-    sc_pid pid = adb_reverse(serial, SOCKET_NAME, local_port);
-    return sc_process_check_success_intr(intr, pid, "adb reverse");
-}
-
-static bool
-disable_tunnel_reverse(struct sc_intr *intr, const char *serial) {
-    sc_pid pid = adb_reverse_remove(serial, SOCKET_NAME);
-    return sc_process_check_success_intr(intr, pid, "adb reverse --remove");
-}
-
-static bool
-enable_tunnel_forward(struct sc_intr *intr, const char *serial,
-                      uint16_t local_port) {
-    sc_pid pid = adb_forward(serial, local_port, SOCKET_NAME);
-    return sc_process_check_success_intr(intr, pid, "adb forward");
-}
-
-static bool
-disable_tunnel_forward(struct sc_intr *intr, const char *serial,
-                       uint16_t local_port) {
-    sc_pid pid = adb_forward_remove(serial, local_port);
-    return sc_process_check_success_intr(intr, pid, "adb forward --remove");
-}
-
-static bool
-disable_tunnel(struct server *server) {
-    assert(server->tunnel_enabled);
-
-    const char *serial = server->params.serial;
-    bool ok = server->tunnel_forward
-            ? disable_tunnel_forward(&server->intr, serial, server->local_port)
-            : disable_tunnel_reverse(&server->intr, serial);
-
-    // Consider tunnel disabled even if the command failed
-    server->tunnel_enabled = false;
-
-    return ok;
-}
-
-static bool
-listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {
-    return net_listen_intr(intr, socket, IPV4_LOCALHOST, port, 1);
-}
-
-static bool
-enable_tunnel_reverse_any_port(struct server *server,
-                               struct sc_port_range port_range) {
-    const char *serial = server->params.serial;
-    uint16_t port = port_range.first;
-    for (;;) {
-        if (!enable_tunnel_reverse(&server->intr, serial, port)) {
-            // the command itself failed, it will fail on any port
-            return false;
-        }
-
-        // At the application level, the device part is "the server" because it
-        // serves video stream and control. However, at the network level, the
-        // client listens and the server connects to the client. That way, the
-        // client can listen before starting the server app, so there is no
-        // need to try to connect until the server socket is listening on the
-        // device.
-        sc_socket server_socket = net_socket();
-        if (server_socket != SC_INVALID_SOCKET) {
-            bool ok = listen_on_port(&server->intr, server_socket, port);
-            if (ok) {
-                // success
-                server->server_socket = server_socket;
-                server->local_port = port;
-                server->tunnel_enabled = true;
-                return true;
-            }
-
-            net_close(server_socket);
-        }
-
-        if (sc_intr_is_interrupted(&server->intr)) {
-            // Stop immediately
-            return false;
-        }
-
-        // failure, disable tunnel and try another port
-        if (!disable_tunnel_reverse(&server->intr, serial)) {
-            LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
-        }
-
-        // check before incrementing to avoid overflow on port 65535
-        if (port < port_range.last) {
-            LOGW("Could not listen on port %" PRIu16", retrying on %" PRIu16,
-                 port, (uint16_t) (port + 1));
-            port++;
-            continue;
-        }
-
-        if (port_range.first == port_range.last) {
-            LOGE("Could not listen on port %" PRIu16, port_range.first);
-        } else {
-            LOGE("Could not listen on any port in range %" PRIu16 ":%" PRIu16,
-                 port_range.first, port_range.last);
-        }
-        return false;
-    }
-}
-
-static bool
-enable_tunnel_forward_any_port(struct server *server,
-                               struct sc_port_range port_range) {
-    server->tunnel_forward = true;
-
-    const char *serial = server->params.serial;
-    uint16_t port = port_range.first;
-    for (;;) {
-        if (enable_tunnel_forward(&server->intr, serial, port)) {
-            // success
-            server->local_port = port;
-            server->tunnel_enabled = true;
-            return true;
-        }
-
-        if (sc_intr_is_interrupted(&server->intr)) {
-            // Stop immediately
-            return false;
-        }
-
-        if (port < port_range.last) {
-            LOGW("Could not forward port %" PRIu16", retrying on %" PRIu16,
-                 port, (uint16_t) (port + 1));
-            port++;
-            continue;
-        }
-
-        if (port_range.first == port_range.last) {
-            LOGE("Could not forward port %" PRIu16, port_range.first);
-        } else {
-            LOGE("Could not forward any port in range %" PRIu16 ":%" PRIu16,
-                 port_range.first, port_range.last);
-        }
-        return false;
-    }
-}
-
-static bool
-enable_tunnel_any_port(struct server *server, struct sc_port_range port_range,
-                       bool force_adb_forward) {
-    if (!force_adb_forward) {
-        // Attempt to use "adb reverse"
-        if (enable_tunnel_reverse_any_port(server, port_range)) {
-            return true;
-        }
-
-        // if "adb reverse" does not work (e.g. over "adb connect"), it
-        // fallbacks to "adb forward", so the app socket is the client
-
-        LOGW("'adb reverse' failed, fallback to 'adb forward'");
-    }
-
-    return enable_tunnel_forward_any_port(server, port_range);
-}
-
 static const char *
 log_level_to_server_string(enum sc_log_level level) {
     switch (level) {
@@ -336,7 +174,7 @@ execute_server(struct server *server, const struct server_params *params) {
         bit_rate_string,
         max_fps_string,
         lock_video_orientation_string,
-        server->tunnel_forward ? "true" : "false",
+        server->tunnel.forward ? "true" : "false",
         params->crop ? params->crop : "-",
         "true", // always send frame meta (packet boundaries + timestamp)
         params->control ? "true" : "false",
@@ -381,7 +219,7 @@ connect_and_read_byte(struct sc_intr *intr, sc_socket socket, uint16_t port) {
 
 static sc_socket
 connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
-    uint16_t port = server->local_port;
+    uint16_t port = server->tunnel.local_port;
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         sc_socket socket = net_socket();
@@ -449,14 +287,10 @@ server_init(struct server *server, const struct server_params *params,
 
     server->stopped = false;
 
-    server->server_socket = SC_INVALID_SOCKET;
     server->video_socket = SC_INVALID_SOCKET;
     server->control_socket = SC_INVALID_SOCKET;
 
-    server->local_port = 0;
-
-    server->tunnel_enabled = false;
-    server->tunnel_forward = false;
+    sc_adb_tunnel_init(&server->tunnel);
 
     assert(cbs);
     assert(cbs->on_connection_failed);
@@ -491,27 +325,24 @@ device_read_info(struct sc_intr *intr, sc_socket device_socket,
 
 static bool
 server_connect_to(struct server *server, struct server_info *info) {
-    assert(server->tunnel_enabled);
+    struct sc_adb_tunnel *tunnel = &server->tunnel;
+
+    assert(tunnel->enabled);
+
+    const char *serial = server->params.serial;
 
     sc_socket video_socket = SC_INVALID_SOCKET;
     sc_socket control_socket = SC_INVALID_SOCKET;
-    if (!server->tunnel_forward) {
-        video_socket = net_accept_intr(&server->intr, server->server_socket);
+    if (!tunnel->forward) {
+        video_socket = net_accept_intr(&server->intr, tunnel->server_socket);
         if (video_socket == SC_INVALID_SOCKET) {
             goto fail;
         }
 
-        control_socket = net_accept_intr(&server->intr, server->server_socket);
+        control_socket = net_accept_intr(&server->intr, tunnel->server_socket);
         if (control_socket == SC_INVALID_SOCKET) {
             goto fail;
         }
-
-        // we don't need the server socket anymore
-        if (!net_close(server->server_socket)) {
-            LOGW("Could not close server socket on connect");
-        }
-
-        // server_socket is never used anymore
     } else {
         uint32_t attempts = 100;
         sc_tick delay = SC_TICK_FROM_MS(100);
@@ -526,14 +357,14 @@ server_connect_to(struct server *server, struct server_info *info) {
             goto fail;
         }
         bool ok = net_connect_intr(&server->intr, control_socket,
-                                   IPV4_LOCALHOST, server->local_port);
+                                   IPV4_LOCALHOST, tunnel->local_port);
         if (!ok) {
             goto fail;
         }
     }
 
     // we don't need the adb tunnel anymore
-    disable_tunnel(server); // ignore failure
+    sc_adb_tunnel_close(tunnel, &server->intr, serial);
 
     // The sockets will be closed on stop if device_read_info() fails
     bool ok = device_read_info(&server->intr, video_socket, info);
@@ -563,7 +394,7 @@ fail:
     }
 
     // Always leave this function with tunnel disabled
-    disable_tunnel(server);
+    sc_adb_tunnel_close(tunnel, &server->intr, serial);
 
     return false;
 }
@@ -594,8 +425,8 @@ run_server(void *data) {
         goto error_connection_failed;
     }
 
-    ok = enable_tunnel_any_port(server, params->port_range,
-                                params->force_adb_forward);
+    ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, params->serial,
+                            params->port_range, params->force_adb_forward);
     if (!ok) {
         goto error_connection_failed;
     }
@@ -603,7 +434,7 @@ run_server(void *data) {
     // server will connect to our server socket
     sc_pid pid = execute_server(server, params);
     if (pid == SC_PROCESS_NONE) {
-        disable_tunnel(server);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, params->serial);
         goto error_connection_failed;
     }
 
@@ -615,7 +446,7 @@ run_server(void *data) {
     if (!ok) {
         sc_process_terminate(pid);
         sc_process_wait(pid, true); // ignore exit code
-        disable_tunnel(server);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, params->serial);
         goto error_connection_failed;
     }
 

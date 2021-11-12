@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "adb.h"
+#include "adb_tunnel.h"
 #include "coords.h"
 #include "options.h"
 #include "util/intr.h"
@@ -52,13 +53,10 @@ struct server {
     bool stopped;
 
     struct sc_intr intr;
+    struct sc_adb_tunnel tunnel;
 
-    sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
     sc_socket control_socket;
-    uint16_t local_port; // selected from port_range
-    bool tunnel_enabled;
-    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
 
     const struct server_callbacks *cbs;
     void *cbs_userdata;

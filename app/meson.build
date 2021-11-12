@@ -1,6 +1,7 @@
 src = [
     'src/main.c',
     'src/adb.c',
+    'src/adb_tunnel.c',
     'src/cli.c',
     'src/clock.c',
     'src/compat.c',
