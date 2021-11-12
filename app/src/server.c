@@ -409,63 +409,6 @@ server_init(struct server *server, const struct server_params *params) {
     return true;
 }
 
-static void
-server_on_terminated(void *userdata) {
-    struct server *server = userdata;
-
-    // No need for synchronization, server_socket is initialized before the
-    // observer thread is created.
-    if (server->server_socket != SC_INVALID_SOCKET) {
-        // If the server process dies before connecting to the server socket,
-        // then the client will be stuck forever on accept(). To avoid the
-        // problem, wake up the accept() call when the server dies.
-        net_interrupt(server->server_socket);
-    }
-
-    LOGD("Server terminated");
-}
-
-bool
-server_start(struct server *server) {
-    const struct server_params *params = &server->params;
-
-    if (!push_server(params->serial)) {
-        /* server->serial will be freed on server_destroy() */
-        return false;
-    }
-
-    if (!enable_tunnel_any_port(server, params->port_range,
-                                params->force_adb_forward)) {
-        return false;
-    }
-
-    // server will connect to our server socket
-    server->process = execute_server(server, params);
-    if (server->process == SC_PROCESS_NONE) {
-        goto error;
-    }
-
-    static const struct sc_process_listener listener = {
-        .on_terminated = server_on_terminated,
-    };
-    bool ok = sc_process_observer_init(&server->observer, server->process,
-                                       &listener, server);
-    if (!ok) {
-        sc_process_terminate(server->process);
-        sc_process_wait(server->process, true); // ignore exit code
-        goto error;
-    }
-
-    return true;
-
-error:
-    // The server socket (if any) will be closed on server_destroy()
-
-    disable_tunnel(server);
-
-    return false;
-}
-
 static bool
 device_read_info(sc_socket device_socket, struct server_info *info) {
     unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
@@ -557,6 +500,63 @@ fail:
             LOGW("Could not close control socket");
         }
     }
+
+    return false;
+}
+
+static void
+server_on_terminated(void *userdata) {
+    struct server *server = userdata;
+
+    // No need for synchronization, server_socket is initialized before the
+    // observer thread is created.
+    if (server->server_socket != SC_INVALID_SOCKET) {
+        // If the server process dies before connecting to the server socket,
+        // then the client will be stuck forever on accept(). To avoid the
+        // problem, wake up the accept() call when the server dies.
+        net_interrupt(server->server_socket);
+    }
+
+    LOGD("Server terminated");
+}
+
+bool
+server_start(struct server *server) {
+    const struct server_params *params = &server->params;
+
+    if (!push_server(params->serial)) {
+        /* server->serial will be freed on server_destroy() */
+        return false;
+    }
+
+    if (!enable_tunnel_any_port(server, params->port_range,
+                                params->force_adb_forward)) {
+        return false;
+    }
+
+    // server will connect to our server socket
+    server->process = execute_server(server, params);
+    if (server->process == SC_PROCESS_NONE) {
+        goto error;
+    }
+
+    static const struct sc_process_listener listener = {
+        .on_terminated = server_on_terminated,
+    };
+    bool ok = sc_process_observer_init(&server->observer, server->process,
+                                       &listener, server);
+    if (!ok) {
+        sc_process_terminate(server->process);
+        sc_process_wait(server->process, true); // ignore exit code
+        goto error;
+    }
+
+    return true;
+
+error:
+    // The server socket (if any) will be closed on server_destroy()
+
+    disable_tunnel(server);
 
     return false;
 }
