@@ -10,6 +10,7 @@
 #include "adb.h"
 #include "coords.h"
 #include "options.h"
+#include "util/intr.h"
 #include "util/log.h"
 #include "util/net.h"
 #include "util/thread.h"
@@ -49,6 +50,8 @@ struct server {
     sc_mutex mutex;
     sc_cond cond_stopped;
     bool stopped;
+
+    struct sc_intr intr;
 
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;
