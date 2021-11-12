@@ -14,10 +14,10 @@
 #include "util/process_intr.h"
 #include "util/str.h"
 
-#define SERVER_FILENAME "scrcpy-server"
+#define SC_SERVER_FILENAME "scrcpy-server"
 
-#define DEFAULT_SERVER_PATH PREFIX "/share/scrcpy/" SERVER_FILENAME
-#define DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
+#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
 
 static char *
 get_server_path(void) {
@@ -42,18 +42,18 @@ get_server_path(void) {
     }
 
 #ifndef PORTABLE
-    LOGD("Using server: " DEFAULT_SERVER_PATH);
-    char *server_path = strdup(DEFAULT_SERVER_PATH);
+    LOGD("Using server: " SC_SERVER_PATH_DEFAULT);
+    char *server_path = strdup(SC_SERVER_PATH_DEFAULT);
     if (!server_path) {
         LOGE("Could not allocate memory");
         return NULL;
     }
 #else
-    char *server_path = sc_file_get_local_path(SERVER_FILENAME);
+    char *server_path = sc_file_get_local_path(SC_SERVER_FILENAME);
     if (!server_path) {
         LOGE("Could not get local file path, "
-             "using " SERVER_FILENAME " from current directory");
-        return strdup(SERVER_FILENAME);
+             "using " SC_SERVER_FILENAME " from current directory");
+        return strdup(SC_SERVER_FILENAME);
     }
 
     LOGD("Using server (portable): %s", server_path);
@@ -63,7 +63,7 @@ get_server_path(void) {
 }
 
 static void
-server_params_destroy(struct server_params *params) {
+sc_server_params_destroy(struct sc_server_params *params) {
     // The server stores a copy of the params provided by the user
     free((char *) params->serial);
     free((char *) params->crop);
@@ -72,7 +72,8 @@ server_params_destroy(struct server_params *params) {
 }
 
 static bool
-server_params_copy(struct server_params *dst, const struct server_params *src) {
+sc_server_params_copy(struct sc_server_params *dst,
+                      const struct sc_server_params *src) {
     *dst = *src;
 
     // The params reference user-allocated memory, so we must copy them to
@@ -96,7 +97,7 @@ server_params_copy(struct server_params *dst, const struct server_params *src) {
     return true;
 
 error:
-    server_params_destroy(dst);
+    sc_server_params_destroy(dst);
     return false;
 }
 
@@ -111,7 +112,7 @@ push_server(struct sc_intr *intr, const char *serial) {
         free(server_path);
         return false;
     }
-    sc_pid pid = adb_push(serial, server_path, DEVICE_SERVER_PATH);
+    sc_pid pid = adb_push(serial, server_path, SC_DEVICE_SERVER_PATH);
     free(server_path);
     return sc_process_check_success_intr(intr, pid, "adb push");
 }
@@ -136,7 +137,8 @@ log_level_to_server_string(enum sc_log_level level) {
 }
 
 static sc_pid
-execute_server(struct server *server, const struct server_params *params) {
+execute_server(struct sc_server *server,
+               const struct sc_server_params *params) {
     const char *serial = server->params.serial;
 
     char max_size_string[6];
@@ -152,7 +154,7 @@ execute_server(struct server *server, const struct server_params *params) {
     sprintf(display_id_string, "%"PRIu32, params->display_id);
     const char *const cmd[] = {
         "shell",
-        "CLASSPATH=" DEVICE_SERVER_PATH,
+        "CLASSPATH=" SC_DEVICE_SERVER_PATH,
         "app_process",
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
@@ -218,7 +220,7 @@ connect_and_read_byte(struct sc_intr *intr, sc_socket socket, uint16_t port) {
 }
 
 static sc_socket
-connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
+connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay) {
     uint16_t port = server->tunnel.local_port;
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
@@ -253,9 +255,9 @@ connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
 }
 
 bool
-server_init(struct server *server, const struct server_params *params,
-            const struct server_callbacks *cbs, void *cbs_userdata) {
-    bool ok = server_params_copy(&server->params, params);
+sc_server_init(struct sc_server *server, const struct sc_server_params *params,
+              const struct sc_server_callbacks *cbs, void *cbs_userdata) {
+    bool ok = sc_server_params_copy(&server->params, params);
     if (!ok) {
         LOGE("Could not copy server params");
         return false;
@@ -264,7 +266,7 @@ server_init(struct server *server, const struct server_params *params,
     ok = sc_mutex_init(&server->mutex);
     if (!ok) {
         LOGE("Could not create server mutex");
-        server_params_destroy(&server->params);
+        sc_server_params_destroy(&server->params);
         return false;
     }
 
@@ -272,7 +274,7 @@ server_init(struct server *server, const struct server_params *params,
     if (!ok) {
         LOGE("Could not create server cond_stopped");
         sc_mutex_destroy(&server->mutex);
-        server_params_destroy(&server->params);
+        sc_server_params_destroy(&server->params);
         return false;
     }
 
@@ -281,7 +283,7 @@ server_init(struct server *server, const struct server_params *params,
         LOGE("Could not create intr");
         sc_cond_destroy(&server->cond_stopped);
         sc_mutex_destroy(&server->mutex);
-        server_params_destroy(&server->params);
+        sc_server_params_destroy(&server->params);
         return false;
     }
 
@@ -305,26 +307,26 @@ server_init(struct server *server, const struct server_params *params,
 
 static bool
 device_read_info(struct sc_intr *intr, sc_socket device_socket,
-                 struct server_info *info) {
-    unsigned char buf[DEVICE_NAME_FIELD_LENGTH + 4];
+                 struct sc_server_info *info) {
+    unsigned char buf[SC_DEVICE_NAME_FIELD_LENGTH + 4];
     ssize_t r = net_recv_all_intr(intr, device_socket, buf, sizeof(buf));
-    if (r < DEVICE_NAME_FIELD_LENGTH + 4) {
+    if (r < SC_DEVICE_NAME_FIELD_LENGTH + 4) {
         LOGE("Could not retrieve device information");
         return false;
     }
     // in case the client sends garbage
-    buf[DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
+    buf[SC_DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
     memcpy(info->device_name, (char *) buf, sizeof(info->device_name));
 
-    info->frame_size.width = (buf[DEVICE_NAME_FIELD_LENGTH] << 8)
-                           | buf[DEVICE_NAME_FIELD_LENGTH + 1];
-    info->frame_size.height = (buf[DEVICE_NAME_FIELD_LENGTH + 2] << 8)
-                            | buf[DEVICE_NAME_FIELD_LENGTH + 3];
+    info->frame_size.width = (buf[SC_DEVICE_NAME_FIELD_LENGTH] << 8)
+                           | buf[SC_DEVICE_NAME_FIELD_LENGTH + 1];
+    info->frame_size.height = (buf[SC_DEVICE_NAME_FIELD_LENGTH + 2] << 8)
+                            | buf[SC_DEVICE_NAME_FIELD_LENGTH + 3];
     return true;
 }
 
 static bool
-server_connect_to(struct server *server, struct server_info *info) {
+sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     struct sc_adb_tunnel *tunnel = &server->tunnel;
 
     assert(tunnel->enabled);
@@ -400,8 +402,8 @@ fail:
 }
 
 static void
-server_on_terminated(void *userdata) {
-    struct server *server = userdata;
+sc_server_on_terminated(void *userdata) {
+    struct sc_server *server = userdata;
 
     // If the server process dies before connecting to the server socket,
     // then the client will be stuck forever on accept(). To avoid the problem,
@@ -416,9 +418,9 @@ server_on_terminated(void *userdata) {
 
 static int
 run_server(void *data) {
-    struct server *server = data;
+    struct sc_server *server = data;
 
-    const struct server_params *params = &server->params;
+    const struct sc_server_params *params = &server->params;
 
     bool ok = push_server(&server->intr, params->serial);
     if (!ok) {
@@ -439,7 +441,7 @@ run_server(void *data) {
     }
 
     static const struct sc_process_listener listener = {
-        .on_terminated = server_on_terminated,
+        .on_terminated = sc_server_on_terminated,
     };
     struct sc_process_observer observer;
     ok = sc_process_observer_init(&observer, pid, &listener, server);
@@ -450,7 +452,7 @@ run_server(void *data) {
         goto error_connection_failed;
     }
 
-    ok = server_connect_to(server, &server->info);
+    ok = sc_server_connect_to(server, &server->info);
     // The tunnel is always closed by server_connect_to()
     if (!ok) {
         sc_process_terminate(pid);
@@ -499,7 +501,7 @@ error_connection_failed:
 }
 
 bool
-server_start(struct server *server) {
+sc_server_start(struct sc_server *server) {
     bool ok = sc_thread_create(&server->thread, run_server, "server", server);
     if (!ok) {
         LOGE("Could not create server thread");
@@ -510,7 +512,7 @@ server_start(struct server *server) {
 }
 
 void
-server_stop(struct server *server) {
+sc_server_stop(struct sc_server *server) {
     sc_mutex_lock(&server->mutex);
     server->stopped = true;
     sc_cond_signal(&server->cond_stopped);
@@ -521,8 +523,8 @@ server_stop(struct server *server) {
 }
 
 void
-server_destroy(struct server *server) {
-    server_params_destroy(&server->params);
+sc_server_destroy(struct sc_server *server) {
+    sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);
     sc_mutex_destroy(&server->mutex);

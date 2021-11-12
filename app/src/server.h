@@ -16,13 +16,13 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-#define DEVICE_NAME_FIELD_LENGTH 64
-struct server_info {
-    char device_name[DEVICE_NAME_FIELD_LENGTH];
+#define SC_DEVICE_NAME_FIELD_LENGTH 64
+struct sc_server_info {
+    char device_name[SC_DEVICE_NAME_FIELD_LENGTH];
     struct sc_size frame_size;
 };
 
-struct server_params {
+struct sc_server_params {
     const char *serial;
     enum sc_log_level log_level;
     const char *crop;
@@ -41,12 +41,12 @@ struct server_params {
     bool power_off_on_close;
 };
 
-struct server {
+struct sc_server {
     // The internal allocated strings are copies owned by the server
-    struct server_params params;
+    struct sc_server_params params;
 
     sc_thread thread;
-    struct server_info info; // initialized once connected
+    struct sc_server_info info; // initialized once connected
 
     sc_mutex mutex;
     sc_cond cond_stopped;
@@ -58,45 +58,45 @@ struct server {
     sc_socket video_socket;
     sc_socket control_socket;
 
-    const struct server_callbacks *cbs;
+    const struct sc_server_callbacks *cbs;
     void *cbs_userdata;
 };
 
-struct server_callbacks {
+struct sc_server_callbacks {
     /**
      * Called when the server failed to connect
      *
      * If it is called, then on_connected() and on_disconnected() will never be
      * called.
      */
-    void (*on_connection_failed)(struct server *server, void *userdata);
+    void (*on_connection_failed)(struct sc_server *server, void *userdata);
 
     /**
      * Called on server connection
      */
-    void (*on_connected)(struct server *server, void *userdata);
+    void (*on_connected)(struct sc_server *server, void *userdata);
 
     /**
      * Called on server disconnection (after it has been connected)
      */
-    void (*on_disconnected)(struct server *server, void *userdata);
+    void (*on_disconnected)(struct sc_server *server, void *userdata);
 };
 
 // init the server with the given params
 bool
-server_init(struct server *server, const struct server_params *params,
-            const struct server_callbacks *cbs, void *cbs_userdata);
+sc_server_init(struct sc_server *server, const struct sc_server_params *params,
+               const struct sc_server_callbacks *cbs, void *cbs_userdata);
 
 // start the server asynchronously
 bool
-server_start(struct server *server);
+sc_server_start(struct sc_server *server);
 
 // disconnect and kill the server process
 void
-server_stop(struct server *server);
+sc_server_stop(struct sc_server *server);
 
 // close and release sockets
 void
-server_destroy(struct server *server);
+sc_server_destroy(struct sc_server *server);
 
 #endif

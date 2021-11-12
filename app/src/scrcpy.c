@@ -34,7 +34,7 @@
 #endif
 
 struct scrcpy {
-    struct server server;
+    struct sc_server server;
     struct screen screen;
     struct stream stream;
     struct decoder decoder;
@@ -286,7 +286,7 @@ stream_on_eos(struct stream *stream, void *userdata) {
 }
 
 static void
-server_on_connection_failed(struct server *server, void *userdata) {
+sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
@@ -294,7 +294,7 @@ server_on_connection_failed(struct server *server, void *userdata) {
 }
 
 static void
-server_on_connected(struct server *server, void *userdata) {
+sc_server_on_connected(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
@@ -302,7 +302,7 @@ server_on_connected(struct server *server, void *userdata) {
 }
 
 static void
-server_on_disconnected(struct server *server, void *userdata) {
+sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
@@ -340,7 +340,7 @@ scrcpy(struct scrcpy_options *options) {
     bool controller_started = false;
     bool screen_initialized = false;
 
-    struct server_params params = {
+    struct sc_server_params params = {
         .serial = options->serial,
         .log_level = options->log_level,
         .crop = options->crop,
@@ -359,16 +359,16 @@ scrcpy(struct scrcpy_options *options) {
         .power_off_on_close = options->power_off_on_close,
     };
 
-    static const struct server_callbacks cbs = {
-        .on_connection_failed = server_on_connection_failed,
-        .on_connected = server_on_connected,
-        .on_disconnected = server_on_disconnected,
+    static const struct sc_server_callbacks cbs = {
+        .on_connection_failed = sc_server_on_connection_failed,
+        .on_connected = sc_server_on_connected,
+        .on_disconnected = sc_server_on_disconnected,
     };
-    if (!server_init(&s->server, &params, &cbs, NULL)) {
+    if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
         return false;
     }
 
-    if (!server_start(&s->server)) {
+    if (!sc_server_start(&s->server)) {
         goto end;
     }
 
@@ -392,7 +392,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     // It is necessarily initialized here, since the device is connected
-    struct server_info *info = &s->server.info;
+    struct sc_server_info *info = &s->server.info;
 
     if (options->display && options->control) {
         if (!file_handler_init(&s->file_handler, options->serial,
@@ -608,7 +608,7 @@ end:
 
     if (server_started) {
         // shutdown the sockets and kill the server
-        server_stop(&s->server);
+        sc_server_stop(&s->server);
     }
 
     // now that the sockets are shutdown, the stream and controller are
@@ -653,7 +653,7 @@ end:
         file_handler_destroy(&s->file_handler);
     }
 
-    server_destroy(&s->server);
+    sc_server_destroy(&s->server);
 
     return ret;
 }
