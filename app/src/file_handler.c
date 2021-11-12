@@ -62,16 +62,6 @@ file_handler_destroy(struct file_handler *file_handler) {
     }
 }
 
-static sc_pid
-install_apk(const char *serial, const char *file) {
-    return adb_install(serial, file);
-}
-
-static sc_pid
-push_file(const char *serial, const char *file, const char *push_target) {
-    return adb_push(serial, file, push_target);
-}
-
 bool
 file_handler_request(struct file_handler *file_handler,
                      file_handler_action_t action, char *file) {
@@ -129,10 +119,10 @@ run_file_handler(void *data) {
         sc_pid pid;
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            pid = install_apk(serial, req.file);
+            pid = adb_install(serial, req.file);
         } else {
             LOGI("Pushing %s...", req.file);
-            pid = push_file(serial, req.file, push_target);
+            pid = adb_push(serial, req.file, push_target);
         }
         file_handler->current_process = pid;
         sc_mutex_unlock(&file_handler->mutex);
