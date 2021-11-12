@@ -9,8 +9,8 @@
 
 #include "options.h"
 #include "util/log.h"
+#include "util/str.h"
 #include "util/strbuf.h"
-#include "util/str_util.h"
 #include "util/term.h"
 
 #define STR_IMPL_(x) #x

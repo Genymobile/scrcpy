@@ -10,7 +10,7 @@
 #include "compat.h"
 #include "util/file.h"
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 #define SCRCPY_PORTABLE_ICON_FILENAME "icon.png"
 #define SCRCPY_DEFAULT_ICON_PATH \

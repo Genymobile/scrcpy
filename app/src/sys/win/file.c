@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 char *
 sc_file_get_executable_path(void) {

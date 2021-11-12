@@ -1,7 +1,7 @@
 #include "v4l2_sink.h"
 
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 /** Downcast frame_sink to sc_v4l2_sink */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_v4l2_sink, frame_sink)

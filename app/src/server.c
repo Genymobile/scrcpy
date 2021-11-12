@@ -12,7 +12,7 @@
 #include "util/log.h"
 #include "util/net_intr.h"
 #include "util/process_intr.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 #define SERVER_FILENAME "scrcpy-server"
 

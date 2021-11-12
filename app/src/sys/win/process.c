@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 #define CMD_MAX_LEN 8192
 

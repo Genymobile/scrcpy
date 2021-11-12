@@ -1,5 +1,5 @@
-#ifndef SC_STRUTIL_H
-#define SC_STRUTIL_H
+#ifndef SC_STR_H
+#define SC_STR_H
 
 #include "common.h"
 

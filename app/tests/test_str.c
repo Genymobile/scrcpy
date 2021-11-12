@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "util/str_util.h"
+#include "util/str.h"
 
 static void test_strncpy_simple(void) {
     char s[] = "xxxxxxxxxx";

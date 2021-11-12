@@ -1,4 +1,4 @@
-#include "str_util.h"
+#include "str.h"
 
 #include <assert.h>
 #include <errno.h>

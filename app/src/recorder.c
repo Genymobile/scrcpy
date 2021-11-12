@@ -6,7 +6,7 @@
 #include <libavutil/time.h>
 
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 /** Downcast packet_sink to recorder */
 #define DOWNCAST(SINK) container_of(SINK, struct recorder, packet_sink)

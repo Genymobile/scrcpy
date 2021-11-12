@@ -7,7 +7,7 @@
 
 #include "util/buffer_util.h"
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 /**
  * Map an enum value to a string based on an array, without crashing on an

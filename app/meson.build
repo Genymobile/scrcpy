@@ -33,7 +33,7 @@ src = [
     'src/util/process.c',
     'src/util/process_intr.c',
     'src/util/strbuf.c',
-    'src/util/str_util.c',
+    'src/util/str.c',
     'src/util/term.c',
     'src/util/thread.c',
     'src/util/tick.c',
@@ -199,8 +199,8 @@ if get_option('buildtype') == 'debug'
             'tests/test_cli.c',
             'src/cli.c',
             'src/options.c',
+            'src/util/str.c',
             'src/util/strbuf.c',
-            'src/util/str_util.c',
             'src/util/term.c',
         ]],
         ['test_clock', [
@@ -210,8 +210,8 @@ if get_option('buildtype') == 'debug'
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
+            'src/util/str.c',
             'src/util/strbuf.c',
-            'src/util/str_util.c',
         ]],
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
@@ -224,10 +224,10 @@ if get_option('buildtype') == 'debug'
             'tests/test_strbuf.c',
             'src/util/strbuf.c',
         ]],
-        ['test_strutil', [
-            'tests/test_strutil.c',
+        ['test_str', [
+            'tests/test_str.c',
+            'src/util/str.c',
             'src/util/strbuf.c',
-            'src/util/str_util.c',
         ]],
     ]
 
