@@ -511,8 +511,8 @@ server_connect_to(struct server *server, struct server_info *info) {
         if (!net_close(server->server_socket)) {
             LOGW("Could not close server socket on connect");
         }
-        // Do not attempt to close it again on server_destroy()
-        server->server_socket = SC_INVALID_SOCKET;
+
+        // server_socket is never used anymore
     } else {
         uint32_t attempts = 100;
         sc_tick delay = SC_TICK_FROM_MS(100);
@@ -573,14 +573,11 @@ static void
 server_on_terminated(void *userdata) {
     struct server *server = userdata;
 
-    // No need for synchronization, server_socket is initialized before the
-    // observer thread is created.
-    if (server->server_socket != SC_INVALID_SOCKET) {
-        // If the server process dies before connecting to the server socket,
-        // then the client will be stuck forever on accept(). To avoid the
-        // problem, wake up the accept() call when the server dies.
-        net_interrupt(server->server_socket);
-    }
+    // If the server process dies before connecting to the server socket,
+    // then the client will be stuck forever on accept(). To avoid the problem,
+    // wake up the accept() call (or any other) when the server dies, like on
+    // stop() (it is safe to call interrupt() twice).
+    sc_intr_interrupt(&server->intr);
 
     server->cbs->on_disconnected(server, server->cbs_userdata);
 
