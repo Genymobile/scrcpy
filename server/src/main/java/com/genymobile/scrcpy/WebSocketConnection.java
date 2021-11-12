@@ -119,7 +119,7 @@ public class WebSocketConnection extends Connection {
                 + 4;                         // client id
         int additionalLength = 0;
         int[] displayIds = Device.getDisplayIds();
-        List<DisplayInfo> displayInfoList = new ArrayList<>();
+        HashMap<Integer, DisplayInfo> displayInfoHashMap = new HashMap<>();
         HashMap<Integer, Integer> connectionsCount = new HashMap<>();
         HashMap<Integer, byte[]> displayInfoMap = new HashMap<>();
         HashMap<Integer, byte[]> videoSettingsBytesMap = new HashMap<>();
@@ -127,7 +127,7 @@ public class WebSocketConnection extends Connection {
 
         for (int displayId : displayIds) {
             DisplayInfo displayInfo = Device.getDisplayInfo(displayId);
-            displayInfoList.add(displayId, displayInfo);
+            displayInfoHashMap.put(displayId, displayInfo);
             byte[] displayInfoBytes = displayInfo.toByteArray();
             additionalLength += displayInfoBytes.length;
             displayInfoMap.put(displayId, displayInfoBytes);
@@ -163,7 +163,7 @@ public class WebSocketConnection extends Connection {
         initialInfo.put(DEVICE_NAME_BYTES, 0, Math.min(DEVICE_NAME_FIELD_LENGTH - 1, DEVICE_NAME_BYTES.length));
         initialInfo.position(MAGIC_BYTES_INITIAL.length + DEVICE_NAME_FIELD_LENGTH);
         initialInfo.putInt(displayIds.length);
-        for (DisplayInfo displayInfo : displayInfoList) {
+        for (DisplayInfo displayInfo : displayInfoHashMap.values()) {
             int displayId = displayInfo.getDisplayId();
             if (displayInfoMap.containsKey(displayId)) {
                 initialInfo.put(displayInfoMap.get(displayId));
