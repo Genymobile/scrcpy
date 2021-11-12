@@ -22,12 +22,10 @@ struct server_info {
 
 struct server {
     char *serial;
-    sc_pid process;
-    sc_thread wait_server_thread;
 
-    sc_mutex mutex;
-    sc_cond process_terminated_cond;
-    bool process_terminated;
+    sc_pid process;
+    // alive only between start() and stop()
+    struct sc_process_observer observer;
 
     sc_socket server_socket; // only used if !tunnel_forward
     sc_socket video_socket;

@@ -329,19 +329,6 @@ server_init(struct server *server) {
     server->serial = NULL;
     server->process = SC_PROCESS_NONE;
 
-    bool ok = sc_mutex_init(&server->mutex);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_cond_init(&server->process_terminated_cond);
-    if (!ok) {
-        sc_mutex_destroy(&server->mutex);
-        return false;
-    }
-
-    server->process_terminated = false;
-
     server->server_socket = SC_INVALID_SOCKET;
     server->video_socket = SC_INVALID_SOCKET;
     server->control_socket = SC_INVALID_SOCKET;
@@ -354,25 +341,20 @@ server_init(struct server *server) {
     return true;
 }
 
-static int
-run_wait_server(void *data) {
-    struct server *server = data;
-    sc_process_wait(server->process, false); // ignore exit code
+static void
+server_on_terminated(void *userdata) {
+    struct server *server = userdata;
 
-    sc_mutex_lock(&server->mutex);
-    server->process_terminated = true;
-    sc_cond_signal(&server->process_terminated_cond);
-    sc_mutex_unlock(&server->mutex);
-
-    // no need for synchronization, server_socket is initialized before this
-    // thread was created
+    // No need for synchronization, server_socket is initialized before the
+    // observer thread is created.
     if (server->server_socket != SC_INVALID_SOCKET) {
-        // Unblock any accept()
+        // If the server process dies before connecting to the server socket,
+        // then the client will be stuck forever on accept(). To avoid the
+        // problem, wake up the accept() call when the server dies.
         net_interrupt(server->server_socket);
     }
 
     LOGD("Server terminated");
-    return 0;
 }
 
 bool
@@ -400,14 +382,11 @@ server_start(struct server *server, const struct server_params *params) {
         goto error;
     }
 
-    // If the server process dies before connecting to the server socket, then
-    // the client will be stuck forever on accept(). To avoid the problem, we
-    // must be able to wake up the accept() call when the server dies. To keep
-    // things simple and multiplatform, just spawn a new thread waiting for the
-    // server process and calling shutdown()/close() on the server socket if
-    // necessary to wake up any accept() blocking call.
-    bool ok = sc_thread_create(&server->wait_server_thread, run_wait_server,
-                               "wait-server", server);
+    static const struct sc_process_listener listener = {
+        .on_terminated = server_on_terminated,
+    };
+    bool ok = sc_process_observer_init(&server->observer, server->process,
+                                       &listener, server);
     if (!ok) {
         sc_process_terminate(server->process);
         sc_process_wait(server->process, true); // ignore exit code
@@ -516,27 +495,25 @@ server_stop(struct server *server) {
     }
 
     // Give some delay for the server to terminate properly
-    sc_mutex_lock(&server->mutex);
-    bool signaled = false;
-    if (!server->process_terminated) {
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
-        signaled = sc_cond_timedwait(&server->process_terminated_cond,
-                                     &server->mutex,
-                                     sc_tick_now() + WATCHDOG_DELAY);
-    }
-    sc_mutex_unlock(&server->mutex);
+    sc_tick deadline = sc_tick_now() + WATCHDOG_DELAY;
+    bool terminated =
+        sc_process_observer_timedwait(&server->observer, deadline);
 
     // After this delay, kill the server if it's not dead already.
     // On some devices, closing the sockets is not sufficient to wake up the
     // blocking calls while the device is asleep.
-    if (!signaled) {
-        // The process is terminated, but not reaped (closed) yet, so its PID
-        // is still valid.
+    if (!terminated) {
+        // The process may have terminated since the check, but it is not
+        // reaped (closed) yet, so its PID is still valid, and it is ok to call
+        // sc_process_terminate() even in that case.
         LOGW("Killing the server...");
         sc_process_terminate(server->process);
     }
 
-    sc_thread_join(&server->wait_server_thread, NULL);
+    sc_process_observer_join(&server->observer);
+    sc_process_observer_destroy(&server->observer);
+
     sc_process_close(server->process);
 }
 
@@ -558,6 +535,4 @@ server_destroy(struct server *server) {
         }
     }
     free(server->serial);
-    sc_cond_destroy(&server->process_terminated_cond);
-    sc_mutex_destroy(&server->mutex);
 }

@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include "util/thread.h"
 
 #ifdef _WIN32
 
@@ -31,6 +32,34 @@
   typedef int sc_pipe;
 
 #endif
+
+struct sc_process_listener {
+    void (*on_terminated)(void *userdata);
+};
+
+/**
+ * Tool to observe process termination
+ *
+ * To keep things simple and multiplatform, it runs a separate thread to wait
+ * for process termination (without closing the process to avoid race
+ * conditions).
+ *
+ * It allows a caller to block until the process is terminated (with a
+ * timeout), and to be notified asynchronously from the observer thread.
+ *
+ * The process is not owned by the observer (the observer will never close it).
+ */
+struct sc_process_observer {
+    sc_pid pid;
+
+    sc_mutex mutex;
+    sc_cond cond_terminated;
+    bool terminated;
+
+    sc_thread thread;
+    const struct sc_process_listener *listener;
+    void *listener_userdata;
+};
 
 enum sc_process_result {
     SC_PROCESS_SUCCESS,
@@ -105,5 +134,43 @@ sc_pipe_read_all(sc_pipe pipe, char *data, size_t len);
  */
 void
 sc_pipe_close(sc_pipe pipe);
+
+/**
+ * Start observing process
+ *
+ * The listener is optional. If set, its callback will be called from the
+ * observer thread once the process is terminated.
+ */
+bool
+sc_process_observer_init(struct sc_process_observer *observer, sc_pid pid,
+                         const struct sc_process_listener *listener,
+                         void *listener_userdata);
+
+/**
+ * Wait for process termination until a deadline
+ *
+ * Return true if the process is already terminated. Return false if the
+ * process terminatation has not been detected yet (however, it may have
+ * terminated in the meantime).
+ *
+ * To wait without timeout/deadline, just use sc_process_wait() instead.
+ */
+bool
+sc_process_observer_timedwait(struct sc_process_observer *observer,
+                              sc_tick deadline);
+
+/**
+ * Join the observer thread
+ */
+void
+sc_process_observer_join(struct sc_process_observer *observer);
+
+/**
+ * Destroy the observer
+ *
+ * This does not close the associated process.
+ */
+void
+sc_process_observer_destroy(struct sc_process_observer *observer);
 
 #endif
