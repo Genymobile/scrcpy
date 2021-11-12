@@ -19,12 +19,12 @@ sc_file_get_executable_path(void) {
         return NULL;
     }
     buf[len] = '\0';
-    return utf8_from_wide_char(buf);
+    return sc_str_from_wchars(buf);
 }
 
 bool
 sc_file_is_regular(const char *path) {
-    wchar_t *wide_path = utf8_to_wide_char(path);
+    wchar_t *wide_path = sc_str_to_wchars(path);
     if (!wide_path) {
         LOGC("Could not allocate wide char string");
         return false;

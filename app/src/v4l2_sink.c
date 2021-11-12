@@ -21,7 +21,7 @@ find_muxer(const char *name) {
         oformat = av_oformat_next(oformat);
 #endif
         // until null or containing the requested name
-    } while (oformat && !strlist_contains(oformat->name, ',', name));
+    } while (oformat && !sc_str_list_contains(oformat->name, ',', name));
     return oformat;
 }
 

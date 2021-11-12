@@ -13,7 +13,7 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
     // only make it work for this very specific program
     // (don't handle escaping nor quotes)
-    size_t ret = xstrjoin(cmd, argv, ' ', len);
+    size_t ret = sc_str_join(cmd, argv, ' ', len);
     if (ret >= len) {
         LOGE("Command too long (%" SC_PRIsizet " chars)", len - 1);
         return false;
@@ -88,7 +88,7 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         goto error_close_stderr;
     }
 
-    wchar_t *wide = utf8_to_wide_char(cmd);
+    wchar_t *wide = sc_str_to_wchars(cmd);
     free(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");

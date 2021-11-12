@@ -66,7 +66,7 @@ write_position(uint8_t *buf, const struct sc_position *position) {
 // write length (2 bytes) + string (non nul-terminated)
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
-    size_t len = utf8_truncation_index(utf8, max_len);
+    size_t len = sc_str_utf8_truncation_index(utf8, max_len);
     buffer_write32be(buf, len);
     memcpy(&buf[4], utf8, len);
     return 4 + len;

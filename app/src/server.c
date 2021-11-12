@@ -29,7 +29,7 @@ get_server_path(void) {
     if (server_path_env) {
         // if the envvar is set, use it
 #ifdef __WINDOWS__
-        char *server_path = utf8_from_wide_char(server_path_env);
+        char *server_path = sc_str_from_wchars(server_path_env);
 #else
         char *server_path = strdup(server_path_env);
 #endif

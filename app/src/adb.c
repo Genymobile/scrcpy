@@ -190,11 +190,11 @@ adb_push(const char *serial, const char *local, const char *remote) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the paths must be quoted
     // (see sys/win/command.c)
-    local = strquote(local);
+    local = sc_str_quote(local);
     if (!local) {
         return SC_PROCESS_NONE;
     }
-    remote = strquote(remote);
+    remote = sc_str_quote(remote);
     if (!remote) {
         free((void *) local);
         return SC_PROCESS_NONE;
@@ -217,7 +217,7 @@ adb_install(const char *serial, const char *local) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the local name must be quoted
     // (see sys/win/command.c)
-    local = strquote(local);
+    local = sc_str_quote(local);
     if (!local) {
         return SC_PROCESS_NONE;
     }

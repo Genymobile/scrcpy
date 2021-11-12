@@ -26,7 +26,7 @@ get_icon_path(void) {
     if (icon_path_env) {
         // if the envvar is set, use it
 #ifdef __WINDOWS__
-        char *icon_path = utf8_from_wide_char(icon_path_env);
+        char *icon_path = sc_str_from_wchars(icon_path_env);
 #else
         char *icon_path = strdup(icon_path_env);
 #endif

@@ -779,9 +779,9 @@ parse_integer_arg(const char *s, long *out, bool accept_suffix, long min,
     long value;
     bool ok;
     if (accept_suffix) {
-        ok = parse_integer_with_suffix(s, &value);
+        ok = sc_str_parse_integer_with_suffix(s, &value);
     } else {
-        ok = parse_integer(s, &value);
+        ok = sc_str_parse_integer(s, &value);
     }
     if (!ok) {
         LOGE("Could not parse %s: %s", name, s);
@@ -801,7 +801,7 @@ parse_integer_arg(const char *s, long *out, bool accept_suffix, long min,
 static size_t
 parse_integers_arg(const char *s, size_t max_items, long *out, long min,
                    long max, const char *name) {
-    size_t count = parse_integers(s, ':', max_items, out);
+    size_t count = sc_str_parse_integers(s, ':', max_items, out);
     if (!count) {
         LOGE("Could not parse %s: %s", name, s);
         return 0;
