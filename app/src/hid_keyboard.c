@@ -307,7 +307,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             // requested. Wait a bit so that the clipboard is set before
             // injecting Ctrl+v via HID, otherwise it would paste the old
             // clipboard content.
-            hid_event.delay = SC_TICK_FROM_MS(2);
+            hid_event.delay = SC_TICK_FROM_MS(5);
         }
 
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
