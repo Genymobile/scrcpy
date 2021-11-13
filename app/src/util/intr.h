@@ -37,7 +37,7 @@ sc_intr_init(struct sc_intr *intr);
 /**
  * Set a socket as the interruptible component
  *
- * Call with SC_INVALID_SOCKET to unset.
+ * Call with SC_SOCKET_NONE to unset.
  */
 bool
 sc_intr_set_socket(struct sc_intr *intr, sc_socket socket);

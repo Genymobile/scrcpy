@@ -46,13 +46,13 @@ static inline sc_socket
 wrap(sc_raw_socket sock) {
 #ifdef __WINDOWS__
     if (sock == INVALID_SOCKET) {
-        return SC_INVALID_SOCKET;
+        return SC_SOCKET_NONE;
     }
 
     struct sc_socket_windows *socket = malloc(sizeof(*socket));
     if (!socket) {
         closesocket(sock);
-        return SC_INVALID_SOCKET;
+        return SC_SOCKET_NONE;
     }
 
     socket->socket = sock;
@@ -67,7 +67,7 @@ wrap(sc_raw_socket sock) {
 static inline sc_raw_socket
 unwrap(sc_socket socket) {
 #ifdef __WINDOWS__
-    if (socket == SC_INVALID_SOCKET) {
+    if (socket == SC_SOCKET_NONE) {
         return INVALID_SOCKET;
     }
 
@@ -97,7 +97,7 @@ sc_socket
 net_socket(void) {
     sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
     sc_socket sock = wrap(raw_sock);
-    if (sock == SC_INVALID_SOCKET) {
+    if (sock == SC_SOCKET_NONE) {
         net_perror("socket");
     }
     return sock;
@@ -195,7 +195,7 @@ net_send_all(sc_socket socket, const void *buf, size_t len) {
 
 bool
 net_interrupt(sc_socket socket) {
-    assert(socket != SC_INVALID_SOCKET);
+    assert(socket != SC_SOCKET_NONE);
 
     sc_raw_socket raw_sock = unwrap(socket);
 

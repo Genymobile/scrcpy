@@ -12,7 +12,7 @@ sc_intr_init(struct sc_intr *intr) {
         return false;
     }
 
-    intr->socket = SC_INVALID_SOCKET;
+    intr->socket = SC_SOCKET_NONE;
     intr->process = SC_PROCESS_NONE;
 
     atomic_store_explicit(&intr->interrupted, false, memory_order_relaxed);
@@ -37,7 +37,7 @@ sc_intr_set_socket(struct sc_intr *intr, sc_socket socket) {
 
 bool
 sc_intr_set_process(struct sc_intr *intr, sc_pid pid) {
-    assert(intr->socket == SC_INVALID_SOCKET);
+    assert(intr->socket == SC_SOCKET_NONE);
 
     sc_mutex_lock(&intr->mutex);
     bool interrupted =
@@ -57,13 +57,13 @@ sc_intr_interrupt(struct sc_intr *intr) {
     atomic_store_explicit(&intr->interrupted, true, memory_order_relaxed);
 
     // No more than one component to interrupt
-    assert(intr->socket == SC_INVALID_SOCKET ||
+    assert(intr->socket == SC_SOCKET_NONE ||
            intr->process == SC_PROCESS_NONE);
 
-    if (intr->socket != SC_INVALID_SOCKET) {
+    if (intr->socket != SC_SOCKET_NONE) {
         LOGD("Interrupting socket");
         net_interrupt(intr->socket);
-        intr->socket = SC_INVALID_SOCKET;
+        intr->socket = SC_SOCKET_NONE;
     }
     if (intr->process != SC_PROCESS_NONE) {
         LOGD("Interrupting process");
@@ -76,7 +76,7 @@ sc_intr_interrupt(struct sc_intr *intr) {
 
 void
 sc_intr_destroy(struct sc_intr *intr) {
-    assert(intr->socket == SC_INVALID_SOCKET);
+    assert(intr->socket == SC_SOCKET_NONE);
     assert(intr->process == SC_PROCESS_NONE);
 
     sc_mutex_destroy(&intr->mutex);

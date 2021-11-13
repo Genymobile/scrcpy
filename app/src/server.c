@@ -223,7 +223,7 @@ connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         sc_socket socket = net_socket();
-        if (socket != SC_INVALID_SOCKET) {
+        if (socket != SC_SOCKET_NONE) {
             bool ok = connect_and_read_byte(&server->intr, socket, port);
             if (ok) {
                 // it worked!
@@ -249,7 +249,7 @@ connect_to_server(struct server *server, uint32_t attempts, sc_tick delay) {
             }
         }
     } while (--attempts > 0);
-    return SC_INVALID_SOCKET;
+    return SC_SOCKET_NONE;
 }
 
 bool
@@ -287,8 +287,8 @@ server_init(struct server *server, const struct server_params *params,
 
     server->stopped = false;
 
-    server->video_socket = SC_INVALID_SOCKET;
-    server->control_socket = SC_INVALID_SOCKET;
+    server->video_socket = SC_SOCKET_NONE;
+    server->control_socket = SC_SOCKET_NONE;
 
     sc_adb_tunnel_init(&server->tunnel);
 
@@ -331,29 +331,29 @@ server_connect_to(struct server *server, struct server_info *info) {
 
     const char *serial = server->params.serial;
 
-    sc_socket video_socket = SC_INVALID_SOCKET;
-    sc_socket control_socket = SC_INVALID_SOCKET;
+    sc_socket video_socket = SC_SOCKET_NONE;
+    sc_socket control_socket = SC_SOCKET_NONE;
     if (!tunnel->forward) {
         video_socket = net_accept_intr(&server->intr, tunnel->server_socket);
-        if (video_socket == SC_INVALID_SOCKET) {
+        if (video_socket == SC_SOCKET_NONE) {
             goto fail;
         }
 
         control_socket = net_accept_intr(&server->intr, tunnel->server_socket);
-        if (control_socket == SC_INVALID_SOCKET) {
+        if (control_socket == SC_SOCKET_NONE) {
             goto fail;
         }
     } else {
         uint32_t attempts = 100;
         sc_tick delay = SC_TICK_FROM_MS(100);
         video_socket = connect_to_server(server, attempts, delay);
-        if (video_socket == SC_INVALID_SOCKET) {
+        if (video_socket == SC_SOCKET_NONE) {
             goto fail;
         }
 
         // we know that the device is listening, we don't need several attempts
         control_socket = net_socket();
-        if (control_socket == SC_INVALID_SOCKET) {
+        if (control_socket == SC_SOCKET_NONE) {
             goto fail;
         }
         bool ok = net_connect_intr(&server->intr, control_socket,
@@ -372,8 +372,8 @@ server_connect_to(struct server *server, struct server_info *info) {
         goto fail;
     }
 
-    assert(video_socket != SC_INVALID_SOCKET);
-    assert(control_socket != SC_INVALID_SOCKET);
+    assert(video_socket != SC_SOCKET_NONE);
+    assert(control_socket != SC_SOCKET_NONE);
 
     server->video_socket = video_socket;
     server->control_socket = control_socket;
@@ -381,13 +381,13 @@ server_connect_to(struct server *server, struct server_info *info) {
     return true;
 
 fail:
-    if (video_socket != SC_INVALID_SOCKET) {
+    if (video_socket != SC_SOCKET_NONE) {
         if (!net_close(video_socket)) {
             LOGW("Could not close video socket");
         }
     }
 
-    if (control_socket != SC_INVALID_SOCKET) {
+    if (control_socket != SC_SOCKET_NONE) {
         if (!net_close(control_socket)) {
             LOGW("Could not close control socket");
         }

@@ -11,7 +11,7 @@
 
 # include <winsock2.h>
 # include <stdatomic.h>
-# define SC_INVALID_SOCKET NULL
+# define SC_SOCKET_NONE NULL
   typedef struct sc_socket_windows {
       SOCKET socket;
       atomic_flag closed;
@@ -20,7 +20,7 @@
 #else // not __WINDOWS__
 
 # include <sys/socket.h>
-# define SC_INVALID_SOCKET -1
+# define SC_SOCKET_NONE -1
   typedef int sc_socket;
 
 #endif

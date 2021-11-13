@@ -59,7 +59,7 @@ enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
         // need to try to connect until the server socket is listening on the
         // device.
         sc_socket server_socket = net_socket();
-        if (server_socket != SC_INVALID_SOCKET) {
+        if (server_socket != SC_SOCKET_NONE) {
             bool ok = listen_on_port(intr, server_socket, port);
             if (ok) {
                 // success
@@ -141,7 +141,7 @@ void
 sc_adb_tunnel_init(struct sc_adb_tunnel *tunnel) {
     tunnel->enabled = false;
     tunnel->forward = false;
-    tunnel->server_socket = SC_INVALID_SOCKET;
+    tunnel->server_socket = SC_SOCKET_NONE;
     tunnel->local_port = 0;
 }
 
@@ -177,7 +177,7 @@ sc_adb_tunnel_close(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
     } else {
         ret = disable_tunnel_reverse(intr, serial);
 
-        assert(tunnel->server_socket != SC_INVALID_SOCKET);
+        assert(tunnel->server_socket != SC_SOCKET_NONE);
         if (!net_close(tunnel->server_socket)) {
             LOGW("Could not close server socket");
         }
