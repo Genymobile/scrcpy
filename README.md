@@ -697,7 +697,7 @@ a location inverted through the center of the screen.
 By default, scrcpy uses Android key or text injection: it works everywhere, but
 is limited to ASCII.
 
-On Linux, scrcpy can simulate a USB physical keyboard on Android to provide a
+On Linux, scrcpy can simulate a physical USB keyboard on Android to provide a
 better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
 keyboard is disabled and it works for all characters and IME.
 
