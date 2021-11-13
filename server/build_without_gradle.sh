@@ -14,8 +14,9 @@ set -e
 SCRCPY_DEBUG=false
 SCRCPY_VERSION_NAME=1.19
 
-PLATFORM=${ANDROID_PLATFORM:-30}
-BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-30.0.0}
+PLATFORM_VERSION=31
+PLATFORM=${ANDROID_PLATFORM:-$PLATFORM_VERSION}
+BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-31.0.0}
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
@@ -55,16 +56,33 @@ javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
 
 echo "Dexing..."
 cd "$CLASSES_DIR"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
-    --output "$BUILD_DIR/classes.dex" \
-    android/view/*.class \
-    android/content/*.class \
-    com/genymobile/scrcpy/*.class \
-    com/genymobile/scrcpy/wrappers/*.class
 
-echo "Archiving..."
-cd "$BUILD_DIR"
-jar cvf "$SERVER_BINARY" classes.dex
-rm -rf classes.dex classes
+if [[ $PLATFORM_VERSION -lt 31 ]]
+then
+    # use dx
+    "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
+        --output "$BUILD_DIR/classes.dex" \
+        android/view/*.class \
+        android/content/*.class \
+        com/genymobile/scrcpy/*.class \
+        com/genymobile/scrcpy/wrappers/*.class
+
+    echo "Archiving..."
+    cd "$BUILD_DIR"
+    jar cvf "$SERVER_BINARY" classes.dex
+    rm -rf classes.dex classes
+else
+    # use d8
+    "$ANDROID_HOME/build-tools/$BUILD_TOOLS/d8" --classpath "$ANDROID_JAR" \
+        --output "$BUILD_DIR/classes.zip" \
+        android/view/*.class \
+        android/content/*.class \
+        com/genymobile/scrcpy/*.class \
+        com/genymobile/scrcpy/wrappers/*.class
+
+    cd "$BUILD_DIR"
+    mv classes.zip "$SERVER_BINARY"
+    rm -rf classes
+fi
 
 echo "Server generated in $BUILD_DIR/$SERVER_BINARY"
