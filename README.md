@@ -1,6 +1,6 @@
 # scrcpy (v1.19)
 
-![icon](data/icon.png)
+<img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 [Read in another language](#translations)
 
