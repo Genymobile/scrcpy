@@ -5,22 +5,33 @@
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected on
-USB (or [over TCP/IP][article-tcpip]). It does not require any _root_ access.
+USB (or [over TCP/IP](#wireless)). It does not require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 It focuses on:
 
- - **lightness** (native, displays only the device screen)
- - **performance** (30~60fps)
- - **quality** (1920×1080 or above)
- - **low latency** ([35~70ms][lowlatency])
- - **low startup time** (~1 second to display the first image)
- - **non-intrusiveness** (nothing is left installed on the device)
+ - **lightness**: native, displays only the device screen
+ - **performance**: 30~120fps, depending on the device
+ - **quality**: 1920×1080 or above
+ - **low latency**: [35~70ms][lowlatency]
+ - **low startup time**: ~1 second to display the first image
+ - **non-intrusiveness**: nothing is left installed on the device
+ - **user benefits**: no account, no ads, no internet required
+ - **freedom**: free and open source software
 
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
+Its features include:
+ - [recording](#recording)
+ - mirroring with [device screen off](#turn-screen-off)
+ - [copy-paste](#copy-paste) in both directions
+ - [configurable quality](#capture-configuration)
+ - device screen [as a webcam (V4L2)](#v4l2loopback) (Linux-only)
+ - [physical keyboard simulation (HID)](#physical-keyboard-simulation-hid)
+   (Linux-only)
+ - and more…
 
 ## Requirements
 
