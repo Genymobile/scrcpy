@@ -26,6 +26,8 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
                      HANDLE *pin, HANDLE *pout, HANDLE *perr) {
     enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
 
+    bool inherit_handles = pin || pout || perr;
+
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
     sa.lpSecurityDescriptor = NULL;
@@ -69,7 +71,7 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
-    if (pin || pout || perr) {
+    if (inherit_handles) {
         si.dwFlags = STARTF_USESTDHANDLES;
         if (pin) {
             si.hStdInput = stdin_read_handle;
@@ -95,8 +97,8 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         goto error_close_stderr;
     }
 
-    if (!CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
-                        &pi)) {
+    if (!CreateProcessW(NULL, wide, NULL, NULL, inherit_handles, 0, NULL, NULL,
+                        &si, &pi)) {
         free(wide);
         *handle = NULL;
 
