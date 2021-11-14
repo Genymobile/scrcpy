@@ -168,7 +168,7 @@ sc_process_close(HANDLE handle) {
 }
 
 ssize_t
-sc_read_pipe(HANDLE pipe, char *data, size_t len) {
+sc_pipe_read(HANDLE pipe, char *data, size_t len) {
     DWORD r;
     if (!ReadFile(pipe, data, len, &r, NULL)) {
         return -1;
@@ -177,7 +177,7 @@ sc_read_pipe(HANDLE pipe, char *data, size_t len) {
 }
 
 void
-sc_close_pipe(HANDLE pipe) {
+sc_pipe_close(HANDLE pipe) {
     if (!CloseHandle(pipe)) {
         LOGW("Cannot close pipe");
     }
