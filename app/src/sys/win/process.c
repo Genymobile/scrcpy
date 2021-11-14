@@ -84,7 +84,6 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
 
     char *cmd = malloc(CMD_MAX_LEN);
     if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
-        *handle = NULL;
         goto error_close_stderr;
     }
 
@@ -98,7 +97,6 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
     if (!CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
                         &pi)) {
         free(wide);
-        *handle = NULL;
 
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             ret = SC_PROCESS_ERROR_MISSING_BINARY;
