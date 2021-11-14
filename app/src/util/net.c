@@ -96,6 +96,27 @@ net_perror(const char *s) {
 sc_socket
 net_socket(void) {
     sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+#ifdef _WIN32
+    /* To be able to communicate with a child process via stdin, stdout and
+     * stderr, the CreateProcess() parameter bInheritHandles must be set to
+     * TRUE. But this causes *all* handles to be inherited, including sockets.
+     *
+     * One possibility could be to use an extended API to set extra attributes
+     * on process creation:
+     *  - <https://stackoverflow.com/a/28185363/1987178>
+     *  - <https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873>
+     * But it seems that this API is not available on MinGW (it does not
+     * compile).
+     *
+     * As an alternative, explicitly mark all sockets as non-inheritable.
+     */
+    if (!SetHandleInformation((HANDLE) raw_sock, HANDLE_FLAG_INHERIT, 0)) {
+        closesocket(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+#endif
+
     sc_socket sock = wrap(raw_sock);
     if (sock == SC_SOCKET_NONE) {
         net_perror("socket");
