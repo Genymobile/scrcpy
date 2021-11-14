@@ -1,4 +1,9 @@
+// <https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873>
+#define _WIN32_WINNT 0x0600 // For extended process API
+
 #include "util/process.h"
+
+#include <processthreadsapi.h>
 
 #include <assert.h>
 
@@ -25,6 +30,9 @@ enum sc_process_result
 sc_process_execute_p(const char *const argv[], HANDLE *handle,
                      HANDLE *pin, HANDLE *pout, HANDLE *perr) {
     enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
+
+    // Add 1 per non-NULL pointer
+    unsigned handle_count = !!pin + !!pout + !!perr;
 
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -65,43 +73,94 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         }
     }
 
-    STARTUPINFOW si;
+    STARTUPINFOEXW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
-    si.cb = sizeof(si);
-    if (pin || pout || perr) {
-        si.dwFlags = STARTF_USESTDHANDLES;
+    si.StartupInfo.cb = sizeof(si);
+    HANDLE handles[3];
+
+    LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
+    if (handle_count) {
+        si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
         if (pin) {
-            si.hStdInput = stdin_read_handle;
+            si.StartupInfo.hStdInput = stdin_read_handle;
         }
         if (pout) {
-            si.hStdOutput = stdout_write_handle;
+            si.StartupInfo.hStdOutput = stdout_write_handle;
         }
         if (perr) {
-            si.hStdError = stderr_write_handle;
+            si.StartupInfo.hStdError = stderr_write_handle;
         }
+
+        SIZE_T size;
+        // Call it once to know the required buffer size
+        BOOL ok =
+            InitializeProcThreadAttributeList(NULL, 1, 0, &size)
+                || GetLastError() == ERROR_INSUFFICIENT_BUFFER;
+        if (!ok) {
+            goto error_close_stderr;
+        }
+
+        lpAttributeList = malloc(size);
+        if (!lpAttributeList) {
+            goto error_close_stderr;
+        }
+
+        ok = InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
+        if (!ok) {
+            free(lpAttributeList);
+            goto error_close_stderr;
+        }
+
+        // Explicitly pass the HANDLEs that must be inherited
+        unsigned i = 0;
+        if (pin) {
+            handles[i++] = stdin_read_handle;
+        }
+        if (pout) {
+            handles[i++] = stdout_write_handle;
+        }
+        if (perr) {
+            handles[i++] = stderr_write_handle;
+        }
+        ok = UpdateProcThreadAttribute(lpAttributeList, 0,
+                                       PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
+                                       handles, handle_count * sizeof(HANDLE),
+                                       NULL, NULL);
+        if (!ok) {
+            goto error_free_attribute_list;
+        }
+
+        si.lpAttributeList = lpAttributeList;
     }
 
     char *cmd = malloc(CMD_MAX_LEN);
     if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
-        goto error_close_stderr;
+        goto error_free_attribute_list;
     }
 
     wchar_t *wide = sc_str_to_wchars(cmd);
     free(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");
-        goto error_close_stderr;
+        goto error_free_attribute_list;
     }
 
-    BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
-                             &pi);
+    BOOL bInheritHandles = handle_count > 0;
+    DWORD dwCreationFlags = handle_count > 0 ? EXTENDED_STARTUPINFO_PRESENT : 0;
+    BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, bInheritHandles,
+                             dwCreationFlags, NULL, NULL, &si.StartupInfo, &pi);
     free(wide);
     if (!ok) {
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             ret = SC_PROCESS_ERROR_MISSING_BINARY;
         }
-        goto error_close_stderr;
+        goto error_free_attribute_list;
+    }
+
+    if (lpAttributeList) {
+        DeleteProcThreadAttributeList(lpAttributeList);
+        free(lpAttributeList);
     }
 
     // These handles are used by the child process, close them for this process
@@ -119,6 +178,11 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
 
     return SC_PROCESS_SUCCESS;
 
+error_free_attribute_list:
+    if (lpAttributeList) {
+        DeleteProcThreadAttributeList(lpAttributeList);
+        free(lpAttributeList);
+    }
 error_close_stderr:
     if (perr) {
         CloseHandle(*perr);
