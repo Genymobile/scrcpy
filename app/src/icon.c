@@ -158,6 +158,12 @@ free_ctx:
     return result;
 }
 
+#if !SDL_VERSION_ATLEAST(2, 0, 10)
+// SDL_PixelFormatEnum has been introduced in SDL 2.0.10. Use int for older SDL
+// versions.
+typedef int SDL_PixelFormatEnum;
+#endif
+
 static SDL_PixelFormatEnum
 to_sdl_pixel_format(enum AVPixelFormat fmt) {
     switch (fmt) {
@@ -172,7 +178,9 @@ to_sdl_pixel_format(enum AVPixelFormat fmt) {
         case AV_PIX_FMT_BGR565BE: return SDL_PIXELFORMAT_BGR565;
         case AV_PIX_FMT_BGR555BE: return SDL_PIXELFORMAT_BGR555;
         case AV_PIX_FMT_RGB444BE: return SDL_PIXELFORMAT_RGB444;
+#if SDL_VERSION_ATLEAST(2, 0, 12)
         case AV_PIX_FMT_BGR444BE: return SDL_PIXELFORMAT_BGR444;
+#endif
         case AV_PIX_FMT_PAL8: return SDL_PIXELFORMAT_INDEX8;
         default: return SDL_PIXELFORMAT_UNKNOWN;
     }
