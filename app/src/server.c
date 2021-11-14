@@ -234,6 +234,12 @@ connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay) {
 
             net_close(socket);
         }
+
+        if (sc_intr_is_interrupted(&server->intr)) {
+            // Stop immediately
+            break;
+        }
+
         if (attempts) {
             sc_mutex_lock(&server->mutex);
             sc_tick deadline = sc_tick_now() + delay;
