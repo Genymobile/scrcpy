@@ -94,10 +94,10 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         goto error_close_stderr;
     }
 
-    if (!CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
-                        &pi)) {
-        free(wide);
-
+    BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
+                             &pi);
+    free(wide);
+    if (!ok) {
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
             ret = SC_PROCESS_ERROR_MISSING_BINARY;
         }
@@ -115,7 +115,6 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         CloseHandle(stderr_write_handle);
     }
 
-    free(wide);
     *handle = pi.hProcess;
 
     return SC_PROCESS_SUCCESS;
