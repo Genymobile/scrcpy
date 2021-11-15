@@ -8,7 +8,7 @@ Current version is based on [65b023a]
 
 [65b023a]: https://github.com/Genymobile/scrcpy/blob/65b023ac6d586593193fd5290f65e25603b68e02/README.md
 
-# scrcpy (v1.17)
+# scrcpy (v1.20)
 
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -29,11 +29,11 @@ Current version is based on [65b023a]
 
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
-特点：
+功能：
  - [屏幕录制](#屏幕录制)
  - 镜像时[关闭设备屏幕](#关闭设备屏幕)
  - 双向[复制粘贴](#复制粘贴)
- - [可配置显示质量](#捕获设置)
+ - [可配置显示质量](#采集设置)
  - 以设备屏幕[作为摄像头(V4L2)](#v4l2loopback) (仅限 Linux)
  - [模拟物理键盘 (HID)](#物理键盘模拟-hid) (仅限 Linux)
  - 更多 ……
@@ -61,7 +61,7 @@ Current version is based on [65b023a]
  - Windows: [下载][direct-win64]
  - macOS: `brew install scrcpy`
 
-从源代码编译: [构建] ([简化过程][BUILD_simple])
+从源代码编译: [构建][BUILD] ([简化过程][BUILD_simple])
 
 [BUILD]: BUILD.md
 [BUILD_simple]: BUILD.md#simple
@@ -171,7 +171,7 @@ scrcpy --help
 
 ## 功能介绍
 
-### 捕获设置
+### 采集设置
 
 #### 降低分辨率
 
@@ -198,7 +198,7 @@ scrcpy -b 2M  # 简写
 
 #### 限制帧率
 
-要限制捕获的帧率：
+要限制采集的帧率：
 
 ```bash
 scrcpy --max-fps 15
@@ -251,7 +251,7 @@ scrcpy --encoder OMX.qcom.video.encoder.avc
 scrcpy --encoder _
 ```
 
-### 捕获
+### 采集
 
 #### 屏幕录制
 
@@ -320,7 +320,7 @@ ffplay -i /dev/videoN
 vlc v4l2:///dev/videoN   # VLC 可能存在一些缓冲延迟
 ```
 
-例如，可以在 [OBS] 中捕获视频。
+例如，可以在 [OBS] 中采集视频。
 
 [OBS]: https://obsproject.com/
 
@@ -413,7 +413,7 @@ ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
 在另一个终端：
 
 ```bash
-scrcpy --force-adb-forward
+scrcpy
 ```
 
 若要不使用远程端口转发，可以强制使用正向连接 (注意 `-L` 和 `-R` 的区别)：
@@ -555,7 +555,7 @@ scrcpy -S
 
 或者在任何时候按 <kbd>MOD</kbd>+<kbd>o</kbd>。
 
-要重新打开屏幕，按下 <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
+要重新打开屏幕，按下 <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>。
 
 在Android上，`电源` 按钮始终能把屏幕打开。为了方便，对于在 _scrcpy_ 中发出的 `电源` 事件 (通过鼠标右键或 <kbd>MOD</kbd>+<kbd>p</kbd>)，会 (尽最大的努力) 在短暂的延迟后将屏幕关闭。设备上的 `电源` 按钮仍然能打开设备屏幕。
 
@@ -660,11 +660,11 @@ scrcpy -K  # 简写
 
 如果失败了 (如设备未通过 USB 连接)，则自动回退至默认模式 (终端中会输出日志)。这即允许通过 USB 和 TCP/IP 连接时使用相同的命令行参数。
 
-在这种模式下，原始按键事件 (扫描码) 被发送给设备，而与宿主机按键映射无关。因此，若键盘布局不匹配，需要在 Android 设备上进行配置，具体为 设置 → 系统 → 语言和输入法 → [实体键盘].
+在这种模式下，原始按键事件 (扫描码) 被发送给设备，而与宿主机按键映射无关。因此，若键盘布局不匹配，需要在 Android 设备上进行配置，具体为 设置 → 系统 → 语言和输入法 → [实体键盘]。
 
 [Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
-#### 文字注入偏好
+#### 文本注入偏好
 
 打字的时候，系统会产生两种[事件][textevents]：
  - _按键事件_ ，代表一个按键被按下或松开。
@@ -680,7 +680,7 @@ scrcpy --prefer-text
 
 (这会导致键盘在游戏中工作不正常)
 
-该选项不影响 HID 键盘 (该模式下，所有按键都发送为扫描码).
+该选项不影响 HID 键盘 (该模式下，所有按键都发送为扫描码)。
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
@@ -696,7 +696,7 @@ scrcpy --prefer-text
 scrcpy --no-key-repeat
 ```
 
-该选项不影响 HID 键盘 (该模式下，按键重复由 Android 直接管理).
+该选项不影响 HID 键盘 (该模式下，按键重复由 Android 直接管理)。
 
 #### 右键和中键
 
@@ -783,12 +783,12 @@ _<kbd>[Super]</kbd> 键通常是指 <kbd>Windows</kbd> 或 <kbd>Cmd</kbd> 键。
  | 剪切到剪贴板⁴                     | <kbd>MOD</kbd>+<kbd>x</kbd>
  | 同步剪贴板并粘贴⁴                 | <kbd>MOD</kbd>+<kbd>v</kbd>
  | 注入电脑剪贴板文本                | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
- | 打开/关闭FPS显示 (在 stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
+ | 打开/关闭FPS显示 (至标准输出)     | <kbd>MOD</kbd>+<kbd>i</kbd>
  | 捏拉缩放                          | <kbd>Ctrl</kbd>+_按住并移动鼠标_
  | 拖放 APK 文件                     | 从电脑安装 APK 文件
  | 拖放非 APK 文件                   | [将文件推送至设备](#push-file-to-device)
 
-_¹双击黑边可以去除黑边_
+_¹双击黑边可以去除黑边。_
 _²点击鼠标右键将在屏幕熄灭时点亮屏幕，其余情况则视为按下返回键 。_
 _³鼠标的第4键和第5键。_
 _⁴需要安卓版本 Android >= 7。_
