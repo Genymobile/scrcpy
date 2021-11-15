@@ -30,12 +30,12 @@ Current version is based on [65b023a]
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
 特点：
- - [录屏](#recording)
- - 当[设备屏幕关闭](#turn-screen-off)时镜像
- - 双向[复制粘贴](#copy-paste)
- - [可配置显示质量](#capture-configuration)
+ - [屏幕录制](#屏幕录制)
+ - 镜像时[关闭设备屏幕](#关闭设备屏幕)
+ - 双向[复制粘贴](#复制粘贴)
+ - [可配置显示质量](#捕获设置)
  - 以设备屏幕[作为摄像头(V4L2)](#v4l2loopback) (仅限 Linux)
- - [模拟物理键盘 (HID)](#physical-keyboard-simulation-hid) (仅限 Linux)
+ - [模拟物理键盘 (HID)](#物理键盘模拟-hid) (仅限 Linux)
  - 更多 ……
 
 ## 系统要求
