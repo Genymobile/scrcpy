@@ -19,6 +19,7 @@
 #include "file_handler.h"
 #include "input_manager.h"
 #include "recorder.h"
+#include "screen_exporter.h"
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
@@ -30,6 +31,7 @@
 #endif
 
 struct scrcpy {
+    struct screen_exporter screen_exporter;
     struct server server;
     struct screen screen;
     struct stream stream;
@@ -364,6 +366,9 @@ scrcpy(const struct scrcpy_options *options) {
             }
         }
     }
+
+    screen_exporter_init(&s->screen_exporter);
+    decoder_add_sink(&s->decoder, &s->screen_exporter.frame_sink);
 
     if (options->display) {
         const char *window_title =

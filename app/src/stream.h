@@ -11,7 +11,7 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-#define STREAM_MAX_SINKS 2
+#define STREAM_MAX_SINKS 3
 
 struct stream {
     socket_t socket;

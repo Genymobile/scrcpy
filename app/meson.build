@@ -16,6 +16,7 @@ src = [
     'src/opengl.c',
     'src/receiver.c',
     'src/recorder.c',
+    'src/screen_exporter.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
