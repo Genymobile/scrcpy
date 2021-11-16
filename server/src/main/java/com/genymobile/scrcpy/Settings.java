@@ -15,19 +15,19 @@ public class Settings {
         this.serviceManager = serviceManager;
     }
 
-    public String getValue(String table, String key) {
+    public String getValue(String table, String key) throws SettingsException {
         try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
             return provider.getValue(table, key);
         }
     }
 
-    public void putValue(String table, String key, String value) {
+    public void putValue(String table, String key, String value) throws SettingsException {
         try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
             provider.putValue(table, key, value);
         }
     }
 
-    public String getAndPutValue(String table, String key, String value) {
+    public String getAndPutValue(String table, String key, String value) throws SettingsException {
         try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
             String oldValue = provider.getValue(table, key);
             if (!value.equals(oldValue)) {
