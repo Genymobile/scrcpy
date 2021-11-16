@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
-import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
@@ -29,6 +28,7 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
     private static final ServiceManager SERVICE_MANAGER = new ServiceManager();
+    private static final Settings SETTINGS = new Settings(SERVICE_MANAGER);
 
     public interface RotationListener {
         void onRotationChanged(int rotation);
@@ -296,7 +296,7 @@ public final class Device {
         }
     }
 
-    public static ContentProvider createSettingsProvider() {
-        return SERVICE_MANAGER.getActivityManager().createSettingsProvider();
+    public static Settings getSettings() {
+        return SETTINGS;
     }
 }
