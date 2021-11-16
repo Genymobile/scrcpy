@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
+import com.genymobile.scrcpy.SettingsException;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
@@ -87,7 +88,8 @@ public class ContentProvider implements Closeable {
         return attributionSource;
     }
 
-    private Bundle call(String callMethod, String arg, Bundle extras) {
+    private Bundle call(String callMethod, String arg, Bundle extras)
+            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         try {
             Method method = getCallMethod();
             Object[] args;
@@ -108,7 +110,7 @@ public class ContentProvider implements Closeable {
             return (Bundle) method.invoke(provider, args);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException | InstantiationException e) {
             Ln.e("Could not invoke method", e);
-            return null;
+            throw e;
         }
     }
 
@@ -142,22 +144,31 @@ public class ContentProvider implements Closeable {
         }
     }
 
-    public String getValue(String table, String key) {
+    public String getValue(String table, String key) throws SettingsException {
         String method = getGetMethod(table);
         Bundle arg = new Bundle();
         arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
-        Bundle bundle = call(method, key, arg);
-        if (bundle == null) {
-            return null;
+        try {
+            Bundle bundle = call(method, key, arg);
+            if (bundle == null) {
+                return null;
+            }
+            return bundle.getString("value");
+        } catch (Exception e) {
+            throw new SettingsException(table, "get", key, null, e);
         }
-        return bundle.getString("value");
+
     }
 
-    public void putValue(String table, String key, String value) {
+    public void putValue(String table, String key, String value) throws SettingsException {
         String method = getPutMethod(table);
         Bundle arg = new Bundle();
         arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
         arg.putString(NAME_VALUE_TABLE_VALUE, value);
-        call(method, key, arg);
+        try {
+            call(method, key, arg);
+        } catch (Exception e) {
+            throw new SettingsException(table, "put", key, value, e);
+        }
     }
 }

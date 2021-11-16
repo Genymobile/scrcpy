@@ -168,11 +168,19 @@ public final class CleanUp {
             Settings settings = new Settings(serviceManager);
             if (config.disableShowTouches) {
                 Ln.i("Disabling \"show touches\"");
-                settings.putValue(Settings.TABLE_SYSTEM, "show_touches", "0");
+                try {
+                    settings.putValue(Settings.TABLE_SYSTEM, "show_touches", "0");
+                } catch (SettingsException e) {
+                    Ln.e("Could not restore \"show_touches\"", e);
+                }
             }
             if (config.restoreStayOn != -1) {
                 Ln.i("Restoring \"stay awake\"");
-                settings.putValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(config.restoreStayOn));
+                try {
+                    settings.putValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(config.restoreStayOn));
+                } catch (SettingsException e) {
+                    Ln.e("Could not restore \"stay_on_while_plugged_in\"", e);
+                }
             }
         }
 
