@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.ContentProvider;
-
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -27,25 +25,24 @@ public final class Server {
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
         if (options.getShowTouches() || options.getStayAwake()) {
-            try (ContentProvider settings = Device.createSettingsProvider()) {
-                if (options.getShowTouches()) {
-                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_SYSTEM, "show_touches", "1");
-                    // If "show touches" was disabled, it must be disabled back on clean up
-                    mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
-                }
+            Settings settings = Device.getSettings();
+            if (options.getShowTouches()) {
+                String oldValue = settings.getAndPutValue(Settings.TABLE_SYSTEM, "show_touches", "1");
+                // If "show touches" was disabled, it must be disabled back on clean up
+                mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
+            }
 
-                if (options.getStayAwake()) {
-                    int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
-                    String oldValue = settings.getAndPutValue(ContentProvider.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
-                    try {
-                        restoreStayOn = Integer.parseInt(oldValue);
-                        if (restoreStayOn == stayOn) {
-                            // No need to restore
-                            restoreStayOn = -1;
-                        }
-                    } catch (NumberFormatException e) {
-                        restoreStayOn = 0;
+            if (options.getStayAwake()) {
+                int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
+                String oldValue = settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
+                try {
+                    restoreStayOn = Integer.parseInt(oldValue);
+                    if (restoreStayOn == stayOn) {
+                        // No need to restore
+                        restoreStayOn = -1;
                     }
+                } catch (NumberFormatException e) {
+                    restoreStayOn = 0;
                 }
             }
         }

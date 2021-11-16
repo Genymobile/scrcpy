@@ -160,12 +160,4 @@ public class ContentProvider implements Closeable {
         arg.putString(NAME_VALUE_TABLE_VALUE, value);
         call(method, key, arg);
     }
-
-    public String getAndPutValue(String table, String key, String value) {
-        String oldValue = getValue(table, key);
-        if (!value.equals(oldValue)) {
-            putValue(table, key, value);
-        }
-        return oldValue;
-    }
 }
