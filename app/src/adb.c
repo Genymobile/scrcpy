@@ -233,37 +233,8 @@ adb_install(const char *serial, const char *local) {
     return pid;
 }
 
-static ssize_t
-adb_execute_for_output(const char *serial, const char *const adb_cmd[],
-                       size_t adb_cmd_len, char *buf, size_t buf_len,
-                       const char *name) {
-    sc_pipe pout;
-    sc_pid pid = adb_execute_p(serial, adb_cmd, adb_cmd_len, NULL, &pout, NULL);
-    if (pid == SC_PROCESS_NONE) {
-        return -1;
-    }
-
-    ssize_t r = sc_pipe_read_all(pout, buf, buf_len);
-    sc_pipe_close(pout);
-
-    if (!sc_process_check_success(pid, name, true)) {
-        return -1;
-    }
-
-    return r;
-}
-
-char *
-adb_get_serialno(void) {
-    char buf[128];
-
+sc_pid
+adb_get_serialno(sc_pipe *pout) {
     const char *const adb_cmd[] = {"get-serialno"};
-    ssize_t r = adb_execute_for_output(NULL, adb_cmd, ARRAY_LEN(adb_cmd),
-                                       buf, sizeof(buf), "get-serialno");
-    if (r <= 0) {
-        return NULL;
-    }
-
-    sc_str_truncate(buf, r, "\r\n");
-    return strdup(buf);
+    return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), NULL, pout, NULL);
 }

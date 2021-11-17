@@ -35,8 +35,12 @@ adb_push(const char *serial, const char *local, const char *remote);
 sc_pid
 adb_install(const char *serial, const char *local);
 
-// Return the result of "adb get-serialno".
-char *
-adb_get_serialno(void);
+/**
+ * Execute `adb get-serialno`
+ *
+ * The result can be read from the output parameter `pout`.
+ */
+sc_pid
+adb_get_serialno(sc_pipe *pout);
 
 #endif

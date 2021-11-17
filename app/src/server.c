@@ -422,6 +422,29 @@ sc_server_on_terminated(void *userdata) {
     LOGD("Server terminated");
 }
 
+static char *
+sc_server_get_serialno(struct sc_intr *intr) {
+    sc_pipe pout;
+    sc_pid pid = adb_get_serialno(&pout);
+    if (pid == SC_PROCESS_NONE) {
+        return false;
+    }
+
+    char buf[128];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    sc_pipe_close(pout);
+
+    bool ok =
+        sc_process_check_success_intr(intr, pid, "adb get-serialno", true);
+    if (!ok) {
+        return NULL;
+    }
+
+    sc_str_truncate(buf, r, " \r\n");
+
+    return strdup(buf);
+}
+
 static bool
 sc_server_fill_serial(struct sc_server *server) {
     // Retrieve the actual device immediately if not provided, so that all
@@ -430,7 +453,7 @@ sc_server_fill_serial(struct sc_server *server) {
     // device/emulator" error)
     if (!server->params.serial) {
         // The serial is owned by sc_server_params, and will be freed on destroy
-        server->params.serial = adb_get_serialno();
+        server->params.serial = sc_server_get_serialno(&server->intr);
         if (!server->params.serial) {
             LOGE("Could not get device serial");
             return false;
