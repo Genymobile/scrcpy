@@ -422,11 +422,35 @@ sc_server_on_terminated(void *userdata) {
     LOGD("Server terminated");
 }
 
+static bool
+sc_server_fill_serial(struct sc_server *server) {
+    // Retrieve the actual device immediately if not provided, so that all
+    // future adb commands are executed for this specific device, even if other
+    // devices are connected afterwards (without "more than one
+    // device/emulator" error)
+    if (!server->params.serial) {
+        // The serial is owned by sc_server_params, and will be freed on destroy
+        server->params.serial = adb_get_serialno();
+        if (!server->params.serial) {
+            LOGE("Could not get device serial");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static int
 run_server(void *data) {
     struct sc_server *server = data;
 
+    if (!sc_server_fill_serial(server)) {
+        goto error_connection_failed;
+    }
+
     const struct sc_server_params *params = &server->params;
+
+    LOGD("Device serial: %s", params->serial);
 
     bool ok = push_server(&server->intr, params->serial);
     if (!ok) {
