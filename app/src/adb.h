@@ -12,8 +12,8 @@ sc_pid
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
 
 sc_pid
-adb_execute_p(const char *serial, const char *const adb_cmd[],
-              size_t len, sc_pipe *pin, sc_pipe *pout, sc_pipe *perr);
+adb_execute_p(const char *serial, const char *const adb_cmd[], size_t len,
+              sc_pipe *pout);
 
 sc_pid
 adb_forward(const char *serial, uint16_t local_port,
