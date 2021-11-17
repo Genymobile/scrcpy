@@ -17,7 +17,7 @@ public final class Server {
         // not instantiable
     }
 
-    private static void initAndCleanUp(Options options) throws IOException {
+    private static void initAndCleanUp(Options options) {
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
         if (options.getShowTouches() || options.getStayAwake()) {
@@ -51,7 +51,11 @@ public final class Server {
             }
         }
 
-        CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+        try {
+            CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+        } catch (IOException e) {
+            Ln.e("Could not configure cleanup", e);
+        }
     }
 
     private static void scrcpy(Options options) throws IOException {
