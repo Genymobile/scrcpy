@@ -394,8 +394,11 @@ scrcpy(struct scrcpy_options *options) {
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
 
+    const char *serial = s->server.params.serial;
+    assert(serial);
+
     if (options->display && options->control) {
-        if (!file_handler_init(&s->file_handler, options->serial,
+        if (!file_handler_init(&s->file_handler, serial,
                                options->push_target)) {
             goto end;
         }
@@ -516,21 +519,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_AOA_HID
             bool aoa_hid_ok = false;
 
-            char *serialno = NULL;
-
-            const char *serial = options->serial;
-            if (!serial) {
-                serialno = adb_get_serialno();
-                if (!serialno) {
-                    LOGE("Could not get device serial");
-                    goto aoa_hid_end;
-                }
-                serial = serialno;
-                LOGI("Device serial: %s", serial);
-            }
-
             bool ok = sc_aoa_init(&s->aoa, serial);
-            free(serialno);
             if (!ok) {
                 goto aoa_hid_end;
             }
