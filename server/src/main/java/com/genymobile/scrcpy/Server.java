@@ -63,7 +63,7 @@ public final class Server {
         final Device device = new Device(options);
         List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
 
-        initAndCleanUp(options);
+        Thread initThread = startInitThread(options);
 
         boolean tunnelForward = options.isTunnelForward();
 
@@ -95,6 +95,7 @@ public final class Server {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
             } finally {
+                initThread.interrupt();
                 if (controllerThread != null) {
                     controllerThread.interrupt();
                 }
@@ -103,6 +104,17 @@ public final class Server {
                 }
             }
         }
+    }
+
+    private static Thread startInitThread(final Options options) {
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                initAndCleanUp(options);
+            }
+        });
+        thread.start();
+        return thread;
     }
 
     private static Thread startController(final Controller controller) {
