@@ -111,7 +111,7 @@ show_adb_err_msg(enum sc_process_result err, const char *const argv[]) {
 
 sc_pid
 adb_execute_p(const char *serial, const char *const adb_cmd[],
-              size_t len, sc_pipe *pin, sc_pipe *pout, sc_pipe *perr) {
+              size_t len, sc_pipe *pout) {
     int i;
     sc_pid pid;
 
@@ -132,7 +132,7 @@ adb_execute_p(const char *serial, const char *const adb_cmd[],
     memcpy(&argv[i], adb_cmd, len * sizeof(const char *));
     argv[len + i] = NULL;
     enum sc_process_result r =
-        sc_process_execute_p(argv, &pid, pin, pout, perr);
+        sc_process_execute_p(argv, &pid, NULL, pout, NULL);
     if (r != SC_PROCESS_SUCCESS) {
         show_adb_err_msg(r, argv);
         pid = SC_PROCESS_NONE;
@@ -144,7 +144,7 @@ adb_execute_p(const char *serial, const char *const adb_cmd[],
 
 sc_pid
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
-    return adb_execute_p(serial, adb_cmd, len, NULL, NULL, NULL);
+    return adb_execute_p(serial, adb_cmd, len, NULL);
 }
 
 sc_pid
@@ -236,5 +236,5 @@ adb_install(const char *serial, const char *local) {
 sc_pid
 adb_get_serialno(sc_pipe *pout) {
     const char *const adb_cmd[] = {"get-serialno"};
-    return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), NULL, pout, NULL);
+    return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), pout);
 }
