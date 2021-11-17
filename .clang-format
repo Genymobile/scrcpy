@@ -1,0 +1,4 @@
+UseTab: Never
+TabWidth: 4
+IndentWidth: 4
+AlwaysBreakAfterReturnType: AllDefinitions
