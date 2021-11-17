@@ -57,11 +57,18 @@ public final class Ln {
         }
     }
 
-    public static void w(String message) {
+    public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
-            Log.w(TAG, message);
+            Log.w(TAG, message, throwable);
             System.out.println(PREFIX + "WARN: " + message);
+            if (throwable != null) {
+                throwable.printStackTrace();
+            }
         }
+    }
+
+    public static void w(String message) {
+        w(message, null);
     }
 
     public static void e(String message, Throwable throwable) {
