@@ -291,3 +291,14 @@ error:
     free(buf.s);
     return NULL;
 }
+
+size_t
+sc_str_truncate_first_line(char *data, size_t len) {
+    data[len - 1] = '\0';
+    char *eol = strpbrk(data, "\r\n");
+    if (eol) {
+        *eol = '\0';
+        len = eol - data;
+    }
+    return len;
+}

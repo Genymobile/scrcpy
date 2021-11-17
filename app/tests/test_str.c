@@ -337,6 +337,14 @@ static void test_wrap_lines(void) {
     free(formatted);
 }
 
+static void test_truncate_first_line(void) {
+    char s[] = "hello\nworld\n!";
+    size_t len = sc_str_truncate_first_line(s, sizeof(s));
+
+    assert(len == 5);
+    assert(!strcmp("hello", s));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -356,5 +364,6 @@ int main(int argc, char *argv[]) {
     test_parse_integer_with_suffix();
     test_strlist_contains();
     test_wrap_lines();
+    test_truncate_first_line();
     return 0;
 }

@@ -103,4 +103,15 @@ sc_str_from_wchars(const wchar_t *s);
 char *
 sc_str_wrap_lines(const char *input, unsigned columns, unsigned indent);
 
+/**
+ * Truncate the data after the first line
+ *
+ * An '\0' is always written at the end of the data, even if no newline
+ * character is encountered.
+ *
+ * Return the size of the resulting line.
+ */
+size_t
+sc_str_truncate_first_line(char *data, size_t len);
+
 #endif
