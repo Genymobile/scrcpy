@@ -293,9 +293,9 @@ error:
 }
 
 size_t
-sc_str_truncate_first_line(char *data, size_t len) {
+sc_str_truncate(char *data, size_t len, const char *endchars) {
     data[len - 1] = '\0';
-    char *eol = strpbrk(data, "\r\n");
+    char *eol = strpbrk(data, endchars);
     if (eol) {
         *eol = '\0';
         len = eol - data;

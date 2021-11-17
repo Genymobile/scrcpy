@@ -264,6 +264,6 @@ adb_get_serialno(void) {
         return NULL;
     }
 
-    sc_str_truncate_first_line(buf, r);
+    sc_str_truncate(buf, r, "\r\n");
     return strdup(buf);
 }

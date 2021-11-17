@@ -337,12 +337,30 @@ static void test_wrap_lines(void) {
     free(formatted);
 }
 
-static void test_truncate_first_line(void) {
+static void test_truncate(void) {
     char s[] = "hello\nworld\n!";
-    size_t len = sc_str_truncate_first_line(s, sizeof(s));
+    size_t len = sc_str_truncate(s, sizeof(s), "\n");
 
     assert(len == 5);
     assert(!strcmp("hello", s));
+
+    char s2[] = "hello\r\nworkd\r\n!";
+    len = sc_str_truncate(s2, sizeof(s2), "\n\r");
+
+    assert(len == 5);
+    assert(!strcmp("hello", s));
+
+    char s3[] = "hello world\n!";
+    len = sc_str_truncate(s3, sizeof(s3), " \n\r");
+
+    assert(len == 5);
+    assert(!strcmp("hello", s3));
+
+    char s4[] = "hello ";
+    len = sc_str_truncate(s4, sizeof(s4), " \n\r");
+
+    assert(len == 5);
+    assert(!strcmp("hello", s4));
 }
 
 int main(int argc, char *argv[]) {
@@ -364,6 +382,6 @@ int main(int argc, char *argv[]) {
     test_parse_integer_with_suffix();
     test_strlist_contains();
     test_wrap_lines();
-    test_truncate_first_line();
+    test_truncate();
     return 0;
 }
