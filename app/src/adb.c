@@ -253,17 +253,6 @@ adb_execute_for_output(const char *serial, const char *const adb_cmd[],
     return r;
 }
 
-static size_t
-truncate_first_line(char *data, size_t len) {
-    data[len - 1] = '\0';
-    char *eol = strpbrk(data, "\r\n");
-    if (eol) {
-        *eol = '\0';
-        len = eol - data;
-    }
-    return len;
-}
-
 char *
 adb_get_serialno(void) {
     char buf[128];
@@ -275,6 +264,6 @@ adb_get_serialno(void) {
         return NULL;
     }
 
-    truncate_first_line(buf, r);
+    sc_str_truncate_first_line(buf, r);
     return strdup(buf);
 }
