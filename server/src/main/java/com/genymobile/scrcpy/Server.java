@@ -17,11 +17,7 @@ public final class Server {
         // not instantiable
     }
 
-    private static void scrcpy(Options options) throws IOException {
-        Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
-        final Device device = new Device(options);
-        List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
-
+    private static void initAndCleanUp(Options options) throws IOException {
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
         if (options.getShowTouches() || options.getStayAwake()) {
@@ -56,6 +52,14 @@ public final class Server {
         }
 
         CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+    }
+
+    private static void scrcpy(Options options) throws IOException {
+        Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
+        final Device device = new Device(options);
+        List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
+
+        initAndCleanUp(options);
 
         boolean tunnelForward = options.isTunnelForward();
 
