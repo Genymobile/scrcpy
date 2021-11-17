@@ -239,6 +239,9 @@ adb_execute_for_output(const char *serial, const char *const adb_cmd[],
                        const char *name) {
     sc_pipe pout;
     sc_pid pid = adb_execute_p(serial, adb_cmd, adb_cmd_len, NULL, &pout, NULL);
+    if (pid == SC_PROCESS_NONE) {
+        return -1;
+    }
 
     ssize_t r = sc_pipe_read_all(pout, buf, buf_len);
     sc_pipe_close(pout);
