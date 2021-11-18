@@ -13,6 +13,14 @@
 #include "util/strbuf.h"
 #include "util/term.h"
 
+#ifdef __WINDOWS__
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)
 
@@ -46,6 +54,8 @@
 #define OPT_V4L2_SINK              1027
 #define OPT_DISPLAY_BUFFER         1028
 #define OPT_V4L2_BUFFER            1029
+#define OPT_TUNNEL_HOST            1030
+#define OPT_TUNNEL_PORT            1031
 
 struct sc_option {
     char shortopt;
@@ -238,6 +248,20 @@ static const struct sc_option options[] = {
         .text = "Set the TCP port (range) used by the client to listen.\n"
                 "Default is " STR(DEFAULT_LOCAL_PORT_RANGE_FIRST) ":"
                               STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".",
+    },
+    {
+        .longopt_id = OPT_TUNNEL_HOST,
+        .longopt = "tunnel-host",
+        .argdesc = "host",
+        .text = "Set the remote IP address of the scrcpy server.\n"
+                "This option is only valid with --force-adb-forward.",
+    },
+    {
+        .longopt_id = OPT_TUNNEL_PORT,
+        .longopt = "tunnel-port",
+        .argdesc = "port",
+        .text = "Set the remote TCP port of the scrcpy server.\n"
+                "This option is only valid with --force-adb-forward.",
     },
     {
         .longopt_id = OPT_POWER_OFF_ON_CLOSE,
@@ -1123,6 +1147,27 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
     return false;
 }
 
+static bool
+parse_ip(const char *optarg, uint32_t *ipv4) {
+    struct in_addr conv;
+    if (!inet_pton(AF_INET, optarg, &conv)) {
+        LOGE("IP address is invalid: %s", optarg);
+        return false;
+    }
+    *ipv4 = ntohl(conv.s_addr);
+    return true;
+}
+
+static bool
+parse_port(const char *optarg, uint16_t *port) {
+    long value;
+    if (!parse_integer_arg(optarg, &value, false, 1, 0xFFFF, "tunnel port")) {
+        return false;
+    }
+    *port = (uint16_t)value;
+	return true;
+}
+
 static enum sc_record_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
@@ -1192,6 +1237,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
                         &opts->lock_video_orientation)) {
+                    return false;
+                }
+                break;
+            case OPT_TUNNEL_HOST:
+                if (!parse_ip(optarg, &opts->scrcpy_ip)) {
+                    return false;
+                }
+                break;
+            case OPT_TUNNEL_PORT:
+                if (!parse_port(optarg, &opts->scrcpy_port)) {
                     return false;
                 }
                 break;

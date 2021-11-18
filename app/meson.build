@@ -137,6 +137,12 @@ foreach f : check_functions
   endif
 endforeach
 
+if host_machine.system() == 'windows' or get_option('crossbuild_windows')
+    # Set the windows version higher than mingw default, needed for inet_pton on windows
+    add_global_arguments('-D_WIN32_WINNT=0x0600', language : 'c')
+	add_global_arguments('-DWINVER=0x0600', language : 'c')
+endif
+
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 

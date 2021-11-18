@@ -29,6 +29,8 @@ struct sc_server_params {
     const char *codec_options;
     const char *encoder_name;
     struct sc_port_range port_range;
+    uint32_t scrcpy_ip;
+    uint16_t scrcpy_port;
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;

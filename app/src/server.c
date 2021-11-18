@@ -202,8 +202,8 @@ execute_server(struct sc_server *server,
 }
 
 static bool
-connect_and_read_byte(struct sc_intr *intr, sc_socket socket, uint16_t port) {
-    bool ok = net_connect_intr(intr, socket, IPV4_LOCALHOST, port);
+connect_and_read_byte(struct sc_intr *intr, sc_socket socket, uint32_t ip, uint16_t port) {
+    bool ok = net_connect_intr(intr, socket, ip, port);
     if (!ok) {
         return false;
     }
@@ -220,13 +220,12 @@ connect_and_read_byte(struct sc_intr *intr, sc_socket socket, uint16_t port) {
 }
 
 static sc_socket
-connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay) {
-    uint16_t port = server->tunnel.local_port;
+connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay, uint32_t ip, uint16_t port) {
     do {
         LOGD("Remaining connection attempts: %d", (int) attempts);
         sc_socket socket = net_socket();
         if (socket != SC_SOCKET_NONE) {
-            bool ok = connect_and_read_byte(&server->intr, socket, port);
+            bool ok = connect_and_read_byte(&server->intr, socket, ip, port);
             if (ok) {
                 // it worked!
                 return socket;
@@ -352,9 +351,23 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             goto fail;
         }
     } else {
+        uint32_t ip;
+        if (server->params.scrcpy_ip) {
+            ip = server->params.scrcpy_ip;
+        } else {
+            ip = IPV4_LOCALHOST;
+        }
+
+		uint16_t port;
+        if (server->params.scrcpy_port) {
+            port = server->params.scrcpy_port;
+        } else {
+            port = tunnel->local_port;
+        }
+
         uint32_t attempts = 100;
         sc_tick delay = SC_TICK_FROM_MS(100);
-        video_socket = connect_to_server(server, attempts, delay);
+        video_socket = connect_to_server(server, attempts, delay, ip, port);
         if (video_socket == SC_SOCKET_NONE) {
             goto fail;
         }
@@ -365,7 +378,7 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             goto fail;
         }
         bool ok = net_connect_intr(&server->intr, control_socket,
-                                   IPV4_LOCALHOST, tunnel->local_port);
+                                   ip, port);
         if (!ok) {
             goto fail;
         }
