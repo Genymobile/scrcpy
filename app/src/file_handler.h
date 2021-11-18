@@ -8,6 +8,7 @@
 #include "adb.h"
 #include "util/cbuf.h"
 #include "util/thread.h"
+#include "util/intr.h"
 
 typedef enum {
     ACTION_INSTALL_APK,
@@ -29,8 +30,9 @@ struct file_handler {
     sc_cond event_cond;
     bool stopped;
     bool initialized;
-    sc_pid current_process;
     struct file_handler_request_queue queue;
+
+    struct sc_intr intr;
 };
 
 bool
