@@ -364,6 +364,26 @@ static void test_truncate(void) {
     assert(!strcmp("hello", s4));
 }
 
+static void test_index_of_column(void) {
+    assert(sc_str_index_of_column("a bc  d", 0, " ") == 0);
+    assert(sc_str_index_of_column("a bc  d", 1, " ") == 2);
+    assert(sc_str_index_of_column("a bc  d", 2, " ") == 6);
+    assert(sc_str_index_of_column("a bc  d", 3, " ") == -1);
+
+    assert(sc_str_index_of_column("a  ", 0, " ") == 0);
+    assert(sc_str_index_of_column("a  ", 1, " ") == -1);
+
+    assert(sc_str_index_of_column("", 0, " ") == 0);
+    assert(sc_str_index_of_column("", 1, " ") == -1);
+
+    assert(sc_str_index_of_column("a \t   \t bc  \t  d\t", 0, " \t") == 0);
+    assert(sc_str_index_of_column("a \t   \t bc  \t  d\t", 1, " \t") == 8);
+    assert(sc_str_index_of_column("a \t   \t bc  \t  d\t", 2, " \t") == 15);
+    assert(sc_str_index_of_column("a \t   \t bc  \t  d\t", 3, " \t") == -1);
+
+    assert(sc_str_index_of_column("  a bc  d", 1, " ") == 2);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -384,5 +404,6 @@ int main(int argc, char *argv[]) {
     test_strlist_contains();
     test_wrap_lines();
     test_truncate();
+    test_index_of_column();
     return 0;
 }

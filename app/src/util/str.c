@@ -304,3 +304,29 @@ sc_str_truncate(char *data, size_t len, const char *endchars) {
     data[idx] = '\0';
     return idx;
 }
+
+ssize_t
+sc_str_index_of_column(const char *s, unsigned col, const char *seps) {
+    size_t colidx = 0;
+
+    size_t idx = 0;
+    while (s[idx] != '\0' && colidx != col) {
+        size_t r = strcspn(&s[idx], seps);
+        idx += r;
+
+        if (s[idx] == '\0') {
+            // Not found
+            return -1;
+        }
+
+        size_t consecutive_seps = strspn(&s[idx], seps);
+        assert(consecutive_seps); // At least one
+        idx += consecutive_seps;
+
+        if (s[idx] != '\0') {
+            ++colidx;
+        }
+    }
+
+    return col == colidx ? (ssize_t) idx : -1;
+}

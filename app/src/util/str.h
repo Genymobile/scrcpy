@@ -114,4 +114,24 @@ sc_str_wrap_lines(const char *input, unsigned columns, unsigned indent);
 size_t
 sc_str_truncate(char *data, size_t len, const char *endchars);
 
+/**
+ * Find the start of a column in a string
+ *
+ * A string may represent several columns, separated by some "spaces"
+ * (separators). This function aims to find the start of the column number
+ * `col`.
+ *
+ * For example, to find the 4th column (column number 3):
+ *
+ *     //                               here
+ *     //                               v
+ *     const char *s = "abc def    ghi  jk";
+ *     ssize_t index = sc_str_index_of_column(s, 3, " ");
+ *     assert(index == 16); // points to "jk"
+ *
+ * Return -1 if no such column exists.
+ */
+ssize_t
+sc_str_index_of_column(const char *s, unsigned col, const char *seps);
+
 #endif
