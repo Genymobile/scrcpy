@@ -19,6 +19,8 @@ const struct scrcpy_options scrcpy_options_default = {
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST,
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST,
     },
+    .tunnel_host = 0,
+    .tunnel_port = 0,
     .shortcut_mods = {
         .data = {SC_MOD_LALT, SC_MOD_LSUPER},
         .count = 2,

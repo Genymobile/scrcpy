@@ -204,6 +204,18 @@ Enable "show touches" on start, restore the initial value on exit.
 It only shows physical touches (not clicks from scrcpy).
 
 .TP
+.BI "\-\-tunnel\-host " ip
+Set the IP address of the adb tunnel to reach the scrcpy server. This option automatically enables --force-adb-forward.
+
+Default is localhost.
+
+.TP
+.BI "\-\-tunnel\-port " port
+Set the TCP port of the adb tunnel to reach the scrcpy server. This option automatically enables --force-adb-forward.
+
+Default is 0 (not forced): the local port used for establishing the tunnel will be used.
+
+.TP
 .BI "\-\-v4l2-sink " /dev/videoN
 Output to v4l2loopback device.
 
