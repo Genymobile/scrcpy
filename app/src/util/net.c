@@ -7,6 +7,7 @@
 #include "log.h"
 
 #ifdef __WINDOWS__
+# include <ws2tcpip.h>
   typedef int socklen_t;
   typedef SOCKET sc_raw_socket;
 #else
@@ -224,4 +225,16 @@ net_close(sc_socket socket) {
 #else
     return !close(raw_sock);
 #endif
+}
+
+bool
+net_parse_ipv4(const char *s, uint32_t *ipv4) {
+    struct in_addr addr;
+    if (!inet_pton(AF_INET, s, &addr)) {
+        LOGE("Invalid IPv4 address: %s", s);
+        return false;
+    }
+
+    *ipv4 = ntohl(addr.s_addr);
+    return true;
 }
