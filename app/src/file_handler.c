@@ -126,32 +126,23 @@ run_file_handler(void *data) {
         (void) non_empty;
         sc_mutex_unlock(&file_handler->mutex);
 
-        sc_pid pid;
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            pid = adb_exec_install(serial, req.file);
-        } else {
-            LOGI("Pushing %s...", req.file);
-            pid = adb_exec_push(serial, req.file, push_target);
-        }
-
-        if (req.action == ACTION_INSTALL_APK) {
-            if (sc_process_check_success_intr(intr, pid, "adb install",
-                                              false)) {
+            bool ok = adb_install(intr, serial, req.file);
+            if (ok) {
                 LOGI("%s successfully installed", req.file);
             } else {
                 LOGE("Failed to install %s", req.file);
             }
         } else {
-            if (sc_process_check_success_intr(intr, pid, "adb push", false)) {
+            LOGI("Pushing %s...", req.file);
+            bool ok = adb_push(intr, serial, req.file, push_target);
+            if (ok) {
                 LOGI("%s successfully pushed to %s", req.file, push_target);
             } else {
                 LOGE("Failed to push %s to %s", req.file, push_target);
             }
         }
-
-        // Close the process (it is necessarily already terminated)
-        sc_process_close(pid);
 
         file_handler_request_destroy(&req);
     }
