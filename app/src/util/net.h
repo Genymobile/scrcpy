@@ -68,4 +68,10 @@ net_interrupt(sc_socket socket);
 bool
 net_close(sc_socket socket);
 
+/**
+ * Parse `ip` "xxx.xxx.xxx.xxx" to an IPv4 host representation
+ */
+bool
+net_parse_ipv4(const char *ip, uint32_t *ipv4);
+
 #endif
