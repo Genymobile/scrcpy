@@ -148,8 +148,8 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
 }
 
 sc_pid
-adb_forward(const char *serial, uint16_t local_port,
-            const char *device_socket_name) {
+adb_exec_forward(const char *serial, uint16_t local_port,
+                 const char *device_socket_name) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
@@ -159,7 +159,7 @@ adb_forward(const char *serial, uint16_t local_port,
 }
 
 sc_pid
-adb_forward_remove(const char *serial, uint16_t local_port) {
+adb_exec_forward_remove(const char *serial, uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     sprintf(local, "tcp:%" PRIu16, local_port);
     const char *const adb_cmd[] = {"forward", "--remove", local};
@@ -167,8 +167,8 @@ adb_forward_remove(const char *serial, uint16_t local_port) {
 }
 
 sc_pid
-adb_reverse(const char *serial, const char *device_socket_name,
-            uint16_t local_port) {
+adb_exec_reverse(const char *serial, const char *device_socket_name,
+                 uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
@@ -178,7 +178,7 @@ adb_reverse(const char *serial, const char *device_socket_name,
 }
 
 sc_pid
-adb_reverse_remove(const char *serial, const char *device_socket_name) {
+adb_exec_reverse_remove(const char *serial, const char *device_socket_name) {
     char remote[108 + 14 + 1]; // localabstract:NAME
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
@@ -186,7 +186,7 @@ adb_reverse_remove(const char *serial, const char *device_socket_name) {
 }
 
 sc_pid
-adb_push(const char *serial, const char *local, const char *remote) {
+adb_exec_push(const char *serial, const char *local, const char *remote) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the paths must be quoted
     // (see sys/win/command.c)
@@ -213,7 +213,7 @@ adb_push(const char *serial, const char *local, const char *remote) {
 }
 
 sc_pid
-adb_install(const char *serial, const char *local) {
+adb_exec_install(const char *serial, const char *local) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the local name must be quoted
     // (see sys/win/command.c)
@@ -234,7 +234,7 @@ adb_install(const char *serial, const char *local) {
 }
 
 sc_pid
-adb_get_serialno(sc_pipe *pout) {
+adb_exec_get_serialno(sc_pipe *pout) {
     const char *const adb_cmd[] = {"get-serialno"};
     return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), pout);
 }

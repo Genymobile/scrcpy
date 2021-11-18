@@ -112,7 +112,7 @@ push_server(struct sc_intr *intr, const char *serial) {
         free(server_path);
         return false;
     }
-    sc_pid pid = adb_push(serial, server_path, SC_DEVICE_SERVER_PATH);
+    sc_pid pid = adb_exec_push(serial, server_path, SC_DEVICE_SERVER_PATH);
     free(server_path);
     return sc_process_check_success_intr(intr, pid, "adb push", true);
 }
@@ -425,7 +425,7 @@ sc_server_on_terminated(void *userdata) {
 static char *
 sc_server_get_serialno(struct sc_intr *intr) {
     sc_pipe pout;
-    sc_pid pid = adb_get_serialno(&pout);
+    sc_pid pid = adb_exec_get_serialno(&pout);
     if (pid == SC_PROCESS_NONE) {
         return false;
     }

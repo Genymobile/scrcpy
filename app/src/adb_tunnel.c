@@ -12,13 +12,13 @@
 static bool
 enable_tunnel_reverse(struct sc_intr *intr, const char *serial,
                       uint16_t local_port) {
-    sc_pid pid = adb_reverse(serial, SC_SOCKET_NAME, local_port);
+    sc_pid pid = adb_exec_reverse(serial, SC_SOCKET_NAME, local_port);
     return sc_process_check_success_intr(intr, pid, "adb reverse", true);
 }
 
 static bool
 disable_tunnel_reverse(struct sc_intr *intr, const char *serial) {
-    sc_pid pid = adb_reverse_remove(serial, SC_SOCKET_NAME);
+    sc_pid pid = adb_exec_reverse_remove(serial, SC_SOCKET_NAME);
     return sc_process_check_success_intr(intr, pid, "adb reverse --remove",
                                          true);
 }
@@ -26,14 +26,14 @@ disable_tunnel_reverse(struct sc_intr *intr, const char *serial) {
 static bool
 enable_tunnel_forward(struct sc_intr *intr, const char *serial,
                       uint16_t local_port) {
-    sc_pid pid = adb_forward(serial, local_port, SC_SOCKET_NAME);
+    sc_pid pid = adb_exec_forward(serial, local_port, SC_SOCKET_NAME);
     return sc_process_check_success_intr(intr, pid, "adb forward", true);
 }
 
 static bool
 disable_tunnel_forward(struct sc_intr *intr, const char *serial,
                        uint16_t local_port) {
-    sc_pid pid = adb_forward_remove(serial, local_port);
+    sc_pid pid = adb_exec_forward_remove(serial, local_port);
     return sc_process_check_success_intr(intr, pid, "adb forward --remove",
                                          true);
 }

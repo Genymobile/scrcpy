@@ -129,10 +129,10 @@ run_file_handler(void *data) {
         sc_pid pid;
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            pid = adb_install(serial, req.file);
+            pid = adb_exec_install(serial, req.file);
         } else {
             LOGI("Pushing %s...", req.file);
-            pid = adb_push(serial, req.file, push_target);
+            pid = adb_exec_push(serial, req.file, push_target);
         }
 
         if (req.action == ACTION_INSTALL_APK) {
