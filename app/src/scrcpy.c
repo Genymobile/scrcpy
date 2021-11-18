@@ -345,6 +345,8 @@ scrcpy(struct scrcpy_options *options) {
         .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,
+        .tunnel_host = options->tunnel_host,
+        .tunnel_port = options->tunnel_port,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
         .max_fps = options->max_fps,

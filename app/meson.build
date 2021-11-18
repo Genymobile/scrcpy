@@ -199,6 +199,7 @@ if get_option('buildtype') == 'debug'
             'tests/test_cli.c',
             'src/cli.c',
             'src/options.c',
+            'src/util/net.c',
             'src/util/str.c',
             'src/util/strbuf.c',
             'src/util/term.c',

@@ -77,6 +77,8 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     struct sc_port_range port_range;
+    uint32_t tunnel_host;
+    uint16_t tunnel_port;
     struct sc_shortcut_mods shortcut_mods;
     uint16_t max_size;
     uint32_t bit_rate;

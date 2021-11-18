@@ -9,6 +9,7 @@
 
 #include "options.h"
 #include "util/log.h"
+#include "util/net.h"
 #include "util/str.h"
 #include "util/strbuf.h"
 #include "util/term.h"
@@ -46,6 +47,8 @@
 #define OPT_V4L2_SINK              1027
 #define OPT_DISPLAY_BUFFER         1028
 #define OPT_V4L2_BUFFER            1029
+#define OPT_TUNNEL_HOST            1030
+#define OPT_TUNNEL_PORT            1031
 
 struct sc_option {
     char shortopt;
@@ -329,6 +332,25 @@ static const struct sc_option options[] = {
         .text = "Enable \"show touches\" on start, restore the initial value "
                 "on exit.\n"
                 "It only shows physical touches (not clicks from scrcpy).",
+    },
+    {
+        .longopt_id = OPT_TUNNEL_HOST,
+        .longopt = "tunnel-host",
+        .argdesc = "ip",
+        .text = "Set the IP address of the adb tunnel to reach the scrcpy "
+                "server. This option automatically enables "
+                "--force-adb-forward.\n"
+                "Default is localhost.",
+    },
+    {
+        .longopt_id = OPT_TUNNEL_PORT,
+        .longopt = "tunnel-port",
+        .argdesc = "port",
+        .text = "Set the TCP port of the adb tunnel to reach the scrcpy "
+                "server. This option automatically enables "
+                "--force-adb-forward.\n"
+                "Default is 0 (not forced): the local port used for "
+                "establishing the tunnel will be used.",
     },
 #ifdef HAVE_V4L2
     {
@@ -1127,6 +1149,21 @@ parse_record_format(const char *optarg, enum sc_record_format *format) {
     return false;
 }
 
+static bool
+parse_ip(const char *optarg, uint32_t *ipv4) {
+    return net_parse_ipv4(optarg, ipv4);
+}
+
+static bool
+parse_port(const char *optarg, uint16_t *port) {
+    long value;
+    if (!parse_integer_arg(optarg, &value, false, 0, 0xFFFF, "port")) {
+        return false;
+    }
+    *port = (uint16_t) value;
+    return true;
+}
+
 static enum sc_record_format
 guess_record_format(const char *filename) {
     size_t len = strlen(filename);
@@ -1196,6 +1233,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
                         &opts->lock_video_orientation)) {
+                    return false;
+                }
+                break;
+            case OPT_TUNNEL_HOST:
+                if (!parse_ip(optarg, &opts->tunnel_host)) {
+                    return false;
+                }
+                break;
+            case OPT_TUNNEL_PORT:
+                if (!parse_port(optarg, &opts->tunnel_port)) {
                     return false;
                 }
                 break;
