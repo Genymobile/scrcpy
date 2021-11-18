@@ -16,6 +16,7 @@ file_handler_request_destroy(struct file_handler_request *req) {
 bool
 file_handler_init(struct file_handler *file_handler, const char *serial,
                   const char *push_target) {
+    assert(serial);
 
     cbuf_init(&file_handler->queue);
 
@@ -30,16 +31,12 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
         return false;
     }
 
-    if (serial) {
-        file_handler->serial = strdup(serial);
-        if (!file_handler->serial) {
-            LOGW("Could not strdup serial");
-            sc_cond_destroy(&file_handler->event_cond);
-            sc_mutex_destroy(&file_handler->mutex);
-            return false;
-        }
-    } else {
-        file_handler->serial = NULL;
+    file_handler->serial = strdup(serial);
+    if (!file_handler->serial) {
+        LOGE("Could not strdup serial");
+        sc_cond_destroy(&file_handler->event_cond);
+        sc_mutex_destroy(&file_handler->mutex);
+        return false;
     }
 
     // lazy initialization
