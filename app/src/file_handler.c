@@ -104,6 +104,12 @@ static int
 run_file_handler(void *data) {
     struct file_handler *file_handler = data;
 
+    const char *serial = file_handler->serial;
+    assert(serial);
+
+    const char *push_target = file_handler->push_target;
+    assert(push_target);
+
     for (;;) {
         sc_mutex_lock(&file_handler->mutex);
         file_handler->current_process = SC_PROCESS_NONE;
@@ -123,11 +129,10 @@ run_file_handler(void *data) {
         sc_pid pid;
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            pid = install_apk(file_handler->serial, req.file);
+            pid = install_apk(serial, req.file);
         } else {
             LOGI("Pushing %s...", req.file);
-            pid = push_file(file_handler->serial, req.file,
-                            file_handler->push_target);
+            pid = push_file(serial, req.file, push_target);
         }
         file_handler->current_process = pid;
         sc_mutex_unlock(&file_handler->mutex);
@@ -140,11 +145,9 @@ run_file_handler(void *data) {
             }
         } else {
             if (sc_process_check_success(pid, "adb push", false)) {
-                LOGI("%s successfully pushed to %s", req.file,
-                                                     file_handler->push_target);
+                LOGI("%s successfully pushed to %s", req.file, push_target);
             } else {
-                LOGE("Failed to push %s to %s", req.file,
-                                                file_handler->push_target);
+                LOGE("Failed to push %s to %s", req.file, push_target);
             }
         }
 
