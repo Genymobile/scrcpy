@@ -7,6 +7,7 @@
 
 #include "util/file.h"
 #include "util/log.h"
+#include "util/process_intr.h"
 #include "util/str.h"
 
 static const char *adb_command;
@@ -237,4 +238,71 @@ sc_pid
 adb_exec_get_serialno(sc_pipe *pout) {
     const char *const adb_cmd[] = {"get-serialno"};
     return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), pout);
+}
+
+bool
+adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
+            const char *device_socket_name) {
+    sc_pid pid = adb_exec_forward(serial, local_port, device_socket_name);
+    return sc_process_check_success_intr(intr, pid, "adb forward", true);
+}
+
+bool
+adb_forward_remove(struct sc_intr *intr, const char *serial,
+                   uint16_t local_port) {
+    sc_pid pid = adb_exec_forward_remove(serial, local_port);
+    return sc_process_check_success_intr(intr, pid, "adb forward --remove",
+                                         true);
+}
+
+bool
+adb_reverse(struct sc_intr *intr, const char *serial,
+            const char *device_socket_name, uint16_t local_port) {
+    sc_pid pid = adb_exec_reverse(serial, device_socket_name, local_port);
+    return sc_process_check_success_intr(intr, pid, "adb reverse", true);
+}
+
+bool
+adb_reverse_remove(struct sc_intr *intr, const char *serial,
+                   const char *device_socket_name) {
+    sc_pid pid = adb_exec_reverse_remove(serial, device_socket_name);
+    return sc_process_check_success_intr(intr, pid, "adb reverse --remove",
+                                         true);
+}
+
+bool
+adb_push(struct sc_intr *intr, const char *serial, const char *local,
+         const char *remote) {
+    sc_pid pid = adb_exec_push(serial, local, remote);
+    return sc_process_check_success_intr(intr, pid, "adb push", true);
+}
+
+bool
+adb_install(struct sc_intr *intr, const char *serial, const char *local) {
+    sc_pid pid = adb_exec_install(serial, local);
+    return sc_process_check_success_intr(intr, pid, "adb install", true);
+}
+
+char *
+adb_get_serialno(struct sc_intr *intr) {
+    sc_pipe pout;
+    sc_pid pid = adb_exec_get_serialno(&pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGE("Could not execute \"adb get-serialno\"");
+        return NULL;
+    }
+
+    char buf[128];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    sc_pipe_close(pout);
+
+    bool ok =
+        sc_process_check_success_intr(intr, pid, "adb get-serialno", true);
+    if (!ok) {
+        return NULL;
+    }
+
+    sc_str_truncate(buf, r, " \r\n");
+
+    return strdup(buf);
 }
