@@ -8,6 +8,6 @@
 
 bool
 sc_process_check_success_intr(struct sc_intr *intr, sc_pid pid,
-                              const char *name);
+                              const char *name, bool close);
 
 #endif

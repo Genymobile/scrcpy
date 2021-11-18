@@ -114,7 +114,7 @@ push_server(struct sc_intr *intr, const char *serial) {
     }
     sc_pid pid = adb_push(serial, server_path, SC_DEVICE_SERVER_PATH);
     free(server_path);
-    return sc_process_check_success_intr(intr, pid, "adb push");
+    return sc_process_check_success_intr(intr, pid, "adb push", true);
 }
 
 static const char *
