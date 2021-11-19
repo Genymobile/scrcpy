@@ -416,17 +416,27 @@ autoadb scrcpy -s '{}'
 
 To connect to a remote device, it is possible to connect a local `adb` client to
 a remote `adb` server (provided they use the same version of the _adb_
-protocol):
+protocol).
+
+First, make sure the ADB server is running on the remote computer:
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+adb start-server
+```
+
+Then, establish a SSH tunnel:
+
+```bash
+# local  5038 --> remote  5037
+# local 27183 <-- remote 27183
+ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal:
+From another terminal, run scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy
 ```
 
@@ -434,14 +444,16 @@ To avoid enabling remote port forwarding, you could force a forward connection
 instead (notice the `-L` instead of `-R`):
 
 ```bash
-adb kill-server    # kill the local adb server on 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# local  5038 --> remote  5037
+# local 27183 --> remote 27183
+ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal:
+From another terminal, run scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy --force-adb-forward
 ```
 
