@@ -459,6 +459,8 @@ run_server(void *data) {
         goto error_connection_failed;
     }
 
+    LOGI("Server pushed");
+
     ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, params->serial,
                             params->port_range, params->force_adb_forward);
     if (!ok) {
