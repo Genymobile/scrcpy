@@ -79,14 +79,19 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
     LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
     if (handle_count) {
         si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+
+        unsigned i = 0;
         if (pin) {
             si.StartupInfo.hStdInput = stdin_read_handle;
+            handles[i++] = si.StartupInfo.hStdInput;
         }
         if (pout) {
             si.StartupInfo.hStdOutput = stdout_write_handle;
+            handles[i++] = si.StartupInfo.hStdOutput;
         }
         if (perr) {
             si.StartupInfo.hStdError = stderr_write_handle;
+            handles[i++] = si.StartupInfo.hStdError;
         }
 
         SIZE_T size;
@@ -110,17 +115,6 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
             goto error_close_stderr;
         }
 
-        // Explicitly pass the HANDLEs that must be inherited
-        unsigned i = 0;
-        if (pin) {
-            handles[i++] = stdin_read_handle;
-        }
-        if (pout) {
-            handles[i++] = stdout_write_handle;
-        }
-        if (perr) {
-            handles[i++] = stderr_write_handle;
-        }
         ok = UpdateProcThreadAttribute(lpAttributeList, 0,
                                        PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
                                        handles, handle_count * sizeof(HANDLE),
