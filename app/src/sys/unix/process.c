@@ -11,8 +11,11 @@
 #include "util/log.h"
 
 enum sc_process_result
-sc_process_execute_p(const char *const argv[], sc_pid *pid,
+sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
                      int *pin, int *pout, int *perr) {
+    bool inherit_stdout = !pout && !(flags & SC_PROCESS_NO_STDOUT);
+    bool inherit_stderr = !perr && !(flags & SC_PROCESS_NO_STDERR);
+
     int in[2];
     int out[2];
     int err[2];
@@ -90,20 +93,30 @@ sc_process_execute_p(const char *const argv[], sc_pid *pid,
             }
             close(in[1]);
         }
+        // Do not close stdin in the child process, this makes adb fail on Linux
+
         if (pout) {
             if (out[1] != STDOUT_FILENO) {
                 dup2(out[1], STDOUT_FILENO);
                 close(out[1]);
             }
             close(out[0]);
+        } else if (!inherit_stdout) {
+            // Close stdout in the child process
+            close(STDOUT_FILENO);
         }
+
         if (perr) {
             if (err[1] != STDERR_FILENO) {
                 dup2(err[1], STDERR_FILENO);
                 close(err[1]);
             }
             close(err[0]);
+        } else if (!inherit_stderr) {
+            // Close stderr in the child process
+            close(STDERR_FILENO);
         }
+
         close(internal[0]);
         enum sc_process_result err;
         if (fcntl(internal[1], F_SETFD, FD_CLOEXEC) == 0) {

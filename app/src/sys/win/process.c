@@ -24,12 +24,17 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
 }
 
 enum sc_process_result
-sc_process_execute_p(const char *const argv[], HANDLE *handle,
+sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
                      HANDLE *pin, HANDLE *pout, HANDLE *perr) {
-    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
+    bool inherit_stdout = !pout && !(flags & SC_PROCESS_NO_STDOUT);
+    bool inherit_stderr = !perr && !(flags & SC_PROCESS_NO_STDERR);
 
     // Add 1 per non-NULL pointer
-    unsigned handle_count = !!pin + !!pout + !!perr;
+    unsigned handle_count = !!pin
+                          + (pout || inherit_stdout)
+                          + (perr || inherit_stderr);
+
+    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
 
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -85,12 +90,14 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
             si.StartupInfo.hStdInput = stdin_read_handle;
             handles[i++] = si.StartupInfo.hStdInput;
         }
-        if (pout) {
-            si.StartupInfo.hStdOutput = stdout_write_handle;
+        if (pout || inherit_stdout) {
+            si.StartupInfo.hStdOutput = pout ? stdout_write_handle
+                                             : GetStdHandle(STD_OUTPUT_HANDLE);
             handles[i++] = si.StartupInfo.hStdOutput;
         }
-        if (perr) {
-            si.StartupInfo.hStdError = stderr_write_handle;
+        if (perr || inherit_stderr) {
+            si.StartupInfo.hStdError = perr ? stderr_write_handle
+                                            : GetStdHandle(STD_ERROR_HANDLE);
             handles[i++] = si.StartupInfo.hStdError;
         }
 
@@ -140,7 +147,9 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
     }
 
     BOOL bInheritHandles = handle_count > 0;
-    DWORD dwCreationFlags = handle_count > 0 ? EXTENDED_STARTUPINFO_PRESENT : 0;
+    // DETACHED_PROCESS to disable stdin, stdout and stderr
+    DWORD dwCreationFlags = handle_count > 0 ? EXTENDED_STARTUPINFO_PRESENT
+                                             : DETACHED_PROCESS;
     BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, bInheritHandles,
                              dwCreationFlags, NULL, NULL, &si.StartupInfo, &pi);
     free(wide);

@@ -5,8 +5,8 @@
 #include "log.h"
 
 enum sc_process_result
-sc_process_execute(const char *const argv[], sc_pid *pid) {
-    return sc_process_execute_p(argv, pid, NULL, NULL, NULL);
+sc_process_execute(const char *const argv[], sc_pid *pid, unsigned flags) {
+    return sc_process_execute_p(argv, pid, flags, NULL, NULL, NULL);
 }
 
 ssize_t

@@ -67,20 +67,32 @@ enum sc_process_result {
     SC_PROCESS_ERROR_MISSING_BINARY,
 };
 
+#define SC_PROCESS_NO_STDOUT (1 << 0)
+#define SC_PROCESS_NO_STDERR (1 << 1)
+
 /**
  * Execute the command and write the process id to `pid`
+ *
+ * The `flags` argument is a bitwise OR of the following values:
+ *  - SC_PROCESS_NO_STDOUT
+ *  - SC_PROCESS_NO_STDERR
+ *
+ * It indicates if stdout and stderr must be inherited from the scrcpy process
+ * (i.e. if the process must output to the scrcpy console).
  */
 enum sc_process_result
-sc_process_execute(const char *const argv[], sc_pid *pid);
+sc_process_execute(const char *const argv[], sc_pid *pid, unsigned flags);
 
 /**
  * Execute the command and write the process id to `pid`
  *
  * If not NULL, provide a pipe for stdin (`pin`), stdout (`pout`) and stderr
  * (`perr`).
+ *
+ * The `flags` argument has the same semantics as in `sc_process_execute()`.
  */
 enum sc_process_result
-sc_process_execute_p(const char *const argv[], sc_pid *pid,
+sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
                      sc_pipe *pin, sc_pipe *pout, sc_pipe *perr);
 
 /**

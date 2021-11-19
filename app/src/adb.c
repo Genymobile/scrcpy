@@ -181,7 +181,7 @@ adb_execute_p(const char *serial, const char *const adb_cmd[], size_t len,
 
     sc_pid pid;
     enum sc_process_result r =
-        sc_process_execute_p(argv, &pid, NULL, pout, NULL);
+        sc_process_execute_p(argv, &pid, 0, NULL, pout, NULL);
     if (r != SC_PROCESS_SUCCESS) {
         show_adb_err_msg(r, argv);
         pid = SC_PROCESS_NONE;
