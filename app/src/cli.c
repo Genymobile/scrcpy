@@ -1405,6 +1405,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
+    if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
+        LOGI("Tunnel host/port is set, "
+             "--force-adb-forward automatically enabled.");
+        opts->force_adb_forward = true;
+    }
+
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
