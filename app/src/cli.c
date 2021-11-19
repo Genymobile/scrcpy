@@ -675,12 +675,12 @@ print_option_usage_header(const struct sc_option *opt) {
         }
     }
 
-    fprintf(stderr, "\n    %s\n", buf.s);
+    printf("\n    %s\n", buf.s);
     free(buf.s);
     return;
 
 error:
-    fprintf(stderr, "<ERROR>\n");
+    printf("<ERROR>\n");
 }
 
 static void
@@ -696,11 +696,11 @@ print_option_usage(const struct sc_option *opt, unsigned cols) {
 
     char *text = sc_str_wrap_lines(opt->text, cols, 8);
     if (!text) {
-        fprintf(stderr, "<ERROR>\n");
+        printf("<ERROR>\n");
         return;
     }
 
-    fprintf(stderr, "%s\n", text);
+    printf("%s\n", text);
     free(text);
 }
 
@@ -711,11 +711,11 @@ print_shortcuts_intro(unsigned cols) {
         "(left) Alt or (left) Super, but it can be configured by "
         "--shortcut-mod (see above).", cols, 4);
     if (!intro) {
-        fprintf(stderr, "<ERROR>\n");
+        printf("<ERROR>\n");
         return;
     }
 
-    fprintf(stderr, "%s\n", intro);
+    printf("%s\n", intro);
     free(intro);
 }
 
@@ -725,21 +725,21 @@ print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
     assert(shortcut->shortcuts[0]); // At least one shortcut
     assert(shortcut->text);
 
-    fprintf(stderr, "\n");
+    printf("\n");
 
     unsigned i = 0;
     while (shortcut->shortcuts[i]) {
-        fprintf(stderr, "    %s\n", shortcut->shortcuts[i]);
+        printf("    %s\n", shortcut->shortcuts[i]);
         ++i;
     };
 
     char *text = sc_str_wrap_lines(shortcut->text, cols, 8);
     if (!text) {
-        fprintf(stderr, "<ERROR>\n");
+        printf("<ERROR>\n");
         return;
     }
 
-    fprintf(stderr, "%s\n", text);
+    printf("%s\n", text);
     free(text);
 }
 
@@ -763,14 +763,14 @@ scrcpy_print_usage(const char *arg0) {
         }
     }
 
-    fprintf(stderr, "Usage: %s [options]\n\n"
-                    "Options:\n", arg0);
+    printf("Usage: %s [options]\n\n"
+            "Options:\n", arg0);
     for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
         print_option_usage(&options[i], cols);
     }
 
     // Print shortcuts section
-    fprintf(stderr, "\nShortcuts:\n\n");
+    printf("\nShortcuts:\n\n");
     print_shortcuts_intro(cols);
     for (size_t i = 0; i < ARRAY_LEN(shortcuts); ++i) {
         print_shortcut(&shortcuts[i], cols);
