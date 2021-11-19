@@ -27,12 +27,17 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
 }
 
 enum sc_process_result
-sc_process_execute_p(const char *const argv[], HANDLE *handle,
+sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned inherit,
                      HANDLE *pin, HANDLE *pout, HANDLE *perr) {
-    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
+    bool inherit_stdout = inherit & SC_INHERIT_STDOUT;
+    bool inherit_stderr = inherit & SC_INHERIT_STDERR;
 
-    // Add 1 per non-NULL pointer
-    unsigned handle_count = !!pin + !!pout + !!perr;
+    // If pout is defined, then inherit MUST NOT contain SC_INHERIT_STDOUT.
+    assert(!pout || !inherit_stdout);
+    // If perr is defined, then inherit MUST NOT contain SC_INHERIT_STDERR.
+    assert(!perr || !inherit_stderr);
+
+    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
 
     SECURITY_ATTRIBUTES sa;
     sa.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -80,53 +85,52 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
     HANDLE handles[3];
 
     LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
-    if (handle_count) {
-        si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
 
-        unsigned i = 0;
-        if (pin) {
-            si.StartupInfo.hStdInput = stdin_read_handle;
-            handles[i++] = si.StartupInfo.hStdInput;
-        }
-        if (pout) {
-            si.StartupInfo.hStdOutput = stdout_write_handle;
-            handles[i++] = si.StartupInfo.hStdOutput;
-        }
-        if (perr) {
-            si.StartupInfo.hStdError = stderr_write_handle;
-            handles[i++] = si.StartupInfo.hStdError;
-        }
-
-        SIZE_T size;
-        // Call it once to know the required buffer size
-        BOOL ok =
-            InitializeProcThreadAttributeList(NULL, 1, 0, &size)
-                || GetLastError() == ERROR_INSUFFICIENT_BUFFER;
-        if (!ok) {
-            goto error_close_stderr;
-        }
-
-        lpAttributeList = malloc(size);
-        if (!lpAttributeList) {
-            goto error_close_stderr;
-        }
-
-        ok = InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
-        if (!ok) {
-            free(lpAttributeList);
-            goto error_close_stderr;
-        }
-
-        ok = UpdateProcThreadAttribute(lpAttributeList, 0,
-                                       PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
-                                       handles, handle_count * sizeof(HANDLE),
-                                       NULL, NULL);
-        if (!ok) {
-            goto error_free_attribute_list;
-        }
-
-        si.lpAttributeList = lpAttributeList;
+    unsigned handle_count = 0;
+    if (pin) {
+        si.StartupInfo.hStdInput = stdin_read_handle;
+        handles[handle_count++] = si.StartupInfo.hStdInput;
     }
+    if (pout || inherit_stdout) {
+        si.StartupInfo.hStdOutput = pout ? stdout_write_handle
+                                         : GetStdHandle(STD_OUTPUT_HANDLE);
+        handles[handle_count++] = si.StartupInfo.hStdOutput;
+    }
+    if (perr || inherit_stderr) {
+        si.StartupInfo.hStdError = perr ? stderr_write_handle
+                                        : GetStdHandle(STD_ERROR_HANDLE);
+        handles[handle_count++] = si.StartupInfo.hStdError;
+    }
+
+    SIZE_T size;
+    // Call it once to know the required buffer size
+    BOOL ok =
+        InitializeProcThreadAttributeList(NULL, 1, 0, &size)
+            || GetLastError() == ERROR_INSUFFICIENT_BUFFER;
+    if (!ok) {
+        goto error_close_stderr;
+    }
+
+    lpAttributeList = malloc(size);
+    if (!lpAttributeList) {
+        goto error_close_stderr;
+    }
+
+    ok = InitializeProcThreadAttributeList(lpAttributeList, 1, 0, &size);
+    if (!ok) {
+        free(lpAttributeList);
+        goto error_close_stderr;
+    }
+
+    ok = UpdateProcThreadAttribute(lpAttributeList, 0,
+                                   PROC_THREAD_ATTRIBUTE_HANDLE_LIST, handles,
+                                   handle_count * sizeof(HANDLE), NULL, NULL);
+    if (!ok) {
+        goto error_free_attribute_list;
+    }
+
+    si.lpAttributeList = lpAttributeList;
 
     char *cmd = malloc(CMD_MAX_LEN);
     if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
@@ -140,10 +144,9 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
         goto error_free_attribute_list;
     }
 
-    BOOL bInheritHandles = handle_count > 0;
-    DWORD dwCreationFlags = handle_count > 0 ? EXTENDED_STARTUPINFO_PRESENT : 0;
-    BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, bInheritHandles,
-                             dwCreationFlags, NULL, NULL, &si.StartupInfo, &pi);
+    ok = CreateProcessW(NULL, wide, NULL, NULL, TRUE,
+                        EXTENDED_STARTUPINFO_PRESENT, NULL, NULL,
+                        &si.StartupInfo, &pi);
     free(wide);
     if (!ok) {
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {

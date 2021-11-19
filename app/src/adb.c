@@ -132,8 +132,12 @@ adb_execute_p(const char *serial, const char *const adb_cmd[],
 
     memcpy(&argv[i], adb_cmd, len * sizeof(const char *));
     argv[len + i] = NULL;
+    unsigned inherit = SC_INHERIT_STDERR;
+    if (!pout) {
+        inherit |= SC_INHERIT_STDOUT;
+    }
     enum sc_process_result r =
-        sc_process_execute_p(argv, &pid, NULL, pout, NULL);
+        sc_process_execute_p(argv, &pid, inherit, NULL, pout, NULL);
     if (r != SC_PROCESS_SUCCESS) {
         show_adb_err_msg(r, argv);
         pid = SC_PROCESS_NONE;
