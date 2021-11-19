@@ -569,6 +569,10 @@ sc_getopt_adapter_create_longopts(void) {
     size_t out_idx = 0;
     for (size_t i = 0; i < ARRAY_LEN(options); ++i) {
         const struct sc_option *in = &options[i];
+
+        // If longopt_id is set, then longopt must be set
+        assert(!in->longopt_id || in->longopt);
+
         if (!in->longopt) {
             // The longopts array must only contain long options
             continue;
