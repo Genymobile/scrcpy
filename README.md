@@ -412,11 +412,46 @@ autoadb scrcpy -s '{}'
 
 [AutoAdb]: https://github.com/rom1v/autoadb
 
-#### SSH tunnel
+#### Tunnels
 
 To connect to a remote device, it is possible to connect a local `adb` client to
 a remote `adb` server (provided they use the same version of the _adb_
 protocol).
+
+##### Remote ADB server
+
+To connect to a remote ADB server, make the server listen on all interfaces:
+
+```bash
+adb kill-server
+adb -a nodaemon server start
+# keep this open
+```
+
+**Warning: all communications between clients and ADB server are unencrypted.**
+
+Suppose that this server is accessible at 192.168.1.2. Then, from another
+terminal, run scrcpy:
+
+```bash
+export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+By default, scrcpy uses the local port used for `adb forward` tunnel
+establishment (typically `27183`, see `--port`). It is also possible to force a
+different tunnel port (it may be useful in more complex situations, when more
+redirections are involved):
+
+```
+scrcpy --tunnel-port=1234
+```
+
+
+##### SSH tunnel
+
+To communicate with a remote ADB server securely, it is preferable to use a SSH
+tunnel.
 
 First, make sure the ADB server is running on the remote computer:
 
