@@ -112,7 +112,8 @@ push_server(struct sc_intr *intr, const char *serial) {
         free(server_path);
         return false;
     }
-    bool ok = adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH);
+    bool ok = adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH,
+                       SC_INHERIT_STDERR);
     free(server_path);
     return ok;
 }
@@ -198,7 +199,9 @@ execute_server(struct sc_server *server,
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(serial, cmd, ARRAY_LEN(cmd));
+    // Inherit both stdout and stderr (all server logs are printed to stdout)
+    return adb_execute(serial, cmd, ARRAY_LEN(cmd),
+                       SC_INHERIT_STDOUT | SC_INHERIT_STDERR);
 }
 
 static bool
@@ -430,7 +433,8 @@ sc_server_fill_serial(struct sc_server *server) {
     // device/emulator" error)
     if (!server->params.serial) {
         // The serial is owned by sc_server_params, and will be freed on destroy
-        server->params.serial = adb_get_serialno(&server->intr);
+        server->params.serial = adb_get_serialno(&server->intr,
+                                                 SC_INHERIT_STDERR);
         if (!server->params.serial) {
             LOGE("Could not get device serial");
             return false;

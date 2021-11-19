@@ -67,6 +67,7 @@ enum sc_process_result {
     SC_PROCESS_ERROR_MISSING_BINARY,
 };
 
+#define SC_INHERIT_NONE    0
 #define SC_INHERIT_STDOUT (1 << 0)
 #define SC_INHERIT_STDERR (1 << 1)
 

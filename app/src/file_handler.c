@@ -128,7 +128,8 @@ run_file_handler(void *data) {
 
         if (req.action == ACTION_INSTALL_APK) {
             LOGI("Installing %s...", req.file);
-            bool ok = adb_install(intr, serial, req.file);
+            bool ok = adb_install(intr, serial, req.file,
+                                  SC_INHERIT_STDOUT | SC_INHERIT_STDERR);
             if (ok) {
                 LOGI("%s successfully installed", req.file);
             } else {
@@ -136,7 +137,8 @@ run_file_handler(void *data) {
             }
         } else {
             LOGI("Pushing %s...", req.file);
-            bool ok = adb_push(intr, serial, req.file, push_target);
+            bool ok = adb_push(intr, serial, req.file, push_target,
+                               SC_INHERIT_STDOUT | SC_INHERIT_STDERR);
             if (ok) {
                 LOGI("%s successfully pushed to %s", req.file, push_target);
             } else {
