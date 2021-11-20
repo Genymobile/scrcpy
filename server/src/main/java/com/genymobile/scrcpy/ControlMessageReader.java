@@ -13,11 +13,11 @@ public class ControlMessageReader {
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int BACK_OR_SCREEN_ON_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
-    static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 1;
+    static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 9;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
-    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 6; // type: 1 byte; paste flag: 1 byte; length: 4 bytes
+    public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 14; // type: 1 byte; sequence: 8 bytes; paste flag: 1 byte; length: 4 bytes
     public static final int INJECT_TEXT_MAX_LENGTH = 300;
 
     private final byte[] rawBuffer = new byte[MESSAGE_MAX_SIZE];
@@ -166,12 +166,13 @@ public class ControlMessageReader {
         if (buffer.remaining() < SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH) {
             return null;
         }
+        long sequence = buffer.getLong();
         boolean paste = buffer.get() != 0;
         String text = parseString();
         if (text == null) {
             return null;
         }
-        return ControlMessage.createSetClipboard(text, paste);
+        return ControlMessage.createSetClipboard(sequence, text, paste);
     }
 
     private ControlMessage parseSetScreenPowerMode() {

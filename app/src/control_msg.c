@@ -118,11 +118,12 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
             buf[1] = msg->inject_keycode.action;
             return 2;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
-            buf[1] = !!msg->set_clipboard.paste;
+            buffer_write64be(&buf[1], msg->set_clipboard.sequence);
+            buf[9] = !!msg->set_clipboard.paste;
             size_t len = write_string(msg->set_clipboard.text,
                                       CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
-                                      &buf[2]);
-            return 2 + len;
+                                      &buf[10]);
+            return 10 + len;
         }
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
@@ -199,7 +200,8 @@ control_msg_log(const struct control_msg *msg) {
                      KEYEVENT_ACTION_LABEL(msg->inject_keycode.action));
             break;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD:
-            LOG_CMSG("clipboard %s \"%s\"",
+            LOG_CMSG("clipboard %" PRIu64_ " %s \"%s\"",
+                     msg->set_clipboard.sequence,
                      msg->set_clipboard.paste ? "paste" : "copy",
                      msg->set_clipboard.text);
             break;

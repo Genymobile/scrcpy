@@ -226,6 +226,7 @@ static void test_serialize_set_clipboard(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_CLIPBOARD,
         .set_clipboard = {
+            .sequence = UINT64_C(0x0102030405060708),
             .paste = true,
             .text = "hello, world!",
         },
@@ -233,10 +234,11 @@ static void test_serialize_set_clipboard(void) {
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     size_t size = control_msg_serialize(&msg, buf);
-    assert(size == 19);
+    assert(size == 27);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_SET_CLIPBOARD,
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sequence
         1, // paste
         0x00, 0x00, 0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text

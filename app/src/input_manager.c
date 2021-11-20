@@ -225,6 +225,7 @@ set_device_clipboard(struct controller *controller, bool paste) {
 
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
+    msg.set_clipboard.sequence = 0; // unused for now
     msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
 

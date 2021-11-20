@@ -70,6 +70,7 @@ struct control_msg {
             // screen may only be turned on on ACTION_DOWN
         } back_or_screen_on;
         struct {
+            uint64_t sequence;
             char *text; // owned, to be freed by free()
             bool paste;
         } set_clipboard;

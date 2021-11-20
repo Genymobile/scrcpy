@@ -31,6 +31,7 @@ public final class ControlMessage {
     private int vScroll;
     private boolean paste;
     private int repeat;
+    private long sequence;
 
     private ControlMessage() {
     }
@@ -79,9 +80,10 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createSetClipboard(String text, boolean paste) {
+    public static ControlMessage createSetClipboard(long sequence, String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
+        msg.sequence = sequence;
         msg.text = text;
         msg.paste = paste;
         return msg;
@@ -153,5 +155,9 @@ public final class ControlMessage {
 
     public int getRepeat() {
         return repeat;
+    }
+
+    public long getSequence() {
+        return sequence;
     }
 }
