@@ -78,7 +78,7 @@ static void test_serialize_inject_touch_event(void) {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
             .action = AMOTION_EVENT_ACTION_DOWN,
-            .pointer_id = 0x1234567887654321L,
+            .pointer_id = UINT64_C(0x1234567887654321),
             .position = {
                 .point = {
                     .x = 100,
