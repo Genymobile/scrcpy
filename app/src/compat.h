@@ -8,6 +8,8 @@
 # define _DARWIN_C_SOURCE
 #endif
 
+#include "config.h"
+
 #include <libavformat/version.h>
 #include <SDL2/SDL_version.h>
 
