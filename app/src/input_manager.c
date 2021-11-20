@@ -215,11 +215,6 @@ set_device_clipboard(struct controller *controller, bool paste) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
         return;
     }
-    if (!*text) {
-        // empty text
-        SDL_free(text);
-        return;
-    }
 
     char *text_dup = strdup(text);
     SDL_free(text);
