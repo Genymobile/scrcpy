@@ -18,6 +18,8 @@ public final class ControlMessage {
     public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
     public static final int TYPE_ROTATE_DEVICE = 11;
 
+    public static final long SEQUENCE_INVALID = 0;
+
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*

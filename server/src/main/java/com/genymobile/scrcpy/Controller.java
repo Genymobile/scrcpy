@@ -120,7 +120,12 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
+                long sequence = msg.getSequence();
                 setClipboard(msg.getText(), msg.getPaste());
+                if (sequence != ControlMessage.SEQUENCE_INVALID) {
+                    // Acknowledgement requested
+                    sender.pushAckClipboard(sequence);
+                }
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {

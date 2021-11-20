@@ -5,6 +5,8 @@ public final class DeviceMessage {
     public static final int TYPE_CLIPBOARD = 0;
     public static final int TYPE_ACK_CLIPBOARD = 1;
 
+    public static final long SEQUENCE_INVALID = ControlMessage.SEQUENCE_INVALID;
+
     private int type;
     private String text;
     private long sequence;
