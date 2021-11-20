@@ -1,4 +1,4 @@
-# scrcpy (v1.17)
+# scrcpy (v1.18)
 
 [Read in another language](#translations)
 
@@ -88,10 +88,10 @@ process][BUILD_simple]).
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
- - [`scrcpy-win64-v1.17.zip`][direct-win64]  
-   _(SHA-256: 8b9e57993c707367ed10ebfe0e1ef563c7a29d9af4a355cd8b6a52a317c73eea)_
+ - [`scrcpy-win64-v1.18.zip`][direct-win64]  
+   _(SHA-256: 37212f5087fe6f3e258f1d44fa5c02207496b30e1d7ec442cbcf8358910a5c63)_
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.17/scrcpy-win64-v1.17.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.18/scrcpy-win64-v1.18.zip
 
 It is also available in [Chocolatey]:
 
@@ -516,7 +516,7 @@ scrcpy --display 1
 
 The list of display ids can be retrieved by:
 
-```
+```bash
 adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
@@ -801,7 +801,9 @@ handled by the active application.
 To use a specific _adb_ binary, configure its path in the environment variable
 `ADB`:
 
-    ADB=/path/to/adb scrcpy
+```bash
+ADB=/path/to/adb scrcpy
+```
 
 To override the path of the `scrcpy-server` file, configure its path in
 `SCRCPY_SERVER_PATH`.
@@ -865,10 +867,13 @@ Read the [developers page].
 
 This README is available in other languages:
 
+- [Русский (Russian, `ru`) - v1.18](README.ru.md)
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
+- [Italiano (Italiano, `it`) - v1.17](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.17](README.jp.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [português brasileiro (Brazilian Portuguese, `pt-BR`) - v1.17](README.pt-br.md)
+- [Español (Spanish, `sp`) - v1.17](README.sp.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.17](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
 

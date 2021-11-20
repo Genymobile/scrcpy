@@ -1,5 +1,7 @@
 # Frequently Asked Questions
 
+[Read in another language](#translations)
+
 Here are the common reported problems and their status.
 
 
@@ -230,3 +232,11 @@ You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
 to add some arguments.
 
 [show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
+
+
+## Translations
+
+This FAQ is available in other languages:
+
+ - [Italiano (Italiano, `it`) - v1.17](FAQ.it.md)
+ - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
