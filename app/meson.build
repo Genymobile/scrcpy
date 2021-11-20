@@ -44,11 +44,19 @@ if host_machine.system() == 'windows'
         'src/sys/win/file.c',
         'src/sys/win/process.c',
     ]
+    add_project_arguments('-D_WIN32_WINNT=0x0600', language: 'c')
+    add_project_arguments('-DWINVER=0x0600', language: 'c')
 else
     src += [
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
+    add_project_arguments('-D_POSIX_C_SOURCE=200809L', language: 'c')
+    add_project_arguments('-D_XOPEN_SOURCE=700', language: 'c')
+    add_project_arguments('-D_GNU_SOURCE', language: 'c')
+    if host_machine.system() == 'darwin'
+        add_project_arguments('-D_DARWIN_C_SOURCE', language: 'c')
+    endif
 endif
 
 v4l2_support = host_machine.system() == 'linux'
