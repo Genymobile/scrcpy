@@ -1,6 +1,6 @@
 _Only the original [README](README.md) is guaranteed to be up-to-date._
 
-# scrcpy (v1.17)
+# scrcpy (v1.19)
 
 このアプリケーションはUSB(もしくは[TCP/IP経由][article-tcpip])で接続されたAndroidデバイスの表示と制御を提供します。このアプリケーションは _root_ でのアクセスを必要としません。このアプリケーションは _GNU/Linux_ 、 _Windows_ そして _macOS_ 上で動作します。
 
@@ -103,18 +103,21 @@ scoop install adb    # まだ入手していない場合
 brew install scrcpy
 ```
 
-`PATH`から`adb`へのアクセスが必要です。もしまだ持っていない場合:
+`PATH`からアクセス可能な`adb`が必要です。もし持っていない場合はインストールしてください。
 
 ```bash
-# Homebrew >= 2.6.0
-brew install --cask android-platform-tools
-
-# Homebrew < 2.6.0
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
 
-また、[アプリケーションをビルド][BUILD]することも可能です。
+`adb`は[MacPorts]からでもインストールできます。
 
+```bash
+sudo port install scrcpy
+```
+
+[MacPorts]: https://www.macports.org/
+
+また、[アプリケーションをビルド][BUILD]することも可能です。
 
 ## 実行
 
@@ -184,10 +187,11 @@ scrcpy --crop 1224:1440:0:0   # オフセット位置(0,0)で1224x1440
 ミラーリングの向きをロックするには:
 
 ```bash
-scrcpy --lock-video-orientation 0   # 自然な向き
-scrcpy --lock-video-orientation 1   # 90°反時計回り
-scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90°時計回り
+scrcpy --lock-video-orientation     # 現在の向き
+scrcpy --lock-video-orientation=0   # 自然な向き
+scrcpy --lock-video-orientation=1   # 90°反時計回り
+scrcpy --lock-video-orientation=2   # 180°
+scrcpy --lock-video-orientation=3   # 90°時計回り
 ```
 
 この設定は録画の向きに影響します。
@@ -210,7 +214,9 @@ scrcpy --encoder OMX.qcom.video.encoder.avc
 scrcpy --encoder _
 ```
 
-### 録画
+### キャプチャ
+
+#### 録画
 
 ミラーリング中に画面の録画をすることが可能です:
 
@@ -233,6 +239,77 @@ scrcpy -Nr file.mkv
 
 [パケット遅延のバリエーション]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
+#### v4l2loopback
+
+Linuxでは、ビデオストリームをv4l2ループバックデバイスに送信することができます。
+v4l2loopbackのデバイスにビデオストリームを送信することで、Androidデバイスをウェブカメラのようにv4l2対応ツールで開くこともできます。
+
+`v4l2loopback` モジュールのインストールが必要です。
+
+```bash
+sudo apt install v4l2loopback-dkms
+```
+
+v4l2デバイスを作成する。
+
+```bash
+sudo modprobe v4l2loopback
+```
+
+これにより、新しいビデオデバイスが `/dev/videoN` に作成されます。（`N` は整数）
+(複数のデバイスや特定のIDのデバイスを作成するために、より多くの[オプション](https://github.com/umlaeute/v4l2loopback#options)が利用可能です。
+多くの[オプション]()が利用可能で複数のデバイスや特定のIDのデバイスを作成できます。
+
+
+有効なデバイスを一覧表示する:
+
+```bash
+# v4l-utilsパッケージが必要
+v4l2-ctl --list-devices
+
+# シンプルですが十分これで確認できます
+ls /dev/video*
+```
+
+v4l2シンクを使用してscrcpyを起動する。
+
+```bash
+scrcpy --v4l2-sink=/dev/videoN
+scrcpy --v4l2-sink=/dev/videoN --no-display  # ミラーリングウィンドウを無効化する
+scrcpy --v4l2-sink=/dev/videoN -N            # 短縮版
+```
+
+(`N` をデバイス ID に置き換えて、`ls /dev/video*` で確認してください)
+有効にすると、v4l2対応のツールでビデオストリームを開けます。
+
+```bash
+ffplay -i /dev/videoN
+vlc v4l2:///dev/videoN   # VLCではバッファリングの遅延が発生する場合があります
+```
+
+例えばですが [OBS]の中にこの映像を取り込めことができます。
+
+[OBS]: https://obsproject.com/
+
+
+#### Buffering
+
+バッファリングを追加することも可能です。これによりレイテンシーは増加しますが、ジッターは減少します。（参照
+[#2464])
+
+[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+
+このオプションでディスプレイバッファリングを設定できます。
+
+```bash
+scrcpy --display-buffer=50  # ディスプレイに50msのバッファリングを追加する
+```
+
+V4L2の場合はこちらのオプションで設定できます。
+
+```bash
+scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
+```
 
 ### 接続
 
@@ -457,16 +534,6 @@ scrcpy -Sw
 ```
 
 
-#### 期限切れフレームをレンダリングする
-
-初期状態では、待ち時間を最小限にするために、_scrcpy_ は最後にデコードされたフレームをレンダリングし、前のフレームを削除します。
-
-全フレームのレンダリングを強制するには(待ち時間が長くなる可能性があります):
-
-```bash
-scrcpy --render-expired-frames
-```
-
 #### タッチを表示
 
 プレゼンテーションの場合(物理デバイス上で)物理的なタッチを表示すると便利な場合があります。
@@ -586,14 +653,14 @@ APKをインストールするには、(`.apk`で終わる)APKファイルを _s
 
 #### デバイスにファイルを送る
 
-デバイスの`/sdcard/`ディレクトリにファイルを送るには、(APKではない)ファイルを _scrcpy_ の画面にドラッグ&ドロップします。
+デバイスの`/sdcard/Download`ディレクトリにファイルを送るには、(APKではない)ファイルを _scrcpy_ の画面にドラッグ&ドロップします。
 
 見た目のフィードバックはありません。コンソールにログが出力されます。
 
 転送先ディレクトリを起動時に変更することができます:
 
 ```bash
-scrcpy --push-target /sdcard/foo/bar/
+scrcpy --push-target=/sdcard/Movies/
 ```
 
 
@@ -634,7 +701,7 @@ _<kbd>[Super]</kbd>は通常<kbd>Windows</kbd>もしくは<kbd>Cmd</kbd>キー�
  | ウィンドウサイズを変更して黒い境界線を削除      | <kbd>MOD</kbd>+<kbd>w</kbd> \| _ダブルクリック¹_
  | `HOME`をクリック                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _真ん中クリック_
  | `BACK`をクリック                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _右クリック²_
- | `APP_SWITCH`をクリック                       | <kbd>MOD</kbd>+<kbd>s</kbd>
+ | `APP_SWITCH`をクリック                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _4クリック³_
  | `MENU` (画面のアンロック)をクリック            | <kbd>MOD</kbd>+<kbd>m</kbd>
  | `VOLUME_UP`をクリック                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(上)_
  | `VOLUME_DOWN`をクリック                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(下)_
@@ -643,7 +710,8 @@ _<kbd>[Super]</kbd>は通常<kbd>Windows</kbd>もしくは<kbd>Cmd</kbd>キー�
  | デバイス画面をオフにする(ミラーリングしたまま)  | <kbd>MOD</kbd>+<kbd>o</kbd>
  | デバイス画面をオンにする                      | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
  | デバイス画面を回転する                        | <kbd>MOD</kbd>+<kbd>r</kbd>
- | 通知パネルを展開する                          | <kbd>MOD</kbd>+<kbd>n</kbd>
+ | 通知パネルを展開する                          | <kbd>MOD</kbd>+<kbd>n</kbd> \| _5ボタンクリック³_
+ | 設定パネルを展開する                          | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _5ダブルクリック³_
  | 通知パネルを折りたたむ                        | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
  | クリップボードへのコピー³                     | <kbd>MOD</kbd>+<kbd>c</kbd>
  | クリップボードへのカット³                     | <kbd>MOD</kbd>+<kbd>x</kbd>
@@ -654,10 +722,16 @@ _<kbd>[Super]</kbd>は通常<kbd>Windows</kbd>もしくは<kbd>Cmd</kbd>キー�
 
 _¹黒い境界線を削除するため、境界線上でダブルクリック_  
 _²もしスクリーンがオフの場合、右クリックでスクリーンをオンする。それ以外の場合はBackを押します._  
-_³Android 7以上のみ._
+_³4と5はマウスのボタンです、もしあなたのマウスにボタンがあれば使えます._  
+_⁴Android 7以上のみ._
+
+キーを繰り返すショートカットはキーを離して2回目を押したら実行されます。例えば「設定パネルを展開する」を実行する場合は以下のように操作する。
+
+ 1. <kbd>MOD</kbd> キーを押し、押したままにする.
+ 2. その後に <kbd>n</kbd>キーを2回押す.
+ 3. 最後に <kbd>MOD</kbd>キーを離す.
 
 全ての<kbd>Ctrl</kbd>+_キー_ ショートカットはデバイスに転送されます、そのためアクティブなアプリケーションによって処理されます。
-
 
 ## カスタムパス
 

@@ -4,11 +4,11 @@
 #include <string.h>
 
 #include "cli.h"
-#include "scrcpy.h"
+#include "options.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -23,7 +23,7 @@ static void test_flag_version(void) {
 
 static void test_flag_help(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -38,7 +38,7 @@ static void test_flag_help(void) {
 
 static void test_options(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -100,7 +100,7 @@ static void test_options(void) {
 
 static void test_options2(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };

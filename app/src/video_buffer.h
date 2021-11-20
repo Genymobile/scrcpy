@@ -1,50 +1,76 @@
-#ifndef VIDEO_BUFFER_H
-#define VIDEO_BUFFER_H
+#ifndef SC_VIDEO_BUFFER_H
+#define SC_VIDEO_BUFFER_H
 
 #include "common.h"
 
 #include <stdbool.h>
 
-#include "fps_counter.h"
+#include "clock.h"
+#include "frame_buffer.h"
+#include "util/queue.h"
 #include "util/thread.h"
+#include "util/tick.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
 
-/**
- * A video buffer holds 1 pending frame, which is the last frame received from
- * the producer (typically, the decoder).
- *
- * If a pending frame has not been consumed when the producer pushes a new
- * frame, then it is lost. The intent is to always provide access to the very
- * last frame to minimize latency.
- *
- * The producer and the consumer typically do not live in the same thread.
- * That's the reason why the callback on_frame_available() does not provide the
- * frame as parameter: the consumer might post an event to its own thread to
- * retrieve the pending frame from there, and that frame may have changed since
- * the callback if producer pushed a new one in between.
- */
+struct sc_video_buffer_frame {
+    AVFrame *frame;
+    struct sc_video_buffer_frame *next;
+#ifndef NDEBUG
+    sc_tick push_date;
+#endif
+};
 
-struct video_buffer {
-    AVFrame *pending_frame;
-    AVFrame *tmp_frame; // To preserve the pending frame on error
+struct sc_video_buffer_frame_queue SC_QUEUE(struct sc_video_buffer_frame);
 
-    sc_mutex mutex;
+struct sc_video_buffer {
+    struct sc_frame_buffer fb;
 
-    bool pending_frame_consumed;
+    sc_tick buffering_time;
+
+    // only if buffering_time > 0
+    struct {
+        sc_thread thread;
+        sc_mutex mutex;
+        sc_cond queue_cond;
+        sc_cond wait_cond;
+
+        struct sc_clock clock;
+        struct sc_video_buffer_frame_queue queue;
+        bool stopped;
+    } b; // buffering
+
+    const struct sc_video_buffer_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct sc_video_buffer_callbacks {
+    void (*on_new_frame)(struct sc_video_buffer *vb, bool previous_skipped,
+                         void *userdata);
 };
 
 bool
-video_buffer_init(struct video_buffer *vb);
-
-void
-video_buffer_destroy(struct video_buffer *vb);
+sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
+                     const struct sc_video_buffer_callbacks *cbs,
+                     void *cbs_userdata);
 
 bool
-video_buffer_push(struct video_buffer *vb, const AVFrame *frame, bool *skipped);
+sc_video_buffer_start(struct sc_video_buffer *vb);
 
 void
-video_buffer_consume(struct video_buffer *vb, AVFrame *dst);
+sc_video_buffer_stop(struct sc_video_buffer *vb);
+
+void
+sc_video_buffer_join(struct sc_video_buffer *vb);
+
+void
+sc_video_buffer_destroy(struct sc_video_buffer *vb);
+
+bool
+sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame);
+
+void
+sc_video_buffer_consume(struct sc_video_buffer *vb, AVFrame *dst);
 
 #endif

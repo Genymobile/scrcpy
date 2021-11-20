@@ -1,41 +1,67 @@
 src = [
     'src/main.c',
     'src/adb.c',
+    'src/adb_tunnel.c',
     'src/cli.c',
+    'src/clock.c',
     'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
     'src/device_msg.c',
-    'src/event_converter.c',
+    'src/icon.c',
     'src/file_handler.c',
     'src/fps_counter.c',
+    'src/frame_buffer.c',
     'src/input_manager.c',
+    'src/keyboard_inject.c',
+    'src/mouse_inject.c',
     'src/opengl.c',
+    'src/options.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
     'src/stream.c',
-    'src/tiny_xpm.c',
     'src/video_buffer.c',
+    'src/util/file.c',
+    'src/util/intr.c',
     'src/util/log.c',
     'src/util/net.c',
+    'src/util/net_intr.c',
     'src/util/process.c',
-    'src/util/str_util.c',
+    'src/util/process_intr.c',
+    'src/util/strbuf.c',
+    'src/util/str.c',
+    'src/util/term.c',
     'src/util/thread.c',
+    'src/util/tick.c',
 ]
 
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/process.c' ]
+    src += [
+        'src/sys/win/file.c',
+        'src/sys/win/process.c',
+    ]
 else
-    src += [ 'src/sys/unix/process.c' ]
+    src += [
+        'src/sys/unix/file.c',
+        'src/sys/unix/process.c',
+    ]
 endif
 
 v4l2_support = host_machine.system() == 'linux'
 if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
+endif
+
+aoa_hid_support = host_machine.system() == 'linux'
+if aoa_hid_support
+    src += [
+        'src/aoa_hid.c',
+        'src/hid_keyboard.c',
+    ]
 endif
 
 check_functions = [
@@ -58,8 +84,11 @@ if not get_option('crossbuild_windows')
         dependencies += dependency('libavdevice')
     endif
 
-else
+    if aoa_hid_support
+        dependencies += dependency('libusb-1.0')
+    endif
 
+else
     # cross-compile mingw32 build (from Linux to Windows)
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
@@ -136,6 +165,9 @@ conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == '
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
 
+# enable HID over AOA support (linux only)
+conf.set('HAVE_AOA_HID', aoa_hid_support)
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
@@ -147,6 +179,9 @@ executable('scrcpy', src,
            c_args: [])
 
 install_man('scrcpy.1')
+install_data('../data/icon.png',
+             rename: 'scrcpy.png',
+             install_dir: 'share/icons/hicolor/256x256/apps')
 
 
 ### TESTS
@@ -163,12 +198,20 @@ if get_option('buildtype') == 'debug'
         ['test_cli', [
             'tests/test_cli.c',
             'src/cli.c',
-            'src/util/str_util.c',
+            'src/options.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+            'src/util/term.c',
+        ]],
+        ['test_clock', [
+            'tests/test_clock.c',
+            'src/clock.c',
         ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
-            'src/util/str_util.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
         ]],
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
@@ -177,9 +220,14 @@ if get_option('buildtype') == 'debug'
         ['test_queue', [
             'tests/test_queue.c',
         ]],
-        ['test_strutil', [
-            'tests/test_strutil.c',
-            'src/util/str_util.c',
+        ['test_strbuf', [
+            'tests/test_strbuf.c',
+            'src/util/strbuf.c',
+        ]],
+        ['test_str', [
+            'tests/test_str.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
         ]],
     ]
 

@@ -9,20 +9,19 @@
 
 #include "controller.h"
 #include "fps_counter.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "screen.h"
+#include "trait/key_processor.h"
+#include "trait/mouse_processor.h"
 
 struct input_manager {
     struct controller *controller;
     struct screen *screen;
 
-    // SDL reports repeated events as a boolean, but Android expects the actual
-    // number of repetitions. This variable keeps track of the count.
-    unsigned repeat;
+    struct sc_key_processor *kp;
+    struct sc_mouse_processor *mp;
 
     bool control;
-    bool forward_key_repeat;
-    bool prefer_text;
     bool forward_all_clicks;
     bool legacy_paste;
 
@@ -43,7 +42,9 @@ struct input_manager {
 
 void
 input_manager_init(struct input_manager *im, struct controller *controller,
-                   struct screen *screen, const struct scrcpy_options *options);
+                   struct screen *screen, struct sc_key_processor *kp,
+                   struct sc_mouse_processor *mp,
+                   const struct scrcpy_options *options);
 
 bool
 input_manager_handle_event(struct input_manager *im, SDL_Event *event);

@@ -3,8 +3,10 @@
 
 #include "common.h"
 
+#include <stdatomic.h>
 #include <stdbool.h>
-#include <stdint.h>
+
+#include "tick.h"
 
 /* Forward declarations */
 typedef struct SDL_Thread SDL_Thread;
@@ -12,7 +14,8 @@ typedef struct SDL_mutex SDL_mutex;
 typedef struct SDL_cond SDL_cond;
 
 typedef int sc_thread_fn(void *);
-typedef unsigned int sc_thread_id;
+typedef unsigned sc_thread_id;
+typedef atomic_uint sc_atomic_thread_id;
 
 typedef struct sc_thread {
     SDL_Thread *thread;
@@ -21,7 +24,7 @@ typedef struct sc_thread {
 typedef struct sc_mutex {
     SDL_mutex *mutex;
 #ifndef NDEBUG
-    sc_thread_id locker;
+    sc_atomic_thread_id locker;
 #endif
 } sc_mutex;
 
@@ -70,7 +73,7 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex);
 
 // return true on signaled, false on timeout
 bool
-sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, uint32_t ms);
+sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline);
 
 void
 sc_cond_signal(sc_cond *cond);

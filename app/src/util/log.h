@@ -5,7 +5,7 @@
 
 #include <SDL2/SDL_log.h>
 
-#include "scrcpy.h"
+#include "options.h"
 
 #define LOGV(...) SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LOGD(...) SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)

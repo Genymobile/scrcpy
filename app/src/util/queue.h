@@ -1,6 +1,6 @@
 // generic intrusive FIFO queue
-#ifndef QUEUE_H
-#define QUEUE_H
+#ifndef SC_QUEUE_H
+#define SC_QUEUE_H
 
 #include "common.h"
 
@@ -10,15 +10,15 @@
 
 // To define a queue type of "struct foo":
 //    struct queue_foo QUEUE(struct foo);
-#define QUEUE(TYPE) { \
+#define SC_QUEUE(TYPE) { \
     TYPE *first; \
     TYPE *last; \
 }
 
-#define queue_init(PQ) \
+#define sc_queue_init(PQ) \
     (void) ((PQ)->first = (PQ)->last = NULL)
 
-#define queue_is_empty(PQ) \
+#define sc_queue_is_empty(PQ) \
     !(PQ)->first
 
 // NEXTFIELD is the field in the ITEM type used for intrusive linked-list
@@ -30,30 +30,30 @@
 //    };
 //
 //    // define the type "struct my_queue"
-//    struct my_queue QUEUE(struct foo);
+//    struct my_queue SC_QUEUE(struct foo);
 //
 //    struct my_queue queue;
-//    queue_init(&queue);
+//    sc_queue_init(&queue);
 //
 //    struct foo v1 = { .value = 42 };
 //    struct foo v2 = { .value = 27 };
 //
-//    queue_push(&queue, next, v1);
-//    queue_push(&queue, next, v2);
+//    sc_queue_push(&queue, next, v1);
+//    sc_queue_push(&queue, next, v2);
 //
 //    struct foo *foo;
-//    queue_take(&queue, next, &foo);
+//    sc_queue_take(&queue, next, &foo);
 //    assert(foo->value == 42);
-//    queue_take(&queue, next, &foo);
+//    sc_queue_take(&queue, next, &foo);
 //    assert(foo->value == 27);
-//    assert(queue_is_empty(&queue));
+//    assert(sc_queue_is_empty(&queue));
 //
 
 // push a new item into the queue
-#define queue_push(PQ, NEXTFIELD, ITEM) \
+#define sc_queue_push(PQ, NEXTFIELD, ITEM) \
     (void) ({ \
         (ITEM)->NEXTFIELD = NULL; \
-        if (queue_is_empty(PQ)) { \
+        if (sc_queue_is_empty(PQ)) { \
             (PQ)->first = (PQ)->last = (ITEM); \
         } else { \
             (PQ)->last->NEXTFIELD = (ITEM); \
@@ -65,9 +65,9 @@
 // the result is stored in *(PITEM)
 // (without typeof(), we could not store a local variable having the correct
 // type so that we can "return" it)
-#define queue_take(PQ, NEXTFIELD, PITEM) \
+#define sc_queue_take(PQ, NEXTFIELD, PITEM) \
     (void) ({ \
-        assert(!queue_is_empty(PQ)); \
+        assert(!sc_queue_is_empty(PQ)); \
         *(PITEM) = (PQ)->first; \
         (PQ)->first = (PQ)->first->NEXTFIELD; \
     })

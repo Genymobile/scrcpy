@@ -1,6 +1,6 @@
 _Apenas o [README](README.md) original é garantido estar atualizado._
 
-# scrcpy (v1.17)
+# scrcpy (v1.19)
 
 Esta aplicação fornece exibição e controle de dispositivos Android conectados via
 USB (ou [via TCP/IP][article-tcpip]). Não requer nenhum acesso _root_.
@@ -38,6 +38,18 @@ controlá-lo usando teclado e mouse.
 
 <a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
+### Sumário
+
+ - Linux: `apt install scrcpy`
+ - Windows: [baixar][direct-win64]
+ - macOS: `brew install scrcpy`
+
+  Compilar pelos arquivos fontes: [BUILD] ([processo simplificado][BUILD_simple])
+
+[BUILD]: BUILD.md
+[BUILD_simple]: BUILD.md#simple
+
+
 ### Linux
 
 No Debian (_testing_ e _sid_ por enquanto) e Ubuntu (20.04):
@@ -67,9 +79,7 @@ Para Gentoo, uma [Ebuild] está disponível: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
-Você também pode [compilar o app manualmente][BUILD] (não se preocupe, não é tão
-difícil).
-
+Você também pode [compilar o app manualmente][BUILD] ([processo simplificado][BUILD_simple]).
 
 
 ### Windows
@@ -113,12 +123,17 @@ brew install scrcpy
 Você precisa do `adb`, acessível pelo seu `PATH`. Se você ainda não o tem:
 
 ```bash
-# Homebrew >= 2.6.0
-brew install --cask android-platform-tools
-
-# Homebrew < 2.6.0
-brew cask install android-platform-tools
+brew install android-platform-tools
 ```
+
+Está também disponivel em [MacPorts], que prepara o adb para você:
+
+```bash
+sudo port install scrcpy
+```
+
+[MacPorts]: https://www.macports.org/
+
 
 Você também pode [compilar o app manualmente][BUILD].
 
@@ -195,10 +210,11 @@ Se `--max-size` também for especificado, o redimensionamento é aplicado após 
 Para travar a orientação do espelhamento:
 
 ```bash
-scrcpy --lock-video-orientation 0   # orientação natural
-scrcpy --lock-video-orientation 1   # 90° sentido anti-horário
-scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° sentido horário
+scrcpy --lock-video-orientation     # orientação inicial (Atual)
+scrcpy --lock-video-orientation=0   # orientação natural
+scrcpy --lock-video-orientation=1   # 90° sentido anti-horário
+scrcpy --lock-video-orientation=2   # 180°
+scrcpy --lock-video-orientation=3   # 90° sentido horário
 ```
 
 Isso afeta a orientação de gravação.
@@ -222,7 +238,9 @@ erro dará os encoders disponíveis:
 scrcpy --encoder _
 ```
 
-### Gravando
+### Captura
+
+#### Gravando
 
 É possível gravar a tela enquanto ocorre o espelhamento:
 
@@ -246,6 +264,79 @@ pacotes][packet delay variation] não impacta o arquivo gravado.
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
+#### v4l2loopback
+
+Em Linux, é possível enviar a transmissão do video para um disposiivo v4l2 loopback, assim
+o dispositivo Android pode ser aberto como uma webcam por qualquer ferramneta capaz de v4l2
+
+The module `v4l2loopback` must be installed:
+
+```bash
+sudo apt install v4l2loopback-dkms
+```
+
+Para criar um dispositivo v4l2:
+
+```bash
+sudo modprobe v4l2loopback
+```
+
+Isso criara um novo dispositivo de vídeo em `/dev/videoN`, onde `N` é uma integer
+(mais [opções](https://github.com/umlaeute/v4l2loopback#options) estão disponiveis
+para criar varios dispositivos ou dispositivos com IDs específicas).
+
+Para listar os dispositivos disponíveis:
+
+```bash
+# requer o pacote v4l-utils
+v4l2-ctl --list-devices
+
+# simples, mas pode ser suficiente
+ls /dev/video*
+```
+
+Para iniciar o scrcpy usando o coletor v4l2 (sink):
+
+```bash
+scrcpy --v4l2-sink=/dev/videoN
+scrcpy --v4l2-sink=/dev/videoN --no-display  # desativa a janela espelhada
+scrcpy --v4l2-sink=/dev/videoN -N            # versão curta
+```
+
+(troque `N` pelo ID do dipositivo, verifique com `ls /dev/video*`)
+
+Uma vez ativado, você pode abrir suas trasmissões de videos com uma ferramenta capaz de v4l2:
+
+```bash
+ffplay -i /dev/videoN
+vlc v4l2:///dev/videoN   # VLC pode adicionar um pouco de atraso de buffering
+```
+
+Por exemplo, você pode capturar o video dentro do [OBS].
+
+[OBS]: https://obsproject.com/
+
+
+#### Buffering
+
+É possivel adicionar buffering. Isso aumenta a latência, mas reduz a tenção (jitter) (veja
+[#2464]).
+
+[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+
+A opção éta disponivel para buffering de exibição:
+
+```bash
+scrcpy --display-buffer=50  # adiciona 50 ms de buffering para a exibição
+```
+
+e coletor V4L2:
+
+```bash
+scrcpy --v4l2-buffer=500    # adiciona 500 ms de buffering para coletor V4L2
+```
+
+,
 ### Conexão
 
 #### Sem fio
@@ -488,18 +579,6 @@ scrcpy -Sw
 ```
 
 
-#### Renderizar frames expirados
-
-Por padrão, para minimizar a latência, _scrcpy_ sempre renderiza o último frame decodificado
-disponível, e descarta o anterior.
-
-Para forçar a renderização de todos os frames (com o custo de um possível aumento de
-latência), use:
-
-```bash
-scrcpy --render-expired-frames
-```
-
 #### Mostrar toques
 
 Para apresentações, pode ser útil mostrar toques físicos (no dispositivo
@@ -647,7 +726,7 @@ Não existe feedback visual, um log é imprimido no console.
 
 #### Enviar arquivo para dispositivo
 
-Para enviar um arquivo para `/sdcard/` no dispositivo, arraste e solte um arquivo (não-APK) para a
+Para enviar um arquivo para `/sdcard/Download/` no dispositivo, arraste e solte um arquivo (não-APK) para a
 janela do _scrcpy_.
 
 Não existe feedback visual, um log é imprimido no console.
@@ -694,12 +773,12 @@ _<kbd>[Super]</kbd> é tipicamente a tecla <kbd>Windows</kbd> ou <kbd>Cmd</kbd>.
  | Mudar modo de tela cheia                    | <kbd>MOD</kbd>+<kbd>f</kbd>
  | Rotacionar display para esquerda            | <kbd>MOD</kbd>+<kbd>←</kbd> _(esquerda)_
  | Rotacionar display para direita             | <kbd>MOD</kbd>+<kbd>→</kbd> _(direita)_
- | Redimensionar janela para 1:1 (pixel-perfect) | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Redimensionar janela para remover bordas pretas | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Clique-duplo¹_
+ | Redimensionar janela para 1:1 (pixel-perfeito) | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Redimensionar janela para remover bordas pretas | <kbd>MOD</kbd>+<kbd>w</kbd> \| _Clique-duplo-esquerdo¹_
  | Clicar em `HOME`                            | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Clique-do-meio_
  | Clicar em `BACK`                            | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Clique-direito²_
- | Clicar em `APP_SWITCH`                      | <kbd>MOD</kbd>+<kbd>s</kbd>
- | Clicar em `MENU` (desbloquear tela          | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Clicar em `APP_SWITCH`                      | <kbd>MOD</kbd>+<kbd>s</kbd> \| _Clique-do-4.°³_
+ | Clicar em `MENU` (desbloquear tela)         | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Clicar em `VOLUME_UP`                       | <kbd>MOD</kbd>+<kbd>↑</kbd> _(cima)_
  | Clicar em `VOLUME_DOWN`                     | <kbd>MOD</kbd>+<kbd>↓</kbd> _(baixo)_
  | Clicar em `POWER`                           | <kbd>MOD</kbd>+<kbd>p</kbd>
@@ -707,18 +786,27 @@ _<kbd>[Super]</kbd> é tipicamente a tecla <kbd>Windows</kbd> ou <kbd>Cmd</kbd>.
  | Desligar tela do dispositivo (continuar espelhando) | <kbd>MOD</kbd>+<kbd>o</kbd>
  | Ligar tela do dispositivo                   | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
  | Rotacionar tela do dispositivo              | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Expandir painel de notificação              | <kbd>MOD</kbd>+<kbd>n</kbd>
- | Colapsar painel de notificação              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copiar para área de transferência³          | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Recortar para área de transferência³        | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Sincronizar áreas de transferência e colar³ | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Expandir painel de notificação              | <kbd>MOD</kbd>+<kbd>n</kbd> \| _Clique-do-5.°³_
+ | Expandir painel de configurção              | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Clique-duplo-do-5.°³_
+ | Colapsar paineis                            | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copiar para área de transferência⁴          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Recortar para área de transferência⁴        | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Sincronizar áreas de transferência e colar⁴ | <kbd>MOD</kbd>+<kbd>v</kbd>
  | Injetar texto da área de transferência do computador | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Ativar/desativar contador de FPS (em stdout) | <kbd>MOD</kbd>+<kbd>i</kbd>
- | Pinçar para dar zoom                        | <kbd>Ctrl</kbd>+_clicar-e-mover_
+ | Pinçar para dar zoom                        | <kbd>Ctrl</kbd>+_Clicar-e-mover_
 
-_¹Clique-duplo em bordas pretas para removê-las._  
-_²Clique-direito liga a tela se ela estiver desligada, pressiona BACK caso contrário._
-_³Apenas em Android >= 7._
+_¹Clique-duplo-esquerdo na borda preta para remove-la._  
+_²Clique-direito liga a tela caso esteja desligada, pressione BACK caso contrário._  
+_³4.° and 5.° botões do mouse, caso o mouse possua._  
+_⁴Apenas em Android >= 7._
+
+Atalhos com teclas reptidas são executados soltando e precionando a tecla
+uma segunda vez. Por exemplo, para executar "Expandir painel de Configurção":
+
+ 1. Mantenha pressionado <kbd>MOD</kbd>.
+ 2. Depois click duas vezes <kbd>n</kbd>.
+ 3. Finalmente, solte <kbd>MOD</kbd>.
 
 Todos os atalhos <kbd>Ctrl</kbd>+_tecla_ são encaminhados para o dispositivo, para que eles sejam
 tratados pela aplicação ativa.
@@ -729,7 +817,9 @@ tratados pela aplicação ativa.
 Para usar um binário _adb_ específico, configure seu caminho na variável de ambiente
 `ADB`:
 
-    ADB=/caminho/para/adb scrcpy
+```bash
+ADB=/caminho/para/adb scrcpy
+```
 
 Para sobrepor o caminho do arquivo `scrcpy-server`, configure seu caminho em
 `SCRCPY_SERVER_PATH`.
@@ -750,8 +840,6 @@ Um colega me desafiou a encontrar um nome tão impronunciável quanto [gnirehtet
 ## Como compilar?
 
 Veja [BUILD].
-
-[BUILD]: BUILD.md
 
 
 ## Problemas comuns

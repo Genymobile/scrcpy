@@ -118,13 +118,17 @@ In developer options, enable:
 
 ### Special characters do not work
 
-Injecting text input is [limited to ASCII characters][text-input]. A trick
-allows to also inject some [accented characters][accented-characters], but
-that's all. See [#37].
+The default text injection method is [limited to ASCII characters][text-input].
+A trick allows to also inject some [accented characters][accented-characters],
+but that's all. See [#37].
+
+Since scrcpy v1.20 on Linux, it is possible to simulate a [physical
+keyboard][hid] (HID).
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
+[hid]: README.md#physical-keyboard-simulation-hid
 
 
 ## Client issues
@@ -152,6 +156,26 @@ You may also need to configure the [scaling behavior]:
 
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
 
+
+### Issue with Wayland
+
+By default, SDL uses x11 on Linux. The [video driver] can be changed via the
+`SDL_VIDEODRIVER` environment variable:
+
+[video driver]: https://wiki.libsdl.org/FAQUsingSDL#how_do_i_choose_a_specific_video_driver
+
+```bash
+export SDL_VIDEODRIVER=wayland
+scrcpy
+```
+
+On some distributions (at least Fedora), the package `libdecor` must be
+installed manually.
+
+See issues [#2554] and [#2559].
+
+[#2554]: https://github.com/Genymobile/scrcpy/issues/2554
+[#2559]: https://github.com/Genymobile/scrcpy/issues/2559
 
 
 ### KWin compositor crashes
@@ -198,6 +222,27 @@ scrcpy -m 800
 You could also try another [encoder](README.md#encoder).
 
 
+If you encounter this exception on Android 12, then just upgrade to scrcpy >=
+1.18 (see [#2129]):
+
+```
+> ERROR: Exception on thread Thread[main,5,main]
+java.lang.AssertionError: java.lang.reflect.InvocationTargetException
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:75)
+    ...
+Caused by: java.lang.reflect.InvocationTargetException
+    at java.lang.reflect.Method.invoke(Native Method)
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:73)
+    ... 7 more
+Caused by: java.lang.IllegalArgumentException: displayToken must not be null
+    at android.view.SurfaceControl$Transaction.setDisplaySurface(SurfaceControl.java:3067)
+    at android.view.SurfaceControl.setDisplaySurface(SurfaceControl.java:2147)
+    ... 9 more
+```
+
+[#2129]: https://github.com/Genymobile/scrcpy/issues/2129
+
+
 ## Command line on Windows
 
 Some Windows users are not familiar with the command line. Here is how to open a
@@ -238,5 +283,6 @@ to add some arguments.
 
 This FAQ is available in other languages:
 
- - [Italiano (Italiano, `it`) - v1.17](FAQ.it.md)
+ - [Italiano (Italiano, `it`) - v1.19](FAQ.it.md)
  - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
+ - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.18](FAQ.zh-Hans.md)

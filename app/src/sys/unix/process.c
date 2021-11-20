@@ -1,118 +1,160 @@
 #include "util/process.h"
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <limits.h>
 #include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 #include "util/log.h"
 
-bool
-search_executable(const char *file) {
-    char *path = getenv("PATH");
-    if (!path)
-        return false;
-    path = strdup(path);
-    if (!path)
-        return false;
+enum sc_process_result
+sc_process_execute_p(const char *const argv[], sc_pid *pid,
+                     int *pin, int *pout, int *perr) {
+    int in[2];
+    int out[2];
+    int err[2];
+    int internal[2]; // communication between parent and children
 
-    bool ret = false;
-    size_t file_len = strlen(file);
-    char *saveptr;
-    for (char *dir = strtok_r(path, ":", &saveptr); dir;
-            dir = strtok_r(NULL, ":", &saveptr)) {
-        size_t dir_len = strlen(dir);
-        char *fullpath = malloc(dir_len + file_len + 2);
-        if (!fullpath)
-            continue;
-        memcpy(fullpath, dir, dir_len);
-        fullpath[dir_len] = '/';
-        memcpy(fullpath + dir_len + 1, file, file_len + 1);
-
-        struct stat sb;
-        bool fullpath_executable = stat(fullpath, &sb) == 0 &&
-            sb.st_mode & S_IXUSR;
-        free(fullpath);
-        if (fullpath_executable) {
-            ret = true;
-            break;
+    if (pipe(internal) == -1) {
+        perror("pipe");
+        return SC_PROCESS_ERROR_GENERIC;
+    }
+    if (pin) {
+        if (pipe(in) == -1) {
+            perror("pipe");
+            close(internal[0]);
+            close(internal[1]);
+            return SC_PROCESS_ERROR_GENERIC;
         }
     }
-
-    free(path);
-    return ret;
-}
-
-enum process_result
-process_execute(const char *const argv[], pid_t *pid) {
-    int fd[2];
-
-    if (pipe(fd) == -1) {
-        perror("pipe");
-        return PROCESS_ERROR_GENERIC;
+    if (pout) {
+        if (pipe(out) == -1) {
+            perror("pipe");
+            // clean up
+            if (pin) {
+                close(in[0]);
+                close(in[1]);
+            }
+            close(internal[0]);
+            close(internal[1]);
+            return SC_PROCESS_ERROR_GENERIC;
+        }
     }
-
-    enum process_result ret = PROCESS_SUCCESS;
+    if (perr) {
+        if (pipe(err) == -1) {
+            perror("pipe");
+            // clean up
+            if (pout) {
+                close(out[0]);
+                close(out[1]);
+            }
+            if (pin) {
+                close(in[0]);
+                close(in[1]);
+            }
+            close(internal[0]);
+            close(internal[1]);
+            return SC_PROCESS_ERROR_GENERIC;
+        }
+    }
 
     *pid = fork();
     if (*pid == -1) {
         perror("fork");
-        ret = PROCESS_ERROR_GENERIC;
-        goto end;
+        // clean up
+        if (perr) {
+            close(err[0]);
+            close(err[1]);
+        }
+        if (pout) {
+            close(out[0]);
+            close(out[1]);
+        }
+        if (pin) {
+            close(in[0]);
+            close(in[1]);
+        }
+        close(internal[0]);
+        close(internal[1]);
+        return SC_PROCESS_ERROR_GENERIC;
     }
 
-    if (*pid > 0) {
-        // parent close write side
-        close(fd[1]);
-        fd[1] = -1;
-        // wait for EOF or receive errno from child
-        if (read(fd[0], &ret, sizeof(ret)) == -1) {
-            perror("read");
-            ret = PROCESS_ERROR_GENERIC;
-            goto end;
-        }
-    } else if (*pid == 0) {
-        // child close read side
-        close(fd[0]);
-        if (fcntl(fd[1], F_SETFD, FD_CLOEXEC) == 0) {
-            execvp(argv[0], (char *const *)argv);
-            if (errno == ENOENT) {
-                ret = PROCESS_ERROR_MISSING_BINARY;
-            } else {
-                ret = PROCESS_ERROR_GENERIC;
+    if (*pid == 0) {
+        if (pin) {
+            if (in[0] != STDIN_FILENO) {
+                dup2(in[0], STDIN_FILENO);
+                close(in[0]);
             }
+            close(in[1]);
+        }
+        if (pout) {
+            if (out[1] != STDOUT_FILENO) {
+                dup2(out[1], STDOUT_FILENO);
+                close(out[1]);
+            }
+            close(out[0]);
+        }
+        if (perr) {
+            if (err[1] != STDERR_FILENO) {
+                dup2(err[1], STDERR_FILENO);
+                close(err[1]);
+            }
+            close(err[0]);
+        }
+        close(internal[0]);
+        enum sc_process_result err;
+        if (fcntl(internal[1], F_SETFD, FD_CLOEXEC) == 0) {
+            execvp(argv[0], (char *const *) argv);
             perror("exec");
+            err = errno == ENOENT ? SC_PROCESS_ERROR_MISSING_BINARY
+                                  : SC_PROCESS_ERROR_GENERIC;
         } else {
             perror("fcntl");
-            ret = PROCESS_ERROR_GENERIC;
+            err = SC_PROCESS_ERROR_GENERIC;
         }
-        // send ret to the parent
-        if (write(fd[1], &ret, sizeof(ret)) == -1) {
+        // send err to the parent
+        if (write(internal[1], &err, sizeof(err)) == -1) {
             perror("write");
         }
-        // close write side before exiting
-        close(fd[1]);
+        close(internal[1]);
         _exit(1);
     }
 
-end:
-    if (fd[0] != -1) {
-        close(fd[0]);
+    // parent
+    assert(*pid > 0);
+
+    close(internal[1]);
+
+    enum sc_process_result res = SC_PROCESS_SUCCESS;
+    // wait for EOF or receive err from child
+    if (read(internal[0], &res, sizeof(res)) == -1) {
+        perror("read");
+        res = SC_PROCESS_ERROR_GENERIC;
     }
-    if (fd[1] != -1) {
-        close(fd[1]);
+
+    close(internal[0]);
+
+    if (pin) {
+        close(in[0]);
+        *pin = in[1];
     }
-    return ret;
+    if (pout) {
+        *pout = out[0];
+        close(out[1]);
+    }
+    if (perr) {
+        *perr = err[0];
+        close(err[1]);
+    }
+
+    return res;
 }
 
 bool
-process_terminate(pid_t pid) {
+sc_process_terminate(pid_t pid) {
     if (pid <= 0) {
         LOGC("Requested to kill %d, this is an error. Please report the bug.\n",
              (int) pid);
@@ -121,8 +163,8 @@ process_terminate(pid_t pid) {
     return kill(pid, SIGKILL) != -1;
 }
 
-exit_code_t
-process_wait(pid_t pid, bool close) {
+sc_exit_code
+sc_process_wait(pid_t pid, bool close) {
     int code;
     int options = WEXITED;
     if (!close) {
@@ -133,7 +175,7 @@ process_wait(pid_t pid, bool close) {
     int r = waitid(P_PID, pid, &info, options);
     if (r == -1 || info.si_code != CLD_EXITED) {
         // could not wait, or exited unexpectedly, probably by a signal
-        code = NO_EXIT_CODE;
+        code = SC_EXIT_CODE_NONE;
     } else {
         code = info.si_status;
     }
@@ -141,37 +183,18 @@ process_wait(pid_t pid, bool close) {
 }
 
 void
-process_close(pid_t pid) {
-    process_wait(pid, true); // ignore exit code
+sc_process_close(pid_t pid) {
+    sc_process_wait(pid, true); // ignore exit code
 }
 
-char *
-get_executable_path(void) {
-// <https://stackoverflow.com/a/1024937/1987178>
-#ifdef __linux__
-    char buf[PATH_MAX + 1]; // +1 for the null byte
-    ssize_t len = readlink("/proc/self/exe", buf, PATH_MAX);
-    if (len == -1) {
-        perror("readlink");
-        return NULL;
-    }
-    buf[len] = '\0';
-    return strdup(buf);
-#else
-    // in practice, we only need this feature for portable builds, only used on
-    // Windows, so we don't care implementing it for every platform
-    // (it's useful to have a working version on Linux for debugging though)
-    return NULL;
-#endif
+ssize_t
+sc_pipe_read(int pipe, char *data, size_t len) {
+    return read(pipe, data, len);
 }
 
-bool
-is_regular_file(const char *path) {
-    struct stat path_stat;
-
-    if (stat(path, &path_stat)) {
-        perror("stat");
-        return false;
+void
+sc_pipe_close(int pipe) {
+    if (close(pipe)) {
+        perror("close pipe");
     }
-    return S_ISREG(path_stat.st_mode);
 }

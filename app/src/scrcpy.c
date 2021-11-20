@@ -18,11 +18,15 @@
 #include "events.h"
 #include "file_handler.h"
 #include "input_manager.h"
+#ifdef HAVE_AOA_HID
+# include "hid_keyboard.h"
+#endif
+#include "keyboard_inject.h"
+#include "mouse_inject.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
-#include "tiny_xpm.h"
 #include "util/log.h"
 #include "util/net.h"
 #ifdef HAVE_V4L2
@@ -30,7 +34,7 @@
 #endif
 
 struct scrcpy {
-    struct server server;
+    struct sc_server server;
     struct screen screen;
     struct stream stream;
     struct decoder decoder;
@@ -40,44 +44,43 @@ struct scrcpy {
 #endif
     struct controller controller;
     struct file_handler file_handler;
+#ifdef HAVE_AOA_HID
+    struct sc_aoa aoa;
+#endif
+    union {
+        struct sc_keyboard_inject keyboard_inject;
+#ifdef HAVE_AOA_HID
+        struct sc_hid_keyboard keyboard_hid;
+#endif
+    };
+    struct sc_mouse_inject mouse_inject;
     struct input_manager input_manager;
 };
+
+static inline void
+push_event(uint32_t type, const char *name) {
+    SDL_Event event;
+    event.type = type;
+    int ret = SDL_PushEvent(&event);
+    if (ret < 0) {
+        LOGE("Could not post %s event: %s", name, SDL_GetError());
+        // What could we do?
+    }
+}
+#define PUSH_EVENT(TYPE) push_event(TYPE, # TYPE)
 
 #ifdef _WIN32
 BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
-        SDL_Event event;
-        event.type = SDL_QUIT;
-        SDL_PushEvent(&event);
+        PUSH_EVENT(SDL_QUIT);
         return TRUE;
     }
     return FALSE;
 }
 #endif // _WIN32
 
-// init SDL and set appropriate hints
-static bool
-sdl_init_and_configure(bool display, const char *render_driver,
-                       bool disable_screensaver) {
-    uint32_t flags = display ? SDL_INIT_VIDEO : SDL_INIT_EVENTS;
-    if (SDL_Init(flags)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-
-    atexit(SDL_Quit);
-
-#ifdef _WIN32
-    // Clean up properly on Ctrl+C on Windows
-    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
-    if (!ok) {
-        LOGW("Could not set Ctrl+C handler");
-    }
-#endif // _WIN32
-
-    if (!display) {
-        return true;
-    }
+static void
+sdl_set_hints(const char *render_driver) {
 
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
@@ -95,6 +98,15 @@ sdl_init_and_configure(bool display, const char *render_driver,
     }
 #endif
 
+#ifdef SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
+    // Disable synthetic mouse events from touch events
+    // Touch events with id SDL_TOUCH_MOUSEID are ignored anyway, but it is
+    // better not to generate them in the first place.
+    if (!SDL_SetHint(SDL_HINT_TOUCH_MOUSE_EVENTS, "0")) {
+        LOGW("Could not disable synthetic mouse events");
+    }
+#endif
+
 #ifdef SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
     // Disable compositor bypassing on X11
     if (!SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0")) {
@@ -106,6 +118,21 @@ sdl_init_and_configure(bool display, const char *render_driver,
     if (!SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0")) {
         LOGW("Could not disable minimize on focus loss");
     }
+}
+
+static void
+sdl_configure(bool display, bool disable_screensaver) {
+#ifdef _WIN32
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+#endif // _WIN32
+
+    if (!display) {
+        return;
+    }
 
     if (disable_screensaver) {
         LOGD("Screensaver disabled");
@@ -114,8 +141,6 @@ sdl_init_and_configure(bool display, const char *render_driver,
         LOGD("Screensaver enabled");
         SDL_EnableScreenSaver();
     }
-
-    return true;
 }
 
 static bool
@@ -192,6 +217,29 @@ event_loop(struct scrcpy *s, const struct scrcpy_options *options) {
     return false;
 }
 
+static bool
+await_for_server(void) {
+    SDL_Event event;
+    while (SDL_WaitEvent(&event)) {
+        switch (event.type) {
+            case SDL_QUIT:
+                LOGD("User requested to quit");
+                return false;
+            case EVENT_SERVER_CONNECTION_FAILED:
+                LOGE("Server connection failed");
+                return false;
+            case EVENT_SERVER_CONNECTED:
+                LOGD("Server connected");
+                return true;
+            default:
+                break;
+        }
+    }
+
+    LOGE("SDL_WaitEvent() error: %s", SDL_GetError());
+    return false;
+}
+
 static SDL_LogPriority
 sdl_priority_from_av_level(int level) {
     switch (level) {
@@ -234,19 +282,47 @@ stream_on_eos(struct stream *stream, void *userdata) {
     (void) stream;
     (void) userdata;
 
-    SDL_Event stop_event;
-    stop_event.type = EVENT_STREAM_STOPPED;
-    SDL_PushEvent(&stop_event);
+    PUSH_EVENT(EVENT_STREAM_STOPPED);
+}
+
+static void
+sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
+    (void) server;
+    (void) userdata;
+
+    PUSH_EVENT(EVENT_SERVER_CONNECTION_FAILED);
+}
+
+static void
+sc_server_on_connected(struct sc_server *server, void *userdata) {
+    (void) server;
+    (void) userdata;
+
+    PUSH_EVENT(EVENT_SERVER_CONNECTED);
+}
+
+static void
+sc_server_on_disconnected(struct sc_server *server, void *userdata) {
+    (void) server;
+    (void) userdata;
+
+    LOGD("Server disconnected");
+    // Do nothing, the disconnection will be handled by the "stream stopped"
+    // event
 }
 
 bool
-scrcpy(const struct scrcpy_options *options) {
+scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
 
-    if (!server_init(&s->server)) {
+    // Minimal SDL initialization
+    if (SDL_Init(SDL_INIT_EVENTS)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
         return false;
     }
+
+    atexit(SDL_Quit);
 
     bool ret = false;
 
@@ -257,12 +333,14 @@ scrcpy(const struct scrcpy_options *options) {
     bool v4l2_sink_initialized = false;
 #endif
     bool stream_started = false;
+#ifdef HAVE_AOA_HID
+    bool aoa_hid_initialized = false;
+#endif
     bool controller_initialized = false;
     bool controller_started = false;
     bool screen_initialized = false;
 
-    bool record = !!options->record_filename;
-    struct server_params params = {
+    struct sc_server_params params = {
         .serial = options->serial,
         .log_level = options->log_level,
         .crop = options->crop,
@@ -280,26 +358,44 @@ scrcpy(const struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
     };
-    if (!server_start(&s->server, &params)) {
+
+    static const struct sc_server_callbacks cbs = {
+        .on_connection_failed = sc_server_on_connection_failed,
+        .on_connected = sc_server_on_connected,
+        .on_disconnected = sc_server_on_disconnected,
+    };
+    if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
+        return false;
+    }
+
+    if (!sc_server_start(&s->server)) {
         goto end;
     }
 
     server_started = true;
 
-    if (!sdl_init_and_configure(options->display, options->render_driver,
-                                options->disable_screensaver)) {
+    if (options->display) {
+        sdl_set_hints(options->render_driver);
+    }
+
+    // Initialize SDL video in addition if display is enabled
+    if (options->display && SDL_Init(SDL_INIT_VIDEO)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
         goto end;
     }
 
-    char device_name[DEVICE_NAME_FIELD_LENGTH];
-    struct size frame_size;
+    sdl_configure(options->display, options->disable_screensaver);
 
-    if (!server_connect_to(&s->server, device_name, &frame_size)) {
+    // Await for server without blocking Ctrl+C handling
+    if (!await_for_server()) {
         goto end;
     }
+
+    // It is necessarily initialized here, since the device is connected
+    struct sc_server_info *info = &s->server.info;
 
     if (options->display && options->control) {
-        if (!file_handler_init(&s->file_handler, s->server.serial,
+        if (!file_handler_init(&s->file_handler, options->serial,
                                options->push_target)) {
             goto end;
         }
@@ -317,11 +413,11 @@ scrcpy(const struct scrcpy_options *options) {
     }
 
     struct recorder *rec = NULL;
-    if (record) {
+    if (options->record_filename) {
         if (!recorder_init(&s->recorder,
                            options->record_filename,
                            options->record_format,
-                           frame_size)) {
+                           info->frame_size)) {
             goto end;
         }
         rec = &s->recorder;
@@ -330,7 +426,7 @@ scrcpy(const struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    const struct stream_callbacks stream_cbs = {
+    static const struct stream_callbacks stream_cbs = {
         .on_eos = stream_on_eos,
     };
     stream_init(&s->stream, s->server.video_socket, &stream_cbs, NULL);
@@ -343,42 +439,16 @@ scrcpy(const struct scrcpy_options *options) {
         stream_add_sink(&s->stream, &rec->packet_sink);
     }
 
-    if (options->display) {
-        if (options->control) {
-            if (!controller_init(&s->controller, s->server.control_socket)) {
-                goto end;
-            }
-            controller_initialized = true;
-
-            if (!controller_start(&s->controller)) {
-                goto end;
-            }
-            controller_started = true;
-        }
-
-        const char *window_title =
-            options->window_title ? options->window_title : device_name;
-
-        struct screen_params screen_params = {
-            .window_title = window_title,
-            .frame_size = frame_size,
-            .always_on_top = options->always_on_top,
-            .window_x = options->window_x,
-            .window_y = options->window_y,
-            .window_width = options->window_width,
-            .window_height = options->window_height,
-            .window_borderless = options->window_borderless,
-            .rotation = options->rotation,
-            .mipmaps = options->mipmaps,
-            .fullscreen = options->fullscreen,
-        };
-
-        if (!screen_init(&s->screen, &screen_params)) {
+    if (options->control) {
+        if (!controller_init(&s->controller, s->server.control_socket)) {
             goto end;
         }
-        screen_initialized = true;
+        controller_initialized = true;
 
-        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+        if (!controller_start(&s->controller)) {
+            goto end;
+        }
+        controller_started = true;
 
         if (options->turn_screen_off) {
             struct control_msg msg;
@@ -391,9 +461,37 @@ scrcpy(const struct scrcpy_options *options) {
         }
     }
 
+    if (options->display) {
+        const char *window_title =
+            options->window_title ? options->window_title : info->device_name;
+
+        struct screen_params screen_params = {
+            .window_title = window_title,
+            .frame_size = info->frame_size,
+            .always_on_top = options->always_on_top,
+            .window_x = options->window_x,
+            .window_y = options->window_y,
+            .window_width = options->window_width,
+            .window_height = options->window_height,
+            .window_borderless = options->window_borderless,
+            .rotation = options->rotation,
+            .mipmaps = options->mipmaps,
+            .fullscreen = options->fullscreen,
+            .buffering_time = options->display_buffer,
+        };
+
+        if (!screen_init(&s->screen, &screen_params)) {
+            goto end;
+        }
+        screen_initialized = true;
+
+        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+    }
+
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device, frame_size)) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
+                               info->frame_size, options->v4l2_buffer)) {
             goto end;
         }
 
@@ -410,7 +508,77 @@ scrcpy(const struct scrcpy_options *options) {
     }
     stream_started = true;
 
-    input_manager_init(&s->input_manager, &s->controller, &s->screen, options);
+    struct sc_key_processor *kp = NULL;
+    struct sc_mouse_processor *mp = NULL;
+
+    if (options->control) {
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
+#ifdef HAVE_AOA_HID
+            bool aoa_hid_ok = false;
+
+            char *serialno = NULL;
+
+            const char *serial = options->serial;
+            if (!serial) {
+                serialno = adb_get_serialno();
+                if (!serialno) {
+                    LOGE("Could not get device serial");
+                    goto aoa_hid_end;
+                }
+                serial = serialno;
+                LOGI("Device serial: %s", serial);
+            }
+
+            bool ok = sc_aoa_init(&s->aoa, serial);
+            free(serialno);
+            if (!ok) {
+                goto aoa_hid_end;
+            }
+
+            if (!sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+                sc_aoa_destroy(&s->aoa);
+                goto aoa_hid_end;
+            }
+
+            if (!sc_aoa_start(&s->aoa)) {
+                sc_hid_keyboard_destroy(&s->keyboard_hid);
+                sc_aoa_destroy(&s->aoa);
+                goto aoa_hid_end;
+            }
+
+            aoa_hid_ok = true;
+            kp = &s->keyboard_hid.key_processor;
+
+            aoa_hid_initialized = true;
+
+aoa_hid_end:
+            if (!aoa_hid_ok) {
+                LOGE("Failed to enable HID over AOA, "
+                     "fallback to default keyboard injection method "
+                     "(-K/--hid-keyboard ignored)");
+                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+            }
+#else
+            LOGE("HID over AOA is not supported on this platform, "
+                 "fallback to default keyboard injection method "
+                 "(-K/--hid-keyboard ignored)");
+            options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+#endif
+        }
+
+        // keyboard_input_mode may have been reset if HID mode failed
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
+            sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
+                                    options);
+            kp = &s->keyboard_inject.key_processor;
+        }
+
+        sc_mouse_inject_init(&s->mouse_inject, &s->controller, &s->screen);
+        mp = &s->mouse_inject.mouse_processor;
+    }
+
+    input_manager_init(&s->input_manager, &s->controller, &s->screen, kp, mp,
+                       options);
 
     ret = event_loop(s, options);
     LOGD("quit...");
@@ -422,6 +590,12 @@ scrcpy(const struct scrcpy_options *options) {
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
+#ifdef HAVE_AOA_HID
+    if (aoa_hid_initialized) {
+        sc_hid_keyboard_destroy(&s->keyboard_hid);
+        sc_aoa_stop(&s->aoa);
+    }
+#endif
     if (controller_started) {
         controller_stop(&s->controller);
     }
@@ -434,7 +608,7 @@ end:
 
     if (server_started) {
         // shutdown the sockets and kill the server
-        server_stop(&s->server);
+        sc_server_stop(&s->server);
     }
 
     // now that the sockets are shutdown, the stream and controller are
@@ -446,6 +620,13 @@ end:
 #ifdef HAVE_V4L2
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
+    }
+#endif
+
+#ifdef HAVE_AOA_HID
+    if (aoa_hid_initialized) {
+        sc_aoa_join(&s->aoa);
+        sc_aoa_destroy(&s->aoa);
     }
 #endif
 
@@ -472,7 +653,7 @@ end:
         file_handler_destroy(&s->file_handler);
     }
 
-    server_destroy(&s->server);
+    sc_server_destroy(&s->server);
 
     return ret;
 }

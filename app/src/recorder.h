@@ -7,7 +7,7 @@
 #include <libavformat/avformat.h>
 
 #include "coords.h"
-#include "scrcpy.h"
+#include "options.h"
 #include "trait/packet_sink.h"
 #include "util/queue.h"
 #include "util/thread.h"
@@ -17,7 +17,7 @@ struct record_packet {
     struct record_packet *next;
 };
 
-struct recorder_queue QUEUE(struct record_packet);
+struct recorder_queue SC_QUEUE(struct record_packet);
 
 struct recorder {
     struct sc_packet_sink packet_sink; // packet sink trait
@@ -25,7 +25,7 @@ struct recorder {
     char *filename;
     enum sc_record_format format;
     AVFormatContext *ctx;
-    struct size declared_frame_size;
+    struct sc_size declared_frame_size;
     bool header_written;
 
     sc_thread thread;
@@ -44,7 +44,7 @@ struct recorder {
 
 bool
 recorder_init(struct recorder *recorder, const char *filename,
-              enum sc_record_format format, struct size declared_frame_size);
+              enum sc_record_format format, struct sc_size declared_frame_size);
 
 void
 recorder_destroy(struct recorder *recorder);

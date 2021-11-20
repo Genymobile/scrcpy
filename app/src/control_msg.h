@@ -57,11 +57,11 @@ struct control_msg {
             enum android_motionevent_action action;
             enum android_motionevent_buttons buttons;
             uint64_t pointer_id;
-            struct position position;
+            struct sc_position position;
             float pressure;
         } inject_touch_event;
         struct {
-            struct position position;
+            struct sc_position position;
             int32_t hscroll;
             int32_t vscroll;
         } inject_scroll_event;

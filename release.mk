@@ -94,6 +94,7 @@ dist-win32: build-server build-win32
 	cp "$(WIN32_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp data/scrcpy-console.bat "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN32_TARGET_DIR)"
+	cp data/icon.png "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp prebuilt-deps/ffmpeg-4.3.1-win32-shared/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.3.1-win32-shared/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.3.1-win32-shared/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
@@ -102,7 +103,7 @@ dist-win32: build-server build-win32
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.14/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.16/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
@@ -110,6 +111,7 @@ dist-win64: build-server build-win64
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp data/scrcpy-console.bat "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)"
+	cp data/icon.png "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp prebuilt-deps/ffmpeg-4.3.1-win64-shared/bin/avutil-56.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.3.1-win64-shared/bin/avcodec-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/ffmpeg-4.3.1-win64-shared/bin/avformat-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
@@ -118,7 +120,7 @@ dist-win64: build-server build-win64
 	cp prebuilt-deps/platform-tools/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp prebuilt-deps/platform-tools/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/SDL2-2.0.14/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp prebuilt-deps/SDL2-2.0.16/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)/$(WIN32_TARGET_DIR)"; \

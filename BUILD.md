@@ -14,7 +14,8 @@ First, you need to install the required packages:
 # for Debian/Ubuntu
 sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
                  gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
+                 libusb-1.0-0 libusb-1.0-0-dev
 ```
 
 Then clone the repo and execute the installation script
@@ -88,11 +89,12 @@ Install the required packages from your package manager.
 
 ```bash
 # runtime dependencies
-sudo apt install ffmpeg libsdl2-2.0-0 adb
+sudo apt install ffmpeg libsdl2-2.0-0 adb libusb-1.0-0
 
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev
+                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
+                 libusb-1.0-0-dev
 
 # server build dependencies
 sudo apt install openjdk-11-jdk
@@ -114,7 +116,7 @@ pip3 install meson
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 
 # client build dependencies
-sudo dnf install SDL2-devel ffms2-devel meson gcc make
+sudo dnf install SDL2-devel ffms2-devel libusb-devel meson gcc make
 
 # server build dependencies
 sudo dnf install java-devel
@@ -268,10 +270,10 @@ install` must be run as root)._
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v1.18`][direct-scrcpy-server]  
-   _(SHA-256: 641c5c6beda9399dfae72d116f5ff43b5ed1059d871c9ebc3f47610fd33c51a3)_
+ - [`scrcpy-server-v1.20`][direct-scrcpy-server]  
+   _(SHA-256: b20aee4951f99b060c4a44000ba94de973f9604758ef62beb253b371aad3df34)_
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.18/scrcpy-server-v1.18
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.20/scrcpy-server-v1.20
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:

@@ -151,7 +151,6 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
 
         if (stream->pending) {
             // the pending packet must be discarded (consumed or error)
-            av_packet_unref(stream->pending);
             av_packet_free(&stream->pending);
         }
 
@@ -244,7 +243,6 @@ run_stream(void *data) {
     LOGD("End of frames");
 
     if (stream->pending) {
-        av_packet_unref(stream->pending);
         av_packet_free(&stream->pending);
     }
 
@@ -262,7 +260,7 @@ end:
 }
 
 void
-stream_init(struct stream *stream, socket_t socket,
+stream_init(struct stream *stream, sc_socket socket,
             const struct stream_callbacks *cbs, void *cbs_userdata) {
     stream->socket = socket;
     stream->pending = NULL;

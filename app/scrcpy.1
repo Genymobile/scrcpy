@@ -57,6 +57,12 @@ The list of possible display ids can be listed by "adb shell dumpsys display"
 Default is 0.
 
 .TP
+.BI "\-\-display\-buffer ms
+Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
+
+Default is 0 (no buffering).
+
+.TP
 .BI "\-\-encoder " name
 Use a specific MediaCodec encoder (must be a H.264 encoder).
 
@@ -77,14 +83,22 @@ Start in fullscreen.
 Print this help.
 
 .TP
+.B \-K, \-\-hid\-keyboard
+Simulate a physical keyboard by using HID over AOAv2.
+
+This provides a better experience for IME users, and allows to generate non-ASCII characters, contrary to the default injection method.
+
+It may only work over USB, and is currently only supported on Linux.
+
+.TP
 .B \-\-legacy\-paste
 Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
 
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
 
 .TP
-.BI "\-\-lock\-video\-orientation " [value]
-Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees otation counterclockwise.
+.BI "\-\-lock\-video\-orientation[=value]
+Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees rotation counterclockwise.
 
 Default is "unlocked".
 
@@ -121,6 +135,10 @@ If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically
 Set the TCP port (range) used by the client to listen.
 
 Default is 27183:27199.
+
+.TP
+.B \-\-power\-off\-on\-close
+Turn the device screen off when closing scrcpy.
 
 .TP
 .B \-\-prefer\-text
@@ -189,7 +207,15 @@ It only shows physical touches (not clicks from scrcpy).
 .BI "\-\-v4l2-sink " /dev/videoN
 Output to v4l2loopback device.
 
-It requires to lock the video orientation (see --lock-video-orientation).
+It requires to lock the video orientation (see \fB\-\-lock\-video\-orientation\fR).
+
+.TP
+.BI "\-\-v4l2-buffer " ms
+Add a buffering delay (in milliseconds) before pushing frames. This increases latency to compensate for jitter.
+
+This option is similar to \fB\-\-display\-buffer\fR, but specific to V4L2 sink.
+
+Default is 0 (no buffering).
 
 .TP
 .BI "\-V, \-\-verbosity " value
@@ -240,7 +266,7 @@ Default is 0 (automatic).
 .SH SHORTCUTS
 
 In the following list, MOD is the shortcut modifier. By default, it's (left)
-Alt or (left) Super, but it can be configured by \-\-shortcut-mod (see above).
+Alt or (left) Super, but it can be configured by \fB\-\-shortcut\-mod\fR (see above).
 
 .TP
 .B MOD+f
@@ -341,6 +367,10 @@ Pinch-to-zoom from the center of the screen
 .TP
 .B Drag & drop APK file
 Install APK from computer
+
+.TP
+.B Drag & drop non-APK file
+Push file to device (see \fB\-\-push\-target\fR)
 
 
 .SH Environment variables

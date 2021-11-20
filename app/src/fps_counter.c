@@ -1,11 +1,10 @@
 #include "fps_counter.h"
 
 #include <assert.h>
-#include <SDL2/SDL_timer.h>
 
 #include "util/log.h"
 
-#define FPS_COUNTER_INTERVAL_MS 1000
+#define FPS_COUNTER_INTERVAL SC_TICK_FROM_SEC(1)
 
 bool
 fps_counter_init(struct fps_counter *counter) {
@@ -47,7 +46,7 @@ set_started(struct fps_counter *counter, bool started) {
 static void
 display_fps(struct fps_counter *counter) {
     unsigned rendered_per_second =
-        counter->nr_rendered * 1000 / FPS_COUNTER_INTERVAL_MS;
+        counter->nr_rendered * SC_TICK_FREQ / FPS_COUNTER_INTERVAL;
     if (counter->nr_skipped) {
         LOGI("%u fps (+%u frames skipped)", rendered_per_second,
                                             counter->nr_skipped);
@@ -68,8 +67,8 @@ check_interval_expired(struct fps_counter *counter, uint32_t now) {
     counter->nr_skipped = 0;
     // add a multiple of the interval
     uint32_t elapsed_slices =
-        (now - counter->next_timestamp) / FPS_COUNTER_INTERVAL_MS + 1;
-    counter->next_timestamp += FPS_COUNTER_INTERVAL_MS * elapsed_slices;
+        (now - counter->next_timestamp) / FPS_COUNTER_INTERVAL + 1;
+    counter->next_timestamp += FPS_COUNTER_INTERVAL * elapsed_slices;
 }
 
 static int
@@ -82,14 +81,12 @@ run_fps_counter(void *data) {
             sc_cond_wait(&counter->state_cond, &counter->mutex);
         }
         while (!counter->interrupted && is_started(counter)) {
-            uint32_t now = SDL_GetTicks();
+            sc_tick now = sc_tick_now();
             check_interval_expired(counter, now);
 
-            assert(counter->next_timestamp > now);
-            uint32_t remaining = counter->next_timestamp - now;
-
             // ignore the reason (timeout or signaled), we just loop anyway
-            sc_cond_timedwait(&counter->state_cond, &counter->mutex, remaining);
+            sc_cond_timedwait(&counter->state_cond, &counter->mutex,
+                              counter->next_timestamp);
         }
     }
     sc_mutex_unlock(&counter->mutex);
@@ -99,7 +96,7 @@ run_fps_counter(void *data) {
 bool
 fps_counter_start(struct fps_counter *counter) {
     sc_mutex_lock(&counter->mutex);
-    counter->next_timestamp = SDL_GetTicks() + FPS_COUNTER_INTERVAL_MS;
+    counter->next_timestamp = sc_tick_now() + FPS_COUNTER_INTERVAL;
     counter->nr_rendered = 0;
     counter->nr_skipped = 0;
     sc_mutex_unlock(&counter->mutex);
@@ -165,7 +162,7 @@ fps_counter_add_rendered_frame(struct fps_counter *counter) {
     }
 
     sc_mutex_lock(&counter->mutex);
-    uint32_t now = SDL_GetTicks();
+    sc_tick now = sc_tick_now();
     check_interval_expired(counter, now);
     ++counter->nr_rendered;
     sc_mutex_unlock(&counter->mutex);
@@ -178,7 +175,7 @@ fps_counter_add_skipped_frame(struct fps_counter *counter) {
     }
 
     sc_mutex_lock(&counter->mutex);
-    uint32_t now = SDL_GetTicks();
+    sc_tick now = sc_tick_now();
     check_interval_expired(counter, now);
     ++counter->nr_skipped;
     sc_mutex_unlock(&counter->mutex);

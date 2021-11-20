@@ -7,7 +7,7 @@
 #include "util/log.h"
 
 bool
-receiver_init(struct receiver *receiver, socket_t control_socket) {
+receiver_init(struct receiver *receiver, sc_socket control_socket) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;

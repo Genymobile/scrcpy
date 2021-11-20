@@ -1,10 +1,9 @@
 #include "util/process.h"
 
 #include <assert.h>
-#include <sys/stat.h>
 
 #include "util/log.h"
-#include "util/str_util.h"
+#include "util/str.h"
 
 #define CMD_MAX_LEN 8192
 
@@ -14,61 +13,146 @@ build_cmd(char *cmd, size_t len, const char *const argv[]) {
     // <http://daviddeley.com/autohotkey/parameters/parameters.htm#WINPASS>
     // only make it work for this very specific program
     // (don't handle escaping nor quotes)
-    size_t ret = xstrjoin(cmd, argv, ' ', len);
+    size_t ret = sc_str_join(cmd, argv, ' ', len);
     if (ret >= len) {
-        LOGE("Command too long (%" PRIsizet " chars)", len - 1);
+        LOGE("Command too long (%" SC_PRIsizet " chars)", len - 1);
         return false;
     }
     return true;
 }
 
-enum process_result
-process_execute(const char *const argv[], HANDLE *handle) {
+enum sc_process_result
+sc_process_execute_p(const char *const argv[], HANDLE *handle,
+                     HANDLE *pin, HANDLE *pout, HANDLE *perr) {
+    enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
+
+    SECURITY_ATTRIBUTES sa;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle = TRUE;
+
+    HANDLE stdin_read_handle;
+    HANDLE stdout_write_handle;
+    HANDLE stderr_write_handle;
+    if (pin) {
+        if (!CreatePipe(&stdin_read_handle, pin, &sa, 0)) {
+            perror("pipe");
+            return SC_PROCESS_ERROR_GENERIC;
+        }
+        if (!SetHandleInformation(*pin, HANDLE_FLAG_INHERIT, 0)) {
+            LOGE("SetHandleInformation stdin failed");
+            goto error_close_stdin;
+        }
+    }
+    if (pout) {
+        if (!CreatePipe(pout, &stdout_write_handle, &sa, 0)) {
+            perror("pipe");
+            goto error_close_stdin;
+        }
+        if (!SetHandleInformation(*pout, HANDLE_FLAG_INHERIT, 0)) {
+            LOGE("SetHandleInformation stdout failed");
+            goto error_close_stdout;
+        }
+    }
+    if (perr) {
+        if (!CreatePipe(perr, &stderr_write_handle, &sa, 0)) {
+            perror("pipe");
+            goto error_close_stdout;
+        }
+        if (!SetHandleInformation(*perr, HANDLE_FLAG_INHERIT, 0)) {
+            LOGE("SetHandleInformation stderr failed");
+            goto error_close_stderr;
+        }
+    }
+
     STARTUPINFOW si;
     PROCESS_INFORMATION pi;
     memset(&si, 0, sizeof(si));
     si.cb = sizeof(si);
+    if (pin || pout || perr) {
+        si.dwFlags = STARTF_USESTDHANDLES;
+        if (pin) {
+            si.hStdInput = stdin_read_handle;
+        }
+        if (pout) {
+            si.hStdOutput = stdout_write_handle;
+        }
+        if (perr) {
+            si.hStdError = stderr_write_handle;
+        }
+    }
 
     char *cmd = malloc(CMD_MAX_LEN);
     if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
         *handle = NULL;
-        return PROCESS_ERROR_GENERIC;
+        goto error_close_stderr;
     }
 
-    wchar_t *wide = utf8_to_wide_char(cmd);
+    wchar_t *wide = sc_str_to_wchars(cmd);
     free(cmd);
     if (!wide) {
         LOGC("Could not allocate wide char string");
-        return PROCESS_ERROR_GENERIC;
+        goto error_close_stderr;
     }
 
-    if (!CreateProcessW(NULL, wide, NULL, NULL, FALSE, 0, NULL, NULL, &si,
+    if (!CreateProcessW(NULL, wide, NULL, NULL, TRUE, 0, NULL, NULL, &si,
                         &pi)) {
         free(wide);
         *handle = NULL;
+
         if (GetLastError() == ERROR_FILE_NOT_FOUND) {
-            return PROCESS_ERROR_MISSING_BINARY;
+            ret = SC_PROCESS_ERROR_MISSING_BINARY;
         }
-        return PROCESS_ERROR_GENERIC;
+        goto error_close_stderr;
+    }
+
+    // These handles are used by the child process, close them for this process
+    if (pin) {
+        CloseHandle(stdin_read_handle);
+    }
+    if (pout) {
+        CloseHandle(stdout_write_handle);
+    }
+    if (perr) {
+        CloseHandle(stderr_write_handle);
     }
 
     free(wide);
     *handle = pi.hProcess;
-    return PROCESS_SUCCESS;
+
+    return SC_PROCESS_SUCCESS;
+
+error_close_stderr:
+    if (perr) {
+        CloseHandle(*perr);
+        CloseHandle(stderr_write_handle);
+    }
+error_close_stdout:
+    if (pout) {
+        CloseHandle(*pout);
+        CloseHandle(stdout_write_handle);
+    }
+error_close_stdin:
+    if (pin) {
+        CloseHandle(*pin);
+        CloseHandle(stdin_read_handle);
+    }
+
+    return ret;
 }
 
 bool
-process_terminate(HANDLE handle) {
+sc_process_terminate(HANDLE handle) {
     return TerminateProcess(handle, 1);
 }
 
-exit_code_t
-process_wait(HANDLE handle, bool close) {
+sc_exit_code
+sc_process_wait(HANDLE handle, bool close) {
     DWORD code;
     if (WaitForSingleObject(handle, INFINITE) != WAIT_OBJECT_0
             || !GetExitCodeProcess(handle, &code)) {
         // could not wait or retrieve the exit code
-        code = NO_EXIT_CODE; // max value, it's unsigned
+        code = SC_EXIT_CODE_NONE;
     }
     if (close) {
         CloseHandle(handle);
@@ -77,42 +161,24 @@ process_wait(HANDLE handle, bool close) {
 }
 
 void
-process_close(HANDLE handle) {
+sc_process_close(HANDLE handle) {
     bool closed = CloseHandle(handle);
     assert(closed);
     (void) closed;
 }
 
-char *
-get_executable_path(void) {
-    HMODULE hModule = GetModuleHandleW(NULL);
-    if (!hModule) {
-        return NULL;
+ssize_t
+sc_read_pipe(HANDLE pipe, char *data, size_t len) {
+    DWORD r;
+    if (!ReadFile(pipe, data, len, &r, NULL)) {
+        return -1;
     }
-    WCHAR buf[MAX_PATH + 1]; // +1 for the null byte
-    int len = GetModuleFileNameW(hModule, buf, MAX_PATH);
-    if (!len) {
-        return NULL;
-    }
-    buf[len] = '\0';
-    return utf8_from_wide_char(buf);
+    return r;
 }
 
-bool
-is_regular_file(const char *path) {
-    wchar_t *wide_path = utf8_to_wide_char(path);
-    if (!wide_path) {
-        LOGC("Could not allocate wide char string");
-        return false;
+void
+sc_close_pipe(HANDLE pipe) {
+    if (!CloseHandle(pipe)) {
+        LOGW("Cannot close pipe");
     }
-
-    struct _stat path_stat;
-    int r = _wstat(wide_path, &path_stat);
-    free(wide_path);
-
-    if (r) {
-        perror("stat");
-        return false;
-    }
-    return S_ISREG(path_stat.st_mode);
 }

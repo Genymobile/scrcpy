@@ -76,7 +76,7 @@ The server uses 3 threads:
  - the **main** thread, encoding and streaming the video to the client;
  - the **controller** thread, listening for _control messages_ (typically,
    keyboard and mouse events) from the client;
- - the **receiver** thread (managed by the controller), sending _device messges_
+ - the **receiver** thread (managed by the controller), sending _device messages_
    to the clients (currently, it is only used to send the device clipboard
    content).
 
