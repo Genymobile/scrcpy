@@ -208,19 +208,19 @@ collapse_panels(struct controller *controller) {
     }
 }
 
-static void
+static bool
 set_device_clipboard(struct controller *controller, bool paste) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
-        return;
+        return false;
     }
 
     char *text_dup = strdup(text);
     SDL_free(text);
     if (!text_dup) {
         LOGW("Could not strdup input text");
-        return;
+        return false;
     }
 
     struct control_msg msg;
@@ -231,7 +231,10 @@ set_device_clipboard(struct controller *controller, bool paste) {
     if (!controller_push_msg(controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'set device clipboard'");
+        return false;
     }
+
+    return true;
 }
 
 static void
@@ -515,7 +518,11 @@ input_manager_process_key(struct input_manager *im,
         }
         // Synchronize the computer clipboard to the device clipboard before
         // sending Ctrl+v, to allow seamless copy-paste.
-        set_device_clipboard(controller, false);
+        bool ok = set_device_clipboard(controller, false);
+        if (!ok) {
+            LOGW("Clipboard could not be synchronized, Ctrl+v not injected");
+            return;
+        }
     }
 
     im->kp->ops->process_key(im->kp, event);
