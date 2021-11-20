@@ -1,6 +1,3 @@
-// <https://devblogs.microsoft.com/oldnewthing/20111216-00/?p=8873>
-#define _WIN32_WINNT 0x0600 // For extended process API
-
 #include "util/process.h"
 
 #include <processthreadsapi.h>

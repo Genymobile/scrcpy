@@ -39,16 +39,26 @@ src = [
     'src/util/tick.c',
 ]
 
+conf = configuration_data()
+
 if host_machine.system() == 'windows'
     src += [
         'src/sys/win/file.c',
         'src/sys/win/process.c',
     ]
+    conf.set('_WIN32_WINNT', '0x0600')
+    conf.set('WINVER', '0x0600')
 else
     src += [
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
+    conf.set('_POSIX_C_SOURCE', '200809L')
+    conf.set('_XOPEN_SOURCE', '700')
+    conf.set('_GNU_SOURCE', true)
+    if host_machine.system() == 'darwin'
+        conf.set('_DARWIN_C_SOURCE', true)
+    endif
 endif
 
 v4l2_support = host_machine.system() == 'linux'
@@ -127,8 +137,6 @@ endif
 if host_machine.system() == 'windows'
     dependencies += cc.find_library('ws2_32')
 endif
-
-conf = configuration_data()
 
 foreach f : check_functions
   if cc.has_function(f)
