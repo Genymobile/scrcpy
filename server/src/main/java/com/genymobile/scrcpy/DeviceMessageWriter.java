@@ -15,7 +15,7 @@ public class DeviceMessageWriter {
 
     public void writeTo(DeviceMessage msg, OutputStream output) throws IOException {
         buffer.clear();
-        buffer.put((byte) DeviceMessage.TYPE_CLIPBOARD);
+        buffer.put((byte) msg.getType());
         switch (msg.getType()) {
             case DeviceMessage.TYPE_CLIPBOARD:
                 String text = msg.getText();
@@ -23,6 +23,10 @@ public class DeviceMessageWriter {
                 int len = StringUtils.getUtf8TruncationIndex(raw, CLIPBOARD_TEXT_MAX_LENGTH);
                 buffer.putInt(len);
                 buffer.put(raw, 0, len);
+                output.write(rawBuffer, 0, buffer.position());
+                break;
+            case DeviceMessage.TYPE_ACK_CLIPBOARD:
+                buffer.putLong(msg.getSequence());
                 output.write(rawBuffer, 0, buffer.position());
                 break;
             default:

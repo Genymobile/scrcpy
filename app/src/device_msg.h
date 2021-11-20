@@ -13,6 +13,7 @@
 
 enum device_msg_type {
     DEVICE_MSG_TYPE_CLIPBOARD,
+    DEVICE_MSG_TYPE_ACK_CLIPBOARD,
 };
 
 struct device_msg {
@@ -21,6 +22,9 @@ struct device_msg {
         struct {
             char *text; // owned, to be freed by free()
         } clipboard;
+        struct {
+            uint64_t sequence;
+        } ack_clipboard;
     };
 };
 

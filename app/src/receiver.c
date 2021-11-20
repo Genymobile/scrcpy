@@ -37,6 +37,9 @@ process_msg(struct device_msg *msg) {
             SDL_SetClipboardText(msg->clipboard.text);
             break;
         }
+        case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
+            // TODO
+            break;
     }
 }
 
