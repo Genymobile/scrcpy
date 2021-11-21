@@ -189,11 +189,11 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const SDL_KeyboardEvent *event,
-                             bool device_clipboard_set) {
+                             uint64_t ack_to_wait) {
     // The device clipboard synchronization and the key event messages are
     // serialized, there is nothing special to do to ensure that the clipboard
     // is set before injecting Ctrl+v.
-    (void) device_clipboard_set;
+    (void) ack_to_wait;
 
     struct sc_keyboard_inject *ki = DOWNCAST(kp);
 
@@ -256,5 +256,7 @@ sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
         .process_text = sc_key_processor_process_text,
     };
 
+    // Key injection and clipboard synchronization are serialized
+    ki->key_processor.async_paste = false;
     ki->key_processor.ops = &ops;
 }

@@ -27,6 +27,7 @@
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
+#include "util/acksync.h"
 #include "util/log.h"
 #include "util/net.h"
 #ifdef HAVE_V4L2
@@ -46,6 +47,8 @@ struct scrcpy {
     struct file_handler file_handler;
 #ifdef HAVE_AOA_HID
     struct sc_aoa aoa;
+    // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
+    struct sc_acksync acksync;
 #endif
     union {
         struct sc_keyboard_inject keyboard_inject;
@@ -340,6 +343,8 @@ scrcpy(struct scrcpy_options *options) {
     bool controller_started = false;
     bool screen_initialized = false;
 
+    struct sc_acksync *acksync = NULL;
+
     struct sc_server_params params = {
         .serial = options->serial,
         .log_level = options->log_level,
@@ -445,7 +450,18 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     if (options->control) {
-        if (!controller_init(&s->controller, s->server.control_socket)) {
+#ifdef HAVE_AOA_HID
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
+            bool ok = sc_acksync_init(&s->acksync);
+            if (!ok) {
+                goto end;
+            }
+
+            acksync = &s->acksync;
+        }
+#endif
+        if (!controller_init(&s->controller, s->server.control_socket,
+                             acksync)) {
             goto end;
         }
         controller_initialized = true;
@@ -521,7 +537,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_AOA_HID
             bool aoa_hid_ok = false;
 
-            bool ok = sc_aoa_init(&s->aoa, serial);
+            bool ok = sc_aoa_init(&s->aoa, serial, acksync);
             if (!ok) {
                 goto aoa_hid_end;
             }
@@ -585,6 +601,9 @@ end:
     if (aoa_hid_initialized) {
         sc_hid_keyboard_destroy(&s->keyboard_hid);
         sc_aoa_stop(&s->aoa);
+    }
+    if (acksync) {
+        sc_acksync_destroy(acksync);
     }
 #endif
     if (controller_started) {

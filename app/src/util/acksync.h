@@ -9,6 +9,11 @@
 
 /**
  * Helper to wait for acknowledgments
+ *
+ * In practice, it is used to wait for device clipboard acknowledgement from the
+ * server before injecting Ctrl+v via AOA HID, in order to avoid pasting the
+ * content of the old device clipboard (if Ctrl+v was injected before the
+ * clipboard content was actually set).
  */
 struct sc_acksync {
     sc_mutex mutex;

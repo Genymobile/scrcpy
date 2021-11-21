@@ -7,12 +7,16 @@
 #include "util/log.h"
 
 bool
-receiver_init(struct receiver *receiver, sc_socket control_socket) {
+receiver_init(struct receiver *receiver, sc_socket control_socket,
+              struct sc_acksync *acksync) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;
     }
+
     receiver->control_socket = control_socket;
+    receiver->acksync = acksync;
+
     return true;
 }
 
@@ -22,7 +26,7 @@ receiver_destroy(struct receiver *receiver) {
 }
 
 static void
-process_msg(struct device_msg *msg) {
+process_msg(struct receiver *receiver, struct device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
             char *current = SDL_GetClipboardText();
@@ -38,13 +42,16 @@ process_msg(struct device_msg *msg) {
             break;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
-            // TODO
+            assert(receiver->acksync);
+            LOGD("Ack device clipboard sequence=%" PRIu64_,
+                 msg->ack_clipboard.sequence);
+            sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
             break;
     }
 }
 
 static ssize_t
-process_msgs(const unsigned char *buf, size_t len) {
+process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -56,7 +63,7 @@ process_msgs(const unsigned char *buf, size_t len) {
             return head;
         }
 
-        process_msg(&msg);
+        process_msg(receiver, &msg);
         device_msg_destroy(&msg);
 
         head += r;
@@ -84,7 +91,7 @@ run_receiver(void *data) {
         }
 
         head += r;
-        ssize_t consumed = process_msgs(buf, head);
+        ssize_t consumed = process_msgs(receiver, buf, head);
         if (consumed == -1) {
             // an error occurred
             break;

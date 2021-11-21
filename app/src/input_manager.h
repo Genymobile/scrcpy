@@ -38,6 +38,8 @@ struct input_manager {
     unsigned key_repeat;
     SDL_Keycode last_keycode;
     uint16_t last_mod;
+
+    uint64_t next_sequence; // used for request acknowledgements
 };
 
 void

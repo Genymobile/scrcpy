@@ -82,6 +82,8 @@ input_manager_init(struct input_manager *im, struct controller *controller,
     im->last_keycode = SDLK_UNKNOWN;
     im->last_mod = 0;
     im->key_repeat = 0;
+
+    im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
 }
 
 static void
@@ -209,7 +211,8 @@ collapse_panels(struct controller *controller) {
 }
 
 static bool
-set_device_clipboard(struct controller *controller, bool paste) {
+set_device_clipboard(struct controller *controller, bool paste,
+                     uint64_t sequence) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -225,7 +228,7 @@ set_device_clipboard(struct controller *controller, bool paste) {
 
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
-    msg.set_clipboard.sequence = 0; // unused for now
+    msg.set_clipboard.sequence = sequence;
     msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
 
@@ -461,8 +464,10 @@ input_manager_process_key(struct input_manager *im,
                         // inject the text as input events
                         clipboard_paste(controller);
                     } else {
-                        // store the text in the device clipboard and paste
-                        set_device_clipboard(controller, true);
+                        // store the text in the device clipboard and paste,
+                        // without requesting an acknowledgment
+                        set_device_clipboard(controller, true,
+                                             SC_SEQUENCE_INVALID);
                     }
                 }
                 return;
@@ -511,6 +516,7 @@ input_manager_process_key(struct input_manager *im,
         return;
     }
 
+    uint64_t ack_to_wait = SC_SEQUENCE_INVALID;
     bool is_ctrl_v = ctrl && !shift && keycode == SDLK_v && down && !repeat;
     if (is_ctrl_v) {
         if (im->legacy_paste) {
@@ -518,16 +524,28 @@ input_manager_process_key(struct input_manager *im,
             clipboard_paste(controller);
             return;
         }
+
+        // Request an acknowledgement only if necessary
+        uint64_t sequence = im->kp->async_paste ? im->next_sequence
+                                                : SC_SEQUENCE_INVALID;
+
         // Synchronize the computer clipboard to the device clipboard before
         // sending Ctrl+v, to allow seamless copy-paste.
-        bool ok = set_device_clipboard(controller, false);
+        bool ok = set_device_clipboard(controller, false, sequence);
         if (!ok) {
             LOGW("Clipboard could not be synchronized, Ctrl+v not injected");
             return;
         }
+
+        if (im->kp->async_paste) {
+            // The key processor must wait for this ack before injecting Ctrl+v
+            ack_to_wait = sequence;
+            // Increment only when the request succeeded
+            ++im->next_sequence;
+        }
     }
 
-    im->kp->ops->process_key(im->kp, event, is_ctrl_v);
+    im->kp->ops->process_key(im->kp, event, ack_to_wait);
 }
 
 static void

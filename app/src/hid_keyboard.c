@@ -279,7 +279,7 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t sdl_mod) {
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const SDL_KeyboardEvent *event,
-                             bool device_clipboard_set) {
+                             uint64_t ack_to_wait) {
     if (event->repeat) {
         // In USB HID protocol, key repeat is handled by the host (Android), so
         // just ignore key repeat here.
@@ -299,12 +299,12 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             }
         }
 
-        if (device_clipboard_set) {
+        if (ack_to_wait) {
             // Ctrl+v is pressed, so clipboard synchronization has been
-            // requested. Wait a bit so that the clipboard is set before
-            // injecting Ctrl+v via HID, otherwise it would paste the old
-            // clipboard content.
-            hid_event.delay = SC_TICK_FROM_MS(5);
+            // requested. Wait until clipboard synchronization is acknowledged
+            // by the server, otherwise it could paste the old clipboard
+            // content.
+            hid_event.ack_to_wait = ack_to_wait;
         }
 
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
@@ -345,6 +345,10 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
         .process_text = sc_key_processor_process_text,
     };
 
+    // Clipboard synchronization is requested over the control socket, while HID
+    // events are sent over AOA, so it must wait for clipboard synchronization
+    // to be acknowledged by the device before injecting Ctrl+v.
+    kb->key_processor.async_paste = true;
     kb->key_processor.ops = &ops;
 
     return true;

@@ -35,7 +35,7 @@ sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
     hid_event->accessory_id = accessory_id;
     hid_event->buffer = buffer;
     hid_event->size = buffer_size;
-    hid_event->delay = 0;
+    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
 }
 
 void
@@ -118,7 +118,10 @@ sc_aoa_open_usb_handle(libusb_device *device, libusb_device_handle **handle) {
 }
 
 bool
-sc_aoa_init(struct sc_aoa *aoa, const char *serial) {
+sc_aoa_init(struct sc_aoa *aoa, const char *serial,
+            struct sc_acksync *acksync) {
+    assert(acksync);
+
     cbuf_init(&aoa->queue);
 
     if (!sc_mutex_init(&aoa->mutex)) {
@@ -155,6 +158,7 @@ sc_aoa_init(struct sc_aoa *aoa, const char *serial) {
     }
 
     aoa->stopped = false;
+    aoa->acksync = acksync;
 
     return true;
 }
@@ -332,22 +336,27 @@ run_aoa_thread(void *data) {
         assert(non_empty);
         (void) non_empty;
 
-        assert(event.delay >= 0);
-        if (event.delay) {
-            // Wait during the specified delay before injecting the HID event
-            sc_tick deadline = sc_tick_now() + event.delay;
-            bool timed_out = false;
-            while (!aoa->stopped && !timed_out) {
-                timed_out = !sc_cond_timedwait(&aoa->event_cond, &aoa->mutex,
-                                               deadline);
-            }
-            if (aoa->stopped) {
-                sc_mutex_unlock(&aoa->mutex);
+        uint64_t ack_to_wait = event.ack_to_wait;
+        sc_mutex_unlock(&aoa->mutex);
+
+        if (ack_to_wait != SC_SEQUENCE_INVALID) {
+            LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
+            // Do not block the loop indefinitely if the ack never comes (it should
+            // never happen)
+            sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
+            enum sc_acksync_wait_result result =
+                sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
+
+            if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
+                LOGW("Ack not received after 500ms, discarding HID event");
+                sc_hid_event_destroy(&event);
+                continue;
+            } else if (result == SC_ACKSYNC_WAIT_INTR) {
+                // stopped
+                sc_hid_event_destroy(&event);
                 break;
             }
         }
-
-        sc_mutex_unlock(&aoa->mutex);
 
         bool ok = sc_aoa_send_hid_event(aoa, &event);
         sc_hid_event_destroy(&event);
@@ -377,6 +386,8 @@ sc_aoa_stop(struct sc_aoa *aoa) {
     aoa->stopped = true;
     sc_cond_signal(&aoa->event_cond);
     sc_mutex_unlock(&aoa->mutex);
+
+    sc_acksync_interrupt(aoa->acksync);
 }
 
 void

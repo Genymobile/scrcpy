@@ -5,10 +5,11 @@
 #include "util/log.h"
 
 bool
-controller_init(struct controller *controller, sc_socket control_socket) {
+controller_init(struct controller *controller, sc_socket control_socket,
+                struct sc_acksync *acksync) {
     cbuf_init(&controller->queue);
 
-    bool ok = receiver_init(&controller->receiver, control_socket);
+    bool ok = receiver_init(&controller->receiver, control_socket, acksync);
     if (!ok) {
         return false;
     }

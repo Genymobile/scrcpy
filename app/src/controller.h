@@ -7,6 +7,7 @@
 
 #include "control_msg.h"
 #include "receiver.h"
+#include "util/acksync.h"
 #include "util/cbuf.h"
 #include "util/net.h"
 #include "util/thread.h"
@@ -24,7 +25,8 @@ struct controller {
 };
 
 bool
-controller_init(struct controller *controller, sc_socket control_socket);
+controller_init(struct controller *controller, sc_socket control_socket,
+                struct sc_acksync *acksync);
 
 void
 controller_destroy(struct controller *controller);
