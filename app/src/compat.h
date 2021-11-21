@@ -6,6 +6,12 @@
 #include <libavformat/version.h>
 #include <SDL2/SDL_version.h>
 
+#ifndef __WIN32
+# define PRIu64_ PRIu64
+#else
+# define PRIu64_ "I64u"  // Windows...
+#endif
+
 // In ffmpeg/doc/APIchanges:
 // 2018-02-06 - 0694d87024 - lavf 58.9.100 - avformat.h
 //   Deprecate use of av_register_input_format(), av_register_output_format(),

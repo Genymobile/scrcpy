@@ -171,11 +171,6 @@ control_msg_log(const struct control_msg *msg) {
                          (long) msg->inject_touch_event.buttons);
             } else {
                 // numeric pointer id
-#ifndef __WIN32
-# define PRIu64_ PRIu64
-#else
-# define PRIu64_ "I64u"  // Windows...
-#endif
                 LOG_CMSG("touch [id=%" PRIu64_ "] %-4s position=%" PRIi32 ",%"
                              PRIi32 " pressure=%g buttons=%06lx",
                          id,
