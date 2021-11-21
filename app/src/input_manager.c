@@ -510,7 +510,8 @@ input_manager_process_key(struct input_manager *im,
         return;
     }
 
-    if (ctrl && !shift && keycode == SDLK_v && down && !repeat) {
+    bool is_ctrl_v = ctrl && !shift && keycode == SDLK_v && down && !repeat;
+    if (is_ctrl_v) {
         if (im->legacy_paste) {
             // inject the text as input events
             clipboard_paste(controller);
@@ -525,7 +526,7 @@ input_manager_process_key(struct input_manager *im,
         }
     }
 
-    im->kp->ops->process_key(im->kp, event);
+    im->kp->ops->process_key(im->kp, event, is_ctrl_v);
 }
 
 static void

@@ -278,7 +278,8 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t sdl_mod) {
 
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
-                             const SDL_KeyboardEvent *event) {
+                             const SDL_KeyboardEvent *event,
+                             bool device_clipboard_set) {
     if (event->repeat) {
         // In USB HID protocol, key repeat is handled by the host (Android), so
         // just ignore key repeat here.
@@ -298,11 +299,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             }
         }
 
-        SDL_Keycode keycode = event->keysym.sym;
-        bool down = event->type == SDL_KEYDOWN;
-        bool ctrl = event->keysym.mod & KMOD_CTRL;
-        bool shift = event->keysym.mod & KMOD_SHIFT;
-        if (ctrl && !shift && keycode == SDLK_v && down) {
+        if (device_clipboard_set) {
             // Ctrl+v is pressed, so clipboard synchronization has been
             // requested. Wait a bit so that the clipboard is set before
             // injecting Ctrl+v via HID, otherwise it would paste the old

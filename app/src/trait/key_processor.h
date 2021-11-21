@@ -18,8 +18,17 @@ struct sc_key_processor {
 };
 
 struct sc_key_processor_ops {
+
+    /**
+     * Process the keyboard event
+     *
+     * The flag `device_clipboard_set` indicates that the input manager sent a
+     * control message to synchronize the device clipboard as a result of this
+     * key event.
+     */
     void
-    (*process_key)(struct sc_key_processor *kp, const SDL_KeyboardEvent *event);
+    (*process_key)(struct sc_key_processor *kp, const SDL_KeyboardEvent *event,
+                   bool device_clipboard_set);
 
     void
     (*process_text)(struct sc_key_processor *kp,
