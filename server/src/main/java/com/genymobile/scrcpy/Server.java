@@ -160,7 +160,7 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 16;
+        final int expectedParameters = 17;
         if (args.length != expectedParameters) {
             throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
         }
@@ -212,6 +212,9 @@ public final class Server {
 
         boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
         options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+
+        boolean clipboardAutosync = Boolean.parseBoolean(args[16]);
+        options.setClipboardAutosync(clipboardAutosync);
 
         return options;
     }

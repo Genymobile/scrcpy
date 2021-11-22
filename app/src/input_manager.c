@@ -66,6 +66,7 @@ input_manager_init(struct input_manager *im, struct controller *controller,
     im->control = options->control;
     im->forward_all_clicks = options->forward_all_clicks;
     im->legacy_paste = options->legacy_paste;
+    im->clipboard_autosync = options->clipboard_autosync;
 
     const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
     assert(shortcut_mods->count);
@@ -518,7 +519,7 @@ input_manager_process_key(struct input_manager *im,
 
     uint64_t ack_to_wait = SC_SEQUENCE_INVALID;
     bool is_ctrl_v = ctrl && !shift && keycode == SDLK_v && down && !repeat;
-    if (is_ctrl_v) {
+    if (im->clipboard_autosync && is_ctrl_v) {
         if (im->legacy_paste) {
             // inject the text as input events
             clipboard_paste(controller);

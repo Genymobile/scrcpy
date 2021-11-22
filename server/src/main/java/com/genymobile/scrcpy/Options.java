@@ -18,6 +18,7 @@ public class Options {
     private String codecOptions;
     private String encoderName;
     private boolean powerOffScreenOnClose;
+    private boolean clipboardAutosync;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -137,5 +138,13 @@ public class Options {
 
     public boolean getPowerOffScreenOnClose() {
         return this.powerOffScreenOnClose;
+    }
+
+    public boolean getClipboardAutosync() {
+        return clipboardAutosync;
+    }
+
+    public void setClipboardAutosync(boolean clipboardAutosync) {
+        this.clipboardAutosync = clipboardAutosync;
     }
 }

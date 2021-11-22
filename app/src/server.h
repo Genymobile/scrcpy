@@ -41,6 +41,7 @@ struct sc_server_params {
     bool stay_awake;
     bool force_adb_forward;
     bool power_off_on_close;
+    bool clipboard_autosync;
 };
 
 struct sc_server {

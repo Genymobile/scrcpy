@@ -53,4 +53,5 @@ const struct scrcpy_options scrcpy_options_default = {
     .forward_all_clicks = false,
     .legacy_paste = false,
     .power_off_on_close = false,
+    .clipboard_autosync = true,
 };

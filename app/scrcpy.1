@@ -115,6 +115,12 @@ Limit both the width and height of the video to \fIvalue\fR. The other dimension
 Default is 0 (unlimited).
 
 .TP
+.B \-\-no\-clipboard\-autosync
+By default, scrcpy automatically synchronizes the computer clipboard to the device clipboard before injecting Ctrl+v, and the device clipboard to the computer clipboard whenever it changes.
+
+This option disables this automatic synchronization.
+
+.TP
 .B \-n, \-\-no\-control
 Disable device control (mirror the device in read\-only).
 

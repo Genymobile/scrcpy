@@ -108,6 +108,7 @@ struct scrcpy_options {
     bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
+    bool clipboard_autosync;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

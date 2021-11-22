@@ -186,6 +186,7 @@ execute_server(struct sc_server *server,
         params->codec_options ? params->codec_options : "-",
         params->encoder_name ? params->encoder_name : "-",
         params->power_off_on_close ? "true" : "false",
+        params->clipboard_autosync ? "true" : "false",
     };
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "

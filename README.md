@@ -730,6 +730,9 @@ of <kbd>Ctrl</kbd>+<kbd>v</kbd> and <kbd>MOD</kbd>+<kbd>v</kbd> so that they
 also inject the computer clipboard text as a sequence of key events (the same
 way as <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
 
+To disable automatic clipboard synchronization, use
+`--no-clipboard-autosync`.
+
 #### Pinch-to-zoom
 
 To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.

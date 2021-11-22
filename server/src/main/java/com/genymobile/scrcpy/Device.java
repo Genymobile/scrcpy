@@ -82,8 +82,8 @@ public final class Device {
             }
         }, displayId);
 
-        if (options.getControl()) {
-            // If control is enabled, synchronize Android clipboard to the computer automatically
+        if (options.getControl() && options.getClipboardAutosync()) {
+            // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
             ClipboardManager clipboardManager = SERVICE_MANAGER.getClipboardManager();
             if (clipboardManager != null) {
                 clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {

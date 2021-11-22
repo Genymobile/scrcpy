@@ -49,6 +49,7 @@
 #define OPT_V4L2_BUFFER            1029
 #define OPT_TUNNEL_HOST            1030
 #define OPT_TUNNEL_PORT            1031
+#define OPT_NO_CLIPBOARD_AUTOSYNC  1032
 
 struct sc_option {
     char shortopt;
@@ -207,6 +208,15 @@ static const struct sc_option options[] = {
                 "other dimension is computed so that the device aspect-ratio "
                 "is preserved.\n"
                 "Default is 0 (unlimited).",
+    },
+    {
+        .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
+        .longopt = "no-clipboard-autosync",
+        .text = "By default, scrcpy automatically synchronizes the computer "
+                "clipboard to the device clipboard before injecting Ctrl+v, "
+                "and the device clipboard to the computer clipboard whenever "
+                "it changes.\n"
+                "This option disables this automatic synchronization."
     },
     {
         .shortopt = 'n',
@@ -1363,6 +1373,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_buffering_time(optarg, &opts->display_buffer)) {
                     return false;
                 }
+                break;
+            case OPT_NO_CLIPBOARD_AUTOSYNC:
+                opts->clipboard_autosync = false;
                 break;
 #ifdef HAVE_V4L2
             case OPT_V4L2_SINK:

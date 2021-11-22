@@ -24,6 +24,7 @@ struct input_manager {
     bool control;
     bool forward_all_clicks;
     bool legacy_paste;
+    bool clipboard_autosync;
 
     struct {
         unsigned data[SC_MAX_SHORTCUT_MODS];
