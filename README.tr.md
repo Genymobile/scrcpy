@@ -79,7 +79,10 @@ Ayrıca [uygulamayı el ile de derleyebilirsiniz][build] ([basitleştirilmiş s�
 
 Windows için (`adb` dahil) tüm gereksinimleri ile derlenmiş bir arşiv mevcut:
 
- - [README](README.md#windows)
+ - [`scrcpy-win64-v1.20.zip`][direct-win64]
+  _(SHA-256: 548532b616288bcaeceff6881ad5e6f0928e5ae2b48c380385f03627401cfdba)_
+
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.20/scrcpy-win64-v1.20.zip
 
 [Chocolatey] ile kurulum:
 
