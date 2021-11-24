@@ -139,23 +139,17 @@ log_level_to_server_string(enum sc_log_level level) {
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
-    char max_size_string[6];
-    char bit_rate_string[11];
-    char max_fps_string[6];
-    char lock_video_orientation_string[5];
-    char display_id_string[11];
-    sprintf(max_size_string, "%"PRIu16, params->max_size);
-    sprintf(bit_rate_string, "%"PRIu32, params->bit_rate);
-    sprintf(max_fps_string, "%"PRIu16, params->max_fps);
-    sprintf(lock_video_orientation_string, "%"PRIi8,
-            params->lock_video_orientation);
-    sprintf(display_id_string, "%"PRIu32, params->display_id);
-    const char *const cmd[] = {
-        "shell",
-        "CLASSPATH=" SC_DEVICE_SERVER_PATH,
-        "app_process",
+    sc_pid pid = SC_PROCESS_NONE;
+
+    const char *cmd[128];
+    unsigned count = 0;
+    cmd[count++] = "shell";
+    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
+    cmd[count++] = "app_process";
+
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
+    cmd[count++] =
 # ifdef SERVER_DEBUGGER_METHOD_NEW
         /* Android 9 and above */
         "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,"
@@ -164,28 +158,43 @@ execute_server(struct sc_server *server,
         /* Android 8 and below */
         "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
 # endif
-            SERVER_DEBUGGER_PORT,
+            SERVER_DEBUGGER_PORT;
 #endif
-        "/", // unused
-        "com.genymobile.scrcpy.Server",
-        SCRCPY_VERSION,
-        log_level_to_server_string(params->log_level),
-        max_size_string,
-        bit_rate_string,
-        max_fps_string,
-        lock_video_orientation_string,
-        server->tunnel.forward ? "true" : "false",
-        params->crop ? params->crop : "-",
-        "true", // always send frame meta (packet boundaries + timestamp)
-        params->control ? "true" : "false",
-        display_id_string,
-        params->show_touches ? "true" : "false",
-        params->stay_awake ? "true" : "false",
-        params->codec_options ? params->codec_options : "-",
-        params->encoder_name ? params->encoder_name : "-",
-        params->power_off_on_close ? "true" : "false",
-        params->clipboard_autosync ? "true" : "false",
-    };
+    cmd[count++] = "/"; // unused
+    cmd[count++] = "com.genymobile.scrcpy.Server";
+    cmd[count++] = SCRCPY_VERSION;
+    cmd[count++] = log_level_to_server_string(params->log_level);
+
+    unsigned dyn_idx = count; // from there, the strings are allocated
+#define ADD_PARAM(fmt, ...) { \
+        char *p = (char *) &cmd[count]; \
+        if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
+            goto end; \
+        } \
+        cmd[count++] = p; \
+    }
+#define STRBOOL(v) (v ? "true" : "false")
+
+    ADD_PARAM("%" PRIu16, params->max_size);
+    ADD_PARAM("%" PRIu32, params->bit_rate);
+    ADD_PARAM("%" PRIu16, params->max_fps);
+    ADD_PARAM("%" PRIi8, params->lock_video_orientation);
+    ADD_PARAM("%s", STRBOOL(server->tunnel.forward));
+    ADD_PARAM("%s", params->crop ? params->crop : "-");
+    // always send frame meta (packet boundaries + timestamp)
+    ADD_PARAM("true");
+    ADD_PARAM("%s", STRBOOL(params->control));
+    ADD_PARAM("%" PRIu32, params->display_id);
+    ADD_PARAM("%s", STRBOOL(params->show_touches));
+    ADD_PARAM("%s", STRBOOL(params->stay_awake));
+    ADD_PARAM("%s", params->codec_options ? params->codec_options : "-");
+    ADD_PARAM("%s", params->encoder_name ? params->encoder_name : "-");
+    ADD_PARAM("%s", STRBOOL(params->power_off_on_close));
+    ADD_PARAM("%s", STRBOOL(params->clipboard_autosync));
+
+#undef ADD_PARAM
+#undef STRBOOL
+
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
          SERVER_DEBUGGER_PORT "...");
@@ -197,7 +206,14 @@ execute_server(struct sc_server *server,
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(params->serial, cmd, ARRAY_LEN(cmd));
+    pid = adb_execute(params->serial, cmd, count);
+
+end:
+    for (unsigned i = dyn_idx; i < count; ++i) {
+        free((char *) cmd[i]);
+    }
+
+    return pid;
 }
 
 static bool
