@@ -1,5 +1,7 @@
 #include "v4l2_sink.h"
 
+#include <string.h>
+
 #include "util/log.h"
 #include "util/str.h"
 
