@@ -5,22 +5,22 @@ import android.graphics.Rect;
 import java.util.List;
 
 public class Options {
-    private Ln.Level logLevel;
+    private Ln.Level logLevel = Ln.Level.DEBUG;
     private int maxSize;
-    private int bitRate;
+    private int bitRate = 8000000;
     private int maxFps;
-    private int lockedVideoOrientation;
+    private int lockedVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
-    private boolean sendFrameMeta; // send PTS so that the client may record properly
-    private boolean control;
+    private boolean sendFrameMeta = true; // send PTS so that the client may record properly
+    private boolean control = true;
     private int displayId;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> codecOptions;
     private String encoderName;
     private boolean powerOffScreenOnClose;
-    private boolean clipboardAutosync;
+    private boolean clipboardAutosync = true;
 
     public Ln.Level getLogLevel() {
         return logLevel;

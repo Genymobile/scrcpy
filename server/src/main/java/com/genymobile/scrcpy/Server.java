@@ -160,67 +160,93 @@ public final class Server {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
-        final int expectedParameters = 17;
-        if (args.length != expectedParameters) {
-            throw new IllegalArgumentException("Expecting " + expectedParameters + " parameters");
-        }
-
         Options options = new Options();
 
-        Ln.Level level = Ln.Level.valueOf(args[1].toUpperCase(Locale.ENGLISH));
-        options.setLogLevel(level);
-
-        int maxSize = Integer.parseInt(args[2]) & ~7; // multiple of 8
-        options.setMaxSize(maxSize);
-
-        int bitRate = Integer.parseInt(args[3]);
-        options.setBitRate(bitRate);
-
-        int maxFps = Integer.parseInt(args[4]);
-        options.setMaxFps(maxFps);
-
-        int lockedVideoOrientation = Integer.parseInt(args[5]);
-        options.setLockedVideoOrientation(lockedVideoOrientation);
-
-        // use "adb forward" instead of "adb tunnel"? (so the server must listen)
-        boolean tunnelForward = Boolean.parseBoolean(args[6]);
-        options.setTunnelForward(tunnelForward);
-
-        Rect crop = parseCrop(args[7]);
-        options.setCrop(crop);
-
-        boolean sendFrameMeta = Boolean.parseBoolean(args[8]);
-        options.setSendFrameMeta(sendFrameMeta);
-
-        boolean control = Boolean.parseBoolean(args[9]);
-        options.setControl(control);
-
-        int displayId = Integer.parseInt(args[10]);
-        options.setDisplayId(displayId);
-
-        boolean showTouches = Boolean.parseBoolean(args[11]);
-        options.setShowTouches(showTouches);
-
-        boolean stayAwake = Boolean.parseBoolean(args[12]);
-        options.setStayAwake(stayAwake);
-
-        List<CodecOption> codecOptions = CodecOption.parse(args[13]);
-        options.setCodecOptions(codecOptions);
-
-        String encoderName = "-".equals(args[14]) ? null : args[14];
-        options.setEncoderName(encoderName);
-
-        boolean powerOffScreenOnClose = Boolean.parseBoolean(args[15]);
-        options.setPowerOffScreenOnClose(powerOffScreenOnClose);
-
-        boolean clipboardAutosync = Boolean.parseBoolean(args[16]);
-        options.setClipboardAutosync(clipboardAutosync);
+        for (int i = 1; i < args.length; ++i) {
+            String arg = args[i];
+            int equalIndex = arg.indexOf('=');
+            if (equalIndex == -1) {
+                throw new IllegalArgumentException("Invalid key=value pair: \"" + arg + "\"");
+            }
+            String key = arg.substring(0, equalIndex);
+            String value = arg.substring(equalIndex + 1);
+            switch (key) {
+                case "log_level":
+                    Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
+                    options.setLogLevel(level);
+                    break;
+                case "max_size":
+                    int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
+                    options.setMaxSize(maxSize);
+                    break;
+                case "bit_rate":
+                    int bitRate = Integer.parseInt(value);
+                    options.setBitRate(bitRate);
+                    break;
+                case "max_fps":
+                    int maxFps = Integer.parseInt(value);
+                    options.setMaxFps(maxFps);
+                    break;
+                case "lock_video_orientation":
+                    int lockedVideoOrientation = Integer.parseInt(value);
+                    options.setLockedVideoOrientation(lockedVideoOrientation);
+                    break;
+                case "tunnel_forward":
+                    boolean tunnelForward = Boolean.parseBoolean(value);
+                    options.setTunnelForward(tunnelForward);
+                    break;
+                case "crop":
+                    Rect crop = parseCrop(value);
+                    options.setCrop(crop);
+                    break;
+                case "send_frame_meta":
+                    boolean sendFrameMeta = Boolean.parseBoolean(value);
+                    options.setSendFrameMeta(sendFrameMeta);
+                    break;
+                case "control":
+                    boolean control = Boolean.parseBoolean(value);
+                    options.setControl(control);
+                    break;
+                case "display_id":
+                    int displayId = Integer.parseInt(value);
+                    options.setDisplayId(displayId);
+                    break;
+                case "show_touches":
+                    boolean showTouches = Boolean.parseBoolean(value);
+                    options.setShowTouches(showTouches);
+                    break;
+                case "stay_awake":
+                    boolean stayAwake = Boolean.parseBoolean(value);
+                    options.setStayAwake(stayAwake);
+                    break;
+                case "codec_options":
+                    List<CodecOption> codecOptions = CodecOption.parse(value);
+                    options.setCodecOptions(codecOptions);
+                    break;
+                case "encoder_name":
+                    if (!value.isEmpty()) {
+                        options.setEncoderName(value);
+                    }
+                    break;
+                case "power_off_on_close":
+                    boolean powerOffScreenOnClose = Boolean.parseBoolean(value);
+                    options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+                    break;
+                case "clipboard_autosync":
+                    boolean clipboardAutosync = Boolean.parseBoolean(value);
+                    options.setClipboardAutosync(clipboardAutosync);
+                    break;
+                default:
+                    Ln.w("Unknown server option: " + key);
+                    break;
+            }
+        }
 
         return options;
     }
 
     private static Rect parseCrop(String crop) {
-        if ("-".equals(crop)) {
+        if (crop.isEmpty()) {
             return null;
         }
         // input format: "width:height:x:y"
