@@ -217,7 +217,6 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
     if (!vs->format_ctx->url) {
         LOGE("Could not strdup v4l2 device name");
         goto error_avformat_free_context;
-        return false;
     }
 #else
     strncpy(vs->format_ctx->filename, vs->device_name,
@@ -228,7 +227,6 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
     if (!ostream) {
         LOGE("Could not allocate new v4l2 stream");
         goto error_avformat_free_context;
-        return false;
     }
 
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
