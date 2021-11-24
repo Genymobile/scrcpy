@@ -37,6 +37,7 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
         LOGE("Could not create intr");
         sc_cond_destroy(&file_handler->event_cond);
         sc_mutex_destroy(&file_handler->mutex);
+        return false;
     }
 
     file_handler->serial = strdup(serial);
