@@ -76,10 +76,6 @@ if aoa_hid_support
     ]
 endif
 
-check_functions = [
-    'strdup'
-]
-
 cc = meson.get_compiler('c')
 
 if not get_option('crossbuild_windows')
@@ -139,6 +135,10 @@ endif
 if host_machine.system() == 'windows'
     dependencies += cc.find_library('ws2_32')
 endif
+
+check_functions = [
+    'strdup',
+]
 
 foreach f : check_functions
   if cc.has_function(f)
