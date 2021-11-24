@@ -42,6 +42,10 @@ src = [
 
 conf = configuration_data()
 
+conf.set('_POSIX_C_SOURCE', '200809L')
+conf.set('_XOPEN_SOURCE', '700')
+conf.set('_GNU_SOURCE', true)
+
 if host_machine.system() == 'windows'
     src += [
         'src/sys/win/file.c',
@@ -54,9 +58,6 @@ else
         'src/sys/unix/file.c',
         'src/sys/unix/process.c',
     ]
-    conf.set('_POSIX_C_SOURCE', '200809L')
-    conf.set('_XOPEN_SOURCE', '700')
-    conf.set('_GNU_SOURCE', true)
     if host_machine.system() == 'darwin'
         conf.set('_DARWIN_C_SOURCE', true)
     endif
