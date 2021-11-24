@@ -31,7 +31,7 @@ sc_file_get_local_path(const char *name) {
     size_t len = dirlen + namelen + 2; // +2: '/' and '\0'
     char *file_path = malloc(len);
     if (!file_path) {
-        LOGE("Could not alloc path");
+        LOG_OOM();
         free(executable_path);
         return NULL;
     }

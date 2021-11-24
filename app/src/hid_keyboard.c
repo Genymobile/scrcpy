@@ -160,6 +160,7 @@ static bool
 sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
     unsigned char *buffer = malloc(HID_KEYBOARD_EVENT_SIZE);
     if (!buffer) {
+        LOG_OOM();
         return false;
     }
 

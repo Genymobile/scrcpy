@@ -42,7 +42,7 @@ stream_recv_packet(struct stream *stream, AVPacket *packet) {
     assert(len);
 
     if (av_new_packet(packet, len)) {
-        LOGE("Could not allocate packet");
+        LOG_OOM();
         return false;
     }
 
@@ -111,18 +111,18 @@ stream_push_packet(struct stream *stream, AVPacket *packet) {
         if (stream->pending) {
             offset = stream->pending->size;
             if (av_grow_packet(stream->pending, packet->size)) {
-                LOGE("Could not grow packet");
+                LOG_OOM();
                 return false;
             }
         } else {
             offset = 0;
             stream->pending = av_packet_alloc();
             if (!stream->pending) {
-                LOGE("Could not allocate packet");
+                LOG_OOM();
                 return false;
             }
             if (av_new_packet(stream->pending, packet->size)) {
-                LOGE("Could not create packet");
+                LOG_OOM();
                 av_packet_free(&stream->pending);
                 return false;
             }
@@ -200,7 +200,7 @@ run_stream(void *data) {
 
     stream->codec_ctx = avcodec_alloc_context3(codec);
     if (!stream->codec_ctx) {
-        LOGC("Could not allocate codec context");
+        LOG_OOM();
         goto end;
     }
 
@@ -221,7 +221,7 @@ run_stream(void *data) {
 
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
-        LOGE("Could not allocate packet");
+        LOG_OOM();
         goto finally_close_parser;
     }
 

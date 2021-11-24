@@ -34,7 +34,6 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
 
     ok = sc_intr_init(&file_handler->intr);
     if (!ok) {
-        LOGE("Could not create intr");
         sc_cond_destroy(&file_handler->event_cond);
         sc_mutex_destroy(&file_handler->mutex);
         return false;
@@ -42,7 +41,7 @@ file_handler_init(struct file_handler *file_handler, const char *serial,
 
     file_handler->serial = strdup(serial);
     if (!file_handler->serial) {
-        LOGE("Could not strdup serial");
+        LOG_OOM();
         sc_intr_destroy(&file_handler->intr);
         sc_cond_destroy(&file_handler->event_cond);
         sc_mutex_destroy(&file_handler->mutex);

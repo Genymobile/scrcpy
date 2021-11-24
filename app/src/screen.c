@@ -366,18 +366,15 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     bool ok = sc_video_buffer_init(&screen->vb, params->buffering_time, &cbs,
                                    screen);
     if (!ok) {
-        LOGE("Could not initialize video buffer");
         return false;
     }
 
     ok = sc_video_buffer_start(&screen->vb);
     if (!ok) {
-        LOGE("Could not start video_buffer");
         goto error_destroy_video_buffer;
     }
 
     if (!fps_counter_init(&screen->fps_counter)) {
-        LOGE("Could not initialize FPS counter");
         goto error_stop_and_join_video_buffer;
     }
 
@@ -478,7 +475,7 @@ screen_init(struct screen *screen, const struct screen_params *params) {
 
     screen->frame = av_frame_alloc();
     if (!screen->frame) {
-        LOGC("Could not create screen frame");
+        LOG_OOM();
         goto error_destroy_texture;
     }
 

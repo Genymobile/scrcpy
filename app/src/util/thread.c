@@ -10,6 +10,7 @@ sc_thread_create(sc_thread *thread, sc_thread_fn fn, const char *name,
                  void *userdata) {
     SDL_Thread *sdl_thread = SDL_CreateThread(fn, name, userdata);
     if (!sdl_thread) {
+        LOG_OOM();
         return false;
     }
 
@@ -26,6 +27,7 @@ bool
 sc_mutex_init(sc_mutex *mutex) {
     SDL_mutex *sdl_mutex = SDL_CreateMutex();
     if (!sdl_mutex) {
+        LOG_OOM();
         return false;
     }
 
@@ -94,6 +96,7 @@ bool
 sc_cond_init(sc_cond *cond) {
     SDL_cond *sdl_cond = SDL_CreateCond();
     if (!sdl_cond) {
+        LOG_OOM();
         return false;
     }
 

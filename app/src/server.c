@@ -34,7 +34,7 @@ get_server_path(void) {
         char *server_path = strdup(server_path_env);
 #endif
         if (!server_path) {
-            LOGE("Could not allocate memory");
+            LOG_OOM();
             return NULL;
         }
         LOGD("Using SCRCPY_SERVER_PATH: %s", server_path);
@@ -45,7 +45,7 @@ get_server_path(void) {
     LOGD("Using server: " SC_SERVER_PATH_DEFAULT);
     char *server_path = strdup(SC_SERVER_PATH_DEFAULT);
     if (!server_path) {
-        LOGE("Could not allocate memory");
+        LOG_OOM();
         return NULL;
     }
 #else
@@ -309,20 +309,18 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
               const struct sc_server_callbacks *cbs, void *cbs_userdata) {
     bool ok = sc_server_params_copy(&server->params, params);
     if (!ok) {
-        LOGE("Could not copy server params");
+        LOG_OOM();
         return false;
     }
 
     ok = sc_mutex_init(&server->mutex);
     if (!ok) {
-        LOGE("Could not create server mutex");
         sc_server_params_destroy(&server->params);
         return false;
     }
 
     ok = sc_cond_init(&server->cond_stopped);
     if (!ok) {
-        LOGE("Could not create server cond_stopped");
         sc_mutex_destroy(&server->mutex);
         sc_server_params_destroy(&server->params);
         return false;
@@ -330,7 +328,6 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
 
     ok = sc_intr_init(&server->intr);
     if (!ok) {
-        LOGE("Could not create intr");
         sc_cond_destroy(&server->cond_stopped);
         sc_mutex_destroy(&server->mutex);
         sc_server_params_destroy(&server->params);

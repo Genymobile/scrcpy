@@ -33,7 +33,7 @@ write_header(struct sc_v4l2_sink *vs, const AVPacket *packet) {
 
     uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));
     if (!extradata) {
-        LOGC("Could not allocate extradata");
+        LOG_OOM();
         return false;
     }
 
@@ -163,25 +163,21 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     bool ok = sc_video_buffer_init(&vs->vb, vs->buffering_time, &cbs, vs);
     if (!ok) {
-        LOGE("Could not initialize video buffer");
         return false;
     }
 
     ok = sc_video_buffer_start(&vs->vb);
     if (!ok) {
-        LOGE("Could not start video buffer");
         goto error_video_buffer_destroy;
     }
 
     ok = sc_mutex_init(&vs->mutex);
     if (!ok) {
-        LOGC("Could not create mutex");
         goto error_video_buffer_stop_and_join;
     }
 
     ok = sc_cond_init(&vs->cond);
     if (!ok) {
-        LOGC("Could not create cond");
         goto error_mutex_destroy;
     }
 
@@ -203,7 +199,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     vs->format_ctx = avformat_alloc_context();
     if (!vs->format_ctx) {
-        LOGE("Could not allocate v4l2 output context");
+        LOG_OOM();
         return false;
     }
 
@@ -215,7 +211,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 #ifdef SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
     vs->format_ctx->url = strdup(vs->device_name);
     if (!vs->format_ctx->url) {
-        LOGE("Could not strdup v4l2 device name");
+        LOG_OOM();
         goto error_avformat_free_context;
     }
 #else
@@ -225,7 +221,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     AVStream *ostream = avformat_new_stream(vs->format_ctx, encoder);
     if (!ostream) {
-        LOGE("Could not allocate new v4l2 stream");
+        LOG_OOM();
         goto error_avformat_free_context;
     }
 
@@ -244,7 +240,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     vs->encoder_ctx = avcodec_alloc_context3(encoder);
     if (!vs->encoder_ctx) {
-        LOGC("Could not allocate codec context for v4l2");
+        LOG_OOM();
         goto error_avio_close;
     }
 
@@ -261,13 +257,13 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
 
     vs->frame = av_frame_alloc();
     if (!vs->frame) {
-        LOGE("Could not create v4l2 frame");
+        LOG_OOM();
         goto error_avcodec_close;
     }
 
     vs->packet = av_packet_alloc();
     if (!vs->packet) {
-        LOGE("Could not allocate packet");
+        LOG_OOM();
         goto error_av_frame_free;
     }
 

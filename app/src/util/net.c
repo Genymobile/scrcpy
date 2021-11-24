@@ -52,6 +52,7 @@ wrap(sc_raw_socket sock) {
 
     struct sc_socket_windows *socket = malloc(sizeof(*socket));
     if (!socket) {
+        LOG_OOM();
         closesocket(sock);
         return SC_SOCKET_NONE;
     }

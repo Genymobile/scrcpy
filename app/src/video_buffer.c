@@ -14,11 +14,13 @@ static struct sc_video_buffer_frame *
 sc_video_buffer_frame_new(const AVFrame *frame) {
     struct sc_video_buffer_frame *vb_frame = malloc(sizeof(*vb_frame));
     if (!vb_frame) {
+        LOG_OOM();
         return NULL;
     }
 
     vb_frame->frame = av_frame_alloc();
     if (!vb_frame->frame) {
+        LOG_OOM();
         free(vb_frame);
         return NULL;
     }
@@ -132,14 +134,12 @@ sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
     if (buffering_time) {
         ok = sc_mutex_init(&vb->b.mutex);
         if (!ok) {
-            LOGC("Could not create mutex");
             sc_frame_buffer_destroy(&vb->fb);
             return false;
         }
 
         ok = sc_cond_init(&vb->b.queue_cond);
         if (!ok) {
-            LOGC("Could not create cond");
             sc_mutex_destroy(&vb->b.mutex);
             sc_frame_buffer_destroy(&vb->fb);
             return false;
@@ -147,7 +147,6 @@ sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
 
         ok = sc_cond_init(&vb->b.wait_cond);
         if (!ok) {
-            LOGC("Could not create wait cond");
             sc_cond_destroy(&vb->b.queue_cond);
             sc_mutex_destroy(&vb->b.mutex);
             sc_frame_buffer_destroy(&vb->fb);
@@ -234,7 +233,7 @@ sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
     struct sc_video_buffer_frame *vb_frame = sc_video_buffer_frame_new(frame);
     if (!vb_frame) {
         sc_mutex_unlock(&vb->b.mutex);
-        LOGE("Could not allocate frame");
+        LOG_OOM();
         return false;
     }
 

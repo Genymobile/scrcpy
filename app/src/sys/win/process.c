@@ -100,6 +100,7 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
 
         lpAttributeList = malloc(size);
         if (!lpAttributeList) {
+            LOG_OOM();
             goto error_close_stderr;
         }
 
@@ -133,13 +134,14 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle,
 
     char *cmd = malloc(CMD_MAX_LEN);
     if (!cmd || !build_cmd(cmd, CMD_MAX_LEN, argv)) {
+        LOG_OOM();
         goto error_free_attribute_list;
     }
 
     wchar_t *wide = sc_str_to_wchars(cmd);
     free(cmd);
     if (!wide) {
-        LOGC("Could not allocate wide char string");
+        LOG_OOM();
         goto error_free_attribute_list;
     }
 

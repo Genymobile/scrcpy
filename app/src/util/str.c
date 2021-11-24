@@ -5,12 +5,14 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
-#include "util/strbuf.h"
 
 #ifdef _WIN32
 # include <windows.h>
 # include <tchar.h>
 #endif
+
+#include "log.h"
+#include "strbuf.h"
 
 size_t
 sc_strncpy(char *dest, const char *src, size_t n) {
@@ -51,6 +53,7 @@ sc_str_quote(const char *src) {
     size_t len = strlen(src);
     char *quoted = malloc(len + 3);
     if (!quoted) {
+        LOG_OOM();
         return NULL;
     }
     memcpy(&quoted[1], src, len);
@@ -188,6 +191,7 @@ sc_str_to_wchars(const char *utf8) {
 
     wchar_t *wide = malloc(len * sizeof(wchar_t));
     if (!wide) {
+        LOG_OOM();
         return NULL;
     }
 
@@ -204,6 +208,7 @@ sc_str_from_wchars(const wchar_t *ws) {
 
     char *utf8 = malloc(len);
     if (!utf8) {
+        LOG_OOM();
         return NULL;
     }
 

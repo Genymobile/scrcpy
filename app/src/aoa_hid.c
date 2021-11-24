@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "aoa_hid.h"
+#include "util/log.h"
 
 // See <https://source.android.com/devices/accessories/aoa2#hid-support>.
 #define ACCESSORY_REGISTER_HID 54
@@ -20,6 +21,7 @@ sc_hid_event_log(const struct sc_hid_event *event) {
     unsigned buffer_size = event->size * 3 + 1;
     char *buffer = malloc(buffer_size);
     if (!buffer) {
+        LOG_OOM();
         return;
     }
     for (unsigned i = 0; i < event->size; ++i) {

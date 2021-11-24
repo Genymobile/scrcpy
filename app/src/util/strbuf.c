@@ -1,15 +1,17 @@
 #include "strbuf.h"
 
 #include <assert.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <stdio.h>
+#include "log.h"
 
 bool
 sc_strbuf_init(struct sc_strbuf *buf, size_t init_cap) {
     buf->s = malloc(init_cap + 1); // +1 for '\0'
     if (!buf->s) {
+        LOG_OOM();
         return false;
     }
 
@@ -25,6 +27,7 @@ sc_strbuf_reserve(struct sc_strbuf *buf, size_t len) {
         char *s = realloc(buf->s, new_cap + 1); // +1 for '\0'
         if (!s) {
             // Leave the old buf->s
+            LOG_OOM();
             return false;
         }
         buf->s = s;

@@ -10,11 +10,13 @@ bool
 sc_frame_buffer_init(struct sc_frame_buffer *fb) {
     fb->pending_frame = av_frame_alloc();
     if (!fb->pending_frame) {
+        LOG_OOM();
         return false;
     }
 
     fb->tmp_frame = av_frame_alloc();
     if (!fb->tmp_frame) {
+        LOG_OOM();
         av_frame_free(&fb->pending_frame);
         return false;
     }

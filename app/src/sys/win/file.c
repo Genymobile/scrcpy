@@ -26,7 +26,7 @@ bool
 sc_file_is_regular(const char *path) {
     wchar_t *wide_path = sc_str_to_wchars(path);
     if (!wide_path) {
-        LOGC("Could not allocate wide char string");
+        LOG_OOM();
         return false;
     }
 

@@ -86,7 +86,8 @@ show_adb_err_msg(enum sc_process_result err, const char *const argv[]) {
 #define MAX_COMMAND_STRING_LEN 1024
     char *buf = malloc(MAX_COMMAND_STRING_LEN);
     if (!buf) {
-        LOGE("Failed to execute (could not allocate error message)");
+        LOG_OOM();
+        LOGE("Failed to execute");
         return;
     }
 
@@ -118,6 +119,7 @@ adb_execute_p(const char *serial, const char *const adb_cmd[],
 
     const char **argv = malloc((len + 4) * sizeof(*argv));
     if (!argv) {
+        LOG_OOM();
         return SC_PROCESS_NONE;
     }
 

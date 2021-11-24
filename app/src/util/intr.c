@@ -8,7 +8,7 @@ bool
 sc_intr_init(struct sc_intr *intr) {
     bool ok = sc_mutex_init(&intr->mutex);
     if (!ok) {
-        LOGE("Could not init intr mutex");
+        LOG_OOM();
         return false;
     }
 

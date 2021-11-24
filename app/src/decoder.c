@@ -42,7 +42,7 @@ static bool
 decoder_open(struct decoder *decoder, const AVCodec *codec) {
     decoder->codec_ctx = avcodec_alloc_context3(codec);
     if (!decoder->codec_ctx) {
-        LOGC("Could not allocate decoder context");
+        LOG_OOM();
         return false;
     }
 
@@ -54,7 +54,7 @@ decoder_open(struct decoder *decoder, const AVCodec *codec) {
 
     decoder->frame = av_frame_alloc();
     if (!decoder->frame) {
-        LOGE("Could not create decoder frame");
+        LOG_OOM();
         avcodec_close(decoder->codec_ctx);
         avcodec_free_context(&decoder->codec_ctx);
         return false;

@@ -24,7 +24,7 @@ device_msg_deserialize(const unsigned char *buf, size_t len,
             }
             char *text = malloc(clipboard_len + 1);
             if (!text) {
-                LOGW("Could not allocate text for clipboard");
+                LOG_OOM();
                 return -1;
             }
             if (clipboard_len) {

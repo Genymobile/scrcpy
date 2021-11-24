@@ -271,7 +271,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     size_t fmt_len = strlen(fmt);
     char *local_fmt = malloc(fmt_len + 10);
     if (!local_fmt) {
-        LOGC("Could not allocate string");
+        LOG_OOM();
         return;
     }
     memcpy(local_fmt, "[FFmpeg] ", 9); // do not write the final '\0'

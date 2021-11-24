@@ -31,7 +31,7 @@ get_icon_path(void) {
         char *icon_path = strdup(icon_path_env);
 #endif
         if (!icon_path) {
-            LOGE("Could not allocate memory");
+            LOG_OOM();
             return NULL;
         }
         LOGD("Using SCRCPY_ICON_PATH: %s", icon_path);
@@ -42,7 +42,7 @@ get_icon_path(void) {
     LOGD("Using icon: " SCRCPY_DEFAULT_ICON_PATH);
     char *icon_path = strdup(SCRCPY_DEFAULT_ICON_PATH);
     if (!icon_path) {
-        LOGE("Could not allocate memory");
+        LOG_OOM();
         return NULL;
     }
 #else
@@ -63,7 +63,7 @@ decode_image(const char *path) {
 
     AVFormatContext *ctx = avformat_alloc_context();
     if (!ctx) {
-        LOGE("Could not allocate image decoder context");
+        LOG_OOM();
         return NULL;
     }
 
@@ -93,7 +93,7 @@ decode_image(const char *path) {
 
     AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
     if (!codec_ctx) {
-        LOGE("Could not allocate codec context");
+        LOG_OOM();
         goto close_input;
     }
 
@@ -109,13 +109,13 @@ decode_image(const char *path) {
 
     AVFrame *frame = av_frame_alloc();
     if (!frame) {
-        LOGE("Could not allocate frame");
+        LOG_OOM();
         goto close_codec;
     }
 
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
-        LOGE("Could not allocate packet");
+        LOG_OOM();
         av_frame_free(&frame);
         goto close_codec;
     }
