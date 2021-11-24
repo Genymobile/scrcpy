@@ -42,6 +42,23 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local,
             unsigned flags);
 
 /**
+ * Execute `adb connect <ip_port>`
+ *
+ * `ip_port` may not be NULL.
+ */
+bool
+adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
+
+/**
+ * Execute `adb disconnect [<ip_port>]`
+ *
+ * If `ip_port` is NULL, execute `adb disconnect`.
+ * Otherwise, execute `adb disconnect <ip_port>`.
+ */
+bool
+adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
+
+/**
  * Execute `adb get-serialno`
  *
  * Return the result, to be freed by the caller, or NULL on error.

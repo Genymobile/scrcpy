@@ -314,6 +314,24 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local,
     return process_check_success_intr(intr, pid, "adb install", flags);
 }
 
+bool
+adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
+    const char *const adb_cmd[] = {"connect", ip_port};
+
+    sc_pid pid = adb_execute(NULL, adb_cmd, ARRAY_LEN(adb_cmd), flags);
+    return process_check_success_intr(intr, pid, "adb connect", flags);
+}
+
+bool
+adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
+    const char *const adb_cmd[] = {"disconnect", ip_port};
+    size_t len = ip_port ? ARRAY_LEN(adb_cmd)
+                         : ARRAY_LEN(adb_cmd) - 1;
+
+    sc_pid pid = adb_execute(NULL, adb_cmd, len, flags);
+    return process_check_success_intr(intr, pid, "adb disconnect", flags);
+}
+
 char *
 adb_get_serialno(struct sc_intr *intr, unsigned flags) {
     const char *const adb_cmd[] = {"get-serialno"};
