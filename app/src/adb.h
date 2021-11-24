@@ -8,31 +8,37 @@
 
 #include "util/intr.h"
 
+#define SC_ADB_NO_STDOUT (1 << 0)
+#define SC_ADB_NO_STDERR (1 << 1)
+
 sc_pid
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len);
+adb_execute(const char *serial, const char *const adb_cmd[], size_t len,
+            unsigned flags);
 
 bool
 adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
-            const char *device_socket_name);
+            const char *device_socket_name, unsigned flags);
 
 bool
 adb_forward_remove(struct sc_intr *intr, const char *serial,
-                   uint16_t local_port);
+                   uint16_t local_port, unsigned flags);
 
 bool
 adb_reverse(struct sc_intr *intr, const char *serial,
-            const char *device_socket_name, uint16_t local_port);
+            const char *device_socket_name, uint16_t local_port,
+            unsigned flags);
 
 bool
 adb_reverse_remove(struct sc_intr *intr, const char *serial,
-                   const char *device_socket_name);
+                   const char *device_socket_name, unsigned flags);
 
 bool
 adb_push(struct sc_intr *intr, const char *serial, const char *local,
-         const char *remote);
+         const char *remote, unsigned flags);
 
 bool
-adb_install(struct sc_intr *intr, const char *serial, const char *local);
+adb_install(struct sc_intr *intr, const char *serial, const char *local,
+            unsigned flags);
 
 /**
  * Execute `adb get-serialno`
@@ -40,6 +46,6 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local);
  * Return the result, to be freed by the caller, or NULL on error.
  */
 char *
-adb_get_serialno(struct sc_intr *intr);
+adb_get_serialno(struct sc_intr *intr, unsigned flags);
 
 #endif
