@@ -138,6 +138,8 @@ endif
 
 check_functions = [
     'strdup',
+    'asprintf',
+    'vasprintf',
 ]
 
 foreach f : check_functions
