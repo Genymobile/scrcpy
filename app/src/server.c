@@ -175,24 +175,50 @@ execute_server(struct sc_server *server,
 #define STRBOOL(v) (v ? "true" : "false")
 
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
-    ADD_PARAM("max_size=%" PRIu16, params->max_size);
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
-    ADD_PARAM("max_fps=%" PRIu16, params->max_fps);
-    ADD_PARAM("lock_video_orientation=%" PRIi8, params->lock_video_orientation);
-    ADD_PARAM("tunnel_forward=%s", STRBOOL(server->tunnel.forward));
-    ADD_PARAM("crop=%s", params->crop ? params->crop : "");
-    // always send frame meta (packet boundaries + timestamp)
-    ADD_PARAM("send_frame_meta=true");
-    ADD_PARAM("control=%s", STRBOOL(params->control));
-    ADD_PARAM("display_id=%" PRIu32, params->display_id);
-    ADD_PARAM("show_touches=%s", STRBOOL(params->show_touches));
-    ADD_PARAM("stay_awake=%s", STRBOOL(params->stay_awake));
-    ADD_PARAM("codec_options=%s",
-              params->codec_options ? params->codec_options : "");
-    ADD_PARAM("encoder_name=%s",
-              params->encoder_name ? params->encoder_name : "");
-    ADD_PARAM("power_off_on_close=%s", STRBOOL(params->power_off_on_close));
-    ADD_PARAM("clipboard_autosync=%s", STRBOOL(params->clipboard_autosync));
+
+    if (params->max_size) {
+        ADD_PARAM("max_size=%" PRIu16, params->max_size);
+    }
+    if (params->max_fps) {
+        ADD_PARAM("max_fps=%" PRIu16, params->max_fps);
+    }
+    if (params->lock_video_orientation != SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+        ADD_PARAM("lock_video_orientation=%" PRIi8,
+                  params->lock_video_orientation);
+    }
+    if (server->tunnel.forward) {
+        ADD_PARAM("tunnel_forward=%s", STRBOOL(server->tunnel.forward));
+    }
+    if (params->crop) {
+        ADD_PARAM("crop=%s", params->crop);
+    }
+    if (!params->control) {
+        // By default, control is true
+        ADD_PARAM("control=%s", STRBOOL(params->control));
+    }
+    if (params->display_id) {
+        ADD_PARAM("display_id=%" PRIu32, params->display_id);
+    }
+    if (params->show_touches) {
+        ADD_PARAM("show_touches=%s", STRBOOL(params->show_touches));
+    }
+    if (params->stay_awake) {
+        ADD_PARAM("stay_awake=%s", STRBOOL(params->stay_awake));
+    }
+    if (params->codec_options) {
+        ADD_PARAM("codec_options=%s", params->codec_options);
+    }
+    if (params->encoder_name) {
+        ADD_PARAM("encoder_name=%s", params->encoder_name);
+    }
+    if (params->power_off_on_close) {
+        ADD_PARAM("power_off_on_close=%s", STRBOOL(params->power_off_on_close));
+    }
+    if (!params->clipboard_autosync) {
+        // By defaut, clipboard_autosync is true
+        ADD_PARAM("clipboard_autosync=%s", STRBOOL(params->clipboard_autosync));
+    }
 
 #undef ADD_PARAM
 #undef STRBOOL
