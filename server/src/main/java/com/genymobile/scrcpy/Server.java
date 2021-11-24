@@ -188,8 +188,8 @@ public final class Server {
                     options.setMaxFps(maxFps);
                     break;
                 case "lock_video_orientation":
-                    int lockedVideoOrientation = Integer.parseInt(value);
-                    options.setLockedVideoOrientation(lockedVideoOrientation);
+                    int lockVideoOrientation = Integer.parseInt(value);
+                    options.setLockVideoOrientation(lockVideoOrientation);
                     break;
                 case "tunnel_forward":
                     boolean tunnelForward = Boolean.parseBoolean(value);

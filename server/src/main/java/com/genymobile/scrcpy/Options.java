@@ -9,7 +9,7 @@ public class Options {
     private int maxSize;
     private int bitRate = 8000000;
     private int maxFps;
-    private int lockedVideoOrientation = -1;
+    private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
@@ -54,12 +54,12 @@ public class Options {
         this.maxFps = maxFps;
     }
 
-    public int getLockedVideoOrientation() {
-        return lockedVideoOrientation;
+    public int getLockVideoOrientation() {
+        return lockVideoOrientation;
     }
 
-    public void setLockedVideoOrientation(int lockedVideoOrientation) {
-        this.lockedVideoOrientation = lockedVideoOrientation;
+    public void setLockVideoOrientation(int lockVideoOrientation) {
+        this.lockVideoOrientation = lockVideoOrientation;
     }
 
     public boolean isTunnelForward() {
