@@ -139,8 +139,6 @@ log_level_to_server_string(enum sc_log_level level) {
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
-    const char *serial = server->params.serial;
-
     char max_size_string[6];
     char bit_rate_string[11];
     char max_fps_string[6];
@@ -199,7 +197,7 @@ execute_server(struct sc_server *server,
     //     Port: 5005
     // Then click on "Debug"
 #endif
-    return adb_execute(serial, cmd, ARRAY_LEN(cmd));
+    return adb_execute(params->serial, cmd, ARRAY_LEN(cmd));
 }
 
 static bool
