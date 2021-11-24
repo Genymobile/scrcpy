@@ -136,6 +136,20 @@ log_level_to_server_string(enum sc_log_level level) {
     }
 }
 
+static bool
+sc_server_sleep(struct sc_server *server, sc_tick deadline) {
+    sc_mutex_lock(&server->mutex);
+    bool timed_out = false;
+    while (!server->stopped && !timed_out) {
+        timed_out = !sc_cond_timedwait(&server->cond_stopped,
+                                       &server->mutex, deadline);
+    }
+    bool stopped = server->stopped;
+    sc_mutex_unlock(&server->mutex);
+
+    return !stopped;
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
@@ -286,17 +300,9 @@ connect_to_server(struct sc_server *server, unsigned attempts, sc_tick delay,
         }
 
         if (attempts) {
-            sc_mutex_lock(&server->mutex);
             sc_tick deadline = sc_tick_now() + delay;
-            bool timed_out = false;
-            while (!server->stopped && !timed_out) {
-                timed_out = !sc_cond_timedwait(&server->cond_stopped,
-                                               &server->mutex, deadline);
-            }
-            bool stopped = server->stopped;
-            sc_mutex_unlock(&server->mutex);
-
-            if (stopped) {
+            bool ok = sc_server_sleep(server, deadline);
+            if (!ok) {
                 LOGI("Connection attempt stopped");
                 break;
             }
