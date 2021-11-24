@@ -61,7 +61,7 @@ public final class Server {
     private static void scrcpy(Options options) throws IOException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
-        List<CodecOption> codecOptions = CodecOption.parse(options.getCodecOptions());
+        List<CodecOption> codecOptions = options.getCodecOptions();
 
         Thread initThread = startInitThread(options);
 
@@ -204,7 +204,7 @@ public final class Server {
         boolean stayAwake = Boolean.parseBoolean(args[12]);
         options.setStayAwake(stayAwake);
 
-        String codecOptions = args[13];
+        List<CodecOption> codecOptions = CodecOption.parse(args[13]);
         options.setCodecOptions(codecOptions);
 
         String encoderName = "-".equals(args[14]) ? null : args[14];

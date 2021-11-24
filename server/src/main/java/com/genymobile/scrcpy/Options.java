@@ -2,6 +2,8 @@ package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
 
+import java.util.List;
+
 public class Options {
     private Ln.Level logLevel;
     private int maxSize;
@@ -15,7 +17,7 @@ public class Options {
     private int displayId;
     private boolean showTouches;
     private boolean stayAwake;
-    private String codecOptions;
+    private List<CodecOption> codecOptions;
     private String encoderName;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync;
@@ -116,11 +118,11 @@ public class Options {
         this.stayAwake = stayAwake;
     }
 
-    public String getCodecOptions() {
+    public List<CodecOption> getCodecOptions() {
         return codecOptions;
     }
 
-    public void setCodecOptions(String codecOptions) {
+    public void setCodecOptions(List<CodecOption> codecOptions) {
         this.codecOptions = codecOptions;
     }
 
