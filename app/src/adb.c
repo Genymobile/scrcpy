@@ -196,46 +196,57 @@ adb_execute(const char *serial, const char *const adb_cmd[], size_t len) {
     return adb_execute_p(serial, adb_cmd, len, NULL);
 }
 
-static sc_pid
-adb_exec_forward(const char *serial, uint16_t local_port,
-                 const char *device_socket_name) {
+bool
+adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
+            const char *device_socket_name) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"forward", local, remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+    sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return process_check_success_intr(intr, pid, "adb forward");
 }
 
-static sc_pid
-adb_exec_forward_remove(const char *serial, uint16_t local_port) {
+bool
+adb_forward_remove(struct sc_intr *intr, const char *serial,
+                   uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     sprintf(local, "tcp:%" PRIu16, local_port);
     const char *const adb_cmd[] = {"forward", "--remove", local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+    sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return process_check_success_intr(intr, pid, "adb forward --remove");
 }
 
-static sc_pid
-adb_exec_reverse(const char *serial, const char *device_socket_name,
-                 uint16_t local_port) {
+bool
+adb_reverse(struct sc_intr *intr, const char *serial,
+            const char *device_socket_name, uint16_t local_port) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", remote, local};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+    sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return process_check_success_intr(intr, pid, "adb reverse");
 }
 
-static sc_pid
-adb_exec_reverse_remove(const char *serial, const char *device_socket_name) {
+bool
+adb_reverse_remove(struct sc_intr *intr, const char *serial,
+                   const char *device_socket_name) {
     char remote[108 + 14 + 1]; // localabstract:NAME
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
-    return adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+
+    sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd));
+    return process_check_success_intr(intr, pid, "adb reverse --remove");
 }
 
-static sc_pid
-adb_exec_push(const char *serial, const char *local, const char *remote) {
+bool
+adb_push(struct sc_intr *intr, const char *serial, const char *local,
+         const char *remote) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the paths must be quoted
     // (see sys/win/command.c)
@@ -258,11 +269,11 @@ adb_exec_push(const char *serial, const char *local, const char *remote) {
     free((void *) local);
 #endif
 
-    return pid;
+    return process_check_success_intr(intr, pid, "adb push");
 }
 
-static sc_pid
-adb_exec_install(const char *serial, const char *local) {
+bool
+adb_install(struct sc_intr *intr, const char *serial, const char *local) {
 #ifdef __WINDOWS__
     // Windows will parse the string, so the local name must be quoted
     // (see sys/win/command.c)
@@ -279,60 +290,15 @@ adb_exec_install(const char *serial, const char *local) {
     free((void *) local);
 #endif
 
-    return pid;
-}
-
-static sc_pid
-adb_exec_get_serialno(sc_pipe *pout) {
-    const char *const adb_cmd[] = {"get-serialno"};
-    return adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), pout);
-}
-
-bool
-adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
-            const char *device_socket_name) {
-    sc_pid pid = adb_exec_forward(serial, local_port, device_socket_name);
-    return process_check_success_intr(intr, pid, "adb forward");
-}
-
-bool
-adb_forward_remove(struct sc_intr *intr, const char *serial,
-                   uint16_t local_port) {
-    sc_pid pid = adb_exec_forward_remove(serial, local_port);
-    return process_check_success_intr(intr, pid, "adb forward --remove");
-}
-
-bool
-adb_reverse(struct sc_intr *intr, const char *serial,
-            const char *device_socket_name, uint16_t local_port) {
-    sc_pid pid = adb_exec_reverse(serial, device_socket_name, local_port);
-    return process_check_success_intr(intr, pid, "adb reverse");
-}
-
-bool
-adb_reverse_remove(struct sc_intr *intr, const char *serial,
-                   const char *device_socket_name) {
-    sc_pid pid = adb_exec_reverse_remove(serial, device_socket_name);
-    return process_check_success_intr(intr, pid, "adb reverse --remove");
-}
-
-bool
-adb_push(struct sc_intr *intr, const char *serial, const char *local,
-         const char *remote) {
-    sc_pid pid = adb_exec_push(serial, local, remote);
-    return process_check_success_intr(intr, pid, "adb push");
-}
-
-bool
-adb_install(struct sc_intr *intr, const char *serial, const char *local) {
-    sc_pid pid = adb_exec_install(serial, local);
     return process_check_success_intr(intr, pid, "adb install");
 }
 
 char *
 adb_get_serialno(struct sc_intr *intr) {
+    const char *const adb_cmd[] = {"get-serialno"};
+
     sc_pipe pout;
-    sc_pid pid = adb_exec_get_serialno(&pout);
+    sc_pid pid = adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), &pout);
     if (pid == SC_PROCESS_NONE) {
         LOGE("Could not execute \"adb get-serialno\"");
         return NULL;
