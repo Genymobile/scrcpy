@@ -374,6 +374,37 @@ adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
 }
 
 char *
+adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
+            unsigned flags) {
+    const char *const adb_cmd[] = {"shell", "getprop", prop};
+
+    sc_pipe pout;
+    sc_pid pid =
+        adb_execute_p(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGE("Could not execute \"adb getprop\"");
+        return NULL;
+    }
+
+    char buf[128];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "adb getprop", flags);
+    if (!ok) {
+        return NULL;
+    }
+
+    if (r == -1) {
+        return NULL;
+    }
+
+    sc_str_truncate(buf, r, " \r\n");
+
+    return strdup(buf);
+}
+
+char *
 adb_get_serialno(struct sc_intr *intr, unsigned flags) {
     const char *const adb_cmd[] = {"get-serialno"};
 

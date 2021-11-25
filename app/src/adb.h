@@ -66,6 +66,13 @@ bool
 adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 
 /**
+ * Execute `adb getprop <prop>`
+ */
+char *
+adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
+            unsigned flags);
+
+/**
  * Execute `adb get-serialno`
  *
  * Return the result, to be freed by the caller, or NULL on error.
