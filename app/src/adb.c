@@ -318,8 +318,37 @@ bool
 adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     const char *const adb_cmd[] = {"connect", ip_port};
 
-    sc_pid pid = adb_execute(NULL, adb_cmd, ARRAY_LEN(adb_cmd), flags);
-    return process_check_success_intr(intr, pid, "adb connect", flags);
+    sc_pipe pout;
+    sc_pid pid = adb_execute_p(NULL, adb_cmd, ARRAY_LEN(adb_cmd), flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGE("Could not execute \"adb connect\"");
+        return false;
+    }
+
+    // "adb connect" always returns successfully (with exit code 0), even in
+    // case of failure. As a workaround, check if its output starts with
+    // "connected".
+    char buf[128];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "adb connect", flags);
+    if (!ok) {
+        return false;
+    }
+
+    if (r == -1) {
+        return false;
+    }
+
+    ok = !strncmp("connected", buf, sizeof("connected") - 1);
+    if (!ok && !(flags & SC_ADB_NO_STDERR)) {
+        // "adb connect" also prints errors to stdout. Since we capture it,
+        // re-print the error to stderr.
+        sc_str_truncate(buf, r, "\r\n");
+        fprintf(stderr, "%s\n", buf);
+    }
+    return ok;
 }
 
 bool
