@@ -304,6 +304,10 @@ adb_get_serialno(struct sc_intr *intr) {
         return NULL;
     }
 
+    if (r == -1) {
+        return false;
+    }
+
     sc_str_truncate(buf, r, " \r\n");
 
     return strdup(buf);
