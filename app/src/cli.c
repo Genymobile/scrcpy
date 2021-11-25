@@ -1394,6 +1394,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    int index = optind;
+    if (index < argc) {
+        LOGE("Unexpected additional argument: %s", argv[index]);
+        return false;
+    }
+
 #ifdef HAVE_V4L2
     if (!opts->display && !opts->record_filename && !opts->v4l2_device) {
         LOGE("-N/--no-display requires either screen recording (-r/--record)"
@@ -1423,12 +1429,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         LOGI("Tunnel host/port is set, "
              "--force-adb-forward automatically enabled.");
         opts->force_adb_forward = true;
-    }
-
-    int index = optind;
-    if (index < argc) {
-        LOGE("Unexpected additional argument: %s", argv[index]);
-        return false;
     }
 
     if (opts->record_format && !opts->record_filename) {
