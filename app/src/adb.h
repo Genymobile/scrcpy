@@ -10,6 +10,7 @@
 
 #define SC_ADB_NO_STDOUT (1 << 0)
 #define SC_ADB_NO_STDERR (1 << 1)
+#define SC_ADB_NO_LOGERR (1 << 2)
 
 sc_pid
 adb_execute(const char *serial, const char *const adb_cmd[], size_t len,

@@ -112,18 +112,25 @@ show_adb_err_msg(enum sc_process_result err, const char *const argv[]) {
 }
 
 static bool
-process_check_success_internal(sc_pid pid, const char *name, bool close) {
+process_check_success_internal(sc_pid pid, const char *name, bool close,
+                               unsigned flags) {
+    bool log_errors = !(flags & SC_ADB_NO_LOGERR);
+
     if (pid == SC_PROCESS_NONE) {
-        LOGE("Could not execute \"%s\"", name);
+        if (log_errors) {
+            LOGE("Could not execute \"%s\"", name);
+        }
         return false;
     }
     sc_exit_code exit_code = sc_process_wait(pid, close);
     if (exit_code) {
-        if (exit_code != SC_EXIT_CODE_NONE) {
-            LOGE("\"%s\" returned with value %" SC_PRIexitcode, name,
-                 exit_code);
-        } else {
-            LOGE("\"%s\" exited unexpectedly", name);
+        if (log_errors) {
+            if (exit_code != SC_EXIT_CODE_NONE) {
+                LOGE("\"%s\" returned with value %" SC_PRIexitcode, name,
+                     exit_code);
+            } else {
+                LOGE("\"%s\" exited unexpectedly", name);
+            }
         }
         return false;
     }
@@ -131,14 +138,15 @@ process_check_success_internal(sc_pid pid, const char *name, bool close) {
 }
 
 static bool
-process_check_success_intr(struct sc_intr *intr, sc_pid pid, const char *name) {
+process_check_success_intr(struct sc_intr *intr, sc_pid pid, const char *name,
+                           unsigned flags) {
     if (!sc_intr_set_process(intr, pid)) {
         // Already interrupted
         return false;
     }
 
     // Always pass close=false, interrupting would be racy otherwise
-    bool ret = process_check_success_internal(pid, name, false);
+    bool ret = process_check_success_internal(pid, name, false, flags);
 
     sc_intr_set_process(intr, SC_PROCESS_NONE);
 
@@ -217,7 +225,7 @@ adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
     const char *const adb_cmd[] = {"forward", local, remote};
 
     sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
-    return process_check_success_intr(intr, pid, "adb forward");
+    return process_check_success_intr(intr, pid, "adb forward", flags);
 }
 
 bool
@@ -228,7 +236,7 @@ adb_forward_remove(struct sc_intr *intr, const char *serial,
     const char *const adb_cmd[] = {"forward", "--remove", local};
 
     sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
-    return process_check_success_intr(intr, pid, "adb forward --remove");
+    return process_check_success_intr(intr, pid, "adb forward --remove", flags);
 }
 
 bool
@@ -242,7 +250,7 @@ adb_reverse(struct sc_intr *intr, const char *serial,
     const char *const adb_cmd[] = {"reverse", remote, local};
 
     sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
-    return process_check_success_intr(intr, pid, "adb reverse");
+    return process_check_success_intr(intr, pid, "adb reverse", flags);
 }
 
 bool
@@ -253,7 +261,7 @@ adb_reverse_remove(struct sc_intr *intr, const char *serial,
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
 
     sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
-    return process_check_success_intr(intr, pid, "adb reverse --remove");
+    return process_check_success_intr(intr, pid, "adb reverse --remove", flags);
 }
 
 bool
@@ -281,7 +289,7 @@ adb_push(struct sc_intr *intr, const char *serial, const char *local,
     free((void *) local);
 #endif
 
-    return process_check_success_intr(intr, pid, "adb push");
+    return process_check_success_intr(intr, pid, "adb push", flags);
 }
 
 bool
@@ -303,7 +311,7 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local,
     free((void *) local);
 #endif
 
-    return process_check_success_intr(intr, pid, "adb install");
+    return process_check_success_intr(intr, pid, "adb install", flags);
 }
 
 char *
@@ -321,7 +329,7 @@ adb_get_serialno(struct sc_intr *intr, unsigned flags) {
     ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
     sc_pipe_close(pout);
 
-    bool ok = process_check_success_intr(intr, pid, "adb get-serialno");
+    bool ok = process_check_success_intr(intr, pid, "adb get-serialno", flags);
     if (!ok) {
         return NULL;
     }
