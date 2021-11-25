@@ -54,4 +54,6 @@ const struct scrcpy_options scrcpy_options_default = {
     .legacy_paste = false,
     .power_off_on_close = false,
     .clipboard_autosync = true,
+    .tcpip = false,
+    .tcpip_dst = NULL,
 };

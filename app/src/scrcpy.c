@@ -365,6 +365,8 @@ scrcpy(struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
+        .tcpip = options->tcpip,
+        .tcpip_dst = options->tcpip_dst,
     };
 
     static const struct sc_server_callbacks cbs = {

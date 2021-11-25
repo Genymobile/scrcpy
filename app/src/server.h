@@ -42,6 +42,8 @@ struct sc_server_params {
     bool force_adb_forward;
     bool power_off_on_close;
     bool clipboard_autosync;
+    bool tcpip;
+    const char *tcpip_dst;
 };
 
 struct sc_server {

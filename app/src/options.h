@@ -109,6 +109,8 @@ struct scrcpy_options {
     bool legacy_paste;
     bool power_off_on_close;
     bool clipboard_autosync;
+    bool tcpip;
+    const char *tcpip_dst;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

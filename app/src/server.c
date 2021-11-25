@@ -69,6 +69,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     free((char *) params->crop);
     free((char *) params->codec_options);
     free((char *) params->encoder_name);
+    free((char *) params->tcpip_dst);
 }
 
 static bool
@@ -92,6 +93,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(crop);
     COPY(codec_options);
     COPY(encoder_name);
+    COPY(tcpip_dst);
 #undef COPY
 
     return true;
@@ -494,22 +496,215 @@ sc_server_fill_serial(struct sc_server *server) {
             LOGE("Could not get device serial");
             return false;
         }
+
+        LOGD("Device serial: %s", server->params.serial);
     }
 
     return true;
+}
+
+static bool
+is_tcpip_mode_enabled(struct sc_server *server) {
+    struct sc_intr *intr = &server->intr;
+    const char *serial = server->params.serial;
+
+    char *current_port =
+        adb_getprop(intr, serial, "service.adb.tcp.port", SC_ADB_SILENT);
+    if (!current_port) {
+        return false;
+    }
+
+    // Is the device is listening on TCP on port 5555?
+    bool enabled = !strcmp("5555", current_port);
+    free(current_port);
+    return enabled;
+}
+
+static bool
+wait_tcpip_mode_enabled(struct sc_server *server, unsigned attempts,
+                        sc_tick delay) {
+    if (is_tcpip_mode_enabled(server)) {
+        LOGI("TCP/IP mode enabled");
+        return true;
+    }
+
+    // Only print this log if TCP/IP is not enabled
+    LOGI("Waiting for TCP/IP mode enabled...");
+
+    do {
+        sc_tick deadline = sc_tick_now() + delay;
+        if (!sc_server_sleep(server, deadline)) {
+            LOGI("TCP/IP mode waiting interrupted");
+            return false;
+        }
+
+        if (is_tcpip_mode_enabled(server)) {
+            LOGI("TCP/IP mode enabled");
+            return true;
+        }
+    } while (--attempts);
+    return false;
+}
+
+char *
+append_port_5555(const char *ip) {
+    size_t len = strlen(ip);
+
+    // sizeof counts the final '\0'
+    char *ip_port = malloc(len + sizeof(":5555"));
+    if (!ip_port) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    memcpy(ip_port, ip, len);
+    memcpy(ip_port + len, ":5555", sizeof(":5555"));
+
+    return ip_port;
+}
+
+static bool
+sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
+    const char *serial = server->params.serial;
+    assert(serial);
+
+    struct sc_intr *intr = &server->intr;
+
+    char *ip = adb_get_device_ip(intr, serial, 0);
+    if (!ip) {
+        LOGE("Device IP not found");
+        return false;
+    }
+
+    char *ip_port = append_port_5555(ip);
+    free(ip);
+    if (!ip_port) {
+        return false;
+    }
+
+    bool tcp_mode = is_tcpip_mode_enabled(server);
+
+    if (!tcp_mode) {
+        bool ok = adb_tcpip(intr, serial, 5555, SC_ADB_NO_STDOUT);
+        if (!ok) {
+            LOGE("Could not restart adbd in TCP/IP mode");
+            goto error;
+        }
+
+        unsigned attempts = 40;
+        sc_tick delay = SC_TICK_FROM_MS(250);
+        ok = wait_tcpip_mode_enabled(server, attempts, delay);
+        if (!ok) {
+            goto error;
+        }
+    }
+
+    *out_ip_port = ip_port;
+
+    return true;
+
+error:
+    free(ip_port);
+    return false;
+}
+
+static bool
+sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
+    struct sc_intr *intr = &server->intr;
+
+    // Error expected if not connected, do not report any error
+    adb_disconnect(intr, ip_port, SC_ADB_SILENT);
+
+    bool ok = adb_connect(intr, ip_port, 0);
+    if (!ok) {
+        LOGE("Could not connect to %s", ip_port);
+        return false;
+    }
+
+    // Override the serial, owned by the sc_server_params
+    free((void *) server->params.serial);
+    server->params.serial = strdup(ip_port);
+    if (!server->params.serial) {
+        LOG_OOM();
+        return false;
+    }
+
+    LOGI("Connected to %s", ip_port);
+    return true;
+}
+
+
+static bool
+sc_server_configure_tcpip(struct sc_server *server) {
+    char *ip_port;
+
+    const struct sc_server_params *params = &server->params;
+
+    // If tcpip parameter is given, then it must connect to this address.
+    // Therefore, the device is unknown, so serial is meaningless at this point.
+    assert(!params->serial || !params->tcpip_dst);
+
+    if (params->tcpip_dst) {
+        // Append ":5555" if no port is present
+        bool contains_port = strchr(params->tcpip_dst, ':');
+        ip_port = contains_port ? strdup(params->tcpip_dst)
+                                : append_port_5555(params->tcpip_dst);
+        if (!ip_port) {
+            LOG_OOM();
+            return false;
+        }
+    } else {
+        // The device IP address must be retrieved from the current
+        // connected device
+        if (!sc_server_fill_serial(server)) {
+            return false;
+        }
+
+        // The serial is either the real serial when connected via USB, or
+        // the IP:PORT when connected over TCP/IP. Only the latter contains
+        // a colon.
+        bool is_already_tcpip = strchr(params->serial, ':');
+        if (is_already_tcpip) {
+            // Nothing to do
+            LOGI("Device already connected via TCP/IP: %s", params->serial);
+            return true;
+        }
+
+        bool ok = sc_server_switch_to_tcpip(server, &ip_port);
+        if (!ok) {
+            return false;
+        }
+    }
+
+    // On success, this call changes params->serial
+    bool ok = sc_server_connect_to_tcpip(server, ip_port);
+    free(ip_port);
+    return ok;
 }
 
 static int
 run_server(void *data) {
     struct sc_server *server = data;
 
+    const struct sc_server_params *params = &server->params;
+
+    if (params->serial) {
+        LOGD("Device serial: %s", params->serial);
+    }
+
+    if (params->tcpip) {
+        // params->serial may be changed after this call
+        bool ok = sc_server_configure_tcpip(server);
+        if (!ok) {
+            goto error_connection_failed;
+        }
+    }
+
+    // It is ok to call this function even if the device serial has been
+    // changed by switching over TCP/IP
     if (!sc_server_fill_serial(server)) {
         goto error_connection_failed;
     }
-
-    const struct sc_server_params *params = &server->params;
-
-    LOGD("Device serial: %s", params->serial);
 
     bool ok = push_server(&server->intr, params->serial);
     if (!ok) {

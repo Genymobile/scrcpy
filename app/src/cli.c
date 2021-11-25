@@ -50,6 +50,7 @@
 #define OPT_TUNNEL_HOST            1030
 #define OPT_TUNNEL_PORT            1031
 #define OPT_NO_CLIPBOARD_AUTOSYNC  1032
+#define OPT_TCPIP                  1033
 
 struct sc_option {
     char shortopt;
@@ -403,6 +404,20 @@ static const struct sc_option options[] = {
         .longopt = "stay-awake",
         .text = "Keep the device on while scrcpy is running, when the device "
                 "is plugged in.",
+    },
+    {
+        .longopt_id = OPT_TCPIP,
+        .longopt = "tcpip",
+        .argdesc = "ip[:port]",
+        .optional_arg = true,
+        .text = "Configure and reconnect the device over TCP/IP.\n"
+                "If a destination address is provided, then scrcpy connects to "
+                "this address before starting. The device must listen on the "
+                "given TCP port (default is 5555).\n"
+                "If no destination address is provided, then scrcpy attempts "
+                "to find the IP address of the current device (typically "
+                "connected over USB), enables TCP/IP mode, then connects to "
+                "this address before starting.",
     },
     {
         .longopt_id = OPT_WINDOW_BORDERLESS,
@@ -1378,6 +1393,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_CLIPBOARD_AUTOSYNC:
                 opts->clipboard_autosync = false;
                 break;
+            case OPT_TCPIP:
+                opts->tcpip = true;
+                opts->tcpip_dst = optarg;
+                break;
 #ifdef HAVE_V4L2
             case OPT_V4L2_SINK:
                 opts->v4l2_device = optarg;
@@ -1397,6 +1416,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     int index = optind;
     if (index < argc) {
         LOGE("Unexpected additional argument: %s", argv[index]);
+        return false;
+    }
+
+    // If a TCP/IP address is provided, then tcpip must be enabled
+    assert(opts->tcpip || !opts->tcpip_dst);
+
+    if (opts->serial && opts->tcpip_dst) {
+        LOGE("Incompatible options: -s/--serial and --tcpip with an argument");
         return false;
     }
 
