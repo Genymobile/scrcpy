@@ -316,6 +316,17 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local,
 }
 
 bool
+adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
+          unsigned flags) {
+    char port_string[5 + 1];
+    sprintf(port_string, "%" PRIu16, port);
+    const char *const adb_cmd[] = {"tcpip", port_string};
+
+    sc_pid pid = adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
+    return process_check_success_intr(intr, pid, "adb tcpip", flags);
+}
+
+bool
 adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     const char *const adb_cmd[] = {"connect", ip_port};
 

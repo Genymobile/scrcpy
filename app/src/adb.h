@@ -42,6 +42,13 @@ adb_install(struct sc_intr *intr, const char *serial, const char *local,
             unsigned flags);
 
 /**
+ * Execute `adb tcpip <port>`
+ */
+bool
+adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
+          unsigned flags);
+
+/**
  * Execute `adb connect <ip_port>`
  *
  * `ip_port` may not be NULL.
