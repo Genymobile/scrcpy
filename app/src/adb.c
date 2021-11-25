@@ -111,19 +111,16 @@ show_adb_err_msg(enum sc_process_result err, const char *const argv[]) {
     free(buf);
 }
 
-static sc_pid
-adb_execute_p(const char *serial, const char *const adb_cmd[],
-              size_t len, sc_pipe *pout) {
-    int i;
-    sc_pid pid;
-
+static const char **
+adb_create_argv(const char *serial, const char *const adb_cmd[], size_t len) {
     const char **argv = malloc((len + 4) * sizeof(*argv));
     if (!argv) {
         LOG_OOM();
-        return SC_PROCESS_NONE;
+        return NULL;
     }
 
     argv[0] = get_adb_command();
+    int i;
     if (serial) {
         argv[1] = "-s";
         argv[2] = serial;
@@ -134,6 +131,18 @@ adb_execute_p(const char *serial, const char *const adb_cmd[],
 
     memcpy(&argv[i], adb_cmd, len * sizeof(const char *));
     argv[len + i] = NULL;
+    return argv;
+}
+
+static sc_pid
+adb_execute_p(const char *serial, const char *const adb_cmd[], size_t len,
+              sc_pipe *pout) {
+    const char **argv = adb_create_argv(serial, adb_cmd, len);
+    if (!argv) {
+        return SC_PROCESS_NONE;
+    }
+
+    sc_pid pid;
     enum sc_process_result r =
         sc_process_execute_p(argv, &pid, NULL, pout, NULL);
     if (r != SC_PROCESS_SUCCESS) {
