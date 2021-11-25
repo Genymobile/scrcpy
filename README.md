@@ -5,7 +5,7 @@
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#wireless)). It does not require any _root_ access.
+USB (or [over TCP/IP](#tcpip-wireless)). It does not require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -356,10 +356,38 @@ scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
 
 ### Connection
 
-#### Wireless
+#### TCP/IP (wireless)
 
 _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP:
+device over TCP/IP.
+
+##### Automatic
+
+An option `--tcpip` allows to configure the connection automatically. There are
+two variants.
+
+If the device (accessible at 192.168.1.1 in this example) already listens on a
+port (typically 5555) for incoming adb connections, then run:
+
+```bash
+scrcpy --tcpip=192.168.1.1       # default port is 5555
+scrcpy --tcpip=192.168.1.1:5555
+```
+
+If the device TCP/IP mode is disabled (or if you don't know the IP address),
+connect the device over USB, then run:
+
+```bash
+scrcpy --tcpip    # without arguments
+```
+
+It will automatically find the device IP address, enable TCP/IP mode, then
+connect to the device before starting.
+
+##### Manual
+
+Alternatively, it is possible to enable the TCP/IP connection manually using
+`adb`:
 
 1. Connect the device to the same Wi-Fi as your computer.
 2. Get your device IP address, in Settings → About phone → Status, or by
