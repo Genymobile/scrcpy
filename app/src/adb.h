@@ -66,4 +66,13 @@ adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 char *
 adb_get_serialno(struct sc_intr *intr, unsigned flags);
 
+/**
+ * Attempt to retrieve the device IP
+ *
+ * Return the IP as a string of the form "xxx.xxx.xxx.xxx", to be freed by the
+ * caller, or NULL on error.
+ */
+char *
+adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
+
 #endif

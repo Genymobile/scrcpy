@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "adb_parser.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/process_intr.h"
@@ -388,4 +389,41 @@ adb_get_serialno(struct sc_intr *intr, unsigned flags) {
     sc_str_truncate(buf, r, " \r\n");
 
     return strdup(buf);
+}
+
+char *
+adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
+    const char *const cmd[] = {"shell", "ip", "route"};
+
+    sc_pipe pout;
+    sc_pid pid = adb_execute_p(serial, cmd, ARRAY_LEN(cmd), flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGD("Could not execute \"ip route\"");
+        return NULL;
+    }
+
+    // "adb shell ip route" output should contain only a few lines
+    char buf[1024];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "ip route", flags);
+    if (!ok) {
+        return NULL;
+    }
+
+    if (r == -1) {
+        return false;
+    }
+
+    assert((size_t) r <= sizeof(buf));
+    if (r == sizeof(buf) && buf[sizeof(buf) - 1] != '\0')  {
+        // The implementation assumes that the output of "ip route" fits in the
+        // buffer in a single pass
+        LOGW("Result of \"ip route\" does not fit in 1Kb. "
+             "Please report an issue.\n");
+        return NULL;
+    }
+
+    return sc_adb_parse_device_ip_from_output(buf, r);
 }

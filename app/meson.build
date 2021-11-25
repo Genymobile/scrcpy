@@ -1,6 +1,7 @@
 src = [
     'src/main.c',
     'src/adb.c',
+    'src/adb_parser.c',
     'src/adb_tunnel.c',
     'src/cli.c',
     'src/clock.c',
@@ -204,8 +205,14 @@ install_data('../data/icon.png',
 # do not build tests in release (assertions would not be executed at all)
 if get_option('buildtype') == 'debug'
     tests = [
+        ['test_adb_parser', [
+            'tests/test_adb_parser.c',
+            'src/adb_parser.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+        ]],
         ['test_buffer_util', [
-            'tests/test_buffer_util.c'
+            'tests/test_buffer_util.c',
         ]],
         ['test_cbuf', [
             'tests/test_cbuf.c',
