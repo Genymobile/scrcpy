@@ -111,6 +111,43 @@ show_adb_err_msg(enum sc_process_result err, const char *const argv[]) {
     free(buf);
 }
 
+static bool
+process_check_success_internal(sc_pid pid, const char *name, bool close) {
+    if (pid == SC_PROCESS_NONE) {
+        LOGE("Could not execute \"%s\"", name);
+        return false;
+    }
+    sc_exit_code exit_code = sc_process_wait(pid, close);
+    if (exit_code) {
+        if (exit_code != SC_EXIT_CODE_NONE) {
+            LOGE("\"%s\" returned with value %" SC_PRIexitcode, name,
+                 exit_code);
+        } else {
+            LOGE("\"%s\" exited unexpectedly", name);
+        }
+        return false;
+    }
+    return true;
+}
+
+static bool
+process_check_success_intr(struct sc_intr *intr, sc_pid pid, const char *name) {
+    if (!sc_intr_set_process(intr, pid)) {
+        // Already interrupted
+        return false;
+    }
+
+    // Always pass close=false, interrupting would be racy otherwise
+    bool ret = process_check_success_internal(pid, name, false);
+
+    sc_intr_set_process(intr, SC_PROCESS_NONE);
+
+    // Close separately
+    sc_process_close(pid);
+
+    return ret;
+}
+
 static const char **
 adb_create_argv(const char *serial, const char *const adb_cmd[], size_t len) {
     const char **argv = malloc((len + 4) * sizeof(*argv));
@@ -255,43 +292,41 @@ bool
 adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
             const char *device_socket_name) {
     sc_pid pid = adb_exec_forward(serial, local_port, device_socket_name);
-    return sc_process_check_success_intr(intr, pid, "adb forward", true);
+    return process_check_success_intr(intr, pid, "adb forward");
 }
 
 bool
 adb_forward_remove(struct sc_intr *intr, const char *serial,
                    uint16_t local_port) {
     sc_pid pid = adb_exec_forward_remove(serial, local_port);
-    return sc_process_check_success_intr(intr, pid, "adb forward --remove",
-                                         true);
+    return process_check_success_intr(intr, pid, "adb forward --remove");
 }
 
 bool
 adb_reverse(struct sc_intr *intr, const char *serial,
             const char *device_socket_name, uint16_t local_port) {
     sc_pid pid = adb_exec_reverse(serial, device_socket_name, local_port);
-    return sc_process_check_success_intr(intr, pid, "adb reverse", true);
+    return process_check_success_intr(intr, pid, "adb reverse");
 }
 
 bool
 adb_reverse_remove(struct sc_intr *intr, const char *serial,
                    const char *device_socket_name) {
     sc_pid pid = adb_exec_reverse_remove(serial, device_socket_name);
-    return sc_process_check_success_intr(intr, pid, "adb reverse --remove",
-                                         true);
+    return process_check_success_intr(intr, pid, "adb reverse --remove");
 }
 
 bool
 adb_push(struct sc_intr *intr, const char *serial, const char *local,
          const char *remote) {
     sc_pid pid = adb_exec_push(serial, local, remote);
-    return sc_process_check_success_intr(intr, pid, "adb push", true);
+    return process_check_success_intr(intr, pid, "adb push");
 }
 
 bool
 adb_install(struct sc_intr *intr, const char *serial, const char *local) {
     sc_pid pid = adb_exec_install(serial, local);
-    return sc_process_check_success_intr(intr, pid, "adb install", true);
+    return process_check_success_intr(intr, pid, "adb install");
 }
 
 char *
@@ -307,8 +342,7 @@ adb_get_serialno(struct sc_intr *intr) {
     ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
     sc_pipe_close(pout);
 
-    bool ok =
-        sc_process_check_success_intr(intr, pid, "adb get-serialno", true);
+    bool ok = process_check_success_intr(intr, pid, "adb get-serialno");
     if (!ok) {
         return NULL;
     }

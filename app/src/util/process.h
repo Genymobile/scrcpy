@@ -108,14 +108,6 @@ void
 sc_process_close(sc_pid pid);
 
 /**
- * Convenience function to wait for a successful process execution
- *
- * Automatically log process errors with the provided process name.
- */
-bool
-sc_process_check_success(sc_pid pid, const char *name, bool close);
-
-/**
  * Read from the pipe
  *
  * Same semantic as read().

@@ -6,10 +6,6 @@
 #include "intr.h"
 #include "process.h"
 
-bool
-sc_process_check_success_intr(struct sc_intr *intr, sc_pid pid,
-                              const char *name, bool close);
-
 ssize_t
 sc_pipe_read_intr(struct sc_intr *intr, sc_pid pid, sc_pipe pipe, char *data,
                   size_t len);
