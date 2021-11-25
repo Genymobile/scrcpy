@@ -264,10 +264,10 @@ connect_and_read_byte(struct sc_intr *intr, sc_socket socket,
 }
 
 static sc_socket
-connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay,
+connect_to_server(struct sc_server *server, unsigned attempts, sc_tick delay,
                   uint32_t host, uint16_t port) {
     do {
-        LOGD("Remaining connection attempts: %d", (int) attempts);
+        LOGD("Remaining connection attempts: %u", attempts);
         sc_socket socket = net_socket();
         if (socket != SC_SOCKET_NONE) {
             bool ok = connect_and_read_byte(&server->intr, socket, host, port);
@@ -300,7 +300,7 @@ connect_to_server(struct sc_server *server, uint32_t attempts, sc_tick delay,
                 break;
             }
         }
-    } while (--attempts > 0);
+    } while (--attempts);
     return SC_SOCKET_NONE;
 }
 
@@ -403,7 +403,7 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             tunnel_port = tunnel->local_port;
         }
 
-        uint32_t attempts = 100;
+        unsigned attempts = 100;
         sc_tick delay = SC_TICK_FROM_MS(100);
         video_socket = connect_to_server(server, attempts, delay, tunnel_host,
                                          tunnel_port);
