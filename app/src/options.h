@@ -38,6 +38,17 @@ enum sc_keyboard_input_mode {
     SC_KEYBOARD_INPUT_MODE_HID,
 };
 
+enum sc_key_inject_mode {
+    // Inject special keys, letters and space as key events.
+    // Inject numbers and punctuation as text events.
+    // This is the default mode.
+    SC_KEY_INJECT_MODE_MIXED,
+
+    // Inject special keys as key events.
+    // Inject letters and space, numbers and punctuation as text events.
+    SC_KEY_INJECT_MODE_TEXT,
+};
+
 #define SC_MAX_SHORTCUT_MODS 8
 
 enum sc_shortcut_mod {
@@ -98,7 +109,7 @@ struct scrcpy_options {
     bool control;
     bool display;
     bool turn_screen_off;
-    bool prefer_text;
+    enum sc_key_inject_mode key_inject_mode;
     bool window_borderless;
     bool mipmaps;
     bool stay_awake;

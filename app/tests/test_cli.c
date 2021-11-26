@@ -89,7 +89,7 @@ static void test_options(void) {
     assert(!strcmp(opts->serial, "0123456789abcdef"));
     assert(opts->show_touches);
     assert(opts->turn_screen_off);
-    assert(opts->prefer_text);
+    assert(opts->key_inject_mode == SC_KEY_INJECT_MODE_TEXT);
     assert(!strcmp(opts->window_title, "my device"));
     assert(opts->window_x == 100);
     assert(opts->window_y == -1);

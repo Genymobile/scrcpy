@@ -18,7 +18,7 @@ struct sc_keyboard_inject {
     // number of repetitions. This variable keeps track of the count.
     unsigned repeat;
 
-    bool prefer_text;
+    enum sc_key_inject_mode key_inject_mode;
     bool forward_key_repeat;
 };
 

@@ -1350,7 +1350,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->push_target = optarg;
                 break;
             case OPT_PREFER_TEXT:
-                opts->prefer_text = true;
+                opts->key_inject_mode = SC_KEY_INJECT_MODE_TEXT;
                 break;
             case OPT_ROTATION:
                 if (!parse_rotation(optarg, &opts->rotation)) {

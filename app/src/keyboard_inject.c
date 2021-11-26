@@ -30,7 +30,7 @@ convert_keycode_action(SDL_EventType from, enum android_keyevent_action *to) {
 
 static bool
 convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
-                bool prefer_text) {
+                enum sc_key_inject_mode key_inject_mode) {
     // Navigation keys and ENTER.
     // Used in all modes.
     static const struct sc_intmap_entry special_keys[] = {
@@ -118,7 +118,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         }
     }
 
-    if (prefer_text && !(mod & KMOD_CTRL)) {
+    if (key_inject_mode == SC_KEY_INJECT_MODE_TEXT && !(mod & KMOD_CTRL)) {
         // do not forward alpha and space key events (unless Ctrl is pressed)
         return false;
     }
@@ -199,7 +199,7 @@ convert_meta_state(SDL_Keymod mod) {
 
 static bool
 convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
-                  bool prefer_text, uint32_t repeat) {
+                  enum sc_key_inject_mode key_inject_mode, uint32_t repeat) {
     to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
@@ -208,7 +208,7 @@ convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
 
     uint16_t mod = from->keysym.mod;
     if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod,
-                         prefer_text)) {
+                         key_inject_mode)) {
         return false;
     }
 
@@ -239,7 +239,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     }
 
     struct control_msg msg;
-    if (convert_input_key(event, &msg, ki->prefer_text, ki->repeat)) {
+    if (convert_input_key(event, &msg, ki->key_inject_mode, ki->repeat)) {
         if (!controller_push_msg(ki->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }
@@ -251,11 +251,11 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
                               const SDL_TextInputEvent *event) {
     struct sc_keyboard_inject *ki = DOWNCAST(kp);
 
-    if (!ki->prefer_text) {
+    if (ki->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         char c = event->text[0];
         if (isalpha(c) || c == ' ') {
             assert(event->text[1] == '\0');
-            // letters and space are handled as raw key event
+            // Letters and space are handled as raw key events
             return;
         }
     }
@@ -278,7 +278,7 @@ sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
                         struct controller *controller,
                         const struct scrcpy_options *options) {
     ki->controller = controller;
-    ki->prefer_text = options->prefer_text;
+    ki->key_inject_mode = options->key_inject_mode;
     ki->forward_key_repeat = options->forward_key_repeat;
 
     ki->repeat = 0;
