@@ -803,6 +803,15 @@ of the host key mapping. Therefore, if your keyboard layout does not match, it
 must be configured on the Android device, in Settings → System → Languages and
 input → [Physical keyboard].
 
+This settings page can be started directly:
+
+```bash
+adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+```
+
+However, the option is only available when the HID keyboard is enabled (or when
+a physical keyboard is connected).
+
 [Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
 

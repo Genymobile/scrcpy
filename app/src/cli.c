@@ -165,7 +165,14 @@ static const struct sc_option options[] = {
                 "generate non-ASCII characters, contrary to the default "
                 "injection method.\n"
                 "It may only work over USB, and is currently only supported "
-                "on Linux.",
+                "on Linux.\n"
+                "The keyboard layout must be configured (once and for all) on "
+                "the device, via Settings -> System -> Languages and input -> "
+                "Physical keyboard. This settings page can be started "
+                "directly: `adb shell am start -a "
+                "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
+                "However, the option is only available when the HID keyboard "
+                "is enabled (or a physical keyboard is connected).",
     },
     {
         .shortopt = 'h',
