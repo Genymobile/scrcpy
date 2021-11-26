@@ -9,8 +9,7 @@
 #include "util/log.h"
 
 /** Downcast key processor to sc_keyboard_inject */
-#define DOWNCAST(KP) \
-    container_of(KP, struct sc_keyboard_inject, key_processor)
+#define DOWNCAST(KP) container_of(KP, struct sc_keyboard_inject, key_processor)
 
 #define MAP(FROM, TO) case FROM: *to = TO; return true
 #define FAIL default: return false
