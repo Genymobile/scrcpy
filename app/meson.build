@@ -149,6 +149,9 @@ foreach f : check_functions
   endif
 endforeach
 
+conf.set('HAVE_SOCK_CLOEXEC', host_machine.system() != 'windows' and
+                              cc.has_header_symbol('sys/socket.h', 'SOCK_CLOEXEC'))
+
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
 

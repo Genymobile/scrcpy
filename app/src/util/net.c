@@ -1,6 +1,7 @@
 #include "net.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <SDL2/SDL_platform.h>
 
@@ -10,17 +11,20 @@
 # include <ws2tcpip.h>
   typedef int socklen_t;
   typedef SOCKET sc_raw_socket;
+# define SC_RAW_SOCKET_NONE INVALID_SOCKET
 #else
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
 # include <arpa/inet.h>
 # include <unistd.h>
+# include <fcntl.h>
 # define SOCKET_ERROR -1
   typedef struct sockaddr_in SOCKADDR_IN;
   typedef struct sockaddr SOCKADDR;
   typedef struct in_addr IN_ADDR;
   typedef int sc_raw_socket;
+# define SC_RAW_SOCKET_NONE -1
 #endif
 
 bool
@@ -79,6 +83,35 @@ unwrap(sc_socket socket) {
 #endif
 }
 
+static inline bool
+sc_raw_socket_close(sc_raw_socket raw_sock) {
+#ifndef _WIN32
+    return !close(raw_sock);
+#else
+    return !closesocket(raw_sock);
+#endif
+}
+
+#ifndef HAVE_SOCK_CLOEXEC
+// If SOCK_CLOEXEC does not exist, the flag must be set manually once the
+// socket is created
+static bool
+set_cloexec_flag(sc_raw_socket raw_sock) {
+#ifndef _WIN32
+    if (fcntl(raw_sock, F_SETFD, FD_CLOEXEC) == -1) {
+        perror("fcntl F_SETFD");
+        return false;
+    }
+#else
+    if (!SetHandleInformation((HANDLE) raw_sock, HANDLE_FLAG_INHERIT, 0)) {
+        LOGE("SetHandleInformation socket failed");
+        return false;
+    }
+#endif
+    return true;
+}
+#endif
+
 static void
 net_perror(const char *s) {
 #ifdef _WIN32
@@ -97,7 +130,16 @@ net_perror(const char *s) {
 
 sc_socket
 net_socket(void) {
+#ifdef HAVE_SOCK_CLOEXEC
+    sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
+#else
     sc_raw_socket raw_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (raw_sock != SC_RAW_SOCKET_NONE && !set_cloexec_flag(raw_sock)) {
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+#endif
+
     sc_socket sock = wrap(raw_sock);
     if (sock == SC_SOCKET_NONE) {
         net_perror("socket");
@@ -156,8 +198,18 @@ net_accept(sc_socket server_socket) {
 
     SOCKADDR_IN csin;
     socklen_t sinsize = sizeof(csin);
+
+#ifdef HAVE_SOCK_CLOEXEC
+    sc_raw_socket raw_sock =
+        accept4(raw_server_socket, (SOCKADDR *) &csin, &sinsize, SOCK_CLOEXEC);
+#else
     sc_raw_socket raw_sock =
         accept(raw_server_socket, (SOCKADDR *) &csin, &sinsize);
+    if (raw_sock != SC_RAW_SOCKET_NONE && !set_cloexec_flag(raw_sock)) {
+        sc_raw_socket_close(raw_sock);
+        return SC_SOCKET_NONE;
+    }
+#endif
 
     return wrap(raw_sock);
 }
@@ -211,7 +263,6 @@ net_interrupt(sc_socket socket) {
 #endif
 }
 
-#include <errno.h>
 bool
 net_close(sc_socket socket) {
     sc_raw_socket raw_sock = unwrap(socket);
