@@ -833,7 +833,13 @@ scrcpy --prefer-text
 
 (but this will break keyboard behavior in games)
 
-This option has no effect on HID keyboard (all key events are sent as
+On the contrary, you could force to always inject raw key events:
+
+```bash
+scrcpy --raw-key-events
+```
+
+These options have no effect on HID keyboard (all key events are sent as
 scancodes in this mode).
 
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input

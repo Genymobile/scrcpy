@@ -51,6 +51,7 @@
 #define OPT_TUNNEL_PORT            1031
 #define OPT_NO_CLIPBOARD_AUTOSYNC  1032
 #define OPT_TCPIP                  1033
+#define OPT_RAW_KEY_EVENTS         1034
 
 struct sc_option {
     char shortopt;
@@ -281,6 +282,11 @@ static const struct sc_option options[] = {
         .text = "Set the target directory for pushing files to the device by "
                 "drag & drop. It is passed as is to \"adb push\".\n"
                 "Default is \"/sdcard/Download/\".",
+    },
+    {
+        .longopt_id = OPT_RAW_KEY_EVENTS,
+        .longopt = "raw-key-events",
+        .text = "Inject key events for all input keys, and ignore text events."
     },
     {
         .shortopt = 'r',
@@ -1350,7 +1356,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->push_target = optarg;
                 break;
             case OPT_PREFER_TEXT:
+                if (opts->key_inject_mode != SC_KEY_INJECT_MODE_MIXED) {
+                    LOGE("--prefer-text is incompatible with --raw-key-events");
+                    return false;
+                }
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_TEXT;
+                break;
+            case OPT_RAW_KEY_EVENTS:
+                if (opts->key_inject_mode != SC_KEY_INJECT_MODE_MIXED) {
+                    LOGE("--prefer-text is incompatible with --raw-key-events");
+                    return false;
+                }
+                opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
                 break;
             case OPT_ROTATION:
                 if (!parse_rotation(optarg, &opts->rotation)) {

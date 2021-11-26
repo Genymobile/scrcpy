@@ -47,6 +47,9 @@ enum sc_key_inject_mode {
     // Inject special keys as key events.
     // Inject letters and space, numbers and punctuation as text events.
     SC_KEY_INJECT_MODE_TEXT,
+
+    // Inject everything as key events.
+    SC_KEY_INJECT_MODE_RAW,
 };
 
 #define SC_MAX_SHORTCUT_MODS 8

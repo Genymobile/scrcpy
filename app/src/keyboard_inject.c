@@ -101,6 +101,55 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         {SDLK_SPACE,     AKEYCODE_SPACE},
     };
 
+    // Numbers and punctuation keys.
+    // Used in raw mode only.
+    static const struct sc_intmap_entry numbers_punct_keys[] = {
+        {SDLK_HASH,          AKEYCODE_POUND},
+        {SDLK_PERCENT,       AKEYCODE_PERIOD},
+        {SDLK_QUOTE,         AKEYCODE_APOSTROPHE},
+        {SDLK_ASTERISK,      AKEYCODE_STAR},
+        {SDLK_PLUS,          AKEYCODE_PLUS},
+        {SDLK_COMMA,         AKEYCODE_COMMA},
+        {SDLK_MINUS,         AKEYCODE_MINUS},
+        {SDLK_PERIOD,        AKEYCODE_PERIOD},
+        {SDLK_SLASH,         AKEYCODE_SLASH},
+        {SDLK_0,             AKEYCODE_0},
+        {SDLK_1,             AKEYCODE_1},
+        {SDLK_2,             AKEYCODE_2},
+        {SDLK_3,             AKEYCODE_3},
+        {SDLK_4,             AKEYCODE_4},
+        {SDLK_5,             AKEYCODE_5},
+        {SDLK_6,             AKEYCODE_6},
+        {SDLK_7,             AKEYCODE_7},
+        {SDLK_8,             AKEYCODE_8},
+        {SDLK_9,             AKEYCODE_9},
+        {SDLK_SEMICOLON,     AKEYCODE_SEMICOLON},
+        {SDLK_EQUALS,        AKEYCODE_EQUALS},
+        {SDLK_AT,            AKEYCODE_AT},
+        {SDLK_LEFTBRACKET,   AKEYCODE_LEFT_BRACKET},
+        {SDLK_BACKSLASH,     AKEYCODE_BACKSLASH},
+        {SDLK_RIGHTBRACKET,  AKEYCODE_RIGHT_BRACKET},
+        {SDLK_BACKQUOTE,     AKEYCODE_GRAVE},
+        {SDLK_KP_1,          AKEYCODE_NUMPAD_1},
+        {SDLK_KP_2,          AKEYCODE_NUMPAD_2},
+        {SDLK_KP_3,          AKEYCODE_NUMPAD_3},
+        {SDLK_KP_4,          AKEYCODE_NUMPAD_4},
+        {SDLK_KP_5,          AKEYCODE_NUMPAD_5},
+        {SDLK_KP_6,          AKEYCODE_NUMPAD_6},
+        {SDLK_KP_7,          AKEYCODE_NUMPAD_7},
+        {SDLK_KP_8,          AKEYCODE_NUMPAD_8},
+        {SDLK_KP_9,          AKEYCODE_NUMPAD_9},
+        {SDLK_KP_0,          AKEYCODE_NUMPAD_0},
+        {SDLK_KP_DIVIDE,     AKEYCODE_NUMPAD_DIVIDE},
+        {SDLK_KP_MULTIPLY,   AKEYCODE_NUMPAD_MULTIPLY},
+        {SDLK_KP_MINUS,      AKEYCODE_NUMPAD_SUBTRACT},
+        {SDLK_KP_PLUS,       AKEYCODE_NUMPAD_ADD},
+        {SDLK_KP_PERIOD,     AKEYCODE_NUMPAD_DOT},
+        {SDLK_KP_EQUALS,     AKEYCODE_NUMPAD_EQUALS},
+        {SDLK_KP_LEFTPAREN,  AKEYCODE_NUMPAD_LEFT_PAREN},
+        {SDLK_KP_RIGHTPAREN, AKEYCODE_NUMPAD_RIGHT_PAREN},
+    };
+
     const struct sc_intmap_entry *entry =
         SC_INTMAP_FIND_ENTRY(special_keys, from);
     if (entry) {
@@ -132,6 +181,14 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
     if (entry) {
         *to = entry->value;
         return true;
+    }
+
+    if (key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+        entry = SC_INTMAP_FIND_ENTRY(numbers_punct_keys, from);
+        if (entry) {
+            *to = entry->value;
+            return true;
+        }
     }
 
     return false;
@@ -250,6 +307,11 @@ static void
 sc_key_processor_process_text(struct sc_key_processor *kp,
                               const SDL_TextInputEvent *event) {
     struct sc_keyboard_inject *ki = DOWNCAST(kp);
+
+    if (ki->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+        // Never inject text events
+        return;
+    }
 
     if (ki->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         char c = event->text[0];
