@@ -28,6 +28,7 @@ src = [
     'src/video_buffer.c',
     'src/util/acksync.c',
     'src/util/file.c',
+    'src/util/intmap.c',
     'src/util/intr.c',
     'src/util/log.c',
     'src/util/net.c',

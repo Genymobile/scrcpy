@@ -6,6 +6,7 @@
 #include "android/input.h"
 #include "control_msg.h"
 #include "controller.h"
+#include "util/intmap.h"
 #include "util/log.h"
 
 /** Downcast mouse processor to sc_mouse_inject */
@@ -32,25 +33,37 @@ convert_mouse_buttons(uint32_t state) {
     return buttons;
 }
 
-#define MAP(FROM, TO) case FROM: *to = TO; return true
-#define FAIL default: return false
 static bool
 convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
-    switch (from) {
-        MAP(SDL_MOUSEBUTTONDOWN, AMOTION_EVENT_ACTION_DOWN);
-        MAP(SDL_MOUSEBUTTONUP,   AMOTION_EVENT_ACTION_UP);
-        FAIL;
+    static const struct sc_intmap_entry actions[] = {
+        {SDL_MOUSEBUTTONDOWN, AMOTION_EVENT_ACTION_DOWN},
+        {SDL_MOUSEBUTTONUP,   AMOTION_EVENT_ACTION_UP},
+    };
+
+    const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
+    if (entry) {
+        *to = entry->value;
+        return true;
     }
+
+    return false;
 }
 
 static bool
 convert_touch_action(SDL_EventType from, enum android_motionevent_action *to) {
-    switch (from) {
-        MAP(SDL_FINGERMOTION, AMOTION_EVENT_ACTION_MOVE);
-        MAP(SDL_FINGERDOWN,   AMOTION_EVENT_ACTION_DOWN);
-        MAP(SDL_FINGERUP,     AMOTION_EVENT_ACTION_UP);
-        FAIL;
+    static const struct sc_intmap_entry actions[] = {
+        {SDL_FINGERMOTION, AMOTION_EVENT_ACTION_MOVE},
+        {SDL_FINGERDOWN,   AMOTION_EVENT_ACTION_DOWN},
+        {SDL_FINGERUP,     AMOTION_EVENT_ACTION_UP},
+    };
+
+    const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
+    if (entry) {
+        *to = entry->value;
+        return true;
     }
+
+    return false;
 }
 
 static bool
