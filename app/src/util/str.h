@@ -134,4 +134,15 @@ sc_str_truncate(char *data, size_t len, const char *endchars);
 ssize_t
 sc_str_index_of_column(const char *s, unsigned col, const char *seps);
 
+/**
+ * Remove all `\r` at the end of the line
+ *
+ * The line length is provided by `len` (this avoids a call to `strlen()` when
+ * the caller already knows the length).
+ *
+ * Return the new length.
+ */
+size_t
+sc_str_remove_trailing_cr(char *s, size_t len);
+
 #endif

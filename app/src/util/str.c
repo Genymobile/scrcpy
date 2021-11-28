@@ -330,3 +330,14 @@ sc_str_index_of_column(const char *s, unsigned col, const char *seps) {
 
     return col == colidx ? (ssize_t) idx : -1;
 }
+
+size_t
+sc_str_remove_trailing_cr(char *s, size_t len) {
+    while (len) {
+        if (s[len - 1] != '\r') {
+            break;
+        }
+        s[--len] = '\0';
+    }
+    return len;
+}
