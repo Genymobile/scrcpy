@@ -65,7 +65,7 @@ Build from sources: [BUILD] ([simplified process][BUILD_simple])
 
 ### Linux
 
-On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
+On Debian and Ubuntu:
 
 ```
 apt install scrcpy
