@@ -120,12 +120,7 @@ public class Controller {
                 }
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
-                long sequence = msg.getSequence();
-                setClipboard(msg.getText(), msg.getPaste());
-                if (sequence != ControlMessage.SEQUENCE_INVALID) {
-                    // Acknowledgement requested
-                    sender.pushAckClipboard(sequence);
-                }
+                setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
                 if (device.supportsInputEvents()) {
@@ -281,7 +276,7 @@ public class Controller {
         return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER);
     }
 
-    private boolean setClipboard(String text, boolean paste) {
+    private boolean setClipboard(String text, boolean paste, long sequence) {
         boolean ok = device.setClipboardText(text);
         if (ok) {
             Ln.i("Device clipboard set");
@@ -290,6 +285,11 @@ public class Controller {
         // On Android >= 7, also press the PASTE key if requested
         if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
             device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE);
+        }
+
+        if (sequence != ControlMessage.SEQUENCE_INVALID) {
+            // Acknowledgement requested
+            sender.pushAckClipboard(sequence);
         }
 
         return ok;
