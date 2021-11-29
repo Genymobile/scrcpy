@@ -74,7 +74,7 @@ public final class Server {
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
             if (options.getControl()) {
-                final Controller controller = new Controller(device, connection);
+                final Controller controller = new Controller(device, connection, options.getClipboardAutosync());
 
                 // asynchronous
                 controllerThread = startController(controller);

@@ -41,6 +41,12 @@ enum screen_power_mode {
     SCREEN_POWER_MODE_NORMAL = 2,
 };
 
+enum get_clipboard_copy_key {
+    GET_CLIPBOARD_COPY_KEY_NONE,
+    GET_CLIPBOARD_COPY_KEY_COPY,
+    GET_CLIPBOARD_COPY_KEY_CUT,
+};
+
 struct control_msg {
     enum control_msg_type type;
     union {
@@ -69,6 +75,9 @@ struct control_msg {
             enum android_keyevent_action action; // action for the BACK key
             // screen may only be turned on on ACTION_DOWN
         } back_or_screen_on;
+        struct {
+            enum get_clipboard_copy_key copy_key;
+        } get_clipboard;
         struct {
             uint64_t sequence;
             char *text; // owned, to be freed by free()

@@ -21,6 +21,7 @@ public class Controller {
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
+    private final boolean clipboardAutosync;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -31,9 +32,10 @@ public class Controller {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection) {
+    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync) {
         this.device = device;
         this.connection = connection;
+        this.clipboardAutosync = clipboardAutosync;
         initPointers();
         sender = new DeviceMessageSender(connection);
     }
@@ -114,10 +116,7 @@ public class Controller {
                 Device.collapsePanels();
                 break;
             case ControlMessage.TYPE_GET_CLIPBOARD:
-                String clipboardText = Device.getClipboardText();
-                if (clipboardText != null) {
-                    sender.pushClipboardText(clipboardText);
-                }
+                getClipboard(msg.getCopyKey());
                 break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
@@ -274,6 +273,25 @@ public class Controller {
             schedulePowerModeOff();
         }
         return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+    }
+
+    private void getClipboard(int copyKey) {
+        // On Android >= 7, press the COPY or CUT key if requested
+        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+            int key = copyKey == ControlMessage.COPY_KEY_COPY ? KeyEvent.KEYCODE_COPY : KeyEvent.KEYCODE_CUT;
+            // Wait until the event is finished, to ensure that the clipboard text we read just after is the correct one
+            device.pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
+        }
+
+        // If clipboard autosync is enabled, then the device clipboard is synchronized to the computer clipboard whenever it changes, in
+        // particular when COPY or CUT are injected, so it should not be synchronized twice. On Android < 7, do not synchronize at all rather than
+        // copying an old clipboard content.
+        if (!clipboardAutosync) {
+            String clipboardText = Device.getClipboardText();
+            if (clipboardText != null) {
+                sender.pushClipboardText(clipboardText);
+            }
+        }
     }
 
     private boolean setClipboard(String text, boolean paste, long sequence) {

@@ -148,16 +148,6 @@ action_menu(struct controller *controller, int actions) {
     send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
 }
 
-static inline void
-action_copy(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_COPY, actions, "COPY");
-}
-
-static inline void
-action_cut(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_CUT, actions, "CUT");
-}
-
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
@@ -209,6 +199,21 @@ collapse_panels(struct controller *controller) {
     if (!controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'collapse notification panel'");
     }
+}
+
+static bool
+get_device_clipboard(struct controller *controller,
+                     enum get_clipboard_copy_key copy_key) {
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
+    msg.get_clipboard.copy_key = copy_key;
+
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'get device clipboard'");
+        return false;
+    }
+
+    return true;
 }
 
 static bool
@@ -450,13 +455,15 @@ input_manager_process_key(struct input_manager *im,
                 }
                 return;
             case SDLK_c:
-                if (control && !shift && !repeat) {
-                    action_copy(controller, action);
+                if (control && !shift && !repeat && down) {
+                    get_device_clipboard(controller,
+                                         GET_CLIPBOARD_COPY_KEY_COPY);
                 }
                 return;
             case SDLK_x:
-                if (control && !shift && !repeat) {
-                    action_cut(controller, action);
+                if (control && !shift && !repeat && down) {
+                    get_device_clipboard(controller,
+                                         GET_CLIPBOARD_COPY_KEY_CUT);
                 }
                 return;
             case SDLK_v:

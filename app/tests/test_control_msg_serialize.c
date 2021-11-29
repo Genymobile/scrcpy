@@ -210,14 +210,18 @@ static void test_serialize_collapse_panels(void) {
 static void test_serialize_get_clipboard(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_GET_CLIPBOARD,
+        .get_clipboard = {
+            .copy_key = GET_CLIPBOARD_COPY_KEY_COPY,
+        },
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     size_t size = control_msg_serialize(&msg, buf);
-    assert(size == 1);
+    assert(size == 2);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_GET_CLIPBOARD,
+        GET_CLIPBOARD_COPY_KEY_COPY,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }

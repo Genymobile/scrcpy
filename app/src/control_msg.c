@@ -55,6 +55,12 @@ static const char *const screen_power_mode_labels[] = {
     "suspend",
 };
 
+static const char *const copy_key_labels[] = {
+    "none",
+    "copy",
+    "cut",
+};
+
 static void
 write_position(uint8_t *buf, const struct sc_position *position) {
     buffer_write32be(&buf[0], position->point.x);
@@ -117,6 +123,9 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
             return 2;
+        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+            buf[1] = msg->get_clipboard.copy_key;
+            return 2;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
             buffer_write64be(&buf[1], msg->set_clipboard.sequence);
             buf[9] = !!msg->set_clipboard.paste;
@@ -131,7 +140,6 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
         case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
-        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
         case CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;
@@ -194,6 +202,10 @@ control_msg_log(const struct control_msg *msg) {
             LOG_CMSG("back-or-screen-on %s",
                      KEYEVENT_ACTION_LABEL(msg->inject_keycode.action));
             break;
+        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+            LOG_CMSG("get clipboard copy_key=%s",
+                     copy_key_labels[msg->get_clipboard.copy_key]);
+            break;
         case CONTROL_MSG_TYPE_SET_CLIPBOARD:
             LOG_CMSG("clipboard %" PRIu64_ " %s \"%s\"",
                      msg->set_clipboard.sequence,
@@ -212,9 +224,6 @@ control_msg_log(const struct control_msg *msg) {
             break;
         case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
             LOG_CMSG("collapse panels");
-            break;
-        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
-            LOG_CMSG("get clipboard");
             break;
         case CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");

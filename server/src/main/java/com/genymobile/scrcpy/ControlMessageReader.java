@@ -13,6 +13,7 @@ public class ControlMessageReader {
     static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
     static final int BACK_OR_SCREEN_ON_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
+    static final int GET_CLIPBOARD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 9;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
@@ -70,6 +71,9 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
                 msg = parseBackOrScreenOnEvent();
                 break;
+            case ControlMessage.TYPE_GET_CLIPBOARD:
+                msg = parseGetClipboard();
+                break;
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 msg = parseSetClipboard();
                 break;
@@ -79,7 +83,6 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL:
             case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
             case ControlMessage.TYPE_COLLAPSE_PANELS:
-            case ControlMessage.TYPE_GET_CLIPBOARD:
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 msg = ControlMessage.createEmpty(type);
                 break;
@@ -160,6 +163,14 @@ public class ControlMessageReader {
         }
         int action = toUnsigned(buffer.get());
         return ControlMessage.createBackOrScreenOn(action);
+    }
+
+    private ControlMessage parseGetClipboard() {
+        if (buffer.remaining() < GET_CLIPBOARD_LENGTH) {
+            return null;
+        }
+        int copyKey = toUnsigned(buffer.get());
+        return ControlMessage.createGetClipboard(copyKey);
     }
 
     private ControlMessage parseSetClipboard() {
