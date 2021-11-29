@@ -197,7 +197,7 @@ control_msg_log(const struct control_msg *msg) {
         case CONTROL_MSG_TYPE_SET_CLIPBOARD:
             LOG_CMSG("clipboard %" PRIu64_ " %s \"%s\"",
                      msg->set_clipboard.sequence,
-                     msg->set_clipboard.paste ? "paste" : "copy",
+                     msg->set_clipboard.paste ? "paste" : "nopaste",
                      msg->set_clipboard.text);
             break;
         case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
