@@ -55,7 +55,7 @@ public class Controller {
     public void control() throws IOException {
         // on start, power on the device
         if (!Device.isScreenOn()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER);
+            device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -144,7 +144,7 @@ public class Controller {
         if (keepPowerModeOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
             schedulePowerModeOff();
         }
-        return device.injectKeyEvent(action, keycode, repeat, metaState);
+        return device.injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectChar(char c) {
@@ -155,7 +155,7 @@ public class Controller {
             return false;
         }
         for (KeyEvent event : events) {
-            if (!device.injectEvent(event)) {
+            if (!device.injectEvent(event, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -219,7 +219,7 @@ public class Controller {
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source,
                         0);
-        return device.injectEvent(event);
+        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, int hScroll, int vScroll) {
@@ -242,7 +242,7 @@ public class Controller {
         MotionEvent event = MotionEvent
                 .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, 0, 1f, 1f, DEFAULT_DEVICE_ID, 0,
                         InputDevice.SOURCE_MOUSE, 0);
-        return device.injectEvent(event);
+        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     /**
@@ -260,7 +260,7 @@ public class Controller {
 
     private boolean pressBackOrTurnScreenOn(int action) {
         if (Device.isScreenOn()) {
-            return device.injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0);
+            return device.injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
         // Screen is off
@@ -273,7 +273,7 @@ public class Controller {
         if (keepPowerModeOff) {
             schedulePowerModeOff();
         }
-        return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER);
+        return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean setClipboard(String text, boolean paste, long sequence) {
@@ -284,7 +284,7 @@ public class Controller {
 
         // On Android >= 7, also press the PASTE key if requested
         if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE);
+            device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
         }
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
