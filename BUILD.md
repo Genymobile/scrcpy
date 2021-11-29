@@ -15,7 +15,7 @@ First, you need to install the required packages:
 sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
                  gcc git pkg-config meson ninja-build libsdl2-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libusb-1.0-0 libusb-dev
+                 libusb-1.0-0 libusb-1.0-0-dev
 ```
 
 Then clone the repo and execute the installation script
@@ -94,7 +94,7 @@ sudo apt install ffmpeg libsdl2-2.0-0 adb libusb-1.0-0
 # client build dependencies
 sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
                  libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libusb-dev
+                 libusb-1.0-0-dev
 
 # server build dependencies
 sudo apt install openjdk-11-jdk

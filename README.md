@@ -65,7 +65,7 @@ Build from sources: [BUILD] ([simplified process][BUILD_simple])
 
 ### Linux
 
-On Debian (_testing_ and _sid_ for now) and Ubuntu (20.04):
+On Debian and Ubuntu:
 
 ```
 apt install scrcpy
@@ -1049,7 +1049,7 @@ This README is available in other languages:
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
 - [Español (Spanish, `sp`) - v1.17](README.sp.md)
-- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.17](README.zh-Hans.md)
+- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.20](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
 - [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
 
