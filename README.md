@@ -1,4 +1,4 @@
-# scrcpy (v1.20)
+# scrcpy (v1.21)
 
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -101,10 +101,10 @@ process][BUILD_simple]).
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
- - [`scrcpy-win64-v1.20.zip`][direct-win64]  
-   _(SHA-256: 548532b616288bcaeceff6881ad5e6f0928e5ae2b48c380385f03627401cfdba)_
+ - [`scrcpy-win64-v1.21.zip`][direct-win64]  
+   _(SHA-256: fdab0c1421353b592a9bbcebd6e252675eadccca65cca8105686feaa9c1ded53)_
 
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.20/scrcpy-win64-v1.20.zip
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.21/scrcpy-win64-v1.21.zip
 
 It is also available in [Chocolatey]:
 
