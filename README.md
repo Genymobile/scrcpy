@@ -359,7 +359,8 @@ scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
 #### TCP/IP (wireless)
 
 _Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
-device over TCP/IP.
+device over TCP/IP. The device must be connected on the same network as the
+computer.
 
 ##### Automatic
 
@@ -374,8 +375,8 @@ scrcpy --tcpip=192.168.1.1       # default port is 5555
 scrcpy --tcpip=192.168.1.1:5555
 ```
 
-If the device TCP/IP mode is disabled (or if you don't know the IP address),
-connect the device over USB, then run:
+If adb TCP/IP mode is disabled on the device (or if you don't know the IP
+address), connect the device over USB, then run:
 
 ```bash
 scrcpy --tcpip    # without arguments
