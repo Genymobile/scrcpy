@@ -30,9 +30,7 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
     bool inherit_stderr = !perr && !(flags & SC_PROCESS_NO_STDERR);
 
     // Add 1 per non-NULL pointer
-    unsigned handle_count = !!pin
-                          + (pout || inherit_stdout)
-                          + (perr || inherit_stderr);
+    unsigned handle_count = !!pin || !!pout || !!perr;
 
     enum sc_process_result ret = SC_PROCESS_ERROR_GENERIC;
 
@@ -81,23 +79,29 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
     si.StartupInfo.cb = sizeof(si);
     HANDLE handles[3];
 
+    si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    if (inherit_stdout) {
+        si.StartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    }
+    if (inherit_stderr) {
+        si.StartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    }
+
     LPPROC_THREAD_ATTRIBUTE_LIST lpAttributeList = NULL;
     if (handle_count) {
-        si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
-
         unsigned i = 0;
         if (pin) {
             si.StartupInfo.hStdInput = stdin_read_handle;
             handles[i++] = si.StartupInfo.hStdInput;
         }
-        if (pout || inherit_stdout) {
-            si.StartupInfo.hStdOutput = pout ? stdout_write_handle
-                                             : GetStdHandle(STD_OUTPUT_HANDLE);
+        if (pout) {
+            assert(!inherit_stdout);
+            si.StartupInfo.hStdOutput = stdout_write_handle;
             handles[i++] = si.StartupInfo.hStdOutput;
         }
-        if (perr || inherit_stderr) {
-            si.StartupInfo.hStdError = perr ? stderr_write_handle
-                                            : GetStdHandle(STD_ERROR_HANDLE);
+        if (perr) {
+            assert(!inherit_stderr);
+            si.StartupInfo.hStdError = stderr_write_handle;
             handles[i++] = si.StartupInfo.hStdError;
         }
 
@@ -146,10 +150,15 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
         goto error_free_attribute_list;
     }
 
-    BOOL bInheritHandles = handle_count > 0;
-    // DETACHED_PROCESS to disable stdin, stdout and stderr
-    DWORD dwCreationFlags = handle_count > 0 ? EXTENDED_STARTUPINFO_PRESENT
-                                             : DETACHED_PROCESS;
+    BOOL bInheritHandles = handle_count > 0 || inherit_stdout || inherit_stderr;
+    DWORD dwCreationFlags = 0;
+    if (handle_count > 0) {
+        dwCreationFlags |= EXTENDED_STARTUPINFO_PRESENT;
+    }
+    if (!inherit_stdout && !inherit_stderr) {
+        // DETACHED_PROCESS to disable stdin, stdout and stderr
+        dwCreationFlags |= DETACHED_PROCESS;
+    }
     BOOL ok = CreateProcessW(NULL, wide, NULL, NULL, bInheritHandles,
                              dwCreationFlags, NULL, NULL, &si.StartupInfo, &pi);
     free(wide);
