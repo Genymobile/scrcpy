@@ -154,7 +154,9 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
                              dwCreationFlags, NULL, NULL, &si.StartupInfo, &pi);
     free(wide);
     if (!ok) {
-        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
+        int err = GetLastError();
+        LOGE("CreateProcessW() error %d", err);
+        if (err == ERROR_FILE_NOT_FOUND) {
             ret = SC_PROCESS_ERROR_MISSING_BINARY;
         }
         goto error_free_attribute_list;
