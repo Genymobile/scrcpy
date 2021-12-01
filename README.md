@@ -82,10 +82,11 @@ For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 [copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
-For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
+On Arch Linux:
 
-[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
-[aur-link]: https://aur.archlinux.org/packages/scrcpy/
+```
+pacman -S scrcpy
+```
 
 For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
