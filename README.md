@@ -71,6 +71,12 @@ On Debian and Ubuntu:
 apt install scrcpy
 ```
 
+On Arch Linux:
+
+```
+pacman -S scrcpy
+```
+
 A [Snap] package is available: [`scrcpy`][snap-link].
 
 [snap-link]: https://snapstats.org/snaps/scrcpy
@@ -82,10 +88,6 @@ For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 [copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
-For Arch Linux, an [AUR] package is available: [`scrcpy`][aur-link].
-
-[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
-[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 
