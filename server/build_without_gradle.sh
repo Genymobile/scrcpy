@@ -57,7 +57,7 @@ javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
 echo "Dexing..."
 cd "$CLASSES_DIR"
 
-if [[ $PLATFORM_VERSION -lt 31 ]]
+if [[ $PLATFORM -lt 31 ]]
 then
     # use dx
     "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
