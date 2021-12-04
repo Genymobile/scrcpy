@@ -250,6 +250,40 @@ static void test_serialize_set_clipboard(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_set_clipboard_long(void) {
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_SET_CLIPBOARD,
+        .set_clipboard = {
+            .sequence = UINT64_C(0x0102030405060708),
+            .paste = true,
+            .text = NULL,
+        },
+    };
+
+    char text[CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH + 1];
+    memset(text, 'a', CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
+    text[CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH] = '\0';
+    msg.set_clipboard.text = text;
+
+    unsigned char buf[CONTROL_MSG_MAX_SIZE];
+    size_t size = control_msg_serialize(&msg, buf);
+    assert(size == CONTROL_MSG_MAX_SIZE);
+
+    unsigned char expected[CONTROL_MSG_MAX_SIZE] = {
+        CONTROL_MSG_TYPE_SET_CLIPBOARD,
+        0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sequence
+        1, // paste
+        // text length
+        CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH >> 24,
+        (CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH >> 16) & 0xff,
+        (CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH >> 8) & 0xff,
+        CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH & 0xff,
+    };
+    memset(expected + 14, 'a', CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
+
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 static void test_serialize_set_screen_power_mode(void) {
     struct control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
@@ -299,6 +333,7 @@ int main(int argc, char *argv[]) {
     test_serialize_collapse_panels();
     test_serialize_get_clipboard();
     test_serialize_set_clipboard();
+    test_serialize_set_clipboard_long();
     test_serialize_set_screen_power_mode();
     test_serialize_rotate_device();
     return 0;
