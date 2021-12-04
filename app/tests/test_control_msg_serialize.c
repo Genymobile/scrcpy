@@ -54,7 +54,7 @@ static void test_serialize_inject_text_long(void) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     char text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH + 1];
-    memset(text, 'a', sizeof(text));
+    memset(text, 'a', CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
     text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH] = '\0';
     msg.inject_text.text = text;
 
