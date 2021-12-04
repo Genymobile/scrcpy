@@ -14,8 +14,8 @@
 #define CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 
 #define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
-// type: 1 byte; paste flag: 1 byte; length: 4 bytes
-#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 6)
+// type: 1 byte; sequence: 8 bytes; paste flag: 1 byte; length: 4 bytes
+#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 14)
 
 #define POINTER_ID_MOUSE UINT64_C(-1)
 #define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2)
