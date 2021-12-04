@@ -678,7 +678,7 @@ sc_getopt_adapter_init(struct sc_getopt_adapter *adapter) {
     }
 
     return true;
-};
+}
 
 static void
 sc_getopt_adapter_destroy(struct sc_getopt_adapter *adapter) {

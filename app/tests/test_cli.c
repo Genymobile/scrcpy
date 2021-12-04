@@ -169,4 +169,4 @@ int main(int argc, char *argv[]) {
     test_options2();
     test_parse_shortcut_mods();
     return 0;
-};
+}
