@@ -41,7 +41,7 @@ static const char *const android_motionevent_action_labels[] = {
     "pointer-up",
     "hover-move",
     "scroll",
-    "hover-enter"
+    "hover-enter",
     "hover-exit",
     "btn-press",
     "btn-release",
