@@ -69,7 +69,7 @@ write_position(uint8_t *buf, const struct sc_position *position) {
     buffer_write16be(&buf[10], position->screen_size.height);
 }
 
-// write length (2 bytes) + string (non nul-terminated)
+// write length (4 bytes) + string (non null-terminated)
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = sc_str_utf8_truncation_index(utf8, max_len);
