@@ -64,12 +64,7 @@ set_window_size(struct screen *screen, struct sc_size new_size) {
 static bool
 get_preferred_display_bounds(struct sc_size *bounds) {
     SDL_Rect rect;
-#ifdef SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
-# define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayUsableBounds((i), (r))
-#else
-# define GET_DISPLAY_BOUNDS(i, r) SDL_GetDisplayBounds((i), (r))
-#endif
-    if (GET_DISPLAY_BOUNDS(0, &rect)) {
+    if (SDL_GetDisplayUsableBounds(0, &rect)) {
         LOGW("Could not get display usable bounds: %s", SDL_GetError());
         return false;
     }
@@ -394,12 +389,7 @@ screen_init(struct screen *screen, const struct screen_params *params) {
                           | SDL_WINDOW_RESIZABLE
                           | SDL_WINDOW_ALLOW_HIGHDPI;
     if (params->always_on_top) {
-#ifdef SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
-#else
-        LOGW("The 'always on top' flag is not available "
-             "(compile with SDL >= 2.0.5 to enable it)");
-#endif
     }
     if (params->window_borderless) {
         window_flags |= SDL_WINDOW_BORDERLESS;

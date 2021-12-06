@@ -87,7 +87,7 @@ if not get_option('crossbuild_windows')
         dependency('libavformat'),
         dependency('libavcodec'),
         dependency('libavutil'),
-        dependency('sdl2'),
+        dependency('sdl2', version: '>= 2.0.5'),
     ]
 
     if v4l2_support

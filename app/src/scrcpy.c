@@ -94,12 +94,10 @@ sdl_set_hints(const char *render_driver) {
         LOGW("Could not enable linear filtering");
     }
 
-#ifdef SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
     // Handle a click to gain focus as any other click
     if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
         LOGW("Could not enable mouse focus clickthrough");
     }
-#endif
 
 #ifdef SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
     // Disable synthetic mouse events from touch events

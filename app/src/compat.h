@@ -35,15 +35,6 @@
 # define SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
 #endif
 
-#if SDL_VERSION_ATLEAST(2, 0, 5)
-// <https://wiki.libsdl.org/SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH>
-# define SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
-// <https://wiki.libsdl.org/SDL_GetDisplayUsableBounds>
-# define SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
-// <https://wiki.libsdl.org/SDL_WindowFlags>
-# define SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
-#endif
-
 #if SDL_VERSION_ATLEAST(2, 0, 6)
 // <https://github.com/libsdl-org/SDL/commit/d7a318de563125e5bb465b1000d6bc9576fbc6fc>
 # define SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
