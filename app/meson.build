@@ -84,7 +84,7 @@ if not get_option('crossbuild_windows')
 
     # native build
     dependencies = [
-        dependency('libavformat'),
+        dependency('libavformat', version: '>= 57.33'),
         dependency('libavcodec'),
         dependency('libavutil'),
         dependency('sdl2', version: '>= 2.0.5'),
