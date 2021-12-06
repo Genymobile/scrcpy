@@ -388,6 +388,7 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     assert(tunnel->enabled);
 
     const char *serial = server->params.serial;
+    bool control = server->params.control;
 
     sc_socket video_socket = SC_SOCKET_NONE;
     sc_socket control_socket = SC_SOCKET_NONE;
@@ -397,9 +398,12 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             goto fail;
         }
 
-        control_socket = net_accept_intr(&server->intr, tunnel->server_socket);
-        if (control_socket == SC_SOCKET_NONE) {
-            goto fail;
+        if (control) {
+            control_socket =
+                net_accept_intr(&server->intr, tunnel->server_socket);
+            if (control_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
         }
     } else {
         uint32_t tunnel_host = server->params.tunnel_host;
@@ -420,15 +424,18 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             goto fail;
         }
 
-        // we know that the device is listening, we don't need several attempts
-        control_socket = net_socket();
-        if (control_socket == SC_SOCKET_NONE) {
-            goto fail;
-        }
-        bool ok = net_connect_intr(&server->intr, control_socket, tunnel_host,
-                                   tunnel_port);
-        if (!ok) {
-            goto fail;
+        if (control) {
+            // we know that the device is listening, we don't need several
+            // attempts
+            control_socket = net_socket();
+            if (control_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
+            bool ok = net_connect_intr(&server->intr, control_socket,
+                                       tunnel_host, tunnel_port);
+            if (!ok) {
+                goto fail;
+            }
         }
     }
 
@@ -442,7 +449,7 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     }
 
     assert(video_socket != SC_SOCKET_NONE);
-    assert(control_socket != SC_SOCKET_NONE);
+    assert(!control || control_socket != SC_SOCKET_NONE);
 
     server->video_socket = video_socket;
     server->control_socket = control_socket;

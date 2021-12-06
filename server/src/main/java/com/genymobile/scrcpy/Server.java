@@ -66,14 +66,15 @@ public final class Server {
         Thread initThread = startInitThread(options);
 
         boolean tunnelForward = options.isTunnelForward();
+        boolean control = options.getControl();
 
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward)) {
+        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward, control)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName());
 
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
-            if (options.getControl()) {
+            if (control) {
                 final Controller controller = new Controller(device, connection, options.getClipboardAutosync());
 
                 // asynchronous

@@ -30,8 +30,13 @@ public final class DesktopConnection implements Closeable {
     private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
         this.videoSocket = videoSocket;
         this.controlSocket = controlSocket;
-        controlInputStream = controlSocket.getInputStream();
-        controlOutputStream = controlSocket.getOutputStream();
+        if (controlSocket != null) {
+            controlInputStream = controlSocket.getInputStream();
+            controlOutputStream = controlSocket.getOutputStream();
+        } else {
+            controlInputStream = null;
+            controlOutputStream = null;
+        }
         videoFd = videoSocket.getFileDescriptor();
     }
 
@@ -41,31 +46,35 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(Device device, boolean tunnelForward) throws IOException {
+    public static DesktopConnection open(Device device, boolean tunnelForward, boolean control) throws IOException {
         LocalSocket videoSocket;
-        LocalSocket controlSocket;
+        LocalSocket controlSocket = null;
         if (tunnelForward) {
             LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
             try {
                 videoSocket = localServerSocket.accept();
                 // send one byte so the client may read() to detect a connection error
                 videoSocket.getOutputStream().write(0);
-                try {
-                    controlSocket = localServerSocket.accept();
-                } catch (IOException | RuntimeException e) {
-                    videoSocket.close();
-                    throw e;
+                if (control) {
+                    try {
+                        controlSocket = localServerSocket.accept();
+                    } catch (IOException | RuntimeException e) {
+                        videoSocket.close();
+                        throw e;
+                    }
                 }
             } finally {
                 localServerSocket.close();
             }
         } else {
             videoSocket = connect(SOCKET_NAME);
-            try {
-                controlSocket = connect(SOCKET_NAME);
-            } catch (IOException | RuntimeException e) {
-                videoSocket.close();
-                throw e;
+            if (control) {
+                try {
+                    controlSocket = connect(SOCKET_NAME);
+                } catch (IOException | RuntimeException e) {
+                    videoSocket.close();
+                    throw e;
+                }
             }
         }
 
@@ -79,9 +88,11 @@ public final class DesktopConnection implements Closeable {
         videoSocket.shutdownInput();
         videoSocket.shutdownOutput();
         videoSocket.close();
-        controlSocket.shutdownInput();
-        controlSocket.shutdownOutput();
-        controlSocket.close();
+        if (controlSocket != null) {
+            controlSocket.shutdownInput();
+            controlSocket.shutdownOutput();
+            controlSocket.close();
+        }
     }
 
     private void send(String deviceName, int width, int height) throws IOException {
