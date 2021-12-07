@@ -46,6 +46,8 @@ decoder_open(struct decoder *decoder, const AVCodec *codec) {
         return false;
     }
 
+    decoder->codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+
     if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
         LOGE("Could not open codec");
         avcodec_free_context(&decoder->codec_ctx);
