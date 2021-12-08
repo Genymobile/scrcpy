@@ -763,6 +763,17 @@ run_server(void *data) {
     }
     sc_mutex_unlock(&server->mutex);
 
+    // Interrupt sockets to wake up socket blocking calls on the server
+    assert(server->video_socket != SC_SOCKET_NONE);
+    net_interrupt(server->video_socket);
+    net_close(server->video_socket);
+
+    if (server->control_socket != SC_SOCKET_NONE) {
+        // There is no control_socket if --no-control is set
+        net_interrupt(server->control_socket);
+        net_close(server->control_socket);
+    }
+
     // Give some delay for the server to terminate properly
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
     sc_tick deadline = sc_tick_now() + WATCHDOG_DELAY;
