@@ -776,7 +776,7 @@ print_shortcuts_intro(unsigned cols) {
         return;
     }
 
-    printf("%s\n", intro);
+    printf("\n%s\n", intro);
     free(intro);
 }
 
@@ -831,7 +831,7 @@ scrcpy_print_usage(const char *arg0) {
     }
 
     // Print shortcuts section
-    printf("\nShortcuts:\n\n");
+    printf("\nShortcuts:\n");
     print_shortcuts_intro(cols);
     for (size_t i = 0; i < ARRAY_LEN(shortcuts); ++i) {
         print_shortcut(&shortcuts[i], cols);
