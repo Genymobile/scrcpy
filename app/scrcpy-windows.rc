@@ -1,1 +1,20 @@
 0 ICON "../data/icon.ico"
+1 VERSIONINFO
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "FileDescription", "Display and control your Android device"
+      VALUE "InternalName", "scrcpy"
+      VALUE "LegalCopyright", "Romain Vimont, Genymobile"
+      VALUE "OriginalFilename", "scrcpy.exe"
+      VALUE "ProductName", "scrcpy"
+      VALUE "ProductVersion", "1.21"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END
