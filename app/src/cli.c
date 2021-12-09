@@ -71,6 +71,11 @@ struct sc_shortcut {
     const char *text;
 };
 
+struct sc_envvar {
+    const char *name;
+    const char *text;
+};
+
 struct sc_getopt_adapter {
     char *optstring;
     struct option *longopts;
@@ -585,6 +590,21 @@ static const struct sc_shortcut shortcuts[] = {
     },
 };
 
+static const struct sc_envvar envvars[] = {
+    {
+        .name = "ADB",
+        .text = "Path to adb executable",
+    },
+    {
+        .name = "SCRCPY_ICON_PATH",
+        .text = "Path to the program icon",
+    },
+    {
+        .name = "SCRCPY_SERVER_PATH",
+        .text = "Path to the server binary",
+    }
+};
+
 static char *
 sc_getopt_adapter_create_optstring(void) {
     struct sc_strbuf buf;
@@ -804,6 +824,23 @@ print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
     free(text);
 }
 
+static void
+print_envvar(const struct sc_envvar *envvar, unsigned cols) {
+    assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
+    assert(envvar->name);
+    assert(envvar->text);
+
+    printf("\n    %s\n", envvar->name);
+    char *text = sc_str_wrap_lines(envvar->text, cols, 8);
+    if (!text) {
+        printf("<ERROR>\n");
+        return;
+    }
+
+    printf("%s\n", text);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
 #define SC_TERM_COLS_DEFAULT 80
@@ -835,6 +872,12 @@ scrcpy_print_usage(const char *arg0) {
     print_shortcuts_intro(cols);
     for (size_t i = 0; i < ARRAY_LEN(shortcuts); ++i) {
         print_shortcut(&shortcuts[i], cols);
+    }
+
+    // Print environment variables section
+    printf("\nEnvironment variables:\n");
+    for (size_t i = 0; i < ARRAY_LEN(envvars); ++i) {
+        print_envvar(&envvars[i], cols);
     }
 }
 
