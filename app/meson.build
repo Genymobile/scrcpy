@@ -49,9 +49,11 @@ conf.set('_XOPEN_SOURCE', '700')
 conf.set('_GNU_SOURCE', true)
 
 if host_machine.system() == 'windows'
+    windows = import('windows')
     src += [
         'src/sys/win/file.c',
         'src/sys/win/process.c',
+        windows.compile_resources('scrcpy-windows.rc'),
     ]
     conf.set('_WIN32_WINNT', '0x0600')
     conf.set('WINVER', '0x0600')
