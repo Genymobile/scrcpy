@@ -8,6 +8,10 @@
 bool
 sc_thread_create(sc_thread *thread, sc_thread_fn fn, const char *name,
                  void *userdata) {
+    // The thread name length is limited on some systems. Never use a name
+    // longer than 16 bytes (including the final '\0')
+    assert(strlen(name) <= 15);
+
     SDL_Thread *sdl_thread = SDL_CreateThread(fn, name, userdata);
     if (!sdl_thread) {
         LOG_OOM();

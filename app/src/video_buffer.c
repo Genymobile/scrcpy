@@ -170,7 +170,7 @@ bool
 sc_video_buffer_start(struct sc_video_buffer *vb) {
     if (vb->buffering_time) {
         bool ok =
-            sc_thread_create(&vb->b.thread, run_buffering, "buffering", vb);
+            sc_thread_create(&vb->b.thread, run_buffering, "scrcpy-vbuf", vb);
         if (!ok) {
             LOGE("Could not start buffering thread");
             return false;

@@ -287,8 +287,8 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     }
 
     LOGD("Starting recorder thread");
-    ok = sc_thread_create(&recorder->thread, run_recorder, "recorder",
-                               recorder);
+    ok = sc_thread_create(&recorder->thread, run_recorder, "scrcpy-recorder",
+                          recorder);
     if (!ok) {
         LOGC("Could not start recorder thread");
         goto error_avio_close;

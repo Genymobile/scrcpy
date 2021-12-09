@@ -284,7 +284,8 @@ bool
 stream_start(struct stream *stream) {
     LOGD("Starting stream thread");
 
-    bool ok = sc_thread_create(&stream->thread, run_stream, "stream", stream);
+    bool ok =
+        sc_thread_create(&stream->thread, run_stream, "scrcpy-stream", stream);
     if (!ok) {
         LOGC("Could not start stream thread");
         return false;

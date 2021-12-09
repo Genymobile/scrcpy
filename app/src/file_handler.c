@@ -154,7 +154,7 @@ file_handler_start(struct file_handler *file_handler) {
     LOGD("Starting file_handler thread");
 
     bool ok = sc_thread_create(&file_handler->thread, run_file_handler,
-                               "file_handler", file_handler);
+                               "scrcpy-file", file_handler);
     if (!ok) {
         LOGC("Could not start file_handler thread");
         return false;

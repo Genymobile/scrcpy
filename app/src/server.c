@@ -804,7 +804,8 @@ error_connection_failed:
 
 bool
 sc_server_start(struct sc_server *server) {
-    bool ok = sc_thread_create(&server->thread, run_server, "server", server);
+    bool ok =
+        sc_thread_create(&server->thread, run_server, "scrcpy-server", server);
     if (!ok) {
         LOGE("Could not create server thread");
         return false;

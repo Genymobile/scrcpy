@@ -272,7 +272,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
     vs->stopped = false;
 
     LOGD("Starting v4l2 thread");
-    ok = sc_thread_create(&vs->thread, run_v4l2_sink, "v4l2", vs);
+    ok = sc_thread_create(&vs->thread, run_v4l2_sink, "scrcpy-v4l2", vs);
     if (!ok) {
         LOGC("Could not start v4l2 thread");
         goto error_av_packet_free;

@@ -108,7 +108,7 @@ fps_counter_start(struct fps_counter *counter) {
     // same thread, no need to lock
     if (!counter->thread_started) {
         bool ok = sc_thread_create(&counter->thread, run_fps_counter,
-                                   "fps counter", counter);
+                                   "scrcpy-fps", counter);
         if (!ok) {
             LOGE("Could not start FPS counter thread");
             return false;
