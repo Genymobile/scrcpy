@@ -82,7 +82,9 @@ endif
 
 cc = meson.get_compiler('c')
 
-if not get_option('crossbuild_windows')
+crossbuild_windows = meson.is_cross_build() and host_machine.system() == 'windows'
+
+if not crossbuild_windows
 
     # native build
     dependencies = [

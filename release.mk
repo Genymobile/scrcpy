@@ -70,7 +70,6 @@ build-win32: prepare-deps-win32
 		meson "$(WIN32_BUILD_DIR)" \
 			--cross-file cross_win32.txt \
 			--buildtype release --strip -Db_lto=true \
-			-Dcrossbuild_windows=true \
 			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
@@ -83,7 +82,6 @@ build-win64: prepare-deps-win64
 		meson "$(WIN64_BUILD_DIR)" \
 			--cross-file cross_win64.txt \
 			--buildtype release --strip -Db_lto=true \
-			-Dcrossbuild_windows=true \
 			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN64_BUILD_DIR)"
