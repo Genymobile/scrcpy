@@ -232,7 +232,7 @@ execute_server(struct sc_server *server,
         ADD_PARAM("power_off_on_close=%s", STRBOOL(params->power_off_on_close));
     }
     if (!params->clipboard_autosync) {
-        // By defaut, clipboard_autosync is true
+        // By default, clipboard_autosync is true
         ADD_PARAM("clipboard_autosync=%s", STRBOOL(params->clipboard_autosync));
     }
 
