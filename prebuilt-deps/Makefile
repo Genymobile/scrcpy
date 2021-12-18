@@ -30,9 +30,9 @@ prepare-ffmpeg-dev-win64:
 		ffmpeg-4.3.1-win64-dev
 
 prepare-sdl2:
-	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.16-mingw.tar.gz \
-		2bfe48628aa9635c12eac7d421907e291525de1d0b04b3bca4a5bd6e6c881a6f \
-		SDL2-2.0.16
+	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.18-mingw.tar.gz \
+		bbad7c6947f6ca3e05292f065852ed8b62f319fc5533047e7708769c4dbae394 \
+		SDL2-2.0.18
 
 prepare-adb:
 	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r31.0.3-windows.zip \
