@@ -101,8 +101,7 @@ get_optimal_size(struct sc_size current_size, struct sc_size content_size) {
     struct sc_size display_size;
     if (!get_preferred_display_bounds(&display_size)) {
         // could not get display bounds, do not constraint the size
-        window_size.width = current_size.width;
-        window_size.height = current_size.height;
+        window_size = current_size;
     } else {
         window_size.width = MIN(current_size.width, display_size.width);
         window_size.height = MIN(current_size.height, display_size.height);
