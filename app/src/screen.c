@@ -90,7 +90,8 @@ is_optimal_size(struct sc_size current_size, struct sc_size content_size) {
 //  - it keeps the aspect ratio
 //  - it scales down to make it fit in the display_size
 static struct sc_size
-get_optimal_size(struct sc_size current_size, struct sc_size content_size) {
+get_optimal_size(struct sc_size current_size, struct sc_size content_size,
+                 bool within_display_bounds) {
     if (content_size.width == 0 || content_size.height == 0) {
         // avoid division by 0
         return current_size;
@@ -99,8 +100,9 @@ get_optimal_size(struct sc_size current_size, struct sc_size content_size) {
     struct sc_size window_size;
 
     struct sc_size display_size;
-    if (!get_preferred_display_bounds(&display_size)) {
-        // could not get display bounds, do not constraint the size
+    if (!within_display_bounds ||
+            !get_preferred_display_bounds(&display_size)) {
+        // do not constraint the size
         window_size = current_size;
     } else {
         window_size.width = MIN(current_size.width, display_size.width);
@@ -134,7 +136,7 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
                          uint16_t req_height) {
     struct sc_size window_size;
     if (!req_width && !req_height) {
-        window_size = get_optimal_size(content_size, content_size);
+        window_size = get_optimal_size(content_size, content_size, true);
     } else {
         if (req_width) {
             window_size.width = req_width;
@@ -559,7 +561,7 @@ resize_for_content(struct screen *screen, struct sc_size old_content_size,
         .height = (uint32_t) window_size.height * new_content_size.height
                 / old_content_size.height,
     };
-    target_size = get_optimal_size(target_size, new_content_size);
+    target_size = get_optimal_size(target_size, new_content_size, true);
     set_window_size(screen, target_size);
 }
 
@@ -694,7 +696,7 @@ screen_resize_to_fit(struct screen *screen) {
     struct sc_size window_size = get_window_size(screen);
 
     struct sc_size optimal_size =
-        get_optimal_size(window_size, screen->content_size);
+        get_optimal_size(window_size, screen->content_size, false);
 
     // Center the window related to the device screen
     assert(optimal_size.width <= window_size.width);
