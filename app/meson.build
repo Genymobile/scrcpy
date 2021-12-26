@@ -77,6 +77,7 @@ if aoa_hid_support
     src += [
         'src/aoa_hid.c',
         'src/hid_keyboard.c',
+        'src/hid_mouse.c',
     ]
 endif
 
