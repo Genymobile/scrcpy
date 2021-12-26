@@ -639,10 +639,10 @@ input_manager_process_mouse_motion(struct input_manager *im,
     if (im->forward_all_clicks) {
         mask |= SDL_BUTTON_MMASK | SDL_BUTTON_RMASK;
     }
-    if (!(event->state & mask)) {
-        // do not send motion events when no click is pressed
-        return;
-    }
+    //if (!(event->state & mask)) {
+    //    // do not send motion events when no click is pressed
+    //    return;
+    //}
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
         return;
