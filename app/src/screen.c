@@ -485,6 +485,10 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     SDL_AddEventWatch(event_watcher, screen);
 #endif
 
+    if (SDL_SetRelativeMouseMode(true)) {
+        LOGE("Could not set relative mouse mode: %s", SDL_GetError());
+    }
+
     static const struct sc_frame_sink_ops ops = {
         .open = screen_frame_sink_open,
         .close = screen_frame_sink_close,
