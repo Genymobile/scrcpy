@@ -19,6 +19,7 @@
 #include "file_handler.h"
 #ifdef HAVE_AOA_HID
 # include "hid_keyboard.h"
+# include "hid_mouse.h"
 #endif
 #include "keyboard_inject.h"
 #include "mouse_inject.h"
@@ -55,7 +56,12 @@ struct scrcpy {
         struct sc_hid_keyboard keyboard_hid;
 #endif
     };
-    struct sc_mouse_inject mouse_inject;
+    union {
+        struct sc_mouse_inject mouse_inject;
+#ifdef HAVE_AOA_HID
+        struct sc_hid_mouse mouse_hid;
+#endif
+    };
 };
 
 static inline void
