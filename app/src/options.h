@@ -38,6 +38,11 @@ enum sc_keyboard_input_mode {
     SC_KEYBOARD_INPUT_MODE_HID,
 };
 
+enum sc_mouse_input_mode {
+    SC_MOUSE_INPUT_MODE_INJECT,
+    SC_MOUSE_INPUT_MODE_HID,
+};
+
 enum sc_key_inject_mode {
     // Inject special keys, letters and space as key events.
     // Inject numbers and punctuation as text events.
@@ -90,6 +95,7 @@ struct scrcpy_options {
     enum sc_log_level log_level;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
+    enum sc_mouse_input_mode mouse_input_mode;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;

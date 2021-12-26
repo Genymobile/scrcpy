@@ -96,6 +96,8 @@ The keyboard layout must be configured (once and for all) on the device, via Set
 
 However, the option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
 
+Also see \fB\-\-hid\-mouse\fR.
+
 .TP
 .B \-\-legacy\-paste
 Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
@@ -119,6 +121,18 @@ Limit the framerate of screen capture (officially supported since Android 10, bu
 Limit both the width and height of the video to \fIvalue\fR. The other dimension is computed so that the device aspect\-ratio is preserved.
 
 Default is 0 (unlimited).
+
+.TP
+.B \-M, \-\-hid\-mouse
+Simulate a physical mouse by using HID over AOAv2.
+
+In this mode, the computer mouse is captured to control the device directly (relative mouse mode).
+
+LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
+
+It may only work over USB, and is currently only supported on Linux.
+
+Also see \fB\-\-hid\-keyboard\fR.
 
 .TP
 .B \-\-no\-clipboard\-autosync

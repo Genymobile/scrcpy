@@ -178,7 +178,8 @@ static const struct sc_option options[] = {
                 "directly: `adb shell am start -a "
                 "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
                 "However, the option is only available when the HID keyboard "
-                "is enabled (or a physical keyboard is connected).",
+                "is enabled (or a physical keyboard is connected).\n"
+                "Also see --hid-mouse.",
     },
     {
         .shortopt = 'h',
@@ -213,6 +214,18 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
                 "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .shortopt = 'M',
+        .longopt = "hid-mouse",
+        .text = "Simulate a physical mouse by using HID over AOAv2.\n"
+                "In this mode, the computer mouse is captured to control the "
+                "device directly (relative mouse mode).\n"
+                "LAlt, LSuper or RSuper toggle the capture mode, to give "
+                "control of the mouse back to the computer.\n"
+                "It may only work over USB, and is currently only supported "
+                "on Linux.\n"
+                "Also see --hid-keyboard.",
     },
     {
         .shortopt = 'm',
@@ -1314,6 +1327,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_max_size(optarg, &opts->max_size)) {
                     return false;
                 }
+                break;
+            case 'M':
+#ifdef HAVE_AOA_HID
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_HID;
+#else
+                LOGE("HID over AOA (-M/--hid-mouse) is not supported on this"
+                     "platform. It is only available on Linux.");
+                return false;
+#endif
                 break;
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
