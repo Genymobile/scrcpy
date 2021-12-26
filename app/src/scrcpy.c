@@ -20,6 +20,7 @@
 #include "input_manager.h"
 #ifdef HAVE_AOA_HID
 # include "hid_keyboard.h"
+# include "hid_mouse.h"
 #endif
 #include "keyboard_inject.h"
 #include "mouse_inject.h"
@@ -56,7 +57,12 @@ struct scrcpy {
         struct sc_hid_keyboard keyboard_hid;
 #endif
     };
-    struct sc_mouse_inject mouse_inject;
+    union {
+        struct sc_mouse_inject mouse_inject;
+#ifdef HAVE_AOA_HID
+        struct sc_hid_mouse mouse_hid;
+#endif
+    };
     struct input_manager input_manager;
 };
 
@@ -581,8 +587,9 @@ aoa_hid_end:
             kp = &s->keyboard_inject.key_processor;
         }
 
-        sc_mouse_inject_init(&s->mouse_inject, &s->controller);
-        mp = &s->mouse_inject.mouse_processor;
+        //sc_mouse_inject_init(&s->mouse_inject, &s->controller);
+        sc_hid_mouse_init(&s->mouse_hid, &s->aoa);
+        mp = &s->mouse_hid.mouse_processor;
     }
 
     input_manager_init(&s->input_manager, &s->controller, &s->screen, kp, mp,
