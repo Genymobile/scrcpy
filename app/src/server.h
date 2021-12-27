@@ -1,86 +1,108 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+#include "common.h"
+
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_thread.h>
 
-#include "config.h"
-#include "command.h"
-#include "common.h"
-#include "scrcpy.h"
+#include "adb.h"
+#include "adb_tunnel.h"
+#include "coords.h"
+#include "options.h"
+#include "util/intr.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/thread.h"
 
-struct server {
-    char *serial;
-    process_t process;
-    SDL_Thread *wait_server_thread;
-    atomic_flag server_socket_closed;
-    socket_t server_socket; // only used if !tunnel_forward
-    socket_t video_socket;
-    socket_t control_socket;
-    struct sc_port_range port_range;
-    uint16_t local_port; // selected from port_range
-    bool tunnel_enabled;
-    bool tunnel_forward; // use "adb forward" instead of "adb reverse"
+#define SC_DEVICE_NAME_FIELD_LENGTH 64
+struct sc_server_info {
+    char device_name[SC_DEVICE_NAME_FIELD_LENGTH];
+    struct sc_size frame_size;
 };
 
-#define SERVER_INITIALIZER { \
-    .serial = NULL, \
-    .process = PROCESS_NONE, \
-    .wait_server_thread = NULL, \
-    .server_socket_closed = ATOMIC_FLAG_INIT, \
-    .server_socket = INVALID_SOCKET, \
-    .video_socket = INVALID_SOCKET, \
-    .control_socket = INVALID_SOCKET, \
-    .port_range = { \
-        .first = 0, \
-        .last = 0, \
-    }, \
-    .local_port = 0, \
-    .tunnel_enabled = false, \
-    .tunnel_forward = false, \
-}
-
-struct server_params {
+struct sc_server_params {
+    const char *serial;
     enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
     const char *encoder_name;
     struct sc_port_range port_range;
+    uint32_t tunnel_host;
+    uint16_t tunnel_port;
     uint16_t max_size;
     uint32_t bit_rate;
     uint16_t max_fps;
     int8_t lock_video_orientation;
     bool control;
-    uint16_t display_id;
+    uint32_t display_id;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
+    bool power_off_on_close;
+    bool clipboard_autosync;
+    bool tcpip;
+    const char *tcpip_dst;
     bool use_adb_keyboard;
 };
 
-// init default values
-void
-server_init(struct server *server);
+struct sc_server {
+    // The internal allocated strings are copies owned by the server
+    struct sc_server_params params;
 
-// push, enable tunnel et start the server
-bool
-server_start(struct server *server, const char *serial,
-             const struct server_params *params);
+    sc_thread thread;
+    struct sc_server_info info; // initialized once connected
 
-// block until the communication with the server is established
+    sc_mutex mutex;
+    sc_cond cond_stopped;
+    bool stopped;
+
+    struct sc_intr intr;
+    struct sc_adb_tunnel tunnel;
+
+    sc_socket video_socket;
+    sc_socket control_socket;
+
+    const struct sc_server_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct sc_server_callbacks {
+    /**
+     * Called when the server failed to connect
+     *
+     * If it is called, then on_connected() and on_disconnected() will never be
+     * called.
+     */
+    void (*on_connection_failed)(struct sc_server *server, void *userdata);
+
+    /**
+     * Called on server connection
+     */
+    void (*on_connected)(struct sc_server *server, void *userdata);
+
+    /**
+     * Called on server disconnection (after it has been connected)
+     */
+    void (*on_disconnected)(struct sc_server *server, void *userdata);
+};
+
+// init the server with the given params
 bool
-server_connect_to(struct server *server);
+sc_server_init(struct sc_server *server, const struct sc_server_params *params,
+               const struct sc_server_callbacks *cbs, void *cbs_userdata);
+
+// start the server asynchronously
+bool
+sc_server_start(struct sc_server *server);
 
 // disconnect and kill the server process
 void
-server_stop(struct server *server);
+sc_server_stop(struct sc_server *server);
 
 // close and release sockets
 void
-server_destroy(struct server *server);
+sc_server_destroy(struct sc_server *server);
 
 #endif

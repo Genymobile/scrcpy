@@ -1,10 +1,10 @@
 #ifndef SC_OPENGL_H
 #define SC_OPENGL_H
 
+#include "common.h"
+
 #include <stdbool.h>
 #include <SDL2/SDL_opengl.h>
-
-#include "config.h"
 
 struct sc_opengl {
     const char *version;

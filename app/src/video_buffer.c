@@ -1,113 +1,254 @@
 #include "video_buffer.h"
 
 #include <assert.h>
-#include <SDL2/SDL_mutex.h>
+#include <stdlib.h>
+
 #include <libavutil/avutil.h>
 #include <libavformat/avformat.h>
 
-#include "config.h"
-#include "util/lock.h"
 #include "util/log.h"
 
-bool
-video_buffer_init(struct video_buffer *vb, struct fps_counter *fps_counter,
-                  bool render_expired_frames) {
-    vb->fps_counter = fps_counter;
+#define SC_BUFFERING_NDEBUG // comment to debug
 
-    if (!(vb->decoding_frame = av_frame_alloc())) {
-        goto error_0;
+static struct sc_video_buffer_frame *
+sc_video_buffer_frame_new(const AVFrame *frame) {
+    struct sc_video_buffer_frame *vb_frame = malloc(sizeof(*vb_frame));
+    if (!vb_frame) {
+        LOG_OOM();
+        return NULL;
     }
 
-    if (!(vb->rendering_frame = av_frame_alloc())) {
-        goto error_1;
+    vb_frame->frame = av_frame_alloc();
+    if (!vb_frame->frame) {
+        LOG_OOM();
+        free(vb_frame);
+        return NULL;
     }
 
-    if (!(vb->mutex = SDL_CreateMutex())) {
-        goto error_2;
+    if (av_frame_ref(vb_frame->frame, frame)) {
+        av_frame_free(&vb_frame->frame);
+        free(vb_frame);
+        return NULL;
     }
 
-    vb->render_expired_frames = render_expired_frames;
-    if (render_expired_frames) {
-        if (!(vb->rendering_frame_consumed_cond = SDL_CreateCond())) {
-            SDL_DestroyMutex(vb->mutex);
-            goto error_2;
-        }
-        // interrupted is not used if expired frames are not rendered
-        // since offering a frame will never block
-        vb->interrupted = false;
-    }
-
-    // there is initially no rendering frame, so consider it has already been
-    // consumed
-    vb->rendering_frame_consumed = true;
-
-    return true;
-
-error_2:
-    av_frame_free(&vb->rendering_frame);
-error_1:
-    av_frame_free(&vb->decoding_frame);
-error_0:
-    return false;
-}
-
-void
-video_buffer_destroy(struct video_buffer *vb) {
-    if (vb->render_expired_frames) {
-        SDL_DestroyCond(vb->rendering_frame_consumed_cond);
-    }
-    SDL_DestroyMutex(vb->mutex);
-    av_frame_free(&vb->rendering_frame);
-    av_frame_free(&vb->decoding_frame);
+    return vb_frame;
 }
 
 static void
-video_buffer_swap_frames(struct video_buffer *vb) {
-    AVFrame *tmp = vb->decoding_frame;
-    vb->decoding_frame = vb->rendering_frame;
-    vb->rendering_frame = tmp;
+sc_video_buffer_frame_delete(struct sc_video_buffer_frame *vb_frame) {
+    av_frame_unref(vb_frame->frame);
+    av_frame_free(&vb_frame->frame);
+    free(vb_frame);
 }
 
-void
-video_buffer_offer_decoded_frame(struct video_buffer *vb,
-                                 bool *previous_frame_skipped) {
-    mutex_lock(vb->mutex);
-    if (vb->render_expired_frames) {
-        // wait for the current (expired) frame to be consumed
-        while (!vb->rendering_frame_consumed && !vb->interrupted) {
-            cond_wait(vb->rendering_frame_consumed_cond, vb->mutex);
+static bool
+sc_video_buffer_offer(struct sc_video_buffer *vb, const AVFrame *frame) {
+    bool previous_skipped;
+    bool ok = sc_frame_buffer_push(&vb->fb, frame, &previous_skipped);
+    if (!ok) {
+        return false;
+    }
+
+    vb->cbs->on_new_frame(vb, previous_skipped, vb->cbs_userdata);
+    return true;
+}
+
+static int
+run_buffering(void *data) {
+    struct sc_video_buffer *vb = data;
+
+    assert(vb->buffering_time > 0);
+
+    for (;;) {
+        sc_mutex_lock(&vb->b.mutex);
+
+        while (!vb->b.stopped && sc_queue_is_empty(&vb->b.queue)) {
+            sc_cond_wait(&vb->b.queue_cond, &vb->b.mutex);
         }
-    } else if (!vb->rendering_frame_consumed) {
-        fps_counter_add_skipped_frame(vb->fps_counter);
+
+        if (vb->b.stopped) {
+            sc_mutex_unlock(&vb->b.mutex);
+            goto stopped;
+        }
+
+        struct sc_video_buffer_frame *vb_frame;
+        sc_queue_take(&vb->b.queue, next, &vb_frame);
+
+        sc_tick max_deadline = sc_tick_now() + vb->buffering_time;
+        // PTS (written by the server) are expressed in microseconds
+        sc_tick pts = SC_TICK_TO_US(vb_frame->frame->pts);
+
+        bool timed_out = false;
+        while (!vb->b.stopped && !timed_out) {
+            sc_tick deadline = sc_clock_to_system_time(&vb->b.clock, pts)
+                             + vb->buffering_time;
+            if (deadline > max_deadline) {
+                deadline = max_deadline;
+            }
+
+            timed_out =
+                !sc_cond_timedwait(&vb->b.wait_cond, &vb->b.mutex, deadline);
+        }
+
+        if (vb->b.stopped) {
+            sc_video_buffer_frame_delete(vb_frame);
+            sc_mutex_unlock(&vb->b.mutex);
+            goto stopped;
+        }
+
+        sc_mutex_unlock(&vb->b.mutex);
+
+#ifndef SC_BUFFERING_NDEBUG
+        LOGD("Buffering: %" PRItick ";%" PRItick ";%" PRItick,
+             pts, vb_frame->push_date, sc_tick_now());
+#endif
+
+        sc_video_buffer_offer(vb, vb_frame->frame);
+
+        sc_video_buffer_frame_delete(vb_frame);
     }
 
-    video_buffer_swap_frames(vb);
+stopped:
+    // Flush queue
+    while (!sc_queue_is_empty(&vb->b.queue)) {
+        struct sc_video_buffer_frame *vb_frame;
+        sc_queue_take(&vb->b.queue, next, &vb_frame);
+        sc_video_buffer_frame_delete(vb_frame);
+    }
 
-    *previous_frame_skipped = !vb->rendering_frame_consumed;
-    vb->rendering_frame_consumed = false;
+    LOGD("Buffering thread ended");
 
-    mutex_unlock(vb->mutex);
+    return 0;
 }
 
-const AVFrame *
-video_buffer_consume_rendered_frame(struct video_buffer *vb) {
-    assert(!vb->rendering_frame_consumed);
-    vb->rendering_frame_consumed = true;
-    fps_counter_add_rendered_frame(vb->fps_counter);
-    if (vb->render_expired_frames) {
-        // unblock video_buffer_offer_decoded_frame()
-        cond_signal(vb->rendering_frame_consumed_cond);
+bool
+sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
+                     const struct sc_video_buffer_callbacks *cbs,
+                     void *cbs_userdata) {
+    bool ok = sc_frame_buffer_init(&vb->fb);
+    if (!ok) {
+        return false;
     }
-    return vb->rendering_frame;
+
+    assert(buffering_time >= 0);
+    if (buffering_time) {
+        ok = sc_mutex_init(&vb->b.mutex);
+        if (!ok) {
+            sc_frame_buffer_destroy(&vb->fb);
+            return false;
+        }
+
+        ok = sc_cond_init(&vb->b.queue_cond);
+        if (!ok) {
+            sc_mutex_destroy(&vb->b.mutex);
+            sc_frame_buffer_destroy(&vb->fb);
+            return false;
+        }
+
+        ok = sc_cond_init(&vb->b.wait_cond);
+        if (!ok) {
+            sc_cond_destroy(&vb->b.queue_cond);
+            sc_mutex_destroy(&vb->b.mutex);
+            sc_frame_buffer_destroy(&vb->fb);
+            return false;
+        }
+
+        sc_clock_init(&vb->b.clock);
+        sc_queue_init(&vb->b.queue);
+    }
+
+    assert(cbs);
+    assert(cbs->on_new_frame);
+
+    vb->buffering_time = buffering_time;
+    vb->cbs = cbs;
+    vb->cbs_userdata = cbs_userdata;
+    return true;
+}
+
+bool
+sc_video_buffer_start(struct sc_video_buffer *vb) {
+    if (vb->buffering_time) {
+        bool ok =
+            sc_thread_create(&vb->b.thread, run_buffering, "buffering", vb);
+        if (!ok) {
+            LOGE("Could not start buffering thread");
+            return false;
+        }
+    }
+
+    return true;
 }
 
 void
-video_buffer_interrupt(struct video_buffer *vb) {
-    if (vb->render_expired_frames) {
-        mutex_lock(vb->mutex);
-        vb->interrupted = true;
-        mutex_unlock(vb->mutex);
-        // wake up blocking wait
-        cond_signal(vb->rendering_frame_consumed_cond);
+sc_video_buffer_stop(struct sc_video_buffer *vb) {
+    if (vb->buffering_time) {
+        sc_mutex_lock(&vb->b.mutex);
+        vb->b.stopped = true;
+        sc_cond_signal(&vb->b.queue_cond);
+        sc_cond_signal(&vb->b.wait_cond);
+        sc_mutex_unlock(&vb->b.mutex);
     }
+}
+
+void
+sc_video_buffer_join(struct sc_video_buffer *vb) {
+    if (vb->buffering_time) {
+        sc_thread_join(&vb->b.thread, NULL);
+    }
+}
+
+void
+sc_video_buffer_destroy(struct sc_video_buffer *vb) {
+    sc_frame_buffer_destroy(&vb->fb);
+    if (vb->buffering_time) {
+        sc_cond_destroy(&vb->b.wait_cond);
+        sc_cond_destroy(&vb->b.queue_cond);
+        sc_mutex_destroy(&vb->b.mutex);
+    }
+}
+
+bool
+sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
+    if (!vb->buffering_time) {
+        // No buffering
+        return sc_video_buffer_offer(vb, frame);
+    }
+
+    sc_mutex_lock(&vb->b.mutex);
+
+    sc_tick pts = SC_TICK_FROM_US(frame->pts);
+    sc_clock_update(&vb->b.clock, sc_tick_now(), pts);
+    sc_cond_signal(&vb->b.wait_cond);
+
+    if (vb->b.clock.count == 1) {
+        sc_mutex_unlock(&vb->b.mutex);
+        // First frame, offer it immediately, for two reasons:
+        //  - not to delay the opening of the scrcpy window
+        //  - the buffering estimation needs at least two clock points, so it
+        //  could not handle the first frame
+        return sc_video_buffer_offer(vb, frame);
+    }
+
+    struct sc_video_buffer_frame *vb_frame = sc_video_buffer_frame_new(frame);
+    if (!vb_frame) {
+        sc_mutex_unlock(&vb->b.mutex);
+        LOG_OOM();
+        return false;
+    }
+
+#ifndef SC_BUFFERING_NDEBUG
+    vb_frame->push_date = sc_tick_now();
+#endif
+    sc_queue_push(&vb->b.queue, next, vb_frame);
+    sc_cond_signal(&vb->b.queue_cond);
+
+    sc_mutex_unlock(&vb->b.mutex);
+
+    return true;
+}
+
+void
+sc_video_buffer_consume(struct sc_video_buffer *vb, AVFrame *dst) {
+    sc_frame_buffer_consume(&vb->fb, dst);
 }

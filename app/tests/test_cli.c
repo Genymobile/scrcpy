@@ -1,13 +1,14 @@
+#include "common.h"
+
 #include <assert.h>
 #include <string.h>
 
 #include "cli.h"
-#include "common.h"
-#include "scrcpy.h"
+#include "options.h"
 
 static void test_flag_version(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -22,7 +23,7 @@ static void test_flag_version(void) {
 
 static void test_flag_help(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -37,7 +38,7 @@ static void test_flag_help(void) {
 
 static void test_options(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };
@@ -50,14 +51,13 @@ static void test_options(void) {
         "--fullscreen",
         "--max-fps", "30",
         "--max-size", "1024",
-        "--lock-video-orientation", "2",
+        "--lock-video-orientation=2", // optional arguments require '='
         // "--no-control" is not compatible with "--turn-screen-off"
         // "--no-display" is not compatible with "--fulscreen"
         "--port", "1234:1236",
         "--push-target", "/sdcard/Movies",
         "--record", "file",
         "--record-format", "mkv",
-        "--render-expired-frames",
         "--serial", "0123456789abcdef",
         "--show-touches",
         "--turn-screen-off",
@@ -86,11 +86,10 @@ static void test_options(void) {
     assert(!strcmp(opts->push_target, "/sdcard/Movies"));
     assert(!strcmp(opts->record_filename, "file"));
     assert(opts->record_format == SC_RECORD_FORMAT_MKV);
-    assert(opts->render_expired_frames);
     assert(!strcmp(opts->serial, "0123456789abcdef"));
     assert(opts->show_touches);
     assert(opts->turn_screen_off);
-    assert(opts->prefer_text);
+    assert(opts->key_inject_mode == SC_KEY_INJECT_MODE_TEXT);
     assert(!strcmp(opts->window_title, "my device"));
     assert(opts->window_x == 100);
     assert(opts->window_y == -1);
@@ -101,7 +100,7 @@ static void test_options(void) {
 
 static void test_options2(void) {
     struct scrcpy_cli_args args = {
-        .opts = SCRCPY_OPTIONS_DEFAULT,
+        .opts = scrcpy_options_default,
         .help = false,
         .version = false,
     };

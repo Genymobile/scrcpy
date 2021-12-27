@@ -7,6 +7,7 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecList;
 import android.media.MediaFormat;
+import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
@@ -55,17 +56,13 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
         Workarounds.prepareMainLooper();
-
-        try {
-            internalStreamScreen(device, fd);
-        } catch (NullPointerException e) {
-            // Retry with workarounds enabled:
-            // <https://github.com/Genymobile/scrcpy/issues/365>
-            // <https://github.com/Genymobile/scrcpy/issues/940>
-            Ln.d("Applying workarounds to avoid NullPointerException");
+        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            // <https://github.com/Genymobile/scrcpy/issues/240>
+            // <https://github.com/Genymobile/scrcpy/issues/2656>
             Workarounds.fillAppInfo();
-            internalStreamScreen(device, fd);
         }
+
+        internalStreamScreen(device, fd);
     }
 
     private void internalStreamScreen(Device device, FileDescriptor fd) throws IOException {
@@ -225,7 +222,11 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private static IBinder createDisplay() {
-        return SurfaceControl.createDisplay("scrcpy", true);
+        // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
+        // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
+        boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
+                .equals(Build.VERSION.CODENAME));
+        return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
     private static void configure(MediaCodec codec, MediaFormat format) {

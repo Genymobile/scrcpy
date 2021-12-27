@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
-import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
@@ -26,7 +25,15 @@ public final class Device {
     public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
     public static final int POWER_MODE_NORMAL = SurfaceControl.POWER_MODE_NORMAL;
 
+    public static final int INJECT_MODE_ASYNC = InputManager.INJECT_INPUT_EVENT_MODE_ASYNC;
+    public static final int INJECT_MODE_WAIT_FOR_RESULT = InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT;
+    public static final int INJECT_MODE_WAIT_FOR_FINISH = InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH;
+
+    public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
+    public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
+
     private static final ServiceManager SERVICE_MANAGER = new ServiceManager();
+    private static final Settings SETTINGS = new Settings(SERVICE_MANAGER);
 
     public interface RotationListener {
         void onRotationChanged(int rotation);
@@ -63,7 +70,7 @@ public final class Device {
 
         int displayInfoFlags = displayInfo.getFlags();
 
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockedVideoOrientation());
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockVideoOrientation());
         layerStack = displayInfo.getLayerStack();
 
         SERVICE_MANAGER.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
@@ -80,8 +87,8 @@ public final class Device {
             }
         }, displayId);
 
-        if (options.getControl()) {
-            // If control is enabled, synchronize Android clipboard to the computer automatically
+        if (options.getControl() && options.getClipboardAutosync()) {
+            // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
             ClipboardManager clipboardManager = SERVICE_MANAGER.getClipboardManager();
             if (clipboardManager != null) {
                 clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
@@ -154,12 +161,16 @@ public final class Device {
         return Build.MODEL;
     }
 
+    public static boolean supportsInputEvents(int displayId) {
+        return displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+    }
+
     public boolean supportsInputEvents() {
         return supportsInputEvents;
     }
 
-    public boolean injectEvent(InputEvent inputEvent, int mode) {
-        if (!supportsInputEvents()) {
+    public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
+        if (!supportsInputEvents(displayId)) {
             throw new AssertionError("Could not inject input event if !supportsInputEvents()");
         }
 
@@ -167,22 +178,31 @@ public final class Device {
             return false;
         }
 
-        return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, mode);
+        return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, injectMode);
     }
 
-    public boolean injectEvent(InputEvent event) {
-        return injectEvent(event, InputManager.INJECT_INPUT_EVENT_MODE_ASYNC);
+    public boolean injectEvent(InputEvent event, int injectMode) {
+        return injectEvent(event, displayId, injectMode);
     }
 
-    public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState) {
+    public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId, int injectMode) {
         long now = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
                 InputDevice.SOURCE_KEYBOARD);
-        return injectEvent(event);
+        return injectEvent(event, displayId, injectMode);
     }
 
-    public boolean injectKeycode(int keyCode) {
-        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0) && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0);
+    public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
+        return injectKeyEvent(action, keyCode, repeat, metaState, displayId, injectMode);
+    }
+
+    public static boolean pressReleaseKeycode(int keyCode, int displayId, int injectMode) {
+        return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0, displayId, injectMode)
+                && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0, displayId, injectMode);
+    }
+
+    public boolean pressReleaseKeycode(int keyCode, int injectMode) {
+        return pressReleaseKeycode(keyCode, displayId, injectMode);
     }
 
     public static boolean isScreenOn() {
@@ -199,6 +219,10 @@ public final class Device {
 
     public static void expandNotificationPanel() {
         SERVICE_MANAGER.getStatusBarManager().expandNotificationsPanel();
+    }
+
+    public static void expandSettingsPanel() {
+        SERVICE_MANAGER.getStatusBarManager().expandSettingsPanel();
     }
 
     public static void collapsePanels() {
@@ -250,6 +274,13 @@ public final class Device {
         return SurfaceControl.setDisplayPowerMode(d, mode);
     }
 
+    public static boolean powerOffScreen(int displayId) {
+        if (!isScreenOn()) {
+            return true;
+        }
+        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
+    }
+
     /**
      * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
      */
@@ -271,8 +302,8 @@ public final class Device {
         }
     }
 
-    public static ContentProvider createSettingsProvider() {
-        return SERVICE_MANAGER.getActivityManager().createSettingsProvider();
+    public static Settings getSettings() {
+        return SETTINGS;
     }
 
     public void sendBroadcast(Intent intent) {

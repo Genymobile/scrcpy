@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
         minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 19
-        versionName "1.16"
+        targetSdkVersion 31
+        versionCode 12100
+        versionName "1.21"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -20,7 +20,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    testImplementation 'junit:junit:4.12'
+    testImplementation 'junit:junit:4.13.1'
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"

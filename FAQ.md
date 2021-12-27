@@ -1,5 +1,7 @@
 # Frequently Asked Questions
 
+[Read in another language](#translations)
+
 Here are the common reported problems and their status.
 
 
@@ -39,8 +41,11 @@ Check [stackoverflow][device-unauthorized].
 
 >     adb: error: failed to get feature set: no devices/emulators found
 
+Check that you correctly enabled [adb debugging][enable-adb].
+
 If your device is not detected, you may need some [drivers] (on Windows).
 
+[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
 
 
@@ -111,25 +116,19 @@ In developer options, enable:
 [simulating input]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
-### Mouse clicks at wrong location
-
-On MacOS, with HiDPI support and multiple screens, input location are wrongly
-scaled. See [#15].
-
-[#15]: https://github.com/Genymobile/scrcpy/issues/15
-
-Open _scrcpy_ directly on the monitor you use it.
-
-
 ### Special characters do not work
 
-Injecting text input is [limited to ASCII characters][text-input]. A trick
-allows to also inject some [accented characters][accented-characters], but
-that's all. See [#37].
+The default text injection method is [limited to ASCII characters][text-input].
+A trick allows to also inject some [accented characters][accented-characters],
+but that's all. See [#37].
+
+Since scrcpy v1.20 on Linux, it is possible to simulate a [physical
+keyboard][hid] (HID).
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
+[hid]: README.md#physical-keyboard-simulation-hid
 
 
 ## Client issues
@@ -157,6 +156,26 @@ You may also need to configure the [scaling behavior]:
 
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
 
+
+### Issue with Wayland
+
+By default, SDL uses x11 on Linux. The [video driver] can be changed via the
+`SDL_VIDEODRIVER` environment variable:
+
+[video driver]: https://wiki.libsdl.org/FAQUsingSDL#how_do_i_choose_a_specific_video_driver
+
+```bash
+export SDL_VIDEODRIVER=wayland
+scrcpy
+```
+
+On some distributions (at least Fedora), the package `libdecor` must be
+installed manually.
+
+See issues [#2554] and [#2559].
+
+[#2554]: https://github.com/Genymobile/scrcpy/issues/2554
+[#2559]: https://github.com/Genymobile/scrcpy/issues/2559
 
 
 ### KWin compositor crashes
@@ -199,3 +218,71 @@ scrcpy -m 1920
 scrcpy -m 1024
 scrcpy -m 800
 ```
+
+You could also try another [encoder](README.md#encoder).
+
+
+If you encounter this exception on Android 12, then just upgrade to scrcpy >=
+1.18 (see [#2129]):
+
+```
+> ERROR: Exception on thread Thread[main,5,main]
+java.lang.AssertionError: java.lang.reflect.InvocationTargetException
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:75)
+    ...
+Caused by: java.lang.reflect.InvocationTargetException
+    at java.lang.reflect.Method.invoke(Native Method)
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:73)
+    ... 7 more
+Caused by: java.lang.IllegalArgumentException: displayToken must not be null
+    at android.view.SurfaceControl$Transaction.setDisplaySurface(SurfaceControl.java:3067)
+    at android.view.SurfaceControl.setDisplaySurface(SurfaceControl.java:2147)
+    ... 9 more
+```
+
+[#2129]: https://github.com/Genymobile/scrcpy/issues/2129
+
+
+## Command line on Windows
+
+Some Windows users are not familiar with the command line. Here is how to open a
+terminal and run `scrcpy` with arguments:
+
+ 1. Press <kbd>Windows</kbd>+<kbd>r</kbd>, this opens a dialog box.
+ 2. Type `cmd` and press <kbd>Enter</kbd>, this opens a terminal.
+ 3. Go to your _scrcpy_ directory, by typing (adapt the path):
+
+    ```bat
+    cd C:\Users\user\Downloads\scrcpy-win64-xxx
+    ```
+
+    and press <kbd>Enter</kbd>
+ 4. Type your command. For example:
+
+    ```bat
+    scrcpy --record file.mkv
+    ```
+
+If you plan to always use the same arguments, create a file `myscrcpy.bat`
+(enable [show file extensions] to avoid confusion) in the `scrcpy` directory,
+containing your command. For example:
+
+```bat
+scrcpy --prefer-text --turn-screen-off --stay-awake
+```
+
+Then just double-click on that file.
+
+You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
+to add some arguments.
+
+[show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
+
+
+## Translations
+
+This FAQ is available in other languages:
+
+ - [Italiano (Italiano, `it`) - v1.19](FAQ.it.md)
+ - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
+ - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.18](FAQ.zh-Hans.md)

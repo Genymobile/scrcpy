@@ -21,7 +21,7 @@ public class CodecOption {
     }
 
     public static List<CodecOption> parse(String codecOptions) {
-        if ("-".equals(codecOptions)) {
+        if (codecOptions.isEmpty()) {
             return null;
         }
 

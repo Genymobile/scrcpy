@@ -68,9 +68,7 @@ Gentoo에서 ,[Ebuild] 가 가능합니다 : [`scrcpy/`][ebuild-link].
 
 윈도우 상에서, 간단하게 설치하기 위해 종속성이 있는 사전 구축된 아카이브가 제공됩니다 (`adb` 포함) :
 해당 파일은 Readme원본 링크를 통해서 다운로드가 가능합니다.
- - [`scrcpy-win`][direct-win]
-
-[direct-win]: https://github.com/Genymobile/scrcpy/blob/master/README.md#windows
+ - [README](README.md#windows)
 
 
 [어플을 직접 설치][BUILD] 할 수도 있습니다.
@@ -114,7 +112,7 @@ scrcpy --help
 ### 캡쳐 환경 설정
 
 
-###사이즈 재정의
+### 사이즈 재정의
 
 가끔씩 성능을 향상시키기위해 안드로이드 디바이스를 낮은 해상도에서 미러링하는 것이 유용할 때도 있습니다.
 
@@ -138,7 +136,7 @@ scrcpy --bit-rate 2M
 scrcpy -b 2M  # 축약 버전
 ```
 
-###프레임 비율 제한
+### 프레임 비율 제한
 
 안드로이드 버전 10이상의 디바이스에서는, 다음의 명령어로 캡쳐 화면의 프레임 비율을 제한할 수 있습니다:
 
@@ -477,7 +475,7 @@ _²화면이 꺼진 상태에서 우클릭 시 다시 켜지며, 그 외의 상�
 ## 라이선스
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2020 Romain Vimont
+    Copyright (C) 2018-2021 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

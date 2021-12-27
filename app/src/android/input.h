@@ -21,7 +21,7 @@
 #define _ANDROID_INPUT_H
 
 /**
- * Meta key / modifer state.
+ * Meta key / modifier state.
  */
 enum android_metastate {
     /** No meta keys are pressed. */

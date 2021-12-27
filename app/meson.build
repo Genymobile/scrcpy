@@ -1,28 +1,84 @@
 src = [
     'src/main.c',
+    'src/adb.c',
+    'src/adb_parser.c',
+    'src/adb_tunnel.c',
     'src/cli.c',
-    'src/command.c',
+    'src/clock.c',
+    'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
-    'src/device.c',
     'src/device_msg.c',
-    'src/event_converter.c',
+    'src/icon.c',
     'src/file_handler.c',
     'src/fps_counter.c',
+    'src/frame_buffer.c',
     'src/input_manager.c',
+    'src/keyboard_inject.c',
+    'src/mouse_inject.c',
     'src/opengl.c',
+    'src/options.c',
     'src/receiver.c',
     'src/recorder.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
     'src/stream.c',
-    'src/tiny_xpm.c',
     'src/video_buffer.c',
+    'src/util/acksync.c',
+    'src/util/file.c',
+    'src/util/intmap.c',
+    'src/util/intr.c',
+    'src/util/log.c',
     'src/util/net.c',
-    'src/util/str_util.c'
+    'src/util/net_intr.c',
+    'src/util/process.c',
+    'src/util/process_intr.c',
+    'src/util/strbuf.c',
+    'src/util/str.c',
+    'src/util/term.c',
+    'src/util/thread.c',
+    'src/util/tick.c',
 ]
+
+conf = configuration_data()
+
+conf.set('_POSIX_C_SOURCE', '200809L')
+conf.set('_XOPEN_SOURCE', '700')
+conf.set('_GNU_SOURCE', true)
+
+if host_machine.system() == 'windows'
+    src += [
+        'src/sys/win/file.c',
+        'src/sys/win/process.c',
+    ]
+    conf.set('_WIN32_WINNT', '0x0600')
+    conf.set('WINVER', '0x0600')
+else
+    src += [
+        'src/sys/unix/file.c',
+        'src/sys/unix/process.c',
+    ]
+    if host_machine.system() == 'darwin'
+        conf.set('_DARWIN_C_SOURCE', true)
+    endif
+endif
+
+v4l2_support = host_machine.system() == 'linux'
+if v4l2_support
+    src += [ 'src/v4l2_sink.c' ]
+endif
+
+aoa_hid_support = host_machine.system() == 'linux'
+if aoa_hid_support
+    src += [
+        'src/aoa_hid.c',
+        'src/hid_keyboard.c',
+    ]
+endif
+
+cc = meson.get_compiler('c')
 
 if not get_option('crossbuild_windows')
 
@@ -34,11 +90,16 @@ if not get_option('crossbuild_windows')
         dependency('sdl2'),
     ]
 
+    if v4l2_support
+        dependencies += dependency('libavdevice')
+    endif
+
+    if aoa_hid_support
+        dependencies += dependency('libusb-1.0')
+    endif
+
 else
-
     # cross-compile mingw32 build (from Linux to Windows)
-    cc = meson.get_compiler('c')
-
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
     sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
     sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/lib'
@@ -73,19 +134,25 @@ else
 
 endif
 
-cc = meson.get_compiler('c')
-
 if host_machine.system() == 'windows'
-    src += [ 'src/sys/win/command.c' ]
     dependencies += cc.find_library('ws2_32')
-else
-    src += [ 'src/sys/unix/command.c' ]
 endif
 
-conf = configuration_data()
+check_functions = [
+    'strdup',
+    'asprintf',
+    'vasprintf',
+]
 
-# expose the build type
-conf.set('NDEBUG', get_option('buildtype') != 'debug')
+foreach f : check_functions
+  if cc.has_function(f)
+    define = 'HAVE_' + f.underscorify().to_upper()
+    conf.set(define, true)
+  endif
+endforeach
+
+conf.set('HAVE_SOCK_CLOEXEC', host_machine.system() != 'windows' and
+                              cc.has_header_symbol('sys/socket.h', 'SOCK_CLOEXEC'))
 
 # the version, updated on release
 conf.set_quoted('SCRCPY_VERSION', meson.project_version())
@@ -102,25 +169,9 @@ conf.set('PORTABLE', get_option('portable'))
 conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
 conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
-# the default max video size for both dimensions, in pixels
-# overridden by option --max-size
-conf.set('DEFAULT_MAX_SIZE', '0')  # 0: unlimited
-
-# the default video orientation
-# natural device orientation is 0 and each increment adds 90 degrees
-# counterclockwise
-# overridden by option --lock-video-orientation
-conf.set('DEFAULT_LOCK_VIDEO_ORIENTATION', '-1')  # -1: unlocked
-
 # the default video bitrate, in bits/second
 # overridden by option --bit-rate
 conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
-
-# enable High DPI support
-conf.set('HIDPI_SUPPORT', get_option('hidpi_support'))
-
-# disable console on Windows
-conf.set('WINDOWS_NOCONSOLE', get_option('windows_noconsole'))
 
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
@@ -128,24 +179,26 @@ conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 # select the debugger method ('old' for Android < 9, 'new' for Android >= 9)
 conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == 'new')
 
+# enable V4L2 support (linux only)
+conf.set('HAVE_V4L2', v4l2_support)
+
+# enable HID over AOA support (linux only)
+conf.set('HAVE_AOA_HID', aoa_hid_support)
+
 configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
-
-if get_option('windows_noconsole')
-    link_args = [ '-Wl,--subsystem,windows' ]
-else
-    link_args = []
-endif
 
 executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
-           c_args: [],
-           link_args: link_args)
+           c_args: [])
 
 install_man('scrcpy.1')
+install_data('../data/icon.png',
+             rename: 'scrcpy.png',
+             install_dir: 'share/icons/hicolor/256x256/apps')
 
 
 ### TESTS
@@ -153,8 +206,14 @@ install_man('scrcpy.1')
 # do not build tests in release (assertions would not be executed at all)
 if get_option('buildtype') == 'debug'
     tests = [
+        ['test_adb_parser', [
+            'tests/test_adb_parser.c',
+            'src/adb_parser.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+        ]],
         ['test_buffer_util', [
-            'tests/test_buffer_util.c'
+            'tests/test_buffer_util.c',
         ]],
         ['test_cbuf', [
             'tests/test_cbuf.c',
@@ -162,12 +221,21 @@ if get_option('buildtype') == 'debug'
         ['test_cli', [
             'tests/test_cli.c',
             'src/cli.c',
-            'src/util/str_util.c',
+            'src/options.c',
+            'src/util/net.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
+            'src/util/term.c',
+        ]],
+        ['test_clock', [
+            'tests/test_clock.c',
+            'src/clock.c',
         ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
-            'src/util/str_util.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
         ]],
         ['test_device_msg_deserialize', [
             'tests/test_device_msg_deserialize.c',
@@ -176,9 +244,14 @@ if get_option('buildtype') == 'debug'
         ['test_queue', [
             'tests/test_queue.c',
         ]],
-        ['test_strutil', [
-            'tests/test_strutil.c',
-            'src/util/str_util.c',
+        ['test_strbuf', [
+            'tests/test_strbuf.c',
+            'src/util/strbuf.c',
+        ]],
+        ['test_str', [
+            'tests/test_str.c',
+            'src/util/str.c',
+            'src/util/strbuf.c',
         ]],
     ]
 

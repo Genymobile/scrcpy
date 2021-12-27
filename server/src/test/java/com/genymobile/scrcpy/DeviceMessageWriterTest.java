@@ -32,4 +32,24 @@ public class DeviceMessageWriterTest {
 
         Assert.assertArrayEquals(expected, actual);
     }
+
+    @Test
+    public void testSerializeAckSetClipboard() throws IOException {
+        DeviceMessageWriter writer = new DeviceMessageWriter();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(DeviceMessage.TYPE_ACK_CLIPBOARD);
+        dos.writeLong(0x0102030405060708L);
+
+        byte[] expected = bos.toByteArray();
+
+        DeviceMessage msg = DeviceMessage.createAckClipboard(0x0102030405060708L);
+        bos = new ByteArrayOutputStream();
+        writer.writeTo(msg, bos);
+
+        byte[] actual = bos.toByteArray();
+
+        Assert.assertArrayEquals(expected, actual);
+    }
 }
