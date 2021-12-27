@@ -1,10 +1,11 @@
 #ifndef SCRCPY_CLI_H
 #define SCRCPY_CLI_H
 
+#include "common.h"
+
 #include <stdbool.h>
 
-#include "config.h"
-#include "scrcpy.h"
+#include "options.h"
 
 struct scrcpy_cli_args {
     struct scrcpy_options opts;

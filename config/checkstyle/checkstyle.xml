@@ -37,6 +37,14 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
   <module name="SuppressWarningsFilter"/>
 
+  <module name="LineLength">
+    <!-- what is a good max value? -->
+    <property name="max" value="150" />
+    <!-- ignore lines like "$File: //depot/... $" -->
+    <property name="ignorePattern" value="\$File.*\$" />
+    <property name="severity" value="info" />
+  </module>
+
   <module name="TreeWalker">
 
     <!-- Checks for Naming Conventions.                  -->
@@ -72,13 +80,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
     <!-- Checks for Size Violations.                    -->
     <!-- See http://checkstyle.sf.net/config_sizes.html -->
-    <module name="LineLength">
-      <!-- what is a good max value? -->
-      <property name="max" value="150" />
-      <!-- ignore lines like "$File: //depot/... $" -->
-      <property name="ignorePattern" value="\$File.*\$" />
-      <property name="severity" value="info" />
-    </module>
     <module name="MethodLength" />
     <module name="ParameterNumber">
       <property name="ignoreOverriddenMethods" value="true"/>
@@ -152,26 +153,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
     </module>
     <module name="UpperEll" />
 
-    <module name="FileContentsHolder" />
-    <!-- Required by comment suppression filters -->
-
-  </module>
-
-  <module name="SuppressionFilter">
-    <!--<property name="file" value="team-props/checkstyle/checkstyle-suppressions.xml" />-->
-  </module>
-
-  <!-- Enable suppression comments -->
-  <module name="SuppressionCommentFilter">
-    <property name="offCommentFormat" value="CHECKSTYLE IGNORE\s+(\S+)" />
-    <property name="onCommentFormat" value="CHECKSTYLE END IGNORE\s+(\S+)" />
-    <property name="checkFormat" value="$1" />
-  </module>
-  <module name="SuppressWithNearbyCommentFilter">
-    <!-- Syntax is "SUPPRESS CHECKSTYLE name" -->
-    <property name="commentFormat" value="SUPPRESS CHECKSTYLE (\w+)" />
-    <property name="checkFormat" value="$1" />
-    <property name="influenceFormat" value="1" />
   </module>
 
 </module>

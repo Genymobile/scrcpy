@@ -3,27 +3,30 @@
 #include <assert.h>
 #include <SDL2/SDL_clipboard.h>
 
-#include "config.h"
 #include "device_msg.h"
-#include "util/lock.h"
 #include "util/log.h"
 
 bool
-receiver_init(struct receiver *receiver, socket_t control_socket) {
-    if (!(receiver->mutex = SDL_CreateMutex())) {
+receiver_init(struct receiver *receiver, sc_socket control_socket,
+              struct sc_acksync *acksync) {
+    bool ok = sc_mutex_init(&receiver->mutex);
+    if (!ok) {
         return false;
     }
+
     receiver->control_socket = control_socket;
+    receiver->acksync = acksync;
+
     return true;
 }
 
 void
 receiver_destroy(struct receiver *receiver) {
-    SDL_DestroyMutex(receiver->mutex);
+    sc_mutex_destroy(&receiver->mutex);
 }
 
 static void
-process_msg(struct device_msg *msg) {
+process_msg(struct receiver *receiver, struct device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
             char *current = SDL_GetClipboardText();
@@ -38,11 +41,17 @@ process_msg(struct device_msg *msg) {
             SDL_SetClipboardText(msg->clipboard.text);
             break;
         }
+        case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
+            assert(receiver->acksync);
+            LOGD("Ack device clipboard sequence=%" PRIu64_,
+                 msg->ack_clipboard.sequence);
+            sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
+            break;
     }
 }
 
 static ssize_t
-process_msgs(const unsigned char *buf, size_t len) {
+process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -54,7 +63,7 @@ process_msgs(const unsigned char *buf, size_t len) {
             return head;
         }
 
-        process_msg(&msg);
+        process_msg(receiver, &msg);
         device_msg_destroy(&msg);
 
         head += r;
@@ -82,7 +91,7 @@ run_receiver(void *data) {
         }
 
         head += r;
-        ssize_t consumed = process_msgs(buf, head);
+        ssize_t consumed = process_msgs(receiver, buf, head);
         if (consumed == -1) {
             // an error occurred
             break;
@@ -102,8 +111,9 @@ bool
 receiver_start(struct receiver *receiver) {
     LOGD("Starting receiver thread");
 
-    receiver->thread = SDL_CreateThread(run_receiver, "receiver", receiver);
-    if (!receiver->thread) {
+    bool ok = sc_thread_create(&receiver->thread, run_receiver, "receiver",
+                               receiver);
+    if (!ok) {
         LOGC("Could not start receiver thread");
         return false;
     }
@@ -113,5 +123,5 @@ receiver_start(struct receiver *receiver) {
 
 void
 receiver_join(struct receiver *receiver) {
-    SDL_WaitThread(receiver->thread, NULL);
+    sc_thread_join(&receiver->thread, NULL);
 }

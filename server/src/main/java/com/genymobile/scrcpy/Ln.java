@@ -12,7 +12,7 @@ public final class Ln {
     private static final String PREFIX = "[server] ";
 
     enum Level {
-        DEBUG, INFO, WARN, ERROR
+        VERBOSE, DEBUG, INFO, WARN, ERROR
     }
 
     private static Level threshold = Level.INFO;
@@ -36,6 +36,13 @@ public final class Ln {
         return level.ordinal() >= threshold.ordinal();
     }
 
+    public static void v(String message) {
+        if (isEnabled(Level.VERBOSE)) {
+            Log.v(TAG, message);
+            System.out.println(PREFIX + "VERBOSE: " + message);
+        }
+    }
+
     public static void d(String message) {
         if (isEnabled(Level.DEBUG)) {
             Log.d(TAG, message);
@@ -50,11 +57,18 @@ public final class Ln {
         }
     }
 
-    public static void w(String message) {
+    public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
-            Log.w(TAG, message);
+            Log.w(TAG, message, throwable);
             System.out.println(PREFIX + "WARN: " + message);
+            if (throwable != null) {
+                throwable.printStackTrace();
+            }
         }
+    }
+
+    public static void w(String message) {
+        w(message, null);
     }
 
     public static void e(String message, Throwable throwable) {

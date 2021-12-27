@@ -11,11 +11,18 @@ public final class ControlMessage {
     public static final int TYPE_INJECT_SCROLL_EVENT = 3;
     public static final int TYPE_BACK_OR_SCREEN_ON = 4;
     public static final int TYPE_EXPAND_NOTIFICATION_PANEL = 5;
-    public static final int TYPE_COLLAPSE_NOTIFICATION_PANEL = 6;
-    public static final int TYPE_GET_CLIPBOARD = 7;
-    public static final int TYPE_SET_CLIPBOARD = 8;
-    public static final int TYPE_SET_SCREEN_POWER_MODE = 9;
-    public static final int TYPE_ROTATE_DEVICE = 10;
+    public static final int TYPE_EXPAND_SETTINGS_PANEL = 6;
+    public static final int TYPE_COLLAPSE_PANELS = 7;
+    public static final int TYPE_GET_CLIPBOARD = 8;
+    public static final int TYPE_SET_CLIPBOARD = 9;
+    public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
+    public static final int TYPE_ROTATE_DEVICE = 11;
+
+    public static final long SEQUENCE_INVALID = 0;
+
+    public static final int COPY_KEY_NONE = 0;
+    public static final int COPY_KEY_COPY = 1;
+    public static final int COPY_KEY_CUT = 2;
 
     private int type;
     private String text;
@@ -28,8 +35,10 @@ public final class ControlMessage {
     private Position position;
     private int hScroll;
     private int vScroll;
+    private int copyKey;
     private boolean paste;
     private int repeat;
+    private long sequence;
 
     private ControlMessage() {
     }
@@ -71,9 +80,24 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createSetClipboard(String text, boolean paste) {
+    public static ControlMessage createBackOrScreenOn(int action) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_BACK_OR_SCREEN_ON;
+        msg.action = action;
+        return msg;
+    }
+
+    public static ControlMessage createGetClipboard(int copyKey) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_GET_CLIPBOARD;
+        msg.copyKey = copyKey;
+        return msg;
+    }
+
+    public static ControlMessage createSetClipboard(long sequence, String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
+        msg.sequence = sequence;
         msg.text = text;
         msg.paste = paste;
         return msg;
@@ -139,11 +163,19 @@ public final class ControlMessage {
         return vScroll;
     }
 
+    public int getCopyKey() {
+        return copyKey;
+    }
+
     public boolean getPaste() {
         return paste;
     }
 
     public int getRepeat() {
         return repeat;
+    }
+
+    public long getSequence() {
+        return sequence;
     }
 }

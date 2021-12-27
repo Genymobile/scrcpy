@@ -11,6 +11,9 @@ public class StatusBarManager {
 
     private final IInterface manager;
     private Method expandNotificationsPanelMethod;
+    private boolean expandNotificationPanelMethodCustomVersion;
+    private Method expandSettingsPanelMethod;
+    private boolean expandSettingsPanelMethodNewVersion = true;
     private Method collapsePanelsMethod;
 
     public StatusBarManager(IInterface manager) {
@@ -19,9 +22,29 @@ public class StatusBarManager {
 
     private Method getExpandNotificationsPanelMethod() throws NoSuchMethodException {
         if (expandNotificationsPanelMethod == null) {
-            expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
+            try {
+                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel");
+            } catch (NoSuchMethodException e) {
+                // Custom version for custom vendor ROM: <https://github.com/Genymobile/scrcpy/issues/2551>
+                expandNotificationsPanelMethod = manager.getClass().getMethod("expandNotificationsPanel", int.class);
+                expandNotificationPanelMethodCustomVersion = true;
+            }
         }
         return expandNotificationsPanelMethod;
+    }
+
+    private Method getExpandSettingsPanel() throws NoSuchMethodException {
+        if (expandSettingsPanelMethod == null) {
+            try {
+                // Since Android 7: https://android.googlesource.com/platform/frameworks/base.git/+/a9927325eda025504d59bb6594fee8e240d95b01%5E%21/
+                expandSettingsPanelMethod = manager.getClass().getMethod("expandSettingsPanel", String.class);
+            } catch (NoSuchMethodException e) {
+                // old version
+                expandSettingsPanelMethod = manager.getClass().getMethod("expandSettingsPanel");
+                expandSettingsPanelMethodNewVersion = false;
+            }
+        }
+        return expandSettingsPanelMethod;
     }
 
     private Method getCollapsePanelsMethod() throws NoSuchMethodException {
@@ -34,7 +57,26 @@ public class StatusBarManager {
     public void expandNotificationsPanel() {
         try {
             Method method = getExpandNotificationsPanelMethod();
-            method.invoke(manager);
+            if (expandNotificationPanelMethodCustomVersion) {
+                method.invoke(manager, 0);
+            } else {
+                method.invoke(manager);
+            }
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Could not invoke method", e);
+        }
+    }
+
+    public void expandSettingsPanel() {
+        try {
+            Method method = getExpandSettingsPanel();
+            if (expandSettingsPanelMethodNewVersion) {
+                // new version
+                method.invoke(manager, (Object) null);
+            } else {
+                // old version
+                method.invoke(manager);
+            }
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
         }

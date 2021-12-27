@@ -76,7 +76,7 @@ The server uses 3 threads:
  - the **main** thread, encoding and streaming the video to the client;
  - the **controller** thread, listening for _control messages_ (typically,
    keyboard and mouse events) from the client;
- - the **receiver** thread (managed by the controller), sending _device messges_
+ - the **receiver** thread (managed by the controller), sending _device messages_
    to the clients (currently, it is only used to send the device clipboard
    content).
 
@@ -211,7 +211,7 @@ There are two [frames][video_buffer] simultaneously in memory:
  - the **rendering** frame, rendered in a texture from the main thread.
 
 When a new decoded frame is available, the decoder _swaps_ the decoding and
-rendering frame (with proper synchronization). Thus, it immediatly starts
+rendering frame (with proper synchronization). Thus, it immediately starts
 to decode a new frame while the main thread renders the last one.
 
 If a [recorder] is present (i.e. `--record` is enabled), then it muxes the raw

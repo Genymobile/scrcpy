@@ -2,21 +2,25 @@ package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
 
+import java.util.List;
+
 public class Options {
-    private Ln.Level logLevel;
+    private Ln.Level logLevel = Ln.Level.DEBUG;
     private int maxSize;
-    private int bitRate;
+    private int bitRate = 8000000;
     private int maxFps;
-    private int lockedVideoOrientation;
+    private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
-    private boolean sendFrameMeta; // send PTS so that the client may record properly
-    private boolean control;
+    private boolean sendFrameMeta = true; // send PTS so that the client may record properly
+    private boolean control = true;
     private int displayId;
     private boolean showTouches;
     private boolean stayAwake;
-    private String codecOptions;
+    private List<CodecOption> codecOptions;
     private String encoderName;
+    private boolean powerOffScreenOnClose;
+    private boolean clipboardAutosync = true;
     private boolean useADBKeyboard;
 
     public Ln.Level getLogLevel() {
@@ -51,12 +55,12 @@ public class Options {
         this.maxFps = maxFps;
     }
 
-    public int getLockedVideoOrientation() {
-        return lockedVideoOrientation;
+    public int getLockVideoOrientation() {
+        return lockVideoOrientation;
     }
 
-    public void setLockedVideoOrientation(int lockedVideoOrientation) {
-        this.lockedVideoOrientation = lockedVideoOrientation;
+    public void setLockVideoOrientation(int lockVideoOrientation) {
+        this.lockVideoOrientation = lockVideoOrientation;
     }
 
     public boolean isTunnelForward() {
@@ -115,11 +119,11 @@ public class Options {
         this.stayAwake = stayAwake;
     }
 
-    public String getCodecOptions() {
+    public List<CodecOption> getCodecOptions() {
         return codecOptions;
     }
 
-    public void setCodecOptions(String codecOptions) {
+    public void setCodecOptions(List<CodecOption> codecOptions) {
         this.codecOptions = codecOptions;
     }
 
@@ -131,7 +135,23 @@ public class Options {
         this.encoderName = encoderName;
     }
 
-    public boolean useADBKeyboard() {
+    public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {
+        this.powerOffScreenOnClose = powerOffScreenOnClose;
+    }
+
+    public boolean getPowerOffScreenOnClose() {
+        return this.powerOffScreenOnClose;
+    }
+
+    public boolean getClipboardAutosync() {
+        return clipboardAutosync;
+    }
+
+    public void setClipboardAutosync(boolean clipboardAutosync) {
+        this.clipboardAutosync = clipboardAutosync;
+    }
+
+    public boolean getUseADBKeyboard() {
         return useADBKeyboard;
     }
 
