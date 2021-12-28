@@ -14,6 +14,7 @@ src = [
     'src/file_handler.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/input_events.c',
     'src/input_manager.c',
     'src/keyboard_inject.c',
     'src/mouse_inject.c',
