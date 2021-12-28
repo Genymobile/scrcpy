@@ -22,7 +22,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .tunnel_host = 0,
     .tunnel_port = 0,
     .shortcut_mods = {
-        .data = {SC_MOD_LALT, SC_MOD_LSUPER},
+        .data = {SC_SHORTCUT_MOD_LALT, SC_SHORTCUT_MOD_LSUPER},
         .count = 2,
     },
     .max_size = 0,

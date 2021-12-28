@@ -55,12 +55,12 @@ enum sc_key_inject_mode {
 #define SC_MAX_SHORTCUT_MODS 8
 
 enum sc_shortcut_mod {
-    SC_MOD_LCTRL = 1 << 0,
-    SC_MOD_RCTRL = 1 << 1,
-    SC_MOD_LALT = 1 << 2,
-    SC_MOD_RALT = 1 << 3,
-    SC_MOD_LSUPER = 1 << 4,
-    SC_MOD_RSUPER = 1 << 5,
+    SC_SHORTCUT_MOD_LCTRL = 1 << 0,
+    SC_SHORTCUT_MOD_RCTRL = 1 << 1,
+    SC_SHORTCUT_MOD_LALT = 1 << 2,
+    SC_SHORTCUT_MOD_RALT = 1 << 3,
+    SC_SHORTCUT_MOD_LSUPER = 1 << 4,
+    SC_SHORTCUT_MOD_RSUPER = 1 << 5,
 };
 
 struct sc_shortcut_mods {
