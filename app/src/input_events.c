@@ -1,8 +1,8 @@
 #include <input_events.h>
 
-static inline enum sc_mod
-sc_mod_from_sdl(SDL_Keymod mod) {
-    return (enum sc_mod) mod;
+static inline uint16_t
+sc_mod_from_sdl(uint16_t mod) {
+    return mod;
 }
 
 static inline enum sc_keycode
@@ -40,7 +40,7 @@ sc_key_event_from_sdl(struct sc_key_event *event,
     event->keycode = sc_keycode_from_sdl(sdl->keysym.sym);
     event->scancode = sc_scancode_from_sdl(sdl->keysym.scancode);
     event->repeat = sdl->repeat;
-    event->mods = sc_mod_from_sdl(sdl->keysym.mod);
+    event->mod = sc_mod_from_sdl(sdl->keysym.mod);
 }
 
 void

@@ -282,11 +282,20 @@ enum sc_scancode {
     SC_SCANCODE_RGUI = SDL_SCANCODE_RGUI,
 };
 
+static_assert(sizeof(enum sc_mod) >= sizeof(SDL_Keymod),
+              "SDL_Keymod must be convertible to sc_mod");
+
+static_assert(sizeof(enum sc_keycode) >= sizeof(SDL_Keycode),
+              "SDL_Keycode must be convertible to sc_keycode");
+
+static_assert(sizeof(enum sc_scancode) >= sizeof(SDL_Scancode),
+              "SDL_Scancode must be convertible to sc_scancode");
+
 struct sc_key_event {
     enum sc_action action;
     enum sc_keycode keycode;
     enum sc_scancode scancode;
-    enum sc_mod mods; // bitwise-OR of sc_mod values
+    uint16_t mod; // bitwise-OR of sc_mod values
     uint8_t repeat;
 };
 
