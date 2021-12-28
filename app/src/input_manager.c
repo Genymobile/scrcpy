@@ -13,24 +13,24 @@ enum sc_action {
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
 static inline uint16_t
-to_sdl_mod(unsigned mod) {
+to_sdl_mod(unsigned shortcut_mod) {
     uint16_t sdl_mod = 0;
-    if (mod & SC_MOD_LCTRL) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_LCTRL) {
         sdl_mod |= KMOD_LCTRL;
     }
-    if (mod & SC_MOD_RCTRL) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_RCTRL) {
         sdl_mod |= KMOD_RCTRL;
     }
-    if (mod & SC_MOD_LALT) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_LALT) {
         sdl_mod |= KMOD_LALT;
     }
-    if (mod & SC_MOD_RALT) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_RALT) {
         sdl_mod |= KMOD_RALT;
     }
-    if (mod & SC_MOD_LSUPER) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_LSUPER) {
         sdl_mod |= KMOD_LGUI;
     }
-    if (mod & SC_MOD_RSUPER) {
+    if (shortcut_mod & SC_SHORTCUT_MOD_RSUPER) {
         sdl_mod |= KMOD_RGUI;
     }
     return sdl_mod;
