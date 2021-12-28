@@ -1118,7 +1118,7 @@ parse_log_level(const char *s, enum sc_log_level *log_level) {
 }
 
 // item is a list of mod keys separated by '+' (e.g. "lctrl+lalt")
-// returns a bitwise-or of SC_MOD_* constants (or 0 on error)
+// returns a bitwise-or of SC_SHORTCUT_MOD_* constants (or 0 on error)
 static unsigned
 parse_shortcut_mods_item(const char *item, size_t len) {
     unsigned mod = 0;
@@ -1136,17 +1136,17 @@ parse_shortcut_mods_item(const char *item, size_t len) {
     ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
 
         if (STREQ("lctrl", item, key_len)) {
-            mod |= SC_MOD_LCTRL;
+            mod |= SC_SHORTCUT_MOD_LCTRL;
         } else if (STREQ("rctrl", item, key_len)) {
-            mod |= SC_MOD_RCTRL;
+            mod |= SC_SHORTCUT_MOD_RCTRL;
         } else if (STREQ("lalt", item, key_len)) {
-            mod |= SC_MOD_LALT;
+            mod |= SC_SHORTCUT_MOD_LALT;
         } else if (STREQ("ralt", item, key_len)) {
-            mod |= SC_MOD_RALT;
+            mod |= SC_SHORTCUT_MOD_RALT;
         } else if (STREQ("lsuper", item, key_len)) {
-            mod |= SC_MOD_LSUPER;
+            mod |= SC_SHORTCUT_MOD_LSUPER;
         } else if (STREQ("rsuper", item, key_len)) {
-            mod |= SC_MOD_RSUPER;
+            mod |= SC_SHORTCUT_MOD_RSUPER;
         } else {
             LOGE("Unknown modifier key: %.*s "
                  "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
