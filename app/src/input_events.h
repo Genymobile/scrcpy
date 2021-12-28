@@ -304,6 +304,12 @@ static_assert(sizeof(enum sc_keycode) >= sizeof(SDL_Keycode),
 static_assert(sizeof(enum sc_scancode) >= sizeof(SDL_Scancode),
               "SDL_Scancode must be convertible to sc_scancode");
 
+enum sc_touch_action {
+    SC_TOUCH_ACTION_MOVE,
+    SC_TOUCH_ACTION_DOWN,
+    SC_TOUCH_ACTION_UP,
+};
+
 struct sc_key_event {
     enum sc_action action;
     enum sc_keycode keycode;
@@ -317,57 +323,82 @@ struct sc_text_event {
 };
 
 struct sc_mouse_click_event {
+    struct sc_position position;
     enum sc_action action;
     enum sc_mouse_button button;
-    struct sc_position position;
+    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
-struct sc_mouse_wheel_event {
+struct sc_mouse_scroll_event {
     struct sc_position position;
     int32_t hscroll;
     int32_t vscroll;
 };
 
 struct sc_mouse_motion_event {
-    int32_t x;
-    int32_t y;
+    struct sc_position position;
     int32_t xrel;
     int32_t yrel;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
+//enum sc_mouse_event_type {
+//    SC_MOUSE_EVENT_TYPE_CLICK,
+//    SC_MOUSE_EVENT_TYPE_MOVE,
+//    SC_MOUSE_EVENT_TYPE_SCROLL,
+//};
+//
+//struct sc_mouse_event {
+//    enum sc_mouse_event_type type;
+//    struct sc_position position;
+//    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
+//    union {
+//        struct {
+//            enum sc_action action;
+//            enum sc_mouse_button button;
+//        } click;
+//        struct {
+//            int32_t xrel;
+//            int32_t yrel;
+//        } move;
+//        struct {
+//            int32_t h;
+//            int32_t v;
+//        } scroll;
+//    };
+//};
+
 struct sc_touch_event {
-    enum sc_action action;
-    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
-    uint64_t pointer_id;
     struct sc_position position;
+    enum sc_touch_action action;
+    uint64_t pointer_id;
     float pressure;
 };
 
 
-void
-sc_key_event_from_sdl(struct sc_key_event *event, const SDL_KeyboardEvent *sdl);
-
-void
-sc_text_event_from_sdl(struct sc_text_event *event,
-                       const SDL_TextInputEvent *sdl);
-
-void
-sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
-                              const SDL_MouseButtonEvent *sdl,
-                              const SDL_Window *window,
-                              struct sc_size screen_size);
-
-void
-sc_mouse_wheel_event_from_sdl(struct sc_mouse_wheel_event *event,
-                              const SDL_MouseWheelEvent *sdl);
-
-void
-sc_mouse_motion_event_from_sdl(struct sc_mouse_motion_event *event,
-                               const SDL_MouseMotionEvent *sdl);
-
-void
-sc_touch_event_from_sdl(struct sc_touch_event *event,
-                        const SDL_TouchFingerEvent *sdl);
+//void
+//sc_key_event_from_sdl(struct sc_key_event *event, const SDL_KeyboardEvent *sdl);
+//
+//void
+//sc_text_event_from_sdl(struct sc_text_event *event,
+//                       const SDL_TextInputEvent *sdl);
+//
+//void
+//sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
+//                              const SDL_MouseButtonEvent *sdl,
+//                              const SDL_Window *window,
+//                              struct sc_size screen_size);
+//
+//void
+//sc_mouse_wheel_event_from_sdl(struct sc_mouse_wheel_event *event,
+//                              const SDL_MouseWheelEvent *sdl);
+//
+//void
+//sc_mouse_motion_event_from_sdl(struct sc_mouse_motion_event *event,
+//                               const SDL_MouseMotionEvent *sdl);
+//
+//void
+//sc_touch_event_from_sdl(struct sc_touch_event *event,
+//                        const SDL_TouchFingerEvent *sdl);
 
 #endif
