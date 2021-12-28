@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <SDL2/SDL_events.h>
 
+#include "coords.h"
+
 /* The values are purposely the same as the SDL constants, so that the
  * implementation to convert from the SDL version to the scrcpy version is
  * straightforward */
@@ -321,15 +323,25 @@ struct sc_mouse_click_event {
 };
 
 struct sc_mouse_wheel_event {
-
+    struct sc_position position;
+    int32_t hscroll;
+    int32_t vscroll;
 };
 
 struct sc_mouse_motion_event {
+    int32_t x;
+    int32_t y;
+    int32_t xrel;
+    int32_t yrel;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
 struct sc_touch_event {
-
+    enum sc_action action;
+    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
+    uint64_t pointer_id;
+    struct sc_position position;
+    float pressure;
 };
 
 
@@ -342,18 +354,20 @@ sc_text_event_from_sdl(struct sc_text_event *event,
 
 void
 sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
-                              const struct SDL_MouseButtonEvent *sdl);
+                              const SDL_MouseButtonEvent *sdl,
+                              const SDL_Window *window,
+                              struct sc_size screen_size);
 
 void
 sc_mouse_wheel_event_from_sdl(struct sc_mouse_wheel_event *event,
-                              const struct SDL_MouseWheelEvent *sdl);
+                              const SDL_MouseWheelEvent *sdl);
 
 void
 sc_mouse_motion_event_from_sdl(struct sc_mouse_motion_event *event,
-                               const struct SDL_MouseMotionEvent *sdl);
+                               const SDL_MouseMotionEvent *sdl);
 
 void
 sc_touch_event_from_sdl(struct sc_touch_event *event,
-                        const struct SDL_TouchFingerEvent *sdl);
+                        const SDL_TouchFingerEvent *sdl);
 
 #endif

@@ -67,7 +67,10 @@ sc_text_event_from_sdl(struct sc_text_event *event,
 
 void
 sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
-                              const struct SDL_MouseButtonEvent *sdl) {
+                              const SDL_MouseButtonEvent *sdl,
+                              const SDL_Window *window,
+                              struct sc_size screen_size) {
     event->action = sc_action_from_sdl_mousebutton_type(sdl->type);
     event->button = sc_mouse_button_from_sdl(sdl->button);
+    event->position.screen_size = screen_size;
 }
