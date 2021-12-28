@@ -3,10 +3,95 @@
 #include <assert.h>
 #include <SDL2/SDL_keycode.h>
 
+#include "input_events.h"
 #include "util/log.h"
 
-static const int ACTION_DOWN = 1;
-static const int ACTION_UP = 1 << 1;
+static inline uint16_t
+sc_mods_state_from_sdl(uint16_t mods_state) {
+    return mods_state;
+}
+
+static inline enum sc_keycode
+sc_keycode_from_sdl(SDL_Keycode keycode) {
+    return (enum sc_keycode) keycode;
+}
+
+static inline enum sc_scancode
+sc_scancode_from_sdl(SDL_Scancode scancode) {
+    return (enum sc_scancode) scancode;
+}
+
+static inline enum sc_action
+sc_action_from_sdl_keyboard_type(uint32_t type) {
+    assert(type == SDL_KEYDOWN || type == SDL_KEYUP);
+    if (type == SDL_KEYDOWN) {
+        return SC_ACTION_DOWN;
+    }
+    return SC_ACTION_UP;
+}
+
+static inline enum sc_action
+sc_action_from_sdl_mousebutton_type(uint32_t type) {
+    assert(type == SDL_MOUSEBUTTONDOWN || type == SDL_MOUSEBUTTONUP);
+    if (type == SDL_MOUSEBUTTONDOWN) {
+        return SC_ACTION_DOWN;
+    }
+    return SC_ACTION_UP;
+}
+
+static inline enum sc_touch_action
+sc_touch_action_from_sdl(uint32_t type) {
+    assert(type == SDL_FINGERMOTION || type == SDL_FINGERDOWN ||
+           type == SDL_FINGERUP);
+    if (type == SDL_FINGERMOTION) {
+        return SC_TOUCH_ACTION_MOVE;
+    }
+    if (type == SDL_FINGERDOWN) {
+        return SC_TOUCH_ACTION_DOWN;
+    }
+    return SC_TOUCH_ACTION_UP;
+}
+
+static inline enum sc_mouse_button
+sc_mouse_button_from_sdl(uint8_t button) {
+    if (button >= SDL_BUTTON_LEFT && button <= SDL_BUTTON_X2) {
+        // SC_MOUSE_BUTTON_* constants are initialized from SDL_BUTTON(index)
+        return SDL_BUTTON(button);
+    }
+
+    return SC_MOUSE_BUTTON_UNKNOWN;
+}
+
+static inline uint8_t
+sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
+    assert(buttons_state < 0x100); // fits in uint8_t
+    return buttons_state;
+}
+
+//void
+//sc_key_event_from_sdl(struct sc_key_event *event,
+//                      const SDL_KeyboardEvent *sdl) {
+//    event->action = sc_action_from_sdl_keyboard_type(sdl->type);
+//    event->keycode = sc_keycode_from_sdl(sdl->keysym.sym);
+//    event->scancode = sc_scancode_from_sdl(sdl->keysym.scancode);
+//    event->repeat = sdl->repeat;
+//    event->mods_state = sc_mods_state_from_sdl(sdl->keysym.mod);
+//}
+//
+//void
+//sc_text_event_from_sdl(struct sc_text_event *event,
+//                       const SDL_TextInputEvent *sdl) {
+//    event->text = sdl->text;
+//}
+//
+//void
+//sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
+//                              const SDL_MouseButtonEvent *sdl,
+//                              struct sc_size screen_size) {
+//    event->action = sc_action_from_sdl_mousebutton_type(sdl->type);
+//    event->button = sc_mouse_button_from_sdl(sdl->button);
+//    event->position.screen_size = screen_size;
+//}
 
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
@@ -97,7 +182,7 @@ send_keycode(struct controller *controller, enum android_keycode keycode,
     msg.inject_keycode.metastate = 0;
     msg.inject_keycode.repeat = 0;
 
-    if (actions & ACTION_DOWN) {
+    if (actions & SC_ACTION_DOWN) {
         msg.inject_keycode.action = AKEY_EVENT_ACTION_DOWN;
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject %s (DOWN)'", name);
@@ -105,7 +190,7 @@ send_keycode(struct controller *controller, enum android_keycode keycode,
         }
     }
 
-    if (actions & ACTION_UP) {
+    if (actions & SC_ACTION_UP) {
         msg.inject_keycode.action = AKEY_EVENT_ACTION_UP;
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'inject %s (UP)'", name);
@@ -155,7 +240,7 @@ press_back_or_turn_screen_on(struct controller *controller, int actions) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
 
-    if (actions & ACTION_DOWN) {
+    if (actions & SC_ACTION_DOWN) {
         msg.back_or_screen_on.action = AKEY_EVENT_ACTION_DOWN;
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'press back or turn screen on'");
@@ -163,7 +248,7 @@ press_back_or_turn_screen_on(struct controller *controller, int actions) {
         }
     }
 
-    if (actions & ACTION_UP) {
+    if (actions & SC_ACTION_UP) {
         msg.back_or_screen_on.action = AKEY_EVENT_ACTION_UP;
         if (!controller_push_msg(controller, &msg)) {
             LOGW("Could not request 'press back or turn screen on'");
@@ -334,6 +419,10 @@ input_manager_process_text_input(struct input_manager *im,
         return;
     }
 
+    struct sc_text_event evt = {
+        .text = event->text,
+    };
+
     im->kp->ops->process_text(im->kp, event);
 }
 
@@ -396,7 +485,7 @@ input_manager_process_key(struct input_manager *im,
 
     // The shortcut modifier is pressed
     if (smod) {
-        int action = down ? ACTION_DOWN : ACTION_UP;
+        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
                 if (control && !shift && !repeat) {
@@ -553,6 +642,14 @@ input_manager_process_key(struct input_manager *im,
         }
     }
 
+    struct sc_key_event evt = {
+        .action = sc_action_from_sdl_keyboard_type(event->type),
+        .keycode = sc_keycode_from_sdl(event->keysym.sym),
+        .scancode = sc_scancode_from_sdl(event->keysym.scancode),
+        .repeat = event->repeat,
+        .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
+    };
+
     im->kp->ops->process_key(im->kp, event, ack_to_wait);
 }
 
@@ -572,6 +669,17 @@ input_manager_process_mouse_motion(struct input_manager *im,
         return;
     }
 
+    struct sc_mouse_motion_event evt = {
+        .position = {
+            .screen_size = im->screen->frame_size,
+            .point = screen_convert_window_to_frame_coords(im->screen,
+                                                           event->x, event->y),
+        },
+        .xrel = event->xrel,
+        .yrel = event->yrel,
+        .buttons_state = sc_mouse_buttons_state_from_sdl(event->state),
+    };
+
     im->mp->ops->process_mouse_motion(im->mp, event);
 
     if (im->vfinger_down) {
@@ -586,6 +694,24 @@ input_manager_process_mouse_motion(struct input_manager *im,
 static void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
+    int dw;
+    int dh;
+    SDL_GL_GetDrawableSize(im->screen->window, &dw, &dh);
+
+    // SDL touch event coordinates are normalized in the range [0; 1]
+    int32_t x = event->x * dw;
+    int32_t y = event->y * dh;
+
+    struct sc_touch_event evt = {
+        .position = {
+            .screen_size = im->screen->frame_size,
+            .point = screen_convert_drawable_to_frame_coords(im->screen, x, y),
+        },
+        .action = sc_touch_action_from_sdl(event->type),
+        .pointer_id = event->fingerId,
+        .pressure = event->pressure,
+    };
+
     im->mp->ops->process_touch(im->mp, event);
 }
 
@@ -601,7 +727,7 @@ input_manager_process_mouse_button(struct input_manager *im,
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
     if (!im->forward_all_clicks) {
-        int action = down ? ACTION_DOWN : ACTION_UP;
+        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
         if (control && event->button == SDL_BUTTON_X1) {
             action_app_switch(im->controller, action);
@@ -646,6 +772,19 @@ input_manager_process_mouse_button(struct input_manager *im,
         return;
     }
 
+    uint32_t sdl_buttons_state = SDL_GetMouseState(NULL, NULL);
+
+    struct sc_mouse_click_event evt = {
+        .position = {
+            .screen_size = im->screen->frame_size,
+            .point = screen_convert_window_to_frame_coords(im->screen, event->x,
+                                                           event->y),
+        },
+        .action = sc_action_from_sdl_mousebutton_type(event->type),
+        .button = sc_mouse_button_from_sdl(event->button),
+        .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state),
+    };
+
     im->mp->ops->process_mouse_button(im->mp, event);
 
     // Pinch-to-zoom simulation.
@@ -677,6 +816,21 @@ input_manager_process_mouse_button(struct input_manager *im,
 static void
 input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
+    // mouse_x and mouse_y are expressed in pixels relative to the window
+    int mouse_x;
+    int mouse_y;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+
+    struct sc_mouse_scroll_event evt = {
+        .position = {
+            .screen_size = im->screen->frame_size,
+            .point = screen_convert_window_to_frame_coords(im->screen,
+                                                           mouse_x, mouse_y),
+        },
+        .hscroll = event->x,
+        .vscroll = event->y,
+    };
+
     im->mp->ops->process_mouse_wheel(im->mp, event);
 }
 
