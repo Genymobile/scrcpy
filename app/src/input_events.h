@@ -294,11 +294,43 @@ struct sc_text_event {
     const char *text; // not owned
 };
 
+struct sc_touch_event {
+
+};
+
+struct sc_mouse_click_event {
+
+};
+
+struct sc_mouse_wheel_event {
+
+};
+
+struct sc_mouse_motion_event {
+
+};
+
 void
 sc_key_event_from_sdl(struct sc_key_event *event, const SDL_KeyboardEvent *sdl);
 
 void
 sc_text_event_from_sdl(struct sc_text_event *event,
                        const SDL_TextInputEvent *sdl);
+
+void
+sc_mouse_click_event_from_sdl(struct sc_mouse_click_event *event,
+                              const struct SDL_MouseButtonEvent *sdl);
+
+void
+sc_mouse_wheel_event_from_sdl(struct sc_mouse_wheel_event *event,
+                              const struct SDL_MouseWheelEvent *sdl);
+
+void
+sc_mouse_motion_event_from_sdl(struct sc_mouse_motion_event *event,
+                               const struct SDL_MouseMotionEvent *sdl);
+
+void
+sc_touch_event_from_sdl(struct sc_touch_event *event,
+                        const struct SDL_TouchFingerEvent *sdl);
 
 #endif
