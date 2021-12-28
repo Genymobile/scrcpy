@@ -282,6 +282,17 @@ enum sc_scancode {
     SC_SCANCODE_RGUI = SDL_SCANCODE_RGUI,
 };
 
+// On purpose, only use the "mask" values (1, 2, 4, 8, 16) for a single button,
+// to avoid unnecessary conversions (and confusion).
+enum sc_mouse_button {
+    SC_MOUSE_BUTTON_UNKNOWN = 0,
+    SC_MOUSE_BUTTON_LEFT = SDL_BUTTON(SDL_BUTTON_LEFT),
+    SC_MOUSE_BUTTON_RIGHT = SDL_BUTTON(SDL_BUTTON_RIGHT),
+    SC_MOUSE_BUTTON_MIDDLE = SDL_BUTTON(SDL_BUTTON_MIDDLE),
+    SC_MOUSE_BUTTON_X1 = SDL_BUTTON(SDL_BUTTON_X1),
+    SC_MOUSE_BUTTON_X2 = SDL_BUTTON(SDL_BUTTON_X2),
+};
+
 static_assert(sizeof(enum sc_mod) >= sizeof(SDL_Keymod),
               "SDL_Keymod must be convertible to sc_mod");
 
@@ -295,7 +306,7 @@ struct sc_key_event {
     enum sc_action action;
     enum sc_keycode keycode;
     enum sc_scancode scancode;
-    uint16_t mod; // bitwise-OR of sc_mod values
+    uint16_t mods_state; // bitwise-OR of sc_mod values
     uint8_t repeat;
 };
 
@@ -303,12 +314,10 @@ struct sc_text_event {
     const char *text; // not owned
 };
 
-struct sc_touch_event {
-
-};
-
 struct sc_mouse_click_event {
-
+    enum sc_action action;
+    enum sc_mouse_button button;
+    struct sc_position position;
 };
 
 struct sc_mouse_wheel_event {
@@ -316,8 +325,13 @@ struct sc_mouse_wheel_event {
 };
 
 struct sc_mouse_motion_event {
+    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
+};
+
+struct sc_touch_event {
 
 };
+
 
 void
 sc_key_event_from_sdl(struct sc_key_event *event, const SDL_KeyboardEvent *sdl);
