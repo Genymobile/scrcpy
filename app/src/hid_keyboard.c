@@ -126,6 +126,80 @@ static const unsigned char keyboard_report_desc[]  = {
     0xC0
 };
 
+/**
+ * A keyboard HID event is 8 bytes long:
+ *
+ *  - byte 0: modifiers (1 flag per modifier key, 8 possible modifier keys)
+ *  - byte 1: reserved (always 0)
+ *  - bytes 2 to 7: pressed keys (6 at most)
+ *
+ *                   7 6 5 4 3 2 1 0
+ *                  +---------------+
+ *         byte 0:  |. . . . . . . .| modifiers
+ *                  +---------------+
+ *                   ^ ^ ^ ^ ^ ^ ^ ^
+ *                   | | | | | | | `- left Ctrl
+ *                   | | | | | | `--- left Shift
+ *                   | | | | | `----- left Alt
+ *                   | | | | `------- left Gui
+ *                   | | | `--------- right Ctrl
+ *                   | | `----------- right Shift
+ *                   | `------------- right Alt
+ *                   `--------------- right Gui
+ *
+ *                  +---------------+
+ *         byte 1:  |0 0 0 0 0 0 0 0| reserved
+ *                  +---------------+
+ *
+ *                  +---------------+
+ *   bytes 2 to 7:  |. . . . . . . .| scancode of 1st key pressed
+ *                  +---------------+
+ *                  |. . . . . . . .| scancode of 2nd key pressed
+ *                  +---------------+
+ *                  |. . . . . . . .| scancode of 3rd key pressed
+ *                  +---------------+
+ *                  |. . . . . . . .| scancode of 4th key pressed
+ *                  +---------------+
+ *                  |. . . . . . . .| scancode of 5th key pressed
+ *                  +---------------+
+ *                  |. . . . . . . .| scancode of 6th key pressed
+ *                  +---------------+
+ *
+ * If there are less than 6 keys pressed, the last items are set to 0.
+ * For example, if A and W are pressed:
+ *
+ *                  +---------------+
+ *   bytes 2 to 7:  |0 0 0 0 0 1 0 0| A is pressed (scancode = 4)
+ *                  +---------------+
+ *                  |0 0 0 1 1 0 1 0| W is pressed (scancode = 26)
+ *                  +---------------+
+ *                  |0 0 0 0 0 0 0 0| ^
+ *                  +---------------+ |  only 2 keys are pressed, the
+ *                  |0 0 0 0 0 0 0 0| |  remaining items are set to 0
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 0| |
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 0| v
+ *                  +---------------+
+ *
+ * Pressing more than 6 keys is not supported. If this happens (typically,
+ * never in practice), report a "phantom state":
+ *
+ *                  +---------------+
+ *   bytes 2 to 7:  |0 0 0 0 0 0 0 1| ^
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 1| |  more than 6 keys pressed:
+ *                  +---------------+ |  the list is filled with a special
+ *                  |0 0 0 0 0 0 0 1| |  rollover error code (0x01)
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 1| |
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 1| |
+ *                  +---------------+ |
+ *                  |0 0 0 0 0 0 0 1| v
+ *                  +---------------+
+ */
+
 static unsigned char
 sdl_keymod_to_hid_modifiers(SDL_Keymod mod) {
     unsigned char modifiers = HID_MODIFIER_NONE;
@@ -217,7 +291,7 @@ convert_hid_keyboard_event(struct sc_hid_keyboard *kb,
             // USB HID protocol says that if keys exceeds report count, a
             // phantom state should be reported
             if (keys_pressed_count >= HID_KEYBOARD_MAX_KEYS) {
-                // Pantom state:
+                // Phantom state:
                 //  - Modifiers
                 //  - Reserved
                 //  - ErrorRollOver * HID_MAX_KEYS
