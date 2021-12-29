@@ -12,20 +12,13 @@
 /** Downcast key processor to sc_keyboard_inject */
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_inject, key_processor)
 
-static bool
-convert_keycode_action(enum sc_action from, enum android_keyevent_action *to) {
-    static const struct sc_intmap_entry actions[] = {
-        {SC_ACTION_DOWN, AKEY_EVENT_ACTION_DOWN},
-        {SC_ACTION_UP,   AKEY_EVENT_ACTION_UP},
-    };
-
-    const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
-    if (entry) {
-        *to = entry->value;
-        return true;
+static enum android_keyevent_action
+convert_keycode_action(enum sc_action action) {
+    if (action == SC_ACTION_DOWN) {
+        return AKEY_EVENT_ACTION_DOWN;
     }
-
-    return false;
+    assert(action == SC_ACTION_UP);
+    return AKEY_EVENT_ACTION_UP;
 }
 
 static bool
@@ -257,15 +250,12 @@ convert_input_key(const struct sc_key_event *event, struct control_msg *msg,
                   enum sc_key_inject_mode key_inject_mode, uint32_t repeat) {
     msg->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
-    if (!convert_keycode_action(event->action, &msg->inject_keycode.action)) {
-        return false;
-    }
-
     if (!convert_keycode(event->keycode, &msg->inject_keycode.keycode,
                          event->mods_state, key_inject_mode)) {
         return false;
     }
 
+    msg->inject_keycode.action = convert_keycode_action(event->action);
     msg->inject_keycode.repeat = repeat;
     msg->inject_keycode.metastate = convert_meta_state(event->mods_state);
 
