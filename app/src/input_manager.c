@@ -5,8 +5,10 @@
 
 #include "util/log.h"
 
-static const int ACTION_DOWN = 1;
-static const int ACTION_UP = 1 << 1;
+enum sc_action {
+    SC_ACTION_DOWN,
+    SC_ACTION_UP,
+};
 
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
@@ -89,85 +91,70 @@ input_manager_init(struct input_manager *im, struct controller *controller,
 
 static void
 send_keycode(struct controller *controller, enum android_keycode keycode,
-             int actions, const char *name) {
+             enum sc_action action, const char *name) {
     // send DOWN event
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action = action == SC_ACTION_DOWN
+                              ? AKEY_EVENT_ACTION_DOWN
+                              : AKEY_EVENT_ACTION_UP;
     msg.inject_keycode.keycode = keycode;
     msg.inject_keycode.metastate = 0;
     msg.inject_keycode.repeat = 0;
 
-    if (actions & ACTION_DOWN) {
-        msg.inject_keycode.action = AKEY_EVENT_ACTION_DOWN;
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'inject %s (DOWN)'", name);
-            return;
-        }
-    }
-
-    if (actions & ACTION_UP) {
-        msg.inject_keycode.action = AKEY_EVENT_ACTION_UP;
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'inject %s (UP)'", name);
-        }
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'inject %s'", name);
     }
 }
 
 static inline void
-action_home(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_HOME, actions, "HOME");
+action_home(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_HOME, action, "HOME");
 }
 
 static inline void
-action_back(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_BACK, actions, "BACK");
+action_back(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_BACK, action, "BACK");
 }
 
 static inline void
-action_app_switch(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_APP_SWITCH, actions, "APP_SWITCH");
+action_app_switch(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
 }
 
 static inline void
-action_power(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_POWER, actions, "POWER");
+action_power(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_POWER, action, "POWER");
 }
 
 static inline void
-action_volume_up(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_VOLUME_UP, actions, "VOLUME_UP");
+action_volume_up(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_VOLUME_UP, action, "VOLUME_UP");
 }
 
 static inline void
-action_volume_down(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_VOLUME_DOWN, actions, "VOLUME_DOWN");
+action_volume_down(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_VOLUME_DOWN, action, "VOLUME_DOWN");
 }
 
 static inline void
-action_menu(struct controller *controller, int actions) {
-    send_keycode(controller, AKEYCODE_MENU, actions, "MENU");
+action_menu(struct controller *controller, enum sc_action action) {
+    send_keycode(controller, AKEYCODE_MENU, action, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
-press_back_or_turn_screen_on(struct controller *controller, int actions) {
+press_back_or_turn_screen_on(struct controller *controller,
+                             enum sc_action action) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
+    msg.back_or_screen_on.action = action == SC_ACTION_DOWN
+                                 ? AKEY_EVENT_ACTION_DOWN
+                                 : AKEY_EVENT_ACTION_UP;
 
-    if (actions & ACTION_DOWN) {
-        msg.back_or_screen_on.action = AKEY_EVENT_ACTION_DOWN;
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'press back or turn screen on'");
-            return;
-        }
-    }
-
-    if (actions & ACTION_UP) {
-        msg.back_or_screen_on.action = AKEY_EVENT_ACTION_UP;
-        if (!controller_push_msg(controller, &msg)) {
-            LOGW("Could not request 'press back or turn screen on'");
-        }
+    if (!controller_push_msg(controller, &msg)) {
+        LOGW("Could not request 'press back or turn screen on'");
     }
 }
 
@@ -396,7 +383,7 @@ input_manager_process_key(struct input_manager *im,
 
     // The shortcut modifier is pressed
     if (smod) {
-        int action = down ? ACTION_DOWN : ACTION_UP;
+        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
                 if (control && !shift && !repeat) {
@@ -601,7 +588,7 @@ input_manager_process_mouse_button(struct input_manager *im,
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
     if (!im->forward_all_clicks) {
-        int action = down ? ACTION_DOWN : ACTION_UP;
+        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
         if (control && event->button == SDL_BUTTON_X1) {
             action_app_switch(im->controller, action);
