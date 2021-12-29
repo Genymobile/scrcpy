@@ -56,57 +56,20 @@ convert_touch_action(enum sc_touch_action action) {
 }
 
 static void
-convert_mouse_motion(const struct sc_mouse_motion_event *event,
-                     struct control_msg *msg) {
-    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    msg->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
-    msg->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    msg->inject_touch_event.position = event->position;
-    msg->inject_touch_event.pressure = 1.f;
-    msg->inject_touch_event.buttons =
-        convert_mouse_buttons(event->buttons_state);
-}
-
-static void
-convert_touch(const struct sc_touch_event *event,
-              struct control_msg *msg) {
-    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    msg->inject_touch_event.action = convert_touch_action(event->action);
-    msg->inject_touch_event.pointer_id = event->pointer_id;
-    msg->inject_touch_event.position = event->position;
-    msg->inject_touch_event.pressure = event->pressure;
-    msg->inject_touch_event.buttons = 0;
-}
-
-static void
-convert_mouse_click(const struct sc_mouse_click_event *event,
-                    struct control_msg *msg) {
-    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    msg->inject_touch_event.action = convert_mouse_action(event->action);
-    msg->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    msg->inject_touch_event.position = event->position;
-    msg->inject_touch_event.pressure = event->action == SC_ACTION_DOWN
-                                     ? 1.f : 0.f;
-    msg->inject_touch_event.buttons =
-        convert_mouse_buttons(event->buttons_state);
-}
-
-static void
-convert_mouse_scroll(const struct sc_mouse_scroll_event *event,
-                     struct control_msg *msg) {
-    msg->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
-    msg->inject_scroll_event.position = event->position;
-    msg->inject_scroll_event.hscroll = event->hscroll;
-    msg->inject_scroll_event.vscroll = event->vscroll;
-}
-
-static void
 sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg;
-    convert_mouse_motion(event, &msg);
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        .inject_touch_event = {
+            .action = AMOTION_EVENT_ACTION_MOVE,
+            .pointer_id = POINTER_ID_MOUSE,
+            .position = event->position,
+            .pressure = 1.f,
+            .buttons = convert_mouse_buttons(event->buttons_state),
+        },
+    };
 
     if (!controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse motion event'");
@@ -118,8 +81,16 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
                                  const struct sc_touch_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg;
-    convert_touch(event, &msg);
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        .inject_touch_event = {
+            .action = convert_touch_action(event->action),
+            .pointer_id = event->pointer_id,
+            .position = event->position,
+            .pressure = event->pressure,
+            .buttons = 0,
+        },
+    };
 
     if (!controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject touch event'");
@@ -131,8 +102,16 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_click_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg;
-    convert_mouse_click(event, &msg);
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        .inject_touch_event = {
+            .action = convert_mouse_action(event->action),
+            .pointer_id = POINTER_ID_MOUSE,
+            .position = event->position,
+            .pressure = event->action == SC_ACTION_DOWN ? 1.f : 0.f,
+            .buttons = convert_mouse_buttons(event->buttons_state),
+        },
+    };
 
     if (!controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse click event'");
@@ -144,8 +123,14 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg;
-    convert_mouse_scroll(event, &msg);
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
+        .inject_scroll_event = {
+            .position = event->position,
+            .hscroll = event->hscroll,
+            .vscroll = event->vscroll,
+        },
+    };
 
     if (!controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse scroll event'");
