@@ -1,11 +1,11 @@
 #include "keyboard_inject.h"
 
 #include <assert.h>
-#include <SDL2/SDL_events.h>
 
 #include "android/input.h"
 #include "control_msg.h"
 #include "controller.h"
+#include "input_events.h"
 #include "util/intmap.h"
 #include "util/log.h"
 
@@ -13,10 +13,10 @@
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_inject, key_processor)
 
 static bool
-convert_keycode_action(SDL_EventType from, enum android_keyevent_action *to) {
+convert_keycode_action(enum sc_action from, enum android_keyevent_action *to) {
     static const struct sc_intmap_entry actions[] = {
-        {SDL_KEYDOWN, AKEY_EVENT_ACTION_DOWN},
-        {SDL_KEYUP,   AKEY_EVENT_ACTION_UP},
+        {SC_ACTION_DOWN, AKEY_EVENT_ACTION_DOWN},
+        {SC_ACTION_UP,   AKEY_EVENT_ACTION_UP},
     };
 
     const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
@@ -29,125 +29,125 @@ convert_keycode_action(SDL_EventType from, enum android_keyevent_action *to) {
 }
 
 static bool
-convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
+convert_keycode(enum sc_keycode from, enum android_keycode *to, uint16_t mod,
                 enum sc_key_inject_mode key_inject_mode) {
     // Navigation keys and ENTER.
     // Used in all modes.
     static const struct sc_intmap_entry special_keys[] = {
-        {SDLK_RETURN,    AKEYCODE_ENTER},
-        {SDLK_KP_ENTER,  AKEYCODE_NUMPAD_ENTER},
-        {SDLK_ESCAPE,    AKEYCODE_ESCAPE},
-        {SDLK_BACKSPACE, AKEYCODE_DEL},
-        {SDLK_TAB,       AKEYCODE_TAB},
-        {SDLK_PAGEUP,    AKEYCODE_PAGE_UP},
-        {SDLK_DELETE,    AKEYCODE_FORWARD_DEL},
-        {SDLK_HOME,      AKEYCODE_MOVE_HOME},
-        {SDLK_END,       AKEYCODE_MOVE_END},
-        {SDLK_PAGEDOWN,  AKEYCODE_PAGE_DOWN},
-        {SDLK_RIGHT,     AKEYCODE_DPAD_RIGHT},
-        {SDLK_LEFT,      AKEYCODE_DPAD_LEFT},
-        {SDLK_DOWN,      AKEYCODE_DPAD_DOWN},
-        {SDLK_UP,        AKEYCODE_DPAD_UP},
-        {SDLK_LCTRL,     AKEYCODE_CTRL_LEFT},
-        {SDLK_RCTRL,     AKEYCODE_CTRL_RIGHT},
-        {SDLK_LSHIFT,    AKEYCODE_SHIFT_LEFT},
-        {SDLK_RSHIFT,    AKEYCODE_SHIFT_RIGHT},
+        {SC_KEYCODE_RETURN,    AKEYCODE_ENTER},
+        {SC_KEYCODE_KP_ENTER,  AKEYCODE_NUMPAD_ENTER},
+        {SC_KEYCODE_ESCAPE,    AKEYCODE_ESCAPE},
+        {SC_KEYCODE_BACKSPACE, AKEYCODE_DEL},
+        {SC_KEYCODE_TAB,       AKEYCODE_TAB},
+        {SC_KEYCODE_PAGEUP,    AKEYCODE_PAGE_UP},
+        {SC_KEYCODE_DELETE,    AKEYCODE_FORWARD_DEL},
+        {SC_KEYCODE_HOME,      AKEYCODE_MOVE_HOME},
+        {SC_KEYCODE_END,       AKEYCODE_MOVE_END},
+        {SC_KEYCODE_PAGEDOWN,  AKEYCODE_PAGE_DOWN},
+        {SC_KEYCODE_RIGHT,     AKEYCODE_DPAD_RIGHT},
+        {SC_KEYCODE_LEFT,      AKEYCODE_DPAD_LEFT},
+        {SC_KEYCODE_DOWN,      AKEYCODE_DPAD_DOWN},
+        {SC_KEYCODE_UP,        AKEYCODE_DPAD_UP},
+        {SC_KEYCODE_LCTRL,     AKEYCODE_CTRL_LEFT},
+        {SC_KEYCODE_RCTRL,     AKEYCODE_CTRL_RIGHT},
+        {SC_KEYCODE_LSHIFT,    AKEYCODE_SHIFT_LEFT},
+        {SC_KEYCODE_RSHIFT,    AKEYCODE_SHIFT_RIGHT},
     };
 
     // Numpad navigation keys.
     // Used in all modes, when NumLock and Shift are disabled.
     static const struct sc_intmap_entry kp_nav_keys[] = {
-        {SDLK_KP_0,      AKEYCODE_INSERT},
-        {SDLK_KP_1,      AKEYCODE_MOVE_END},
-        {SDLK_KP_2,      AKEYCODE_DPAD_DOWN},
-        {SDLK_KP_3,      AKEYCODE_PAGE_DOWN},
-        {SDLK_KP_4,      AKEYCODE_DPAD_LEFT},
-        {SDLK_KP_6,      AKEYCODE_DPAD_RIGHT},
-        {SDLK_KP_7,      AKEYCODE_MOVE_HOME},
-        {SDLK_KP_8,      AKEYCODE_DPAD_UP},
-        {SDLK_KP_9,      AKEYCODE_PAGE_UP},
-        {SDLK_KP_PERIOD, AKEYCODE_FORWARD_DEL},
+        {SC_KEYCODE_KP_0,      AKEYCODE_INSERT},
+        {SC_KEYCODE_KP_1,      AKEYCODE_MOVE_END},
+        {SC_KEYCODE_KP_2,      AKEYCODE_DPAD_DOWN},
+        {SC_KEYCODE_KP_3,      AKEYCODE_PAGE_DOWN},
+        {SC_KEYCODE_KP_4,      AKEYCODE_DPAD_LEFT},
+        {SC_KEYCODE_KP_6,      AKEYCODE_DPAD_RIGHT},
+        {SC_KEYCODE_KP_7,      AKEYCODE_MOVE_HOME},
+        {SC_KEYCODE_KP_8,      AKEYCODE_DPAD_UP},
+        {SC_KEYCODE_KP_9,      AKEYCODE_PAGE_UP},
+        {SC_KEYCODE_KP_PERIOD, AKEYCODE_FORWARD_DEL},
     };
 
     // Letters and space.
     // Used in non-text mode.
     static const struct sc_intmap_entry alphaspace_keys[] = {
-        {SDLK_a,         AKEYCODE_A},
-        {SDLK_b,         AKEYCODE_B},
-        {SDLK_c,         AKEYCODE_C},
-        {SDLK_d,         AKEYCODE_D},
-        {SDLK_e,         AKEYCODE_E},
-        {SDLK_f,         AKEYCODE_F},
-        {SDLK_g,         AKEYCODE_G},
-        {SDLK_h,         AKEYCODE_H},
-        {SDLK_i,         AKEYCODE_I},
-        {SDLK_j,         AKEYCODE_J},
-        {SDLK_k,         AKEYCODE_K},
-        {SDLK_l,         AKEYCODE_L},
-        {SDLK_m,         AKEYCODE_M},
-        {SDLK_n,         AKEYCODE_N},
-        {SDLK_o,         AKEYCODE_O},
-        {SDLK_p,         AKEYCODE_P},
-        {SDLK_q,         AKEYCODE_Q},
-        {SDLK_r,         AKEYCODE_R},
-        {SDLK_s,         AKEYCODE_S},
-        {SDLK_t,         AKEYCODE_T},
-        {SDLK_u,         AKEYCODE_U},
-        {SDLK_v,         AKEYCODE_V},
-        {SDLK_w,         AKEYCODE_W},
-        {SDLK_x,         AKEYCODE_X},
-        {SDLK_y,         AKEYCODE_Y},
-        {SDLK_z,         AKEYCODE_Z},
-        {SDLK_SPACE,     AKEYCODE_SPACE},
+        {SC_KEYCODE_a,         AKEYCODE_A},
+        {SC_KEYCODE_b,         AKEYCODE_B},
+        {SC_KEYCODE_c,         AKEYCODE_C},
+        {SC_KEYCODE_d,         AKEYCODE_D},
+        {SC_KEYCODE_e,         AKEYCODE_E},
+        {SC_KEYCODE_f,         AKEYCODE_F},
+        {SC_KEYCODE_g,         AKEYCODE_G},
+        {SC_KEYCODE_h,         AKEYCODE_H},
+        {SC_KEYCODE_i,         AKEYCODE_I},
+        {SC_KEYCODE_j,         AKEYCODE_J},
+        {SC_KEYCODE_k,         AKEYCODE_K},
+        {SC_KEYCODE_l,         AKEYCODE_L},
+        {SC_KEYCODE_m,         AKEYCODE_M},
+        {SC_KEYCODE_n,         AKEYCODE_N},
+        {SC_KEYCODE_o,         AKEYCODE_O},
+        {SC_KEYCODE_p,         AKEYCODE_P},
+        {SC_KEYCODE_q,         AKEYCODE_Q},
+        {SC_KEYCODE_r,         AKEYCODE_R},
+        {SC_KEYCODE_s,         AKEYCODE_S},
+        {SC_KEYCODE_t,         AKEYCODE_T},
+        {SC_KEYCODE_u,         AKEYCODE_U},
+        {SC_KEYCODE_v,         AKEYCODE_V},
+        {SC_KEYCODE_w,         AKEYCODE_W},
+        {SC_KEYCODE_x,         AKEYCODE_X},
+        {SC_KEYCODE_y,         AKEYCODE_Y},
+        {SC_KEYCODE_z,         AKEYCODE_Z},
+        {SC_KEYCODE_SPACE,     AKEYCODE_SPACE},
     };
 
     // Numbers and punctuation keys.
     // Used in raw mode only.
     static const struct sc_intmap_entry numbers_punct_keys[] = {
-        {SDLK_HASH,          AKEYCODE_POUND},
-        {SDLK_PERCENT,       AKEYCODE_PERIOD},
-        {SDLK_QUOTE,         AKEYCODE_APOSTROPHE},
-        {SDLK_ASTERISK,      AKEYCODE_STAR},
-        {SDLK_PLUS,          AKEYCODE_PLUS},
-        {SDLK_COMMA,         AKEYCODE_COMMA},
-        {SDLK_MINUS,         AKEYCODE_MINUS},
-        {SDLK_PERIOD,        AKEYCODE_PERIOD},
-        {SDLK_SLASH,         AKEYCODE_SLASH},
-        {SDLK_0,             AKEYCODE_0},
-        {SDLK_1,             AKEYCODE_1},
-        {SDLK_2,             AKEYCODE_2},
-        {SDLK_3,             AKEYCODE_3},
-        {SDLK_4,             AKEYCODE_4},
-        {SDLK_5,             AKEYCODE_5},
-        {SDLK_6,             AKEYCODE_6},
-        {SDLK_7,             AKEYCODE_7},
-        {SDLK_8,             AKEYCODE_8},
-        {SDLK_9,             AKEYCODE_9},
-        {SDLK_SEMICOLON,     AKEYCODE_SEMICOLON},
-        {SDLK_EQUALS,        AKEYCODE_EQUALS},
-        {SDLK_AT,            AKEYCODE_AT},
-        {SDLK_LEFTBRACKET,   AKEYCODE_LEFT_BRACKET},
-        {SDLK_BACKSLASH,     AKEYCODE_BACKSLASH},
-        {SDLK_RIGHTBRACKET,  AKEYCODE_RIGHT_BRACKET},
-        {SDLK_BACKQUOTE,     AKEYCODE_GRAVE},
-        {SDLK_KP_1,          AKEYCODE_NUMPAD_1},
-        {SDLK_KP_2,          AKEYCODE_NUMPAD_2},
-        {SDLK_KP_3,          AKEYCODE_NUMPAD_3},
-        {SDLK_KP_4,          AKEYCODE_NUMPAD_4},
-        {SDLK_KP_5,          AKEYCODE_NUMPAD_5},
-        {SDLK_KP_6,          AKEYCODE_NUMPAD_6},
-        {SDLK_KP_7,          AKEYCODE_NUMPAD_7},
-        {SDLK_KP_8,          AKEYCODE_NUMPAD_8},
-        {SDLK_KP_9,          AKEYCODE_NUMPAD_9},
-        {SDLK_KP_0,          AKEYCODE_NUMPAD_0},
-        {SDLK_KP_DIVIDE,     AKEYCODE_NUMPAD_DIVIDE},
-        {SDLK_KP_MULTIPLY,   AKEYCODE_NUMPAD_MULTIPLY},
-        {SDLK_KP_MINUS,      AKEYCODE_NUMPAD_SUBTRACT},
-        {SDLK_KP_PLUS,       AKEYCODE_NUMPAD_ADD},
-        {SDLK_KP_PERIOD,     AKEYCODE_NUMPAD_DOT},
-        {SDLK_KP_EQUALS,     AKEYCODE_NUMPAD_EQUALS},
-        {SDLK_KP_LEFTPAREN,  AKEYCODE_NUMPAD_LEFT_PAREN},
-        {SDLK_KP_RIGHTPAREN, AKEYCODE_NUMPAD_RIGHT_PAREN},
+        {SC_KEYCODE_HASH,          AKEYCODE_POUND},
+        {SC_KEYCODE_PERCENT,       AKEYCODE_PERIOD},
+        {SC_KEYCODE_QUOTE,         AKEYCODE_APOSTROPHE},
+        {SC_KEYCODE_ASTERISK,      AKEYCODE_STAR},
+        {SC_KEYCODE_PLUS,          AKEYCODE_PLUS},
+        {SC_KEYCODE_COMMA,         AKEYCODE_COMMA},
+        {SC_KEYCODE_MINUS,         AKEYCODE_MINUS},
+        {SC_KEYCODE_PERIOD,        AKEYCODE_PERIOD},
+        {SC_KEYCODE_SLASH,         AKEYCODE_SLASH},
+        {SC_KEYCODE_0,             AKEYCODE_0},
+        {SC_KEYCODE_1,             AKEYCODE_1},
+        {SC_KEYCODE_2,             AKEYCODE_2},
+        {SC_KEYCODE_3,             AKEYCODE_3},
+        {SC_KEYCODE_4,             AKEYCODE_4},
+        {SC_KEYCODE_5,             AKEYCODE_5},
+        {SC_KEYCODE_6,             AKEYCODE_6},
+        {SC_KEYCODE_7,             AKEYCODE_7},
+        {SC_KEYCODE_8,             AKEYCODE_8},
+        {SC_KEYCODE_9,             AKEYCODE_9},
+        {SC_KEYCODE_SEMICOLON,     AKEYCODE_SEMICOLON},
+        {SC_KEYCODE_EQUALS,        AKEYCODE_EQUALS},
+        {SC_KEYCODE_AT,            AKEYCODE_AT},
+        {SC_KEYCODE_LEFTBRACKET,   AKEYCODE_LEFT_BRACKET},
+        {SC_KEYCODE_BACKSLASH,     AKEYCODE_BACKSLASH},
+        {SC_KEYCODE_RIGHTBRACKET,  AKEYCODE_RIGHT_BRACKET},
+        {SC_KEYCODE_BACKQUOTE,     AKEYCODE_GRAVE},
+        {SC_KEYCODE_KP_1,          AKEYCODE_NUMPAD_1},
+        {SC_KEYCODE_KP_2,          AKEYCODE_NUMPAD_2},
+        {SC_KEYCODE_KP_3,          AKEYCODE_NUMPAD_3},
+        {SC_KEYCODE_KP_4,          AKEYCODE_NUMPAD_4},
+        {SC_KEYCODE_KP_5,          AKEYCODE_NUMPAD_5},
+        {SC_KEYCODE_KP_6,          AKEYCODE_NUMPAD_6},
+        {SC_KEYCODE_KP_7,          AKEYCODE_NUMPAD_7},
+        {SC_KEYCODE_KP_8,          AKEYCODE_NUMPAD_8},
+        {SC_KEYCODE_KP_9,          AKEYCODE_NUMPAD_9},
+        {SC_KEYCODE_KP_0,          AKEYCODE_NUMPAD_0},
+        {SC_KEYCODE_KP_DIVIDE,     AKEYCODE_NUMPAD_DIVIDE},
+        {SC_KEYCODE_KP_MULTIPLY,   AKEYCODE_NUMPAD_MULTIPLY},
+        {SC_KEYCODE_KP_MINUS,      AKEYCODE_NUMPAD_SUBTRACT},
+        {SC_KEYCODE_KP_PLUS,       AKEYCODE_NUMPAD_ADD},
+        {SC_KEYCODE_KP_PERIOD,     AKEYCODE_NUMPAD_DOT},
+        {SC_KEYCODE_KP_EQUALS,     AKEYCODE_NUMPAD_EQUALS},
+        {SC_KEYCODE_KP_LEFTPAREN,  AKEYCODE_NUMPAD_LEFT_PAREN},
+        {SC_KEYCODE_KP_RIGHTPAREN, AKEYCODE_NUMPAD_RIGHT_PAREN},
     };
 
     const struct sc_intmap_entry *entry =
@@ -157,7 +157,7 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         return true;
     }
 
-    if (!(mod & (KMOD_NUM | KMOD_SHIFT))) {
+    if (!(mod & (SC_MOD_NUM | SC_MOD_LSHIFT | SC_MOD_RSHIFT))) {
         // Handle Numpad events when Num Lock is disabled
         // If SHIFT is pressed, a text event will be sent instead
         entry = SC_INTMAP_FIND_ENTRY(kp_nav_keys, from);
@@ -167,12 +167,13 @@ convert_keycode(SDL_Keycode from, enum android_keycode *to, uint16_t mod,
         }
     }
 
-    if (key_inject_mode == SC_KEY_INJECT_MODE_TEXT && !(mod & KMOD_CTRL)) {
+    if (key_inject_mode == SC_KEY_INJECT_MODE_TEXT &&
+            !(mod & (SC_MOD_LCTRL | SC_MOD_RCTRL))) {
         // do not forward alpha and space key events (unless Ctrl is pressed)
         return false;
     }
 
-    if (mod & (KMOD_LALT | KMOD_RALT | KMOD_LGUI | KMOD_RGUI)) {
+    if (mod & (SC_MOD_LALT | SC_MOD_RALT | SC_MOD_LGUI | SC_MOD_RGUI)) {
         return false;
     }
 
@@ -214,40 +215,37 @@ autocomplete_metastate(enum android_metastate metastate) {
 }
 
 static enum android_metastate
-convert_meta_state(SDL_Keymod mod) {
+convert_meta_state(uint16_t mod) {
     enum android_metastate metastate = 0;
-    if (mod & KMOD_LSHIFT) {
+    if (mod & SC_MOD_LSHIFT) {
         metastate |= AMETA_SHIFT_LEFT_ON;
     }
-    if (mod & KMOD_RSHIFT) {
+    if (mod & SC_MOD_RSHIFT) {
         metastate |= AMETA_SHIFT_RIGHT_ON;
     }
-    if (mod & KMOD_LCTRL) {
+    if (mod & SC_MOD_LCTRL) {
         metastate |= AMETA_CTRL_LEFT_ON;
     }
-    if (mod & KMOD_RCTRL) {
+    if (mod & SC_MOD_RCTRL) {
         metastate |= AMETA_CTRL_RIGHT_ON;
     }
-    if (mod & KMOD_LALT) {
+    if (mod & SC_MOD_LALT) {
         metastate |= AMETA_ALT_LEFT_ON;
     }
-    if (mod & KMOD_RALT) {
+    if (mod & SC_MOD_RALT) {
         metastate |= AMETA_ALT_RIGHT_ON;
     }
-    if (mod & KMOD_LGUI) { // Windows key
+    if (mod & SC_MOD_LGUI) { // Windows key
         metastate |= AMETA_META_LEFT_ON;
     }
-    if (mod & KMOD_RGUI) { // Windows key
+    if (mod & SC_MOD_RGUI) { // Windows key
         metastate |= AMETA_META_RIGHT_ON;
     }
-    if (mod & KMOD_NUM) {
+    if (mod & SC_MOD_NUM) {
         metastate |= AMETA_NUM_LOCK_ON;
     }
-    if (mod & KMOD_CAPS) {
+    if (mod & SC_MOD_CAPS) {
         metastate |= AMETA_CAPS_LOCK_ON;
-    }
-    if (mod & KMOD_MODE) { // Alt Gr
-        // no mapping?
     }
 
     // fill the dependent fields
@@ -255,29 +253,28 @@ convert_meta_state(SDL_Keymod mod) {
 }
 
 static bool
-convert_input_key(const SDL_KeyboardEvent *from, struct control_msg *to,
+convert_input_key(const struct sc_key_event *event, struct control_msg *msg,
                   enum sc_key_inject_mode key_inject_mode, uint32_t repeat) {
-    to->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
-    if (!convert_keycode_action(from->type, &to->inject_keycode.action)) {
+    if (!convert_keycode_action(event->action, &msg->inject_keycode.action)) {
         return false;
     }
 
-    uint16_t mod = from->keysym.mod;
-    if (!convert_keycode(from->keysym.sym, &to->inject_keycode.keycode, mod,
-                         key_inject_mode)) {
+    if (!convert_keycode(event->keycode, &msg->inject_keycode.keycode,
+                         event->mods_state, key_inject_mode)) {
         return false;
     }
 
-    to->inject_keycode.repeat = repeat;
-    to->inject_keycode.metastate = convert_meta_state(mod);
+    msg->inject_keycode.repeat = repeat;
+    msg->inject_keycode.metastate = convert_meta_state(event->mods_state);
 
     return true;
 }
 
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
-                             const SDL_KeyboardEvent *event,
+                             const struct sc_key_event *event,
                              uint64_t ack_to_wait) {
     // The device clipboard synchronization and the key event messages are
     // serialized, there is nothing special to do to ensure that the clipboard
@@ -305,7 +302,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
 static void
 sc_key_processor_process_text(struct sc_key_processor *kp,
-                              const SDL_TextInputEvent *event) {
+                              const struct sc_text_event *event) {
     struct sc_keyboard_inject *ki = DOWNCAST(kp);
 
     if (ki->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {

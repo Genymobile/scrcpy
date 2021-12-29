@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <stdbool.h>
 
-#include <SDL2/SDL_events.h>
+#include "input_events.h"
 
 /**
  * Key processor trait.
@@ -37,12 +37,12 @@ struct sc_key_processor_ops {
      * Ctrl+v on the device.
      */
     void
-    (*process_key)(struct sc_key_processor *kp, const SDL_KeyboardEvent *event,
-                   uint64_t ack_to_wait);
+    (*process_key)(struct sc_key_processor *kp,
+                   const struct sc_key_event *event, uint64_t ack_to_wait);
 
     void
     (*process_text)(struct sc_key_processor *kp,
-                    const SDL_TextInputEvent *event);
+                    const struct sc_text_event *event);
 };
 
 #endif

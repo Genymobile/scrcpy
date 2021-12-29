@@ -410,7 +410,7 @@ input_manager_process_text_input(struct input_manager *im,
         .text = event->text,
     };
 
-    im->kp->ops->process_text(im->kp, event);
+    im->kp->ops->process_text(im->kp, &evt);
 }
 
 static bool
@@ -637,7 +637,7 @@ input_manager_process_key(struct input_manager *im,
         .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
     };
 
-    im->kp->ops->process_key(im->kp, event, ack_to_wait);
+    im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 
 static void
