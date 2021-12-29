@@ -578,7 +578,7 @@ aoa_hid_end:
             kp = &s->keyboard_inject.key_processor;
         }
 
-        sc_mouse_inject_init(&s->mouse_inject, &s->controller, &s->screen);
+        sc_mouse_inject_init(&s->mouse_inject, &s->controller);
         mp = &s->mouse_inject.mouse_processor;
     }
 

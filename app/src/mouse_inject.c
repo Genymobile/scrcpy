@@ -1,11 +1,11 @@
 #include "mouse_inject.h"
 
 #include <assert.h>
-#include <SDL2/SDL_events.h>
 
 #include "android/input.h"
 #include "control_msg.h"
 #include "controller.h"
+#include "input_events.h"
 #include "util/intmap.h"
 #include "util/log.h"
 
@@ -15,29 +15,29 @@
 static enum android_motionevent_buttons
 convert_mouse_buttons(uint32_t state) {
     enum android_motionevent_buttons buttons = 0;
-    if (state & SDL_BUTTON_LMASK) {
+    if (state & SC_MOUSE_BUTTON_LEFT) {
         buttons |= AMOTION_EVENT_BUTTON_PRIMARY;
     }
-    if (state & SDL_BUTTON_RMASK) {
+    if (state & SC_MOUSE_BUTTON_RIGHT) {
         buttons |= AMOTION_EVENT_BUTTON_SECONDARY;
     }
-    if (state & SDL_BUTTON_MMASK) {
+    if (state & SC_MOUSE_BUTTON_MIDDLE) {
         buttons |= AMOTION_EVENT_BUTTON_TERTIARY;
     }
-    if (state & SDL_BUTTON_X1MASK) {
+    if (state & SC_MOUSE_BUTTON_X1) {
         buttons |= AMOTION_EVENT_BUTTON_BACK;
     }
-    if (state & SDL_BUTTON_X2MASK) {
+    if (state & SC_MOUSE_BUTTON_X2) {
         buttons |= AMOTION_EVENT_BUTTON_FORWARD;
     }
     return buttons;
 }
 
 static bool
-convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
+convert_mouse_action(enum sc_action from, enum android_motionevent_action *to) {
     static const struct sc_intmap_entry actions[] = {
-        {SDL_MOUSEBUTTONDOWN, AMOTION_EVENT_ACTION_DOWN},
-        {SDL_MOUSEBUTTONUP,   AMOTION_EVENT_ACTION_UP},
+        {SC_ACTION_DOWN, AMOTION_EVENT_ACTION_DOWN},
+        {SC_ACTION_UP,   AMOTION_EVENT_ACTION_UP},
     };
 
     const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
@@ -50,11 +50,12 @@ convert_mouse_action(SDL_EventType from, enum android_motionevent_action *to) {
 }
 
 static bool
-convert_touch_action(SDL_EventType from, enum android_motionevent_action *to) {
+convert_touch_action(enum sc_touch_action from,
+                     enum android_motionevent_action *to) {
     static const struct sc_intmap_entry actions[] = {
-        {SDL_FINGERMOTION, AMOTION_EVENT_ACTION_MOVE},
-        {SDL_FINGERDOWN,   AMOTION_EVENT_ACTION_DOWN},
-        {SDL_FINGERUP,     AMOTION_EVENT_ACTION_UP},
+        {SC_TOUCH_ACTION_MOVE, AMOTION_EVENT_ACTION_MOVE},
+        {SC_TOUCH_ACTION_DOWN, AMOTION_EVENT_ACTION_DOWN},
+        {SC_TOUCH_ACTION_UP,   AMOTION_EVENT_ACTION_UP},
     };
 
     const struct sc_intmap_entry *entry = SC_INTMAP_FIND_ENTRY(actions, from);
@@ -67,99 +68,73 @@ convert_touch_action(SDL_EventType from, enum android_motionevent_action *to) {
 }
 
 static bool
-convert_mouse_motion(const SDL_MouseMotionEvent *from, struct screen *screen,
-                     struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
-    to->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
-    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point =
-        screen_convert_window_to_frame_coords(screen, from->x, from->y);
-    to->inject_touch_event.pressure = 1.f;
-    to->inject_touch_event.buttons = convert_mouse_buttons(from->state);
+convert_mouse_motion(const struct sc_mouse_motion_event *event,
+                     struct control_msg *msg) {
+    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg->inject_touch_event.action = AMOTION_EVENT_ACTION_MOVE;
+    msg->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
+    msg->inject_touch_event.position = event->position;
+    msg->inject_touch_event.pressure = 1.f;
+    msg->inject_touch_event.buttons =
+        convert_mouse_buttons(event->buttons_state);
 
     return true;
 }
 
 static bool
-convert_touch(const SDL_TouchFingerEvent *from, struct screen *screen,
-              struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+convert_touch(const struct sc_touch_event *event,
+              struct control_msg *msg) {
+    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
 
-    if (!convert_touch_action(from->type, &to->inject_touch_event.action)) {
+    if (!convert_touch_action(event->action, &msg->inject_touch_event.action)) {
         return false;
     }
 
-    to->inject_touch_event.pointer_id = from->fingerId;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
+    msg->inject_touch_event.pointer_id = event->pointer_id;
+    msg->inject_touch_event.position = event->position;
+    msg->inject_touch_event.pressure = event->pressure;
+    msg->inject_touch_event.buttons = 0;
 
-    int dw;
-    int dh;
-    SDL_GL_GetDrawableSize(screen->window, &dw, &dh);
-
-    // SDL touch event coordinates are normalized in the range [0; 1]
-    int32_t x = from->x * dw;
-    int32_t y = from->y * dh;
-    to->inject_touch_event.position.point =
-        screen_convert_drawable_to_frame_coords(screen, x, y);
-
-    to->inject_touch_event.pressure = from->pressure;
-    to->inject_touch_event.buttons = 0;
     return true;
 }
 
 static bool
-convert_mouse_button(const SDL_MouseButtonEvent *from, struct screen *screen,
-                     struct control_msg *to) {
-    to->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+convert_mouse_click(const struct sc_mouse_click_event *event,
+                    struct control_msg *msg) {
+    msg->type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
 
-    if (!convert_mouse_action(from->type, &to->inject_touch_event.action)) {
+    if (!convert_mouse_action(event->action, &msg->inject_touch_event.action)) {
         return false;
     }
 
-    to->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
-    to->inject_touch_event.position.screen_size = screen->frame_size;
-    to->inject_touch_event.position.point =
-        screen_convert_window_to_frame_coords(screen, from->x, from->y);
-    to->inject_touch_event.pressure =
-        from->type == SDL_MOUSEBUTTONDOWN ? 1.f : 0.f;
-    to->inject_touch_event.buttons =
-        convert_mouse_buttons(SDL_BUTTON(from->button));
+    msg->inject_touch_event.pointer_id = POINTER_ID_MOUSE;
+    msg->inject_touch_event.position = event->position;
+    msg->inject_touch_event.pressure = event->action == SC_ACTION_DOWN
+                                     ? 1.f : 0.f;
+    msg->inject_touch_event.buttons =
+        convert_mouse_buttons(event->buttons_state);
 
     return true;
 }
 
 static bool
-convert_mouse_wheel(const SDL_MouseWheelEvent *from, struct screen *screen,
-                    struct control_msg *to) {
-
-    // mouse_x and mouse_y are expressed in pixels relative to the window
-    int mouse_x;
-    int mouse_y;
-    SDL_GetMouseState(&mouse_x, &mouse_y);
-
-    struct sc_position position = {
-        .screen_size = screen->frame_size,
-        .point = screen_convert_window_to_frame_coords(screen,
-                                                       mouse_x, mouse_y),
-    };
-
-    to->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
-
-    to->inject_scroll_event.position = position;
-    to->inject_scroll_event.hscroll = from->x;
-    to->inject_scroll_event.vscroll = from->y;
+convert_mouse_scroll(const struct sc_mouse_scroll_event *event,
+                     struct control_msg *msg) {
+    msg->type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT;
+    msg->inject_scroll_event.position = event->position;
+    msg->inject_scroll_event.hscroll = event->hscroll;
+    msg->inject_scroll_event.vscroll = event->vscroll;
 
     return true;
 }
 
 static void
 sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
-                                        const SDL_MouseMotionEvent *event) {
+                                    const struct sc_mouse_motion_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
     struct control_msg msg;
-    if (!convert_mouse_motion(event, mi->screen, &msg)) {
+    if (!convert_mouse_motion(event, &msg)) {
         return;
     }
 
@@ -170,11 +145,11 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 
 static void
 sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
-                                 const SDL_TouchFingerEvent *event) {
+                                 const struct sc_touch_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
     struct control_msg msg;
-    if (convert_touch(event, mi->screen, &msg)) {
+    if (convert_touch(event, &msg)) {
         if (!controller_push_msg(mi->controller, &msg)) {
             LOGW("Could not request 'inject touch event'");
         }
@@ -182,42 +157,41 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
 }
 
 static void
-sc_mouse_processor_process_mouse_button(struct sc_mouse_processor *mp,
-                                        const SDL_MouseButtonEvent *event) {
+sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
+                                    const struct sc_mouse_click_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
     struct control_msg msg;
-    if (convert_mouse_button(event, mi->screen, &msg)) {
+    if (convert_mouse_click(event, &msg)) {
         if (!controller_push_msg(mi->controller, &msg)) {
-            LOGW("Could not request 'inject mouse button event'");
+            LOGW("Could not request 'inject mouse click event'");
         }
     }
 }
 
 static void
-sc_mouse_processor_process_mouse_wheel(struct sc_mouse_processor *mp,
-                                       const SDL_MouseWheelEvent *event) {
+sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
+                                   const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
     struct control_msg msg;
-    if (convert_mouse_wheel(event, mi->screen, &msg)) {
+    if (convert_mouse_scroll(event, &msg)) {
         if (!controller_push_msg(mi->controller, &msg)) {
-            LOGW("Could not request 'inject mouse wheel event'");
+            LOGW("Could not request 'inject mouse scroll event'");
         }
     }
 }
 
 void
-sc_mouse_inject_init(struct sc_mouse_inject *mi, struct controller *controller,
-                     struct screen *screen) {
+sc_mouse_inject_init(struct sc_mouse_inject *mi,
+                     struct controller *controller) {
     mi->controller = controller;
-    mi->screen = screen;
 
     static const struct sc_mouse_processor_ops ops = {
         .process_mouse_motion = sc_mouse_processor_process_mouse_motion,
         .process_touch = sc_mouse_processor_process_touch,
-        .process_mouse_button = sc_mouse_processor_process_mouse_button,
-        .process_mouse_wheel = sc_mouse_processor_process_mouse_wheel,
+        .process_mouse_click = sc_mouse_processor_process_mouse_click,
+        .process_mouse_scroll = sc_mouse_processor_process_mouse_scroll,
     };
 
     mi->mouse_processor.ops = &ops;
