@@ -24,16 +24,16 @@ struct sc_mouse_processor_ops {
                             const struct sc_mouse_motion_event *event);
 
     void
-    (*process_touch)(struct sc_mouse_processor *mp,
-                     const struct sc_touch_event *event);
-
-    void
     (*process_mouse_click)(struct sc_mouse_processor *mp,
                            const struct sc_mouse_click_event *event);
 
     void
     (*process_mouse_scroll)(struct sc_mouse_processor *mp,
                             const struct sc_mouse_scroll_event *event);
+
+    void
+    (*process_touch)(struct sc_mouse_processor *mp,
+                     const struct sc_touch_event *event);
 };
 
 #endif
