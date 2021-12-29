@@ -365,6 +365,8 @@ struct sc_mouse_scroll_event {
 
 struct sc_mouse_motion_event {
     struct sc_position position;
+    int32_t xrel;
+    int32_t yrel;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
