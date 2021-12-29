@@ -13,11 +13,9 @@ struct sc_mouse_inject {
     struct sc_mouse_processor mouse_processor; // mouse processor trait
 
     struct controller *controller;
-    struct screen *screen;
 };
 
 void
-sc_mouse_inject_init(struct sc_mouse_inject *mi, struct controller *controller,
-                     struct screen *screen);
+sc_mouse_inject_init(struct sc_mouse_inject *mi, struct controller *controller);
 
 #endif
