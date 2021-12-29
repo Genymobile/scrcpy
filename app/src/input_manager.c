@@ -651,6 +651,8 @@ input_manager_process_mouse_motion(struct input_manager *im,
             .point = screen_convert_window_to_frame_coords(im->screen,
                                                            event->x, event->y),
         },
+        .xrel = event->xrel,
+        .yrel = event->yrel,
         .buttons_state =
             sc_mouse_buttons_state_from_sdl(event->state,
                                             im->forward_all_clicks),
