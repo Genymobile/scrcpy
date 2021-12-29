@@ -77,27 +77,6 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 }
 
 static void
-sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
-                                 const struct sc_touch_event *event) {
-    struct sc_mouse_inject *mi = DOWNCAST(mp);
-
-    struct control_msg msg = {
-        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
-        .inject_touch_event = {
-            .action = convert_touch_action(event->action),
-            .pointer_id = event->pointer_id,
-            .position = event->position,
-            .pressure = event->pressure,
-            .buttons = 0,
-        },
-    };
-
-    if (!controller_push_msg(mi->controller, &msg)) {
-        LOGW("Could not request 'inject touch event'");
-    }
-}
-
-static void
 sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_click_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
@@ -137,6 +116,27 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     }
 }
 
+static void
+sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
+                                 const struct sc_touch_event *event) {
+    struct sc_mouse_inject *mi = DOWNCAST(mp);
+
+    struct control_msg msg = {
+        .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+        .inject_touch_event = {
+            .action = convert_touch_action(event->action),
+            .pointer_id = event->pointer_id,
+            .position = event->position,
+            .pressure = event->pressure,
+            .buttons = 0,
+        },
+    };
+
+    if (!controller_push_msg(mi->controller, &msg)) {
+        LOGW("Could not request 'inject touch event'");
+    }
+}
+
 void
 sc_mouse_inject_init(struct sc_mouse_inject *mi,
                      struct controller *controller) {
@@ -144,9 +144,9 @@ sc_mouse_inject_init(struct sc_mouse_inject *mi,
 
     static const struct sc_mouse_processor_ops ops = {
         .process_mouse_motion = sc_mouse_processor_process_mouse_motion,
-        .process_touch = sc_mouse_processor_process_touch,
         .process_mouse_click = sc_mouse_processor_process_mouse_click,
         .process_mouse_scroll = sc_mouse_processor_process_mouse_scroll,
+        .process_touch = sc_mouse_processor_process_touch,
     };
 
     mi->mouse_processor.ops = &ops;
