@@ -3,12 +3,8 @@
 #include <assert.h>
 #include <SDL2/SDL_keycode.h>
 
+#include "input_events.h"
 #include "util/log.h"
-
-enum sc_action {
-    SC_ACTION_DOWN,
-    SC_ACTION_UP,
-};
 
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
