@@ -63,9 +63,19 @@ sc_mouse_button_from_sdl(uint8_t button) {
 }
 
 static inline uint8_t
-sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
+sc_mouse_buttons_state_from_sdl(uint32_t buttons_state,
+                                bool forward_all_clicks) {
     assert(buttons_state < 0x100); // fits in uint8_t
-    return buttons_state;
+
+    uint8_t mask = SC_MOUSE_BUTTON_LEFT;
+    if (forward_all_clicks) {
+        mask |= SC_MOUSE_BUTTON_RIGHT
+              | SC_MOUSE_BUTTON_MIDDLE
+              | SC_MOUSE_BUTTON_X1
+              | SC_MOUSE_BUTTON_X2;
+    }
+
+    return buttons_state & mask;
 }
 
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
@@ -616,6 +626,7 @@ input_manager_process_key(struct input_manager *im,
 static void
 input_manager_process_mouse_motion(struct input_manager *im,
                                    const SDL_MouseMotionEvent *event) {
+
     uint32_t mask = SDL_BUTTON_LMASK;
     if (im->forward_all_clicks) {
         mask |= SDL_BUTTON_MMASK | SDL_BUTTON_RMASK;
@@ -635,7 +646,9 @@ input_manager_process_mouse_motion(struct input_manager *im,
             .point = screen_convert_window_to_frame_coords(im->screen,
                                                            event->x, event->y),
         },
-        .buttons_state = sc_mouse_buttons_state_from_sdl(event->state),
+        .buttons_state =
+            sc_mouse_buttons_state_from_sdl(event->state,
+                                            im->forward_all_clicks),
     };
 
     im->mp->ops->process_mouse_motion(im->mp, &evt);
@@ -740,7 +753,9 @@ input_manager_process_mouse_button(struct input_manager *im,
         },
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
-        .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state),
+        .buttons_state =
+            sc_mouse_buttons_state_from_sdl(sdl_buttons_state,
+                                            im->forward_all_clicks),
     };
 
     im->mp->ops->process_mouse_click(im->mp, &evt);
