@@ -256,7 +256,7 @@ enum sc_scancode {
     SC_SCANCODE_DOWN = SDL_SCANCODE_DOWN,
     SC_SCANCODE_UP = SDL_SCANCODE_UP,
 
-    SC_SCANCODE_NUMLOCKCLEAR = SDL_SCANCODE_NUMLOCKCLEAR,
+    SC_SCANCODE_NUMLOCK = SDL_SCANCODE_NUMLOCKCLEAR,
     SC_SCANCODE_KP_DIVIDE = SDL_SCANCODE_KP_DIVIDE,
     SC_SCANCODE_KP_MULTIPLY = SDL_SCANCODE_KP_MULTIPLY,
     SC_SCANCODE_KP_MINUS = SDL_SCANCODE_KP_MINUS,
@@ -315,7 +315,7 @@ struct sc_key_event {
     enum sc_keycode keycode;
     enum sc_scancode scancode;
     uint16_t mods_state; // bitwise-OR of sc_mod values
-    uint8_t repeat;
+    bool repeat;
 };
 
 struct sc_text_event {
