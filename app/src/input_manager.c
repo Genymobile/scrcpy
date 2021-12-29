@@ -6,6 +6,30 @@
 #include "input_events.h"
 #include "util/log.h"
 
+static inline uint16_t
+sc_mods_state_from_sdl(uint16_t mods_state) {
+    return mods_state;
+}
+
+static inline enum sc_keycode
+sc_keycode_from_sdl(SDL_Keycode keycode) {
+    return (enum sc_keycode) keycode;
+}
+
+static inline enum sc_scancode
+sc_scancode_from_sdl(SDL_Scancode scancode) {
+    return (enum sc_scancode) scancode;
+}
+
+static inline enum sc_action
+sc_action_from_sdl_keyboard_type(uint32_t type) {
+    assert(type == SDL_KEYDOWN || type == SDL_KEYUP);
+    if (type == SDL_KEYDOWN) {
+        return SC_ACTION_DOWN;
+    }
+    return SC_ACTION_UP;
+}
+
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
 static inline uint16_t
@@ -317,7 +341,11 @@ input_manager_process_text_input(struct input_manager *im,
         return;
     }
 
-    im->kp->ops->process_text(im->kp, event);
+    struct sc_text_event evt = {
+        .text = event->text,
+    };
+
+    im->kp->ops->process_text(im->kp, &evt);
 }
 
 static bool
@@ -536,7 +564,15 @@ input_manager_process_key(struct input_manager *im,
         }
     }
 
-    im->kp->ops->process_key(im->kp, event, ack_to_wait);
+    struct sc_key_event evt = {
+        .action = sc_action_from_sdl_keyboard_type(event->type),
+        .keycode = sc_keycode_from_sdl(event->keysym.sym),
+        .scancode = sc_scancode_from_sdl(event->keysym.scancode),
+        .repeat = event->repeat,
+        .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
+    };
+
+    im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 
 static void
