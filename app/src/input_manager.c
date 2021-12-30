@@ -657,6 +657,7 @@ input_manager_process_mouse_motion(struct input_manager *im,
                                             im->forward_all_clicks),
     };
 
+    assert(im->mp->ops->process_mouse_motion);
     im->mp->ops->process_mouse_motion(im->mp, &evt);
 
     if (im->vfinger_down) {
@@ -671,6 +672,11 @@ input_manager_process_mouse_motion(struct input_manager *im,
 static void
 input_manager_process_touch(struct input_manager *im,
                             const SDL_TouchFingerEvent *event) {
+    if (!im->mp->ops->process_touch) {
+        // The mouse processor does not support touch events
+        return;
+    }
+
     int dw;
     int dh;
     SDL_GL_GetDrawableSize(im->screen->window, &dw, &dh);
@@ -764,6 +770,7 @@ input_manager_process_mouse_button(struct input_manager *im,
                                             im->forward_all_clicks),
     };
 
+    assert(im->mp->ops->process_mouse_click);
     im->mp->ops->process_mouse_click(im->mp, &evt);
 
     // Pinch-to-zoom simulation.
@@ -795,6 +802,11 @@ input_manager_process_mouse_button(struct input_manager *im,
 static void
 input_manager_process_mouse_wheel(struct input_manager *im,
                                   const SDL_MouseWheelEvent *event) {
+    if (!im->mp->ops->process_mouse_scroll) {
+        // The mouse processor does not support scroll events
+        return;
+    }
+
     // mouse_x and mouse_y are expressed in pixels relative to the window
     int mouse_x;
     int mouse_y;
