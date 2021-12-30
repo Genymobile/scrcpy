@@ -11,13 +11,17 @@
 #define HID_MOUSE_ACCESSORY_ID 2
 
 // 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position
-#define HID_MOUSE_EVENT_SIZE 3
+#define HID_MOUSE_EVENT_SIZE 4
 
 /**
  * Mouse descriptor from the specification:
  * <https://www.usb.org/sites/default/files/hid1_11.pdf>
  *
  * Appendix E (p71): §E.10 Report Descriptor (Mouse)
+ *
+ * The usage tags (like Wheel) are listed in "HID Usage Tables":
+ * <https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf>
+ * §4 Generic Desktop Page (0x01) (p26)
  */
 static const unsigned char mouse_report_desc[]  = {
     // Usage Page (Generic Desktop)
@@ -65,15 +69,17 @@ static const unsigned char mouse_report_desc[]  = {
     0x09, 0x30,
     // Usage (Y)
     0x09, 0x31,
+    // Usage (Wheel)
+    0x09, 0x38,
     // Local Minimum (-127)
     0x15, 0x81,
     // Local Maximum (127)
     0x25, 0x7F,
     // Report Size (8)
     0x75, 0x08,
-    // Report Count (2)
-    0x95, 0x02,
-    // Input (Data, Variable, Relative): 2 position bytes (X & Y)
+    // Report Count (3)
+    0x95, 0x03,
+    // Input (Data, Variable, Relative): 3 position bytes (X, Y, Wheel)
     0x81, 0x06,
 
     // End Collection
@@ -104,6 +110,8 @@ static const unsigned char mouse_report_desc[]  = {
  *                  +---------------+
  *         byte 2:  |. . . . . . . .| relative y motion
  *                  +---------------+
+ *         byte 3:  |. . . . . . . .| wheel motion (-1, 0 or 1)
+ *                  +---------------+
  *
  * As an example, here is the report for a motion of (x=5, y=-4) with left
  * button pressed:
@@ -114,6 +122,8 @@ static const unsigned char mouse_report_desc[]  = {
  *                  |0 0 0 0 0 1 0 1| horizontal motion (x = 5)
  *                  +---------------+
  *                  |1 1 1 1 1 1 0 0| relative y motion (y = -4)
+ *                  +---------------+
+ *                  |0 0 0 0 0 0 0 0| wheel motion
  *                  +---------------+
  */
 
@@ -159,6 +169,7 @@ convert_hid_mouse_motion(struct sc_hid_mouse *mouse,
     buffer[0] = buttons_state_to_hid_buttons(event->buttons_state);
     buffer[1] = CLAMP(event->xrel, -127, 127);
     buffer[2] = CLAMP(event->yrel, -127, 127);
+    buffer[3] = 0; // wheel coordinate only used for scrolling
 
     return true;
 }
