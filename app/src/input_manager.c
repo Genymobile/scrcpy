@@ -384,6 +384,11 @@ rotate_client_right(struct screen *screen) {
 static void
 input_manager_process_text_input(struct input_manager *im,
                                  const SDL_TextInputEvent *event) {
+    if (!im->kp->ops->process_text) {
+        // The key processor does not support text input
+        return;
+    }
+
     if (is_shortcut_mod(im, SDL_GetModState())) {
         // A shortcut must never generate text events
         return;
@@ -620,6 +625,7 @@ input_manager_process_key(struct input_manager *im,
         .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
     };
 
+    assert(im->kp->ops->process_key);
     im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 
