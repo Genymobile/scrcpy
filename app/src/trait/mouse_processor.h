@@ -16,6 +16,13 @@
  */
 struct sc_mouse_processor {
     const struct sc_mouse_processor_ops *ops;
+
+    /**
+     * If set, the mouse processor works in relative mode (the absolute
+     * position is irrelevant). In particular, it indicates that the mouse
+     * pointer must be "captured" by the UI.
+     */
+    bool relative_mode;
 };
 
 struct sc_mouse_processor_ops {

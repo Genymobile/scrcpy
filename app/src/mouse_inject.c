@@ -151,4 +151,6 @@ sc_mouse_inject_init(struct sc_mouse_inject *mi,
     };
 
     mi->mouse_processor.ops = &ops;
+
+    mi->mouse_processor.relative_mode = false;
 }
