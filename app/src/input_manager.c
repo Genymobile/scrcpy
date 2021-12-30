@@ -659,7 +659,11 @@ input_manager_process_mouse_motion(struct input_manager *im,
     assert(im->mp->ops->process_mouse_motion);
     im->mp->ops->process_mouse_motion(im->mp, &evt);
 
+    // vfinger must never be used in relative mode
+    assert(!im->mp->relative_mode || !im->vfinger_down);
+
     if (im->vfinger_down) {
+        assert(!im->mp->relative_mode); // assert one more time
         struct sc_point mouse =
             screen_convert_window_to_frame_coords(im->screen, event->x,
                                                   event->y);
@@ -771,6 +775,12 @@ input_manager_process_mouse_button(struct input_manager *im,
 
     assert(im->mp->ops->process_mouse_click);
     im->mp->ops->process_mouse_click(im->mp, &evt);
+
+    if (im->mp->relative_mode) {
+        assert(!im->vfinger_down); // vfinger must not be used in relative mode
+        // No pinch-to-zoom simulation
+        return;
+    }
 
     // Pinch-to-zoom simulation.
     //
