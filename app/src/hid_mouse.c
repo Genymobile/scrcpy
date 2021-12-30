@@ -163,7 +163,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 
     struct sc_hid_event hid_event;
     if (!sc_hid_mouse_event_init(&hid_event)) {
-        return false;
+        return;
     }
 
     unsigned char *buffer = hid_event.buffer;
@@ -171,10 +171,6 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     buffer[1] = CLAMP(event->xrel, -127, 127);
     buffer[2] = CLAMP(event->yrel, -127, 127);
     buffer[3] = 0; // wheel coordinates only used for scrolling
-
-    if (!convert_hid_mouse_motion(mouse, &hid_event, event)) {
-        return;
-    }
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
@@ -185,12 +181,11 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 static void
 sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_click_event *event) {
-    LOGD("button");
     struct sc_hid_mouse *mouse = DOWNCAST(mp);
 
     struct sc_hid_event hid_event;
     if (!sc_hid_mouse_event_init(&hid_event)) {
-        return false;
+        return;
     }
 
     unsigned char *buffer = hid_event.buffer;
@@ -212,17 +207,17 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
 
     struct sc_hid_event hid_event;
     if (!sc_hid_mouse_event_init(&hid_event)) {
-        return false;
+        return;
     }
 
-    LOGD("==== vscroll = %d\n", (int) event->vscroll);
-
     unsigned char *buffer = hid_event.buffer;
-    buffer[0] = buttons_state_to_hid_buttons(event->buttons_state);
+    buffer[0] = 0; // buttons state irrelevant (and unknown)
     buffer[1] = 0; // no x motion
     buffer[2] = 0; // no y motion
-    buffer[3] = event->vscroll;
-    // horizontal scrolling ignored
+    // In practice, vscroll is always -1, 0 or 1, but in theory other values
+    // are possible
+    buffer[3] = CLAMP(event->vscroll, -127, 127);
+    // Horizontal scrolling ignored
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
