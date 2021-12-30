@@ -387,15 +387,6 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     }
 }
 
-static void
-sc_key_processor_process_text(struct sc_key_processor *kp,
-                              const struct sc_text_event *event) {
-    (void) kp;
-    (void) event;
-
-    // Never forward text input via HID (all the keys are injected separately)
-}
-
 bool
 sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
@@ -415,7 +406,9 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
-        .process_text = sc_key_processor_process_text,
+        // Never forward text input via HID (all the keys are injected
+        // separately)
+        .process_text = NULL,
     };
 
     // Clipboard synchronization is requested over the control socket, while HID
