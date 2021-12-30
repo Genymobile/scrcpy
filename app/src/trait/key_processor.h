@@ -29,17 +29,24 @@ struct sc_key_processor {
 struct sc_key_processor_ops {
 
     /**
-     * Process the keyboard event
+     * Process a keyboard event
      *
      * The `sequence` number (if different from `SC_SEQUENCE_INVALID`) indicates
      * the acknowledgement number to wait for before injecting this event.
      * This allows to ensure that the device clipboard is set before injecting
      * Ctrl+v on the device.
+     *
+     * This function is mandatory.
      */
     void
     (*process_key)(struct sc_key_processor *kp,
                    const struct sc_key_event *event, uint64_t ack_to_wait);
 
+    /**
+     * Process an input text
+     *
+     * This function is optional.
+     */
     void
     (*process_text)(struct sc_key_processor *kp,
                     const struct sc_text_event *event);
