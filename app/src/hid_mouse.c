@@ -225,12 +225,6 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     }
 }
 
-static void
-sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
-                                 const struct sc_touch_event *event) {
-    struct sc_hid_mouse *mouse = DOWNCAST(mp);
-}
-
 bool
 sc_hid_mouse_init(struct sc_hid_mouse *mouse, struct sc_aoa *aoa) {
     mouse->aoa = aoa;
@@ -246,7 +240,8 @@ sc_hid_mouse_init(struct sc_hid_mouse *mouse, struct sc_aoa *aoa) {
         .process_mouse_motion = sc_mouse_processor_process_mouse_motion,
         .process_mouse_click = sc_mouse_processor_process_mouse_click,
         .process_mouse_scroll = sc_mouse_processor_process_mouse_scroll,
-        .process_touch = sc_mouse_processor_process_touch,
+        // Touch events not supported (coordinates are not relative)
+        .process_touch = NULL,
     };
 
     mouse->mouse_processor.ops = &ops;
