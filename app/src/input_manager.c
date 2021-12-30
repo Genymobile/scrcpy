@@ -775,6 +775,12 @@ input_manager_process_mouse_button(struct input_manager *im,
     assert(im->mp->ops->process_mouse_click);
     im->mp->ops->process_mouse_click(im->mp, &evt);
 
+    if (im->mp->relative_mode) {
+        assert(!im->vfinger_down); // vfinger must not be used in relative mode
+        // No pinch-to-zoom simulation
+        return;
+    }
+
     // Pinch-to-zoom simulation.
     //
     // If Ctrl is hold when the left-click button is pressed, then
