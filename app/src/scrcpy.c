@@ -582,8 +582,19 @@ aoa_hid_end:
         mp = &s->mouse_inject.mouse_processor;
     }
 
-    input_manager_init(&s->input_manager, &s->controller, &s->screen, kp, mp,
-                       options);
+    struct input_manager_params im_params = {
+        .controller = &s->controller,
+        .screen = &s->screen,
+        .kp = kp,
+        .mp = mp,
+        .control = options->control,
+        .forward_all_clicks = options->forward_all_clicks,
+        .legacy_paste = options->legacy_paste,
+        .clipboard_autosync = options->clipboard_autosync,
+        .shortcut_mods = &options->shortcut_mods,
+    };
+
+    input_manager_init(&s->input_manager, &im_params);
 
     ret = event_loop(s, options);
     LOGD("quit...");

@@ -121,24 +121,22 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 }
 
 void
-input_manager_init(struct input_manager *im, struct controller *controller,
-                   struct screen *screen, struct sc_key_processor *kp,
-                   struct sc_mouse_processor *mp,
-                   const struct scrcpy_options *options) {
-    assert(!options->control || (kp && kp->ops));
-    assert(!options->control || (mp && mp->ops));
+input_manager_init(struct input_manager *im,
+                   const struct input_manager_params *params) {
+    assert(!params->control || (params->kp && params->kp->ops));
+    assert(!params->control || (params->mp && params->mp->ops));
 
-    im->controller = controller;
-    im->screen = screen;
-    im->kp = kp;
-    im->mp = mp;
+    im->controller = params->controller;
+    im->screen = params->screen;
+    im->kp = params->kp;
+    im->mp = params->mp;
 
-    im->control = options->control;
-    im->forward_all_clicks = options->forward_all_clicks;
-    im->legacy_paste = options->legacy_paste;
-    im->clipboard_autosync = options->clipboard_autosync;
+    im->control = params->control;
+    im->forward_all_clicks = params->forward_all_clicks;
+    im->legacy_paste = params->legacy_paste;
+    im->clipboard_autosync = params->clipboard_autosync;
 
-    const struct sc_shortcut_mods *shortcut_mods = &options->shortcut_mods;
+    const struct sc_shortcut_mods *shortcut_mods = params->shortcut_mods;
     assert(shortcut_mods->count);
     assert(shortcut_mods->count < SC_MAX_SHORTCUT_MODS);
     for (unsigned i = 0; i < shortcut_mods->count; ++i) {
