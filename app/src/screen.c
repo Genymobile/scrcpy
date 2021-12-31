@@ -156,6 +156,17 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
     return window_size;
 }
 
+static inline void
+screen_capture_mouse(struct screen *screen, bool capture) {
+    if (SDL_SetRelativeMouseMode(capture)) {
+        LOGE("Could not set relative mouse mode to %s: %s",
+             capture ? "true" : "false", SDL_GetError());
+        return;
+    }
+
+    screen->mouse_captured = capture;
+}
+
 static void
 screen_update_content_rect(struct screen *screen) {
     int dw;
@@ -354,6 +365,7 @@ screen_init(struct screen *screen, const struct screen_params *params) {
     screen->fullscreen = false;
     screen->maximized = false;
     screen->event_failed = false;
+    screen->mouse_captured = false;
 
     static const struct sc_video_buffer_callbacks cbs = {
         .on_new_frame = sc_video_buffer_on_new_frame,
@@ -783,6 +795,34 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
                     apply_pending_resize(screen);
                     screen_render(screen, true);
                     break;
+                case SDL_WINDOWEVENT_FOCUS_LOST:
+                    if (screen->im.mp->relative_mode) {
+                        screen_capture_mouse(screen, false);
+                    }
+                    break;
+            }
+            return true;
+        case SDL_MOUSEWHEEL:
+        case SDL_MOUSEMOTION:
+        case SDL_MOUSEBUTTONDOWN:
+            if (screen->im.mp->relative_mode && !screen->mouse_captured) {
+                // Do not forward to input manager, the mouse will be captured
+                // on SDL_MOUSEBUTTONUP
+                return true;
+            }
+            break;
+        case SDL_FINGERMOTION:
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+            if (screen->im.mp->relative_mode) {
+                // Touch events are not compatible with relative mode
+                // (coordinates are not relative)
+                return true;
+            }
+            break;
+        case SDL_MOUSEBUTTONUP:
+            if (screen->im.mp->relative_mode && !screen->mouse_captured) {
+                screen_capture_mouse(screen, true);
             }
             return true;
     }
