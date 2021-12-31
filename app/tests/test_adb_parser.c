@@ -11,6 +11,7 @@ static void test_get_ip_single_line() {
     char *ip = sc_adb_parse_device_ip_from_output(ip_route, sizeof(ip_route));
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
+    free(ip);
 }
 
 static void test_get_ip_single_line_without_eol() {
@@ -20,6 +21,7 @@ static void test_get_ip_single_line_without_eol() {
     char *ip = sc_adb_parse_device_ip_from_output(ip_route, sizeof(ip_route));
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
+    free(ip);
 }
 
 static void test_get_ip_single_line_with_trailing_space() {
@@ -29,6 +31,7 @@ static void test_get_ip_single_line_with_trailing_space() {
     char *ip = sc_adb_parse_device_ip_from_output(ip_route, sizeof(ip_route));
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
+    free(ip);
 }
 
 static void test_get_ip_multiline_first_ok() {
@@ -40,6 +43,7 @@ static void test_get_ip_multiline_first_ok() {
     char *ip = sc_adb_parse_device_ip_from_output(ip_route, sizeof(ip_route));
     assert(ip);
     assert(!strcmp(ip, "192.168.1.2"));
+    free(ip);
 }
 
 static void test_get_ip_multiline_second_ok() {
@@ -51,6 +55,7 @@ static void test_get_ip_multiline_second_ok() {
     char *ip = sc_adb_parse_device_ip_from_output(ip_route, sizeof(ip_route));
     assert(ip);
     assert(!strcmp(ip, "192.168.1.3"));
+    free(ip);
 }
 
 static void test_get_ip_no_wlan() {
