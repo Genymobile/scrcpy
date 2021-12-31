@@ -470,6 +470,20 @@ screen_init(struct screen *screen, const struct screen_params *params) {
         goto error_destroy_texture;
     }
 
+    struct input_manager_params im_params = {
+        .controller = params->controller,
+        .screen = screen,
+        .kp = params->kp,
+        .mp = params->mp,
+        .control = params->control,
+        .forward_all_clicks = params->forward_all_clicks,
+        .legacy_paste = params->legacy_paste,
+        .clipboard_autosync = params->clipboard_autosync,
+        .shortcut_mods = params->shortcut_mods,
+    };
+
+    input_manager_init(&screen->im, &im_params);
+
     // Reset the window size to trigger a SIZE_CHANGED event, to workaround
     // HiDPI issues with some SDL renderers when several displays having
     // different HiDPI scaling are connected
@@ -773,7 +787,7 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
             return true;
     }
 
-    return false;
+    return input_manager_handle_event(&screen->im, event);
 }
 
 struct sc_point
