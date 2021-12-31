@@ -70,6 +70,7 @@ struct control_msg {
             struct sc_position position;
             int32_t hscroll;
             int32_t vscroll;
+            enum android_motionevent_buttons buttons;
         } inject_scroll_event;
         struct {
             enum android_keyevent_action action; // action for the BACK key

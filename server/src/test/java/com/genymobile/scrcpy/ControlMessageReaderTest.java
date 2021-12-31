@@ -128,6 +128,7 @@ public class ControlMessageReaderTest {
         dos.writeShort(1920);
         dos.writeInt(1);
         dos.writeInt(-1);
+        dos.writeInt(1);
 
         byte[] packet = bos.toByteArray();
 
@@ -144,6 +145,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
         Assert.assertEquals(1, event.getHScroll());
         Assert.assertEquals(-1, event.getVScroll());
+        Assert.assertEquals(1, event.getButtons());
     }
 
     @Test

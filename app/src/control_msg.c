@@ -119,7 +119,8 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
                              (uint32_t) msg->inject_scroll_event.hscroll);
             buffer_write32be(&buf[17],
                              (uint32_t) msg->inject_scroll_event.vscroll);
-            return 21;
+            buffer_write32be(&buf[21], msg->inject_scroll_event.buttons);
+            return 25;
         case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
             return 2;
@@ -192,11 +193,12 @@ control_msg_log(const struct control_msg *msg) {
         }
         case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             LOG_CMSG("scroll position=%" PRIi32 ",%" PRIi32 " hscroll=%" PRIi32
-                         " vscroll=%" PRIi32,
+                         " vscroll=%" PRIi32 " buttons=%06lx",
                      msg->inject_scroll_event.position.point.x,
                      msg->inject_scroll_event.position.point.y,
                      msg->inject_scroll_event.hscroll,
-                     msg->inject_scroll_event.vscroll);
+                     msg->inject_scroll_event.vscroll,
+                     (long) msg->inject_scroll_event.buttons);
             break;
         case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             LOG_CMSG("back-or-screen-on %s",
