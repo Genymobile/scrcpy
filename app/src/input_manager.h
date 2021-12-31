@@ -43,11 +43,22 @@ struct input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 };
 
+struct input_manager_params {
+    struct controller *controller;
+    struct screen *screen;
+    struct sc_key_processor *kp;
+    struct sc_mouse_processor *mp;
+
+    bool control;
+    bool forward_all_clicks;
+    bool legacy_paste;
+    bool clipboard_autosync;
+    const struct sc_shortcut_mods *shortcut_mods;
+};
+
 void
-input_manager_init(struct input_manager *im, struct controller *controller,
-                   struct screen *screen, struct sc_key_processor *kp,
-                   struct sc_mouse_processor *mp,
-                   const struct scrcpy_options *options);
+input_manager_init(struct input_manager *im,
+                   const struct input_manager_params *params);
 
 bool
 input_manager_handle_event(struct input_manager *im, SDL_Event *event);
