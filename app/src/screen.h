@@ -51,6 +51,8 @@ struct screen {
 
     bool event_failed; // in case SDL_PushEvent() returned an error
 
+    bool mouse_captured; // only relevant in relative mouse mode
+
     AVFrame *frame;
 };
 
