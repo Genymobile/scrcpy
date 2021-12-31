@@ -126,12 +126,13 @@ static void test_serialize_inject_scroll_event(void) {
             },
             .hscroll = 1,
             .vscroll = -1,
+            .buttons = 1,
         },
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
     size_t size = control_msg_serialize(&msg, buf);
-    assert(size == 21);
+    assert(size == 25);
 
     const unsigned char expected[] = {
         CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
@@ -139,6 +140,7 @@ static void test_serialize_inject_scroll_event(void) {
         0x04, 0x38, 0x07, 0x80, // 1080 1920
         0x00, 0x00, 0x00, 0x01, // 1
         0xFF, 0xFF, 0xFF, 0xFF, // -1
+        0x00, 0x00, 0x00, 0x01, // 1
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }

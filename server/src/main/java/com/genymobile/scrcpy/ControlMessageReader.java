@@ -10,7 +10,7 @@ public class ControlMessageReader {
 
     static final int INJECT_KEYCODE_PAYLOAD_LENGTH = 13;
     static final int INJECT_TOUCH_EVENT_PAYLOAD_LENGTH = 27;
-    static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 20;
+    static final int INJECT_SCROLL_EVENT_PAYLOAD_LENGTH = 24;
     static final int BACK_OR_SCREEN_ON_LENGTH = 1;
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int GET_CLIPBOARD_LENGTH = 1;
@@ -154,7 +154,8 @@ public class ControlMessageReader {
         Position position = readPosition(buffer);
         int hScroll = buffer.getInt();
         int vScroll = buffer.getInt();
-        return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll);
+        int buttons = buffer.getInt();
+        return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll, buttons);
     }
 
     private ControlMessage parseBackOrScreenOnEvent() {

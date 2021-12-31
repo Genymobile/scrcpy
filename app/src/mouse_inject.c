@@ -108,6 +108,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
             .position = event->position,
             .hscroll = event->hscroll,
             .vscroll = event->vscroll,
+            .buttons = convert_mouse_buttons(event->buttons_state),
         },
     };
 

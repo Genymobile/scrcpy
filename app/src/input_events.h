@@ -360,6 +360,7 @@ struct sc_mouse_scroll_event {
     struct sc_position position;
     int32_t hscroll;
     int32_t vscroll;
+    uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
 struct sc_mouse_motion_event {

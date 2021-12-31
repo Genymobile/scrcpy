@@ -71,12 +71,13 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createInjectScrollEvent(Position position, int hScroll, int vScroll) {
+    public static ControlMessage createInjectScrollEvent(Position position, int hScroll, int vScroll, int buttons) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_SCROLL_EVENT;
         msg.position = position;
         msg.hScroll = hScroll;
         msg.vScroll = vScroll;
+        msg.buttons = buttons;
         return msg;
     }
 

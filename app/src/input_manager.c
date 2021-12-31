@@ -810,7 +810,7 @@ input_manager_process_mouse_wheel(struct input_manager *im,
     // mouse_x and mouse_y are expressed in pixels relative to the window
     int mouse_x;
     int mouse_y;
-    SDL_GetMouseState(&mouse_x, &mouse_y);
+    uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
     struct sc_mouse_scroll_event evt = {
         .position = {
@@ -820,6 +820,8 @@ input_manager_process_mouse_wheel(struct input_manager *im,
         },
         .hscroll = event->x,
         .vscroll = event->y,
+        .buttons_state =
+            sc_mouse_buttons_state_from_sdl(buttons, im->forward_all_clicks),
     };
 
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
