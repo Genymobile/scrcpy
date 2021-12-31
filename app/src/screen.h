@@ -51,6 +51,11 @@ struct screen {
 
     bool event_failed; // in case SDL_PushEvent() returned an error
 
+    bool mouse_captured; // only relevant in relative mouse mode
+    // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
+    // RGUI) must be pressed. This variable tracks the pressed capture key.
+    SDL_Keycode mouse_capture_key_pressed;
+
     AVFrame *frame;
 };
 
