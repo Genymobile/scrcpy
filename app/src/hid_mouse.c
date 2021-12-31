@@ -43,24 +43,24 @@ static const unsigned char mouse_report_desc[]  = {
 
     // Usage Minimum (1)
     0x19, 0x01,
-     // Usage Maximum (3)
-    0x29, 0x03,
+     // Usage Maximum (5)
+    0x29, 0x05,
     // Logical Minimum (0)
     0x15, 0x00,
     // Logical Maximum (1)
     0x25, 0x01,
-    // Report Count (3)
-    0x95, 0x03,
+    // Report Count (5)
+    0x95, 0x05,
     // Report Size (1)
     0x75, 0x01,
-    // Input (Data, Variable, Absolute): 3 buttons bits
+    // Input (Data, Variable, Absolute): 5 buttons bits
     0x81, 0x02,
 
     // Report Count (1)
     0x95, 0x01,
-    // Report Size (5)
-    0x75, 0x05,
-    // Input (Constant): 5 bits padding
+    // Report Size (3)
+    0x75, 0x03,
+    // Input (Constant): 3 bits padding
     0x81, 0x01,
 
     // Usage Page (Generic Desktop)
@@ -98,12 +98,14 @@ static const unsigned char mouse_report_desc[]  = {
  *
  *                   7 6 5 4 3 2 1 0
  *                  +---------------+
- *         byte 0:  |0 0 0 0 0 . . .| buttons state
+ *         byte 0:  |0 0 0 . . . . .| buttons state
  *                  +---------------+
- *                             ^ ^ ^
- *                             | | `- left button
- *                             | `--- right button
- *                             `----- middle button
+ *                         ^ ^ ^ ^ ^
+ *                         | | | | `- left button
+ *                         | | | `--- right button
+ *                         | | `----- middle button
+ *                         | `------- button 4
+ *                         `--------- button 5
  *
  *                  +---------------+
  *         byte 1:  |. . . . . . . .| relative x motion
@@ -152,7 +154,12 @@ buttons_state_to_hid_buttons(uint8_t buttons_state) {
     if (buttons_state & SC_MOUSE_BUTTON_MIDDLE) {
         c |= 1 << 2;
     }
-    // TODO buttons 4 and 5?
+    if (buttons_state & SC_MOUSE_BUTTON_X1) {
+        c |= 1 << 3;
+    }
+    if (buttons_state & SC_MOUSE_BUTTON_X2) {
+        c |= 1 << 4;
+    }
     return c;
 }
 
