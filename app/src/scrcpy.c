@@ -17,7 +17,6 @@
 #include "decoder.h"
 #include "events.h"
 #include "file_handler.h"
-#include "input_manager.h"
 #ifdef HAVE_AOA_HID
 # include "hid_keyboard.h"
 #endif
@@ -57,7 +56,6 @@ struct scrcpy {
 #endif
     };
     struct sc_mouse_inject mouse_inject;
-    struct input_manager input_manager;
 };
 
 static inline void
@@ -189,11 +187,6 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
     }
 
     bool consumed = screen_handle_event(&s->screen, event);
-    if (consumed) {
-        goto end;
-    }
-
-    consumed = input_manager_handle_event(&s->input_manager, event);
     (void) consumed;
 
 end:
@@ -450,6 +443,9 @@ scrcpy(struct scrcpy_options *options) {
         stream_add_sink(&s->stream, &rec->packet_sink);
     }
 
+    struct sc_key_processor *kp = NULL;
+    struct sc_mouse_processor *mp = NULL;
+
     if (options->control) {
 #ifdef HAVE_AOA_HID
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
@@ -481,59 +477,7 @@ scrcpy(struct scrcpy_options *options) {
                 LOGW("Could not request 'set screen power mode'");
             }
         }
-    }
 
-    if (options->display) {
-        const char *window_title =
-            options->window_title ? options->window_title : info->device_name;
-
-        struct screen_params screen_params = {
-            .window_title = window_title,
-            .frame_size = info->frame_size,
-            .always_on_top = options->always_on_top,
-            .window_x = options->window_x,
-            .window_y = options->window_y,
-            .window_width = options->window_width,
-            .window_height = options->window_height,
-            .window_borderless = options->window_borderless,
-            .rotation = options->rotation,
-            .mipmaps = options->mipmaps,
-            .fullscreen = options->fullscreen,
-            .buffering_time = options->display_buffer,
-        };
-
-        if (!screen_init(&s->screen, &screen_params)) {
-            goto end;
-        }
-        screen_initialized = true;
-
-        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
-    }
-
-#ifdef HAVE_V4L2
-    if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
-                               info->frame_size, options->v4l2_buffer)) {
-            goto end;
-        }
-
-        decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
-
-        v4l2_sink_initialized = true;
-    }
-#endif
-
-    // now we consumed the header values, the socket receives the video stream
-    // start the stream
-    if (!stream_start(&s->stream)) {
-        goto end;
-    }
-    stream_started = true;
-
-    struct sc_key_processor *kp = NULL;
-    struct sc_mouse_processor *mp = NULL;
-
-    if (options->control) {
 #ifdef HAVE_AOA_HID
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
             bool aoa_hid_ok = false;
@@ -582,19 +526,60 @@ aoa_hid_end:
         mp = &s->mouse_inject.mouse_processor;
     }
 
-    struct input_manager_params im_params = {
-        .controller = &s->controller,
-        .screen = &s->screen,
-        .kp = kp,
-        .mp = mp,
-        .control = options->control,
-        .forward_all_clicks = options->forward_all_clicks,
-        .legacy_paste = options->legacy_paste,
-        .clipboard_autosync = options->clipboard_autosync,
-        .shortcut_mods = &options->shortcut_mods,
-    };
+    if (options->display) {
+        const char *window_title =
+            options->window_title ? options->window_title : info->device_name;
 
-    input_manager_init(&s->input_manager, &im_params);
+        struct screen_params screen_params = {
+            .controller = &s->controller,
+            .kp = kp,
+            .mp = mp,
+            .control = options->control,
+            .forward_all_clicks = options->forward_all_clicks,
+            .legacy_paste = options->legacy_paste,
+            .clipboard_autosync = options->clipboard_autosync,
+            .shortcut_mods = &options->shortcut_mods,
+            .window_title = window_title,
+            .frame_size = info->frame_size,
+            .always_on_top = options->always_on_top,
+            .window_x = options->window_x,
+            .window_y = options->window_y,
+            .window_width = options->window_width,
+            .window_height = options->window_height,
+            .window_borderless = options->window_borderless,
+            .rotation = options->rotation,
+            .mipmaps = options->mipmaps,
+            .fullscreen = options->fullscreen,
+            .buffering_time = options->display_buffer,
+        };
+
+        if (!screen_init(&s->screen, &screen_params)) {
+            goto end;
+        }
+        screen_initialized = true;
+
+        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+    }
+
+#ifdef HAVE_V4L2
+    if (options->v4l2_device) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
+                               info->frame_size, options->v4l2_buffer)) {
+            goto end;
+        }
+
+        decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
+
+        v4l2_sink_initialized = true;
+    }
+#endif
+
+    // now we consumed the header values, the socket receives the video stream
+    // start the stream
+    if (!stream_start(&s->stream)) {
+        goto end;
+    }
+    stream_started = true;
 
     ret = event_loop(s, options);
     LOGD("quit...");

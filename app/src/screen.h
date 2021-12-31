@@ -7,10 +7,14 @@
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
+#include "controller.h"
 #include "coords.h"
 #include "fps_counter.h"
+#include "input_manager.h"
 #include "opengl.h"
+#include "trait/key_processor.h"
 #include "trait/frame_sink.h"
+#include "trait/mouse_processor.h"
 #include "video_buffer.h"
 
 struct screen {
@@ -20,6 +24,7 @@ struct screen {
     bool open; // track the open/close state to assert correct behavior
 #endif
 
+    struct input_manager im;
     struct sc_video_buffer vb;
     struct fps_counter fps_counter;
 
@@ -50,6 +55,16 @@ struct screen {
 };
 
 struct screen_params {
+    struct controller *controller;
+    struct sc_key_processor *kp;
+    struct sc_mouse_processor *mp;
+
+    bool control;
+    bool forward_all_clicks;
+    bool legacy_paste;
+    bool clipboard_autosync;
+    const struct sc_shortcut_mods *shortcut_mods;
+
     const char *window_title;
     struct sc_size frame_size;
     bool always_on_top;

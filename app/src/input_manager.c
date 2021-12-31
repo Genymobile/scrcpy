@@ -4,6 +4,7 @@
 #include <SDL2/SDL_keycode.h>
 
 #include "input_events.h"
+#include "screen.h"
 #include "util/log.h"
 
 static inline uint16_t
