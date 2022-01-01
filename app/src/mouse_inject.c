@@ -58,6 +58,11 @@ convert_touch_action(enum sc_touch_action action) {
 static void
 sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
+    if (!event->buttons_state) {
+        // Do not send motion events when no click is pressed
+        return;
+    }
+
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
     struct control_msg msg = {
