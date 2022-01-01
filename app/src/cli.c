@@ -240,11 +240,8 @@ static const struct sc_option options[] = {
     {
         .shortopt = 'N',
         .longopt = "no-display",
-        .text = "Do not display device (only when screen recording "
-#ifdef HAVE_V4L2
-                "or V4L2 sink "
-#endif
-                "is enabled).",
+        .text = "Do not display device (only when screen recording or V4L2 "
+                "sink is enabled).",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -381,14 +378,14 @@ static const struct sc_option options[] = {
                 "Default is 0 (not forced): the local port used for "
                 "establishing the tunnel will be used.",
     },
-#ifdef HAVE_V4L2
     {
         .longopt_id = OPT_V4L2_SINK,
         .longopt = "v4l2-sink",
         .argdesc = "/dev/videoN",
         .text = "Output to v4l2loopback device.\n"
                 "It requires to lock the video orientation (see "
-                "--lock-video-orientation).",
+                "--lock-video-orientation).\n"
+                "This feature is only available on Linux.",
     },
     {
         .longopt_id = OPT_V4L2_BUFFER,
@@ -398,9 +395,9 @@ static const struct sc_option options[] = {
                 "frames. This increases latency to compensate for jitter.\n"
                 "This option is similar to --display-buffer, but specific to "
                 "V4L2 sink.\n"
-                "Default is 0 (no buffering).",
+                "Default is 0 (no buffering).\n"
+                "This option is only available on Linux.",
     },
-#endif
     {
         .shortopt = 'V',
         .longopt = "verbosity",
@@ -1470,16 +1467,24 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->tcpip = true;
                 opts->tcpip_dst = optarg;
                 break;
-#ifdef HAVE_V4L2
             case OPT_V4L2_SINK:
+#ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
+#else
+                LOGE("V4L2 (--v4l2-sink) is only available on Linux.");
+                return false;
+#endif
                 break;
             case OPT_V4L2_BUFFER:
+#ifdef HAVE_V4L2
                 if (!parse_buffering_time(optarg, &opts->v4l2_buffer)) {
                     return false;
                 }
-                break;
+#else
+                LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
+                return false;
 #endif
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
