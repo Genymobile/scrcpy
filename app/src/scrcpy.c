@@ -455,34 +455,10 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             acksync = &s->acksync;
-        }
-#endif
-        if (!controller_init(&s->controller, s->server.control_socket,
-                             acksync)) {
-            goto end;
-        }
-        controller_initialized = true;
 
-        if (!controller_start(&s->controller)) {
-            goto end;
-        }
-        controller_started = true;
-
-        if (options->turn_screen_off) {
-            struct control_msg msg;
-            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
-
-            if (!controller_push_msg(&s->controller, &msg)) {
-                LOGW("Could not request 'set screen power mode'");
-            }
-        }
-
-#ifdef HAVE_AOA_HID
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
             bool aoa_hid_ok = false;
 
-            bool ok = sc_aoa_init(&s->aoa, serial, acksync);
+            ok = sc_aoa_init(&s->aoa, serial, acksync);
             if (!ok) {
                 goto aoa_hid_end;
             }
@@ -524,6 +500,28 @@ aoa_hid_end:
 
         sc_mouse_inject_init(&s->mouse_inject, &s->controller);
         mp = &s->mouse_inject.mouse_processor;
+
+        if (!controller_init(&s->controller, s->server.control_socket,
+                             acksync)) {
+            goto end;
+        }
+        controller_initialized = true;
+
+        if (!controller_start(&s->controller)) {
+            goto end;
+        }
+        controller_started = true;
+
+        if (options->turn_screen_off) {
+            struct control_msg msg;
+            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
+
+            if (!controller_push_msg(&s->controller, &msg)) {
+                LOGW("Could not request 'set screen power mode'");
+            }
+        }
+
     }
 
     if (options->display) {
