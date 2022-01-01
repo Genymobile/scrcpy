@@ -809,7 +809,7 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
             }
             return true;
         case SDL_KEYDOWN:
-            if (screen->im.mp->relative_mode && screen->mouse_captured) {
+            if (screen->im.mp->relative_mode) {
                 SDL_Keycode key = event->key.keysym.sym;
                 if (screen_is_uncapture_key(key)) {
                     if (!screen->uncapture_key_pressed) {
@@ -826,15 +826,15 @@ screen_handle_event(struct screen *screen, SDL_Event *event) {
             }
             break;
         case SDL_KEYUP:
-            if (screen->im.mp->relative_mode && screen->mouse_captured) {
+            if (screen->im.mp->relative_mode) {
                 SDL_Keycode key = event->key.keysym.sym;
                 SDL_Keycode uncapture_key_pressed =
                     screen->uncapture_key_pressed;
                 screen->uncapture_key_pressed = 0;
                 if (key == uncapture_key_pressed) {
                     // An uncapture key has been pressed then released:
-                    // uncapture the mouse
-                    screen_capture_mouse(screen, false);
+                    // toggle the capture mouse mode
+                    screen_capture_mouse(screen, !screen->mouse_captured);
                     return true;
                 }
                 // Do not return, the event must be forwarded to the input
