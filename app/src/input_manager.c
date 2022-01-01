@@ -783,8 +783,9 @@ input_manager_process_mouse_button(struct input_manager *im,
     // In other words, the center of the rotation/scaling is the center of the
     // screen.
 #define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
-    if ((down && !im->vfinger_down && CTRL_PRESSED)
-            || (!down && im->vfinger_down)) {
+    if (event->button == SDL_BUTTON_LEFT &&
+            ((down && !im->vfinger_down && CTRL_PRESSED) ||
+             (!down && im->vfinger_down))) {
         struct sc_point mouse =
             screen_convert_window_to_frame_coords(im->screen, event->x,
                                                               event->y);
