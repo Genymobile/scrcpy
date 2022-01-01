@@ -1300,7 +1300,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
+#ifdef HAVE_AOA_HID
                 opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
+#else
+                LOGE("HID over AOA (-K/--hid-keyboard) is not supported on "
+                     "this platform. It is only available on Linux.");
+                return false;
+#endif
                 break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
