@@ -454,25 +454,27 @@ scrcpy(struct scrcpy_options *options) {
                 goto end;
             }
 
-            acksync = &s->acksync;
-
             ok = sc_aoa_init(&s->aoa, serial, acksync);
             if (!ok) {
+                sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
 
             if (!sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+                sc_acksync_destroy(&s->acksync);
                 sc_aoa_destroy(&s->aoa);
                 goto aoa_hid_end;
             }
 
             if (!sc_aoa_start(&s->aoa)) {
+                sc_acksync_destroy(&s->acksync);
                 sc_hid_keyboard_destroy(&s->keyboard_hid);
                 sc_aoa_destroy(&s->aoa);
                 goto aoa_hid_end;
             }
 
             kp = &s->keyboard_hid.key_processor;
+            acksync = &s->acksync;
 
             aoa_hid_initialized = true;
 
