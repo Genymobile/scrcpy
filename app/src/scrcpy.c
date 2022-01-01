@@ -534,8 +534,8 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
 #ifdef HAVE_AOA_HID
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
             bool aoa_hid_ok = false;
 
             bool ok = sc_aoa_init(&s->aoa, serial, acksync);
@@ -566,13 +566,10 @@ aoa_hid_end:
                      "(-K/--hid-keyboard ignored)");
                 options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
             }
-#else
-            LOGE("HID over AOA is not supported on this platform, "
-                 "fallback to default keyboard injection method "
-                 "(-K/--hid-keyboard ignored)");
-            options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
-#endif
         }
+#else
+        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID);
+#endif
 
         // keyboard_input_mode may have been reset if HID mode failed
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
