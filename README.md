@@ -31,6 +31,8 @@ Its features include:
  - device screen [as a webcam (V4L2)](#v4l2loopback) (Linux-only)
  - [physical keyboard simulation (HID)](#physical-keyboard-simulation-hid)
    (Linux-only)
+ - [physical mouse simulation (HID)](#physical-mouse-simulation-hid)
+   (Linux-only)
  - and more…
 
 ## Requirements
@@ -814,6 +816,35 @@ However, the option is only available when the HID keyboard is enabled (or when
 a physical keyboard is connected).
 
 [Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+
+#### Physical mouse simulation (HID)
+
+Similarly to the physical keyboard simulation, it is possible to simulate a
+physical mouse. Likewise, it only works if the device is connected by USB, and
+is currently only supported on Linux.
+
+By default, scrcpy uses Android mouse events injection, using absolute
+coordinates. By simulating a physical mouse, a mouse pointer appears on the
+Android device, and relative mouse motion, clicks and scrolls are injected.
+
+To enable this mode:
+
+```bash
+scrcpy --hid-mouse
+scrcpy -M  # short version
+```
+
+You could also add `--forward-all-clicks` to [forward all mouse
+buttons][forward_all_clicks].
+
+[forward_all_clicks]: #right-click-and-middle-click
+
+When this mode is enabled, the computer mouse is "captured" (the mouse pointer
+disappears from the computer and appears on the Android device instead).
+
+Special capture keys, either <kbd>Alt</kbd> or <kbd>Super</kbd>, toggle
+(disable or enable) the mouse capture. Use one of them to give the control of
+the mouse back to the computer.
 
 
 #### Text injection preference
