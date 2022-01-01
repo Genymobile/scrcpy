@@ -329,6 +329,7 @@ scrcpy(struct scrcpy_options *options) {
     bool stream_started = false;
 #ifdef HAVE_AOA_HID
     bool aoa_hid_initialized = false;
+    bool hid_keyboard_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -448,40 +449,52 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
 #ifdef HAVE_AOA_HID
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID) {
+        bool use_hid_keyboard =
+            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
+        if (use_hid_keyboard) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
             }
 
-            ok = sc_aoa_init(&s->aoa, serial, acksync);
+            ok = sc_aoa_init(&s->aoa, serial, &s->acksync);
             if (!ok) {
+                LOGE("Failed to enable HID over AOA");
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
 
-            if (!sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+            if (use_hid_keyboard) {
+                if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+                    hid_keyboard_initialized = true;
+                    kp = &s->keyboard_hid.key_processor;
+                } else {
+                    LOGE("Could not initialize HID keyboard");
+                }
+            }
+
+            bool need_aoa = hid_keyboard_initialized;
+
+            if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
                 sc_aoa_destroy(&s->aoa);
                 goto aoa_hid_end;
             }
 
-            if (!sc_aoa_start(&s->aoa)) {
-                sc_acksync_destroy(&s->acksync);
-                sc_hid_keyboard_destroy(&s->keyboard_hid);
-                sc_aoa_destroy(&s->aoa);
-                goto aoa_hid_end;
-            }
-
-            kp = &s->keyboard_hid.key_processor;
             acksync = &s->acksync;
 
             aoa_hid_initialized = true;
 
 aoa_hid_end:
             if (!aoa_hid_initialized) {
-                LOGE("Failed to enable HID over AOA, "
-                     "fallback to default keyboard injection method "
+                if (hid_keyboard_initialized) {
+                    sc_hid_keyboard_destroy(&s->keyboard_hid);
+                    hid_keyboard_initialized = false;
+                }
+            }
+
+            if (use_hid_keyboard && !hid_keyboard_initialized) {
+                LOGE("Fallback to default keyboard injection method "
                      "(-K/--hid-keyboard ignored)");
                 options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
             }
@@ -590,7 +603,9 @@ end:
     // end-of-stream
 #ifdef HAVE_AOA_HID
     if (aoa_hid_initialized) {
-        sc_hid_keyboard_destroy(&s->keyboard_hid);
+        if (hid_keyboard_initialized) {
+            sc_hid_keyboard_destroy(&s->keyboard_hid);
+        }
         sc_aoa_stop(&s->aoa);
     }
     if (acksync) {
