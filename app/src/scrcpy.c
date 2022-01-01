@@ -456,8 +456,6 @@ scrcpy(struct scrcpy_options *options) {
 
             acksync = &s->acksync;
 
-            bool aoa_hid_ok = false;
-
             ok = sc_aoa_init(&s->aoa, serial, acksync);
             if (!ok) {
                 goto aoa_hid_end;
@@ -474,13 +472,12 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            aoa_hid_ok = true;
             kp = &s->keyboard_hid.key_processor;
 
             aoa_hid_initialized = true;
 
 aoa_hid_end:
-            if (!aoa_hid_ok) {
+            if (!aoa_hid_initialized) {
                 LOGE("Failed to enable HID over AOA, "
                      "fallback to default keyboard injection method "
                      "(-K/--hid-keyboard ignored)");
