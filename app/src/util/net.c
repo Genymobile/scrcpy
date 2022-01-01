@@ -83,6 +83,7 @@ unwrap(sc_socket socket) {
 #endif
 }
 
+#ifndef HAVE_SOCK_CLOEXEC // avoid unused-function warning
 static inline bool
 sc_raw_socket_close(sc_raw_socket raw_sock) {
 #ifndef _WIN32
@@ -91,6 +92,7 @@ sc_raw_socket_close(sc_raw_socket raw_sock) {
     return !closesocket(raw_sock);
 #endif
 }
+#endif
 
 #ifndef HAVE_SOCK_CLOEXEC
 // If SOCK_CLOEXEC does not exist, the flag must be set manually once the
