@@ -336,6 +336,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_AOA_HID
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
+    bool hid_mouse_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -457,7 +458,9 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_AOA_HID
         bool use_hid_keyboard =
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
-        if (use_hid_keyboard) {
+        bool use_hid_mouse =
+            options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
+        if (use_hid_keyboard || use_hid_mouse) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
@@ -479,7 +482,16 @@ scrcpy(struct scrcpy_options *options) {
                 }
             }
 
-            bool need_aoa = hid_keyboard_initialized;
+            if (use_hid_mouse) {
+                if (sc_hid_mouse_init(&s->mouse_hid, &s->aoa)) {
+                    hid_mouse_initialized = true;
+                    mp = &s->mouse_hid.mouse_processor;
+                } else {
+                    LOGE("Could not initialized HID mouse");
+                }
+            }
+
+            bool need_aoa = hid_keyboard_initialized || hid_mouse_initialized;
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
@@ -497,6 +509,10 @@ aoa_hid_end:
                     sc_hid_keyboard_destroy(&s->keyboard_hid);
                     hid_keyboard_initialized = false;
                 }
+                if (hid_mouse_initialized) {
+                    sc_hid_mouse_destroy(&s->mouse_hid);
+                    hid_mouse_initialized = false;
+                }
             }
 
             if (use_hid_keyboard && !hid_keyboard_initialized) {
@@ -504,9 +520,16 @@ aoa_hid_end:
                      "(-K/--hid-keyboard ignored)");
                 options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
             }
+
+            if (use_hid_mouse && !hid_mouse_initialized) {
+                LOGE("Fallback to default mouse injection method "
+                     "(-M/--hid-mouse ignored)");
+                options->mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT;
+            }
         }
 #else
         assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID);
+        assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_HID);
 #endif
 
         // keyboard_input_mode may have been reset if HID mode failed
@@ -516,8 +539,11 @@ aoa_hid_end:
             kp = &s->keyboard_inject.key_processor;
         }
 
-        sc_mouse_inject_init(&s->mouse_inject, &s->controller);
-        mp = &s->mouse_inject.mouse_processor;
+        // mouse_input_mode may have been reset if HID mode failed
+        if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_INJECT) {
+            sc_mouse_inject_init(&s->mouse_inject, &s->controller);
+            mp = &s->mouse_inject.mouse_processor;
+        }
 
         if (!controller_init(&s->controller, s->server.control_socket,
                              acksync)) {
