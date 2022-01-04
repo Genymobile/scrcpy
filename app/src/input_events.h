@@ -54,7 +54,6 @@ enum sc_mod {
 
     SC_MOD_NUM = KMOD_NUM,
     SC_MOD_CAPS = KMOD_CAPS,
-    SC_MOD_SCROLL = KMOD_SCROLL,
 };
 
 enum sc_action {
