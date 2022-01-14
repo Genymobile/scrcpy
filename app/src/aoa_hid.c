@@ -343,8 +343,8 @@ run_aoa_thread(void *data) {
 
         if (ack_to_wait != SC_SEQUENCE_INVALID) {
             LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
-            // Do not block the loop indefinitely if the ack never comes (it should
-            // never happen)
+            // Do not block the loop indefinitely if the ack never comes (it
+            // should never happen)
             sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
             enum sc_acksync_wait_result result =
                 sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
