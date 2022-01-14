@@ -325,10 +325,11 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
 void
 sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
                         struct controller *controller,
-                        const struct scrcpy_options *options) {
+                        enum sc_key_inject_mode key_inject_mode,
+                        bool forward_key_repeat) {
     ki->controller = controller;
-    ki->key_inject_mode = options->key_inject_mode;
-    ki->forward_key_repeat = options->forward_key_repeat;
+    ki->key_inject_mode = key_inject_mode;
+    ki->forward_key_repeat = forward_key_repeat;
 
     ki->repeat = 0;
 

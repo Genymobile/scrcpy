@@ -25,6 +25,7 @@ struct sc_keyboard_inject {
 void
 sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
                         struct controller *controller,
-                        const struct scrcpy_options *options);
+                        enum sc_key_inject_mode key_inject_mode,
+                        bool forward_key_repeat);
 
 #endif

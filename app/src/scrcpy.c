@@ -535,7 +535,8 @@ aoa_hid_end:
         // keyboard_input_mode may have been reset if HID mode failed
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
             sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
-                                    options);
+                                    options->key_inject_mode,
+                                    options->forward_key_repeat);
             kp = &s->keyboard_inject.key_processor;
         }
 
