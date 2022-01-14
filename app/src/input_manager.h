@@ -13,7 +13,7 @@
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"
 
-struct input_manager {
+struct sc_input_manager {
     struct controller *controller;
     struct sc_screen *screen;
 
@@ -42,7 +42,7 @@ struct input_manager {
     uint64_t next_sequence; // used for request acknowledgements
 };
 
-struct input_manager_params {
+struct sc_input_manager_params {
     struct controller *controller;
     struct sc_screen *screen;
     struct sc_key_processor *kp;
@@ -56,10 +56,10 @@ struct input_manager_params {
 };
 
 void
-input_manager_init(struct input_manager *im,
-                   const struct input_manager_params *params);
+sc_input_manager_init(struct sc_input_manager *im,
+                      const struct sc_input_manager_params *params);
 
 bool
-input_manager_handle_event(struct input_manager *im, SDL_Event *event);
+sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event);
 
 #endif

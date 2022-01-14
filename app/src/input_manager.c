@@ -106,7 +106,7 @@ to_sdl_mod(unsigned shortcut_mod) {
 }
 
 static bool
-is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
+is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
     // keep only the relevant modifier keys
     sdl_mod &= SC_SDL_SHORTCUT_MODS_MASK;
 
@@ -122,8 +122,8 @@ is_shortcut_mod(struct input_manager *im, uint16_t sdl_mod) {
 }
 
 void
-input_manager_init(struct input_manager *im,
-                   const struct input_manager_params *params) {
+sc_input_manager_init(struct sc_input_manager *im,
+                      const struct sc_input_manager_params *params) {
     assert(!params->control || (params->kp && params->kp->ops));
     assert(!params->control || (params->mp && params->mp->ops));
 
@@ -381,8 +381,8 @@ rotate_client_right(struct sc_screen *screen) {
 }
 
 static void
-input_manager_process_text_input(struct input_manager *im,
-                                 const SDL_TextInputEvent *event) {
+sc_input_manager_process_text_input(struct sc_input_manager *im,
+                                    const SDL_TextInputEvent *event) {
     if (!im->kp->ops->process_text) {
         // The key processor does not support text input
         return;
@@ -401,7 +401,7 @@ input_manager_process_text_input(struct input_manager *im,
 }
 
 static bool
-simulate_virtual_finger(struct input_manager *im,
+simulate_virtual_finger(struct sc_input_manager *im,
                         enum android_motionevent_action action,
                         struct sc_point point) {
     bool up = action == AMOTION_EVENT_ACTION_UP;
@@ -431,8 +431,8 @@ inverse_point(struct sc_point point, struct sc_size size) {
 }
 
 static void
-input_manager_process_key(struct input_manager *im,
-                          const SDL_KeyboardEvent *event) {
+sc_input_manager_process_key(struct sc_input_manager *im,
+                             const SDL_KeyboardEvent *event) {
     // control: indicates the state of the command-line option --no-control
     bool control = im->control;
 
@@ -629,8 +629,8 @@ input_manager_process_key(struct input_manager *im,
 }
 
 static void
-input_manager_process_mouse_motion(struct input_manager *im,
-                                   const SDL_MouseMotionEvent *event) {
+sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
+                                      const SDL_MouseMotionEvent *event) {
 
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
@@ -668,8 +668,8 @@ input_manager_process_mouse_motion(struct input_manager *im,
 }
 
 static void
-input_manager_process_touch(struct input_manager *im,
-                            const SDL_TouchFingerEvent *event) {
+sc_input_manager_process_touch(struct sc_input_manager *im,
+                               const SDL_TouchFingerEvent *event) {
     if (!im->mp->ops->process_touch) {
         // The mouse processor does not support touch events
         return;
@@ -698,8 +698,8 @@ input_manager_process_touch(struct input_manager *im,
 }
 
 static void
-input_manager_process_mouse_button(struct input_manager *im,
-                                   const SDL_MouseButtonEvent *event) {
+sc_input_manager_process_mouse_button(struct sc_input_manager *im,
+                                      const SDL_MouseButtonEvent *event) {
     bool control = im->control;
 
     if (event->which == SDL_TOUCH_MOUSEID) {
@@ -807,8 +807,8 @@ input_manager_process_mouse_button(struct input_manager *im,
 }
 
 static void
-input_manager_process_mouse_wheel(struct input_manager *im,
-                                  const SDL_MouseWheelEvent *event) {
+sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
+                                     const SDL_MouseWheelEvent *event) {
     if (!im->mp->ops->process_mouse_scroll) {
         // The mouse processor does not support scroll events
         return;
@@ -835,42 +835,42 @@ input_manager_process_mouse_wheel(struct input_manager *im,
 }
 
 bool
-input_manager_handle_event(struct input_manager *im, SDL_Event *event) {
+sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
     switch (event->type) {
         case SDL_TEXTINPUT:
             if (!im->control) {
                 return true;
             }
-            input_manager_process_text_input(im, &event->text);
+            sc_input_manager_process_text_input(im, &event->text);
             return true;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
-            input_manager_process_key(im, &event->key);
+            sc_input_manager_process_key(im, &event->key);
             return true;
         case SDL_MOUSEMOTION:
             if (!im->control) {
                 break;
             }
-            input_manager_process_mouse_motion(im, &event->motion);
+            sc_input_manager_process_mouse_motion(im, &event->motion);
             return true;
         case SDL_MOUSEWHEEL:
             if (!im->control) {
                 break;
             }
-            input_manager_process_mouse_wheel(im, &event->wheel);
+            sc_input_manager_process_mouse_wheel(im, &event->wheel);
             return true;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
             // some mouse events do not interact with the device, so process
             // the event even if control is disabled
-            input_manager_process_mouse_button(im, &event->button);
+            sc_input_manager_process_mouse_button(im, &event->button);
             return true;
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
-            input_manager_process_touch(im, &event->tfinger);
+            sc_input_manager_process_touch(im, &event->tfinger);
             return true;
     }
 

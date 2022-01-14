@@ -24,7 +24,7 @@ struct sc_screen {
     bool open; // track the open/close state to assert correct behavior
 #endif
 
-    struct input_manager im;
+    struct sc_input_manager im;
     struct sc_video_buffer vb;
     struct fps_counter fps_counter;
 

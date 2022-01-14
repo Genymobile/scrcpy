@@ -484,7 +484,7 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_texture;
     }
 
-    struct input_manager_params im_params = {
+    struct sc_input_manager_params im_params = {
         .controller = params->controller,
         .screen = screen,
         .kp = params->kp,
@@ -496,7 +496,7 @@ sc_screen_init(struct sc_screen *screen,
         .shortcut_mods = params->shortcut_mods,
     };
 
-    input_manager_init(&screen->im, &im_params);
+    sc_input_manager_init(&screen->im, &im_params);
 
     // Reset the window size to trigger a SIZE_CHANGED event, to workaround
     // HiDPI issues with some SDL renderers when several displays having
@@ -866,7 +866,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
             }
     }
 
-    return input_manager_handle_event(&screen->im, event);
+    return sc_input_manager_handle_event(&screen->im, event);
 }
 
 struct sc_point
