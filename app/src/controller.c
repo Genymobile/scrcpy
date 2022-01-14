@@ -38,9 +38,9 @@ sc_controller_destroy(struct sc_controller *controller) {
     sc_cond_destroy(&controller->msg_cond);
     sc_mutex_destroy(&controller->mutex);
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     while (cbuf_take(&controller->queue, &msg)) {
-        control_msg_destroy(&msg);
+        sc_control_msg_destroy(&msg);
     }
 
     receiver_destroy(&controller->receiver);
@@ -48,9 +48,9 @@ sc_controller_destroy(struct sc_controller *controller) {
 
 bool
 sc_controller_push_msg(struct sc_controller *controller,
-                       const struct control_msg *msg) {
+                       const struct sc_control_msg *msg) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
-        control_msg_log(msg);
+        sc_control_msg_log(msg);
     }
 
     sc_mutex_lock(&controller->mutex);
@@ -64,9 +64,10 @@ sc_controller_push_msg(struct sc_controller *controller,
 }
 
 static bool
-process_msg(struct sc_controller *controller, const struct control_msg *msg) {
+process_msg(struct sc_controller *controller,
+            const struct sc_control_msg *msg) {
     static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
-    size_t length = control_msg_serialize(msg, serialized_msg);
+    size_t length = sc_control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
     }
@@ -89,14 +90,14 @@ run_controller(void *data) {
             sc_mutex_unlock(&controller->mutex);
             break;
         }
-        struct control_msg msg;
+        struct sc_control_msg msg;
         bool non_empty = cbuf_take(&controller->queue, &msg);
         assert(non_empty);
         (void) non_empty;
         sc_mutex_unlock(&controller->mutex);
 
         bool ok = process_msg(controller, &msg);
-        control_msg_destroy(&msg);
+        sc_control_msg_destroy(&msg);
         if (!ok) {
             LOGD("Could not write msg to socket");
             break;

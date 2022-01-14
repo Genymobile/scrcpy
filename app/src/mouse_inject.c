@@ -65,7 +65,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
             .action = AMOTION_EVENT_ACTION_MOVE,
@@ -86,7 +86,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_click_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
             .action = convert_mouse_action(event->action),
@@ -107,7 +107,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         .inject_scroll_event = {
             .position = event->position,
@@ -127,7 +127,7 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
                                  const struct sc_touch_event *event) {
     struct sc_mouse_inject *mi = DOWNCAST(mp);
 
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
             .action = convert_touch_action(event->action),

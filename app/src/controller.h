@@ -12,7 +12,7 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-struct sc_control_msg_queue CBUF(struct control_msg, 64);
+struct sc_control_msg_queue CBUF(struct sc_control_msg, 64);
 
 struct sc_controller {
     sc_socket control_socket;
@@ -42,6 +42,6 @@ sc_controller_join(struct sc_controller *controller);
 
 bool
 sc_controller_push_msg(struct sc_controller *controller,
-                       const struct control_msg *msg);
+                       const struct sc_control_msg *msg);
 
 #endif

@@ -89,7 +89,7 @@ to_fixed_point_16(float f) {
 }
 
 size_t
-control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
+sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
     buf[0] = msg->type;
     switch (msg->type) {
         case CONTROL_MSG_TYPE_INJECT_KEYCODE:
@@ -151,7 +151,7 @@ control_msg_serialize(const struct control_msg *msg, unsigned char *buf) {
 }
 
 void
-control_msg_log(const struct control_msg *msg) {
+sc_control_msg_log(const struct sc_control_msg *msg) {
 #define LOG_CMSG(fmt, ...) LOGV("input: " fmt, ## __VA_ARGS__)
     switch (msg->type) {
         case CONTROL_MSG_TYPE_INJECT_KEYCODE:
@@ -237,7 +237,7 @@ control_msg_log(const struct control_msg *msg) {
 }
 
 void
-control_msg_destroy(struct control_msg *msg) {
+sc_control_msg_destroy(struct sc_control_msg *msg) {
     switch (msg->type) {
         case CONTROL_MSG_TYPE_INJECT_TEXT:
             free(msg->inject_text.text);

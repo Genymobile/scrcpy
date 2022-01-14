@@ -160,7 +160,7 @@ static void
 send_keycode(struct sc_controller *controller, enum android_keycode keycode,
              enum sc_action action, const char *name) {
     // send DOWN event
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
     msg.inject_keycode.action = action == SC_ACTION_DOWN
                               ? AKEY_EVENT_ACTION_DOWN
@@ -214,7 +214,7 @@ action_menu(struct sc_controller *controller, enum sc_action action) {
 static void
 press_back_or_turn_screen_on(struct sc_controller *controller,
                              enum sc_action action) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
     msg.back_or_screen_on.action = action == SC_ACTION_DOWN
                                  ? AKEY_EVENT_ACTION_DOWN
@@ -227,7 +227,7 @@ press_back_or_turn_screen_on(struct sc_controller *controller,
 
 static void
 expand_notification_panel(struct sc_controller *controller) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -237,7 +237,7 @@ expand_notification_panel(struct sc_controller *controller) {
 
 static void
 expand_settings_panel(struct sc_controller *controller) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -247,7 +247,7 @@ expand_settings_panel(struct sc_controller *controller) {
 
 static void
 collapse_panels(struct sc_controller *controller) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_COLLAPSE_PANELS;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -258,7 +258,7 @@ collapse_panels(struct sc_controller *controller) {
 static bool
 get_device_clipboard(struct sc_controller *controller,
                      enum get_clipboard_copy_key copy_key) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
     msg.get_clipboard.copy_key = copy_key;
 
@@ -286,7 +286,7 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
         return false;
     }
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
     msg.set_clipboard.sequence = sequence;
     msg.set_clipboard.text = text_dup;
@@ -304,7 +304,7 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
 static void
 set_screen_power_mode(struct sc_controller *controller,
                       enum screen_power_mode mode) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
     msg.set_screen_power_mode.mode = mode;
 
@@ -349,7 +349,7 @@ clipboard_paste(struct sc_controller *controller) {
         return;
     }
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = text_dup;
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -360,7 +360,7 @@ clipboard_paste(struct sc_controller *controller) {
 
 static void
 rotate_device(struct sc_controller *controller) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_ROTATE_DEVICE;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -406,7 +406,7 @@ simulate_virtual_finger(struct sc_input_manager *im,
                         struct sc_point point) {
     bool up = action == AMOTION_EVENT_ACTION_UP;
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     msg.inject_touch_event.action = action;
     msg.inject_touch_event.position.screen_size = im->screen->frame_size;

@@ -20,7 +20,7 @@
 #define POINTER_ID_MOUSE UINT64_C(-1)
 #define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2)
 
-enum control_msg_type {
+enum sc_control_msg_type {
     CONTROL_MSG_TYPE_INJECT_KEYCODE,
     CONTROL_MSG_TYPE_INJECT_TEXT,
     CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -47,8 +47,8 @@ enum get_clipboard_copy_key {
     GET_CLIPBOARD_COPY_KEY_CUT,
 };
 
-struct control_msg {
-    enum control_msg_type type;
+struct sc_control_msg {
+    enum sc_control_msg_type type;
     union {
         struct {
             enum android_keyevent_action action;
@@ -93,12 +93,12 @@ struct control_msg {
 // buf size must be at least CONTROL_MSG_MAX_SIZE
 // return the number of bytes written
 size_t
-control_msg_serialize(const struct control_msg *msg, unsigned char *buf);
+sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf);
 
 void
-control_msg_log(const struct control_msg *msg);
+sc_control_msg_log(const struct sc_control_msg *msg);
 
 void
-control_msg_destroy(struct control_msg *msg);
+sc_control_msg_destroy(struct sc_control_msg *msg);
 
 #endif

@@ -246,7 +246,7 @@ convert_meta_state(uint16_t mod) {
 }
 
 static bool
-convert_input_key(const struct sc_key_event *event, struct control_msg *msg,
+convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
                   enum sc_key_inject_mode key_inject_mode, uint32_t repeat) {
     msg->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
@@ -282,7 +282,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
         ki->repeat = 0;
     }
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     if (convert_input_key(event, &msg, ki->key_inject_mode, ki->repeat)) {
         if (!sc_controller_push_msg(ki->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
@@ -309,7 +309,7 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
         }
     }
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = strdup(event->text);
     if (!msg.inject_text.text) {

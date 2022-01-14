@@ -6,7 +6,7 @@
 #include "control_msg.h"
 
 static void test_serialize_inject_keycode(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_KEYCODE,
         .inject_keycode = {
             .action = AKEY_EVENT_ACTION_UP,
@@ -17,7 +17,7 @@ static void test_serialize_inject_keycode(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 14);
 
     const unsigned char expected[] = {
@@ -31,7 +31,7 @@ static void test_serialize_inject_keycode(void) {
 }
 
 static void test_serialize_inject_text(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TEXT,
         .inject_text = {
             .text = "hello, world!",
@@ -39,7 +39,7 @@ static void test_serialize_inject_text(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 18);
 
     const unsigned char expected[] = {
@@ -51,7 +51,7 @@ static void test_serialize_inject_text(void) {
 }
 
 static void test_serialize_inject_text_long(void) {
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     char text[CONTROL_MSG_INJECT_TEXT_MAX_LENGTH + 1];
     memset(text, 'a', CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
@@ -59,7 +59,7 @@ static void test_serialize_inject_text_long(void) {
     msg.inject_text.text = text;
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
     unsigned char expected[5 + CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
@@ -74,7 +74,7 @@ static void test_serialize_inject_text_long(void) {
 }
 
 static void test_serialize_inject_touch_event(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
             .action = AMOTION_EVENT_ACTION_DOWN,
@@ -95,7 +95,7 @@ static void test_serialize_inject_touch_event(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 28);
 
     const unsigned char expected[] = {
@@ -111,7 +111,7 @@ static void test_serialize_inject_touch_event(void) {
 }
 
 static void test_serialize_inject_scroll_event(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         .inject_scroll_event = {
             .position = {
@@ -131,7 +131,7 @@ static void test_serialize_inject_scroll_event(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 25);
 
     const unsigned char expected[] = {
@@ -146,7 +146,7 @@ static void test_serialize_inject_scroll_event(void) {
 }
 
 static void test_serialize_back_or_screen_on(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
         .back_or_screen_on = {
             .action = AKEY_EVENT_ACTION_UP,
@@ -154,7 +154,7 @@ static void test_serialize_back_or_screen_on(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
     const unsigned char expected[] = {
@@ -165,12 +165,12 @@ static void test_serialize_back_or_screen_on(void) {
 }
 
 static void test_serialize_expand_notification_panel(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -180,12 +180,12 @@ static void test_serialize_expand_notification_panel(void) {
 }
 
 static void test_serialize_expand_settings_panel(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -195,12 +195,12 @@ static void test_serialize_expand_settings_panel(void) {
 }
 
 static void test_serialize_collapse_panels(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {
@@ -210,7 +210,7 @@ static void test_serialize_collapse_panels(void) {
 }
 
 static void test_serialize_get_clipboard(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_GET_CLIPBOARD,
         .get_clipboard = {
             .copy_key = GET_CLIPBOARD_COPY_KEY_COPY,
@@ -218,7 +218,7 @@ static void test_serialize_get_clipboard(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
     const unsigned char expected[] = {
@@ -229,7 +229,7 @@ static void test_serialize_get_clipboard(void) {
 }
 
 static void test_serialize_set_clipboard(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_CLIPBOARD,
         .set_clipboard = {
             .sequence = UINT64_C(0x0102030405060708),
@@ -239,7 +239,7 @@ static void test_serialize_set_clipboard(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 27);
 
     const unsigned char expected[] = {
@@ -253,7 +253,7 @@ static void test_serialize_set_clipboard(void) {
 }
 
 static void test_serialize_set_clipboard_long(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_CLIPBOARD,
         .set_clipboard = {
             .sequence = UINT64_C(0x0102030405060708),
@@ -268,7 +268,7 @@ static void test_serialize_set_clipboard_long(void) {
     msg.set_clipboard.text = text;
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == CONTROL_MSG_MAX_SIZE);
 
     unsigned char expected[CONTROL_MSG_MAX_SIZE] = {
@@ -287,7 +287,7 @@ static void test_serialize_set_clipboard_long(void) {
 }
 
 static void test_serialize_set_screen_power_mode(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
         .set_screen_power_mode = {
             .mode = SCREEN_POWER_MODE_NORMAL,
@@ -295,7 +295,7 @@ static void test_serialize_set_screen_power_mode(void) {
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
     const unsigned char expected[] = {
@@ -306,12 +306,12 @@ static void test_serialize_set_screen_power_mode(void) {
 }
 
 static void test_serialize_rotate_device(void) {
-    struct control_msg msg = {
+    struct sc_control_msg msg = {
         .type = CONTROL_MSG_TYPE_ROTATE_DEVICE,
     };
 
     unsigned char buf[CONTROL_MSG_MAX_SIZE];
-    size_t size = control_msg_serialize(&msg, buf);
+    size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
     const unsigned char expected[] = {

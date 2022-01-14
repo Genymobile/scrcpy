@@ -558,7 +558,7 @@ aoa_hid_end:
         controller_started = true;
 
         if (options->turn_screen_off) {
-            struct control_msg msg;
+            struct sc_control_msg msg;
             msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
             msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
 
