@@ -76,7 +76,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse motion event'");
     }
 }
@@ -97,7 +97,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse click event'");
     }
 }
@@ -117,7 +117,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject mouse scroll event'");
     }
 }
@@ -138,14 +138,14 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(mi->controller, &msg)) {
         LOGW("Could not request 'inject touch event'");
     }
 }
 
 void
 sc_mouse_inject_init(struct sc_mouse_inject *mi,
-                     struct controller *controller) {
+                     struct sc_controller *controller) {
     mi->controller = controller;
 
     static const struct sc_mouse_processor_ops ops = {

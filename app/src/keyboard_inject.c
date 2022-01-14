@@ -284,7 +284,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct control_msg msg;
     if (convert_input_key(event, &msg, ki->key_inject_mode, ki->repeat)) {
-        if (!controller_push_msg(ki->controller, &msg)) {
+        if (!sc_controller_push_msg(ki->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }
     }
@@ -316,7 +316,7 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
         LOGW("Could not strdup input text");
         return;
     }
-    if (!controller_push_msg(ki->controller, &msg)) {
+    if (!sc_controller_push_msg(ki->controller, &msg)) {
         free(msg.inject_text.text);
         LOGW("Could not request 'inject text'");
     }
@@ -324,7 +324,7 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
 
 void
 sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
-                        struct controller *controller,
+                        struct sc_controller *controller,
                         enum sc_key_inject_mode key_inject_mode,
                         bool forward_key_repeat) {
     ki->controller = controller;

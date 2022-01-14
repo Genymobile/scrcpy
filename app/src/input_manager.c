@@ -157,7 +157,7 @@ sc_input_manager_init(struct sc_input_manager *im,
 }
 
 static void
-send_keycode(struct controller *controller, enum android_keycode keycode,
+send_keycode(struct sc_controller *controller, enum android_keycode keycode,
              enum sc_action action, const char *name) {
     // send DOWN event
     struct control_msg msg;
@@ -169,50 +169,50 @@ send_keycode(struct controller *controller, enum android_keycode keycode,
     msg.inject_keycode.metastate = 0;
     msg.inject_keycode.repeat = 0;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'inject %s'", name);
     }
 }
 
 static inline void
-action_home(struct controller *controller, enum sc_action action) {
+action_home(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_HOME, action, "HOME");
 }
 
 static inline void
-action_back(struct controller *controller, enum sc_action action) {
+action_back(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_BACK, action, "BACK");
 }
 
 static inline void
-action_app_switch(struct controller *controller, enum sc_action action) {
+action_app_switch(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
 }
 
 static inline void
-action_power(struct controller *controller, enum sc_action action) {
+action_power(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_POWER, action, "POWER");
 }
 
 static inline void
-action_volume_up(struct controller *controller, enum sc_action action) {
+action_volume_up(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_VOLUME_UP, action, "VOLUME_UP");
 }
 
 static inline void
-action_volume_down(struct controller *controller, enum sc_action action) {
+action_volume_down(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_VOLUME_DOWN, action, "VOLUME_DOWN");
 }
 
 static inline void
-action_menu(struct controller *controller, enum sc_action action) {
+action_menu(struct sc_controller *controller, enum sc_action action) {
     send_keycode(controller, AKEYCODE_MENU, action, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
-press_back_or_turn_screen_on(struct controller *controller,
+press_back_or_turn_screen_on(struct sc_controller *controller,
                              enum sc_action action) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
@@ -220,49 +220,49 @@ press_back_or_turn_screen_on(struct controller *controller,
                                  ? AKEY_EVENT_ACTION_DOWN
                                  : AKEY_EVENT_ACTION_UP;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'press back or turn screen on'");
     }
 }
 
 static void
-expand_notification_panel(struct controller *controller) {
+expand_notification_panel(struct sc_controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'expand notification panel'");
     }
 }
 
 static void
-expand_settings_panel(struct controller *controller) {
+expand_settings_panel(struct sc_controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'expand settings panel'");
     }
 }
 
 static void
-collapse_panels(struct controller *controller) {
+collapse_panels(struct sc_controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_COLLAPSE_PANELS;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'collapse notification panel'");
     }
 }
 
 static bool
-get_device_clipboard(struct controller *controller,
+get_device_clipboard(struct sc_controller *controller,
                      enum get_clipboard_copy_key copy_key) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
     msg.get_clipboard.copy_key = copy_key;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'get device clipboard'");
         return false;
     }
@@ -271,7 +271,7 @@ get_device_clipboard(struct controller *controller,
 }
 
 static bool
-set_device_clipboard(struct controller *controller, bool paste,
+set_device_clipboard(struct sc_controller *controller, bool paste,
                      uint64_t sequence) {
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -292,7 +292,7 @@ set_device_clipboard(struct controller *controller, bool paste,
     msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'set device clipboard'");
         return false;
@@ -302,13 +302,13 @@ set_device_clipboard(struct controller *controller, bool paste,
 }
 
 static void
-set_screen_power_mode(struct controller *controller,
+set_screen_power_mode(struct sc_controller *controller,
                       enum screen_power_mode mode) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
     msg.set_screen_power_mode.mode = mode;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'set screen power mode'");
     }
 }
@@ -330,7 +330,7 @@ switch_fps_counter_state(struct fps_counter *fps_counter) {
 }
 
 static void
-clipboard_paste(struct controller *controller) {
+clipboard_paste(struct sc_controller *controller) {
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -352,18 +352,18 @@ clipboard_paste(struct controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = text_dup;
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'paste clipboard'");
     }
 }
 
 static void
-rotate_device(struct controller *controller) {
+rotate_device(struct sc_controller *controller) {
     struct control_msg msg;
     msg.type = CONTROL_MSG_TYPE_ROTATE_DEVICE;
 
-    if (!controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request device rotation");
     }
 }
@@ -415,7 +415,7 @@ simulate_virtual_finger(struct sc_input_manager *im,
     msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
     msg.inject_touch_event.buttons = 0;
 
-    if (!controller_push_msg(im->controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'inject virtual finger event'");
         return false;
     }
@@ -436,7 +436,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // control: indicates the state of the command-line option --no-control
     bool control = im->control;
 
-    struct controller *controller = im->controller;
+    struct sc_controller *controller = im->controller;
 
     SDL_Keycode keycode = event->keysym.sym;
     uint16_t mod = event->keysym.mod;

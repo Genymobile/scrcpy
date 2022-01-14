@@ -43,7 +43,7 @@ struct scrcpy {
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
 #endif
-    struct controller controller;
+    struct sc_controller controller;
     struct file_handler file_handler;
 #ifdef HAVE_AOA_HID
     struct sc_aoa aoa;
@@ -546,13 +546,13 @@ aoa_hid_end:
             mp = &s->mouse_inject.mouse_processor;
         }
 
-        if (!controller_init(&s->controller, s->server.control_socket,
-                             acksync)) {
+        if (!sc_controller_init(&s->controller, s->server.control_socket,
+                                acksync)) {
             goto end;
         }
         controller_initialized = true;
 
-        if (!controller_start(&s->controller)) {
+        if (!sc_controller_start(&s->controller)) {
             goto end;
         }
         controller_started = true;
@@ -562,7 +562,7 @@ aoa_hid_end:
             msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
             msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
 
-            if (!controller_push_msg(&s->controller, &msg)) {
+            if (!sc_controller_push_msg(&s->controller, &msg)) {
                 LOGW("Could not request 'set screen power mode'");
             }
         }
@@ -646,7 +646,7 @@ end:
     }
 #endif
     if (controller_started) {
-        controller_stop(&s->controller);
+        sc_controller_stop(&s->controller);
     }
     if (file_handler_initialized) {
         file_handler_stop(&s->file_handler);
@@ -687,10 +687,10 @@ end:
     }
 
     if (controller_started) {
-        controller_join(&s->controller);
+        sc_controller_join(&s->controller);
     }
     if (controller_initialized) {
-        controller_destroy(&s->controller);
+        sc_controller_destroy(&s->controller);
     }
 
     if (recorder_initialized) {
