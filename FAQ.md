@@ -43,10 +43,11 @@ Check [stackoverflow][device-unauthorized].
 
 Check that you correctly enabled [adb debugging][enable-adb].
 
-If your device is not detected, you may need some [drivers] (on Windows).
+If your device is not detected, you may need some [drivers] (on Windows). There is a separate [USB driver for Google devices][google-usb-driver].
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
+[google-usb-driver]: https://developer.android.com/studio/run/win-usb
 
 
 ### Several devices connected
