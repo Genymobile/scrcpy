@@ -15,7 +15,7 @@
 
 struct input_manager {
     struct controller *controller;
-    struct screen *screen;
+    struct sc_screen *screen;
 
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
@@ -44,7 +44,7 @@ struct input_manager {
 
 struct input_manager_params {
     struct controller *controller;
-    struct screen *screen;
+    struct sc_screen *screen;
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 

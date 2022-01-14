@@ -36,7 +36,7 @@
 
 struct scrcpy {
     struct sc_server server;
-    struct screen screen;
+    struct sc_screen screen;
     struct stream stream;
     struct decoder decoder;
     struct recorder recorder;
@@ -192,7 +192,7 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
         }
     }
 
-    bool consumed = screen_handle_event(&s->screen, event);
+    bool consumed = sc_screen_handle_event(&s->screen, event);
     (void) consumed;
 
 end:
@@ -573,7 +573,7 @@ aoa_hid_end:
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
 
-        struct screen_params screen_params = {
+        struct sc_screen_params screen_params = {
             .controller = &s->controller,
             .kp = kp,
             .mp = mp,
@@ -596,7 +596,7 @@ aoa_hid_end:
             .buffering_time = options->display_buffer,
         };
 
-        if (!screen_init(&s->screen, &screen_params)) {
+        if (!sc_screen_init(&s->screen, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
@@ -629,7 +629,7 @@ aoa_hid_end:
 
     // Close the window immediately on closing, because screen_destroy() may
     // only be called once the stream thread is joined (it may take time)
-    screen_hide_window(&s->screen);
+    sc_screen_hide_window(&s->screen);
 
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
@@ -652,7 +652,7 @@ end:
         file_handler_stop(&s->file_handler);
     }
     if (screen_initialized) {
-        screen_interrupt(&s->screen);
+        sc_screen_interrupt(&s->screen);
     }
 
     if (server_started) {
@@ -682,8 +682,8 @@ end:
     // Destroy the screen only after the stream is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
     if (screen_initialized) {
-        screen_join(&s->screen);
-        screen_destroy(&s->screen);
+        sc_screen_join(&s->screen);
+        sc_screen_destroy(&s->screen);
     }
 
     if (controller_started) {

@@ -369,15 +369,15 @@ rotate_device(struct controller *controller) {
 }
 
 static void
-rotate_client_left(struct screen *screen) {
+rotate_client_left(struct sc_screen *screen) {
     unsigned new_rotation = (screen->rotation + 1) % 4;
-    screen_set_rotation(screen, new_rotation);
+    sc_screen_set_rotation(screen, new_rotation);
 }
 
 static void
-rotate_client_right(struct screen *screen) {
+rotate_client_right(struct sc_screen *screen) {
     unsigned new_rotation = (screen->rotation + 3) % 4;
-    screen_set_rotation(screen, new_rotation);
+    sc_screen_set_rotation(screen, new_rotation);
 }
 
 static void
@@ -544,17 +544,17 @@ input_manager_process_key(struct input_manager *im,
                 return;
             case SDLK_f:
                 if (!shift && !repeat && down) {
-                    screen_switch_fullscreen(im->screen);
+                    sc_screen_switch_fullscreen(im->screen);
                 }
                 return;
             case SDLK_w:
                 if (!shift && !repeat && down) {
-                    screen_resize_to_fit(im->screen);
+                    sc_screen_resize_to_fit(im->screen);
                 }
                 return;
             case SDLK_g:
                 if (!shift && !repeat && down) {
-                    screen_resize_to_pixel_perfect(im->screen);
+                    sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
             case SDLK_i:
@@ -640,8 +640,9 @@ input_manager_process_mouse_motion(struct input_manager *im,
     struct sc_mouse_motion_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
-            .point = screen_convert_window_to_frame_coords(im->screen,
-                                                           event->x, event->y),
+            .point = sc_screen_convert_window_to_frame_coords(im->screen,
+                                                              event->x,
+                                                              event->y),
         },
         .xrel = event->xrel,
         .yrel = event->yrel,
@@ -659,8 +660,8 @@ input_manager_process_mouse_motion(struct input_manager *im,
     if (im->vfinger_down) {
         assert(!im->mp->relative_mode); // assert one more time
         struct sc_point mouse =
-            screen_convert_window_to_frame_coords(im->screen, event->x,
-                                                  event->y);
+           sc_screen_convert_window_to_frame_coords(im->screen, event->x,
+                                                    event->y);
         struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
         simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
@@ -685,7 +686,8 @@ input_manager_process_touch(struct input_manager *im,
     struct sc_touch_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
-            .point = screen_convert_drawable_to_frame_coords(im->screen, x, y),
+            .point =
+                sc_screen_convert_drawable_to_frame_coords(im->screen, x, y),
         },
         .action = sc_touch_action_from_sdl(event->type),
         .pointer_id = event->fingerId,
@@ -734,13 +736,13 @@ input_manager_process_mouse_button(struct input_manager *im,
         if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
             int32_t x = event->x;
             int32_t y = event->y;
-            screen_hidpi_scale_coords(im->screen, &x, &y);
+            sc_screen_hidpi_scale_coords(im->screen, &x, &y);
             SDL_Rect *r = &im->screen->rect;
             bool outside = x < r->x || x >= r->x + r->w
                         || y < r->y || y >= r->y + r->h;
             if (outside) {
                 if (down) {
-                    screen_resize_to_fit(im->screen);
+                    sc_screen_resize_to_fit(im->screen);
                 }
                 return;
             }
@@ -757,8 +759,9 @@ input_manager_process_mouse_button(struct input_manager *im,
     struct sc_mouse_click_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
-            .point = screen_convert_window_to_frame_coords(im->screen, event->x,
-                                                           event->y),
+            .point = sc_screen_convert_window_to_frame_coords(im->screen,
+                                                              event->x,
+                                                              event->y),
         },
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
@@ -790,8 +793,8 @@ input_manager_process_mouse_button(struct input_manager *im,
             ((down && !im->vfinger_down && CTRL_PRESSED) ||
              (!down && im->vfinger_down))) {
         struct sc_point mouse =
-            screen_convert_window_to_frame_coords(im->screen, event->x,
-                                                              event->y);
+            sc_screen_convert_window_to_frame_coords(im->screen, event->x,
+                                                                 event->y);
         struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
@@ -819,8 +822,8 @@ input_manager_process_mouse_wheel(struct input_manager *im,
     struct sc_mouse_scroll_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
-            .point = screen_convert_window_to_frame_coords(im->screen,
-                                                           mouse_x, mouse_y),
+            .point = sc_screen_convert_window_to_frame_coords(im->screen,
+                                                              mouse_x, mouse_y),
         },
         .hscroll = event->x,
         .vscroll = event->y,

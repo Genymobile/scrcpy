@@ -17,7 +17,7 @@
 #include "trait/mouse_processor.h"
 #include "video_buffer.h"
 
-struct screen {
+struct sc_screen {
     struct sc_frame_sink frame_sink; // frame sink trait
 
 #ifndef NDEBUG
@@ -59,7 +59,7 @@ struct screen {
     AVFrame *frame;
 };
 
-struct screen_params {
+struct sc_screen_params {
     struct controller *controller;
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
@@ -91,65 +91,65 @@ struct screen_params {
 
 // initialize screen, create window, renderer and texture (window is hidden)
 bool
-screen_init(struct screen *screen, const struct screen_params *params);
+sc_screen_init(struct sc_screen *screen, const struct sc_screen_params *params);
 
 // request to interrupt any inner thread
 // must be called before screen_join()
 void
-screen_interrupt(struct screen *screen);
+sc_screen_interrupt(struct sc_screen *screen);
 
 // join any inner thread
 void
-screen_join(struct screen *screen);
+sc_screen_join(struct sc_screen *screen);
 
 // destroy window, renderer and texture (if any)
 void
-screen_destroy(struct screen *screen);
+sc_screen_destroy(struct sc_screen *screen);
 
 // hide the window
 //
 // It is used to hide the window immediately on closing without waiting for
 // screen_destroy()
 void
-screen_hide_window(struct screen *screen);
+sc_screen_hide_window(struct sc_screen *screen);
 
 // switch the fullscreen mode
 void
-screen_switch_fullscreen(struct screen *screen);
+sc_screen_switch_fullscreen(struct sc_screen *screen);
 
 // resize window to optimal size (remove black borders)
 void
-screen_resize_to_fit(struct screen *screen);
+sc_screen_resize_to_fit(struct sc_screen *screen);
 
 // resize window to 1:1 (pixel-perfect)
 void
-screen_resize_to_pixel_perfect(struct screen *screen);
+sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
 
 // set the display rotation (0, 1, 2 or 3, x90 degrees counterclockwise)
 void
-screen_set_rotation(struct screen *screen, unsigned rotation);
+sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation);
 
 // react to SDL events
 bool
-screen_handle_event(struct screen *screen, SDL_Event *event);
+sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event);
 
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels
 struct sc_point
-screen_convert_window_to_frame_coords(struct screen *screen,
-                                      int32_t x, int32_t y);
+sc_screen_convert_window_to_frame_coords(struct sc_screen *screen,
+                                        int32_t x, int32_t y);
 
 // convert point from drawable coordinates to frame coordinates
 // x and y are expressed in pixels
 struct sc_point
-screen_convert_drawable_to_frame_coords(struct screen *screen,
-                                        int32_t x, int32_t y);
+sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
+                                          int32_t x, int32_t y);
 
 // Convert coordinates from window to drawable.
 // Events are expressed in window coordinates, but content is expressed in
 // drawable coordinates. They are the same if HiDPI scaling is 1, but differ
 // otherwise.
 void
-screen_hidpi_scale_coords(struct screen *screen, int32_t *x, int32_t *y);
+sc_screen_hidpi_scale_coords(struct sc_screen *screen, int32_t *x, int32_t *y);
 
 #endif
