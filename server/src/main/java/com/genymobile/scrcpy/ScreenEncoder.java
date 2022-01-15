@@ -30,11 +30,11 @@ public class ScreenEncoder implements Device.RotationListener {
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
-    private String encoderName;
-    private List<CodecOption> codecOptions;
-    private int bitRate;
-    private int maxFps;
-    private boolean sendFrameMeta;
+    private final String encoderName;
+    private final List<CodecOption> codecOptions;
+    private final int bitRate;
+    private final int maxFps;
+    private final boolean sendFrameMeta;
     private long ptsOrigin;
 
     public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName) {
