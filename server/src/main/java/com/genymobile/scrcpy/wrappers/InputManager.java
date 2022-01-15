@@ -16,6 +16,7 @@ public final class InputManager {
 
     private final IInterface manager;
     private Method injectInputEventMethod;
+    boolean alternativeInjectInputEventMethod;
 
     private static Method setDisplayIdMethod;
 
@@ -25,7 +26,12 @@ public final class InputManager {
 
     private Method getInjectInputEventMethod() throws NoSuchMethodException {
         if (injectInputEventMethod == null) {
-            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            try {
+                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            } catch (NoSuchMethodException e) {
+                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class, int.class);
+                alternativeInjectInputEventMethod = true;
+            }
         }
         return injectInputEventMethod;
     }
@@ -33,6 +39,10 @@ public final class InputManager {
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
         try {
             Method method = getInjectInputEventMethod();
+            if (alternativeInjectInputEventMethod) {
+                // See <https://github.com/Genymobile/scrcpy/issues/2250>
+                return (boolean) method.invoke(manager, inputEvent, mode, 0);
+            }
             return (boolean) method.invoke(manager, inputEvent, mode);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
