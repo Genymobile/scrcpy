@@ -69,7 +69,8 @@ public final class Device {
 
         int displayInfoFlags = displayInfo.getFlags();
 
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo, options.getCrop(), options.getMaxSize(), options.getLockVideoOrientation());
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(), options.getMaxSize(),
+                options.getLockVideoOrientation());
         layerStack = displayInfo.getLayerStack();
 
         SERVICE_MANAGER.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
