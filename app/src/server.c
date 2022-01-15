@@ -188,7 +188,6 @@ execute_server(struct sc_server *server,
         } \
         cmd[count++] = p; \
     }
-#define STRBOOL(v) (v ? "true" : "false")
 
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
@@ -204,23 +203,23 @@ execute_server(struct sc_server *server,
                   params->lock_video_orientation);
     }
     if (server->tunnel.forward) {
-        ADD_PARAM("tunnel_forward=%s", STRBOOL(server->tunnel.forward));
+        ADD_PARAM("tunnel_forward=true");
     }
     if (params->crop) {
         ADD_PARAM("crop=%s", params->crop);
     }
     if (!params->control) {
         // By default, control is true
-        ADD_PARAM("control=%s", STRBOOL(params->control));
+        ADD_PARAM("control=false");
     }
     if (params->display_id) {
         ADD_PARAM("display_id=%" PRIu32, params->display_id);
     }
     if (params->show_touches) {
-        ADD_PARAM("show_touches=%s", STRBOOL(params->show_touches));
+        ADD_PARAM("show_touches=true");
     }
     if (params->stay_awake) {
-        ADD_PARAM("stay_awake=%s", STRBOOL(params->stay_awake));
+        ADD_PARAM("stay_awake=true");
     }
     if (params->codec_options) {
         ADD_PARAM("codec_options=%s", params->codec_options);
@@ -229,11 +228,11 @@ execute_server(struct sc_server *server,
         ADD_PARAM("encoder_name=%s", params->encoder_name);
     }
     if (params->power_off_on_close) {
-        ADD_PARAM("power_off_on_close=%s", STRBOOL(params->power_off_on_close));
+        ADD_PARAM("power_off_on_close=true");
     }
     if (!params->clipboard_autosync) {
         // By default, clipboard_autosync is true
-        ADD_PARAM("clipboard_autosync=%s", STRBOOL(params->clipboard_autosync));
+        ADD_PARAM("clipboard_autosync=false");
     }
 
 #undef ADD_PARAM
