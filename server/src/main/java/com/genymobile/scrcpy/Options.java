@@ -21,6 +21,7 @@ public class Options {
     private String encoderName;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
+    private boolean downsizeOnError = true;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -148,5 +149,13 @@ public class Options {
 
     public void setClipboardAutosync(boolean clipboardAutosync) {
         this.clipboardAutosync = clipboardAutosync;
+    }
+
+    public boolean getDownsizeOnError() {
+        return downsizeOnError;
+    }
+
+    public void setDownsizeOnError(boolean downsizeOnError) {
+        this.downsizeOnError = downsizeOnError;
     }
 }

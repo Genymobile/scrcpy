@@ -52,6 +52,7 @@
 #define OPT_NO_CLIPBOARD_AUTOSYNC  1032
 #define OPT_TCPIP                  1033
 #define OPT_RAW_KEY_EVENTS         1034
+#define OPT_NO_DOWNSIZE_ON_ERROR   1035
 
 struct sc_option {
     char shortopt;
@@ -235,6 +236,13 @@ static const struct sc_option options[] = {
                 "other dimension is computed so that the device aspect-ratio "
                 "is preserved.\n"
                 "Default is 0 (unlimited).",
+    },
+    {
+        .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
+        .longopt = "no-downsize-on-error",
+        .text = "By default, on MediaCodec error, scrcpy automatically tries "
+                "again with a lower definition.\n"
+                "This option disables this behavior.",
     },
     {
         .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
@@ -1488,6 +1496,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_TCPIP:
                 opts->tcpip = true;
                 opts->tcpip_dst = optarg;
+                break;
+            case OPT_NO_DOWNSIZE_ON_ERROR:
+                opts->downsize_on_error = false;
                 break;
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2

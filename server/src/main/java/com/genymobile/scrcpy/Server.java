@@ -70,7 +70,7 @@ public final class Server {
 
         try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward, control)) {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName());
+                    options.getEncoderName(), options.getDownsizeOnError());
 
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
@@ -236,6 +236,10 @@ public final class Server {
                 case "clipboard_autosync":
                     boolean clipboardAutosync = Boolean.parseBoolean(value);
                     options.setClipboardAutosync(clipboardAutosync);
+                    break;
+                case "downsize_on_error":
+                    boolean downsizeOnError = Boolean.parseBoolean(value);
+                    options.setDownsizeOnError(downsizeOnError);
                     break;
                 default:
                     Ln.w("Unknown server option: " + key);

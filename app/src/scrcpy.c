@@ -364,6 +364,7 @@ scrcpy(struct scrcpy_options *options) {
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
+        .downsize_on_error = options->downsize_on_error,
         .tcpip = options->tcpip,
         .tcpip_dst = options->tcpip_dst,
     };

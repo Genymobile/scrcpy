@@ -234,6 +234,10 @@ execute_server(struct sc_server *server,
         // By default, clipboard_autosync is true
         ADD_PARAM("clipboard_autosync=false");
     }
+    if (!params->downsize_on_error) {
+        // By default, downsize_on_error is true
+        ADD_PARAM("downsize_on_error=false");
+    }
 
 #undef ADD_PARAM
 #undef STRBOOL

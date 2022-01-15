@@ -38,14 +38,17 @@ public class ScreenEncoder implements Device.RotationListener {
     private final int bitRate;
     private final int maxFps;
     private final boolean sendFrameMeta;
+    private final boolean downsizeOnError;
     private long ptsOrigin;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName) {
+    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
+            boolean downsizeOnError) {
         this.sendFrameMeta = sendFrameMeta;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
         this.encoderName = encoderName;
+        this.downsizeOnError = downsizeOnError;
     }
 
     @Override
@@ -96,6 +99,11 @@ public class ScreenEncoder implements Device.RotationListener {
                     codec.stop();
                 } catch (Exception e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
+                    if (!downsizeOnError) {
+                        // Fail immediately
+                        throw e;
+                    }
+
                     int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
                     if (newMaxSize == 0) {
                         // Definitively fail
