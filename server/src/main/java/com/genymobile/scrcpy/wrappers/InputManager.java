@@ -16,6 +16,7 @@ public final class InputManager {
 
     private final IInterface manager;
     private Method injectInputEventMethod;
+    boolean alternativeInjectInputEventMethod = false;
 
     private static Method setDisplayIdMethod;
 
@@ -25,7 +26,13 @@ public final class InputManager {
 
     private Method getInjectInputEventMethod() throws NoSuchMethodException {
         if (injectInputEventMethod == null) {
-            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            try {
+                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            }
+            catch(NoSuchMethodException e) {
+                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class, int.class);
+                alternativeInjectInputEventMethod = true;
+            }
         }
         return injectInputEventMethod;
     }
@@ -33,11 +40,26 @@ public final class InputManager {
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
         try {
             Method method = getInjectInputEventMethod();
+            if(alternativeInjectInputEventMethod)
+                return (boolean) method.invoke(manager, inputEvent, mode, 0);
             return (boolean) method.invoke(manager, inputEvent, mode);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
-            Ln.e("Could not invoke method", e);
-            return false;
         }
+        catch(NoSuchMethodException e) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(e.getMessage());
+            sb.append("\ncandidates: ");
+            for(Method m : manager.getClass().getMethods()) {
+                if(m.getName().equals("injectInputEvent")) {
+                    sb.append("\n    ").append(m);
+                }
+            }
+            e = new NoSuchMethodException(sb.toString());
+            Ln.e("Could not invoke method", e);
+        }
+        catch (InvocationTargetException | IllegalAccessException e) {
+            Ln.e("Could not invoke method", e);
+        }
+        return false;
     }
 
     private static Method getSetDisplayIdMethod() throws NoSuchMethodException {
