@@ -42,6 +42,11 @@ public final class Device {
         void onClipboardTextChanged(String text);
     }
 
+    private final Size deviceSize;
+    private final Rect crop;
+    private final int maxSize;
+    private final int lockVideoOrientation;
+
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
     private ClipboardListener clipboardListener;
@@ -69,8 +74,12 @@ public final class Device {
 
         int displayInfoFlags = displayInfo.getFlags();
 
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(), options.getMaxSize(),
-                options.getLockVideoOrientation());
+        deviceSize = displayInfo.getSize();
+        crop = options.getCrop();
+        maxSize = options.getMaxSize();
+        lockVideoOrientation = options.getLockVideoOrientation();
+
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
         layerStack = displayInfo.getLayerStack();
 
         SERVICE_MANAGER.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
