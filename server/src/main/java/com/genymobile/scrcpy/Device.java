@@ -44,7 +44,7 @@ public final class Device {
 
     private final Size deviceSize;
     private final Rect crop;
-    private final int maxSize;
+    private int maxSize;
     private final int lockVideoOrientation;
 
     private ScreenInfo screenInfo;
@@ -131,6 +131,11 @@ public final class Device {
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
+    }
+
+    public synchronized void setMaxSize(int newMaxSize) {
+        maxSize = newMaxSize;
+        screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
     }
 
     public synchronized ScreenInfo getScreenInfo() {

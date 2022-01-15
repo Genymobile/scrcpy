@@ -25,6 +25,9 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
     private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
 
+    // Keep the values in descending order
+    private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
+
     private static final int NO_PTS = -1;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
@@ -91,6 +94,18 @@ public class ScreenEncoder implements Device.RotationListener {
                     alive = encode(codec, fd);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
+                } catch (Exception e) {
+                    Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
+                    int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
+                    if (newMaxSize == 0) {
+                        // Definitively fail
+                        throw e;
+                    }
+
+                    // Retry with a smaller device size
+                    Ln.i("Retrying with -m" + newMaxSize + "...");
+                    device.setMaxSize(newMaxSize);
+                    alive = true;
                 } finally {
                     destroyDisplay(display);
                     codec.release();
@@ -100,6 +115,18 @@ public class ScreenEncoder implements Device.RotationListener {
         } finally {
             device.setRotationListener(null);
         }
+    }
+
+    private static int chooseMaxSizeFallback(Size failedSize) {
+        int currentMaxSize = Math.max(failedSize.getWidth(), failedSize.getHeight());
+        for (int value : MAX_SIZE_FALLBACK) {
+            if (value < currentMaxSize) {
+                // We found a smaller value to reduce the video size
+                return value;
+            }
+        }
+        // No fallback, fail definitively
+        return 0;
     }
 
     private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
