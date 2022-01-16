@@ -693,6 +693,12 @@ sc_screen_update_frame(struct sc_screen *screen) {
     }
     update_texture(screen, frame);
 
+    if (!screen->has_frame) {
+        screen->has_frame = true;
+        // this is the very first frame, show the window
+        sc_screen_show_window(screen);
+    }
+
     sc_screen_render(screen, false);
     return true;
 }
@@ -763,17 +769,13 @@ sc_screen_is_mouse_capture_key(SDL_Keycode key) {
 bool
 sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
     switch (event->type) {
-        case EVENT_NEW_FRAME:
-            if (!screen->has_frame) {
-                screen->has_frame = true;
-                // this is the very first frame, show the window
-                sc_screen_show_window(screen);
-            }
+        case EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGW("Frame update failed\n");
             }
             return true;
+        }
         case SDL_WINDOWEVENT:
             if (!screen->has_frame) {
                 // Do nothing
