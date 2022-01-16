@@ -28,6 +28,15 @@ struct sc_screen {
     struct sc_video_buffer vb;
     struct fps_counter fps_counter;
 
+    // The initial requested window properties
+    struct {
+        int16_t x;
+        int16_t y;
+        uint16_t width;
+        uint16_t height;
+        bool fullscreen;
+    } req;
+
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *texture;

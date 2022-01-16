@@ -369,6 +369,12 @@ sc_screen_init(struct sc_screen *screen,
     screen->mouse_captured = false;
     screen->mouse_capture_key_pressed = 0;
 
+    screen->req.x = params->window_x;
+    screen->req.y = params->window_y;
+    screen->req.width = params->window_width;
+    screen->req.height = params->window_height;
+    screen->req.fullscreen = params->fullscreen;
+
     static const struct sc_video_buffer_callbacks cbs = {
         .on_new_frame = sc_video_buffer_on_new_frame,
     };
@@ -397,9 +403,6 @@ sc_screen_init(struct sc_screen *screen,
         get_rotated_size(screen->frame_size, screen->rotation);
     screen->content_size = content_size;
 
-    struct sc_size window_size =
-        get_initial_optimal_size(content_size,params->window_width,
-                                 params->window_height);
     uint32_t window_flags = SDL_WINDOW_HIDDEN
                           | SDL_WINDOW_RESIZABLE
                           | SDL_WINDOW_ALLOW_HIGHDPI;
@@ -410,13 +413,9 @@ sc_screen_init(struct sc_screen *screen,
         window_flags |= SDL_WINDOW_BORDERLESS;
     }
 
-    int x = params->window_x != SC_WINDOW_POSITION_UNDEFINED
-          ? params->window_x : (int) SDL_WINDOWPOS_UNDEFINED;
-    int y = params->window_y != SC_WINDOW_POSITION_UNDEFINED
-          ? params->window_y : (int) SDL_WINDOWPOS_UNDEFINED;
-    screen->window = SDL_CreateWindow(params->window_title, x, y,
-                                      window_size.width, window_size.height,
-                                      window_flags);
+    // The window will be positioned and sized on first video frame
+    screen->window =
+        SDL_CreateWindow(params->window_title, 0, 0, 0, 0, window_flags);
     if (!screen->window) {
         LOGC("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;
@@ -498,17 +497,6 @@ sc_screen_init(struct sc_screen *screen,
 
     sc_input_manager_init(&screen->im, &im_params);
 
-    // Reset the window size to trigger a SIZE_CHANGED event, to workaround
-    // HiDPI issues with some SDL renderers when several displays having
-    // different HiDPI scaling are connected
-    SDL_SetWindowSize(screen->window, window_size.width, window_size.height);
-
-    sc_screen_update_content_rect(screen);
-
-    if (params->fullscreen) {
-        sc_screen_switch_fullscreen(screen);
-    }
-
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     SDL_AddEventWatch(event_watcher, screen);
 #endif
@@ -545,7 +533,23 @@ error_destroy_video_buffer:
 }
 
 static void
-sc_screen_show_window(struct sc_screen *screen) {
+sc_screen_show_initial_window(struct sc_screen *screen) {
+    int x = screen->req.x != SC_WINDOW_POSITION_UNDEFINED
+          ? screen->req.x : (int) SDL_WINDOWPOS_CENTERED;
+    int y = screen->req.y != SC_WINDOW_POSITION_UNDEFINED
+          ? screen->req.y : (int) SDL_WINDOWPOS_CENTERED;
+
+    struct sc_size window_size =
+        get_initial_optimal_size(screen->content_size, screen->req.width,
+                                                       screen->req.height);
+
+    set_window_size(screen, window_size);
+    SDL_SetWindowPosition(screen->window, x, y);
+
+    if (screen->req.fullscreen) {
+        sc_screen_switch_fullscreen(screen);
+    }
+
     SDL_ShowWindow(screen->window);
 }
 
@@ -696,7 +700,7 @@ sc_screen_update_frame(struct sc_screen *screen) {
     if (!screen->has_frame) {
         screen->has_frame = true;
         // this is the very first frame, show the window
-        sc_screen_show_window(screen);
+        sc_screen_show_initial_window(screen);
     }
 
     sc_screen_render(screen, false);
