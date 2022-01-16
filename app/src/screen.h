@@ -74,10 +74,10 @@ struct sc_screen_params {
     struct sc_size frame_size;
     bool always_on_top;
 
-    int16_t window_x;
-    int16_t window_y;
-    uint16_t window_width;  // accepts SC_WINDOW_POSITION_UNDEFINED
-    uint16_t window_height; // accepts SC_WINDOW_POSITION_UNDEFINED
+    int16_t window_x; // accepts SC_WINDOW_POSITION_UNDEFINED
+    int16_t window_y; // accepts SC_WINDOW_POSITION_UNDEFINED
+    uint16_t window_width;
+    uint16_t window_height;
 
     bool window_borderless;
 
