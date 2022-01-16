@@ -6,6 +6,7 @@
 #include "trait/packet_sink.h"
 
 #include <stdbool.h>
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
 #define DECODER_MAX_SINKS 2

@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 
 #include "trait/packet_sink.h"

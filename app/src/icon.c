@@ -2,6 +2,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/pixfmt.h>
@@ -85,7 +86,7 @@ decode_image(const char *path) {
 
     AVCodecParameters *params = ctx->streams[stream]->codecpar;
 
-    AVCodec *codec = avcodec_find_decoder(params->codec_id);
+    const AVCodec *codec = avcodec_find_decoder(params->codec_id);
     if (!codec) {
         LOGE("Could not find image decoder");
         goto close_input;

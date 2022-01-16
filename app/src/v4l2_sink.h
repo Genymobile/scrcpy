@@ -3,12 +3,13 @@
 
 #include "common.h"
 
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+
 #include "coords.h"
 #include "trait/frame_sink.h"
 #include "video_buffer.h"
 #include "util/tick.h"
-
-#include <libavformat/avformat.h>
 
 struct sc_v4l2_sink {
     struct sc_frame_sink frame_sink; // frame sink trait
