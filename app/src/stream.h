@@ -20,8 +20,8 @@ struct stream {
     struct sc_packet_sink *sinks[STREAM_MAX_SINKS];
     unsigned sink_count;
 
-    AVCodecContext *codec_ctx;
-    AVCodecParserContext *parser;
+    struct AVCodecContext *codec_ctx;
+    struct AVCodecParserContext *parser;
     // successive packets may need to be concatenated, until a non-config
     // packet is available
     AVPacket *pending;

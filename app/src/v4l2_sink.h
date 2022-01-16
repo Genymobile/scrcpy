@@ -15,7 +15,7 @@ struct sc_v4l2_sink {
 
     struct sc_video_buffer vb;
     AVFormatContext *format_ctx;
-    AVCodecContext *encoder_ctx;
+    struct AVCodecContext *encoder_ctx;
 
     char *device_name;
     struct sc_size frame_size;

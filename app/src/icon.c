@@ -91,7 +91,7 @@ decode_image(const char *path) {
         goto close_input;
     }
 
-    AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
+    struct AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
     if (!codec_ctx) {
         LOG_OOM();
         goto close_input;

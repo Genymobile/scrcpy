@@ -5,6 +5,8 @@
 #include "util/log.h"
 #include "util/str.h"
 
+#include <libavcodec/avcodec.h>
+
 /** Downcast frame_sink to sc_v4l2_sink */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_v4l2_sink, frame_sink)
 

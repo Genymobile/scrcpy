@@ -16,7 +16,7 @@ struct decoder {
     struct sc_frame_sink *sinks[DECODER_MAX_SINKS];
     unsigned sink_count;
 
-    AVCodecContext *codec_ctx;
+    struct AVCodecContext *codec_ctx;
     AVFrame *frame;
 };
 
