@@ -118,10 +118,9 @@ else
         include_directories: include_directories(sdl2_include_dir)
     )
 
-    prebuilt_ffmpeg_shared = meson.get_cross_property('prebuilt_ffmpeg_shared')
-    prebuilt_ffmpeg_dev = meson.get_cross_property('prebuilt_ffmpeg_dev')
-    ffmpeg_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_ffmpeg_shared + '/bin'
-    ffmpeg_include_dir = '../prebuilt-deps/' + prebuilt_ffmpeg_dev + '/include'
+    prebuilt_ffmpeg = meson.get_cross_property('prebuilt_ffmpeg')
+    ffmpeg_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_ffmpeg + '/bin'
+    ffmpeg_include_dir = '../prebuilt-deps/' + prebuilt_ffmpeg + '/include'
     ffmpeg = declare_dependency(
         dependencies: [
             cc.find_library('avcodec-58', dirs: ffmpeg_bin_dir),

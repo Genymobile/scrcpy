@@ -14,6 +14,7 @@ prepare-ffmpeg-win32:
 	@./prepare-dep https://github.com/Genymobile/scrcpy/releases/download/v1.16/ffmpeg-4.3.1-win32-dev.zip \
 		230efb08e9bcf225bd474da29676c70e591fc94d8790a740ca801408fddcb78b \
 		ffmpeg-4.3.1-win32-dev
+	ln -sf ../ffmpeg-4.3.1-win32-dev/include ffmpeg-4.3.1-win32-shared/
 
 prepare-ffmpeg-win64:
 	@./prepare-dep https://github.com/Genymobile/scrcpy/releases/download/v1.16/ffmpeg-4.3.1-win64-shared.zip \
@@ -22,6 +23,7 @@ prepare-ffmpeg-win64:
 	@./prepare-dep https://github.com/Genymobile/scrcpy/releases/download/v1.16/ffmpeg-4.3.1-win64-dev.zip \
 		2e8038242cf8e1bd095c2978f196ff0462b122cc6ef7e74626a6af15459d8b81 \
 		ffmpeg-4.3.1-win64-dev
+	ln -sf ../ffmpeg-4.3.1-win64-dev/include ffmpeg-4.3.1-win64-shared/
 
 prepare-sdl2:
 	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.18-mingw.tar.gz \
