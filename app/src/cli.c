@@ -1545,11 +1545,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
-    if (opts->v4l2_device && opts->lock_video_orientation
-                             == SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
-        LOGI("Video orientation is locked for v4l2 sink. "
-             "See --lock-video-orientation.");
-        opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
+    if (opts->v4l2_device) {
+        if (opts->lock_video_orientation ==
+                SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+            LOGI("Video orientation is locked for v4l2 sink. "
+                 "See --lock-video-orientation.");
+            opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
+        }
+
+        // V4L2 could not handle size change.
+        // Do not log because downsizing on error is the default behavior,
+        // not an explicit request from the user.
+        opts->downsize_on_error = false;
     }
 
     if (opts->v4l2_buffer && !opts->v4l2_device) {
