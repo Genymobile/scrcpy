@@ -121,11 +121,17 @@ else
     prebuilt_ffmpeg = meson.get_cross_property('prebuilt_ffmpeg')
     ffmpeg_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_ffmpeg + '/bin'
     ffmpeg_include_dir = '../prebuilt-deps/' + prebuilt_ffmpeg + '/include'
+
+    # ffmpeg versions are different for win32 and win64 builds
+    ffmpeg_avcodec = meson.get_cross_property('ffmpeg_avcodec')
+    ffmpeg_avformat = meson.get_cross_property('ffmpeg_avformat')
+    ffmpeg_avutil = meson.get_cross_property('ffmpeg_avutil')
+
     ffmpeg = declare_dependency(
         dependencies: [
-            cc.find_library('avcodec-58', dirs: ffmpeg_bin_dir),
-            cc.find_library('avformat-58', dirs: ffmpeg_bin_dir),
-            cc.find_library('avutil-56', dirs: ffmpeg_bin_dir),
+            cc.find_library(ffmpeg_avcodec, dirs: ffmpeg_bin_dir),
+            cc.find_library(ffmpeg_avformat, dirs: ffmpeg_bin_dir),
+            cc.find_library(ffmpeg_avutil, dirs: ffmpeg_bin_dir),
         ],
         include_directories: include_directories(ffmpeg_include_dir)
     )

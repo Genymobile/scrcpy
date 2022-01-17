@@ -34,6 +34,9 @@ extract() {
     elif [[ "$file" == *.tar.gz ]]
     then
         tar xf "$file"
+    elif [[ "$file" == *.7z ]]
+    then
+        7z x "$file"
     else
         echo "Unsupported file: $file"
         return 1
