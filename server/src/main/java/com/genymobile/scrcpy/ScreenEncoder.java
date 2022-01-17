@@ -41,6 +41,8 @@ public class ScreenEncoder implements Device.RotationListener {
     private final boolean downsizeOnError;
     private long ptsOrigin;
 
+    private boolean firstFrameSent;
+
     public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
             boolean downsizeOnError) {
         this.sendFrameMeta = sendFrameMeta;
@@ -99,7 +101,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     codec.stop();
                 } catch (Exception e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
-                    if (!downsizeOnError) {
+                    if (!downsizeOnError || firstFrameSent) {
                         // Fail immediately
                         throw e;
                     }
@@ -157,6 +159,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     }
 
                     IO.writeFully(fd, codecBuffer);
+                    firstFrameSent = true;
                 }
             } finally {
                 if (outputBufferId >= 0) {
