@@ -128,6 +128,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     assert(!params->control || (params->mp && params->mp->ops));
 
     im->controller = params->controller;
+    im->fp = params->fp;
     im->screen = params->screen;
     im->kp = params->kp;
     im->mp = params->mp;
@@ -834,6 +835,34 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
 }
 
+static bool
+is_apk(const char *file) {
+    const char *ext = strrchr(file, '.');
+    return ext && !strcmp(ext, ".apk");
+}
+
+static void
+sc_input_manager_process_file(struct sc_input_manager *im,
+                              const SDL_DropEvent *event) {
+    char *file = strdup(event->file);
+    SDL_free(event->file);
+    if (!file) {
+        LOG_OOM();
+        return;
+    }
+
+    enum sc_file_pusher_action action;
+    if (is_apk(file)) {
+        action = SC_FILE_PUSHER_ACTION_INSTALL_APK;
+    } else {
+        action = SC_FILE_PUSHER_ACTION_PUSH_FILE;
+    }
+    bool ok = sc_file_pusher_request(im->fp, action, file);
+    if (!ok) {
+        free(file);
+    }
+}
+
 void
 sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
     switch (event->type) {
@@ -872,5 +901,11 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
         case SDL_FINGERUP:
             sc_input_manager_process_touch(im, &event->tfinger);
             break;
+        case SDL_DROPFILE: {
+            if (!im->control) {
+                break;
+            }
+            sc_input_manager_process_file(im, &event->drop);
+        }
     }
 }

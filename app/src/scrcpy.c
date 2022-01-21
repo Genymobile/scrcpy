@@ -148,12 +148,6 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 }
 
-static bool
-is_apk(const char *file) {
-    const char *ext = strrchr(file, '.');
-    return ext && !strcmp(ext, ".apk");
-}
-
 enum event_result {
     EVENT_RESULT_CONTINUE,
     EVENT_RESULT_STOPPED_BY_USER,
@@ -161,8 +155,7 @@ enum event_result {
 };
 
 static enum event_result
-handle_event(struct scrcpy *s, const struct scrcpy_options *options,
-             SDL_Event *event) {
+handle_event(struct scrcpy *s, SDL_Event *event) {
     switch (event->type) {
         case EVENT_STREAM_STOPPED:
             LOGD("Video stream stopped");
@@ -170,42 +163,17 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
         case SDL_QUIT:
             LOGD("User requested to quit");
             return EVENT_RESULT_STOPPED_BY_USER;
-        case SDL_DROPFILE: {
-            if (!options->control) {
-                break;
-            }
-            char *file = strdup(event->drop.file);
-            SDL_free(event->drop.file);
-            if (!file) {
-                LOGW("Could not strdup drop filename\n");
-                break;
-            }
-
-            enum sc_file_pusher_action action;
-            if (is_apk(file)) {
-                action = SC_FILE_PUSHER_ACTION_INSTALL_APK;
-            } else {
-                action = SC_FILE_PUSHER_ACTION_PUSH_FILE;
-            }
-            bool ok = sc_file_pusher_request(&s->file_pusher, action, file);
-            if (!ok) {
-                free(file);
-            }
-            goto end;
-        }
     }
 
     sc_screen_handle_event(&s->screen, event);
-
-end:
     return EVENT_RESULT_CONTINUE;
 }
 
 static bool
-event_loop(struct scrcpy *s, const struct scrcpy_options *options) {
+event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(s, options, &event);
+        enum event_result result = handle_event(s, &event);
         switch (result) {
             case EVENT_RESULT_STOPPED_BY_USER:
                 return true;
@@ -409,11 +377,14 @@ scrcpy(struct scrcpy_options *options) {
     const char *serial = s->server.params.serial;
     assert(serial);
 
+    struct sc_file_pusher *fp = NULL;
+
     if (options->display && options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
                                  options->push_target)) {
             goto end;
         }
+        fp = &s->file_pusher;
         file_pusher_initialized = true;
     }
 
@@ -578,6 +549,7 @@ aoa_hid_end:
 
         struct sc_screen_params screen_params = {
             .controller = &s->controller,
+            .fp = fp,
             .kp = kp,
             .mp = mp,
             .control = options->control,
@@ -627,7 +599,7 @@ aoa_hid_end:
     }
     stream_started = true;
 
-    ret = event_loop(s, options);
+    ret = event_loop(s);
     LOGD("quit...");
 
     // Close the window immediately on closing, because screen_destroy() may

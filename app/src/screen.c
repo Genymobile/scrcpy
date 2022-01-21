@@ -485,6 +485,7 @@ sc_screen_init(struct sc_screen *screen,
 
     struct sc_input_manager_params im_params = {
         .controller = params->controller,
+        .fp = params->fp,
         .screen = screen,
         .kp = params->kp,
         .mp = params->mp,
