@@ -56,14 +56,13 @@ accept_device(libusb_device *device, const char *serial) {
     // devices available on the computer have permission restrictions
 
     struct libusb_device_descriptor desc;
-    libusb_get_device_descriptor(device, &desc);
-
-    if (!desc.iSerialNumber) {
+    int result = libusb_get_device_descriptor(device, &desc);
+    if (result < 0 || !desc.iSerialNumber) {
         return false;
     }
 
     libusb_device_handle *handle;
-    int result = libusb_open(device, &handle);
+    result = libusb_open(device, &handle);
     if (result < 0) {
         return false;
     }
