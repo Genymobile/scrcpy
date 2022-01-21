@@ -16,7 +16,7 @@
 #include "controller.h"
 #include "decoder.h"
 #include "events.h"
-#include "file_handler.h"
+#include "file_pusher.h"
 #ifdef HAVE_AOA_HID
 # include "hid_keyboard.h"
 # include "hid_mouse.h"
@@ -44,7 +44,7 @@ struct scrcpy {
     struct sc_v4l2_sink v4l2_sink;
 #endif
     struct sc_controller controller;
-    struct file_handler file_handler;
+    struct sc_file_pusher file_pusher;
 #ifdef HAVE_AOA_HID
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
@@ -181,13 +181,13 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
                 break;
             }
 
-            file_handler_action_t action;
+            enum sc_file_pusher_action action;
             if (is_apk(file)) {
-                action = ACTION_INSTALL_APK;
+                action = SC_FILE_PUSHER_ACTION_INSTALL_APK;
             } else {
-                action = ACTION_PUSH_FILE;
+                action = SC_FILE_PUSHER_ACTION_PUSH_FILE;
             }
-            file_handler_request(&s->file_handler, action, file);
+            sc_file_pusher_request(&s->file_pusher, action, file);
             goto end;
         }
     }
@@ -327,7 +327,7 @@ scrcpy(struct scrcpy_options *options) {
     bool ret = false;
 
     bool server_started = false;
-    bool file_handler_initialized = false;
+    bool file_pusher_initialized = false;
     bool recorder_initialized = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
@@ -408,11 +408,11 @@ scrcpy(struct scrcpy_options *options) {
     assert(serial);
 
     if (options->display && options->control) {
-        if (!file_handler_init(&s->file_handler, serial,
-                               options->push_target)) {
+        if (!sc_file_pusher_init(&s->file_pusher, serial,
+                                 options->push_target)) {
             goto end;
         }
-        file_handler_initialized = true;
+        file_pusher_initialized = true;
     }
 
     struct decoder *dec = NULL;
@@ -649,8 +649,8 @@ end:
     if (controller_started) {
         sc_controller_stop(&s->controller);
     }
-    if (file_handler_initialized) {
-        file_handler_stop(&s->file_handler);
+    if (file_pusher_initialized) {
+        sc_file_pusher_stop(&s->file_pusher);
     }
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
@@ -698,9 +698,9 @@ end:
         recorder_destroy(&s->recorder);
     }
 
-    if (file_handler_initialized) {
-        file_handler_join(&s->file_handler);
-        file_handler_destroy(&s->file_handler);
+    if (file_pusher_initialized) {
+        sc_file_pusher_join(&s->file_pusher);
+        sc_file_pusher_destroy(&s->file_pusher);
     }
 
     sc_server_destroy(&s->server);
