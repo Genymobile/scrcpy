@@ -148,39 +148,19 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 }
 
-enum event_result {
-    EVENT_RESULT_CONTINUE,
-    EVENT_RESULT_STOPPED_BY_USER,
-    EVENT_RESULT_STOPPED_BY_EOS,
-};
-
-static enum event_result
-handle_event(struct scrcpy *s, SDL_Event *event) {
-    switch (event->type) {
-        case EVENT_STREAM_STOPPED:
-            LOGD("Video stream stopped");
-            return EVENT_RESULT_STOPPED_BY_EOS;
-        case SDL_QUIT:
-            LOGD("User requested to quit");
-            return EVENT_RESULT_STOPPED_BY_USER;
-    }
-
-    sc_screen_handle_event(&s->screen, event);
-    return EVENT_RESULT_CONTINUE;
-}
-
 static bool
 event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
-        enum event_result result = handle_event(s, &event);
-        switch (result) {
-            case EVENT_RESULT_STOPPED_BY_USER:
-                return true;
-            case EVENT_RESULT_STOPPED_BY_EOS:
+        switch (event.type) {
+            case EVENT_STREAM_STOPPED:
                 LOGW("Device disconnected");
                 return false;
-            case EVENT_RESULT_CONTINUE:
+            case SDL_QUIT:
+                LOGD("User requested to quit");
+                return true;
+            default:
+                sc_screen_handle_event(&s->screen, &event);
                 break;
         }
     }
