@@ -131,31 +131,22 @@ sc_aoa_init(struct sc_aoa *aoa, const char *serial,
     }
 
     if (!sc_cond_init(&aoa->event_cond)) {
-        sc_mutex_destroy(&aoa->mutex);
-        return false;
+        goto error_destroy_mutex;
     }
 
     if (libusb_init(&aoa->usb_context) != LIBUSB_SUCCESS) {
-        sc_cond_destroy(&aoa->event_cond);
-        sc_mutex_destroy(&aoa->mutex);
-        return false;
+        goto error_destroy_cond;
     }
 
     aoa->usb_device = sc_aoa_find_usb_device(serial);
     if (!aoa->usb_device) {
         LOGW("USB device of serial %s not found", serial);
-        libusb_exit(aoa->usb_context);
-        sc_mutex_destroy(&aoa->mutex);
-        sc_cond_destroy(&aoa->event_cond);
-        return false;
+        goto error_exit_libusb;
     }
 
     if (sc_aoa_open_usb_handle(aoa->usb_device, &aoa->usb_handle) < 0) {
         LOGW("Open USB handle failed");
-        libusb_unref_device(aoa->usb_device);
-        libusb_exit(aoa->usb_context);
-        sc_cond_destroy(&aoa->event_cond);
-        sc_mutex_destroy(&aoa->mutex);
+        goto error_unref_device;
         return false;
     }
 
@@ -163,6 +154,16 @@ sc_aoa_init(struct sc_aoa *aoa, const char *serial,
     aoa->acksync = acksync;
 
     return true;
+
+error_unref_device:
+    libusb_unref_device(aoa->usb_device);
+error_exit_libusb:
+    libusb_exit(aoa->usb_context);
+error_destroy_cond:
+    sc_cond_destroy(&aoa->event_cond);
+error_destroy_mutex:
+    sc_mutex_destroy(&aoa->mutex);
+    return false;
 }
 
 void
