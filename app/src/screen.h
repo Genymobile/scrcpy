@@ -139,7 +139,7 @@ void
 sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation);
 
 // react to SDL events
-bool
+void
 sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event);
 
 // convert point from window coordinates to frame coordinates

@@ -59,7 +59,7 @@ void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params);
 
-bool
+void
 sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event);
 
 #endif

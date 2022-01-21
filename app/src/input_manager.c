@@ -834,45 +834,43 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
 }
 
-bool
+void
 sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
     switch (event->type) {
         case SDL_TEXTINPUT:
             if (!im->control) {
-                return true;
+                break;
             }
             sc_input_manager_process_text_input(im, &event->text);
-            return true;
+            break;
         case SDL_KEYDOWN:
         case SDL_KEYUP:
             // some key events do not interact with the device, so process the
             // event even if control is disabled
             sc_input_manager_process_key(im, &event->key);
-            return true;
+            break;
         case SDL_MOUSEMOTION:
             if (!im->control) {
                 break;
             }
             sc_input_manager_process_mouse_motion(im, &event->motion);
-            return true;
+            break;
         case SDL_MOUSEWHEEL:
             if (!im->control) {
                 break;
             }
             sc_input_manager_process_mouse_wheel(im, &event->wheel);
-            return true;
+            break;
         case SDL_MOUSEBUTTONDOWN:
         case SDL_MOUSEBUTTONUP:
             // some mouse events do not interact with the device, so process
             // the event even if control is disabled
             sc_input_manager_process_mouse_button(im, &event->button);
-            return true;
+            break;
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
             sc_input_manager_process_touch(im, &event->tfinger);
-            return true;
+            break;
     }
-
-    return false;
 }

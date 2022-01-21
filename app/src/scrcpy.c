@@ -195,8 +195,7 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
         }
     }
 
-    bool consumed = sc_screen_handle_event(&s->screen, event);
-    (void) consumed;
+    sc_screen_handle_event(&s->screen, event);
 
 end:
     return EVENT_RESULT_CONTINUE;
