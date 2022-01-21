@@ -99,7 +99,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     alive = encode(codec, fd);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
-                } catch (Exception e) {
+                } catch (IllegalStateException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!downsizeOnError || firstFrameSent) {
                         // Fail immediately
