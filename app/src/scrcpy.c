@@ -187,7 +187,10 @@ handle_event(struct scrcpy *s, const struct scrcpy_options *options,
             } else {
                 action = SC_FILE_PUSHER_ACTION_PUSH_FILE;
             }
-            sc_file_pusher_request(&s->file_pusher, action, file);
+            bool ok = sc_file_pusher_request(&s->file_pusher, action, file);
+            if (!ok) {
+                free(file);
+            }
             goto end;
         }
     }
