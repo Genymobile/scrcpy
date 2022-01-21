@@ -16,7 +16,7 @@ public final class InputManager {
 
     private final IInterface manager;
     private Method injectInputEventMethod;
-    boolean alternativeInjectInputEventMethod;
+    private boolean alternativeInjectInputEventMethod;
 
     private static Method setDisplayIdMethod;
 
