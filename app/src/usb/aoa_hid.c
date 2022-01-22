@@ -53,8 +53,6 @@ log_libusb_error(enum libusb_error errcode) {
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
-    assert(acksync);
-
     cbuf_init(&aoa->queue);
 
     if (!sc_mutex_init(&aoa->mutex)) {
@@ -248,6 +246,11 @@ run_aoa_thread(void *data) {
 
         if (ack_to_wait != SC_SEQUENCE_INVALID) {
             LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
+
+            // If some events have ack_to_wait set, then sc_aoa must have been
+            // initialized with a non NULL acksync
+            assert(aoa->acksync);
+
             // Do not block the loop indefinitely if the ack never comes (it
             // should never happen)
             sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
@@ -294,7 +297,9 @@ sc_aoa_stop(struct sc_aoa *aoa) {
     sc_cond_signal(&aoa->event_cond);
     sc_mutex_unlock(&aoa->mutex);
 
-    sc_acksync_interrupt(aoa->acksync);
+    if (aoa->acksync) {
+        sc_acksync_interrupt(aoa->acksync);
+    }
 }
 
 void
