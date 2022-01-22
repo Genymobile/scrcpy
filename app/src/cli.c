@@ -53,6 +53,7 @@
 #define OPT_TCPIP                  1033
 #define OPT_RAW_KEY_EVENTS         1034
 #define OPT_NO_DOWNSIZE_ON_ERROR   1035
+#define OPT_OTG                    1036
 
 struct sc_option {
     char shortopt;
@@ -275,6 +276,20 @@ static const struct sc_option options[] = {
         .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
                 "mipmaps are automatically generated to improve downscaling "
                 "quality. This option disables the generation of mipmaps.",
+    },
+    {
+        .longopt_id = OPT_OTG,
+        .longopt = "otg",
+        .text = "Run in OTG mode: simulate physical keyboard and mouse, "
+                "as if the computer keyboard and mouse were plugged directly "
+                "to the device via an OTG cable.\n"
+                "In this mode, adb (USB debugging) is not necessary, and "
+                "mirroring is disabled.\n"
+                "LAlt, LSuper or RSuper toggle the mouse capture mode, to give "
+                "control of the mouse back to the computer.\n"
+                "It may only work over USB, and is currently only supported "
+                "on Linux.\n"
+                "See --hid-keyboard and --hid-mouse.",
     },
     {
         .shortopt = 'p',
@@ -1500,6 +1515,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_DOWNSIZE_ON_ERROR:
                 opts->downsize_on_error = false;
                 break;
+            case OPT_OTG:
+#ifdef HAVE_USB
+                opts->otg = true;
+                break;
+#else
+                LOGE("OTG mode (--otg) is not supported on this platform. It "
+                     "is only available on Linux.");
+                return false;
+#endif
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
@@ -1609,6 +1633,43 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
     }
+
+#ifdef HAVE_USB
+    if (opts->otg) {
+        // OTG mode is compatible with only very few options.
+        // Only report obvious errors.
+        if (opts->record_filename) {
+            LOGE("OTG mode: could not record");
+            return false;
+        }
+        if (opts->turn_screen_off) {
+            LOGE("OTG mode: could not turn screen off");
+            return false;
+        }
+        if (opts->stay_awake) {
+            LOGE("OTG mode: could not stay awake");
+            return false;
+        }
+        if (opts->show_touches) {
+            LOGE("OTG mode: could not request to show touches");
+            return false;
+        }
+        if (opts->power_off_on_close) {
+            LOGE("OTG mode: could not request power off on close");
+            return false;
+        }
+        if (opts->display_id) {
+            LOGE("OTG mode: could not select display");
+            return false;
+        }
+#ifdef HAVE_V4L2
+        if (opts->v4l2_device) {
+            LOGE("OTG mode: could not sink to V4L2 device");
+            return false;
+        }
+#endif
+    }
+#endif
 
     return true;
 }

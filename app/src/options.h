@@ -112,6 +112,9 @@ struct scrcpy_options {
     uint32_t display_id;
     sc_tick display_buffer;
     sc_tick v4l2_buffer;
+#ifdef HAVE_USB
+    bool otg;
+#endif
     bool show_touches;
     bool fullscreen;
     bool always_on_top;

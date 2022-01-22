@@ -13,6 +13,7 @@
 #include "cli.h"
 #include "options.h"
 #include "scrcpy.h"
+#include "usb/scrcpy_otg.h"
 #include "util/log.h"
 
 static void
@@ -88,9 +89,14 @@ main(int argc, char *argv[]) {
         return 1;
     }
 
-    int res = scrcpy(&args.opts) ? 0 : 1;
+#ifdef HAVE_USB
+    bool ok = args.opts.otg ? scrcpy_otg(&args.opts)
+                            : scrcpy(&args.opts);
+#else
+    bool ok = scrcpy(&args.opts);
+#endif
 
     avformat_network_deinit(); // ignore failure
 
-    return res;
+    return ok ? 0 : 1;
 }

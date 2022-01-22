@@ -37,6 +37,9 @@ const struct scrcpy_options scrcpy_options_default = {
     .display_id = 0,
     .display_buffer = 0,
     .v4l2_buffer = 0,
+#ifdef HAVE_USB
+    .otg = false,
+#endif
     .show_touches = false,
     .fullscreen = false,
     .always_on_top = false,
