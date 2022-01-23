@@ -156,7 +156,7 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
     return window_size;
 }
 
-static inline void
+static void
 sc_screen_capture_mouse(struct sc_screen *screen, bool capture) {
     if (SDL_SetRelativeMouseMode(capture)) {
         LOGE("Could not set relative mouse mode to %s: %s",
