@@ -873,6 +873,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                 sc_screen_capture_mouse(screen, true);
                 return;
             }
+            break;
     }
 
     sc_input_manager_handle_event(&screen->im, event);
