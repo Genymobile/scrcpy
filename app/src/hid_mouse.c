@@ -262,6 +262,6 @@ void
 sc_hid_mouse_destroy(struct sc_hid_mouse *mouse) {
     bool ok = sc_aoa_unregister_hid(mouse->aoa, HID_MOUSE_ACCESSORY_ID);
     if (!ok) {
-        LOGW("Could not unregister HID");
+        LOGW("Could not unregister HID mouse");
     }
 }
