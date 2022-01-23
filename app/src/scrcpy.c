@@ -598,6 +598,9 @@ end:
         if (hid_keyboard_initialized) {
             sc_hid_keyboard_destroy(&s->keyboard_hid);
         }
+        if (hid_mouse_initialized) {
+            sc_hid_mouse_destroy(&s->mouse_hid);
+        }
         sc_aoa_stop(&s->aoa);
     }
     if (acksync) {
