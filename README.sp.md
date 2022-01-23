@@ -1,24 +1,36 @@
 Solo se garantiza que el archivo [README](README.md) original esté actualizado.
 
-# scrcpy (v1.17)
+# scrcpy (v1.21)
 
-Esta aplicación proporciona imagen y control de un dispositivo Android conectado
-por USB (o [por TCP/IP][article-tcpip]). No requiere acceso _root_.
+<img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+
+Esta aplicación proporciona control e imagen de un dispositivo Android conectado
+por USB (o [por TCP/IP](#conexión)). No requiere acceso _root_.
 Compatible con _GNU/Linux_, _Windows_ y _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
-Sus características principales son:
-
- - **ligero** (nativo, solo muestra la imagen del dispositivo)
- - **desempeño** (30~60fps)
- - **calidad** (1920×1080 o superior)
- - **baja latencia** ([35~70ms][lowlatency])
- - **corto tiempo de inicio** (~1 segundo para mostrar la primera imagen)
- - **no intrusivo** (no se deja nada instalado en el dispositivo)
+Se enfoca en:
+ - **ser ligera**: aplicación nativa, solo muestra la imagen del dispositivo
+ - **rendimiento**: 30~120fps, dependiendo del dispositivo
+ - **calidad**: 1920×1080 o superior
+ - **baja latencia**: [35~70ms][lowlatency]
+ - **inicio rápido**: ~1 segundo para mostrar la primera imagen
+ - **no intrusivo**: no deja nada instalado en el dispositivo
+ - **beneficios**: sin cuentas, sin anuncios, no requiere acceso a internet
+ - **libertad**: software gratis y de código abierto
 
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
+Con la aplicación puede:
+ - [grabar la pantalla](#capturas-y-grabaciones)
+ - duplicar la imagen con [la pantalla apagada](#apagar-la-pantalla)
+ - [copiar y pegar](#copiar-y-pegar) en ambos sentidos
+ - [configurar la calidad](#configuración-de-captura)
+ - usar la pantalla del dispositivo [como webcam (V4L2)](#v4l2loopback) (solo en Linux)
+ - [emular un teclado físico (HID)](#emular-teclado-físico-hid)
+   (solo en Linux)
+ - y mucho más…
 
 ## Requisitos
 
@@ -51,7 +63,7 @@ Construir desde la fuente: [BUILD] ([proceso simplificado][BUILD_simple])
 
 ### Linux
 
-En Debian (_test_ y _sid_ por ahora) y Ubuntu (20.04):
+En Debian y Ubuntu:
 
 ```
 apt install scrcpy
@@ -125,7 +137,7 @@ Necesitarás `adb`, accesible desde `PATH`. Si aún no lo tienes:
 brew install android-platform-tools
 ```
 
-También está disponible en [MacPorts], que configurará el adb automáticamente:
+También está disponible en [MacPorts], que configura el adb automáticamente:
 
 ```bash
 sudo port install scrcpy
@@ -153,7 +165,7 @@ scrcpy --help
 
 ## Características
 
-### Capturar configuración
+### Configuración de captura
 
 #### Reducir la definición
 
@@ -208,10 +220,11 @@ Si `--max-size` también está especificado, el cambio de tamaño es aplicado de
 Para fijar la rotación de la transmisión:
 
 ```bash
-scrcpy --lock-video-orientation 0   # orientación normal
-scrcpy --lock-video-orientation 1   # 90° contrarreloj
-scrcpy --lock-video-orientation 2   # 180°
-scrcpy --lock-video-orientation 3   # 90° sentido de las agujas del reloj
+scrcpy --lock-video-orientation     # orientación inicial
+scrcpy --lock-video-orientation=0   # orientación normal
+scrcpy --lock-video-orientation=1   # 90° contrarreloj
+scrcpy --lock-video-orientation=2   # 180°
+scrcpy --lock-video-orientation=3   # 90° sentido de las agujas del reloj
 ```
 
 Esto afecta la rotación de la grabación.
@@ -233,7 +246,10 @@ Para listar los codificadores disponibles, puedes pasar un nombre de codificador
 scrcpy --encoder _
 ```
 
-### Grabación
+### Capturas y grabaciones
+
+
+#### Grabación
 
 Es posible grabar la pantalla mientras se transmite:
 
@@ -250,17 +266,117 @@ scrcpy -Nr file.mkv
 # interrumpe la grabación con Ctrl+C
 ```
 
-"Skipped frames" son grabados, incluso si no son mostrados en tiempo real (por razones de desempeño). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
+Los "skipped frames" son grabados, incluso si no se mostrados en tiempo real (por razones de desempeño). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
 variation]" no impacta el archivo grabado.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
+#### v4l2loopback
+
+En Linux se puede mandar el stream del video a un dispositivo loopback v4l2, por
+lo que se puede abrir el dispositivo Android como una webcam con cualquier
+programa compatible con v4l2.
+
+Se debe instalar el modulo `v4l2loopback`:
+
+```bash
+sudo apt install v4l2loopback-dkms
+```
+
+Para crear un dispositivo v4l2:
+
+```bash
+sudo modprobe v4l2loopback
+```
+
+Esto va a crear un nuevo dispositivo de video en `/dev/videoN`, donde `N` es un número
+(hay más [opciones](https://github.com/umlaeute/v4l2loopback#options) disponibles
+para crear múltiples dispositivos o usar un ID en específico).
+
+Para ver los dispositivos disponibles:
+
+```bash
+# requiere el paquete v4l-utils
+v4l2-ctl --list-devices
+# simple pero generalmente suficiente
+ls /dev/video*
+```
+
+Para iniciar scrcpy usando una fuente v4l2:
+
+```bash
+scrcpy --v4l2-sink=/dev/videoN
+scrcpy --v4l2-sink=/dev/videoN --no-display  # deshabilita la transmisión de imagen
+scrcpy --v4l2-sink=/dev/videoN -N            # más corto
+```
+
+(reemplace `N` con el ID del dispositivo, compruebe con `ls /dev/video*`)
+
+Una vez habilitado, podés abrir el stream del video con una herramienta compatible con v4l2:
+
+```bash
+ffplay -i /dev/videoN
+vlc v4l2:///dev/videoN   # VLC puede agregar un delay por buffering
+```
+
+Por ejemplo, podrías capturar el video usando [OBS].
+
+[OBS]: https://obsproject.com/
+
+
+#### Buffering
+
+Es posible agregar buffering al video. Esto reduce el ruido en la imagen ("jitter")
+pero aumenta la latencia (vea [#2464]).
+
+[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+
+La opción de buffering está disponible para la transmisión de imagen:
+
+```bash
+scrcpy --display-buffer=50  # agrega 50 ms de buffering a la imagen
+```
+
+y las fuentes V4L2:
+
+```bash
+scrcpy --v4l2-buffer=500    # agrega 500 ms de buffering a la fuente v4l2
+```
+
+
 ### Conexión
 
-#### Inalámbrica
+#### TCP/IP (Inalámbrica)
 
-_Scrcpy_ usa `adb` para comunicarse con el dispositivo, y `adb` puede [conectarse] vía TCP/IP:
+_Scrcpy_ usa `adb` para comunicarse con el dispositivo, y `adb` puede [conectarse] vía TCP/IP.
+El dispositivo debe estar conectado a la misma red que la computadora:
+
+##### Automático
+
+La opción `--tcpip` permite configurar la conexión automáticamente. Hay 2 variables.
+
+Si el dispositivo (accesible en 192.168.1.1 para este ejemplo) ya está escuchando
+en un puerto (generalmente 5555) esperando una conexión adb entrante, entonces corré:
+
+```bash
+scrcpy --tcpip=192.168.1.1       # el puerto default es 5555
+scrcpy --tcpip=192.168.1.1:5555
+```
+
+Si el dispositivo no tiene habilitado el modo adb TCP/IP (o si no sabés la dirección IP),
+entonces conectá el dispositivo por USB y corré:
+
+```bash
+scrcpy --tcpip    # sin argumentos
+```
+
+El programa buscará automáticamente la IP del dispositivo, habilitará el modo TCP/IP, y
+se conectará al dispositivo antes de comenzar a transmitir la imagen.
+
+##### Manual
+
+Como alternativa, se puede habilitar la conexión TCP/IP manualmente usando `adb`:
 
 1. Conecta el dispositivo al mismo Wi-Fi que tu computadora.
 2. Obtén la dirección IP del dispositivo, en Ajustes → Acerca del dispositivo → Estado, o ejecutando este comando:
@@ -302,7 +418,7 @@ scrcpy -s 192.168.0.1:5555  # versión breve
 
 Puedes iniciar múltiples instancias de _scrcpy_ para múltiples dispositivos.
 
-#### Autoiniciar al detectar dispositivo
+#### Iniciar automáticamente al detectar dispositivo
 
 Puedes utilizar [AutoAdb]:
 
@@ -312,36 +428,81 @@ autoadb scrcpy -s '{}'
 
 [AutoAdb]: https://github.com/rom1v/autoadb
 
-#### Túnel SSH
+#### Túneles
 
-Para conectarse a un dispositivo remoto, es posible conectar un cliente local de `adb` a un servidor remoto `adb` (siempre y cuando utilicen la misma versión de protocolos _adb_):
+Para conectarse a un dispositivo remoto, es posible conectar un cliente local `adb` a un servidor remoto `adb` (siempre y cuando utilicen la misma versión de protocolos _adb_).
+
+##### Servidor ADB remoto
+
+Para conectarse a un servidor ADB remoto, haz que el servidor escuche en todas las interfaces:
 
 ```bash
-adb kill-server    # cierra el servidor local adb en 5037
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+adb kill-server
+adb -a nodaemon server start
 # conserva este servidor abierto
 ```
 
-Desde otra terminal:
+**Advertencia: todas las comunicaciones entre los clientes y el servidor ADB están desencriptadas.**
+
+Supondremos que este servidor se puede acceder desde 192.168.1.2. Entonces, desde otra
+terminal, corré scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+Por default, scrcpy usa el puerto local que se usó para establecer el tunel
+`adb forward` (típicamente `27183`, vea `--port`). También es posible forzar un
+puerto diferente (puede resultar útil en situaciones más complejas, donde haya
+múltiples redirecciones):
+
+```
+scrcpy --tunnel-port=1234
+```
+
+
+##### Túnel SSH
+
+Para comunicarse con un servidor ADB remoto de forma segura, es preferible usar un túnel SSH.
+
+Primero, asegurate que el servidor ADB está corriendo en la computadora remota:
+
+```bash
+adb start-server
+```
+
+Después, establecé el túnel SSH:
+
+```bash
+# local  5038 --> remoto  5037
+# local 27183 <-- remoto 27183
+ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# conserva este servidor abierto
+```
+
+Desde otra terminal, corré scrcpy:
+
+```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy
 ```
 
 Para evitar habilitar "remote port forwarding", puedes forzar una "forward connection" (nótese el argumento `-L` en vez de `-R`):
 
 ```bash
-adb kill-server    # cierra el servidor local adb en 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# local  5038 --> remoto  5037
+# local 27183 --> remoto 27183
+ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # conserva este servidor abierto
 ```
 
-Desde otra terminal:
+Desde otra terminal, corré scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy --force-adb-forward
 ```
-
 
 Al igual que las conexiones inalámbricas, puede resultar útil reducir la calidad:
 
@@ -402,7 +563,7 @@ Se puede rotar la ventana:
 scrcpy --rotation 1
 ```
 
-Los valores posibles son:
+Los posibles valores son:
  - `0`: sin rotación
  - `1`: 90 grados contrarreloj
  - `2`: 180 grados
@@ -416,7 +577,7 @@ Nótese que _scrcpy_ maneja 3 diferentes rotaciones:
  - `--rotation` (o <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>) rota solo el contenido de la imagen. Esto solo afecta a la imagen mostrada, no a la grabación.
 
 
-### Otras opciones menores
+### Otras opciones
 
 #### Solo lectura ("Read-only")
 
@@ -479,14 +640,12 @@ scrcpy -Sw  # versión breve
 ```
 
 
-#### Renderizar frames vencidos
+#### Apagar al cerrar la aplicación
 
-Por defecto, para minimizar la latencia, _scrcpy_ siempre renderiza el último frame disponible decodificado, e ignora cualquier frame anterior.
-
-Para forzar el renderizado de todos los frames (a costo de posible aumento de latencia), use:
+Para apagar la pantalla del dispositivo al cerrar scrcpy:
 
 ```bash
-scrcpy --render-expired-frames
+scrcpy --power-off-on-close
 ```
 
 #### Mostrar clicks
@@ -548,6 +707,8 @@ Además, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permite inyectar el texto 
 
 Algunos dispositivos no se comportan como es esperado al establecer el portapapeles programáticamente. La opción `--legacy-paste` está disponible para cambiar el comportamiento de <kbd>Ctrl</kbd>+<kbd>v</kbd> y <kbd>MOD</kbd>+<kbd>v</kbd> para que también inyecten el texto del portapapeles de la computadora como una secuencia de teclas (de la misma forma que <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
 
+Para deshabilitar la auto-sincronización del portapapeles, use `--no-clipboard-autosync`.
+
 #### Pellizcar para zoom
 
 Para simular "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-y-mover_.
@@ -555,6 +716,48 @@ Para simular "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-y-mover_.
 Más precisamente, mantén <kbd>Ctrl</kbd> mientras presionas botón izquierdo. Hasta que no se suelte el botón, todos los movimientos del mouse cambiarán el tamaño y rotación del contenido (si es soportado por la app en uso) respecto al centro de la pantalla.
 
 Concretamente, scrcpy genera clicks adicionales con un "dedo virtual" en la posición invertida respecto al centro de la pantalla.
+
+#### Emular teclado físico (HID)
+
+Por default, scrcpy usa el sistema de Android para la injección de teclas o texto:
+funciona en todas partes, pero está limitado a ASCII.
+
+En Linux, scrcpy puede emular un teclado USB físico en Android para proveer
+una mejor experiencia al enviar _inputs_ (usando [USB HID vía AOAv2][hid-aoav2]):
+deshabilita el teclado virtual y funciona para todos los caracteres y IME.
+
+[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
+
+Sin embargo, solo funciona si el dispositivo está conectado por USB, y por ahora
+solo funciona en Linux.
+
+Para habilitar este modo:
+
+```bash
+scrcpy --hid-keyboard
+scrcpy -K  # más corto
+```
+
+Si por alguna razón falla (por ejemplo si el dispositivo no está conectado vía
+USB), automáticamente vuelve al modo default (un mensaje se escribirá en la consola).
+Se puede usar los mismos argumentos en la línea de comandos tanto si se conecta con
+USB o vía TCP/IP.
+
+En este modo, los _raw key events_ (_scancodes_) se envían al dispositivo, independientemente
+del mapeo del teclado en el host. Por eso, si el diseño de tu teclado no concuerda, debe ser
+configurado en el dispositivo Android, en Ajustes → Sistema → Idioma y Entrada de Texto
+→ [Teclado Físico].
+
+Se puede iniciar automáticamente en esta página de ajustes:
+
+```bash
+adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+```
+
+Sin embargo, la opción solo está disponible cuando el teclado HID está activo
+(o cuando se conecta un teclado físico).
+
+[Teclado Físico]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
 
 #### Preferencias de inyección de texto
@@ -573,19 +776,32 @@ scrcpy --prefer-text
 
 (Pero esto romperá el comportamiento del teclado en los juegos)
 
+Por el contrario, se puede forzar scrcpy para siempre injectar _raw key events_:
+
+```bash
+scrcpy --raw-key-events
+```
+
+Estas opciones no tienen efecto en los teclados HID (todos los _key events_ son enviados como
+_scancodes_ en este modo).
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
 #### Repetir tecla
 
-Por defecto, mantener una tecla presionada genera múltiples _key events_. Esto puede causar problemas de desempeño en algunos juegos, donde estos eventos no tienen sentido de todos modos.
+Por defecto, mantener una tecla presionada genera múltiples _key events_. Esto puede
+causar problemas de desempeño en algunos juegos, donde estos eventos no tienen sentido de todos modos.
 
 Para evitar enviar _key events_ repetidos:
 
 ```bash
 scrcpy --no-key-repeat
 ```
+
+Estas opciones no tienen efecto en los teclados HID (Android maneja directamente
+las repeticiones de teclas en este modo)
 
 
 #### Botón derecho y botón del medio
@@ -608,14 +824,15 @@ No hay respuesta visual, un mensaje se escribirá en la consola.
 
 #### Enviar archivos al dispositivo
 
-Para enviar un archivo a `/sdcard/` en el dispositivo, arrastre y suelte un archivo (no APK) a la ventana de _scrcpy_.
+Para enviar un archivo a `/sdcard/Download/` en el dispositivo, arrastre y suelte
+un archivo (no APK) a la ventana de _scrcpy_.
 
-No hay respuesta visual, un mensaje se escribirá en la consola.
+No hay ninguna respuesta visual, un mensaje se escribirá en la consola.
 
 El directorio de destino puede ser modificado al iniciar:
 
 ```bash
-scrcpy --push-target=/sdcard/Download/
+scrcpy --push-target=/sdcard/Movies/
 ```
 
 
@@ -647,36 +864,48 @@ _<kbd>[Super]</kbd> es generalmente la tecla <kbd>Windows</kbd> o <kbd>Cmd</kbd>
 
 [Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
 
- | Acción                                      |   Atajo
- | ------------------------------------------- |:-----------------------------
- | Alterne entre pantalla compelta             | <kbd>MOD</kbd>+<kbd>f</kbd>
- | Rotar pantalla hacia la izquierda           | <kbd>MOD</kbd>+<kbd>←</kbd> _(izquierda)_
- | Rotar pantalla hacia la derecha             | <kbd>MOD</kbd>+<kbd>→</kbd> _(derecha)_
- | Ajustar ventana a 1:1 ("pixel-perfect")     | <kbd>MOD</kbd>+<kbd>g</kbd>
- | Ajustar ventana para quitar los bordes negros| <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doble click¹_
- | Click en `INICIO`                           | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Botón del medio_
- | Click en `RETROCEDER`                       | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Botón derecho²_
- | Click en `CAMBIAR APLICACIÓN`               | <kbd>MOD</kbd>+<kbd>s</kbd>
- | Click en `MENÚ` (desbloquear pantalla)      | <kbd>MOD</kbd>+<kbd>m</kbd>
- | Click en `SUBIR VOLUMEN`                    | <kbd>MOD</kbd>+<kbd>↑</kbd> _(arriba)_
- | Click en `BAJAR VOLUME`                     | <kbd>MOD</kbd>+<kbd>↓</kbd> _(abajo)_
- | Click en `ENCENDIDO`                        | <kbd>MOD</kbd>+<kbd>p</kbd>
- | Encendido                                   | _Botón derecho²_
- | Apagar pantalla (manteniendo la transmisión)| <kbd>MOD</kbd>+<kbd>o</kbd>
- | Encender pantalla                           | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
- | Rotar pantalla del dispositivo              | <kbd>MOD</kbd>+<kbd>r</kbd>
- | Abrir panel de notificaciones               | <kbd>MOD</kbd>+<kbd>n</kbd>
- | Cerrar panel de notificaciones              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copiar al portapapeles³                     | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Cortar al portapapeles³                     | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Synchronizar portapapeles y pegar³          | <kbd>MOD</kbd>+<kbd>v</kbd>
- | inyectar texto del portapapeles de la PC    | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | Acción                                       |   Atajo
+ | -------------------------------------------  |:-----------------------------
+ | Alterne entre pantalla compelta              | <kbd>MOD</kbd>+<kbd>f</kbd>
+ | Rotar pantalla hacia la izquierda            | <kbd>MOD</kbd>+<kbd>←</kbd> _(izquierda)_
+ | Rotar pantalla hacia la derecha              | <kbd>MOD</kbd>+<kbd>→</kbd> _(derecha)_
+ | Ajustar ventana a 1:1 ("pixel-perfect")      | <kbd>MOD</kbd>+<kbd>g</kbd>
+ | Ajustar ventana para quitar los bordes negros| <kbd>MOD</kbd>+<kbd>w</kbd> \| _Doble click izquierdo¹_
+ | Click en `INICIO`                            | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Click medio_
+ | Click en `RETROCEDER`                        | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Click derecho²_
+ | Click en `CAMBIAR APLICACIÓN`                | <kbd>MOD</kbd>+<kbd>s</kbd> \| _Cuarto botón³_
+ | Click en `MENÚ` (desbloquear pantalla)⁴      | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Click en `SUBIR VOLUMEN`                     | <kbd>MOD</kbd>+<kbd>↑</kbd> _(arriba)_
+ | Click en `BAJAR VOLUME`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(abajo)_
+ | Click en `ENCENDIDO`                         | <kbd>MOD</kbd>+<kbd>p</kbd>
+ | Encendido                                    | _Botón derecho²_
+ | Apagar pantalla (manteniendo la transmisión) | <kbd>MOD</kbd>+<kbd>o</kbd>
+ | Encender pantalla                            | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>
+ | Rotar pantalla del dispositivo               | <kbd>MOD</kbd>+<kbd>r</kbd>
+ | Abrir panel de notificaciones                | <kbd>MOD</kbd>+<kbd>n</kbd> \| _Quinto botón³_
+ | Abrir panel de configuración                 | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Doble quinto botón³_
+ | Cerrar paneles                               | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
+ | Copiar al portapapeles⁵                      | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Cortar al portapapeles⁵                      | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Synchronizar portapapeles y pegar⁵           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Inyectar texto del portapapeles de la PC     | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Habilitar/Deshabilitar contador de FPS (en stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
- | Pellizcar para zoom                         | <kbd>Ctrl</kbd>+_click-y-mover_
+ | Pellizcar para zoom                          | <kbd>Ctrl</kbd>+_click-y-mover_
+ | Arrastrar y soltar un archivo (APK)          | Instalar APK desde la computadora
+ | Arrastrar y soltar un archivo (no APK)       | [Mover archivo al dispositivo](#enviar-archivos-al-dispositivo)
 
 _¹Doble click en los bordes negros para eliminarlos._  
 _²Botón derecho enciende la pantalla si estaba apagada, sino ejecuta RETROCEDER._  
-_³Solo en Android >= 7._
+_³Cuarto y quinto botón del mouse, si tu mouse los tiene._  
+_⁴Para las apps react-native en desarrollo, `MENU` activa el menú de desarrollo._  
+_⁵Solo en Android >= 7._
+
+Los shortcuts con teclas repetidas se ejecutan soltando y volviendo a apretar la tecla
+por segunda vez. Por ejemplo, para ejecutar "Abrir panel de configuración":
+
+ 1. Apretá y mantené apretado <kbd>MOD</kbd>.
+ 2. Después apretá dos veces la tecla <kbd>n</kbd>.
+ 3. Por último, soltá la tecla <kbd>MOD</kbd>.
 
 Todos los atajos <kbd>Ctrl</kbd>+_tecla_ son enviados al dispositivo para que sean manejados por la aplicación activa.
 
@@ -690,6 +919,8 @@ ADB=/path/to/adb scrcpy
 ```
 
 Para sobreescribir el path del archivo `scrcpy-server`, configure el path en `SCRCPY_SERVER_PATH`.
+
+Para sobreescribir el ícono, configure el path en `SCRCPY_ICON_PATH`.
 
 
 ## ¿Por qué _scrcpy_?
