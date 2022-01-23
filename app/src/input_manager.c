@@ -124,8 +124,8 @@ is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
-    assert(!params->control || (params->kp && params->kp->ops));
-    assert(!params->control || (params->mp && params->mp->ops));
+    assert(!params->controller || (params->kp && params->kp->ops));
+    assert(!params->controller || (params->mp && params->mp->ops));
 
     im->controller = params->controller;
     im->fp = params->fp;
@@ -133,7 +133,6 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->kp = params->kp;
     im->mp = params->mp;
 
-    im->control = params->control;
     im->forward_all_clicks = params->forward_all_clicks;
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
@@ -434,9 +433,7 @@ inverse_point(struct sc_point point, struct sc_size size) {
 static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
-    // control: indicates the state of the command-line option --no-control
-    bool control = im->control;
-
+    // controller is NULL if --no-control is requested
     struct sc_controller *controller = im->controller;
 
     SDL_Keycode keycode = event->keysym.sym;
@@ -463,33 +460,33 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
-                if (control && !shift && !repeat) {
+                if (controller && !shift && !repeat) {
                     action_home(controller, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (control && !shift && !repeat) {
+                if (controller && !shift && !repeat) {
                     action_back(controller, action);
                 }
                 return;
             case SDLK_s:
-                if (control && !shift && !repeat) {
+                if (controller && !shift && !repeat) {
                     action_app_switch(controller, action);
                 }
                 return;
             case SDLK_m:
-                if (control && !shift && !repeat) {
+                if (controller && !shift && !repeat) {
                     action_menu(controller, action);
                 }
                 return;
             case SDLK_p:
-                if (control && !shift && !repeat) {
+                if (controller && !shift && !repeat) {
                     action_power(controller, action);
                 }
                 return;
             case SDLK_o:
-                if (control && !repeat && down) {
+                if (controller && !repeat && down) {
                     enum screen_power_mode mode = shift
                                                 ? SCREEN_POWER_MODE_NORMAL
                                                 : SCREEN_POWER_MODE_OFF;
@@ -497,13 +494,13 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_DOWN:
-                if (control && !shift) {
+                if (controller && !shift) {
                     // forward repeated events
                     action_volume_down(controller, action);
                 }
                 return;
             case SDLK_UP:
-                if (control && !shift) {
+                if (controller && !shift) {
                     // forward repeated events
                     action_volume_up(controller, action);
                 }
@@ -519,19 +516,19 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_c:
-                if (control && !shift && !repeat && down) {
+                if (controller && !shift && !repeat && down) {
                     get_device_clipboard(controller,
                                          GET_CLIPBOARD_COPY_KEY_COPY);
                 }
                 return;
             case SDLK_x:
-                if (control && !shift && !repeat && down) {
+                if (controller && !shift && !repeat && down) {
                     get_device_clipboard(controller,
                                          GET_CLIPBOARD_COPY_KEY_CUT);
                 }
                 return;
             case SDLK_v:
-                if (control && !repeat && down) {
+                if (controller && !repeat && down) {
                     if (shift || im->legacy_paste) {
                         // inject the text as input events
                         clipboard_paste(controller);
@@ -564,7 +561,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_n:
-                if (control && !repeat && down) {
+                if (controller && !repeat && down) {
                     if (shift) {
                         collapse_panels(controller);
                     } else if (im->key_repeat == 0) {
@@ -575,7 +572,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_r:
-                if (control && !shift && !repeat && down) {
+                if (controller && !shift && !repeat && down) {
                     rotate_device(controller);
                 }
                 return;
@@ -584,7 +581,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         return;
     }
 
-    if (!control) {
+    if (!controller) {
         return;
     }
 
@@ -701,7 +698,7 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                                       const SDL_MouseButtonEvent *event) {
-    bool control = im->control;
+    struct sc_controller *controller = im->controller;
 
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
@@ -712,24 +709,24 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     if (!im->forward_all_clicks) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
-        if (control && event->button == SDL_BUTTON_X1) {
-            action_app_switch(im->controller, action);
+        if (controller && event->button == SDL_BUTTON_X1) {
+            action_app_switch(controller, action);
             return;
         }
-        if (control && event->button == SDL_BUTTON_X2 && down) {
+        if (controller && event->button == SDL_BUTTON_X2 && down) {
             if (event->clicks < 2) {
-                expand_notification_panel(im->controller);
+                expand_notification_panel(controller);
             } else {
-                expand_settings_panel(im->controller);
+                expand_settings_panel(controller);
             }
             return;
         }
-        if (control && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(im->controller, action);
+        if (controller && event->button == SDL_BUTTON_RIGHT) {
+            press_back_or_turn_screen_on(controller, action);
             return;
         }
-        if (control && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(im->controller, action);
+        if (controller && event->button == SDL_BUTTON_MIDDLE) {
+            action_home(controller, action);
             return;
         }
 
@@ -751,7 +748,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         // otherwise, send the click event to the device
     }
 
-    if (!control) {
+    if (!controller) {
         return;
     }
 
@@ -865,9 +862,10 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 
 void
 sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
+    bool control = im->controller;
     switch (event->type) {
         case SDL_TEXTINPUT:
-            if (!im->control) {
+            if (!control) {
                 break;
             }
             sc_input_manager_process_text_input(im, &event->text);
@@ -879,13 +877,13 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
             sc_input_manager_process_key(im, &event->key);
             break;
         case SDL_MOUSEMOTION:
-            if (!im->control) {
+            if (!control) {
                 break;
             }
             sc_input_manager_process_mouse_motion(im, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
-            if (!im->control) {
+            if (!control) {
                 break;
             }
             sc_input_manager_process_mouse_wheel(im, &event->wheel);
@@ -899,13 +897,13 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
-            if (!im->control) {
+            if (!control) {
                 break;
             }
             sc_input_manager_process_touch(im, &event->tfinger);
             break;
         case SDL_DROPFILE: {
-            if (!im->control) {
+            if (!control) {
                 break;
             }
             sc_input_manager_process_file(im, &event->drop);

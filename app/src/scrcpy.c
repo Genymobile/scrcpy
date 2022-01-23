@@ -525,6 +525,9 @@ aoa_hid_end:
 
     }
 
+    // There is a controller if and only if control is enabled
+    assert(options->control == !!controller);
+
     if (options->display) {
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
@@ -534,7 +537,6 @@ aoa_hid_end:
             .fp = fp,
             .kp = kp,
             .mp = mp,
-            .control = options->control,
             .forward_all_clicks = options->forward_all_clicks,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,

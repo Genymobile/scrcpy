@@ -22,7 +22,6 @@ struct sc_input_manager {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
-    bool control;
     bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;
@@ -51,7 +50,6 @@ struct sc_input_manager_params {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
-    bool control;
     bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;
