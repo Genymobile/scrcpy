@@ -156,6 +156,12 @@ get_initial_optimal_size(struct sc_size content_size, uint16_t req_width,
     return window_size;
 }
 
+static inline bool
+sc_screen_is_relative_mode(struct sc_screen *screen) {
+    // screen->im.mp may be NULL if --no-control
+    return screen->im.mp && screen->im.mp->relative_mode;
+}
+
 static void
 sc_screen_capture_mouse(struct sc_screen *screen, bool capture) {
     if (SDL_SetRelativeMouseMode(capture)) {
@@ -772,8 +778,7 @@ sc_screen_is_mouse_capture_key(SDL_Keycode key) {
 
 void
 sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
-    // screen->im.mp may be NULL if --no-control
-    bool relative_mode = screen->im.mp && screen->im.mp->relative_mode;
+    bool relative_mode = sc_screen_is_relative_mode(screen);
 
     switch (event->type) {
         case EVENT_NEW_FRAME: {
