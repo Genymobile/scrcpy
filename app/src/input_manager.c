@@ -899,6 +899,9 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
+            if (!im->control) {
+                break;
+            }
             sc_input_manager_process_touch(im, &event->tfinger);
             break;
         case SDL_DROPFILE: {
