@@ -707,27 +707,29 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
     if (!im->forward_all_clicks) {
-        enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
+        if (controller) {
+            enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
-        if (controller && event->button == SDL_BUTTON_X1) {
-            action_app_switch(controller, action);
-            return;
-        }
-        if (controller && event->button == SDL_BUTTON_X2 && down) {
-            if (event->clicks < 2) {
-                expand_notification_panel(controller);
-            } else {
-                expand_settings_panel(controller);
+            if (event->button == SDL_BUTTON_X1) {
+                action_app_switch(controller, action);
+                return;
             }
-            return;
-        }
-        if (controller && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(controller, action);
-            return;
-        }
-        if (controller && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(controller, action);
-            return;
+            if (event->button == SDL_BUTTON_X2 && down) {
+                if (event->clicks < 2) {
+                    expand_notification_panel(controller);
+                } else {
+                    expand_settings_panel(controller);
+                }
+                return;
+            }
+            if (event->button == SDL_BUTTON_RIGHT) {
+                press_back_or_turn_screen_on(controller, action);
+                return;
+            }
+            if (event->button == SDL_BUTTON_MIDDLE) {
+                action_home(controller, action);
+                return;
+            }
         }
 
         // double-click on black borders resize to fit the device screen
