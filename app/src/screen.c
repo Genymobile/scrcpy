@@ -824,14 +824,13 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                 if (sc_screen_is_mouse_capture_key(key)) {
                     if (!screen->mouse_capture_key_pressed) {
                         screen->mouse_capture_key_pressed = key;
-                        return;
                     } else {
                         // Another mouse capture key has been pressed, cancel
                         // mouse (un)capture
                         screen->mouse_capture_key_pressed = 0;
-                        // Do not return, the event must be forwarded to the
-                        // input manager
                     }
+                    // Mouse capture keys are never forwarded to the device
+                    return;
                 }
             }
             break;
@@ -840,14 +839,16 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                 SDL_Keycode key = event->key.keysym.sym;
                 SDL_Keycode cap = screen->mouse_capture_key_pressed;
                 screen->mouse_capture_key_pressed = 0;
-                if (key == cap) {
-                    // A mouse capture key has been pressed then released:
-                    // toggle the capture mouse mode
-                    sc_screen_capture_mouse(screen, !screen->mouse_captured);
+                if (sc_screen_is_mouse_capture_key(key)) {
+                    if (key == cap) {
+                        // A mouse capture key has been pressed then released:
+                        // toggle the capture mouse mode
+                        sc_screen_capture_mouse(screen,
+                                                !screen->mouse_captured);
+                    }
+                    // Mouse capture keys are never forwarded to the device
                     return;
                 }
-                // Do not return, the event must be forwarded to the input
-                // manager
             }
             break;
         case SDL_MOUSEWHEEL:
