@@ -5,7 +5,7 @@ Solo se garantiza que el archivo [README](README.md) original esté actualizado.
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 Esta aplicación proporciona control e imagen de un dispositivo Android conectado
-por USB (o [por TCP/IP][#wireless]). No requiere acceso _root_.
+por USB (o [por TCP/IP](#conexión)). No requiere acceso _root_.
 Compatible con _GNU/Linux_, _Windows_ y _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -23,12 +23,12 @@ Se enfoca en:
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
 Con la aplicación puede:
- - [grabar la pantalla](#recording)
- - duplicar la imagen con [la pantalla apagada](#turn-screen-off)
- - [copiar y pegar](#copy-paste) en ambos sentidos
- - [configurar la calidad](#capture-configuration)
+ - [grabar la pantalla](#capturas-y-grabaciones)
+ - duplicar la imagen con [la pantalla apagada](#apagar-la-pantalla)
+ - [copiar y pegar](#copiar-y-pegar) en ambos sentidos
+ - [configurar la calidad](#configuración-de-captura)
  - usar la pantalla del dispositivo [como webcam (V4L2)](#v4l2loopback) (solo en Linux)
- - [emular un teclado físico (HID)](#physical-keyboard-simulation-hid)
+ - [emular un teclado físico (HID)](#emular-teclado-físico-hid)
    (solo en Linux)
  - y mucho más…
 
@@ -165,7 +165,7 @@ scrcpy --help
 
 ## Características
 
-### Capturar configuración
+### Configuración de captura
 
 #### Reducir la definición
 
@@ -266,7 +266,7 @@ scrcpy -Nr file.mkv
 # interrumpe la grabación con Ctrl+C
 ```
 
-"Skipped frames" son grabados, incluso si no son mostrados en tiempo real (por razones de desempeño). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
+Los "skipped frames" son grabados, incluso si no se mostrados en tiempo real (por razones de desempeño). Los frames tienen _marcas de tiempo_ en el dispositivo, por lo que el "[packet delay
 variation]" no impacta el archivo grabado.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
@@ -418,7 +418,7 @@ scrcpy -s 192.168.0.1:5555  # versión breve
 
 Puedes iniciar múltiples instancias de _scrcpy_ para múltiples dispositivos.
 
-#### Autoiniciar al detectar dispositivo
+#### Iniciar automáticamente al detectar dispositivo
 
 Puedes utilizar [AutoAdb]:
 
@@ -563,7 +563,7 @@ Se puede rotar la ventana:
 scrcpy --rotation 1
 ```
 
-Los valores posibles son:
+Los posibles valores son:
  - `0`: sin rotación
  - `1`: 90 grados contrarreloj
  - `2`: 180 grados
@@ -577,7 +577,7 @@ Nótese que _scrcpy_ maneja 3 diferentes rotaciones:
  - `--rotation` (o <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>) rota solo el contenido de la imagen. Esto solo afecta a la imagen mostrada, no a la grabación.
 
 
-### Otras opciones menores
+### Otras opciones
 
 #### Solo lectura ("Read-only")
 
@@ -717,12 +717,12 @@ Más precisamente, mantén <kbd>Ctrl</kbd> mientras presionas botón izquierdo. 
 
 Concretamente, scrcpy genera clicks adicionales con un "dedo virtual" en la posición invertida respecto al centro de la pantalla.
 
-#### Simular teclado físico (HID)
+#### Emular teclado físico (HID)
 
 Por default, scrcpy usa el sistema de Android para la injección de teclas o texto:
 funciona en todas partes, pero está limitado a ASCII.
 
-En Linux, scrcpy puede simular un teclado USB físico en Android para proveer
+En Linux, scrcpy puede emular un teclado USB físico en Android para proveer
 una mejor experiencia al enviar _inputs_ (usando [USB HID vía AOAv2][hid-aoav2]):
 deshabilita el teclado virtual y funciona para todos los caracteres y IME.
 
@@ -892,7 +892,7 @@ _<kbd>[Super]</kbd> es generalmente la tecla <kbd>Windows</kbd> o <kbd>Cmd</kbd>
  | Habilitar/Deshabilitar contador de FPS (en stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pellizcar para zoom                          | <kbd>Ctrl</kbd>+_click-y-mover_
  | Arrastrar y soltar un archivo (APK)          | Instalar APK desde la computadora
- | Arrastrar y soltar un archivo (no APK)       | [Mover archivo al dispositivo](#push-file-to-device)
+ | Arrastrar y soltar un archivo (no APK)       | [Mover archivo al dispositivo](#enviar-archivos-al-dispositivo)
 
 _¹Doble click en los bordes negros para eliminarlos._  
 _²Botón derecho enciende la pantalla si estaba apagada, sino ejecuta RETROCEDER._
