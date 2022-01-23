@@ -773,6 +773,9 @@ sc_screen_is_mouse_capture_key(SDL_Keycode key) {
 
 void
 sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
+    // screen->im.mp may be NULL if --no-control
+    bool relative_mode = screen->im.mp && screen->im.mp->relative_mode;
+
     switch (event->type) {
         case EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
@@ -810,14 +813,14 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_FOCUS_LOST:
-                    if (screen->im.mp->relative_mode) {
+                    if (relative_mode) {
                         sc_screen_capture_mouse(screen, false);
                     }
                     break;
             }
             return;
         case SDL_KEYDOWN:
-            if (screen->im.mp->relative_mode) {
+            if (relative_mode) {
                 SDL_Keycode key = event->key.keysym.sym;
                 if (sc_screen_is_mouse_capture_key(key)) {
                     if (!screen->mouse_capture_key_pressed) {
@@ -834,7 +837,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
             }
             break;
         case SDL_KEYUP:
-            if (screen->im.mp->relative_mode) {
+            if (relative_mode) {
                 SDL_Keycode key = event->key.keysym.sym;
                 SDL_Keycode cap = screen->mouse_capture_key_pressed;
                 screen->mouse_capture_key_pressed = 0;
@@ -851,7 +854,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
         case SDL_MOUSEWHEEL:
         case SDL_MOUSEMOTION:
         case SDL_MOUSEBUTTONDOWN:
-            if (screen->im.mp->relative_mode && !screen->mouse_captured) {
+            if (relative_mode && !screen->mouse_captured) {
                 // Do not forward to input manager, the mouse will be captured
                 // on SDL_MOUSEBUTTONUP
                 return;
@@ -860,14 +863,14 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
-            if (screen->im.mp->relative_mode) {
+            if (relative_mode) {
                 // Touch events are not compatible with relative mode
                 // (coordinates are not relative)
                 return;
             }
             break;
         case SDL_MOUSEBUTTONUP:
-            if (screen->im.mp->relative_mode && !screen->mouse_captured) {
+            if (relative_mode && !screen->mouse_captured) {
                 sc_screen_capture_mouse(screen, true);
                 return;
             }
