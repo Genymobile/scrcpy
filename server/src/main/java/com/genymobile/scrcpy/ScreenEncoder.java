@@ -159,7 +159,10 @@ public class ScreenEncoder implements Device.RotationListener {
                     }
 
                     IO.writeFully(fd, codecBuffer);
-                    firstFrameSent = true;
+                    if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                        // If this is not a config packet, then it contains a frame
+                        firstFrameSent = true;
+                    }
                 }
             } finally {
                 if (outputBufferId >= 0) {
