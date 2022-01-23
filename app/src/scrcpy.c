@@ -405,6 +405,7 @@ scrcpy(struct scrcpy_options *options) {
         stream_add_sink(&s->stream, &rec->packet_sink);
     }
 
+    struct sc_controller *controller = NULL;
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
 
@@ -510,6 +511,7 @@ aoa_hid_end:
             goto end;
         }
         controller_started = true;
+        controller = &s->controller;
 
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
@@ -528,7 +530,7 @@ aoa_hid_end:
             options->window_title ? options->window_title : info->device_name;
 
         struct sc_screen_params screen_params = {
-            .controller = &s->controller,
+            .controller = controller,
             .fp = fp,
             .kp = kp,
             .mp = mp,
