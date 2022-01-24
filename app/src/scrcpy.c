@@ -17,16 +17,17 @@
 #include "decoder.h"
 #include "events.h"
 #include "file_pusher.h"
-#ifdef HAVE_AOA_HID
-# include "hid_keyboard.h"
-# include "hid_mouse.h"
-#endif
 #include "keyboard_inject.h"
 #include "mouse_inject.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
+#ifdef HAVE_AOA_HID
+# include "usb/aoa_hid.h"
+# include "usb/hid_keyboard.h"
+# include "usb/hid_mouse.h"
+#endif
 #include "util/acksync.h"
 #include "util/log.h"
 #include "util/net.h"

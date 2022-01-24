@@ -75,9 +75,9 @@ endif
 aoa_hid_support = host_machine.system() == 'linux'
 if aoa_hid_support
     src += [
-        'src/aoa_hid.c',
-        'src/hid_keyboard.c',
-        'src/hid_mouse.c',
+        'src/usb/aoa_hid.c',
+        'src/usb/hid_keyboard.c',
+        'src/usb/hid_mouse.c',
     ]
 endif
 
