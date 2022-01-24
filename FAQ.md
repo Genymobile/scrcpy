@@ -32,7 +32,16 @@ in the release, so it should work out-of-the-box.
 
 ### Device unauthorized
 
-Check [stackoverflow][device-unauthorized].
+
+>     error: device unauthorized.
+>     This adb server's $ADB_VENDOR_KEYS is not set
+>     Try 'adb kill-server' if that seems wrong.
+>     Otherwise check for a confirmation dialog on your device.
+
+When connecting, a popup should open on the device. You must authorize USB
+debugging.
+
+If it does not open, check [stackoverflow][device-unauthorized].
 
 [device-unauthorized]: https://stackoverflow.com/questions/23081263/adb-android-device-unauthorized
 
@@ -62,7 +71,7 @@ the identifier of the device you want to mirror must be provided:
 scrcpy -s 01234567890abcdef
 ```
 
-Note that if your device is connected over TCP/IP, you'll get this message:
+Note that if your device is connected over TCP/IP, you might get this message:
 
 >     adb: error: more than one device/emulator
 >     ERROR: "adb reverse" returned with value 1
