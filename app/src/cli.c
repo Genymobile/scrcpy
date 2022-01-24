@@ -1600,6 +1600,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("Could not request to stay awake if control is disabled");
             return false;
         }
+        if (opts->show_touches) {
+            LOGE("Could not request to show touches if control is disabled");
+            return false;
+        }
+        if (opts->power_off_on_close) {
+            LOGE("Could not request power off on close if control is disabled");
+            return false;
+        }
     }
 
     return true;
