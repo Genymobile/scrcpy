@@ -72,8 +72,8 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
-aoa_hid_support = host_machine.system() == 'linux'
-if aoa_hid_support
+usb_support = host_machine.system() == 'linux'
+if usb_support
     src += [
         'src/usb/aoa_hid.c',
         'src/usb/hid_keyboard.c',
@@ -99,7 +99,7 @@ if not crossbuild_windows
         dependencies += dependency('libavdevice')
     endif
 
-    if aoa_hid_support
+    if usb_support
         dependencies += dependency('libusb-1.0')
     endif
 
@@ -193,7 +193,7 @@ conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == '
 conf.set('HAVE_V4L2', v4l2_support)
 
 # enable HID over AOA support (linux only)
-conf.set('HAVE_AOA_HID', aoa_hid_support)
+conf.set('HAVE_USB', usb_support)
 
 configure_file(configuration: conf, output: 'config.h')
 

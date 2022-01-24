@@ -23,7 +23,7 @@
 #include "screen.h"
 #include "server.h"
 #include "stream.h"
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
 # include "usb/aoa_hid.h"
 # include "usb/hid_keyboard.h"
 # include "usb/hid_mouse.h"
@@ -46,20 +46,20 @@ struct scrcpy {
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
 #endif
     union {
         struct sc_keyboard_inject keyboard_inject;
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
         struct sc_hid_keyboard keyboard_hid;
 #endif
     };
     union {
         struct sc_mouse_inject mouse_inject;
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
         struct sc_hid_mouse mouse_hid;
 #endif
     };
@@ -284,7 +284,7 @@ scrcpy(struct scrcpy_options *options) {
     bool v4l2_sink_initialized = false;
 #endif
     bool stream_started = false;
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
     bool hid_mouse_initialized = false;
@@ -411,7 +411,7 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
         bool use_hid_keyboard =
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
         bool use_hid_mouse =
@@ -594,7 +594,7 @@ aoa_hid_end:
 end:
     // The stream is not stopped explicitly, because it will stop by itself on
     // end-of-stream
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
     if (aoa_hid_initialized) {
         if (hid_keyboard_initialized) {
             sc_hid_keyboard_destroy(&s->keyboard_hid);
@@ -635,7 +635,7 @@ end:
     }
 #endif
 
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
     if (aoa_hid_initialized) {
         sc_aoa_join(&s->aoa);
         sc_aoa_destroy(&s->aoa);

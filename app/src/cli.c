@@ -1318,7 +1318,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
                 opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
                 break;
 #else
@@ -1337,7 +1337,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'M':
-#ifdef HAVE_AOA_HID
+#ifdef HAVE_USB
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_HID;
                 break;
 #else
