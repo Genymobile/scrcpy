@@ -456,7 +456,7 @@ scrcpy(struct scrcpy_options *options) {
                  usb_device->serial, usb_device->vid, usb_device->pid,
                  usb_device->manufacturer, usb_device->product);
 
-            ok = sc_usb_connect(&s->usb, usb_device->device);
+            ok = sc_usb_connect(&s->usb, usb_device->device, NULL, NULL);
             sc_usb_device_destroy(usb_device);
             if (!ok) {
                 LOGE("Failed to connect to USB device %s", serial);
@@ -650,6 +650,7 @@ end:
             sc_hid_mouse_destroy(&s->mouse_hid);
         }
         sc_aoa_stop(&s->aoa);
+        sc_usb_stop(&s->usb);
     }
     if (acksync) {
         sc_acksync_destroy(acksync);
@@ -686,6 +687,7 @@ end:
     if (aoa_hid_initialized) {
         sc_aoa_join(&s->aoa);
         sc_aoa_destroy(&s->aoa);
+        sc_usb_join(&s->usb);
         sc_usb_disconnect(&s->usb);
         sc_usb_destroy(&s->usb);
     }
