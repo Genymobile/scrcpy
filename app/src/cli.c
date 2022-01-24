@@ -1591,14 +1591,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
-    if (!opts->control && opts->turn_screen_off) {
-        LOGE("Could not request to turn screen off if control is disabled");
-        return false;
-    }
-
-    if (!opts->control && opts->stay_awake) {
-        LOGE("Could not request to stay awake if control is disabled");
-        return false;
+    if (!opts->control) {
+        if (opts->turn_screen_off) {
+            LOGE("Could not request to turn screen off if control is disabled");
+            return false;
+        }
+        if (opts->stay_awake) {
+            LOGE("Could not request to stay awake if control is disabled");
+            return false;
+        }
     }
 
     return true;
