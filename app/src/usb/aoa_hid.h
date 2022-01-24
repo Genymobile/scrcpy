@@ -30,7 +30,7 @@ sc_hid_event_destroy(struct sc_hid_event *hid_event);
 struct sc_hid_event_queue CBUF(struct sc_hid_event, 64);
 
 struct sc_aoa {
-    struct sc_usb usb;
+    struct sc_usb *usb;
     sc_thread thread;
     sc_mutex mutex;
     sc_cond event_cond;
@@ -41,7 +41,7 @@ struct sc_aoa {
 };
 
 bool
-sc_aoa_init(struct sc_aoa *aoa, const char *serial, struct sc_acksync *acksync);
+sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb, struct sc_acksync *acksync);
 
 void
 sc_aoa_destroy(struct sc_aoa *aoa);

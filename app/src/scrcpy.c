@@ -27,6 +27,7 @@
 # include "usb/aoa_hid.h"
 # include "usb/hid_keyboard.h"
 # include "usb/hid_mouse.h"
+# include "usb/usb.h"
 #endif
 #include "util/acksync.h"
 #include "util/log.h"
@@ -47,6 +48,7 @@ struct scrcpy {
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
 #ifdef HAVE_USB
+    struct sc_usb usb;
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
@@ -422,9 +424,17 @@ scrcpy(struct scrcpy_options *options) {
                 goto end;
             }
 
-            ok = sc_aoa_init(&s->aoa, serial, &s->acksync);
+            ok = sc_usb_init(&s->usb, serial);
+            if (!ok) {
+                LOGE("Failed to initialized USB device");
+                sc_acksync_destroy(&s->acksync);
+                goto aoa_hid_end;
+            }
+
+            ok = sc_aoa_init(&s->aoa, &s->usb, &s->acksync);
             if (!ok) {
                 LOGE("Failed to enable HID over AOA");
+                sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
@@ -451,6 +461,7 @@ scrcpy(struct scrcpy_options *options) {
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
+                sc_usb_destroy(&s->usb);
                 sc_aoa_destroy(&s->aoa);
                 goto aoa_hid_end;
             }
@@ -639,6 +650,7 @@ end:
     if (aoa_hid_initialized) {
         sc_aoa_join(&s->aoa);
         sc_aoa_destroy(&s->aoa);
+        sc_usb_destroy(&s->usb);
     }
 #endif
 

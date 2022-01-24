@@ -51,7 +51,7 @@ log_libusb_error(enum libusb_error errcode) {
 }
 
 bool
-sc_aoa_init(struct sc_aoa *aoa, const char *serial,
+sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
     assert(acksync);
 
@@ -62,24 +62,15 @@ sc_aoa_init(struct sc_aoa *aoa, const char *serial,
     }
 
     if (!sc_cond_init(&aoa->event_cond)) {
-        goto error_destroy_mutex;
-    }
-
-    bool ok = sc_usb_init(&aoa->usb, serial);
-    if (!ok) {
-        goto error_destroy_cond;
+        sc_mutex_destroy(&aoa->mutex);
+        return false;
     }
 
     aoa->stopped = false;
     aoa->acksync = acksync;
+    aoa->usb = usb;
 
     return true;
-
-error_destroy_cond:
-    sc_cond_destroy(&aoa->event_cond);
-error_destroy_mutex:
-    sc_mutex_destroy(&aoa->mutex);
-    return false;
 }
 
 void
@@ -90,7 +81,6 @@ sc_aoa_destroy(struct sc_aoa *aoa) {
         sc_hid_event_destroy(&event);
     }
 
-    sc_usb_destroy(&aoa->usb);
     sc_cond_destroy(&aoa->event_cond);
     sc_mutex_destroy(&aoa->mutex);
 }
@@ -107,8 +97,8 @@ sc_aoa_register_hid(struct sc_aoa *aoa, uint16_t accessory_id,
     uint16_t index = report_desc_size;
     unsigned char *buffer = NULL;
     uint16_t length = 0;
-    int result = libusb_control_transfer(aoa->usb.handle, request_type, request,
-                                         value, index, buffer, length,
+    int result = libusb_control_transfer(aoa->usb->handle, request_type,
+                                         request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         log_libusb_error((enum libusb_error) result);
@@ -143,8 +133,8 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
     // libusb_control_transfer expects a pointer to non-const
     unsigned char *buffer = (unsigned char *) report_desc;
     uint16_t length = report_desc_size;
-    int result = libusb_control_transfer(aoa->usb.handle, request_type, request,
-                                         value, index, buffer, length,
+    int result = libusb_control_transfer(aoa->usb->handle, request_type,
+                                         request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         log_libusb_error((enum libusb_error) result);
@@ -185,8 +175,8 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     uint16_t index = 0;
     unsigned char *buffer = event->buffer;
     uint16_t length = event->size;
-    int result = libusb_control_transfer(aoa->usb.handle, request_type, request,
-                                         value, index, buffer, length,
+    int result = libusb_control_transfer(aoa->usb->handle, request_type,
+                                         request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         log_libusb_error((enum libusb_error) result);
@@ -207,8 +197,8 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, const uint16_t accessory_id) {
     uint16_t index = 0;
     unsigned char *buffer = NULL;
     uint16_t length = 0;
-    int result = libusb_control_transfer(aoa->usb.handle, request_type, request,
-                                         value, index, buffer, length,
+    int result = libusb_control_transfer(aoa->usb->handle, request_type,
+                                         request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         log_libusb_error((enum libusb_error) result);
