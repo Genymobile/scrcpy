@@ -1320,12 +1320,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'K':
 #ifdef HAVE_AOA_HID
                 opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
+                break;
 #else
                 LOGE("HID over AOA (-K/--hid-keyboard) is not supported on "
                      "this platform. It is only available on Linux.");
                 return false;
 #endif
-                break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
                     return false;
@@ -1339,12 +1339,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'M':
 #ifdef HAVE_AOA_HID
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_HID;
+                break;
 #else
                 LOGE("HID over AOA (-M/--hid-mouse) is not supported on this"
                      "platform. It is only available on Linux.");
                 return false;
 #endif
-                break;
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
                         &opts->lock_video_orientation)) {
@@ -1503,21 +1503,21 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
+                break;
 #else
                 LOGE("V4L2 (--v4l2-sink) is only available on Linux.");
                 return false;
 #endif
-                break;
             case OPT_V4L2_BUFFER:
 #ifdef HAVE_V4L2
                 if (!parse_buffering_time(optarg, &opts->v4l2_buffer)) {
                     return false;
                 }
+                break;
 #else
                 LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
                 return false;
 #endif
-                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
