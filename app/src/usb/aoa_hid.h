@@ -6,6 +6,7 @@
 
 #include <libusb-1.0/libusb.h>
 
+#include "usb.h"
 #include "util/acksync.h"
 #include "util/cbuf.h"
 #include "util/thread.h"
@@ -29,9 +30,7 @@ sc_hid_event_destroy(struct sc_hid_event *hid_event);
 struct sc_hid_event_queue CBUF(struct sc_hid_event, 64);
 
 struct sc_aoa {
-    libusb_context *usb_context;
-    libusb_device *usb_device;
-    libusb_device_handle *usb_handle;
+    struct sc_usb usb;
     sc_thread thread;
     sc_mutex mutex;
     sc_cond event_cond;

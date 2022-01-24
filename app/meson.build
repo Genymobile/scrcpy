@@ -78,6 +78,7 @@ if usb_support
         'src/usb/aoa_hid.c',
         'src/usb/hid_keyboard.c',
         'src/usb/hid_mouse.c',
+        'src/usb/usb.c',
     ]
 endif
 
