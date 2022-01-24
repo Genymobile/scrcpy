@@ -12,7 +12,7 @@ Here are the common reported problems and their status.
 
 In that case, it will print this error:
 
->     ERROR: "adb push" returned with value 1
+>     ERROR: "adb get-serialno" returned with value 1
 
 This is typically not a bug in _scrcpy_, but a problem in your environment.
 
@@ -39,7 +39,7 @@ Check [stackoverflow][device-unauthorized].
 
 ### Device not detected
 
->     adb: error: failed to get feature set: no devices/emulators found
+>     error: no devices/emulators found
 
 Check that you correctly enabled [adb debugging][enable-adb].
 
@@ -54,7 +54,7 @@ If your device is not detected, you may need some [drivers] (on Windows). There 
 
 If several devices are connected, you will encounter this error:
 
->     adb: error: failed to get feature set: more than one device/emulator
+>     error: more than one device/emulator
 
 the identifier of the device you want to mirror must be provided:
 
