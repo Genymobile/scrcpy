@@ -1,5 +1,5 @@
-#ifndef HID_MOUSE_H
-#define HID_MOUSE_H
+#ifndef SC_HID_MOUSE_H
+#define SC_HID_MOUSE_H
 
 #include "common.h"
 
