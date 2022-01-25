@@ -9,6 +9,26 @@ log_libusb_error(enum libusb_error errcode) {
     LOGW("libusb error: %s", libusb_strerror(errcode));
 }
 
+static char *
+read_string(libusb_device_handle *handle, uint8_t desc_index) {
+    char buffer[128];
+    int result =
+        libusb_get_string_descriptor_ascii(handle, desc_index,
+                                           (unsigned char *) buffer,
+                                           sizeof(buffer));
+    if (result < 0) {
+        return NULL;
+    }
+
+    assert((size_t) result <= sizeof(buffer));
+
+    // When non-negative, 'result' contains the number of bytes written
+    char *s = malloc(result + 1);
+    memcpy(s, buffer, result);
+    s[result] = '\0';
+    return s;
+}
+
 static bool
 accept_device(libusb_device *device, const char *serial) {
     // Do not log any USB error in this function, it is expected that many USB
@@ -26,19 +46,15 @@ accept_device(libusb_device *device, const char *serial) {
         return false;
     }
 
-    char buffer[128];
-    result = libusb_get_string_descriptor_ascii(handle, desc.iSerialNumber,
-                                                (unsigned char *) buffer,
-                                                sizeof(buffer));
+    char *device_serial = read_string(handle, desc.iSerialNumber);
     libusb_close(handle);
-    if (result < 0) {
+    if (!device_serial) {
         return false;
     }
 
-    buffer[sizeof(buffer) - 1] = '\0'; // just in case
-
-    // Accept the device if its serial matches
-    return !strcmp(buffer, serial);
+    bool matches = !strcmp(serial, device_serial);
+    free(device_serial);
+    return matches;
 }
 
 static libusb_device *
