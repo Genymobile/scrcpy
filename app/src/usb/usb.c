@@ -57,8 +57,10 @@ accept_device(libusb_device *device, const char *serial) {
     return matches;
 }
 
-static libusb_device *
+libusb_device *
 sc_usb_find_device(struct sc_usb *usb, const char *serial) {
+    assert(serial);
+
     libusb_device **list;
     libusb_device *result = NULL;
     ssize_t count = libusb_get_device_list(usb->context, &list);
@@ -103,19 +105,9 @@ sc_usb_destroy(struct sc_usb *usb) {
 }
 
 bool
-sc_usb_connect(struct sc_usb *usb, const char *serial) {
-    assert(serial);
-
-    libusb_device *device = sc_usb_find_device(usb, serial);
-    if (!device) {
-        LOGW("USB device %s not found", serial);
-        return false;
-    }
-
+sc_usb_connect(struct sc_usb *usb, libusb_device *device) {
     usb->handle = sc_usb_open_handle(device);
-    libusb_unref_device(device);
     if (!usb->handle) {
-        LOGW("Could not open USB device %s", serial);
         return false;
     }
 

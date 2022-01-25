@@ -431,7 +431,17 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            ok = sc_usb_connect(&s->usb, serial);
+            assert(serial);
+            libusb_device *device = sc_usb_find_device(&s->usb, serial);
+            if (!device) {
+                LOGE("Could not find USB device %s", serial);
+                sc_usb_destroy(&s->usb);
+                sc_acksync_destroy(&s->acksync);
+                goto aoa_hid_end;
+            }
+
+            ok = sc_usb_connect(&s->usb, device);
+            libusb_unref_device(device);
             if (!ok) {
                 LOGE("Failed to connect to USB device %s", serial);
                 sc_usb_destroy(&s->usb);
