@@ -424,9 +424,17 @@ scrcpy(struct scrcpy_options *options) {
                 goto end;
             }
 
-            ok = sc_usb_init(&s->usb, serial);
+            ok = sc_usb_init(&s->usb);
             if (!ok) {
-                LOGE("Failed to initialized USB device");
+                LOGE("Failed to initialize USB");
+                sc_acksync_destroy(&s->acksync);
+                goto aoa_hid_end;
+            }
+
+            ok = sc_usb_connect(&s->usb, serial);
+            if (!ok) {
+                LOGE("Failed to connect to USB device %s", serial);
+                sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
@@ -434,6 +442,7 @@ scrcpy(struct scrcpy_options *options) {
             ok = sc_aoa_init(&s->aoa, &s->usb, &s->acksync);
             if (!ok) {
                 LOGE("Failed to enable HID over AOA");
+                sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
@@ -461,6 +470,7 @@ scrcpy(struct scrcpy_options *options) {
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
+                sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_aoa_destroy(&s->aoa);
                 goto aoa_hid_end;
@@ -650,6 +660,7 @@ end:
     if (aoa_hid_initialized) {
         sc_aoa_join(&s->aoa);
         sc_aoa_destroy(&s->aoa);
+        sc_usb_disconnect(&s->usb);
         sc_usb_destroy(&s->usb);
     }
 #endif

@@ -12,9 +12,15 @@ struct sc_usb {
 };
 
 bool
-sc_usb_init(struct sc_usb *usb, const char *serial);
+sc_usb_init(struct sc_usb *usb);
 
 void
 sc_usb_destroy(struct sc_usb *usb);
+
+bool
+sc_usb_connect(struct sc_usb *usb, const char *serial);
+
+void
+sc_usb_disconnect(struct sc_usb *usb);
 
 #endif
