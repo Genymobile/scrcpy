@@ -66,8 +66,9 @@ public final class Server {
 
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
+        boolean sendDummyByte = options.getSendDummyByte();
 
-        try (DesktopConnection connection = DesktopConnection.open(tunnelForward, control)) {
+        try (DesktopConnection connection = DesktopConnection.open(tunnelForward, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
@@ -247,6 +248,10 @@ public final class Server {
                 case "send_frame_meta":
                     boolean sendFrameMeta = Boolean.parseBoolean(value);
                     options.setSendFrameMeta(sendFrameMeta);
+                    break;
+                case "send_dummy_byte":
+                    boolean sendDummyByte = Boolean.parseBoolean(value);
+                    options.setSendDummyByte(sendDummyByte);
                     break;
                 default:
                     Ln.w("Unknown server option: " + key);

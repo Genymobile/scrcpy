@@ -46,15 +46,17 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(boolean tunnelForward, boolean control) throws IOException {
+    public static DesktopConnection open(boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
         LocalSocket videoSocket;
         LocalSocket controlSocket = null;
         if (tunnelForward) {
             LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
             try {
                 videoSocket = localServerSocket.accept();
-                // send one byte so the client may read() to detect a connection error
-                videoSocket.getOutputStream().write(0);
+                if (sendDummyByte) {
+                    // send one byte so the client may read() to detect a connection error
+                    videoSocket.getOutputStream().write(0);
+                }
                 if (control) {
                     try {
                         controlSocket = localServerSocket.accept();

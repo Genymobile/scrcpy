@@ -25,6 +25,7 @@ public class Options {
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
+    private boolean sendDummyByte = true; // write a byte on start to detect connection issues
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -168,5 +169,13 @@ public class Options {
 
     public void setSendFrameMeta(boolean sendFrameMeta) {
         this.sendFrameMeta = sendFrameMeta;
+    }
+
+    public boolean getSendDummyByte() {
+        return sendDummyByte;
+    }
+
+    public void setSendDummyByte(boolean sendDummyByte) {
+        this.sendDummyByte = sendDummyByte;
     }
 }
