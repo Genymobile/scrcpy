@@ -42,10 +42,10 @@ accept_device(libusb_device *device, const char *serial) {
 }
 
 static libusb_device *
-sc_usb_find_device(const char *serial) {
+sc_usb_find_device(struct sc_usb *usb, const char *serial) {
     libusb_device **list;
     libusb_device *result = NULL;
-    ssize_t count = libusb_get_device_list(NULL, &list);
+    ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
         log_libusb_error((enum libusb_error) count);
         return NULL;
@@ -84,7 +84,7 @@ sc_usb_init(struct sc_usb *usb, const char *serial) {
         return false;
     }
 
-    libusb_device *device = sc_usb_find_device(serial);
+    libusb_device *device = sc_usb_find_device(usb, serial);
     if (!device) {
         LOGW("USB device %s not found", serial);
         libusb_exit(usb->context);
