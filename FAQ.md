@@ -248,8 +248,15 @@ Caused by: java.lang.IllegalArgumentException: displayToken must not be null
 
 ## Command line on Windows
 
-Some Windows users are not familiar with the command line. Here is how to open a
-terminal and run `scrcpy` with arguments:
+Since v1.22, a "shortcut" has been added to directly open a terminal in the
+scrcpy directory. Double-click on `open_a_terminal_here.bat`, then type your
+command. For example:
+
+```
+scrcpy --record file.mkv
+```
+
+You could also open a terminal and go to the scrcpy folder manually:
 
  1. Press <kbd>Windows</kbd>+<kbd>r</kbd>, this opens a dialog box.
  2. Type `cmd` and press <kbd>Enter</kbd>, this opens a terminal.
