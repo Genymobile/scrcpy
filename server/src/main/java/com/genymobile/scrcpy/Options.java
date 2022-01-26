@@ -23,6 +23,7 @@ public class Options {
     private boolean downsizeOnError = true;
 
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
+    private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
 
     public Ln.Level getLogLevel() {
@@ -151,6 +152,14 @@ public class Options {
 
     public void setDownsizeOnError(boolean downsizeOnError) {
         this.downsizeOnError = downsizeOnError;
+    }
+
+    public boolean getSendDeviceMeta() {
+        return sendDeviceMeta;
+    }
+
+    public void setSendDeviceMeta(boolean sendDeviceMeta) {
+        this.sendDeviceMeta = sendDeviceMeta;
     }
 
     public boolean getSendFrameMeta() {

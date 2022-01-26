@@ -68,8 +68,10 @@ public final class Server {
         boolean control = options.getControl();
 
         try (DesktopConnection connection = DesktopConnection.open(tunnelForward, control)) {
-            Size videoSize = device.getScreenInfo().getVideoSize();
-            connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+            if (options.getSendDeviceMeta()) {
+                Size videoSize = device.getScreenInfo().getVideoSize();
+                connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+            }
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
 
@@ -237,6 +239,10 @@ public final class Server {
                 case "downsize_on_error":
                     boolean downsizeOnError = Boolean.parseBoolean(value);
                     options.setDownsizeOnError(downsizeOnError);
+                    break;
+                case "send_device_meta":
+                    boolean sendDeviceMeta = Boolean.parseBoolean(value);
+                    options.setSendDeviceMeta(sendDeviceMeta);
                     break;
                 case "send_frame_meta":
                     boolean sendFrameMeta = Boolean.parseBoolean(value);
