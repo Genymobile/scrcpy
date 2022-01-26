@@ -67,7 +67,9 @@ public final class Server {
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
 
-        try (DesktopConnection connection = DesktopConnection.open(device, tunnelForward, control)) {
+        try (DesktopConnection connection = DesktopConnection.open(tunnelForward, control)) {
+            Size videoSize = device.getScreenInfo().getVideoSize();
+            connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
 

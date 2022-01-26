@@ -46,7 +46,7 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(Device device, boolean tunnelForward, boolean control) throws IOException {
+    public static DesktopConnection open(boolean tunnelForward, boolean control) throws IOException {
         LocalSocket videoSocket;
         LocalSocket controlSocket = null;
         if (tunnelForward) {
@@ -78,10 +78,7 @@ public final class DesktopConnection implements Closeable {
             }
         }
 
-        DesktopConnection connection = new DesktopConnection(videoSocket, controlSocket);
-        Size videoSize = device.getScreenInfo().getVideoSize();
-        connection.send(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
-        return connection;
+        return new DesktopConnection(videoSocket, controlSocket);
     }
 
     public void close() throws IOException {
@@ -95,7 +92,7 @@ public final class DesktopConnection implements Closeable {
         }
     }
 
-    private void send(String deviceName, int width, int height) throws IOException {
+    public void sendDeviceMeta(String deviceName, int width, int height) throws IOException {
         byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
 
         byte[] deviceNameBytes = deviceName.getBytes(StandardCharsets.UTF_8);
