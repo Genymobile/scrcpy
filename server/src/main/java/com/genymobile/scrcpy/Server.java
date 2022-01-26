@@ -253,6 +253,14 @@ public final class Server {
                     boolean sendDummyByte = Boolean.parseBoolean(value);
                     options.setSendDummyByte(sendDummyByte);
                     break;
+                case "raw_video_stream":
+                    boolean rawVideoStream = Boolean.parseBoolean(value);
+                    if (rawVideoStream) {
+                        options.setSendDeviceMeta(false);
+                        options.setSendFrameMeta(false);
+                        options.setSendDummyByte(false);
+                    }
+                    break;
                 default:
                     Ln.w("Unknown server option: " + key);
                     break;
