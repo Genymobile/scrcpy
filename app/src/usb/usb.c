@@ -80,29 +80,36 @@ sc_usb_device_destroy(struct sc_usb_device *usb_device) {
     free(usb_device->product);
 }
 
-bool
-sc_usb_find_device(struct sc_usb *usb, const char *serial,
-                   struct sc_usb_device *out) {
+void
+sc_usb_device_destroy_all(struct sc_usb_device *usb_devices, size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        sc_usb_device_destroy(&usb_devices[i]);
+    }
+}
+
+ssize_t
+sc_usb_find_devices(struct sc_usb *usb, const char *serial,
+                    struct sc_usb_device *devices, size_t len) {
     assert(serial);
 
     libusb_device **list;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
         log_libusb_error((enum libusb_error) count);
-        return false;
+        return -1;
     }
 
-    for (size_t i = 0; i < (size_t) count; ++i) {
+    size_t idx = 0;
+    for (size_t i = 0; i < (size_t) count && idx < len; ++i) {
         libusb_device *device = list[i];
 
-        if (accept_device(device, serial, out)) {
-            libusb_free_device_list(list, 1);
-            return true;
+        if (accept_device(device, serial, &devices[idx])) {
+            ++idx;
         }
     }
 
     libusb_free_device_list(list, 1);
-    return false;
+    return idx;
 }
 
 static libusb_device_handle *
