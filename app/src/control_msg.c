@@ -92,19 +92,19 @@ size_t
 sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
     buf[0] = msg->type;
     switch (msg->type) {
-        case CONTROL_MSG_TYPE_INJECT_KEYCODE:
+        case SC_CONTROL_MSG_TYPE_INJECT_KEYCODE:
             buf[1] = msg->inject_keycode.action;
             buffer_write32be(&buf[2], msg->inject_keycode.keycode);
             buffer_write32be(&buf[6], msg->inject_keycode.repeat);
             buffer_write32be(&buf[10], msg->inject_keycode.metastate);
             return 14;
-        case CONTROL_MSG_TYPE_INJECT_TEXT: {
+        case SC_CONTROL_MSG_TYPE_INJECT_TEXT: {
             size_t len =
                 write_string(msg->inject_text.text,
-                             CONTROL_MSG_INJECT_TEXT_MAX_LENGTH, &buf[1]);
+                             SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH, &buf[1]);
             return 1 + len;
         }
-        case CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
+        case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
             buf[1] = msg->inject_touch_event.action;
             buffer_write64be(&buf[2], msg->inject_touch_event.pointer_id);
             write_position(&buf[10], &msg->inject_touch_event.position);
@@ -113,7 +113,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             buffer_write16be(&buf[22], pressure);
             buffer_write32be(&buf[24], msg->inject_touch_event.buttons);
             return 28;
-        case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
+        case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
             buffer_write32be(&buf[13],
                              (uint32_t) msg->inject_scroll_event.hscroll);
@@ -121,27 +121,26 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
                              (uint32_t) msg->inject_scroll_event.vscroll);
             buffer_write32be(&buf[21], msg->inject_scroll_event.buttons);
             return 25;
-        case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
+        case SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
             return 2;
-        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+        case SC_CONTROL_MSG_TYPE_GET_CLIPBOARD:
             buf[1] = msg->get_clipboard.copy_key;
             return 2;
-        case CONTROL_MSG_TYPE_SET_CLIPBOARD: {
+        case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             buffer_write64be(&buf[1], msg->set_clipboard.sequence);
             buf[9] = !!msg->set_clipboard.paste;
             size_t len = write_string(msg->set_clipboard.text,
-                                      CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
+                                      SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
                                       &buf[10]);
             return 10 + len;
-        }
-        case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
+        case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
             return 2;
-        case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
-        case CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
-        case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
-        case CONTROL_MSG_TYPE_ROTATE_DEVICE:
+        case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
+        case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
+        case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
+        case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;
         default:
@@ -154,17 +153,17 @@ void
 sc_control_msg_log(const struct sc_control_msg *msg) {
 #define LOG_CMSG(fmt, ...) LOGV("input: " fmt, ## __VA_ARGS__)
     switch (msg->type) {
-        case CONTROL_MSG_TYPE_INJECT_KEYCODE:
+        case SC_CONTROL_MSG_TYPE_INJECT_KEYCODE:
             LOG_CMSG("key %-4s code=%d repeat=%" PRIu32 " meta=%06lx",
                      KEYEVENT_ACTION_LABEL(msg->inject_keycode.action),
                      (int) msg->inject_keycode.keycode,
                      msg->inject_keycode.repeat,
                      (long) msg->inject_keycode.metastate);
             break;
-        case CONTROL_MSG_TYPE_INJECT_TEXT:
+        case SC_CONTROL_MSG_TYPE_INJECT_TEXT:
             LOG_CMSG("text \"%s\"", msg->inject_text.text);
             break;
-        case CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT: {
+        case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT: {
             int action = msg->inject_touch_event.action
                        & AMOTION_EVENT_ACTION_MASK;
             uint64_t id = msg->inject_touch_event.pointer_id;
@@ -191,7 +190,7 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             }
             break;
         }
-        case CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
+        case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             LOG_CMSG("scroll position=%" PRIi32 ",%" PRIi32 " hscroll=%" PRIi32
                          " vscroll=%" PRIi32 " buttons=%06lx",
                      msg->inject_scroll_event.position.point.x,
@@ -200,34 +199,34 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
                      msg->inject_scroll_event.vscroll,
                      (long) msg->inject_scroll_event.buttons);
             break;
-        case CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
+        case SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             LOG_CMSG("back-or-screen-on %s",
                      KEYEVENT_ACTION_LABEL(msg->inject_keycode.action));
             break;
-        case CONTROL_MSG_TYPE_GET_CLIPBOARD:
+        case SC_CONTROL_MSG_TYPE_GET_CLIPBOARD:
             LOG_CMSG("get clipboard copy_key=%s",
                      copy_key_labels[msg->get_clipboard.copy_key]);
             break;
-        case CONTROL_MSG_TYPE_SET_CLIPBOARD:
+        case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             LOG_CMSG("clipboard %" PRIu64_ " %s \"%s\"",
                      msg->set_clipboard.sequence,
                      msg->set_clipboard.paste ? "paste" : "nopaste",
                      msg->set_clipboard.text);
             break;
-        case CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
+        case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             LOG_CMSG("power mode %s",
                      SCREEN_POWER_MODE_LABEL(msg->set_screen_power_mode.mode));
             break;
-        case CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
+        case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
             LOG_CMSG("expand notification panel");
             break;
-        case CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
+        case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
             LOG_CMSG("expand settings panel");
             break;
-        case CONTROL_MSG_TYPE_COLLAPSE_PANELS:
+        case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
             LOG_CMSG("collapse panels");
             break;
-        case CONTROL_MSG_TYPE_ROTATE_DEVICE:
+        case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");
             break;
         default:
@@ -239,10 +238,10 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
 void
 sc_control_msg_destroy(struct sc_control_msg *msg) {
     switch (msg->type) {
-        case CONTROL_MSG_TYPE_INJECT_TEXT:
+        case SC_CONTROL_MSG_TYPE_INJECT_TEXT:
             free(msg->inject_text.text);
             break;
-        case CONTROL_MSG_TYPE_SET_CLIPBOARD:
+        case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             free(msg->set_clipboard.text);
             break;
         default:

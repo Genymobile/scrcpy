@@ -66,7 +66,7 @@ sc_controller_push_msg(struct sc_controller *controller,
 static bool
 process_msg(struct sc_controller *controller,
             const struct sc_control_msg *msg) {
-    static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
+    static unsigned char serialized_msg[SC_CONTROL_MSG_MAX_SIZE];
     size_t length = sc_control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
