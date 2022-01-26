@@ -12,7 +12,6 @@ public class Options {
     private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
-    private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean control = true;
     private int displayId;
     private boolean showTouches;
@@ -22,6 +21,9 @@ public class Options {
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
+
+    // Options not used by the scrcpy client, but useful to use scrcpy-server directly
+    private boolean sendFrameMeta = true; // send PTS so that the client may record properly
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -77,14 +79,6 @@ public class Options {
 
     public void setCrop(Rect crop) {
         this.crop = crop;
-    }
-
-    public boolean getSendFrameMeta() {
-        return sendFrameMeta;
-    }
-
-    public void setSendFrameMeta(boolean sendFrameMeta) {
-        this.sendFrameMeta = sendFrameMeta;
     }
 
     public boolean getControl() {
@@ -157,5 +151,13 @@ public class Options {
 
     public void setDownsizeOnError(boolean downsizeOnError) {
         this.downsizeOnError = downsizeOnError;
+    }
+
+    public boolean getSendFrameMeta() {
+        return sendFrameMeta;
+    }
+
+    public void setSendFrameMeta(boolean sendFrameMeta) {
+        this.sendFrameMeta = sendFrameMeta;
     }
 }

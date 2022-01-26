@@ -201,10 +201,6 @@ public final class Server {
                     Rect crop = parseCrop(value);
                     options.setCrop(crop);
                     break;
-                case "send_frame_meta":
-                    boolean sendFrameMeta = Boolean.parseBoolean(value);
-                    options.setSendFrameMeta(sendFrameMeta);
-                    break;
                 case "control":
                     boolean control = Boolean.parseBoolean(value);
                     options.setControl(control);
@@ -241,6 +237,10 @@ public final class Server {
                 case "downsize_on_error":
                     boolean downsizeOnError = Boolean.parseBoolean(value);
                     options.setDownsizeOnError(downsizeOnError);
+                    break;
+                case "send_frame_meta":
+                    boolean sendFrameMeta = Boolean.parseBoolean(value);
+                    options.setSendFrameMeta(sendFrameMeta);
                     break;
                 default:
                     Ln.w("Unknown server option: " + key);
