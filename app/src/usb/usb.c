@@ -84,17 +84,17 @@ sc_usb_init(struct sc_usb *usb, const char *serial) {
         return false;
     }
 
-    usb->device = sc_usb_find_device(serial);
-    if (!usb->device) {
+    libusb_device *device = sc_usb_find_device(serial);
+    if (!device) {
         LOGW("USB device %s not found", serial);
         libusb_exit(usb->context);
         return false;
     }
 
-    usb->handle = sc_usb_open_handle(usb->device);
+    usb->handle = sc_usb_open_handle(device);
+    libusb_unref_device(device);
     if (!usb->handle) {
         LOGW("Could not open USB device %s", serial);
-        libusb_unref_device(usb->device);
         libusb_exit(usb->context);
         return false;
     }
@@ -105,6 +105,5 @@ sc_usb_init(struct sc_usb *usb, const char *serial) {
 void
 sc_usb_destroy(struct sc_usb *usb) {
     libusb_close(usb->handle);
-    libusb_unref_device(usb->device);
     libusb_exit(usb->context);
 }

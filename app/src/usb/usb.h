@@ -8,7 +8,6 @@
 
 struct sc_usb {
     libusb_context *context;
-    libusb_device *device;
     libusb_device_handle *handle;
 };
 
