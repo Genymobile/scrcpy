@@ -53,11 +53,14 @@ accept_device(libusb_device *device, const char *serial,
         return false;
     }
 
-    bool matches = !strcmp(serial, device_serial);
-    if (!matches) {
-        free(device_serial);
-        libusb_close(handle);
-        return false;
+    if (serial) {
+        // Filter by serial
+        bool matches = !strcmp(serial, device_serial);
+        if (!matches) {
+            free(device_serial);
+            libusb_close(handle);
+            return false;
+        }
     }
 
     out->device = libusb_ref_device(device);
@@ -90,8 +93,6 @@ sc_usb_device_destroy_all(struct sc_usb_device *usb_devices, size_t count) {
 ssize_t
 sc_usb_find_devices(struct sc_usb *usb, const char *serial,
                     struct sc_usb_device *devices, size_t len) {
-    assert(serial);
-
     libusb_device **list;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
