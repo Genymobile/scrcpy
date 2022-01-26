@@ -432,16 +432,21 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             assert(serial);
-            libusb_device *device = sc_usb_find_device(&s->usb, serial);
-            if (!device) {
+            struct sc_usb_device usb_device;
+            ok = sc_usb_find_device(&s->usb, serial, &usb_device);
+            if (!ok) {
                 LOGE("Could not find USB device %s", serial);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
 
-            ok = sc_usb_connect(&s->usb, device);
-            libusb_unref_device(device);
+            LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
+                 usb_device.serial, usb_device.vid, usb_device.pid,
+                 usb_device.manufacturer, usb_device.product);
+
+            ok = sc_usb_connect(&s->usb, usb_device.device);
+            sc_usb_device_destroy(&usb_device);
             if (!ok) {
                 LOGE("Failed to connect to USB device %s", serial);
                 sc_usb_destroy(&s->usb);

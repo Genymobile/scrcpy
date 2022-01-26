@@ -30,7 +30,8 @@ read_string(libusb_device_handle *handle, uint8_t desc_index) {
 }
 
 static bool
-accept_device(libusb_device *device, const char *serial) {
+accept_device(libusb_device *device, const char *serial,
+              struct sc_usb_device *out) {
     // Do not log any USB error in this function, it is expected that many USB
     // devices available on the computer have permission restrictions
 
@@ -47,39 +48,61 @@ accept_device(libusb_device *device, const char *serial) {
     }
 
     char *device_serial = read_string(handle, desc.iSerialNumber);
-    libusb_close(handle);
     if (!device_serial) {
+        libusb_close(handle);
         return false;
     }
 
     bool matches = !strcmp(serial, device_serial);
-    free(device_serial);
-    return matches;
+    if (!matches) {
+        free(device_serial);
+        libusb_close(handle);
+        return false;
+    }
+
+    out->device = libusb_ref_device(device);
+    out->serial = device_serial;
+    out->vid = desc.idVendor;
+    out->pid = desc.idProduct;
+    out->manufacturer = read_string(handle, desc.iManufacturer);
+    out->product = read_string(handle, desc.iProduct);
+
+    libusb_close(handle);
+
+    return true;
 }
 
-libusb_device *
-sc_usb_find_device(struct sc_usb *usb, const char *serial) {
+void
+sc_usb_device_destroy(struct sc_usb_device *usb_device) {
+    libusb_unref_device(usb_device->device);
+    free(usb_device->serial);
+    free(usb_device->manufacturer);
+    free(usb_device->product);
+}
+
+bool
+sc_usb_find_device(struct sc_usb *usb, const char *serial,
+                   struct sc_usb_device *out) {
     assert(serial);
 
     libusb_device **list;
-    libusb_device *result = NULL;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
         log_libusb_error((enum libusb_error) count);
-        return NULL;
+        return false;
     }
 
     for (size_t i = 0; i < (size_t) count; ++i) {
         libusb_device *device = list[i];
 
-        if (accept_device(device, serial)) {
-            result = libusb_ref_device(device);
-            break;
+        if (accept_device(device, serial, out)) {
+            libusb_free_device_list(list, 1);
+            return true;
         }
     }
 
     libusb_free_device_list(list, 1);
-    return result;
+    return false;
 }
 
 static libusb_device_handle *
