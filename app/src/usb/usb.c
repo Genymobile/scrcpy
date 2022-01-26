@@ -43,10 +43,6 @@ accept_device(libusb_device *device, const char *serial) {
 
 static libusb_device *
 sc_usb_find_device(const char *serial) {
-    if (!serial) {
-        return NULL;
-    }
-
     libusb_device **list;
     libusb_device *result = NULL;
     ssize_t count = libusb_get_device_list(NULL, &list);
@@ -81,6 +77,8 @@ sc_usb_open_handle(libusb_device *device) {
 
 bool
 sc_usb_init(struct sc_usb *usb, const char *serial) {
+    assert(serial);
+
     // There is only one device, initialize the context here
     if (libusb_init(&usb->context) != LIBUSB_SUCCESS) {
         return false;
