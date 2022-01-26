@@ -11,40 +11,40 @@
 #include "android/keycodes.h"
 #include "coords.h"
 
-#define CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
+#define SC_CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 
-#define CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
+#define SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH 300
 // type: 1 byte; sequence: 8 bytes; paste flag: 1 byte; length: 4 bytes
-#define CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (CONTROL_MSG_MAX_SIZE - 14)
+#define SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH (SC_CONTROL_MSG_MAX_SIZE - 14)
 
 #define POINTER_ID_MOUSE UINT64_C(-1)
 #define POINTER_ID_VIRTUAL_FINGER UINT64_C(-2)
 
 enum sc_control_msg_type {
-    CONTROL_MSG_TYPE_INJECT_KEYCODE,
-    CONTROL_MSG_TYPE_INJECT_TEXT,
-    CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
-    CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
-    CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
-    CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
-    CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
-    CONTROL_MSG_TYPE_COLLAPSE_PANELS,
-    CONTROL_MSG_TYPE_GET_CLIPBOARD,
-    CONTROL_MSG_TYPE_SET_CLIPBOARD,
-    CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
-    CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    SC_CONTROL_MSG_TYPE_INJECT_KEYCODE,
+    SC_CONTROL_MSG_TYPE_INJECT_TEXT,
+    SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
+    SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
+    SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
+    SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
+    SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
+    SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS,
+    SC_CONTROL_MSG_TYPE_GET_CLIPBOARD,
+    SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
+    SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+    SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
 };
 
-enum screen_power_mode {
+enum sc_screen_power_mode {
     // see <https://android.googlesource.com/platform/frameworks/base.git/+/pie-release-2/core/java/android/view/SurfaceControl.java#305>
-    SCREEN_POWER_MODE_OFF = 0,
-    SCREEN_POWER_MODE_NORMAL = 2,
+    SC_SCREEN_POWER_MODE_OFF = 0,
+    SC_SCREEN_POWER_MODE_NORMAL = 2,
 };
 
-enum get_clipboard_copy_key {
-    GET_CLIPBOARD_COPY_KEY_NONE,
-    GET_CLIPBOARD_COPY_KEY_COPY,
-    GET_CLIPBOARD_COPY_KEY_CUT,
+enum sc_copy_key {
+    SC_COPY_KEY_NONE,
+    SC_COPY_KEY_COPY,
+    SC_COPY_KEY_CUT,
 };
 
 struct sc_control_msg {
@@ -77,7 +77,7 @@ struct sc_control_msg {
             // screen may only be turned on on ACTION_DOWN
         } back_or_screen_on;
         struct {
-            enum get_clipboard_copy_key copy_key;
+            enum sc_copy_key copy_key;
         } get_clipboard;
         struct {
             uint64_t sequence;
@@ -85,7 +85,7 @@ struct sc_control_msg {
             bool paste;
         } set_clipboard;
         struct {
-            enum screen_power_mode mode;
+            enum sc_screen_power_mode mode;
         } set_screen_power_mode;
     };
 };

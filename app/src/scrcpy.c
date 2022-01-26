@@ -515,8 +515,8 @@ aoa_hid_end:
 
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
-            msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-            msg.set_screen_power_mode.mode = SCREEN_POWER_MODE_OFF;
+            msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+            msg.set_screen_power_mode.mode = SC_SCREEN_POWER_MODE_OFF;
 
             if (!sc_controller_push_msg(&s->controller, &msg)) {
                 LOGW("Could not request 'set screen power mode'");

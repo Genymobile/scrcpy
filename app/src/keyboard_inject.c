@@ -248,7 +248,7 @@ convert_meta_state(uint16_t mod) {
 static bool
 convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
                   enum sc_key_inject_mode key_inject_mode, uint32_t repeat) {
-    msg->type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg->type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
 
     if (!convert_keycode(event->keycode, &msg->inject_keycode.keycode,
                          event->mods_state, key_inject_mode)) {
@@ -310,7 +310,7 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
     }
 
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = strdup(event->text);
     if (!msg.inject_text.text) {
         LOGW("Could not strdup input text");

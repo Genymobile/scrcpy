@@ -161,7 +161,7 @@ send_keycode(struct sc_controller *controller, enum android_keycode keycode,
              enum sc_action action, const char *name) {
     // send DOWN event
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
     msg.inject_keycode.action = action == SC_ACTION_DOWN
                               ? AKEY_EVENT_ACTION_DOWN
                               : AKEY_EVENT_ACTION_UP;
@@ -215,7 +215,7 @@ static void
 press_back_or_turn_screen_on(struct sc_controller *controller,
                              enum sc_action action) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
+    msg.type = SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
     msg.back_or_screen_on.action = action == SC_ACTION_DOWN
                                  ? AKEY_EVENT_ACTION_DOWN
                                  : AKEY_EVENT_ACTION_UP;
@@ -228,7 +228,7 @@ press_back_or_turn_screen_on(struct sc_controller *controller,
 static void
 expand_notification_panel(struct sc_controller *controller) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
+    msg.type = SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
 
     if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'expand notification panel'");
@@ -238,7 +238,7 @@ expand_notification_panel(struct sc_controller *controller) {
 static void
 expand_settings_panel(struct sc_controller *controller) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
+    msg.type = SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
 
     if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'expand settings panel'");
@@ -248,7 +248,7 @@ expand_settings_panel(struct sc_controller *controller) {
 static void
 collapse_panels(struct sc_controller *controller) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_COLLAPSE_PANELS;
+    msg.type = SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS;
 
     if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request 'collapse notification panel'");
@@ -257,9 +257,9 @@ collapse_panels(struct sc_controller *controller) {
 
 static bool
 get_device_clipboard(struct sc_controller *controller,
-                     enum get_clipboard_copy_key copy_key) {
+                     enum sc_copy_key copy_key) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_GET_CLIPBOARD;
+    msg.type = SC_CONTROL_MSG_TYPE_GET_CLIPBOARD;
     msg.get_clipboard.copy_key = copy_key;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -287,7 +287,7 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
     }
 
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_SET_CLIPBOARD;
+    msg.type = SC_CONTROL_MSG_TYPE_SET_CLIPBOARD;
     msg.set_clipboard.sequence = sequence;
     msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
@@ -303,9 +303,9 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
 
 static void
 set_screen_power_mode(struct sc_controller *controller,
-                      enum screen_power_mode mode) {
+                      enum sc_screen_power_mode mode) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+    msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
     msg.set_screen_power_mode.mode = mode;
 
     if (!sc_controller_push_msg(controller, &msg)) {
@@ -350,7 +350,7 @@ clipboard_paste(struct sc_controller *controller) {
     }
 
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_TEXT;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = text_dup;
     if (!sc_controller_push_msg(controller, &msg)) {
         free(text_dup);
@@ -361,7 +361,7 @@ clipboard_paste(struct sc_controller *controller) {
 static void
 rotate_device(struct sc_controller *controller) {
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_ROTATE_DEVICE;
+    msg.type = SC_CONTROL_MSG_TYPE_ROTATE_DEVICE;
 
     if (!sc_controller_push_msg(controller, &msg)) {
         LOGW("Could not request device rotation");
@@ -407,7 +407,7 @@ simulate_virtual_finger(struct sc_input_manager *im,
     bool up = action == AMOTION_EVENT_ACTION_UP;
 
     struct sc_control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT;
     msg.inject_touch_event.action = action;
     msg.inject_touch_event.position.screen_size = im->screen->frame_size;
     msg.inject_touch_event.position.point = point;
@@ -487,9 +487,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_o:
                 if (controller && !repeat && down) {
-                    enum screen_power_mode mode = shift
-                                                ? SCREEN_POWER_MODE_NORMAL
-                                                : SCREEN_POWER_MODE_OFF;
+                    enum sc_screen_power_mode mode = shift
+                                                   ? SC_SCREEN_POWER_MODE_NORMAL
+                                                   : SC_SCREEN_POWER_MODE_OFF;
                     set_screen_power_mode(controller, mode);
                 }
                 return;
@@ -517,14 +517,12 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_c:
                 if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller,
-                                         GET_CLIPBOARD_COPY_KEY_COPY);
+                    get_device_clipboard(controller, SC_COPY_KEY_COPY);
                 }
                 return;
             case SDLK_x:
                 if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller,
-                                         GET_CLIPBOARD_COPY_KEY_CUT);
+                    get_device_clipboard(controller, SC_COPY_KEY_CUT);
                 }
                 return;
             case SDLK_v:
