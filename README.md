@@ -35,6 +35,7 @@ Its features include:
    (Linux-only)
  - [physical mouse simulation (HID)](#physical-mouse-simulation-hid)
    (Linux-only)
+ - [OTG mode](#otg) (Linux-only)
  - and more…
 
 ## Requirements
@@ -847,6 +848,26 @@ disappears from the computer and appears on the Android device instead).
 Special capture keys, either <kbd>Alt</kbd> or <kbd>Super</kbd>, toggle
 (disable or enable) the mouse capture. Use one of them to give the control of
 the mouse back to the computer.
+
+
+#### OTG
+
+It is possible to run _scrcpy_ with only physical keyboard and mouse simulation
+(HID), as if the computer keyboard and mouse were plugged directly to the device
+via an OTG cable.
+
+In this mode, _adb_ (USB debugging) is not necessary, and mirroring is disabled.
+
+To enable OTG mode:
+
+```bash
+scrcpy --otg
+# Pass the serial if several USB devices are available
+scrcpy --otg -s 0123456789abcdef
+```
+
+Like `--hid-keyboard` and `--hid-mouse`, it only works if the device is
+connected by USB, and is currently only supported on Linux.
 
 
 #### Text injection preference
