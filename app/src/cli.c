@@ -287,6 +287,8 @@ static const struct sc_option options[] = {
                 "mirroring is disabled.\n"
                 "LAlt, LSuper or RSuper toggle the mouse capture mode, to give "
                 "control of the mouse back to the computer.\n"
+                "If any of --hid-keyboard or --hid-mouse is set, only enable "
+                "keyboard or mouse respectively, otherwise enable both."
                 "It may only work over USB, and is currently only supported "
                 "on Linux.\n"
                 "See --hid-keyboard and --hid-mouse.",

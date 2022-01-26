@@ -866,6 +866,16 @@ scrcpy --otg
 scrcpy --otg -s 0123456789abcdef
 ```
 
+It is possible to enable only HID keyboard or HID mouse:
+
+```bash
+scrcpy --otg --hid-keyboard              # keyboard only
+scrcpy --otg --hid-mouse                 # mouse only
+scrcpy --otg --hid-keyboard --hid-mouse  # keyboard and mouse
+# for convenience, enable both by default
+scrcpy --otg                             # keyboard and mouse
+```
+
 Like `--hid-keyboard` and `--hid-mouse`, it only works if the device is
 connected by USB, and is currently only supported on Linux.
 
