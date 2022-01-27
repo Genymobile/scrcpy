@@ -17,22 +17,22 @@
 
 static void
 print_version(void) {
-    fprintf(stderr, "\ndependencies:\n");
-    fprintf(stderr, " - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
-                                         SDL_PATCHLEVEL);
-    fprintf(stderr, " - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR,
-                                                LIBAVCODEC_VERSION_MINOR,
-                                                LIBAVCODEC_VERSION_MICRO);
-    fprintf(stderr, " - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR,
-                                                 LIBAVFORMAT_VERSION_MINOR,
-                                                 LIBAVFORMAT_VERSION_MICRO);
-    fprintf(stderr, " - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
-                                               LIBAVUTIL_VERSION_MINOR,
-                                               LIBAVUTIL_VERSION_MICRO);
+    printf("\ndependencies:\n");
+    printf(" - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
+                                SDL_PATCHLEVEL);
+    printf(" - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR,
+                                       LIBAVCODEC_VERSION_MINOR,
+                                       LIBAVCODEC_VERSION_MICRO);
+    printf(" - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR,
+                                        LIBAVFORMAT_VERSION_MINOR,
+                                        LIBAVFORMAT_VERSION_MICRO);
+    printf(" - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
+                                      LIBAVUTIL_VERSION_MINOR,
+                                      LIBAVUTIL_VERSION_MICRO);
 #ifdef HAVE_V4L2
-    fprintf(stderr, " - libavdevice %d.%d.%d\n", LIBAVDEVICE_VERSION_MAJOR,
-                                                 LIBAVDEVICE_VERSION_MINOR,
-                                                 LIBAVDEVICE_VERSION_MICRO);
+    printf(" - libavdevice %d.%d.%d\n", LIBAVDEVICE_VERSION_MAJOR,
+                                        LIBAVDEVICE_VERSION_MINOR,
+                                        LIBAVDEVICE_VERSION_MICRO);
 #endif
 }
 
