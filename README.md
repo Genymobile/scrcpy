@@ -2,6 +2,8 @@
 
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
+_pronounced "**scr**een **c**o**py**"_
+
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
