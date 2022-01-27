@@ -62,6 +62,10 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     atexit(SDL_Quit);
 
+    if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
+        LOGW("Could not enable mouse focus clickthrough");
+    }
+
     bool ret = false;
 
     struct sc_hid_keyboard *keyboard = NULL;
