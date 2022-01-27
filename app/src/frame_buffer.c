@@ -50,7 +50,7 @@ swap_frames(AVFrame **lhs, AVFrame **rhs) {
 
 bool
 sc_frame_buffer_push(struct sc_frame_buffer *fb, const AVFrame *frame,
-                  bool *previous_frame_skipped) {
+                     bool *previous_frame_skipped) {
     // Use a temporary frame to preserve pending_frame in case of error.
     // tmp_frame is an empty frame, no need to call av_frame_unref() beforehand.
     int r = av_frame_ref(fb->tmp_frame, frame);
