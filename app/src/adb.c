@@ -425,7 +425,7 @@ adb_get_serialno(struct sc_intr *intr, unsigned flags) {
     }
 
     if (r == -1) {
-        return false;
+        return NULL;
     }
 
     sc_str_truncate(buf, r, " \r\n");
@@ -455,7 +455,7 @@ adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
     }
 
     if (r == -1) {
-        return false;
+        return NULL;
     }
 
     assert((size_t) r <= sizeof(buf));
