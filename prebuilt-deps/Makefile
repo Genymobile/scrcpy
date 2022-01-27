@@ -23,9 +23,9 @@ prepare-ffmpeg-win64:
 		ffmpeg-5.0-full_build-shared
 
 prepare-sdl2:
-	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.18-mingw.tar.gz \
-		bbad7c6947f6ca3e05292f065852ed8b62f319fc5533047e7708769c4dbae394 \
-		SDL2-2.0.18
+	@./prepare-dep https://libsdl.org/release/SDL2-devel-2.0.20-mingw.tar.gz \
+		38094d82a857d6c62352e5c5cdec74948c5b4d25c59cbd298d6d233568976bd1 \
+		SDL2-2.0.20
 
 prepare-adb:
 	@./prepare-dep https://dl.google.com/android/repository/platform-tools_r31.0.3-windows.zip \
