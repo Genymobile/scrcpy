@@ -769,12 +769,10 @@ run_server(void *data) {
     // Interrupt sockets to wake up socket blocking calls on the server
     assert(server->video_socket != SC_SOCKET_NONE);
     net_interrupt(server->video_socket);
-    net_close(server->video_socket);
 
     if (server->control_socket != SC_SOCKET_NONE) {
         // There is no control_socket if --no-control is set
         net_interrupt(server->control_socket);
-        net_close(server->control_socket);
     }
 
     // Give some delay for the server to terminate properly
@@ -830,6 +828,13 @@ sc_server_stop(struct sc_server *server) {
 
 void
 sc_server_destroy(struct sc_server *server) {
+    if (server->video_socket != SC_SOCKET_NONE) {
+        net_close(server->video_socket);
+    }
+    if (server->control_socket != SC_SOCKET_NONE) {
+        net_close(server->control_socket);
+    }
+
     sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);
