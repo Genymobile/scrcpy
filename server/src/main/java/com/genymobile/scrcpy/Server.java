@@ -19,6 +19,7 @@ public final class Server {
     private static void initAndCleanUp(Options options) {
         boolean mustDisableShowTouchesOnCleanUp = false;
         int restoreStayOn = -1;
+        boolean restoreNormalPowerMode = options.getControl(); // only restore power mode if control is enabled
         if (options.getShowTouches() || options.getStayAwake()) {
             Settings settings = Device.getSettings();
             if (options.getShowTouches()) {
@@ -51,7 +52,8 @@ public final class Server {
         }
 
         try {
-            CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, true, options.getPowerOffScreenOnClose());
+            CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
+                    options.getPowerOffScreenOnClose());
         } catch (IOException e) {
             Ln.e("Could not configure cleanup", e);
         }
