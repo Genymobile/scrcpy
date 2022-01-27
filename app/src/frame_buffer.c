@@ -51,8 +51,6 @@ swap_frames(AVFrame **lhs, AVFrame **rhs) {
 bool
 sc_frame_buffer_push(struct sc_frame_buffer *fb, const AVFrame *frame,
                   bool *previous_frame_skipped) {
-    sc_mutex_lock(&fb->mutex);
-
     // Use a temporary frame to preserve pending_frame in case of error.
     // tmp_frame is an empty frame, no need to call av_frame_unref() beforehand.
     int r = av_frame_ref(fb->tmp_frame, frame);
@@ -60,6 +58,8 @@ sc_frame_buffer_push(struct sc_frame_buffer *fb, const AVFrame *frame,
         LOGE("Could not ref frame: %d", r);
         return false;
     }
+
+    sc_mutex_lock(&fb->mutex);
 
     // Now that av_frame_ref() succeeded, we can replace the previous
     // pending_frame
