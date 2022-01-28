@@ -367,8 +367,6 @@ scrcpy --tcpip=192.168.1.1:5555
 scrcpy --tcpip    # 无需参数
 ```
 
-It will automatically find the device IP address, enable TCP/IP mode, then
-connect to the device before starting.
 这将会自动寻找设备IP地址，启用TCP/IP模式，然后在启动之前连接到设备。
 
 ##### 手动配置
