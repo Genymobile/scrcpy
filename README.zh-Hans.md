@@ -371,8 +371,6 @@ scrcpy --tcpip    # 无需参数
 
 ##### 手动配置
 
-Alternatively, it is possible to enable the TCP/IP connection manually using
-`adb`:
 或者，可以通过 `adb` 使用手动启用 TCP/IP 连接：
 
 1. 将设备和电脑连接至同一 Wi-Fi。
