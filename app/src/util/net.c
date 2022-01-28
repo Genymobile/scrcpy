@@ -117,14 +117,7 @@ set_cloexec_flag(sc_raw_socket raw_sock) {
 static void
 net_perror(const char *s) {
 #ifdef _WIN32
-    int error = WSAGetLastError();
-    char *wsa_message;
-    FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-            NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (char *) &wsa_message, 0, NULL);
-    // no explicit '\n', wsa_message already contains a trailing '\n'
-    fprintf(stderr, "%s: [%d] %s", s, error, wsa_message);
-    LocalFree(wsa_message);
+    sc_log_windows_error(s, WSAGetLastError());
 #else
     perror(s);
 #endif

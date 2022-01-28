@@ -26,4 +26,10 @@ sc_set_log_level(enum sc_log_level level);
 enum sc_log_level
 sc_get_log_level(void);
 
+#ifdef _WIN32
+// Log system error (typically returned by GetLastError() or similar)
+bool
+sc_log_windows_error(const char *prefix, int error);
+#endif
+
 #endif

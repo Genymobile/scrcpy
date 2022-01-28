@@ -1,5 +1,8 @@
 #include "log.h"
 
+#if _WIN32
+# include <windows.h>
+#endif
 #include <assert.h>
 
 static SDL_LogPriority
@@ -51,3 +54,24 @@ sc_get_log_level(void) {
     SDL_LogPriority sdl_log = SDL_LogGetPriority(SDL_LOG_CATEGORY_APPLICATION);
     return log_level_sdl_to_sc(sdl_log);
 }
+
+#ifdef _WIN32
+bool
+sc_log_windows_error(const char *prefix, int error) {
+    assert(prefix);
+
+    char *message;
+    DWORD flags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM;
+    DWORD lang_id = MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US);
+    int ret =
+        FormatMessage(flags, NULL, error, lang_id, (char *) &message, 0, NULL);
+    if (ret <= 0) {
+        return false;
+    }
+
+    // Note: message already contains a trailing '\n'
+    LOGE("%s: [%d] %s", prefix, error, message);
+    LocalFree(message);
+    return true;
+}
+#endif
