@@ -509,7 +509,7 @@ scrcpy -b2M -m800 --max-fps 15
 窗口的标题默认为设备型号。可以通过如下命令修改：
 
 ```bash
-scrcpy --window-title '我的设备'
+scrcpy --window-title "我的设备"
 ```
 
 #### 位置和大小
