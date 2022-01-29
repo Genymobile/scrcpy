@@ -12,7 +12,7 @@ Here are the common reported problems and their status.
 
 In that case, it will print this error:
 
->     ERROR: "adb push" returned with value 1
+>     ERROR: "adb get-serialno" returned with value 1
 
 This is typically not a bug in _scrcpy_, but a problem in your environment.
 
@@ -32,28 +32,38 @@ in the release, so it should work out-of-the-box.
 
 ### Device unauthorized
 
-Check [stackoverflow][device-unauthorized].
+
+>     error: device unauthorized.
+>     This adb server's $ADB_VENDOR_KEYS is not set
+>     Try 'adb kill-server' if that seems wrong.
+>     Otherwise check for a confirmation dialog on your device.
+
+When connecting, a popup should open on the device. You must authorize USB
+debugging.
+
+If it does not open, check [stackoverflow][device-unauthorized].
 
 [device-unauthorized]: https://stackoverflow.com/questions/23081263/adb-android-device-unauthorized
 
 
 ### Device not detected
 
->     adb: error: failed to get feature set: no devices/emulators found
+>     error: no devices/emulators found
 
 Check that you correctly enabled [adb debugging][enable-adb].
 
-If your device is not detected, you may need some [drivers] (on Windows).
+If your device is not detected, you may need some [drivers] (on Windows). There is a separate [USB driver for Google devices][google-usb-driver].
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
+[google-usb-driver]: https://developer.android.com/studio/run/win-usb
 
 
 ### Several devices connected
 
 If several devices are connected, you will encounter this error:
 
->     adb: error: failed to get feature set: more than one device/emulator
+>     error: more than one device/emulator
 
 the identifier of the device you want to mirror must be provided:
 
@@ -61,7 +71,7 @@ the identifier of the device you want to mirror must be provided:
 scrcpy -s 01234567890abcdef
 ```
 
-Note that if your device is connected over TCP/IP, you'll get this message:
+Note that if your device is connected over TCP/IP, you might get this message:
 
 >     adb: error: more than one device/emulator
 >     ERROR: "adb reverse" returned with value 1

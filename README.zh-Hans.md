@@ -1,14 +1,14 @@
 _Only the original [README](README.md) is guaranteed to be up-to-date._
 
-只有原版的[README](README.md)会保持最新。
+_只有原版的 [README](README.md)是保证最新的。_
 
-Current version is based on [65b023a]
+Current version is based on [8615813]
 
-本文根据[65b023a]进行翻译。
+本文根据[8615813]进行翻译。
 
-[65b023a]: https://github.com/Genymobile/scrcpy/blob/65b023ac6d586593193fd5290f65e25603b68e02/README.md
+[8615813]: https://github.com/Genymobile/scrcpy/blob/86158130051d450a449a2e7bb20b0fcef1b62e80/README.md
 
-# scrcpy (v1.20)
+# scrcpy (v1.21)
 
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -68,10 +68,16 @@ Current version is based on [65b023a]
 
 ### Linux
 
-在 Debian (目前仅支持 _testing_ 和 _sid_ 分支) 和Ubuntu (20.04) 上：
+在 Debian 和 Ubuntu 上：
 
 ```
 apt install scrcpy
+```
+
+在 Arch Linux 上:
+
+```
+pacman -S scrcpy
 ```
 
 我们也提供 [Snap] 包： [`scrcpy`][snap-link]。
@@ -84,11 +90,6 @@ apt install scrcpy
 
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 [copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
-
-对 Arch Linux 我们提供 [AUR] 包： [`scrcpy`][aur-link]。
-
-[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
-[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 对 Gentoo 我们提供 [Ebuild] 包：[`scrcpy/`][ebuild-link]。
 
@@ -343,9 +344,32 @@ scrcpy --v4l2-buffer=500    # 为 v4l2 漏增加 500 毫秒的缓冲
 
 ### 连接
 
-#### 无线
+#### TCP/IP （无线）
 
-_Scrcpy_ 使用 `adb` 与设备通信，并且 `adb` 支持通过 TCP/IP [连接]到设备:
+_Scrcpy_ 使用 `adb` 与设备通信，并且 `adb` 支持通过 TCP/IP [连接]到设备（设备必须连接与电脑相同的网络）。
+
+##### 自动配置
+
+参数 `--tcpip` 允许自动配置连接。这里有两种方式。
+
+对于传入的 adb 连接，如果设备（在这个例子中以192.168.1.1为可用地址）已经监听了一个端口（通常是5555），运行：
+
+```bash
+scrcpy --tcpip=192.168.1.1       # 默认端口是5555
+scrcpy --tcpip=192.168.1.1:5555
+```
+
+如果adb TCP/IP（无线） 模式在某些设备上不被启用（或者你不知道IP地址），用USB连接设备，然后运行：
+
+```bash
+scrcpy --tcpip    # 无需参数
+```
+
+这将会自动寻找设备IP地址，启用TCP/IP模式，然后在启动之前连接到设备。
+
+##### 手动配置
+
+或者，可以通过 `adb` 使用手动启用 TCP/IP 连接：
 
 1. 将设备和电脑连接至同一 Wi-Fi。
 2. 打开 设置 → 关于手机 → 状态信息，获取设备的 IP 地址，也可以执行以下的命令：
@@ -354,12 +378,12 @@ _Scrcpy_ 使用 `adb` 与设备通信，并且 `adb` 支持通过 TCP/IP [连接
     adb shell ip route | awk '{print $9}'
     ```
 
-3. 启用设备的网络 adb 功能： `adb tcpip 5555`。
+3. 启用设备的网络 adb 功能：`adb tcpip 5555`。
 4. 断开设备的 USB 连接。
 5. 连接到您的设备：`adb connect DEVICE_IP:5555` _(将 `DEVICE_IP` 替换为设备 IP)_。
 6. 正常运行 `scrcpy`。
 
-可能降低码率和分辨率会更好一些：
+降低比特率和分辨率可能很有用：
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
@@ -397,33 +421,75 @@ autoadb scrcpy -s '{}'
 
 [AutoAdb]: https://github.com/rom1v/autoadb
 
-#### SSH 隧道
+#### 隧道
 
-要远程连接到设备，可以将本地的 adb 客户端连接到远程的 adb 服务端 (需要两端的 _adb_ 协议版本相同)：
+要远程连接到设备，可以将本地的 adb 客户端连接到远程的 adb 服务端 (需要两端的 _adb_ 协议版本相同)。
+
+##### 远程ADB服务器
+
+要连接到一个远程ADB服务器，让服务器在所有接口上监听：
 
 ```bash
-adb kill-server    # 关闭本地 5037 端口上的 adb 服务端
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+adb kill-server
+adb -a nodaemon server start
 # 保持该窗口开启
 ```
 
-在另一个终端：
+**警告：所有客户端与ADB服务器的交流都是未加密的。**
+
+假设此服务器可在 192.168.1.2 访问。 然后，从另一个终端，运行 scrcpy：
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+默认情况下，scrcpy使用用于 `adb forward` 隧道建立的本地端口（通常是 `27183`，见 `--port` ）。它也可以强制使用一个不同的隧道端口（当涉及更多的重定向时，这在更复杂的情况下可能很有用）:
+
+```
+scrcpy --tunnel-port=1234
+```
+
+
+##### SSH 隧道
+
+为了安全地与远程ADB服务器通信，最好使用SSH隧道。
+
+首先，确保ADB服务器正在远程计算机上运行：
+
+```bash
+adb start-server
+```
+
+然后，建立一个SSH隧道：
+
+```bash
+# 本地  5038 --> 远程  5037
+# 本地 27183 <-- 远程 27183
+ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# 保持该窗口开启
+```
+
+在另一个终端上，运行scrcpy：
+
+```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy
 ```
 
-若要不使用远程端口转发，可以强制使用正向连接 (注意 `-L` 和 `-R` 的区别)：
+若要不使用远程端口转发，可以强制使用正向连接（注意是 `-L` 而不是 `-R` ）：
 
 ```bash
-adb kill-server    # 关闭本地 5037 端口上的 adb 服务端
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# 本地  5038 --> 远程  5037
+# 本地 27183 <-- 远程 27183
+ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # 保持该窗口开启
 ```
 
-在另一个终端:
+在另一个终端上，运行scrcpy：
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy --force-adb-forward
 ```
 
@@ -441,7 +507,7 @@ scrcpy -b2M -m800 --max-fps 15
 窗口的标题默认为设备型号。可以通过如下命令修改：
 
 ```bash
-scrcpy --window-title 'My device'
+scrcpy --window-title "我的设备"
 ```
 
 #### 位置和大小
@@ -630,6 +696,8 @@ scrcpy --disable-screensaver
 
 一些设备不支持通过程序设置剪贴板。通过 `--legacy-paste` 选项可以修改 <kbd>Ctrl</kbd>+<kbd>v</kbd> 和 <kbd>MOD</kbd>+<kbd>v</kbd> 的工作方式，使它们通过按键事件 (同 <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>) 来注入电脑剪贴板内容。
 
+要禁用自动剪贴板同步功能，使用`--no-clipboard-autosync`。
+
 #### 双指缩放
 
 模拟“双指缩放”：<kbd>Ctrl</kbd>+_按住并移动鼠标_。
@@ -659,11 +727,11 @@ scrcpy -K  # 简写
 
 在这种模式下，原始按键事件 (扫描码) 被发送给设备，而与宿主机按键映射无关。因此，若键盘布局不匹配，需要在 Android 设备上进行配置，具体为 设置 → 系统 → 语言和输入法 → [实体键盘]。
 
-[Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+[实体键盘]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
 #### 文本注入偏好
 
-打字的时候，系统会产生两种[事件][textevents]：
+输入文字的时候，系统会产生两种[事件][textevents]：
  - _按键事件_ ，代表一个按键被按下或松开。
  - _文本事件_ ，代表一个字符被输入。
 
@@ -675,7 +743,13 @@ scrcpy -K  # 简写
 scrcpy --prefer-text
 ```
 
-(这会导致键盘在游戏中工作不正常)
+(但这会导致键盘在游戏中工作不正常)
+
+相反，您可以强制始终注入原始按键事件：
+
+```bash
+scrcpy --raw-key-events
+```
 
 该选项不影响 HID 键盘 (该模式下，所有按键都发送为扫描码)。
 
@@ -765,7 +839,7 @@ _<kbd>[Super]</kbd> 键通常是指 <kbd>Windows</kbd> 或 <kbd>Cmd</kbd> 键。
  | 点按 `主屏幕`                     | <kbd>MOD</kbd>+<kbd>h</kbd> \| _中键_
  | 点按 `返回`                       | <kbd>MOD</kbd>+<kbd>b</kbd> \| _右键²_
  | 点按 `切换应用`                   | <kbd>MOD</kbd>+<kbd>s</kbd> \| _第4键³_
- | 点按 `菜单` (解锁屏幕)            | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | 点按 `菜单` (解锁屏幕)⁴           | <kbd>MOD</kbd>+<kbd>m</kbd>
  | 点按 `音量+`                      | <kbd>MOD</kbd>+<kbd>↑</kbd> _(上箭头)_
  | 点按 `音量-`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(下箭头)_
  | 点按 `电源`                       | <kbd>MOD</kbd>+<kbd>p</kbd>
@@ -776,9 +850,9 @@ _<kbd>[Super]</kbd> 键通常是指 <kbd>Windows</kbd> 或 <kbd>Cmd</kbd> 键。
  | 展开通知面板                      | <kbd>MOD</kbd>+<kbd>n</kbd> \| _第5键³_
  | 展开设置面板                      | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _双击第5键³_
  | 收起通知面板                      | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | 复制到剪贴板⁴                     | <kbd>MOD</kbd>+<kbd>c</kbd>
- | 剪切到剪贴板⁴                     | <kbd>MOD</kbd>+<kbd>x</kbd>
- | 同步剪贴板并粘贴⁴                 | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | 复制到剪贴板⁵                     | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | 剪切到剪贴板⁵                     | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | 同步剪贴板并粘贴⁵                 | <kbd>MOD</kbd>+<kbd>v</kbd>
  | 注入电脑剪贴板文本                | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | 打开/关闭FPS显示 (至标准输出)     | <kbd>MOD</kbd>+<kbd>i</kbd>
  | 捏拉缩放                          | <kbd>Ctrl</kbd>+_按住并移动鼠标_
@@ -788,7 +862,8 @@ _<kbd>[Super]</kbd> 键通常是指 <kbd>Windows</kbd> 或 <kbd>Cmd</kbd> 键。
 _¹双击黑边可以去除黑边。_  
 _²点击鼠标右键将在屏幕熄灭时点亮屏幕，其余情况则视为按下返回键 。_  
 _³鼠标的第4键和第5键。_  
-_⁴需要安卓版本 Android >= 7。_
+_⁴对于开发中的 react-native 应用程序，`MENU` 触发开发菜单。_  
+_⁵需要安卓版本 Android >= 7。_
 
 有重复按键的快捷键通过松开再按下一个按键来进行，如“展开设置面板”：
 
@@ -816,7 +891,7 @@ ADB=/path/to/adb scrcpy
 
 一个同事让我找出一个和 [gnirehtet] 一样难以发音的名字。
 
-[`strcpy`] 复制一个 **str**ing （字符串）； `scrcpy` 复制一个 **scr**een （屏幕）。
+[`strcpy`] 源于 **str**ing （字符串）； `scrcpy` 源于 **scr**een （屏幕）。
 
 [gnirehtet]: https://github.com/Genymobile/gnirehtet
 [`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
