@@ -89,13 +89,15 @@ public class ScreenEncoder implements Device.RotationListener {
                 Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
                 int videoRotation = screenInfo.getVideoRotation();
                 int layerStack = device.getLayerStack();
-
                 setSize(format, videoRect.width(), videoRect.height());
-                configure(codec, format);
-                Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
-                codec.start();
+
+                Surface surface = null;
                 try {
+                    configure(codec, format);
+                    surface = codec.createInputSurface();
+                    setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                    codec.start();
+
                     alive = encode(codec, fd);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
@@ -119,7 +121,9 @@ public class ScreenEncoder implements Device.RotationListener {
                 } finally {
                     destroyDisplay(display);
                     codec.release();
-                    surface.release();
+                    if (surface != null) {
+                        surface.release();
+                    }
                 }
             } while (alive);
         } finally {
