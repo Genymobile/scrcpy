@@ -1,0 +1,22 @@
+PREBUILT_DATA_DIR=data
+
+checksum() {
+    local file="$1"
+    local sum="$2"
+    echo "$file: verifying checksum..."
+    echo "$sum  $file" | sha256sum -c
+}
+
+get_file() {
+    local url="$1"
+    local file="$2"
+    local sum="$3"
+    if [[ -f "$file" ]]
+    then
+        echo "$file: found"
+    else
+        echo "$file: not found, downloading..."
+        wget "$url" -O "$file"
+    fi
+    checksum "$file" "$sum"
+}

@@ -109,9 +109,9 @@ if not crossbuild_windows
 else
     # cross-compile mingw32 build (from Linux to Windows)
     prebuilt_sdl2 = meson.get_cross_property('prebuilt_sdl2')
-    sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/bin'
-    sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_sdl2 + '/lib'
-    sdl2_include_dir = '../prebuilt-deps/' + prebuilt_sdl2 + '/include'
+    sdl2_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/data/' + prebuilt_sdl2 + '/bin'
+    sdl2_lib_dir = meson.current_source_dir() + '/../prebuilt-deps/data/' + prebuilt_sdl2 + '/lib'
+    sdl2_include_dir = '../prebuilt-deps/data/' + prebuilt_sdl2 + '/include'
 
     sdl2 = declare_dependency(
         dependencies: [
@@ -122,8 +122,8 @@ else
     )
 
     prebuilt_ffmpeg = meson.get_cross_property('prebuilt_ffmpeg')
-    ffmpeg_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/' + prebuilt_ffmpeg + '/bin'
-    ffmpeg_include_dir = '../prebuilt-deps/' + prebuilt_ffmpeg + '/include'
+    ffmpeg_bin_dir = meson.current_source_dir() + '/../prebuilt-deps/data/' + prebuilt_ffmpeg + '/bin'
+    ffmpeg_include_dir = '../prebuilt-deps/data/' + prebuilt_ffmpeg + '/include'
 
     # ffmpeg versions are different for win32 and win64 builds
     ffmpeg_avcodec = meson.get_cross_property('ffmpeg_avcodec')

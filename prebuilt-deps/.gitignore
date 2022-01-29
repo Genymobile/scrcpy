@@ -1,4 +1,1 @@
-*
-!/.gitignore
-!/Makefile
-!/prepare-dep
+/data
