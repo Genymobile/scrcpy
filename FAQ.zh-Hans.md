@@ -129,7 +129,7 @@ scrcpy
 
 可输入的文本[被限制为ASCII字符][text-input]。也可以用一些小技巧输入一些[带重音符号的字符][accented-characters]，但是仅此而已。参见[#37]。
 
-Since scrcpy v1.20 on Linux, it is possible to simulate a [physical keyboard][hid] (HID).自 Linux 上的 scrcpy v1.20 之后，可以模拟[物理键盘][hid] (HID)。
+自 Linux 上的 scrcpy v1.20 之后，可以模拟[物理键盘][hid] (HID)。
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
