@@ -6,7 +6,7 @@ Current version is based on [f4c7044]
 
 本文根据[f4c7044]进行翻译。
 
-[8615813]: https://github.com/Genymobile/scrcpy/blob/f4c7044b46ae28eb64cb5e1a15c9649a44023c70/README.md
+[f4c7044]: https://github.com/Genymobile/scrcpy/blob/f4c7044b46ae28eb64cb5e1a15c9649a44023c70/README.md
 
 # scrcpy (v1.22)
 
