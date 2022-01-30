@@ -1,7 +1,12 @@
-只有原版的[FAQ](FAQ.md)会保持更新。
-本文根据[d6aaa5]翻译。
+_Only the original [FAQ.md](FAQ.md) is guaranteed to be up-to-date._
 
-[d6aaa5]:https://github.com/Genymobile/scrcpy/blob/d6aaa5bf9aa3710660c683b6e3e0ed971ee44af5/FAQ.md
+_只有原版的 [FAQ.md](FAQ.md)是保证最新的。_
+
+Current version is based on [28054cd]
+
+本文根据[28054cd]进行翻译。
+
+[28054cd]: https://github.com/Genymobile/scrcpy/blob/28054cd471f848733e11372c9d745cd5d71e6ce7/FAQ.md
 
 # 常见问题
 
@@ -9,11 +14,11 @@
 
 ## `adb` 相关问题
 
-`scrcpy` 执行 `adb` 命令来初始化和设备之间的连接。如果`adb` 执行失败了， scrcpy 就无法工作。
+`scrcpy` 执行 `adb` 命令来初始化和设备之间的连接。如果 `adb` 执行失败了， scrcpy 就无法工作。
 
 在这种情况中，将会输出这个错误:
 
->     ERROR: "adb push" returned with value 1
+>     ERROR: "adb get-serialno" returned with value 1
 
 这通常不是 _scrcpy_ 的bug，而是你的环境的问题。
 
@@ -33,28 +38,37 @@ adb devices
 
 ### 设备未授权
 
-参见这里 [stackoverflow][device-unauthorized].
+
+>     error: device unauthorized.
+>     This adb server's $ADB_VENDOR_KEYS is not set
+>     Try 'adb kill-server' if that seems wrong.
+>     Otherwise check for a confirmation dialog on your device.
+
+连接时，在设备上应该会打开一个弹出窗口。 您必须授权 USB 调试。
+
+如果没有打开，参见[stackoverflow][device-unauthorized].
 
 [device-unauthorized]: https://stackoverflow.com/questions/23081263/adb-android-device-unauthorized
 
 
 ### 未检测到设备
 
->     adb: error: failed to get feature set: no devices/emulators found
+>     error: no devices/emulators found
 
 确认已经正确启用 [adb debugging][enable-adb].
 
-如果你的设备没有被检测到，你可能需要一些[驱动][drivers] (在 Windows上).
+如果你的设备没有被检测到，你可能需要一些[驱动][drivers] (在 Windows上)。这里有一个单独的 [适用于Google设备的USB驱动][google-usb-driver].
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
+[google-usb-driver]: https://developer.android.com/studio/run/win-usb
 
 
 ### 已连接多个设备
 
 如果连接了多个设备，您将遇到以下错误：
 
->     adb: error: failed to get feature set: more than one device/emulator
+>     error: more than one device/emulator
 
 必须提供要镜像的设备的标识符：
 
@@ -90,11 +104,12 @@ scrcpy
 ### 设备断开连接
 
 如果 _scrcpy_ 在警告“设备连接断开”的情况下自动中止，那就意味着`adb`连接已经断开了。
-请尝试使用另一条USB线或者电脑上的另一个USB接口。
-请参看 [#281] 和 [#283]。
+
+请尝试使用另一条USB线或者电脑上的另一个USB接口。请参看 [#281] 和 [#283]。
 
 [#281]: https://github.com/Genymobile/scrcpy/issues/281
 [#283]: https://github.com/Genymobile/scrcpy/issues/283
+
 
 ## 控制相关问题
 
@@ -102,7 +117,6 @@ scrcpy
 
 
 在某些设备上，您可能需要启用一个选项以允许 [模拟输入][simulating input]。
-
 在开发者选项中，打开：
 
 > **USB调试 (安全设置)**  
@@ -115,10 +129,12 @@ scrcpy
 
 可输入的文本[被限制为ASCII字符][text-input]。也可以用一些小技巧输入一些[带重音符号的字符][accented-characters]，但是仅此而已。参见[#37]。
 
+自 Linux 上的 scrcpy v1.20 之后，可以模拟[物理键盘][hid] (HID)。
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
+[hid]: README.md#physical-keyboard-simulation-hid
 
 
 ## 客户端相关问题
@@ -128,7 +144,6 @@ scrcpy
 如果你的客户端窗口分辨率比你的设备屏幕小，则可能出现效果差的问题，尤其是在文本上（参见 [#40]）。
 
 [#40]: https://github.com/Genymobile/scrcpy/issues/40
-
 
 为了提升降尺度的质量，如果渲染器是OpenGL并且支持mip映射，就会自动开启三线性过滤。
 
@@ -177,6 +192,7 @@ scrcpy
 ## 崩溃
 
 ### 异常
+
 可能有很多原因。一个常见的原因是您的设备无法按给定清晰度进行编码：
 
 > ```
@@ -204,12 +220,40 @@ scrcpy -m 1024
 scrcpy -m 800
 ```
 
+自 scrcpy v1.22以来，scrcpy 会自动在失败前以更低的分辨率重试。这种行为可以用`--no-downsize-on-error`关闭。
+
 你也可以尝试另一种 [编码器](README.md#encoder)。
+
+
+如果您在 Android 12 上遇到此异常，则只需升级到 scrcpy >= 1.18 (见 [#2129])：
+
+```
+> ERROR: Exception on thread Thread[main,5,main]
+java.lang.AssertionError: java.lang.reflect.InvocationTargetException
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:75)
+    ...
+Caused by: java.lang.reflect.InvocationTargetException
+    at java.lang.reflect.Method.invoke(Native Method)
+    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:73)
+    ... 7 more
+Caused by: java.lang.IllegalArgumentException: displayToken must not be null
+    at android.view.SurfaceControl$Transaction.setDisplaySurface(SurfaceControl.java:3067)
+    at android.view.SurfaceControl.setDisplaySurface(SurfaceControl.java:2147)
+    ... 9 more
+```
+
+[#2129]: https://github.com/Genymobile/scrcpy/issues/2129
 
 
 ## Windows命令行
 
-一些Windows用户不熟悉命令行。以下是如何打开终端并带参数执行`scrcpy`：
+从 v1.22 开始，增加了一个“快捷方式”，可以直接在 scrcpy 目录打开一个终端。双击`open_a_terminal_here.bat`，然后输入你的命令。 例如：
+
+```
+scrcpy --record file.mkv
+```
+
+您也可以打开终端并手动转到 scrcpy 文件夹：
 
  1. 按下 <kbd>Windows</kbd>+<kbd>r</kbd>，打开一个对话框。
  2. 输入 `cmd` 并按 <kbd>Enter</kbd>，这样就打开了一个终端。
@@ -233,7 +277,7 @@ scrcpy -m 800
 scrcpy --prefer-text --turn-screen-off --stay-awake
 ```
 
-然后双击刚刚创建的文件。
+然后只需双击刚刚创建的文件。
 
 你也可以编辑 `scrcpy-console.bat` 或者 `scrcpy-noconsole.vbs`（的副本）来添加参数。
 
