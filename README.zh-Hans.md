@@ -2,15 +2,17 @@ _Only the original [README](README.md) is guaranteed to be up-to-date._
 
 _只有原版的 [README](README.md)是保证最新的。_
 
-Current version is based on [8615813]
+Current version is based on [f4c7044]
 
-本文根据[8615813]进行翻译。
+本文根据[f4c7044]进行翻译。
 
-[8615813]: https://github.com/Genymobile/scrcpy/blob/86158130051d450a449a2e7bb20b0fcef1b62e80/README.md
+[f4c7044]: https://github.com/Genymobile/scrcpy/blob/f4c7044b46ae28eb64cb5e1a15c9649a44023c70/README.md
 
-# scrcpy (v1.21)
+# scrcpy (v1.22)
 
 <img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+
+_发音为 "**scr**een **c**o**py**"_
 
 本应用程序可以显示并控制通过 USB (或 [TCP/IP][article-tcpip]) 连接的安卓设备，且不需要任何 _root_ 权限。本程序支持 _GNU/Linux_, _Windows_ 和 _macOS_。
 
@@ -36,6 +38,8 @@ Current version is based on [8615813]
  - [可配置显示质量](#采集设置)
  - 以设备屏幕[作为摄像头(V4L2)](#v4l2loopback) (仅限 Linux)
  - [模拟物理键盘 (HID)](#物理键盘模拟-hid) (仅限 Linux)
+ - [物理鼠标模拟 (HID)](#物理鼠标模拟-hid) (仅限 Linux)
+ - [OTG模式](#otg) (仅限 Linux)
  - 更多 ……
 
 ## 系统要求
@@ -362,7 +366,7 @@ scrcpy --tcpip=192.168.1.1:5555
 如果adb TCP/IP（无线） 模式在某些设备上不被启用（或者你不知道IP地址），用USB连接设备，然后运行：
 
 ```bash
-scrcpy --tcpip    # 无需参数
+scrcpy --tcpip    # 无需其他参数
 ```
 
 这将会自动寻找设备IP地址，启用TCP/IP模式，然后在启动之前连接到设备。
@@ -728,6 +732,55 @@ scrcpy -K  # 简写
 在这种模式下，原始按键事件 (扫描码) 被发送给设备，而与宿主机按键映射无关。因此，若键盘布局不匹配，需要在 Android 设备上进行配置，具体为 设置 → 系统 → 语言和输入法 → [实体键盘]。
 
 [实体键盘]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+
+#### 物理鼠标模拟 (HID)
+
+与物理键盘模拟类似，可以模拟一个物理鼠标。 同样，它仅在设备通过 USB 连接时才有效，并且目前仅在 Linux 上受支持。
+
+默认情况下，scrcpy 使用 Android 鼠标事件注入，使用绝对坐标。 通过模拟物理鼠标，在Android设备上出现鼠标指针，并注入鼠标相对运动、点击和滚动。
+
+启用此模式:
+
+```bash
+scrcpy --hid-mouse
+scrcpy -M  # 简写
+```
+
+您还可以将 `--forward-all-clicks` 添加到 [转发所有点击][forward_all_clicks].
+
+[forward_all_clicks]: #右键和中键
+
+启用此模式后，计算机鼠标将被“捕获”（鼠标指针从计算机上消失并出现在 Android 设备上）。
+
+特殊的捕获键，<kbd>Alt</kbd> 或 <kbd>Super</kbd>，切换（禁用或启用）鼠标捕获。 使用其中之一将鼠标的控制权交还给计算机。
+
+
+#### OTG
+
+可以仅使用物理键盘和鼠标模拟 (HID) 运行 _scrcpy_，就好像计算机键盘和鼠标通过 OTG 线直接插入设备一样。
+
+在这个模式下，_adb_ (USB 调试)是不必要的，且镜像被禁用。
+
+启用 OTG 模式:
+
+```bash
+scrcpy --otg
+# 如果有多个 USB 设备可用，则通过序列号选择
+scrcpy --otg -s 0123456789abcdef
+```
+
+只开启 HID 键盘 或 HID 鼠标 是可行的：
+
+```bash
+scrcpy --otg --hid-keyboard              # 只开启 HID 键盘
+scrcpy --otg --hid-mouse                 # 只开启 HID 鼠标
+scrcpy --otg --hid-keyboard --hid-mouse  # 开启 HID 键盘 和 HID 鼠标
+# 为了方便，默认两者都开启
+scrcpy --otg                             # 开启 HID 键盘 和 HID 鼠标
+```
+
+像 `--hid-keyboard` 和 `--hid-mouse` 一样，它只在设备通过 USB 连接时才有效，且目前仅在 Linux 上支持。
+
 
 #### 文本注入偏好
 
