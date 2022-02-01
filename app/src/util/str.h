@@ -106,10 +106,10 @@ sc_str_wrap_lines(const char *input, unsigned columns, unsigned indent);
 /**
  * Truncate the data after any of the characters from `endchars`
  *
- * An '\0' is always written at the end of the data, even if no newline
- * character is encountered.
+ * An '\0' is always written at the end of the data string, even if no
+ * character from `endchars` is encountered.
  *
- * Return the size of the resulting line.
+ * Return the size of the resulting string (as strlen() would return).
  */
 size_t
 sc_str_truncate(char *data, size_t len, const char *endchars);
