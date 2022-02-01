@@ -8,7 +8,7 @@
 
 static char *
 sc_adb_parse_device_ip_from_line(char *line, size_t len) {
-    // One line from "ip route" looks lile:
+    // One line from "ip route" looks like:
     // "192.168.1.0/24 dev wlan0  proto kernel  scope link  src 192.168.1.x"
 
     // Get the location of the device name (index of "wlan0" in the example)
