@@ -7,6 +7,8 @@
 
 /**
  * Parse the ip from the output of `adb shell ip route`
+ *
+ * Warning: this function modifies the buffer for optimization purposes.
  */
 char *
 sc_adb_parse_device_ip_from_output(char *buf, size_t buf_len);
