@@ -41,7 +41,7 @@ struct scrcpy {
     struct sc_screen screen;
     struct stream stream;
     struct sc_decoder decoder;
-    struct recorder recorder;
+    struct sc_recorder recorder;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
 #endif
@@ -381,12 +381,12 @@ scrcpy(struct scrcpy_options *options) {
         dec = &s->decoder;
     }
 
-    struct recorder *rec = NULL;
+    struct sc_recorder *rec = NULL;
     if (options->record_filename) {
-        if (!recorder_init(&s->recorder,
-                           options->record_filename,
-                           options->record_format,
-                           info->frame_size)) {
+        if (!sc_recorder_init(&s->recorder,
+                              options->record_filename,
+                              options->record_format,
+                              info->frame_size)) {
             goto end;
         }
         rec = &s->recorder;
@@ -708,7 +708,7 @@ end:
     }
 
     if (recorder_initialized) {
-        recorder_destroy(&s->recorder);
+        sc_recorder_destroy(&s->recorder);
     }
 
     if (file_pusher_initialized) {

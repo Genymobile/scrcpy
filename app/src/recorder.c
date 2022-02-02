@@ -9,7 +9,7 @@
 #include "util/str.h"
 
 /** Downcast packet_sink to recorder */
-#define DOWNCAST(SINK) container_of(SINK, struct recorder, packet_sink)
+#define DOWNCAST(SINK) container_of(SINK, struct sc_recorder, packet_sink)
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
@@ -30,9 +30,9 @@ find_muxer(const char *name) {
     return oformat;
 }
 
-static struct record_packet *
-record_packet_new(const AVPacket *packet) {
-    struct record_packet *rec = malloc(sizeof(*rec));
+static struct sc_record_packet *
+sc_record_packet_new(const AVPacket *packet) {
+    struct sc_record_packet *rec = malloc(sizeof(*rec));
     if (!rec) {
         LOG_OOM();
         return NULL;
@@ -54,22 +54,22 @@ record_packet_new(const AVPacket *packet) {
 }
 
 static void
-record_packet_delete(struct record_packet *rec) {
+sc_record_packet_delete(struct sc_record_packet *rec) {
     av_packet_free(&rec->packet);
     free(rec);
 }
 
 static void
-recorder_queue_clear(struct recorder_queue *queue) {
+sc_recorder_queue_clear(struct sc_recorder_queue *queue) {
     while (!sc_queue_is_empty(queue)) {
-        struct record_packet *rec;
+        struct sc_record_packet *rec;
         sc_queue_take(queue, next, &rec);
-        record_packet_delete(rec);
+        sc_record_packet_delete(rec);
     }
 }
 
 static const char *
-recorder_get_format_name(enum sc_record_format format) {
+sc_recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
         case SC_RECORD_FORMAT_MP4: return "mp4";
         case SC_RECORD_FORMAT_MKV: return "matroska";
@@ -78,7 +78,7 @@ recorder_get_format_name(enum sc_record_format format) {
 }
 
 static bool
-recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
+sc_recorder_write_header(struct sc_recorder *recorder, const AVPacket *packet) {
     AVStream *ostream = recorder->ctx->streams[0];
 
     uint8_t *extradata = av_malloc(packet->size * sizeof(uint8_t));
@@ -103,19 +103,19 @@ recorder_write_header(struct recorder *recorder, const AVPacket *packet) {
 }
 
 static void
-recorder_rescale_packet(struct recorder *recorder, AVPacket *packet) {
+sc_recorder_rescale_packet(struct sc_recorder *recorder, AVPacket *packet) {
     AVStream *ostream = recorder->ctx->streams[0];
     av_packet_rescale_ts(packet, SCRCPY_TIME_BASE, ostream->time_base);
 }
 
 static bool
-recorder_write(struct recorder *recorder, AVPacket *packet) {
+sc_recorder_write(struct sc_recorder *recorder, AVPacket *packet) {
     if (!recorder->header_written) {
         if (packet->pts != AV_NOPTS_VALUE) {
             LOGE("The first packet is not a config packet");
             return false;
         }
-        bool ok = recorder_write_header(recorder, packet);
+        bool ok = sc_recorder_write_header(recorder, packet);
         if (!ok) {
             return false;
         }
@@ -128,13 +128,13 @@ recorder_write(struct recorder *recorder, AVPacket *packet) {
         return true;
     }
 
-    recorder_rescale_packet(recorder, packet);
+    sc_recorder_rescale_packet(recorder, packet);
     return av_write_frame(recorder->ctx, packet) >= 0;
 }
 
 static int
 run_recorder(void *data) {
-    struct recorder *recorder = data;
+    struct sc_recorder *recorder = data;
 
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
@@ -148,29 +148,29 @@ run_recorder(void *data) {
 
         if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
             sc_mutex_unlock(&recorder->mutex);
-            struct record_packet *last = recorder->previous;
+            struct sc_record_packet *last = recorder->previous;
             if (last) {
                 // assign an arbitrary duration to the last packet
                 last->packet->duration = 100000;
-                bool ok = recorder_write(recorder, last->packet);
+                bool ok = sc_recorder_write(recorder, last->packet);
                 if (!ok) {
                     // failing to write the last frame is not very serious, no
                     // future frame may depend on it, so the resulting file
                     // will still be valid
                     LOGW("Could not record last packet");
                 }
-                record_packet_delete(last);
+                sc_record_packet_delete(last);
             }
             break;
         }
 
-        struct record_packet *rec;
+        struct sc_record_packet *rec;
         sc_queue_take(&recorder->queue, next, &rec);
 
         sc_mutex_unlock(&recorder->mutex);
 
         // recorder->previous is only written from this thread, no need to lock
-        struct record_packet *previous = recorder->previous;
+        struct sc_record_packet *previous = recorder->previous;
         recorder->previous = rec;
 
         if (!previous) {
@@ -186,15 +186,15 @@ run_recorder(void *data) {
                 rec->packet->pts - previous->packet->pts;
         }
 
-        bool ok = recorder_write(recorder, previous->packet);
-        record_packet_delete(previous);
+        bool ok = sc_recorder_write(recorder, previous->packet);
+        sc_record_packet_delete(previous);
         if (!ok) {
             LOGE("Could not record packet");
 
             sc_mutex_lock(&recorder->mutex);
             recorder->failed = true;
             // discard pending packets
-            recorder_queue_clear(&recorder->queue);
+            sc_recorder_queue_clear(&recorder->queue);
             sc_mutex_unlock(&recorder->mutex);
             break;
         }
@@ -216,7 +216,7 @@ run_recorder(void *data) {
     if (recorder->failed) {
         LOGE("Recording failed to %s", recorder->filename);
     } else {
-        const char *format_name = recorder_get_format_name(recorder->format);
+        const char *format_name = sc_recorder_get_format_name(recorder->format);
         LOGI("Recording complete to %s file: %s", format_name,
                                                   recorder->filename);
     }
@@ -227,7 +227,7 @@ run_recorder(void *data) {
 }
 
 static bool
-recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
+sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     bool ok = sc_mutex_init(&recorder->mutex);
     if (!ok) {
         return false;
@@ -244,7 +244,7 @@ recorder_open(struct recorder *recorder, const AVCodec *input_codec) {
     recorder->header_written = false;
     recorder->previous = NULL;
 
-    const char *format_name = recorder_get_format_name(recorder->format);
+    const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
@@ -311,7 +311,7 @@ error_mutex_destroy:
 }
 
 static void
-recorder_close(struct recorder *recorder) {
+sc_recorder_close(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
     recorder->stopped = true;
     sc_cond_signal(&recorder->queue_cond);
@@ -326,7 +326,7 @@ recorder_close(struct recorder *recorder) {
 }
 
 static bool
-recorder_push(struct recorder *recorder, const AVPacket *packet) {
+sc_recorder_push(struct sc_recorder *recorder, const AVPacket *packet) {
     sc_mutex_lock(&recorder->mutex);
     assert(!recorder->stopped);
 
@@ -336,7 +336,7 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
         return false;
     }
 
-    struct record_packet *rec = record_packet_new(packet);
+    struct sc_record_packet *rec = sc_record_packet_new(packet);
     if (!rec) {
         LOG_OOM();
         sc_mutex_unlock(&recorder->mutex);
@@ -351,28 +351,30 @@ recorder_push(struct recorder *recorder, const AVPacket *packet) {
 }
 
 static bool
-recorder_packet_sink_open(struct sc_packet_sink *sink, const AVCodec *codec) {
-    struct recorder *recorder = DOWNCAST(sink);
-    return recorder_open(recorder, codec);
+sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
+                             const AVCodec *codec) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+    return sc_recorder_open(recorder, codec);
 }
 
 static void
-recorder_packet_sink_close(struct sc_packet_sink *sink) {
-    struct recorder *recorder = DOWNCAST(sink);
-    recorder_close(recorder);
+sc_recorder_packet_sink_close(struct sc_packet_sink *sink) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+    sc_recorder_close(recorder);
 }
 
 static bool
-recorder_packet_sink_push(struct sc_packet_sink *sink, const AVPacket *packet) {
-    struct recorder *recorder = DOWNCAST(sink);
-    return recorder_push(recorder, packet);
+sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
+                             const AVPacket *packet) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+    return sc_recorder_push(recorder, packet);
 }
 
 bool
-recorder_init(struct recorder *recorder,
-              const char *filename,
-              enum sc_record_format format,
-              struct sc_size declared_frame_size) {
+sc_recorder_init(struct sc_recorder *recorder,
+                 const char *filename,
+                 enum sc_record_format format,
+                 struct sc_size declared_frame_size) {
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOG_OOM();
@@ -383,9 +385,9 @@ recorder_init(struct recorder *recorder,
     recorder->declared_frame_size = declared_frame_size;
 
     static const struct sc_packet_sink_ops ops = {
-        .open = recorder_packet_sink_open,
-        .close = recorder_packet_sink_close,
-        .push = recorder_packet_sink_push,
+        .open = sc_recorder_packet_sink_open,
+        .close = sc_recorder_packet_sink_close,
+        .push = sc_recorder_packet_sink_push,
     };
 
     recorder->packet_sink.ops = &ops;
@@ -394,6 +396,6 @@ recorder_init(struct recorder *recorder,
 }
 
 void
-recorder_destroy(struct recorder *recorder) {
+sc_recorder_destroy(struct sc_recorder *recorder) {
     free(recorder->filename);
 }
