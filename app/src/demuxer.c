@@ -69,7 +69,7 @@ push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
     return true;
 }
 
-static bool
+static void
 sc_demuxer_parse(struct sc_demuxer *demuxer, AVPacket *packet) {
     uint8_t *in_data = packet->data;
     int in_len = packet->size;
@@ -89,14 +89,6 @@ sc_demuxer_parse(struct sc_demuxer *demuxer, AVPacket *packet) {
     }
 
     packet->dts = packet->pts;
-
-    bool ok = push_packet_to_sinks(demuxer, packet);
-    if (!ok) {
-        LOGE("Could not process packet");
-        return false;
-    }
-
-    return true;
 }
 
 static bool
@@ -138,25 +130,23 @@ sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         }
     }
 
-    if (is_config) {
-        // config packet
-        bool ok = push_packet_to_sinks(demuxer, packet);
-        if (!ok) {
-            return false;
-        }
-    } else {
+    if (!is_config) {
         // data packet
-        bool ok = sc_demuxer_parse(demuxer, packet);
-
-        if (demuxer->pending) {
-            // the pending packet must be discarded (consumed or error)
-            av_packet_free(&demuxer->pending);
-        }
-
-        if (!ok) {
-            return false;
-        }
+        sc_demuxer_parse(demuxer, packet);
     }
+
+    bool ok = push_packet_to_sinks(demuxer, packet);
+
+    if (!is_config && demuxer->pending) {
+        // the pending packet must be discarded (consumed or error)
+        av_packet_free(&demuxer->pending);
+    }
+
+    if (!ok) {
+        LOGE("Could not process packet");
+        return false;
+    }
+
     return true;
 }
 
