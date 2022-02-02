@@ -40,7 +40,7 @@ struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
     struct stream stream;
-    struct decoder decoder;
+    struct sc_decoder decoder;
     struct recorder recorder;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -371,13 +371,13 @@ scrcpy(struct scrcpy_options *options) {
         file_pusher_initialized = true;
     }
 
-    struct decoder *dec = NULL;
+    struct sc_decoder *dec = NULL;
     bool needs_decoder = options->display;
 #ifdef HAVE_V4L2
     needs_decoder |= !!options->v4l2_device;
 #endif
     if (needs_decoder) {
-        decoder_init(&s->decoder);
+        sc_decoder_init(&s->decoder);
         dec = &s->decoder;
     }
 
@@ -608,7 +608,7 @@ aoa_hid_end:
         }
         screen_initialized = true;
 
-        decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+        sc_decoder_add_sink(&s->decoder, &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
@@ -618,7 +618,7 @@ aoa_hid_end:
             goto end;
         }
 
-        decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
+        sc_decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }
