@@ -15,6 +15,7 @@
 
 #include "controller.h"
 #include "decoder.h"
+#include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
 #include "keyboard_inject.h"
@@ -22,7 +23,6 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
-#include "stream.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
 # include "usb/hid_keyboard.h"
@@ -39,7 +39,7 @@
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
-    struct stream stream;
+    struct sc_demuxer demuxer;
     struct sc_decoder decoder;
     struct sc_recorder recorder;
 #ifdef HAVE_V4L2
@@ -231,8 +231,8 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 }
 
 static void
-stream_on_eos(struct stream *stream, void *userdata) {
-    (void) stream;
+sc_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
+    (void) demuxer;
     (void) userdata;
 
     PUSH_EVENT(EVENT_STREAM_STOPPED);
@@ -285,7 +285,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
-    bool stream_started = false;
+    bool demuxer_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
@@ -395,17 +395,17 @@ scrcpy(struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    static const struct stream_callbacks stream_cbs = {
-        .on_eos = stream_on_eos,
+    static const struct sc_demuxer_callbacks demuxer_cbs = {
+        .on_eos = sc_demuxer_on_eos,
     };
-    stream_init(&s->stream, s->server.video_socket, &stream_cbs, NULL);
+    sc_demuxer_init(&s->demuxer, s->server.video_socket, &demuxer_cbs, NULL);
 
     if (dec) {
-        stream_add_sink(&s->stream, &dec->packet_sink);
+        sc_demuxer_add_sink(&s->demuxer, &dec->packet_sink);
     }
 
     if (rec) {
-        stream_add_sink(&s->stream, &rec->packet_sink);
+        sc_demuxer_add_sink(&s->demuxer, &rec->packet_sink);
     }
 
     struct sc_controller *controller = NULL;
@@ -625,21 +625,21 @@ aoa_hid_end:
 #endif
 
     // now we consumed the header values, the socket receives the video stream
-    // start the stream
-    if (!stream_start(&s->stream)) {
+    // start the demuxer
+    if (!sc_demuxer_start(&s->demuxer)) {
         goto end;
     }
-    stream_started = true;
+    demuxer_started = true;
 
     ret = event_loop(s);
     LOGD("quit...");
 
     // Close the window immediately on closing, because screen_destroy() may
-    // only be called once the stream thread is joined (it may take time)
+    // only be called once the demuxer thread is joined (it may take time)
     sc_screen_hide_window(&s->screen);
 
 end:
-    // The stream is not stopped explicitly, because it will stop by itself on
+    // The demuxer is not stopped explicitly, because it will stop by itself on
     // end-of-stream
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {
@@ -671,10 +671,10 @@ end:
         sc_server_stop(&s->server);
     }
 
-    // now that the sockets are shutdown, the stream and controller are
+    // now that the sockets are shutdown, the demuxer and controller are
     // interrupted, we can join them
-    if (stream_started) {
-        stream_join(&s->stream);
+    if (demuxer_started) {
+        sc_demuxer_join(&s->demuxer);
     }
 
 #ifdef HAVE_V4L2
@@ -693,7 +693,7 @@ end:
     }
 #endif
 
-    // Destroy the screen only after the stream is guaranteed to be finished,
+    // Destroy the screen only after the demuxer is guaranteed to be finished,
     // because otherwise the screen could receive new frames after destruction
     if (screen_initialized) {
         sc_screen_join(&s->screen);
