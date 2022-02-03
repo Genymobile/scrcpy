@@ -114,7 +114,7 @@ push_server(struct sc_intr *intr, const char *serial) {
         free(server_path);
         return false;
     }
-    bool ok = adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH, 0);
+    bool ok = sc_adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH, 0);
     free(server_path);
     return ok;
 }
@@ -254,7 +254,7 @@ execute_server(struct sc_server *server,
     // Then click on "Debug"
 #endif
     // Inherit both stdout and stderr (all server logs are printed to stdout)
-    pid = adb_execute(params->serial, cmd, count, 0);
+    pid = sc_adb_execute(params->serial, cmd, count, 0);
 
 end:
     for (unsigned i = dyn_idx; i < count; ++i) {
@@ -501,7 +501,7 @@ sc_server_fill_serial(struct sc_server *server) {
     // device/emulator" error)
     if (!server->params.serial) {
         // The serial is owned by sc_server_params, and will be freed on destroy
-        server->params.serial = adb_get_serialno(&server->intr, 0);
+        server->params.serial = sc_adb_get_serialno(&server->intr, 0);
         if (!server->params.serial) {
             LOGE("Could not get device serial");
             return false;
@@ -519,7 +519,7 @@ is_tcpip_mode_enabled(struct sc_server *server) {
     const char *serial = server->params.serial;
 
     char *current_port =
-        adb_getprop(intr, serial, "service.adb.tcp.port", SC_ADB_SILENT);
+        sc_adb_getprop(intr, serial, "service.adb.tcp.port", SC_ADB_SILENT);
     if (!current_port) {
         return false;
     }
@@ -580,7 +580,7 @@ sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
 
     struct sc_intr *intr = &server->intr;
 
-    char *ip = adb_get_device_ip(intr, serial, 0);
+    char *ip = sc_adb_get_device_ip(intr, serial, 0);
     if (!ip) {
         LOGE("Device IP not found");
         return false;
@@ -595,7 +595,7 @@ sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
     bool tcp_mode = is_tcpip_mode_enabled(server);
 
     if (!tcp_mode) {
-        bool ok = adb_tcpip(intr, serial, 5555, SC_ADB_NO_STDOUT);
+        bool ok = sc_adb_tcpip(intr, serial, 5555, SC_ADB_NO_STDOUT);
         if (!ok) {
             LOGE("Could not restart adbd in TCP/IP mode");
             goto error;
@@ -623,9 +623,9 @@ sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
     struct sc_intr *intr = &server->intr;
 
     // Error expected if not connected, do not report any error
-    adb_disconnect(intr, ip_port, SC_ADB_SILENT);
+    sc_adb_disconnect(intr, ip_port, SC_ADB_SILENT);
 
-    bool ok = adb_connect(intr, ip_port, 0);
+    bool ok = sc_adb_connect(intr, ip_port, 0);
     if (!ok) {
         LOGE("Could not connect to %s", ip_port);
         return false;

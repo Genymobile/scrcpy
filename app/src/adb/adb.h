@@ -15,40 +15,40 @@
 #define SC_ADB_SILENT (SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR)
 
 sc_pid
-adb_execute(const char *serial, const char *const adb_cmd[], size_t len,
-            unsigned flags);
+sc_adb_execute(const char *serial, const char *const adb_cmd[], size_t len,
+               unsigned flags);
 
 bool
-adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
-            const char *device_socket_name, unsigned flags);
+sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
+               const char *device_socket_name, unsigned flags);
 
 bool
-adb_forward_remove(struct sc_intr *intr, const char *serial,
-                   uint16_t local_port, unsigned flags);
+sc_adb_forward_remove(struct sc_intr *intr, const char *serial,
+                      uint16_t local_port, unsigned flags);
 
 bool
-adb_reverse(struct sc_intr *intr, const char *serial,
-            const char *device_socket_name, uint16_t local_port,
-            unsigned flags);
+sc_adb_reverse(struct sc_intr *intr, const char *serial,
+               const char *device_socket_name, uint16_t local_port,
+               unsigned flags);
 
 bool
-adb_reverse_remove(struct sc_intr *intr, const char *serial,
-                   const char *device_socket_name, unsigned flags);
+sc_adb_reverse_remove(struct sc_intr *intr, const char *serial,
+                      const char *device_socket_name, unsigned flags);
 
 bool
-adb_push(struct sc_intr *intr, const char *serial, const char *local,
-         const char *remote, unsigned flags);
+sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
+            const char *remote, unsigned flags);
 
 bool
-adb_install(struct sc_intr *intr, const char *serial, const char *local,
-            unsigned flags);
+sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
+               unsigned flags);
 
 /**
  * Execute `adb tcpip <port>`
  */
 bool
-adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
-          unsigned flags);
+sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
+             unsigned flags);
 
 /**
  * Execute `adb connect <ip_port>`
@@ -56,7 +56,7 @@ adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
  * `ip_port` may not be NULL.
  */
 bool
-adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
+sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 
 /**
  * Execute `adb disconnect [<ip_port>]`
@@ -65,14 +65,14 @@ adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
  * Otherwise, execute `adb disconnect <ip_port>`.
  */
 bool
-adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
+sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
 
 /**
  * Execute `adb getprop <prop>`
  */
 char *
-adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
-            unsigned flags);
+sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
+               unsigned flags);
 
 /**
  * Execute `adb get-serialno`
@@ -80,7 +80,7 @@ adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
  * Return the result, to be freed by the caller, or NULL on error.
  */
 char *
-adb_get_serialno(struct sc_intr *intr, unsigned flags);
+sc_adb_get_serialno(struct sc_intr *intr, unsigned flags);
 
 /**
  * Attempt to retrieve the device IP
@@ -89,6 +89,6 @@ adb_get_serialno(struct sc_intr *intr, unsigned flags);
  * caller, or NULL on error.
  */
 char *
-adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
+sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
 
 #endif

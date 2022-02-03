@@ -20,8 +20,8 @@ enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
                                struct sc_port_range port_range) {
     uint16_t port = port_range.first;
     for (;;) {
-        if (!adb_reverse(intr, serial, SC_SOCKET_NAME, port,
-                         SC_ADB_NO_STDOUT)) {
+        if (!sc_adb_reverse(intr, serial, SC_SOCKET_NAME, port,
+                            SC_ADB_NO_STDOUT)) {
             // the command itself failed, it will fail on any port
             return false;
         }
@@ -52,7 +52,7 @@ enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
         }
 
         // failure, disable tunnel and try another port
-        if (!adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
+        if (!sc_adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
                                 SC_ADB_NO_STDOUT)) {
             LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
         }
@@ -83,7 +83,8 @@ enable_tunnel_forward_any_port(struct sc_adb_tunnel *tunnel,
 
     uint16_t port = port_range.first;
     for (;;) {
-        if (adb_forward(intr, serial, port, SC_SOCKET_NAME, SC_ADB_NO_STDOUT)) {
+        if (sc_adb_forward(intr, serial, port, SC_SOCKET_NAME,
+                           SC_ADB_NO_STDOUT)) {
             // success
             tunnel->local_port = port;
             tunnel->enabled = true;
@@ -148,11 +149,11 @@ sc_adb_tunnel_close(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
 
     bool ret;
     if (tunnel->forward) {
-        ret = adb_forward_remove(intr, serial, tunnel->local_port,
-                                 SC_ADB_NO_STDOUT);
+        ret = sc_adb_forward_remove(intr, serial, tunnel->local_port,
+                                    SC_ADB_NO_STDOUT);
     } else {
-        ret = adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
-                                 SC_ADB_NO_STDOUT);
+        ret = sc_adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
+                                    SC_ADB_NO_STDOUT);
 
         assert(tunnel->server_socket != SC_SOCKET_NONE);
         if (!net_close(tunnel->server_socket)) {
