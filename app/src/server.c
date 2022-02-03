@@ -7,7 +7,7 @@
 #include <SDL2/SDL_timer.h>
 #include <SDL2/SDL_platform.h>
 
-#include "adb.h"
+#include "adb/adb.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/net_intr.h"

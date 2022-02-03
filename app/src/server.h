@@ -7,8 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "adb.h"
-#include "adb_tunnel.h"
+#include "adb/adb_tunnel.h"
 #include "coords.h"
 #include "options.h"
 #include "util/intr.h"

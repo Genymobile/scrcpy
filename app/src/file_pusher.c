@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "adb.h"
+#include "adb/adb.h"
 #include "util/log.h"
 #include "util/process_intr.h"
 

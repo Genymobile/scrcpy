@@ -5,7 +5,6 @@
 
 #include <stdbool.h>
 
-#include "adb.h"
 #include "util/cbuf.h"
 #include "util/thread.h"
 #include "util/intr.h"

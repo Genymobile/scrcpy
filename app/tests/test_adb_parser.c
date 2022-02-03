@@ -2,7 +2,7 @@
 
 #include <assert.h>
 
-#include "adb_parser.h"
+#include "adb/adb_parser.h"
 
 static void test_get_ip_single_line() {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
