@@ -143,10 +143,8 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 
     if (disable_screensaver) {
-        LOGD("Screensaver disabled");
         SDL_DisableScreenSaver();
     } else {
-        LOGD("Screensaver enabled");
         SDL_EnableScreenSaver();
     }
 }
