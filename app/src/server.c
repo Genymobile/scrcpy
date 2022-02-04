@@ -580,8 +580,8 @@ append_port_5555(const char *ip) {
     return ip_port;
 }
 
-static bool
-sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
+static char *
+sc_server_switch_to_tcpip(struct sc_server *server) {
     const char *serial = server->params.serial;
     assert(serial);
 
@@ -590,13 +590,13 @@ sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
     char *ip = sc_adb_get_device_ip(intr, serial, 0);
     if (!ip) {
         LOGE("Device IP not found");
-        return false;
+        return NULL;
     }
 
     char *ip_port = append_port_5555(ip);
     free(ip);
     if (!ip_port) {
-        return false;
+        return NULL;
     }
 
     bool tcp_mode = is_tcpip_mode_enabled(server);
@@ -616,13 +616,11 @@ sc_server_switch_to_tcpip(struct sc_server *server, char **out_ip_port) {
         }
     }
 
-    *out_ip_port = ip_port;
-
-    return true;
+    return ip_port;
 
 error:
     free(ip_port);
-    return false;
+    return NULL;
 }
 
 static bool
@@ -687,8 +685,8 @@ sc_server_configure_tcpip(struct sc_server *server) {
             return true;
         }
 
-        bool ok = sc_server_switch_to_tcpip(server, &ip_port);
-        if (!ok) {
+        ip_port = sc_server_switch_to_tcpip(server);
+        if (!ip_port) {
             return false;
         }
     }
