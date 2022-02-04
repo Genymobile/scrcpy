@@ -77,9 +77,6 @@ show_adb_installation_msg() {
         }
     }
 #endif
-
-    LOGI("You may download and install 'adb' from "
-         "https://developer.android.com/studio/releases/platform-tools");
 }
 
 static void
