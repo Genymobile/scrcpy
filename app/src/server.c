@@ -65,7 +65,7 @@ get_server_path(void) {
 static void
 sc_server_params_destroy(struct sc_server_params *params) {
     // The server stores a copy of the params provided by the user
-    free((char *) params->serial);
+    free((char *) params->req_serial);
     free((char *) params->crop);
     free((char *) params->codec_options);
     free((char *) params->encoder_name);
@@ -89,7 +89,7 @@ sc_server_params_copy(struct sc_server_params *dst,
         } \
     }
 
-    COPY(serial);
+    COPY(req_serial);
     COPY(crop);
     COPY(codec_options);
     COPY(encoder_name);
@@ -157,7 +157,7 @@ execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
     sc_pid pid = SC_PROCESS_NONE;
 
-    const char *serial = params->serial;
+    const char *serial = server->serial;
     assert(serial);
 
     const char *cmd[128];
@@ -353,6 +353,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
         return false;
     }
 
+    server->serial = NULL;
     server->stopped = false;
 
     server->video_socket = SC_SOCKET_NONE;
@@ -397,7 +398,9 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
 
     assert(tunnel->enabled);
 
-    const char *serial = server->params.serial;
+    const char *serial = server->serial;
+    assert(serial);
+
     bool control = server->params.control;
 
     sc_socket video_socket = SC_SOCKET_NONE;
@@ -500,30 +503,25 @@ sc_server_on_terminated(void *userdata) {
     LOGD("Server terminated");
 }
 
-static bool
-sc_server_fill_serial(struct sc_server *server) {
-    // Retrieve the actual device immediately if not provided, so that all
-    // future adb commands are executed for this specific device, even if other
-    // devices are connected afterwards (without "more than one
-    // device/emulator" error)
-    if (!server->params.serial) {
-        // The serial is owned by sc_server_params, and will be freed on destroy
-        server->params.serial = sc_adb_get_serialno(&server->intr, 0);
-        if (!server->params.serial) {
-            LOGE("Could not get device serial");
-            return false;
+static char *
+sc_server_read_serial(struct sc_server *server) {
+    char *serial;
+    if (server->params.req_serial) {
+        // The serial is already known
+        serial = strdup(server->params.req_serial);
+        if (!serial) {
+            LOG_OOM();
         }
-
-        LOGD("Device serial: %s", server->params.serial);
+    } else {
+        serial = sc_adb_get_serialno(&server->intr, 0);
     }
 
-    return true;
+    return serial;
 }
 
 static bool
-is_tcpip_mode_enabled(struct sc_server *server) {
+is_tcpip_mode_enabled(struct sc_server *server, const char *serial) {
     struct sc_intr *intr = &server->intr;
-    const char *serial = server->params.serial;
 
     char *current_port =
         sc_adb_getprop(intr, serial, "service.adb.tcp.port", SC_ADB_SILENT);
@@ -538,9 +536,9 @@ is_tcpip_mode_enabled(struct sc_server *server) {
 }
 
 static bool
-wait_tcpip_mode_enabled(struct sc_server *server, unsigned attempts,
-                        sc_tick delay) {
-    if (is_tcpip_mode_enabled(server)) {
+wait_tcpip_mode_enabled(struct sc_server *server, const char *serial,
+                        unsigned attempts, sc_tick delay) {
+    if (is_tcpip_mode_enabled(server, serial)) {
         LOGI("TCP/IP mode enabled");
         return true;
     }
@@ -555,7 +553,7 @@ wait_tcpip_mode_enabled(struct sc_server *server, unsigned attempts,
             return false;
         }
 
-        if (is_tcpip_mode_enabled(server)) {
+        if (is_tcpip_mode_enabled(server, serial)) {
             LOGI("TCP/IP mode enabled");
             return true;
         }
@@ -581,11 +579,12 @@ append_port_5555(const char *ip) {
 }
 
 static char *
-sc_server_switch_to_tcpip(struct sc_server *server) {
-    const char *serial = server->params.serial;
+sc_server_switch_to_tcpip(struct sc_server *server, const char *serial) {
     assert(serial);
 
     struct sc_intr *intr = &server->intr;
+
+    LOGI("Switching device %s to TCP/IP...", serial);
 
     char *ip = sc_adb_get_device_ip(intr, serial, 0);
     if (!ip) {
@@ -599,7 +598,7 @@ sc_server_switch_to_tcpip(struct sc_server *server) {
         return NULL;
     }
 
-    bool tcp_mode = is_tcpip_mode_enabled(server);
+    bool tcp_mode = is_tcpip_mode_enabled(server, serial);
 
     if (!tcp_mode) {
         bool ok = sc_adb_tcpip(intr, serial, 5555, SC_ADB_NO_STDOUT);
@@ -610,7 +609,7 @@ sc_server_switch_to_tcpip(struct sc_server *server) {
 
         unsigned attempts = 40;
         sc_tick delay = SC_TICK_FROM_MS(250);
-        ok = wait_tcpip_mode_enabled(server, attempts, delay);
+        ok = wait_tcpip_mode_enabled(server, serial, attempts, delay);
         if (!ok) {
             goto error;
         }
@@ -630,17 +629,11 @@ sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
     // Error expected if not connected, do not report any error
     sc_adb_disconnect(intr, ip_port, SC_ADB_SILENT);
 
+    LOGI("Connecting to %s...", ip_port);
+
     bool ok = sc_adb_connect(intr, ip_port, 0);
     if (!ok) {
         LOGE("Could not connect to %s", ip_port);
-        return false;
-    }
-
-    // Override the serial, owned by the sc_server_params
-    free((void *) server->params.serial);
-    server->params.serial = strdup(ip_port);
-    if (!server->params.serial) {
-        LOG_OOM();
         return false;
     }
 
@@ -657,7 +650,7 @@ sc_server_configure_tcpip(struct sc_server *server) {
 
     // If tcpip parameter is given, then it must connect to this address.
     // Therefore, the device is unknown, so serial is meaningless at this point.
-    assert(!params->serial || !params->tcpip_dst);
+    assert(!params->req_serial || !params->tcpip_dst);
 
     if (params->tcpip_dst) {
         // Append ":5555" if no port is present
@@ -671,30 +664,32 @@ sc_server_configure_tcpip(struct sc_server *server) {
     } else {
         // The device IP address must be retrieved from the current
         // connected device
-        if (!sc_server_fill_serial(server)) {
+        char *serial = sc_server_read_serial(server);
+        if (!serial) {
+            LOGE("Could not get device serial");
             return false;
         }
 
         // The serial is either the real serial when connected via USB, or
         // the IP:PORT when connected over TCP/IP. Only the latter contains
         // a colon.
-        bool is_already_tcpip = strchr(params->serial, ':');
+        bool is_already_tcpip = strchr(serial, ':');
         if (is_already_tcpip) {
             // Nothing to do
-            LOGI("Device already connected via TCP/IP: %s", params->serial);
+            LOGI("Device already connected via TCP/IP: %s", serial);
+            free(serial);
             return true;
         }
 
-        ip_port = sc_server_switch_to_tcpip(server);
+        ip_port = sc_server_switch_to_tcpip(server, serial);
+        free(serial);
         if (!ip_port) {
             return false;
         }
     }
 
-    // On success, this call changes params->serial
-    bool ok = sc_server_connect_to_tcpip(server, ip_port);
-    free(ip_port);
-    return ok;
+    server->serial = ip_port;
+    return sc_server_connect_to_tcpip(server, ip_port);
 }
 
 static int
@@ -703,30 +698,30 @@ run_server(void *data) {
 
     const struct sc_server_params *params = &server->params;
 
-    if (params->serial) {
-        LOGD("Device serial: %s", params->serial);
-    }
-
     if (params->tcpip) {
-        // params->serial may be changed after this call
         bool ok = sc_server_configure_tcpip(server);
         if (!ok) {
             goto error_connection_failed;
         }
+        assert(server->serial);
+    } else {
+        server->serial = sc_server_read_serial(server);
+        if (!server->serial) {
+            LOGD("Could not get device serial");
+            goto error_connection_failed;
+        }
     }
 
-    // It is ok to call this function even if the device serial has been
-    // changed by switching over TCP/IP
-    if (!sc_server_fill_serial(server)) {
-        goto error_connection_failed;
-    }
+    const char *serial = server->serial;
+    assert(serial);
+    LOGD("Device serial: %s", serial);
 
-    bool ok = push_server(&server->intr, params->serial);
+    bool ok = push_server(&server->intr, serial);
     if (!ok) {
         goto error_connection_failed;
     }
 
-    ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, params->serial,
+    ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, serial,
                             params->port_range, params->force_adb_forward);
     if (!ok) {
         goto error_connection_failed;
@@ -735,7 +730,7 @@ run_server(void *data) {
     // server will connect to our server socket
     sc_pid pid = execute_server(server, params);
     if (pid == SC_PROCESS_NONE) {
-        sc_adb_tunnel_close(&server->tunnel, &server->intr, params->serial);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial);
         goto error_connection_failed;
     }
 
@@ -747,7 +742,7 @@ run_server(void *data) {
     if (!ok) {
         sc_process_terminate(pid);
         sc_process_wait(pid, true); // ignore exit code
-        sc_adb_tunnel_close(&server->tunnel, &server->intr, params->serial);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial);
         goto error_connection_failed;
     }
 
@@ -840,6 +835,7 @@ sc_server_destroy(struct sc_server *server) {
         net_close(server->control_socket);
     }
 
+    free(server->serial);
     sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);

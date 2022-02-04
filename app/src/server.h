@@ -22,7 +22,7 @@ struct sc_server_info {
 };
 
 struct sc_server_params {
-    const char *serial;
+    const char *req_serial;
     enum sc_log_level log_level;
     const char *crop;
     const char *codec_options;
@@ -49,6 +49,7 @@ struct sc_server_params {
 struct sc_server {
     // The internal allocated strings are copies owned by the server
     struct sc_server_params params;
+    char *serial;
 
     sc_thread thread;
     struct sc_server_info info; // initialized once connected

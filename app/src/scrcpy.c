@@ -296,7 +296,7 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_acksync *acksync = NULL;
 
     struct sc_server_params params = {
-        .serial = options->serial,
+        .req_serial = options->serial,
         .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,
@@ -355,7 +355,7 @@ scrcpy(struct scrcpy_options *options) {
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
 
-    const char *serial = s->server.params.serial;
+    const char *serial = s->server.serial;
     assert(serial);
 
     struct sc_file_pusher *fp = NULL;
