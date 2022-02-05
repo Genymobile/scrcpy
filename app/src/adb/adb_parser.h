@@ -5,6 +5,19 @@
 
 #include <stddef.h>
 
+#include "adb_device.h"
+
+/**
+ * Parse the available devices from the output of `adb devices`
+ *
+ * The parameter must be a NUL-terminated string.
+ *
+ * Warning: this function modifies the buffer for optimization purposes.
+ */
+ssize_t
+sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
+                     size_t devices_len);
+
 /**
  * Parse the ip from the output of `adb shell ip route`
  *

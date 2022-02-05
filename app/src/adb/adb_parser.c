@@ -1,10 +1,167 @@
 #include "adb_parser.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "util/log.h"
 #include "util/str.h"
+
+bool
+sc_adb_parse_device(char *line, struct sc_adb_device *device) {
+    // One device line looks like:
+    // "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
+    //     "device:MyDevice transport_id:1"
+
+    if (line[0] == '*') {
+        // Garbage lines printed by adb daemon while starting start with a '*'
+        return false;
+    }
+
+    if (!strncmp("adb server", line, sizeof("adb server") - 1)) {
+        // Ignore lines starting with "adb server":
+        //   adb server version (41) doesn't match this client (39); killing...
+        return false;
+    }
+
+    char *s = line; // cursor in the line
+
+    // After the serial:
+    //  - "adb devices" writes a single '\t'
+    //  - "adb devices -l" writes multiple spaces
+    // For flexibility, accept both.
+    size_t serial_len = strcspn(s, " \t");
+    if (!serial_len) {
+        // empty serial
+        return false;
+    }
+    bool eol = s[serial_len] == '\0';
+    if (eol) {
+        // serial alone is unexpected
+        return false;
+    }
+    s[serial_len] = '\0';
+    char *serial = s;
+    s += serial_len + 1;
+    // After the serial, there might be several spaces
+    s += strspn(s, " \t"); // consume all separators
+
+    size_t state_len = strcspn(s, " ");
+    if (!state_len) {
+        // empty state
+        return false;
+    }
+    eol = s[state_len] == '\0';
+    s[state_len] = '\0';
+    char *state = s;
+
+    char *model = NULL;
+    if (!eol) {
+        s += state_len + 1;
+
+        // Iterate over all properties "key:value key:value ..."
+        for (;;) {
+            size_t token_len = strcspn(s, " ");
+            if (!token_len) {
+                break;
+            }
+            eol = s[token_len] == '\0';
+            s[token_len] = '\0';
+            char *token = s;
+
+            if (!strncmp("model:", token, sizeof("model:") - 1)) {
+                model = &token[sizeof("model:") - 1];
+                // We only need the model
+                break;
+            }
+
+            if (eol) {
+                break;
+            } else {
+                s+= token_len + 1;
+            }
+        }
+    }
+
+    device->serial = strdup(serial);
+    if (!device->serial) {
+        return false;
+    }
+
+    device->state = strdup(state);
+    if (!device->state) {
+        free(device->serial);
+        return false;
+    }
+
+    if (model) {
+        device->model = strdup(model);
+        if (!device->model) {
+            LOG_OOM();
+            // model is optional, do not fail
+        }
+    } else {
+        device->model = NULL;
+    }
+
+    return true;
+}
+
+ssize_t
+sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
+                     size_t devices_len) {
+    size_t dev_count = 0;
+
+#define HEADER "List of devices attached"
+#define HEADER_LEN (sizeof(HEADER) - 1)
+    bool header_found = false;
+
+    size_t idx_line = 0;
+    while (str[idx_line] != '\0') {
+        char *line = &str[idx_line];
+        size_t len = strcspn(line, "\n");
+
+        // The next line starts after the '\n' (replaced by `\0`)
+        idx_line += len;
+
+        if (str[idx_line] != '\0') {
+            // The next line starts after the '\n'
+            ++idx_line;
+        }
+
+        if (!header_found) {
+            if (!strncmp(line, HEADER, HEADER_LEN)) {
+                header_found = true;
+            }
+            // Skip everything until the header, there might be garbage lines
+            // related to daemon starting before
+            continue;
+        }
+
+        // The line, but without any trailing '\r'
+        size_t line_len = sc_str_remove_trailing_cr(line, len);
+        line[line_len] = '\0';
+
+        bool ok = sc_adb_parse_device(line, &devices[dev_count]);
+        if (!ok) {
+            continue;
+        }
+
+        ++dev_count;
+
+        assert(dev_count <= devices_len);
+        if (dev_count == devices_len) {
+            // Max number of devices reached
+            break;
+        }
+    }
+
+    if (!header_found) {
+        return -1;
+    }
+
+    return dev_count;
+}
 
 static char *
 sc_adb_parse_device_ip_from_line(char *line) {
@@ -64,7 +221,7 @@ sc_adb_parse_device_ip_from_output(char *str) {
 
         if (str[idx_line] != '\0') {
             // The next line starts after the '\n'
-            idx_line += 1;
+            ++idx_line;
         }
     }
 
