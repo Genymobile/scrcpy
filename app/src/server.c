@@ -240,7 +240,6 @@ execute_server(struct sc_server *server,
     }
 
 #undef ADD_PARAM
-#undef STRBOOL
 
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
