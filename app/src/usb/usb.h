@@ -35,6 +35,7 @@ struct sc_usb_device {
     char *product;
     uint16_t vid;
     uint16_t pid;
+    bool selected;
 };
 
 void
