@@ -25,8 +25,7 @@ read_string(libusb_device_handle *handle, uint8_t desc_index) {
 }
 
 static bool
-accept_device(libusb_device *device, const char *serial,
-              struct sc_usb_device *out) {
+sc_usb_read_device(libusb_device *device, struct sc_usb_device *out) {
     // Do not log any USB error in this function, it is expected that many USB
     // devices available on the computer have permission restrictions
 
@@ -48,22 +47,13 @@ accept_device(libusb_device *device, const char *serial,
         return false;
     }
 
-    if (serial) {
-        // Filter by serial
-        bool matches = !strcmp(serial, device_serial);
-        if (!matches) {
-            free(device_serial);
-            libusb_close(handle);
-            return false;
-        }
-    }
-
     out->device = libusb_ref_device(device);
     out->serial = device_serial;
     out->vid = desc.idVendor;
     out->pid = desc.idProduct;
     out->manufacturer = read_string(handle, desc.iManufacturer);
     out->product = read_string(handle, desc.iProduct);
+    out->selected = false;
 
     libusb_close(handle);
 
@@ -97,8 +87,8 @@ sc_usb_devices_destroy_all(struct sc_usb_device *usb_devices, size_t count) {
 }
 
 static ssize_t
-sc_usb_find_devices(struct sc_usb *usb, const char *serial,
-                    struct sc_usb_device *devices, size_t len) {
+sc_usb_list_devices(struct sc_usb *usb, struct sc_usb_device *devices,
+                    size_t len) {
     libusb_device **list;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
@@ -110,7 +100,7 @@ sc_usb_find_devices(struct sc_usb *usb, const char *serial,
     for (size_t i = 0; i < (size_t) count && idx < len; ++i) {
         libusb_device *device = list[i];
 
-        if (accept_device(device, serial, &devices[idx])) {
+        if (sc_usb_read_device(device, &devices[idx])) {
             ++idx;
         }
     }
@@ -119,46 +109,94 @@ sc_usb_find_devices(struct sc_usb *usb, const char *serial,
     return idx;
 }
 
+static bool
+sc_usb_accept_device(const struct sc_usb_device *device, const char *serial) {
+    if (!serial) {
+        return true;
+    }
+
+    return !strcmp(serial, device->serial);
+}
+
+static size_t
+sc_usb_devices_select(struct sc_usb_device *devices, size_t len,
+                      const char *serial, size_t *idx_out) {
+    size_t count = 0;
+    for (size_t i = 0; i < len; ++i) {
+        struct sc_usb_device *device = &devices[i];
+        device->selected = sc_usb_accept_device(device, serial);
+        if (device->selected) {
+            if (idx_out && !count) {
+                *idx_out = i;
+            }
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+static void
+sc_usb_devices_log(enum sc_log_level level, struct sc_usb_device *devices,
+                   size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        struct sc_usb_device *d = &devices[i];
+        const char *selection = d->selected ? "-->" : "   ";
+        LOG(level, "    %s %-18s (%04" PRIx16 ":%04" PRIx16 ")  %s %s",
+            selection, d->serial, d->vid, d->pid, d->manufacturer, d->product);
+    }
+}
+
 bool
 sc_usb_select_device(struct sc_usb *usb, const char *serial,
                      struct sc_usb_device *out_device) {
     struct sc_usb_device usb_devices[16];
-    ssize_t count = sc_usb_find_devices(usb, serial, usb_devices,
-                                        ARRAY_LEN(usb_devices));
+    ssize_t count =
+        sc_usb_list_devices(usb, usb_devices, ARRAY_LEN(usb_devices));
     if (count == -1) {
         LOGE("Could not list USB devices");
         return false;
     }
 
     if (count == 0) {
-        if (serial) {
-            LOGE("Could not find USB device %s", serial);
-        } else {
-            LOGE("Could not find any USB device");
-        }
+        LOGE("Could not find any USB device");
         return false;
     }
 
-    if (count > 1) {
+    size_t sel_idx; // index of the single matching device if sel_count == 1
+    size_t sel_count =
+        sc_usb_devices_select(usb_devices, count, serial, &sel_idx);
+
+    if (sel_count == 0) {
+        // if count > 0 && sel_count == 0, then necessarily a serial is provided
+        assert(serial);
+        LOGE("Could not find USB device %s", serial);
+        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, usb_devices, count);
+        sc_usb_devices_destroy_all(usb_devices, count);
+        return false;
+    }
+
+    if (sel_count > 1) {
         if (serial) {
             LOGE("Multiple (%" SC_PRIsizet ") USB devices with serial %s:",
-                 count, serial);
+                 sel_count, serial);
         } else {
-            LOGE("Multiple (%" SC_PRIsizet ") USB devices:", count);
-        }
-        for (size_t i = 0; i < (size_t) count; ++i) {
-            struct sc_usb_device *d = &usb_devices[i];
-            LOGE("    %-18s (%04" PRIx16 ":%04" PRIx16 ")  %s %s",
-                 d->serial, d->vid, d->pid, d->manufacturer, d->product);
+            LOGE("Multiple (%" SC_PRIsizet ") USB devices:", sel_count);
         }
         LOGE("Select a device via -s (--serial)");
         sc_usb_devices_destroy_all(usb_devices, count);
         return false;
     }
 
-    assert(count == 1);
-    // Move usb_devices[0] into out_device (do not destroy usb_devices[0])
-    *out_device = usb_devices[0];
+    assert(sel_count == 1); // sel_idx is valid only if sel_count == 1
+    struct sc_usb_device *device = &usb_devices[sel_idx];
+
+    LOGD("USB device found:");
+    sc_usb_devices_log(SC_LOG_LEVEL_DEBUG, usb_devices, count);
+
+    // Move device into out_device (do not destroy device)
+    sc_usb_device_move(out_device, device);
+    sc_usb_devices_destroy_all(usb_devices, count);
     return true;
 }
 
