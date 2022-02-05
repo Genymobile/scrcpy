@@ -55,6 +55,16 @@ sc_get_log_level(void) {
     return log_level_sdl_to_sc(sdl_log);
 }
 
+void
+sc_log(enum sc_log_level level, const char *fmt, ...) {
+    SDL_LogPriority sdl_level = log_level_sc_to_sdl(level);
+
+    va_list ap;
+    va_start(ap, fmt);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_APPLICATION, sdl_level, fmt, ap);
+    va_end(ap);
+}
+
 #ifdef _WIN32
 bool
 sc_log_windows_error(const char *prefix, int error) {

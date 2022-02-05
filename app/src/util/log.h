@@ -25,6 +25,10 @@ sc_set_log_level(enum sc_log_level level);
 enum sc_log_level
 sc_get_log_level(void);
 
+void
+sc_log(enum sc_log_level level, const char *fmt, ...);
+#define LOG(LEVEL, ...) sc_log((LEVEL), __VA_ARGS__)
+
 #ifdef _WIN32
 // Log system error (typically returned by GetLastError() or similar)
 bool
