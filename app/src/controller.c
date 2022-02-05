@@ -113,7 +113,7 @@ sc_controller_start(struct sc_controller *controller) {
     bool ok = sc_thread_create(&controller->thread, run_controller,
                                "scrcpy-ctl", controller);
     if (!ok) {
-        LOGC("Could not start controller thread");
+        LOGE("Could not start controller thread");
         return false;
     }
 

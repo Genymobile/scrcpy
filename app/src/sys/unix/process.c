@@ -176,7 +176,7 @@ sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
 bool
 sc_process_terminate(pid_t pid) {
     if (pid <= 0) {
-        LOGC("Requested to kill %d, this is an error. Please report the bug.\n",
+        LOGE("Requested to kill %d, this is an error. Please report the bug.\n",
              (int) pid);
         abort();
     }

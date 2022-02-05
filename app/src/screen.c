@@ -423,14 +423,14 @@ sc_screen_init(struct sc_screen *screen,
     screen->window =
         SDL_CreateWindow(params->window_title, 0, 0, 0, 0, window_flags);
     if (!screen->window) {
-        LOGC("Could not create window: %s", SDL_GetError());
+        LOGE("Could not create window: %s", SDL_GetError());
         goto error_destroy_fps_counter;
     }
 
     screen->renderer = SDL_CreateRenderer(screen->window, -1,
                                           SDL_RENDERER_ACCELERATED);
     if (!screen->renderer) {
-        LOGC("Could not create renderer: %s", SDL_GetError());
+        LOGE("Could not create renderer: %s", SDL_GetError());
         goto error_destroy_window;
     }
 
@@ -479,7 +479,7 @@ sc_screen_init(struct sc_screen *screen,
                                                   params->frame_size.height);
     screen->texture = create_texture(screen);
     if (!screen->texture) {
-        LOGC("Could not create texture: %s", SDL_GetError());
+        LOGE("Could not create texture: %s", SDL_GetError());
         goto error_destroy_renderer;
     }
 
@@ -666,7 +666,7 @@ prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
                      screen->frame_size.width, screen->frame_size.height);
         screen->texture = create_texture(screen);
         if (!screen->texture) {
-            LOGC("Could not create texture: %s", SDL_GetError());
+            LOGE("Could not create texture: %s", SDL_GetError());
             return false;
         }
     }

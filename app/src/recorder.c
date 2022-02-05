@@ -290,7 +290,7 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     ok = sc_thread_create(&recorder->thread, run_recorder, "scrcpy-recorder",
                           recorder);
     if (!ok) {
-        LOGC("Could not start recorder thread");
+        LOGE("Could not start recorder thread");
         goto error_avio_close;
     }
 

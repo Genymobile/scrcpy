@@ -114,7 +114,7 @@ receiver_start(struct receiver *receiver) {
     bool ok = sc_thread_create(&receiver->thread, run_receiver,
                                "scrcpy-receiver", receiver);
     if (!ok) {
-        LOGC("Could not start receiver thread");
+        LOGE("Could not start receiver thread");
         return false;
     }
 

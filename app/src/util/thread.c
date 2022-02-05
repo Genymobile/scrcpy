@@ -54,7 +54,7 @@ sc_mutex_lock(sc_mutex *mutex) {
     int r = SDL_LockMutex(mutex->mutex);
 #ifndef NDEBUG
     if (r) {
-        LOGC("Could not lock mutex: %s", SDL_GetError());
+        LOGE("Could not lock mutex: %s", SDL_GetError());
         abort();
     }
 
@@ -74,7 +74,7 @@ sc_mutex_unlock(sc_mutex *mutex) {
     int r = SDL_UnlockMutex(mutex->mutex);
 #ifndef NDEBUG
     if (r) {
-        LOGC("Could not lock mutex: %s", SDL_GetError());
+        LOGE("Could not lock mutex: %s", SDL_GetError());
         abort();
     }
 #else
@@ -118,7 +118,7 @@ sc_cond_wait(sc_cond *cond, sc_mutex *mutex) {
     int r = SDL_CondWait(cond->cond, mutex->mutex);
 #ifndef NDEBUG
     if (r) {
-        LOGC("Could not wait on condition: %s", SDL_GetError());
+        LOGE("Could not wait on condition: %s", SDL_GetError());
         abort();
     }
 
@@ -140,7 +140,7 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline) {
     int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, ms);
 #ifndef NDEBUG
     if (r < 0) {
-        LOGC("Could not wait on condition with timeout: %s", SDL_GetError());
+        LOGE("Could not wait on condition with timeout: %s", SDL_GetError());
         abort();
     }
 
@@ -156,7 +156,7 @@ sc_cond_signal(sc_cond *cond) {
     int r = SDL_CondSignal(cond->cond);
 #ifndef NDEBUG
     if (r) {
-        LOGC("Could not signal a condition: %s", SDL_GetError());
+        LOGE("Could not signal a condition: %s", SDL_GetError());
         abort();
     }
 #else
@@ -169,7 +169,7 @@ sc_cond_broadcast(sc_cond *cond) {
     int r = SDL_CondBroadcast(cond->cond);
 #ifndef NDEBUG
     if (r) {
-        LOGC("Could not broadcast a condition: %s", SDL_GetError());
+        LOGE("Could not broadcast a condition: %s", SDL_GetError());
         abort();
     }
 #else
