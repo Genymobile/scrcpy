@@ -364,11 +364,10 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
 
 bool
 sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
+    assert(ip_port);
     const char *const adb_cmd[] = {"disconnect", ip_port};
-    size_t len = ip_port ? ARRAY_LEN(adb_cmd)
-                         : ARRAY_LEN(adb_cmd) - 1;
 
-    sc_pid pid = sc_adb_execute(NULL, adb_cmd, len, flags);
+    sc_pid pid = sc_adb_execute(NULL, adb_cmd, ARRAY_LEN(adb_cmd), flags);
     return process_check_success_intr(intr, pid, "adb disconnect", flags);
 }
 
