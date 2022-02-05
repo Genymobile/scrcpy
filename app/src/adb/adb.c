@@ -11,16 +11,16 @@
 #include "util/process_intr.h"
 #include "util/str.h"
 
-static const char *adb_command;
+static const char *adb_executable;
 
 static inline const char *
-get_adb_command(void) {
-    if (!adb_command) {
-        adb_command = getenv("ADB");
-        if (!adb_command)
-            adb_command = "adb";
+get_adb_executable(void) {
+    if (!adb_executable) {
+        adb_executable = getenv("ADB");
+        if (!adb_executable)
+            adb_executable = "adb";
     }
-    return adb_command;
+    return adb_executable;
 }
 
 // serialize argv to string "[arg1], [arg2], [arg3]"
@@ -163,7 +163,7 @@ sc_adb_create_argv(const char *serial, const char *const adb_cmd[],
         return NULL;
     }
 
-    argv[0] = get_adb_command();
+    argv[0] = get_adb_executable();
     int i;
     if (serial) {
         argv[1] = "-s";
