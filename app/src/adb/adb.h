@@ -18,8 +18,7 @@ const char *
 sc_adb_get_executable(void);
 
 sc_pid
-sc_adb_execute(const char *serial, const char *const adb_cmd[], size_t len,
-               unsigned flags);
+sc_adb_execute(const char *const argv[], unsigned flags);
 
 bool
 sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,

@@ -157,8 +157,14 @@ execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
     sc_pid pid = SC_PROCESS_NONE;
 
+    const char *serial = params->serial;
+    assert(serial);
+
     const char *cmd[128];
     unsigned count = 0;
+    cmd[count++] = sc_adb_get_executable();
+    cmd[count++] = "-s";
+    cmd[count++] = serial;
     cmd[count++] = "shell";
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
     cmd[count++] = "app_process";
@@ -241,6 +247,8 @@ execute_server(struct sc_server *server,
 
 #undef ADD_PARAM
 
+    cmd[count++] = NULL;
+
 #ifdef SERVER_DEBUGGER
     LOGI("Server debugger waiting for a client on device port "
          SERVER_DEBUGGER_PORT "...");
@@ -253,7 +261,7 @@ execute_server(struct sc_server *server,
     // Then click on "Debug"
 #endif
     // Inherit both stdout and stderr (all server logs are printed to stdout)
-    pid = sc_adb_execute(params->serial, cmd, count, 0);
+    pid = sc_adb_execute(cmd, 0);
 
 end:
     for (unsigned i = dyn_idx; i < count; ++i) {
