@@ -442,7 +442,7 @@ scrcpy(struct scrcpy_options *options) {
 
             if (count > 1) {
                 LOGE("Multiple (%d) devices with serial %s", (int) count, serial);
-                sc_usb_device_destroy_all(usb_devices, count);
+                sc_usb_devices_destroy_all(usb_devices, count);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;

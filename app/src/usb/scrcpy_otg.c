@@ -115,7 +115,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         if (!serial) {
             LOGE("Specify the device via -s or --serial");
         }
-        sc_usb_device_destroy_all(usb_devices, count);
+        sc_usb_devices_destroy_all(usb_devices, count);
         goto end;
     }
     usb_device_initialized = true;

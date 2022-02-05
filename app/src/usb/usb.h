@@ -41,7 +41,7 @@ void
 sc_usb_device_destroy(struct sc_usb_device *usb_device);
 
 void
-sc_usb_device_destroy_all(struct sc_usb_device *usb_devices, size_t count);
+sc_usb_devices_destroy_all(struct sc_usb_device *usb_devices, size_t count);
 
 bool
 sc_usb_init(struct sc_usb *usb);
