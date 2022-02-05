@@ -8,8 +8,10 @@
 
 #ifndef __WIN32
 # define PRIu64_ PRIu64
+# define SC_PRIsizet "zu"
 #else
 # define PRIu64_ "I64u"  // Windows...
+# define SC_PRIsizet "Iu"
 #endif
 
 // In ffmpeg/doc/APIchanges:
