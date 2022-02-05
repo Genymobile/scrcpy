@@ -156,7 +156,7 @@ sc_file_pusher_start(struct sc_file_pusher *fp) {
 
     bool ok = sc_thread_create(&fp->thread, run_file_pusher, "scrcpy-file", fp);
     if (!ok) {
-        LOGC("Could not start file_pusher thread");
+        LOGE("Could not start file_pusher thread");
         return false;
     }
 

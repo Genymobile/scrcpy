@@ -278,7 +278,7 @@ sc_aoa_start(struct sc_aoa *aoa) {
 
     bool ok = sc_thread_create(&aoa->thread, run_aoa_thread, "scrcpy-aoa", aoa);
     if (!ok) {
-        LOGC("Could not start AOA thread");
+        LOGE("Could not start AOA thread");
         return false;
     }
 

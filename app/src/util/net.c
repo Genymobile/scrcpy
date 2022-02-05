@@ -33,7 +33,7 @@ net_init(void) {
     WSADATA wsa;
     int res = WSAStartup(MAKEWORD(2, 2), &wsa) < 0;
     if (res < 0) {
-        LOGC("WSAStartup failed with error %d", res);
+        LOGE("WSAStartup failed with error %d", res);
         return false;
     }
 #endif
