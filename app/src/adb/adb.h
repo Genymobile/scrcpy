@@ -14,6 +14,9 @@
 
 #define SC_ADB_SILENT (SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR)
 
+const char *
+sc_adb_get_executable(void);
+
 sc_pid
 sc_adb_execute(const char *serial, const char *const adb_cmd[], size_t len,
                unsigned flags);

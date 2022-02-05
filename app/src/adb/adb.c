@@ -13,8 +13,8 @@
 
 static const char *adb_executable;
 
-static inline const char *
-get_adb_executable(void) {
+const char *
+sc_adb_get_executable(void) {
     if (!adb_executable) {
         adb_executable = getenv("ADB");
         if (!adb_executable)
@@ -163,7 +163,7 @@ sc_adb_create_argv(const char *serial, const char *const adb_cmd[],
         return NULL;
     }
 
-    argv[0] = get_adb_executable();
+    argv[0] = sc_adb_get_executable();
     int i;
     if (serial) {
         argv[1] = "-s";
