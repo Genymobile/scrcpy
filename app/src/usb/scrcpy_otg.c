@@ -83,50 +83,17 @@ scrcpy_otg(struct scrcpy_options *options) {
         return false;
     }
 
-    struct sc_usb_device usb_devices[16];
-    ssize_t count = sc_usb_find_devices(&s->usb, serial, usb_devices,
-                                        ARRAY_LEN(usb_devices));
-    if (count < 0) {
-        LOGE("Could not list USB devices");
+    struct sc_usb_device usb_device;
+    ok = sc_usb_select_device(&s->usb, serial, &usb_device);
+    if (!ok) {
         goto end;
     }
-
-    if (count == 0) {
-        if (serial) {
-            LOGE("Could not find USB device %s", serial);
-        } else {
-            LOGE("Could not find any USB device");
-        }
-        goto end;
-    }
-
-    if (count > 1) {
-        if (serial) {
-            LOGE("Multiple (%d) USB devices with serial %s:", (int) count,
-                 serial);
-        } else {
-            LOGE("Multiple (%d) USB devices:", (int) count);
-        }
-        for (size_t i = 0; i < (size_t) count; ++i) {
-            struct sc_usb_device *d = &usb_devices[i];
-            LOGE("    %-18s (%04" PRIx16 ":%04" PRIx16 ")  %s %s",
-                 d->serial, d->vid, d->pid, d->manufacturer, d->product);
-        }
-        if (!serial) {
-            LOGE("Specify the device via -s or --serial");
-        }
-        sc_usb_devices_destroy_all(usb_devices, count);
-        goto end;
-    }
-    usb_device_initialized = true;
-
-    struct sc_usb_device *usb_device = &usb_devices[0];
 
     LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
-         usb_device->serial, usb_device->vid, usb_device->pid,
-         usb_device->manufacturer, usb_device->product);
+         usb_device.serial, usb_device.vid, usb_device.pid,
+         usb_device.manufacturer, usb_device.product);
 
-    ok = sc_usb_connect(&s->usb, usb_device->device, &cbs, NULL);
+    ok = sc_usb_connect(&s->usb, usb_device.device, &cbs, NULL);
     if (!ok) {
         goto end;
     }
@@ -173,7 +140,7 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     const char *window_title = options->window_title;
     if (!window_title) {
-        window_title = usb_device->product ? usb_device->product : "scrcpy";
+        window_title = usb_device.product ? usb_device.product : "scrcpy";
     }
 
     struct sc_screen_otg_params params = {
@@ -192,7 +159,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     // usb_device not needed anymore
-    sc_usb_device_destroy(usb_device);
+    sc_usb_device_destroy(&usb_device);
     usb_device_initialized = false;
 
     ret = event_loop(s);
@@ -223,7 +190,7 @@ end:
     }
 
     if (usb_device_initialized) {
-        sc_usb_device_destroy(usb_device);
+        sc_usb_device_destroy(&usb_device);
     }
 
     sc_usb_destroy(&s->usb);

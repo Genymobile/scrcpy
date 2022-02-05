@@ -430,32 +430,19 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             assert(serial);
-            struct sc_usb_device usb_devices[16];
-            ssize_t count = sc_usb_find_devices(&s->usb, serial, usb_devices,
-                                                ARRAY_LEN(usb_devices));
-            if (count <= 0) {
-                LOGE("Could not find USB device %s", serial);
+            struct sc_usb_device usb_device;
+            ok = sc_usb_select_device(&s->usb, serial, &usb_device);
+            if (!ok) {
                 sc_usb_destroy(&s->usb);
-                sc_acksync_destroy(&s->acksync);
                 goto aoa_hid_end;
             }
-
-            if (count > 1) {
-                LOGE("Multiple (%d) devices with serial %s", (int) count, serial);
-                sc_usb_devices_destroy_all(usb_devices, count);
-                sc_usb_destroy(&s->usb);
-                sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
-            }
-
-            struct sc_usb_device *usb_device = &usb_devices[0];
 
             LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
-                 usb_device->serial, usb_device->vid, usb_device->pid,
-                 usb_device->manufacturer, usb_device->product);
+                 usb_device.serial, usb_device.vid, usb_device.pid,
+                 usb_device.manufacturer, usb_device.product);
 
-            ok = sc_usb_connect(&s->usb, usb_device->device, NULL, NULL);
-            sc_usb_device_destroy(usb_device);
+            ok = sc_usb_connect(&s->usb, usb_device.device, NULL, NULL);
+            sc_usb_device_destroy(&usb_device);
             if (!ok) {
                 LOGE("Failed to connect to USB device %s", serial);
                 sc_usb_destroy(&s->usb);

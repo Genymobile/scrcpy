@@ -61,9 +61,9 @@ sc_usb_init(struct sc_usb *usb);
 void
 sc_usb_destroy(struct sc_usb *usb);
 
-ssize_t
-sc_usb_find_devices(struct sc_usb *usb, const char *serial,
-                    struct sc_usb_device *devices, size_t len);
+bool
+sc_usb_select_device(struct sc_usb *usb, const char *serial,
+                     struct sc_usb_device *out_device);
 
 bool
 sc_usb_connect(struct sc_usb *usb, libusb_device *device,
