@@ -641,51 +641,37 @@ sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
     return true;
 }
 
+static bool
+sc_server_configure_tcpip_known_address(struct sc_server *server,
+                                        const char *addr) {
+    // Append ":5555" if no port is present
+    bool contains_port = strchr(addr, ':');
+    char *ip_port = contains_port ? strdup(addr) : append_port_5555(addr);
+    if (!ip_port) {
+        LOG_OOM();
+        return false;
+    }
+
+    server->serial = ip_port;
+    return sc_server_connect_to_tcpip(server, ip_port);
+}
 
 static bool
-sc_server_configure_tcpip(struct sc_server *server) {
-    char *ip_port;
+sc_server_configure_tcpip_unknown_address(struct sc_server *server,
+                                          const char *serial) {
+    // The serial is either the real serial when connected via USB, or
+    // the IP:PORT when connected over TCP/IP. Only the latter contains
+    // a colon.
+    bool is_already_tcpip = strchr(serial, ':');
+    if (is_already_tcpip) {
+        // Nothing to do
+        LOGI("Device already connected via TCP/IP: %s", serial);
+        return true;
+    }
 
-    const struct sc_server_params *params = &server->params;
-
-    // If tcpip parameter is given, then it must connect to this address.
-    // Therefore, the device is unknown, so serial is meaningless at this point.
-    assert(!params->req_serial || !params->tcpip_dst);
-
-    if (params->tcpip_dst) {
-        // Append ":5555" if no port is present
-        bool contains_port = strchr(params->tcpip_dst, ':');
-        ip_port = contains_port ? strdup(params->tcpip_dst)
-                                : append_port_5555(params->tcpip_dst);
-        if (!ip_port) {
-            LOG_OOM();
-            return false;
-        }
-    } else {
-        // The device IP address must be retrieved from the current
-        // connected device
-        char *serial = sc_server_read_serial(server);
-        if (!serial) {
-            LOGE("Could not get device serial");
-            return false;
-        }
-
-        // The serial is either the real serial when connected via USB, or
-        // the IP:PORT when connected over TCP/IP. Only the latter contains
-        // a colon.
-        bool is_already_tcpip = strchr(serial, ':');
-        if (is_already_tcpip) {
-            // Nothing to do
-            LOGI("Device already connected via TCP/IP: %s", serial);
-            free(serial);
-            return true;
-        }
-
-        ip_port = sc_server_switch_to_tcpip(server, serial);
-        free(serial);
-        if (!ip_port) {
-            return false;
-        }
+    char *ip_port = sc_server_switch_to_tcpip(server, serial);
+    if (!ip_port) {
+        return false;
     }
 
     server->serial = ip_port;
@@ -698,16 +684,40 @@ run_server(void *data) {
 
     const struct sc_server_params *params = &server->params;
 
-    if (params->tcpip) {
-        bool ok = sc_server_configure_tcpip(server);
-        if (!ok) {
+    // params->tcpip_dst implies params->tcpip
+    assert(!params->tcpip_dst || params->tcpip);
+
+    // If tcpip_dst parameter is given, then it must connect to this address.
+    // Therefore, the device is unknown, so serial is meaningless at this point.
+    assert(!params->req_serial || !params->tcpip_dst);
+
+    // A device must be selected via a serial in all cases except when --tcpip=
+    // is called with a parameter (in that case, the device may initially not
+    // exist, and scrcpy will execute "adb connect").
+    bool need_initial_serial = !params->tcpip_dst;
+
+    bool ok;
+    if (need_initial_serial) {
+        char *serial = sc_server_read_serial(server);
+        if (!serial) {
+            LOGE("Could not get device serial");
             goto error_connection_failed;
         }
-        assert(server->serial);
+
+        if (params->tcpip) {
+            assert(!params->tcpip_dst);
+            ok = sc_server_configure_tcpip_unknown_address(server, serial);
+            free(serial);
+            if (!ok) {
+                goto error_connection_failed;
+            }
+            assert(server->serial);
+        } else {
+            server->serial = serial;
+        }
     } else {
-        server->serial = sc_server_read_serial(server);
-        if (!server->serial) {
-            LOGD("Could not get device serial");
+        ok = sc_server_configure_tcpip_known_address(server, params->tcpip_dst);
+        if (!ok) {
             goto error_connection_failed;
         }
     }
@@ -716,7 +726,7 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
-    bool ok = push_server(&server->intr, serial);
+    ok = push_server(&server->intr, serial);
     if (!ok) {
         goto error_connection_failed;
     }
