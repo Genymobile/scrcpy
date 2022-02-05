@@ -221,6 +221,8 @@ sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
+
+    assert(serial);
     const char *const adb_cmd[] = {"forward", local, remote};
 
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
@@ -232,6 +234,8 @@ sc_adb_forward_remove(struct sc_intr *intr, const char *serial,
                       uint16_t local_port, unsigned flags) {
     char local[4 + 5 + 1]; // tcp:PORT
     sprintf(local, "tcp:%" PRIu16, local_port);
+
+    assert(serial);
     const char *const adb_cmd[] = {"forward", "--remove", local};
 
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
@@ -246,6 +250,8 @@ sc_adb_reverse(struct sc_intr *intr, const char *serial,
     char remote[108 + 14 + 1]; // localabstract:NAME
     sprintf(local, "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
+
+    assert(serial);
     const char *const adb_cmd[] = {"reverse", remote, local};
 
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
@@ -257,6 +263,8 @@ sc_adb_reverse_remove(struct sc_intr *intr, const char *serial,
                       const char *device_socket_name, unsigned flags) {
     char remote[108 + 14 + 1]; // localabstract:NAME
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
+
+    assert(serial);
     const char *const adb_cmd[] = {"reverse", "--remove", remote};
 
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
@@ -280,7 +288,9 @@ sc_adb_push(struct sc_intr *intr, const char *serial, const char *local,
     }
 #endif
 
+    assert(serial);
     const char *const adb_cmd[] = {"push", local, remote};
+
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
 
 #ifdef __WINDOWS__
@@ -303,7 +313,9 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
     }
 #endif
 
+    assert(serial);
     const char *const adb_cmd[] = {"install", "-r", local};
+
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
 
 #ifdef __WINDOWS__
@@ -318,6 +330,8 @@ sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
              unsigned flags) {
     char port_string[5 + 1];
     sprintf(port_string, "%" PRIu16, port);
+
+    assert(serial);
     const char *const adb_cmd[] = {"tcpip", port_string};
 
     sc_pid pid = sc_adb_execute(serial, adb_cmd, ARRAY_LEN(adb_cmd), flags);
@@ -374,6 +388,7 @@ sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
 char *
 sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
                unsigned flags) {
+    assert(serial);
     const char *const adb_cmd[] = {"shell", "getprop", prop};
 
     sc_pipe pout;
@@ -434,6 +449,7 @@ sc_adb_get_serialno(struct sc_intr *intr, unsigned flags) {
 
 char *
 sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
+    assert(serial);
     const char *const cmd[] = {"shell", "ip", "route"};
 
     sc_pipe pout;
