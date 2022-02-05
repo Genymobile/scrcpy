@@ -40,6 +40,18 @@ struct sc_usb_device {
 void
 sc_usb_device_destroy(struct sc_usb_device *usb_device);
 
+/**
+ * Move src to dest
+ *
+ * After this call, the content of src is undefined, except that
+ * sc_usb_device_destroy() can be called.
+ *
+ * This is useful to take a device from a list that will be destroyed, without
+ * making unnecessary copies.
+ */
+void
+sc_usb_device_move(struct sc_usb_device *dst, struct sc_usb_device *src);
+
 void
 sc_usb_devices_destroy_all(struct sc_usb_device *usb_devices, size_t count);
 

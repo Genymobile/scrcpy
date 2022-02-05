@@ -72,10 +72,21 @@ accept_device(libusb_device *device, const char *serial,
 
 void
 sc_usb_device_destroy(struct sc_usb_device *usb_device) {
-    libusb_unref_device(usb_device->device);
+    if (usb_device->device) {
+        libusb_unref_device(usb_device->device);
+    }
     free(usb_device->serial);
     free(usb_device->manufacturer);
     free(usb_device->product);
+}
+
+void
+sc_usb_device_move(struct sc_usb_device *dst, struct sc_usb_device *src) {
+    *dst = *src;
+    src->device = NULL;
+    src->serial = NULL;
+    src->manufacturer = NULL;
+    src->product = NULL;
 }
 
 void
