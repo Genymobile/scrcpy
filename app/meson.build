@@ -1,6 +1,7 @@
 src = [
     'src/main.c',
     'src/adb/adb.c',
+    'src/adb/adb_device.c',
     'src/adb/adb_parser.c',
     'src/adb/adb_tunnel.c',
     'src/cli.c',
@@ -221,6 +222,7 @@ if get_option('buildtype') == 'debug'
     tests = [
         ['test_adb_parser', [
             'tests/test_adb_parser.c',
+            'src/adb/adb_device.c',
             'src/adb/adb_parser.c',
             'src/util/str.c',
             'src/util/strbuf.c',
