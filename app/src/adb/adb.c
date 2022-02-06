@@ -339,7 +339,7 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     // case of failure. As a workaround, check if its output starts with
     // "connected".
     char buf[128];
-    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
     sc_pipe_close(pout);
 
     bool ok = process_check_success_intr(intr, pid, "adb connect", flags);
@@ -351,11 +351,15 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
         return false;
     }
 
+    assert((size_t) r < sizeof(buf));
+    buf[r] = '\0';
+
     ok = !strncmp("connected", buf, sizeof("connected") - 1);
     if (!ok && !(flags & SC_ADB_NO_STDERR)) {
         // "adb connect" also prints errors to stdout. Since we capture it,
         // re-print the error to stderr.
-        sc_str_truncate(buf, r, "\r\n");
+        size_t len = strcspn(buf, "\r\n");
+        buf[len] = '\0';
         fprintf(stderr, "%s\n", buf);
     }
     return ok;
