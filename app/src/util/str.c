@@ -297,14 +297,6 @@ error:
     return NULL;
 }
 
-size_t
-sc_str_truncate(char *data, size_t len, const char *endchars) {
-    data[len - 1] = '\0';
-    size_t idx = strcspn(data, endchars);
-    data[idx] = '\0';
-    return idx;
-}
-
 ssize_t
 sc_str_index_of_column(const char *s, unsigned col, const char *seps) {
     size_t colidx = 0;
