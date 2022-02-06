@@ -446,7 +446,7 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
 
     // "adb shell ip route" output should contain only a few lines
     char buf[1024];
-    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
     sc_pipe_close(pout);
 
     bool ok = process_check_success_intr(intr, pid, "ip route", flags);
@@ -458,8 +458,8 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
         return NULL;
     }
 
-    assert((size_t) r <= sizeof(buf));
-    if (r == sizeof(buf) && buf[sizeof(buf) - 1] != '\0')  {
+    assert((size_t) r < sizeof(buf));
+    if (r == sizeof(buf) - 1)  {
         // The implementation assumes that the output of "ip route" fits in the
         // buffer in a single pass
         LOGW("Result of \"ip route\" does not fit in 1Kb. "
@@ -467,5 +467,8 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
         return NULL;
     }
 
-    return sc_adb_parse_device_ip_from_output(buf, r);
+    // It is parsed as a NUL-terminated string
+    buf[r] = '\0';
+
+    return sc_adb_parse_device_ip_from_output(buf);
 }

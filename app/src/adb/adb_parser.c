@@ -7,7 +7,7 @@
 #include "util/str.h"
 
 static char *
-sc_adb_parse_device_ip_from_line(char *line, size_t len) {
+sc_adb_parse_device_ip_from_line(char *line) {
     // One line from "ip route" looks like:
     // "192.168.1.0/24 dev wlan0  proto kernel  scope link  src 192.168.1.x"
 
@@ -27,10 +27,12 @@ sc_adb_parse_device_ip_from_line(char *line, size_t len) {
     idx_ip += idx_dev_name;
 
     char *dev_name = &line[idx_dev_name];
-    sc_str_truncate(dev_name, len - idx_dev_name + 1, " \t");
+    size_t dev_name_len = strcspn(dev_name, " \t");
+    dev_name[dev_name_len] = '\0';
 
     char *ip = &line[idx_ip];
-    sc_str_truncate(ip, len - idx_ip + 1, " \t");
+    size_t ip_len = strcspn(ip, " \t");
+    ip[ip_len] = '\0';
 
     // Only consider lines where the device name starts with "wlan"
     if (strncmp(dev_name, "wlan", sizeof("wlan") - 1)) {
@@ -42,23 +44,28 @@ sc_adb_parse_device_ip_from_line(char *line, size_t len) {
 }
 
 char *
-sc_adb_parse_device_ip_from_output(char *buf, size_t buf_len) {
+sc_adb_parse_device_ip_from_output(char *str) {
     size_t idx_line = 0;
-    while (idx_line < buf_len && buf[idx_line] != '\0') {
-        char *line = &buf[idx_line];
-        size_t len = sc_str_truncate(line, buf_len - idx_line, "\n");
+    while (str[idx_line] != '\0') {
+        char *line = &str[idx_line];
+        size_t len = strcspn(line, "\n");
 
         // The same, but without any trailing '\r'
         size_t line_len = sc_str_remove_trailing_cr(line, len);
+        line[line_len] = '\0';
 
-        char *ip = sc_adb_parse_device_ip_from_line(line, line_len);
+        char *ip = sc_adb_parse_device_ip_from_line(line);
         if (ip) {
             // Found
             return ip;
         }
 
-        // The next line starts after the '\n' (replaced by `\0`)
-        idx_line += len + 1;
+        idx_line += len;
+
+        if (str[idx_line] != '\0') {
+            // The next line starts after the '\n'
+            idx_line += 1;
+        }
     }
 
     return NULL;
