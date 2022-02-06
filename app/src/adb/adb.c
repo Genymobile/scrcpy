@@ -424,39 +424,49 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
 }
 
 static bool
-sc_adb_accept_device(const struct sc_adb_device *device, const char *serial) {
-    if (!serial) {
-        return true;
-    }
-
-    char *device_serial_colon = strchr(device->serial, ':');
-    if (device_serial_colon) {
-        // The device serial is an IP:port...
-        char *serial_colon = strchr(serial, ':');
-        if (!serial_colon) {
-            // But the requested serial has no ':', so only consider the IP part
-            // of the device serial. This allows to use "192.168.1.1" to match
-            // any "192.168.1.1:port".
-            size_t serial_len = strlen(serial);
-            size_t device_ip_len = device_serial_colon - device->serial;
-            if (serial_len != device_ip_len) {
-                // They are not equal, they don't even have the same length
-                return false;
+sc_adb_accept_device(const struct sc_adb_device *device,
+                     const struct sc_adb_device_selector *selector) {
+    switch (selector->type) {
+        case SC_ADB_DEVICE_SELECT_ALL:
+            return true;
+        case SC_ADB_DEVICE_SELECT_SERIAL:
+            assert(selector->serial);
+            char *device_serial_colon = strchr(device->serial, ':');
+            if (device_serial_colon) {
+                // The device serial is an IP:port...
+                char *serial_colon = strchr(selector->serial, ':');
+                if (!serial_colon) {
+                    // But the requested serial has no ':', so only consider
+                    // the IP part of the device serial. This allows to use
+                    // "192.168.1.1" to match any "192.168.1.1:port".
+                    size_t serial_len = strlen(selector->serial);
+                    size_t device_ip_len = device_serial_colon - device->serial;
+                    if (serial_len != device_ip_len) {
+                        // They are not equal, they don't even have the same
+                        // length
+                        return false;
+                    }
+                    return !strncmp(selector->serial, device->serial,
+                                    device_ip_len);
+                }
             }
-            return !strncmp(serial, device->serial, device_ip_len);
-        }
+            return !strcmp(selector->serial, device->serial);
+        default:
+            assert(!"Missing SC_ADB_DEVICE_SELECT_* handling");
+            break;
     }
 
-    return !strcmp(serial, device->serial);
+    return false;
 }
 
 static size_t
 sc_adb_devices_select(struct sc_adb_device *devices, size_t len,
-                      const char *serial, size_t *idx_out) {
+                      const struct sc_adb_device_selector *selector,
+                      size_t *idx_out) {
     size_t count = 0;
     for (size_t i = 0; i < len; ++i) {
         struct sc_adb_device *device = &devices[i];
-        device->selected = sc_adb_accept_device(device, serial);
+        device->selected = sc_adb_accept_device(device, selector);
         if (device->selected) {
             if (idx_out && !count) {
                 *idx_out = i;
@@ -502,8 +512,9 @@ sc_adb_device_check_state(struct sc_adb_device *device,
 }
 
 bool
-sc_adb_select_device(struct sc_intr *intr, const char *serial, unsigned flags,
-                     struct sc_adb_device *out_device) {
+sc_adb_select_device(struct sc_intr *intr,
+                     const struct sc_adb_device_selector *selector,
+                     unsigned flags, struct sc_adb_device *out_device) {
     struct sc_adb_device devices[16];
     ssize_t count =
         sc_adb_list_devices(intr, flags, devices, ARRAY_LEN(devices));
@@ -518,26 +529,45 @@ sc_adb_select_device(struct sc_intr *intr, const char *serial, unsigned flags,
     }
 
     size_t sel_idx; // index of the single matching device if sel_count == 1
-    size_t sel_count = sc_adb_devices_select(devices, count, serial, &sel_idx);
+    size_t sel_count =
+        sc_adb_devices_select(devices, count, selector, &sel_idx);
 
     if (sel_count == 0) {
-        // if count > 0 && sel_count == 0, then necessarily a serial is provided
-        assert(serial);
-        LOGE("Could not find ADB device %s", serial);
+        // if count > 0 && sel_count == 0, then necessarily a selection is
+        // requested
+        assert(selector->type != SC_ADB_DEVICE_SELECT_ALL);
+
+        switch (selector->type) {
+            case SC_ADB_DEVICE_SELECT_SERIAL:
+                assert(selector->serial);
+                LOGE("Could not find ADB device %s:", selector->serial);
+                break;
+            default:
+                assert(!"Unexpected selector type");
+                break;
+        }
+
         sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
         sc_adb_devices_destroy_all(devices, count);
         return false;
     }
 
     if (sel_count > 1) {
-        if (serial) {
-            LOGE("Multiple (%" SC_PRIsizet ") ADB devices with serial %s:",
-                 sel_count, serial);
-        } else {
-            LOGE("Multiple (%" SC_PRIsizet ") ADB devices:", sel_count);
+        switch (selector->type) {
+            case SC_ADB_DEVICE_SELECT_ALL:
+                LOGE("Multiple (%" SC_PRIsizet ") ADB devices:", sel_count);
+                break;
+            case SC_ADB_DEVICE_SELECT_SERIAL:
+                assert(selector->serial);
+                LOGE("Multiple (%" SC_PRIsizet ") ADB devices with serial %s:",
+                     sel_count, selector->serial);
+                break;
+            default:
+                assert(!"Unexpected selector type");
+                break;
         }
         sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
-        if (!serial) {
+        if (selector->type != SC_ADB_DEVICE_SELECT_ALL) {
             LOGE("Specify the device via -s or --serial");
         }
         sc_adb_devices_destroy_all(devices, count);
