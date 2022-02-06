@@ -183,6 +183,7 @@ sc_usb_select_device(struct sc_usb *usb, const char *serial,
         } else {
             LOGE("Multiple (%" SC_PRIsizet ") USB devices:", sel_count);
         }
+        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, usb_devices, count);
         LOGE("Select a device via -s (--serial)");
         sc_usb_devices_destroy_all(usb_devices, count);
         return false;

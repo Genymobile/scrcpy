@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
+#include "adb_device.h"
 #include "util/intr.h"
 
 #define SC_ADB_NO_STDOUT (1 << 0)
@@ -68,6 +69,15 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags);
  */
 bool
 sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
+
+/**
+ * Execute `adb devices` and parse the result to select a device
+ *
+ * Return true if a single matching device is found, and write it to out_device.
+ */
+bool
+sc_adb_select_device(struct sc_intr *intr, const char *serial, unsigned flags,
+                     struct sc_adb_device *out_device);
 
 /**
  * Execute `adb getprop <prop>`

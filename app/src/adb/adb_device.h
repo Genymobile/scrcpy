@@ -10,6 +10,7 @@ struct sc_adb_device {
     char *serial;
     char *state;
     char *model;
+    bool selected;
 };
 
 void
