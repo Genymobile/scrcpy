@@ -421,6 +421,24 @@ sc_adb_accept_device(const struct sc_adb_device *device, const char *serial) {
         return true;
     }
 
+    char *device_serial_colon = strchr(device->serial, ':');
+    if (device_serial_colon) {
+        // The device serial is an IP:port...
+        char *serial_colon = strchr(serial, ':');
+        if (!serial_colon) {
+            // But the requested serial has no ':', so only consider the IP part
+            // of the device serial. This allows to use "192.168.1.1" to match
+            // any "192.168.1.1:port".
+            size_t serial_len = strlen(serial);
+            size_t device_ip_len = device_serial_colon - device->serial;
+            if (serial_len != device_ip_len) {
+                // They are not equal, they don't even have the same length
+                return false;
+            }
+            return !strncmp(serial, device->serial, device_ip_len);
+        }
+    }
+
     return !strcmp(serial, device->serial);
 }
 
