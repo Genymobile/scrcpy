@@ -451,6 +451,10 @@ sc_adb_accept_device(const struct sc_adb_device *device,
                 }
             }
             return !strcmp(selector->serial, device->serial);
+        case SC_ADB_DEVICE_SELECT_USB:
+            return !sc_adb_is_serial_tcpip(device->serial);
+        case SC_ADB_DEVICE_SELECT_TCPIP:
+            return sc_adb_is_serial_tcpip(device->serial);
         default:
             assert(!"Missing SC_ADB_DEVICE_SELECT_* handling");
             break;
@@ -542,6 +546,12 @@ sc_adb_select_device(struct sc_intr *intr,
                 assert(selector->serial);
                 LOGE("Could not find ADB device %s:", selector->serial);
                 break;
+            case SC_ADB_DEVICE_SELECT_USB:
+                LOGE("Could not find any ADB device over USB:");
+                break;
+            case SC_ADB_DEVICE_SELECT_TCPIP:
+                LOGE("Could not find any ADB device over TCP/IP:");
+                break;
             default:
                 assert(!"Unexpected selector type");
                 break;
@@ -562,12 +572,21 @@ sc_adb_select_device(struct sc_intr *intr,
                 LOGE("Multiple (%" SC_PRIsizet ") ADB devices with serial %s:",
                      sel_count, selector->serial);
                 break;
+            case SC_ADB_DEVICE_SELECT_USB:
+                LOGE("Multiple (%" SC_PRIsizet ") ADB devices over USB:",
+                     sel_count);
+                break;
+            case SC_ADB_DEVICE_SELECT_TCPIP:
+                LOGE("Multiple (%" SC_PRIsizet ") ADB devices over TCP/IP:",
+                     sel_count);
+                break;
             default:
                 assert(!"Unexpected selector type");
                 break;
         }
         sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
-        LOGE("Select a device via -s (--serial)");
+        LOGE("Select a device via -s (--serial), -d (--select-usb) or -e "
+             "(--select-tcpip)");
         sc_adb_devices_destroy_all(devices, count);
         return false;
     }

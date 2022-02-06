@@ -44,6 +44,8 @@ struct sc_server_params {
     bool downsize_on_error;
     bool tcpip;
     const char *tcpip_dst;
+    bool select_usb;
+    bool select_tcpip;
 };
 
 struct sc_server {

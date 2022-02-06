@@ -44,6 +44,12 @@ The values are expressed in the device natural orientation (typically, portrait 
 value is computed on the cropped size.
 
 .TP
+.B \-d, \-\-select\-usb
+Use USB device (if there is exactly one, like adb -d).
+
+Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
+
+.TP
 .BI "\-\-disable-screensaver"
 Disable screensaver while scrcpy is running.
 
@@ -61,6 +67,12 @@ Default is 0.
 Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
 
 Default is 0 (no buffering).
+
+.TP
+.B \-e, \-\-select\-tcpip
+Use TCP/IP device (if there is exactly one, like adb -e).
+
+Also see \fB\-d\fR (\fB\-\-select\-usb\fR).
 
 .TP
 .BI "\-\-encoder " name

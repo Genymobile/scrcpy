@@ -119,6 +119,12 @@ static const struct sc_option options[] = {
                 "Any --max-size value is cmoputed on the cropped size.",
     },
     {
+        .shortopt = 'd',
+        .longopt = "select-usb",
+        .text = "Use USB device (if there is exactly one, like adb -d).\n"
+                "Also see -e (--select-tcpip).",
+    },
+    {
         .longopt_id = OPT_DISABLE_SCREENSAVER,
         .longopt = "disable-screensaver",
         .text = "Disable screensaver while scrcpy is running.",
@@ -140,6 +146,12 @@ static const struct sc_option options[] = {
         .text = "Add a buffering delay (in milliseconds) before displaying. "
                 "This increases latency to compensate for jitter.\n"
                 "Default is 0 (no buffering).",
+    },
+    {
+        .shortopt = 'e',
+        .longopt = "select-tcpip",
+        .text = "Use TCP/IP device (if there is exactly one, like adb -e).\n"
+                "Also see -d (--select-usb).",
     },
     {
         .longopt_id = OPT_ENCODER_NAME,
@@ -1320,6 +1332,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case 'd':
+                opts->select_usb = true;
+                break;
+            case 'e':
+                opts->select_tcpip = true;
+                break;
             case 'f':
                 opts->fullscreen = true;
                 break;
@@ -1559,8 +1577,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     // If a TCP/IP address is provided, then tcpip must be enabled
     assert(opts->tcpip || !opts->tcpip_dst);
 
-    if (opts->serial && opts->tcpip_dst) {
-        LOGE("Incompatible options: -s/--serial and --tcpip with an argument");
+    unsigned selectors = !!opts->serial
+                       + !!opts->tcpip_dst
+                       + opts->select_tcpip
+                       + opts->select_usb;
+    if (selectors > 1) {
+        LOGE("At most one device selector option may be passed, among:\n"
+             "  --serial (-s)\n"
+             "  --select-usb (-d)\n"
+             "  --select-tcpip (-e)\n"
+             "  --tcpip=<addr> (with an argument)");
         return false;
     }
 
