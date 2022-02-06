@@ -104,6 +104,8 @@ sc_adb_parse_device(char *line, struct sc_adb_device *device) {
         device->model = NULL;
     }
 
+    device->selected = false;
+
     return true;
 }
 

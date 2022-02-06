@@ -503,22 +503,6 @@ sc_server_on_terminated(void *userdata) {
     LOGD("Server terminated");
 }
 
-static char *
-sc_server_read_serial(struct sc_server *server) {
-    char *serial;
-    if (server->params.req_serial) {
-        // The serial is already known
-        serial = strdup(server->params.req_serial);
-        if (!serial) {
-            LOG_OOM();
-        }
-    } else {
-        serial = sc_adb_get_serialno(&server->intr, 0);
-    }
-
-    return serial;
-}
-
 static bool
 is_tcpip_mode_enabled(struct sc_server *server, const char *serial) {
     struct sc_intr *intr = &server->intr;
@@ -695,22 +679,28 @@ run_server(void *data) {
 
     bool ok;
     if (need_initial_serial) {
-        char *serial = sc_server_read_serial(server);
-        if (!serial) {
-            LOGE("Could not get device serial");
+        struct sc_adb_device device;
+        ok = sc_adb_select_device(&server->intr, params->req_serial, 0,
+                                  &device);
+        if (!ok) {
             goto error_connection_failed;
         }
 
         if (params->tcpip) {
             assert(!params->tcpip_dst);
-            ok = sc_server_configure_tcpip_unknown_address(server, serial);
-            free(serial);
+            ok = sc_server_configure_tcpip_unknown_address(server,
+                                                           device.serial);
+            sc_adb_device_destroy(&device);
             if (!ok) {
                 goto error_connection_failed;
             }
             assert(server->serial);
         } else {
-            server->serial = serial;
+            // "move" the device.serial without copy
+            server->serial = device.serial;
+            // the serial must not be freed by the destructor
+            device.serial = NULL;
+            sc_adb_device_destroy(&device);
         }
     } else {
         ok = sc_server_configure_tcpip_known_address(server, params->tcpip_dst);

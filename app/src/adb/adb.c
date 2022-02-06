@@ -374,6 +374,168 @@ sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     return process_check_success_intr(intr, pid, "adb disconnect", flags);
 }
 
+static ssize_t
+sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
+                    struct sc_adb_device *devices, size_t len) {
+    const char *const argv[] = SC_ADB_COMMAND("devices", "-l");
+
+    sc_pipe pout;
+    sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGE("Could not execute \"adb devices -l\"");
+        return -1;
+    }
+
+    char buf[4096];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "adb devices -l", flags);
+    if (!ok) {
+        return -1;
+    }
+
+    if (r == -1) {
+        return -1;
+    }
+
+    assert((size_t) r < sizeof(buf));
+    if (r == sizeof(buf) - 1)  {
+        // The implementation assumes that the output of "adb devices -l" fits
+        // in the buffer in a single pass
+        LOGW("Result of \"adb devices -l\" does not fit in 4Kb. "
+             "Please report an issue.\n");
+        return -1;
+    }
+
+    // It is parsed as a NUL-terminated string
+    buf[r] = '\0';
+
+    // List all devices to the output list directly
+    return sc_adb_parse_devices(buf, devices, len);
+}
+
+static bool
+sc_adb_accept_device(const struct sc_adb_device *device, const char *serial) {
+    if (!serial) {
+        return true;
+    }
+
+    return !strcmp(serial, device->serial);
+}
+
+static size_t
+sc_adb_devices_select(struct sc_adb_device *devices, size_t len,
+                      const char *serial, size_t *idx_out) {
+    size_t count = 0;
+    for (size_t i = 0; i < len; ++i) {
+        struct sc_adb_device *device = &devices[i];
+        device->selected = sc_adb_accept_device(device, serial);
+        if (device->selected) {
+            if (idx_out && !count) {
+                *idx_out = i;
+            }
+            ++count;
+        }
+    }
+
+    return count;
+}
+
+static void
+sc_adb_devices_log(enum sc_log_level level, struct sc_adb_device *devices,
+                   size_t count) {
+    for (size_t i = 0; i < count; ++i) {
+        struct sc_adb_device *d = &devices[i];
+        const char *selection = d->selected ? "-->" : "   ";
+        const char *type = sc_adb_is_serial_tcpip(d->serial) ? "(tcpip)"
+                                                             : "  (usb)";
+        LOG(level, "    %s %s  %-20s  %16s  %s",
+             selection, type, d->serial, d->state, d->model ? d->model : "");
+    }
+}
+
+static bool
+sc_adb_device_check_state(struct sc_adb_device *device,
+                          struct sc_adb_device *devices, size_t count) {
+    const char *state = device->state;
+
+    if (!strcmp("device", state)) {
+        return true;
+    }
+
+    if (!strcmp("unauthorized", state)) {
+        LOGE("Device is unauthorized:");
+        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
+        LOGE("A popup should open on the device to request authorization.");
+        LOGE("Check the FAQ: "
+             "<https://github.com/Genymobile/scrcpy/blob/master/FAQ.md>");
+    }
+
+    return false;
+}
+
+bool
+sc_adb_select_device(struct sc_intr *intr, const char *serial, unsigned flags,
+                     struct sc_adb_device *out_device) {
+    struct sc_adb_device devices[16];
+    ssize_t count =
+        sc_adb_list_devices(intr, flags, devices, ARRAY_LEN(devices));
+    if (count == -1) {
+        LOGE("Could not list ADB devices");
+        return false;
+    }
+
+    if (count == 0) {
+        LOGE("Could not find any ADB device");
+        return false;
+    }
+
+    size_t sel_idx; // index of the single matching device if sel_count == 1
+    size_t sel_count = sc_adb_devices_select(devices, count, serial, &sel_idx);
+
+    if (sel_count == 0) {
+        // if count > 0 && sel_count == 0, then necessarily a serial is provided
+        assert(serial);
+        LOGE("Could not find ADB device %s", serial);
+        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
+        sc_adb_devices_destroy_all(devices, count);
+        return false;
+    }
+
+    if (sel_count > 1) {
+        if (serial) {
+            LOGE("Multiple (%" SC_PRIsizet ") ADB devices with serial %s:",
+                 sel_count, serial);
+        } else {
+            LOGE("Multiple (%" SC_PRIsizet ") ADB devices:", sel_count);
+        }
+        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
+        if (!serial) {
+            LOGE("Specify the device via -s or --serial");
+        }
+        sc_adb_devices_destroy_all(devices, count);
+        return false;
+    }
+
+    assert(sel_count == 1); // sel_idx is valid only if sel_count == 1
+    struct sc_adb_device *device = &devices[sel_idx];
+
+    bool ok = sc_adb_device_check_state(device, devices, count);
+    if (!ok) {
+        sc_adb_devices_destroy_all(devices, count);
+        return false;
+    }
+
+    LOGD("ADB device found:");
+    sc_adb_devices_log(SC_LOG_LEVEL_DEBUG, devices, count);
+
+    // Move devics into out_device (do not destroy device)
+    sc_adb_device_move(out_device, device);
+    sc_adb_devices_destroy_all(devices, count);
+    return true;
+}
+
 char *
 sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
                unsigned flags) {
