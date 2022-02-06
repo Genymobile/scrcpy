@@ -417,6 +417,16 @@ static const struct sc_option options[] = {
                 "establishing the tunnel will be used.",
     },
     {
+        .shortopt = 'T',
+        .longopt = "select-tcpip",
+        .text = "Use TCP/IP device (if there is exactly one).",
+    },
+    {
+        .shortopt = 'U',
+        .longopt = "select-usb",
+        .text = "Use USB device (if there is exactly one).",
+    },
+    {
         .longopt_id = OPT_V4L2_SINK,
         .longopt = "v4l2-sink",
         .argdesc = "/dev/videoN",
@@ -1401,6 +1411,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 't':
                 opts->show_touches = true;
                 break;
+            case 'T':
+                opts->select_tcpip = true;
+                break;
+            case 'U':
+                opts->select_usb = true;
+                break;
             case OPT_ALWAYS_ON_TOP:
                 opts->always_on_top = true;
                 break;
@@ -1559,8 +1575,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     // If a TCP/IP address is provided, then tcpip must be enabled
     assert(opts->tcpip || !opts->tcpip_dst);
 
-    if (opts->serial && opts->tcpip_dst) {
-        LOGE("Incompatible options: -s/--serial and --tcpip with an argument");
+    unsigned selectors = !!opts->serial
+                       + !!opts->tcpip_dst
+                       + opts->select_tcpip
+                       + opts->select_usb;
+    if (selectors > 1) {
+        LOGE("At most one device selector option may be passed, among:\n"
+             "  --serial (-s)\n"
+             "  --select-usb (-U)\n"
+             "  --select-tcpip (-T)\n"
+             "  --tcpip=<addr> (with an argument)");
         return false;
     }
 

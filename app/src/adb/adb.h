@@ -21,6 +21,8 @@ sc_adb_get_executable(void);
 enum sc_adb_device_selector_type {
     SC_ADB_DEVICE_SELECT_ALL,
     SC_ADB_DEVICE_SELECT_SERIAL,
+    SC_ADB_DEVICE_SELECT_USB,
+    SC_ADB_DEVICE_SELECT_TCPIP,
 };
 
 struct sc_adb_device_selector {

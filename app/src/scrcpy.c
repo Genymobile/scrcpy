@@ -297,6 +297,8 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_server_params params = {
         .req_serial = options->serial,
+        .select_usb = options->select_usb,
+        .select_tcpip = options->select_tcpip,
         .log_level = options->log_level,
         .crop = options->crop,
         .port_range = options->port_range,

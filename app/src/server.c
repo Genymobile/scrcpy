@@ -687,10 +687,19 @@ run_server(void *data) {
     bool need_initial_serial = !params->tcpip_dst;
 
     if (need_initial_serial) {
+        // At most one of the 3 following parameters may be set
+        assert(!!params->req_serial
+               + params->select_usb
+               + params->select_tcpip <= 1);
+
         struct sc_adb_device_selector selector;
         if (params->req_serial) {
             selector.type = SC_ADB_DEVICE_SELECT_SERIAL;
             selector.serial = params->req_serial;
+        } else if (params->select_usb) {
+            selector.type = SC_ADB_DEVICE_SELECT_USB;
+        } else if (params->select_tcpip) {
+            selector.type = SC_ADB_DEVICE_SELECT_TCPIP;
         } else {
             selector.type = SC_ADB_DEVICE_SELECT_ALL;
         }

@@ -60,4 +60,6 @@ const struct scrcpy_options scrcpy_options_default = {
     .downsize_on_error = true,
     .tcpip = false,
     .tcpip_dst = NULL,
+    .select_tcpip = false,
+    .select_usb = false,
 };
