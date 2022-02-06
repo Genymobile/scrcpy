@@ -422,7 +422,7 @@ scrcpy -b2M -m800  # short version
 
 #### Multi-devices
 
-If several devices are listed in `adb devices`, you must specify the _serial_:
+If several devices are listed in `adb devices`, you can specify the _serial_:
 
 ```bash
 scrcpy --serial 0123456789abcdef
@@ -434,6 +434,19 @@ If the device is connected over TCP/IP:
 ```bash
 scrcpy --serial 192.168.0.1:5555
 scrcpy -s 192.168.0.1:5555  # short version
+```
+
+If only one device is connected via either USB or TCP/IP, it is possible to
+select it automatically:
+
+```bash
+# Select the only device connected via USB
+scrcpy --select-usb
+scrcpy -U  # short version
+
+# Select the only device connected via TCP/IP
+scrcpy --select-tcpip
+scrcpy -T  # short version
 ```
 
 You can start several instances of _scrcpy_ for several devices.
