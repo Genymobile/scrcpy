@@ -665,6 +665,15 @@ run_server(void *data) {
 
     const struct sc_server_params *params = &server->params;
 
+    // Execute "adb start-server" before "adb devices" so that daemon starting
+    // output/errors is correctly printed in the console ("adb devices" output
+    // is parsed, so it is not output)
+    bool ok = sc_adb_start_server(&server->intr, 0);
+    if (!ok) {
+        LOGE("Could not start adb daemon");
+        goto error_connection_failed;
+    }
+
     // params->tcpip_dst implies params->tcpip
     assert(!params->tcpip_dst || params->tcpip);
 
@@ -677,7 +686,6 @@ run_server(void *data) {
     // exist, and scrcpy will execute "adb connect").
     bool need_initial_serial = !params->tcpip_dst;
 
-    bool ok;
     if (need_initial_serial) {
         struct sc_adb_device device;
         ok = sc_adb_select_device(&server->intr, params->req_serial, 0,
