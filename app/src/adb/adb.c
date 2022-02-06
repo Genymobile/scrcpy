@@ -385,7 +385,7 @@ sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
     }
 
     char buf[128];
-    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf));
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
     sc_pipe_close(pout);
 
     bool ok = process_check_success_intr(intr, pid, "adb getprop", flags);
@@ -397,7 +397,10 @@ sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
         return NULL;
     }
 
-    sc_str_truncate(buf, r, " \r\n");
+    assert((size_t) r < sizeof(buf));
+    buf[r] = '\0';
+    size_t len = strcspn(buf, " \r\n");
+    buf[len] = '\0';
 
     return strdup(buf);
 }
