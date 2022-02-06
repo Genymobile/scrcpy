@@ -687,9 +687,15 @@ run_server(void *data) {
     bool need_initial_serial = !params->tcpip_dst;
 
     if (need_initial_serial) {
+        struct sc_adb_device_selector selector;
+        if (params->req_serial) {
+            selector.type = SC_ADB_DEVICE_SELECT_SERIAL;
+            selector.serial = params->req_serial;
+        } else {
+            selector.type = SC_ADB_DEVICE_SELECT_ALL;
+        }
         struct sc_adb_device device;
-        ok = sc_adb_select_device(&server->intr, params->req_serial, 0,
-                                  &device);
+        ok = sc_adb_select_device(&server->intr, &selector, 0, &device);
         if (!ok) {
             goto error_connection_failed;
         }

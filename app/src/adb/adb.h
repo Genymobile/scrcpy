@@ -18,6 +18,16 @@
 const char *
 sc_adb_get_executable(void);
 
+enum sc_adb_device_selector_type {
+    SC_ADB_DEVICE_SELECT_ALL,
+    SC_ADB_DEVICE_SELECT_SERIAL,
+};
+
+struct sc_adb_device_selector {
+    enum sc_adb_device_selector_type type;
+    const char *serial;
+};
+
 sc_pid
 sc_adb_execute(const char *const argv[], unsigned flags);
 
@@ -79,8 +89,9 @@ sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags);
  * Return true if a single matching device is found, and write it to out_device.
  */
 bool
-sc_adb_select_device(struct sc_intr *intr, const char *serial, unsigned flags,
-                     struct sc_adb_device *out_device);
+sc_adb_select_device(struct sc_intr *intr,
+                     const struct sc_adb_device_selector *selector,
+                     unsigned flags, struct sc_adb_device *out_device);
 
 /**
  * Execute `adb getprop <prop>`
