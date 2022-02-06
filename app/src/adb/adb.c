@@ -482,3 +482,8 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
 
     return sc_adb_parse_device_ip_from_output(buf);
 }
+
+bool
+sc_adb_is_serial_tcpip(const char *serial) {
+    return strchr(serial, ':');
+}

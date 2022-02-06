@@ -659,10 +659,7 @@ sc_server_configure_tcpip_known_address(struct sc_server *server,
 static bool
 sc_server_configure_tcpip_unknown_address(struct sc_server *server,
                                           const char *serial) {
-    // The serial is either the real serial when connected via USB, or
-    // the IP:PORT when connected over TCP/IP. Only the latter contains
-    // a colon.
-    bool is_already_tcpip = strchr(serial, ':');
+    bool is_already_tcpip = sc_adb_is_serial_tcpip(serial);
     if (is_already_tcpip) {
         // Nothing to do
         LOGI("Device already connected via TCP/IP: %s", serial);
