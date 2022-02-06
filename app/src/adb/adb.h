@@ -87,14 +87,6 @@ sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
                unsigned flags);
 
 /**
- * Execute `adb get-serialno`
- *
- * Return the result, to be freed by the caller, or NULL on error.
- */
-char *
-sc_adb_get_serialno(struct sc_intr *intr, unsigned flags);
-
-/**
  * Attempt to retrieve the device IP
  *
  * Return the IP as a string of the form "xxx.xxx.xxx.xxx", to be freed by the
