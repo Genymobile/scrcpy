@@ -108,17 +108,6 @@ sc_usb_find_devices(struct sc_usb *usb, const char *serial,
     return idx;
 }
 
-static libusb_device_handle *
-sc_usb_open_handle(libusb_device *device) {
-    libusb_device_handle *handle;
-    int result = libusb_open(device, &handle);
-    if (result < 0) {
-        LOGE("Open device: libusb error: %s", libusb_strerror(result));
-        return NULL;
-    }
-    return handle;
- }
-
 bool
 sc_usb_init(struct sc_usb *usb) {
     usb->handle = NULL;
@@ -204,8 +193,9 @@ sc_usb_register_callback(struct sc_usb *usb) {
 bool
 sc_usb_connect(struct sc_usb *usb, libusb_device *device,
               const struct sc_usb_callbacks *cbs, void *cbs_userdata) {
-    usb->handle = sc_usb_open_handle(device);
-    if (!usb->handle) {
+    int result = libusb_open(device, &usb->handle);
+    if (result < 0) {
+        LOGE("Open device: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
