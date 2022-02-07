@@ -89,8 +89,8 @@ scrcpy_otg(struct scrcpy_options *options) {
         goto end;
     }
 
-    LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
-         usb_device.serial, usb_device.vid, usb_device.pid,
+    LOGI("USB device: %s (%04x:%04x) %s %s", usb_device.serial,
+         (unsigned) usb_device.vid, (unsigned) usb_device.pid,
          usb_device.manufacturer, usb_device.product);
 
     ok = sc_usb_connect(&s->usb, usb_device.device, &cbs, NULL);
