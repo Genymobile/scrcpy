@@ -40,8 +40,9 @@ sc_usb_read_device(libusb_device *device, struct sc_usb_device *out) {
     if (result < 0) {
         // Log at debug level because it is expected that some non-Android USB
         // devices present on the computer require special permissions
-        LOGD("Open USB device %04" PRIx16 ":%04" PRIx16 ": libusb error: %s",
-             desc.idVendor, desc.idProduct, libusb_strerror(result));
+        LOGD("Open USB device %04x:%04x: libusb error: %s",
+             (unsigned) desc.idVendor, (unsigned) desc.idProduct,
+             libusb_strerror(result));
         return false;
     }
 
@@ -146,8 +147,10 @@ sc_usb_devices_log(enum sc_log_level level, struct sc_usb_device *devices,
     for (size_t i = 0; i < count; ++i) {
         struct sc_usb_device *d = &devices[i];
         const char *selection = d->selected ? "-->" : "   ";
-        LOG(level, "    %s %-18s (%04" PRIx16 ":%04" PRIx16 ")  %s %s",
-            selection, d->serial, d->vid, d->pid, d->manufacturer, d->product);
+        // Convert uint16_t to unsigned because PRIx16 may not exist on Windows
+        LOG(level, "    %s %-18s (%04x:%04x)  %s %s",
+            selection, d->serial, (unsigned) d->vid, (unsigned) d->pid,
+            d->manufacturer, d->product);
     }
 }
 
