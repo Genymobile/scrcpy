@@ -161,7 +161,8 @@ install the required packages:
 ```bash
 # runtime dependencies
 pacman -S mingw-w64-x86_64-SDL2 \
-          mingw-w64-x86_64-ffmpeg
+          mingw-w64-x86_64-ffmpeg \
+          mingw-w64-x86_64-libusb
 
 # client build dependencies
 pacman -S mingw-w64-x86_64-make \
@@ -175,7 +176,8 @@ For a 32 bits version, replace `x86_64` by `i686`:
 ```bash
 # runtime dependencies
 pacman -S mingw-w64-i686-SDL2 \
-          mingw-w64-i686-ffmpeg
+          mingw-w64-i686-ffmpeg \
+          mingw-w64-i686-libusb
 
 # client build dependencies
 pacman -S mingw-w64-i686-make \

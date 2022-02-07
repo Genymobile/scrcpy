@@ -74,7 +74,7 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
-usb_support = get_option('usb') and host_machine.system() != 'windows'
+usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
@@ -141,9 +141,22 @@ else
         include_directories: include_directories(ffmpeg_include_dir)
     )
 
+    prebuilt_libusb = meson.get_cross_property('prebuilt_libusb')
+    prebuilt_libusb_root = meson.get_cross_property('prebuilt_libusb_root')
+    libusb_bin_dir = meson.current_source_dir() + '/prebuilt-deps/data/' + prebuilt_libusb + '/dll'
+    libusb_include_dir = 'prebuilt-deps/data/' + prebuilt_libusb_root + '/include'
+
+    libusb = declare_dependency(
+        dependencies: [
+            cc.find_library('libusb-1.0', dirs: libusb_bin_dir),
+        ],
+        include_directories: include_directories(libusb_include_dir)
+    )
+
     dependencies = [
         ffmpeg,
         sdl2,
+        libusb,
         cc.find_library('mingw32')
     ]
 
