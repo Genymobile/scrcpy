@@ -195,7 +195,7 @@ sc_usb_connect(struct sc_usb *usb, libusb_device *device,
               const struct sc_usb_callbacks *cbs, void *cbs_userdata) {
     int result = libusb_open(device, &usb->handle);
     if (result < 0) {
-        LOGE("Open device: libusb error: %s", libusb_strerror(result));
+        LOGE("Open USB device: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
