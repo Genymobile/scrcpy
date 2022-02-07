@@ -4,11 +4,6 @@
 
 #include "util/log.h"
 
-static inline void
-log_libusb_error(enum libusb_error errcode) {
-    LOGW("libusb error: %s", libusb_strerror(errcode));
-}
-
 static char *
 read_string(libusb_device_handle *handle, uint8_t desc_index) {
     char buffer[128];
@@ -96,7 +91,7 @@ sc_usb_find_devices(struct sc_usb *usb, const char *serial,
     libusb_device **list;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
-        log_libusb_error((enum libusb_error) count);
+        LOGE("List USB devices: libusb error: %s", libusb_strerror(count));
         return -1;
     }
 
@@ -118,7 +113,7 @@ sc_usb_open_handle(libusb_device *device) {
     libusb_device_handle *handle;
     int result = libusb_open(device, &handle);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
+        LOGE("Open device: libusb error: %s", libusb_strerror(result));
         return NULL;
     }
     return handle;
@@ -183,8 +178,7 @@ sc_usb_register_callback(struct sc_usb *usb) {
     struct libusb_device_descriptor desc;
     int result = libusb_get_device_descriptor(device, &desc);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
-        LOGW("Could not read USB device descriptor");
+        LOGE("Device descriptor: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
@@ -198,8 +192,8 @@ sc_usb_register_callback(struct sc_usb *usb) {
                                               sc_usb_libusb_callback, usb,
                                               &usb->callback_handle);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
-        LOGW("Could not register USB callback");
+        LOGE("Register hotplog callback: libusb error: %s",
+             libusb_strerror(result));
         return false;
     }
 

@@ -45,11 +45,6 @@ sc_hid_event_destroy(struct sc_hid_event *hid_event) {
     free(hid_event->buffer);
 }
 
-static inline void
-log_libusb_error(enum libusb_error errcode) {
-    LOGW("libusb error: %s", libusb_strerror(errcode));
-}
-
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
@@ -99,7 +94,7 @@ sc_aoa_register_hid(struct sc_aoa *aoa, uint16_t accessory_id,
                                          request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
+        LOGE("REGISTER_HID: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
@@ -135,7 +130,7 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
                                          request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
+        LOGE("SET_HID_REPORT_DESC: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
@@ -177,7 +172,7 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
                                          request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
+        LOGE("SEND_HID_EVENT: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
@@ -199,7 +194,7 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, const uint16_t accessory_id) {
                                          request, value, index, buffer, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
-        log_libusb_error((enum libusb_error) result);
+        LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
         return false;
     }
 
