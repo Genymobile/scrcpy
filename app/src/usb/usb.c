@@ -237,7 +237,7 @@ sc_usb_check_disconnected(struct sc_usb *usb, int result) {
     return true;
 }
 
-static int
+static LIBUSB_CALL int
 sc_usb_libusb_callback(libusb_context *ctx, libusb_device *device,
                        libusb_hotplug_event event, void *userdata) {
     (void) ctx;
