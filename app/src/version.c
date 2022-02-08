@@ -9,21 +9,49 @@
 
 void
 scrcpy_print_version(void) {
-    printf("\ndependencies:\n");
-    printf(" - SDL %d.%d.%d\n", SDL_MAJOR_VERSION, SDL_MINOR_VERSION,
-                                SDL_PATCHLEVEL);
-    printf(" - libavcodec %d.%d.%d\n", LIBAVCODEC_VERSION_MAJOR,
-                                       LIBAVCODEC_VERSION_MINOR,
-                                       LIBAVCODEC_VERSION_MICRO);
-    printf(" - libavformat %d.%d.%d\n", LIBAVFORMAT_VERSION_MAJOR,
-                                        LIBAVFORMAT_VERSION_MINOR,
-                                        LIBAVFORMAT_VERSION_MICRO);
-    printf(" - libavutil %d.%d.%d\n", LIBAVUTIL_VERSION_MAJOR,
-                                      LIBAVUTIL_VERSION_MINOR,
-                                      LIBAVUTIL_VERSION_MICRO);
+    printf("\nDependencies (compiled / linked):\n");
+
+    SDL_version sdl;
+    SDL_GetVersion(&sdl);
+    printf(" - SDL: %u.%u.%u / %u.%u.%u\n",
+           SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL,
+           (unsigned) sdl.major, (unsigned) sdl.minor, (unsigned) sdl.patch);
+
+    unsigned avcodec = avcodec_version();
+    printf(" - libavcodec: %u.%u.%u / %u.%u.%u\n",
+           LIBAVCODEC_VERSION_MAJOR,
+           LIBAVCODEC_VERSION_MINOR,
+           LIBAVCODEC_VERSION_MICRO,
+           AV_VERSION_MAJOR(avcodec),
+           AV_VERSION_MINOR(avcodec),
+           AV_VERSION_MICRO(avcodec));
+
+    unsigned avformat = avformat_version();
+    printf(" - libavformat: %u.%u.%u / %u.%u.%u\n",
+           LIBAVFORMAT_VERSION_MAJOR,
+           LIBAVFORMAT_VERSION_MINOR,
+           LIBAVFORMAT_VERSION_MICRO,
+           AV_VERSION_MAJOR(avformat),
+           AV_VERSION_MINOR(avformat),
+           AV_VERSION_MICRO(avformat));
+
+    unsigned avutil = avutil_version();
+    printf(" - libavutil: %u.%u.%u / %u.%u.%u\n",
+           LIBAVUTIL_VERSION_MAJOR,
+           LIBAVUTIL_VERSION_MINOR,
+           LIBAVUTIL_VERSION_MICRO,
+           AV_VERSION_MAJOR(avutil),
+           AV_VERSION_MINOR(avutil),
+           AV_VERSION_MICRO(avutil));
+
 #ifdef HAVE_V4L2
-    printf(" - libavdevice %d.%d.%d\n", LIBAVDEVICE_VERSION_MAJOR,
-                                        LIBAVDEVICE_VERSION_MINOR,
-                                        LIBAVDEVICE_VERSION_MICRO);
+    unsigned avdevice = avdevice_version();
+    printf(" - libavdevice: %u.%u.%u / %u.%u.%u\n",
+           LIBAVDEVICE_VERSION_MAJOR,
+           LIBAVDEVICE_VERSION_MINOR,
+           LIBAVDEVICE_VERSION_MICRO,
+           AV_VERSION_MAJOR(avdevice),
+           AV_VERSION_MINOR(avdevice),
+           AV_VERSION_MICRO(avdevice));
 #endif
 }
