@@ -73,7 +73,7 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
-usb_support = host_machine.system() == 'linux' or host_machine.system() == 'windows'
+usb_support = true
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
