@@ -26,6 +26,7 @@ src = [
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
+    'src/version.c',
     'src/video_buffer.c',
     'src/util/acksync.c',
     'src/util/file.c',
