@@ -63,14 +63,14 @@ build-server:
 	ninja -C "$(SERVER_BUILD_DIR)"
 
 prepare-deps-win32:
-	@prebuilt-deps/prepare-adb.sh
-	@prebuilt-deps/prepare-sdl.sh
-	@prebuilt-deps/prepare-ffmpeg-win32.sh
+	@app/prebuilt-deps/prepare-adb.sh
+	@app/prebuilt-deps/prepare-sdl.sh
+	@app/prebuilt-deps/prepare-ffmpeg-win32.sh
 
 prepare-deps-win64:
-	@prebuilt-deps/prepare-adb.sh
-	@prebuilt-deps/prepare-sdl.sh
-	@prebuilt-deps/prepare-ffmpeg-win64.sh
+	@app/prebuilt-deps/prepare-adb.sh
+	@app/prebuilt-deps/prepare-sdl.sh
+	@app/prebuilt-deps/prepare-ffmpeg-win64.sh
 
 build-win32: prepare-deps-win32
 	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
@@ -98,15 +98,15 @@ dist-win32: build-server build-win32
 	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp data/icon.png "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp data/open_a_terminal_here.bat "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/swscale-5.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp prebuilt-deps/data/SDL2-2.0.20/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avutil-56.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avcodec-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/avformat-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/swresample-3.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win32-4.3.1/bin/swscale-5.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/SDL2-2.0.20/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
@@ -116,15 +116,15 @@ dist-win64: build-server build-win64
 	cp data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp data/icon.png "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp data/open_a_terminal_here.bat "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp prebuilt-deps/data/ffmpeg-win64-5.0/bin/avutil-57.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win64-5.0/bin/avcodec-59.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win64-5.0/bin/avformat-59.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win64-5.0/bin/swresample-4.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/ffmpeg-win64-5.0/bin/swscale-6.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/platform-tools-31.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp prebuilt-deps/data/SDL2-2.0.20/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win64-5.0/bin/avutil-57.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win64-5.0/bin/avcodec-59.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win64-5.0/bin/avformat-59.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win64-5.0/bin/swresample-4.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-win64-5.0/bin/swscale-6.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/SDL2-2.0.20/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)/$(WIN32_TARGET_DIR)"; \
