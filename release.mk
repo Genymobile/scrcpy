@@ -67,6 +67,11 @@ prepare-deps-win32:
 	@prebuilt-deps/prepare-sdl.sh
 	@prebuilt-deps/prepare-ffmpeg-win32.sh
 
+prepare-deps-win64:
+	@prebuilt-deps/prepare-adb.sh
+	@prebuilt-deps/prepare-sdl.sh
+	@prebuilt-deps/prepare-ffmpeg-win64.sh
+
 build-win32: prepare-deps-win32
 	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
 		meson "$(WIN32_BUILD_DIR)" \
@@ -75,11 +80,6 @@ build-win32: prepare-deps-win32
 			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
-
-prepare-deps-win64:
-	@prebuilt-deps/prepare-adb.sh
-	@prebuilt-deps/prepare-sdl.sh
-	@prebuilt-deps/prepare-ffmpeg-win64.sh
 
 build-win64: prepare-deps-win64
 	[ -d "$(WIN64_BUILD_DIR)" ] || ( mkdir "$(WIN64_BUILD_DIR)" && \
