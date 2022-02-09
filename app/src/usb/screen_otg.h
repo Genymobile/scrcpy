@@ -18,7 +18,6 @@ struct sc_screen_otg {
     SDL_Texture *texture;
 
     // See equivalent mechanism in screen.h
-    bool mouse_captured;
     SDL_Keycode mouse_capture_key_pressed;
 };
 
