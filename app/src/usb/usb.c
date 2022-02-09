@@ -38,6 +38,10 @@ sc_usb_read_device(libusb_device *device, struct sc_usb_device *out) {
     libusb_device_handle *handle;
     result = libusb_open(device, &handle);
     if (result < 0) {
+        // Log at debug level because it is expected that some non-Android USB
+        // devices present on the computer require special permissions
+        LOGD("Open USB device %04" PRIx16 ":%04" PRIx16 ": libusb error: %s",
+             desc.idVendor, desc.idProduct, libusb_strerror(result));
         return false;
     }
 
