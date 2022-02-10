@@ -254,7 +254,8 @@ run_libusb_event_handler(void *data) {
 static bool
 sc_usb_register_callback(struct sc_usb *usb) {
     if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
-        LOGW("libusb does not have hotplug capability");
+        LOGW("On this platform, libusb does not have hotplug capability; "
+             "device disconnection will not be detected properly");
         return false;
     }
 
