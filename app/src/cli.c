@@ -1690,12 +1690,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("OTG mode: could not select display");
             return false;
         }
-#ifdef HAVE_V4L2
+# ifdef HAVE_V4L2
         if (opts->v4l2_device) {
             LOGE("OTG mode: could not sink to V4L2 device");
             return false;
         }
-#endif
+# endif
     }
 #endif
 
