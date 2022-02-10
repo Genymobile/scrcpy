@@ -335,8 +335,6 @@ sc_usb_connect(struct sc_usb *usb, libusb_device *device,
                 LOGW("Libusb event thread handler could not be created, USB "
                      "device disconnection might not be detected immediately");
             }
-        } else {
-            LOGW("Could not register USB device disconnection callback");
         }
     }
 
