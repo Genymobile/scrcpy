@@ -150,7 +150,7 @@ process_check_success_internal(sc_pid pid, const char *name, bool close,
 static bool
 process_check_success_intr(struct sc_intr *intr, sc_pid pid, const char *name,
                            unsigned flags) {
-    if (!sc_intr_set_process(intr, pid)) {
+    if (intr && !sc_intr_set_process(intr, pid)) {
         // Already interrupted
         return false;
     }
@@ -158,7 +158,9 @@ process_check_success_intr(struct sc_intr *intr, sc_pid pid, const char *name,
     // Always pass close=false, interrupting would be racy otherwise
     bool ret = process_check_success_internal(pid, name, false, flags);
 
-    sc_intr_set_process(intr, SC_PROCESS_NONE);
+    if (intr) {
+        sc_intr_set_process(intr, SC_PROCESS_NONE);
+    }
 
     // Close separately
     sc_process_close(pid);
