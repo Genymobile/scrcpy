@@ -1,0 +1,69 @@
+#compdef -N scrcpy -N scrcpy.exe
+#
+# name: scrcpy
+# auth: hltdev [hltdev8642@gmail.com]
+# desc: completion file for scrcpy (all OSes)
+#
+
+local arguments
+
+arguments=(
+    '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
+    {-b,--bit-rate=}'[Encode the video at the given bit-rate]'
+    '--codec-options=[Set a list of comma-separated key\:type=value options for the device encoder]'
+    '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
+    {-d,--select-usb}'[Use USB device]'
+    '--disable-screensaver[Disable screensaver while scrcpy is running]'
+    '--display=[Specify the display id to mirror]'
+    '--display-buffer=[Add a buffering delay \(in milliseconds\) before displaying]'
+    {-e,--select-tcpip}'[Use TCP/IP device]'
+    '--encoder=[Use a specific MediaCodec encoder \(must be a H.264 encoder\)]'
+    '--force-adb-forward[Do not attempt to use \"adb reverse\" to connect to the device]'
+    '--forward-all-clicks[Forward clicks to device]'
+    {-f,--fullscreen}'[Start in fullscreen]'
+    {-K,--hid-keyboard}'[Simulate a physical keyboard by using HID over AOAv2]'
+    {-h,--help}'[Print the help]'
+    '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
+    '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 1 2 3)'
+    '--max-fps=[Limit the frame rate of screen capture]'
+    {-M,--hid-mouse}'[Simulate a physical mouse by using HID over AOAv2]'
+    {-m,--max-size=}'[Limit both the width and height of the video to value]'
+    '--no-cleanup[Disable device cleanup actions on exit]'
+    '--no-clipboard-autosync[Disable automatic clipboard synchronization]'
+    '--no-downsize-on-error[Disable lowering definition on MediaCodec error]'
+    {-n,--no-control}'[Disable device control \(mirror the device in read only\)]'
+    {-N,--no-display}'[Do not display device \(during screen recording or when V4L2 sink is enabled\)]'
+    '--no-key-repeat[Do not forward repeated key events when a key is held down]'
+    '--no-mipmaps[Disable the generation of mipmaps]'
+    '--otg[Run in OTG mode \(simulating physical keyboard and mouse\)]'
+    {-p,--port=}'[\[port\[\:port\]\] Set the TCP port \(range\) used by the client to listen]'
+    '--power-off-on-close[Turn the device screen off when closing scrcpy]'
+    '--prefer-text[Inject alpha characters and space as text events instead of key events]'
+    '--print-fps[Start FPS counter, to print frame logs to the console]'
+    '--push-target=[Set the target directory for pushing files to the device by drag and drop]'
+    '--raw-key-events[Inject key events for all input keys, and ignore text events]'
+    {-r,--record=}'[Record screen to file]:record file:_files'
+    '--record-format=[Force recording format]:format:(mp4 mkv)'
+    '--render-driver=[Request SDL to use the given render driver]:driver name:(direct3d opengl opengles2 opengles metal software)'
+    '--rotation=[Set the initial display rotation]:rotation values:(0 1 2 3)'
+    {-s,--serial=}'[The device serial number \(mandatory for multiple devices only\)]'
+    '--shortcut-mod=[\[key1,key2+key3,...\] Specify the modifiers to use for scrcpy shortcuts]:shortcut mod:(lctrl rctrl lalt ralt lsuper rsuper)'
+    {-S,--turn-screen-off}'[Turn the device screen off immediately]'
+    {-t,--show-touches}'[Show physical touches]'
+    '--tcpip[\(optional \[ip\:port\]\) Configure and connect the device over TCP/IP]'
+    '--tunnel-host=[Set the IP address of the adb tunnel to reach the scrcpy server]'
+    '--tunnel-port=[Set the TCP port of the adb tunnel to reach the scrcpy server]'
+    '--v4l2-buffer=[Add a buffering delay \(in milliseconds\) before pushing frames]'
+    '--v4l2-sink=[\[\/dev\/videoN\] Output to v4l2loopback device]'
+    {-V,--verbosity=}'[Set the log level]:verbosity:(verbose debug info warn error)'
+    {-v,--version}'[Print the version of scrcpy]'
+    {-w,--stay-awake}'[Keep the device on while scrcpy is running, when the device is plugged in]'
+    '--window-borderless[Disable window decorations \(display borderless window\)]'
+    '--window-title=[Set a custom window title]'
+    '--window-x=[Set the initial window horizontal position]'
+    '--window-y=[Set the initial window vertical position]'
+    '--window-width=[Set the initial window width]'
+    '--window-height=[Set the initial window height]'
+)
+
+_arguments -s $arguments
