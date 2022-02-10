@@ -216,6 +216,24 @@ sc_usb_destroy(struct sc_usb *usb) {
     libusb_exit(usb->context);
 }
 
+static void
+sc_usb_report_disconnected(struct sc_usb *usb) {
+    if (usb->cbs && !atomic_flag_test_and_set(&usb->disconnection_notified)) {
+        assert(usb->cbs && usb->cbs->on_disconnected);
+        usb->cbs->on_disconnected(usb, usb->cbs_userdata);
+    }
+}
+
+bool
+sc_usb_check_disconnected(struct sc_usb *usb, int result) {
+    if (result == LIBUSB_ERROR_NO_DEVICE || result == LIBUSB_ERROR_NOT_FOUND) {
+        sc_usb_report_disconnected(usb);
+        return false;
+    }
+
+    return true;
+}
+
 static int
 sc_usb_libusb_callback(libusb_context *ctx, libusb_device *device,
                        libusb_hotplug_event event, void *userdata) {
@@ -232,8 +250,7 @@ sc_usb_libusb_callback(libusb_context *ctx, libusb_device *device,
         return 0;
     }
 
-    assert(usb->cbs && usb->cbs->on_disconnected);
-    usb->cbs->on_disconnected(usb, usb->cbs_userdata);
+    sc_usb_report_disconnected(usb);
 
     // Do not automatically deregister the callback by returning 1. Instead,
     // manually deregister to interrupt libusb_handle_events() from the libusb
@@ -307,6 +324,7 @@ sc_usb_connect(struct sc_usb *usb, libusb_device *device,
 
     if (cbs) {
         atomic_init(&usb->stopped, false);
+        usb->disconnection_notified = (atomic_flag) ATOMIC_FLAG_INIT;
         if (sc_usb_register_callback(usb)) {
             // Create a thread to process libusb events, so that device
             // disconnection could be detected immediately

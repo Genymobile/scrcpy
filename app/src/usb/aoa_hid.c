@@ -95,6 +95,7 @@ sc_aoa_register_hid(struct sc_aoa *aoa, uint16_t accessory_id,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("REGISTER_HID: libusb error: %s", libusb_strerror(result));
+        sc_usb_check_disconnected(aoa->usb, result);
         return false;
     }
 
@@ -131,6 +132,7 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("SET_HID_REPORT_DESC: libusb error: %s", libusb_strerror(result));
+        sc_usb_check_disconnected(aoa->usb, result);
         return false;
     }
 
@@ -173,6 +175,7 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("SEND_HID_EVENT: libusb error: %s", libusb_strerror(result));
+        sc_usb_check_disconnected(aoa->usb, result);
         return false;
     }
 
@@ -195,6 +198,7 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, const uint16_t accessory_id) {
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
+        sc_usb_check_disconnected(aoa->usb, result);
         return false;
     }
 

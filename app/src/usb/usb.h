@@ -22,6 +22,7 @@ struct sc_usb {
     sc_thread libusb_event_thread;
 
     atomic_bool stopped; // only used if cbs != NULL
+    atomic_flag disconnection_notified;
 };
 
 struct sc_usb_callbacks {
@@ -72,6 +73,11 @@ sc_usb_connect(struct sc_usb *usb, libusb_device *device,
 
 void
 sc_usb_disconnect(struct sc_usb *usb);
+
+// A client should call this function with the return value of a libusb call
+// to detect disconnection immediately
+bool
+sc_usb_check_disconnected(struct sc_usb *usb, int result);
 
 void
 sc_usb_stop(struct sc_usb *usb);
