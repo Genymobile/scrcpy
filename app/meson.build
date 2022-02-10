@@ -227,6 +227,8 @@ install_man('scrcpy.1')
 install_data('data/icon.png',
              rename: 'scrcpy.png',
              install_dir: 'share/icons/hicolor/256x256/apps')
+install_data('data/zsh-completion/_scrcpy',
+             install_dir: 'share/zsh/site-functions')
 
 
 ### TESTS
