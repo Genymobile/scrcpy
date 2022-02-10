@@ -1680,6 +1680,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 #ifdef HAVE_USB
+
+# ifdef _WIN32
+    if (!opts->otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID
+                    || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID)) {
+        LOGE("On Windows, it is not possible to open a USB device already open "
+             "by another process (like adb).");
+        LOGE("Therefore, -K/--hid-keyboard and -M/--hid-mouse may only work in "
+             "OTG mode (--otg).");
+        return false;
+    }
+# endif
+
     if (opts->otg) {
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
