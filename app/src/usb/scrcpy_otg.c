@@ -89,6 +89,8 @@ scrcpy_otg(struct scrcpy_options *options) {
         goto end;
     }
 
+    usb_device_initialized = true;
+
     LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
          usb_device.serial, usb_device.vid, usb_device.pid,
          usb_device.manufacturer, usb_device.product);
