@@ -10,11 +10,11 @@ local arguments
 arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\).]'
     {-b,--bit-rate}'[\[value\] Encode the video at the given bit-rate]'
-    '--codec-options[\[key\]Set a list of comma-separated key\:type=value options for the device encoder.]'
+    '--codec-options[\[key\] Set a list of comma-separated key\:type=value options for the device encoder.]'
     '--crop[\[width\:height\:x\:y\] Crop the device screen on the server.]'
     '--disable-screensaver[Disable screensaver while scrcpy is running.]'
     '--display[\[id\] Specify the display id to mirror.]'
-    '--display-buffer[\[ms\]Add a buffering delay \(in milliseconds\) before displaying.]'
+    '--display-buffer[\[ms\] Add a buffering delay \(in milliseconds\) before displaying.]'
     '--encoder[\[name\] Use a specific MediaCodec encoder \(must be a H.264 encoder\).]'
     '--force-adb-forward[Do not attempt to use \"adb reverse\" to connect to the device.]'
     '--forward-all-clicks[Forwards clicks to device.]'
