@@ -37,6 +37,9 @@ bool
 sc_adb_start_server(struct sc_intr *intr, unsigned flags);
 
 bool
+sc_adb_kill_server(struct sc_intr *intr, unsigned flags);
+
+bool
 sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
                const char *device_socket_name, unsigned flags);
 

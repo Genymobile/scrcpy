@@ -2,6 +2,7 @@
 
 #include <SDL2/SDL.h>
 
+#include "adb/adb.h"
 #include "events.h"
 #include "screen_otg.h"
 #include "util/log.h"
@@ -74,6 +75,15 @@ scrcpy_otg(struct scrcpy_options *options) {
     bool usb_connected = false;
     bool aoa_started = false;
     bool aoa_initialized = false;
+
+#ifdef _WIN32
+    // On Windows, only one process could open a USB device
+    // <https://github.com/Genymobile/scrcpy/issues/2773>
+    LOGI("Killing adb daemon (if any)...");
+    unsigned flags = SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR;
+    // uninterruptible (intr == NULL), but in practice it's very quick
+    sc_adb_kill_server(NULL, flags);
+#endif
 
     static const struct sc_usb_callbacks cbs = {
         .on_disconnected = sc_usb_on_disconnected,
