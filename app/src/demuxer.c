@@ -73,6 +73,7 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         packet->flags |= AV_PKT_FLAG_KEY;
     }
 
+    packet->dts = packet->pts;
     return true;
 }
 
@@ -87,28 +88,6 @@ push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
     }
 
     return true;
-}
-
-static void
-sc_demuxer_parse(struct sc_demuxer *demuxer, AVPacket *packet) {
-    uint8_t *in_data = packet->data;
-    int in_len = packet->size;
-    uint8_t *out_data = NULL;
-    int out_len = 0;
-    int r = av_parser_parse2(demuxer->parser, demuxer->codec_ctx,
-                             &out_data, &out_len, in_data, in_len,
-                             AV_NOPTS_VALUE, AV_NOPTS_VALUE, -1);
-
-    // PARSER_FLAG_COMPLETE_FRAMES is set
-    assert(r == in_len);
-    (void) r;
-    assert(out_len == in_len);
-
-    if (demuxer->parser->key_frame == 1) {
-        packet->flags |= AV_PKT_FLAG_KEY;
-    }
-
-    packet->dts = packet->pts;
 }
 
 static bool
@@ -148,11 +127,6 @@ sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
             demuxer->pending->flags = packet->flags;
             packet = demuxer->pending;
         }
-    }
-
-    if (!is_config) {
-        // data packet
-        sc_demuxer_parse(demuxer, packet);
     }
 
     bool ok = push_packet_to_sinks(demuxer, packet);
