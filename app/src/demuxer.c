@@ -10,8 +10,6 @@
 #include "util/buffer_util.h"
 #include "util/log.h"
 
-#define BUFSIZE 0x10000
-
 #define HEADER_SIZE 12
 
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
