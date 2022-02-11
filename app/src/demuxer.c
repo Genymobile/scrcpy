@@ -10,7 +10,7 @@
 #include "util/buffer_util.h"
 #include "util/log.h"
 
-#define HEADER_SIZE 12
+#define SC_PACKET_HEADER_SIZE 12
 
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
 #define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 62)
@@ -40,9 +40,9 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // | `- config packet
     //  `-- key frame
 
-    uint8_t header[HEADER_SIZE];
-    ssize_t r = net_recv_all(demuxer->socket, header, HEADER_SIZE);
-    if (r < HEADER_SIZE) {
+    uint8_t header[SC_PACKET_HEADER_SIZE];
+    ssize_t r = net_recv_all(demuxer->socket, header, SC_PACKET_HEADER_SIZE);
+    if (r < SC_PACKET_HEADER_SIZE) {
         return false;
     }
 
