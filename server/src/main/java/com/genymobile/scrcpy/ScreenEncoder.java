@@ -29,6 +29,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
+    private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
@@ -189,6 +190,9 @@ public class ScreenEncoder implements Device.RotationListener {
                 ptsOrigin = bufferInfo.presentationTimeUs;
             }
             pts = bufferInfo.presentationTimeUs - ptsOrigin;
+            if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+                pts |= PACKET_FLAG_KEY_FRAME;
+            }
         }
 
         headerBuffer.putLong(pts);

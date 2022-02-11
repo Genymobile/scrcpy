@@ -15,8 +15,9 @@
 #define HEADER_SIZE 12
 
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
+#define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 62)
 
-#define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_CONFIG - 1)
+#define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_KEY_FRAME - 1)
 
 static bool
 sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
@@ -35,10 +36,11 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // The most significant bits of the PTS are used for packet flags:
     //
     //  byte 7   byte 6   byte 5   byte 4   byte 3   byte 2   byte 1   byte 0
-    // C....... ........ ........ ........ ........ ........ ........ ........
-    // ^<-------------------------------------------------------------------->
-    // |                                 PTS
-    //  `- config packet
+    // CK...... ........ ........ ........ ........ ........ ........ ........
+    // ^^<------------------------------------------------------------------->
+    // ||                                PTS
+    // | `- config packet
+    //  `-- key frame
 
     uint8_t header[HEADER_SIZE];
     ssize_t r = net_recv_all(demuxer->socket, header, HEADER_SIZE);
@@ -65,6 +67,10 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         packet->pts = AV_NOPTS_VALUE;
     } else {
         packet->pts = pts_flags & SC_PACKET_PTS_MASK;
+    }
+
+    if (pts_flags & SC_PACKET_FLAG_KEY_FRAME) {
+        packet->flags |= AV_PKT_FLAG_KEY;
     }
 
     return true;
