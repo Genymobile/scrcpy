@@ -69,7 +69,7 @@ else
     endif
 endif
 
-v4l2_support = host_machine.system() == 'linux'
+v4l2_support = get_option('v4l2') and host_machine.system() == 'linux'
 if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif

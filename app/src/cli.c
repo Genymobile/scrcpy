@@ -1549,7 +1549,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->v4l2_device = optarg;
                 break;
 #else
-                LOGE("V4L2 (--v4l2-sink) is only available on Linux.");
+                LOGE("V4L2 (--v4l2-sink) is disabled (or unsupported on this "
+                     "platform).");
                 return false;
 #endif
             case OPT_V4L2_BUFFER:
