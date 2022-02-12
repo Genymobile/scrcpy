@@ -1357,8 +1357,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
                 break;
 #else
-                LOGE("HID over AOA (-K/--hid-keyboard) is not supported on "
-                     "this platform. It is only available on Linux.");
+                LOGE("HID over AOA (-K/--hid-keyboard) is disabled (or "
+                     "unsupported on this platform).");
                 return false;
 #endif
             case OPT_MAX_FPS:
@@ -1376,8 +1376,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_HID;
                 break;
 #else
-                LOGE("HID over AOA (-M/--hid-mouse) is not supported on this"
-                     "platform. It is only available on Linux.");
+                LOGE("HID over AOA (-M/--hid-mouse) is disabled (or "
+                     "unsupported on this platform).");
                 return false;
 #endif
             case OPT_LOCK_VIDEO_ORIENTATION:
@@ -1540,8 +1540,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->otg = true;
                 break;
 #else
-                LOGE("OTG mode (--otg) is not supported on this platform. It "
-                     "is only available on Linux.");
+                LOGE("OTG mode (--otg) is disabled (or unsupported on this "
+                     "platform).");
                 return false;
 #endif
             case OPT_V4L2_SINK:

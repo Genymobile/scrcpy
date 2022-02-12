@@ -5,3 +5,4 @@ option('portable', type: 'boolean', value: false, description: 'Use scrcpy-serve
 option('server_debugger', type: 'boolean', value: false, description: 'Run a server debugger and wait for a client to be attached')
 option('server_debugger_method', type: 'combo', choices: ['old', 'new'], value: 'new', description: 'Select the debugger method (Android < 9: "old", Android >= 9: "new")')
 option('v4l2', type: 'boolean', value: true, description: 'Enable V4L2 feature when supported')
+option('usb', type: 'boolean', value: true, description: 'Enable HID/OTG features when supported')
