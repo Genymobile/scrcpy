@@ -46,8 +46,8 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         return false;
     }
 
-    uint64_t pts_flags = buffer_read64be(header);
-    uint32_t len = buffer_read32be(&header[8]);
+    uint64_t pts_flags = sc_read64be(header);
+    uint32_t len = sc_read32be(&header[8]);
     assert(len);
 
     if (av_new_packet(packet, len)) {

@@ -63,17 +63,17 @@ static const char *const copy_key_labels[] = {
 
 static void
 write_position(uint8_t *buf, const struct sc_position *position) {
-    buffer_write32be(&buf[0], position->point.x);
-    buffer_write32be(&buf[4], position->point.y);
-    buffer_write16be(&buf[8], position->screen_size.width);
-    buffer_write16be(&buf[10], position->screen_size.height);
+    sc_write32be(&buf[0], position->point.x);
+    sc_write32be(&buf[4], position->point.y);
+    sc_write16be(&buf[8], position->screen_size.width);
+    sc_write16be(&buf[10], position->screen_size.height);
 }
 
 // write length (4 bytes) + string (non null-terminated)
 static size_t
 write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     size_t len = sc_str_utf8_truncation_index(utf8, max_len);
-    buffer_write32be(buf, len);
+    sc_write32be(buf, len);
     memcpy(&buf[4], utf8, len);
     return 4 + len;
 }
@@ -94,9 +94,9 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
     switch (msg->type) {
         case SC_CONTROL_MSG_TYPE_INJECT_KEYCODE:
             buf[1] = msg->inject_keycode.action;
-            buffer_write32be(&buf[2], msg->inject_keycode.keycode);
-            buffer_write32be(&buf[6], msg->inject_keycode.repeat);
-            buffer_write32be(&buf[10], msg->inject_keycode.metastate);
+            sc_write32be(&buf[2], msg->inject_keycode.keycode);
+            sc_write32be(&buf[6], msg->inject_keycode.repeat);
+            sc_write32be(&buf[10], msg->inject_keycode.metastate);
             return 14;
         case SC_CONTROL_MSG_TYPE_INJECT_TEXT: {
             size_t len =
@@ -106,20 +106,20 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
         }
         case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
             buf[1] = msg->inject_touch_event.action;
-            buffer_write64be(&buf[2], msg->inject_touch_event.pointer_id);
+            sc_write64be(&buf[2], msg->inject_touch_event.pointer_id);
             write_position(&buf[10], &msg->inject_touch_event.position);
             uint16_t pressure =
                 to_fixed_point_16(msg->inject_touch_event.pressure);
-            buffer_write16be(&buf[22], pressure);
-            buffer_write32be(&buf[24], msg->inject_touch_event.buttons);
+            sc_write16be(&buf[22], pressure);
+            sc_write32be(&buf[24], msg->inject_touch_event.buttons);
             return 28;
         case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
-            buffer_write32be(&buf[13],
+            sc_write32be(&buf[13],
                              (uint32_t) msg->inject_scroll_event.hscroll);
-            buffer_write32be(&buf[17],
+            sc_write32be(&buf[17],
                              (uint32_t) msg->inject_scroll_event.vscroll);
-            buffer_write32be(&buf[21], msg->inject_scroll_event.buttons);
+            sc_write32be(&buf[21], msg->inject_scroll_event.buttons);
             return 25;
         case SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
@@ -128,7 +128,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             buf[1] = msg->get_clipboard.copy_key;
             return 2;
         case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
-            buffer_write64be(&buf[1], msg->set_clipboard.sequence);
+            sc_write64be(&buf[1], msg->set_clipboard.sequence);
             buf[9] = !!msg->set_clipboard.paste;
             size_t len = write_string(msg->set_clipboard.text,
                                       SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,

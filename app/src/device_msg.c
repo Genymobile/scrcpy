@@ -18,7 +18,7 @@ device_msg_deserialize(const unsigned char *buf, size_t len,
     msg->type = buf[0];
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
-            size_t clipboard_len = buffer_read32be(&buf[1]);
+            size_t clipboard_len = sc_read32be(&buf[1]);
             if (clipboard_len > len - 5) {
                 return 0; // not available
             }
@@ -36,7 +36,7 @@ device_msg_deserialize(const unsigned char *buf, size_t len,
             return 5 + clipboard_len;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD: {
-            uint64_t sequence = buffer_read64be(&buf[1]);
+            uint64_t sequence = sc_read64be(&buf[1]);
             msg->ack_clipboard.sequence = sequence;
             return 9;
         }
