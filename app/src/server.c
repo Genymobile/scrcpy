@@ -482,8 +482,10 @@ fail:
         }
     }
 
-    // Always leave this function with tunnel disabled
-    sc_adb_tunnel_close(tunnel, &server->intr, serial);
+    if (tunnel->enabled) {
+        // Always leave this function with tunnel disabled
+        sc_adb_tunnel_close(tunnel, &server->intr, serial);
+    }
 
     return false;
 }
