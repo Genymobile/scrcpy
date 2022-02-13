@@ -46,6 +46,7 @@ struct sc_server_params {
     const char *tcpip_dst;
     bool select_usb;
     bool select_tcpip;
+    bool cleanup;
 };
 
 struct sc_server {

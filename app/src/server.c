@@ -244,6 +244,10 @@ execute_server(struct sc_server *server,
         // By default, downsize_on_error is true
         ADD_PARAM("downsize_on_error=false");
     }
+    if (!params->cleanup) {
+        // By default, cleanup is true
+        ADD_PARAM("cleanup=false");
+    }
 
 #undef ADD_PARAM
 

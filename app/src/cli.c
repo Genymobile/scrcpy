@@ -54,6 +54,7 @@
 #define OPT_RAW_KEY_EVENTS         1034
 #define OPT_NO_DOWNSIZE_ON_ERROR   1035
 #define OPT_OTG                    1036
+#define OPT_NO_CLEANUP             1037
 
 struct sc_option {
     char shortopt;
@@ -249,6 +250,14 @@ static const struct sc_option options[] = {
                 "other dimension is computed so that the device aspect-ratio "
                 "is preserved.\n"
                 "Default is 0 (unlimited).",
+    },
+    {
+        .longopt_id = OPT_NO_CLEANUP,
+        .longopt = "no-cleanup",
+        .text = "By default, scrcpy removes the server binary from the device "
+                "and restores the device state (show touches, stay awake and "
+                "power mode) on exit.\n"
+                "This option disables this cleanup."
     },
     {
         .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
@@ -1534,6 +1543,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_DOWNSIZE_ON_ERROR:
                 opts->downsize_on_error = false;
+                break;
+            case OPT_NO_CLEANUP:
+                opts->cleanup = false;
                 break;
             case OPT_OTG:
 #ifdef HAVE_USB

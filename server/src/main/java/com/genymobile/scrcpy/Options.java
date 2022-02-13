@@ -21,6 +21,7 @@ public class Options {
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
+    private boolean cleanup = true;
 
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
@@ -153,6 +154,14 @@ public class Options {
 
     public void setDownsizeOnError(boolean downsizeOnError) {
         this.downsizeOnError = downsizeOnError;
+    }
+
+    public boolean getCleanup() {
+        return cleanup;
+    }
+
+    public void setCleanup(boolean cleanup) {
+        this.cleanup = cleanup;
     }
 
     public boolean getSendDeviceMeta() {

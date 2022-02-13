@@ -51,11 +51,13 @@ public final class Server {
             }
         }
 
-        try {
-            CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
-                    options.getPowerOffScreenOnClose());
-        } catch (IOException e) {
-            Ln.e("Could not configure cleanup", e);
+        if (options.getCleanup()) {
+            try {
+                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
+                        options.getPowerOffScreenOnClose());
+            } catch (IOException e) {
+                Ln.e("Could not configure cleanup", e);
+            }
         }
     }
 
@@ -242,6 +244,10 @@ public final class Server {
                 case "downsize_on_error":
                     boolean downsizeOnError = Boolean.parseBoolean(value);
                     options.setDownsizeOnError(downsizeOnError);
+                    break;
+                case "cleanup":
+                    boolean cleanup = Boolean.parseBoolean(value);
+                    options.setCleanup(cleanup);
                     break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);

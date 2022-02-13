@@ -137,6 +137,7 @@ struct scrcpy_options {
     const char *tcpip_dst;
     bool select_usb;
     bool select_tcpip;
+    bool cleanup;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

@@ -62,4 +62,5 @@ const struct scrcpy_options scrcpy_options_default = {
     .tcpip_dst = NULL,
     .select_tcpip = false,
     .select_usb = false,
+    .cleanup = true,
 };
