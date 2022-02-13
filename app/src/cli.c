@@ -251,13 +251,6 @@ static const struct sc_option options[] = {
                 "Default is 0 (unlimited).",
     },
     {
-        .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
-        .longopt = "no-downsize-on-error",
-        .text = "By default, on MediaCodec error, scrcpy automatically tries "
-                "again with a lower definition.\n"
-                "This option disables this behavior.",
-    },
-    {
         .longopt_id = OPT_NO_CLIPBOARD_AUTOSYNC,
         .longopt = "no-clipboard-autosync",
         .text = "By default, scrcpy automatically synchronizes the computer "
@@ -265,6 +258,13 @@ static const struct sc_option options[] = {
                 "and the device clipboard to the computer clipboard whenever "
                 "it changes.\n"
                 "This option disables this automatic synchronization."
+    },
+    {
+        .longopt_id = OPT_NO_DOWNSIZE_ON_ERROR,
+        .longopt = "no-downsize-on-error",
+        .text = "By default, on MediaCodec error, scrcpy automatically tries "
+                "again with a lower definition.\n"
+                "This option disables this behavior.",
     },
     {
         .shortopt = 'n',
