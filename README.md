@@ -1110,6 +1110,7 @@ Read the [developers page].
 
 This README is available in other languages:
 
+- [Deutsch (German, `de`) - v1.22](README.de.md)
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
 - [Italiano (Italiano, `it`) - v1.19](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
