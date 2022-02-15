@@ -106,10 +106,7 @@ Die App kann zudem [manuell gebaut werden][BUILD] ([vereinfachter Prozess (engli
 
 Für Windows ist der Einfachheit halber ein vorgebautes Archiv mit allen Abhängigkeiten (inklusive `adb`) vorhanden.
 
- - [`scrcpy-win64-v1.22.zip`][direct-win64]  
-   _(SHA-256: ce4d9b8cc761e29862c4a72d8ad6f538bdd1f1831d15fd1f36633cd3b403db82)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.22/scrcpy-win64-v1.22.zip
+ - [README](README.md#windows)
 
 Es ist zudem in [Chocolatey] vorhanden:
 
@@ -453,7 +450,7 @@ export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
 scrcpy --tunnel-host=192.168.1.2
 ```
 
-Standardmäßig verwendet scrcpy den lokalen Port für die Einrichtung des `adb forward`-Tunnels  (typischerweise `27183`, siehe `--port`). 
+Standardmäßig verwendet scrcpy den lokalen Port für die Einrichtung des `adb forward`-Tunnels  (typischerweise `27183`, siehe `--port`).
 Es ist zudem möglich, einen anderen Tunnel-Port zuzuweisen (sinnvoll in Situationen, bei welchen viele Weiterleitungen erfolgen):
 
 ```
@@ -631,7 +628,7 @@ Oder durch das Drücken von <kbd>MOD</kbd>+<kbd>o</kbd> jederzeit.
 
 Um das Display wieder einzuschalten muss <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd> gedrückt werden.
 
-Auf Android aktiviert der `POWER` Knopf das Display immer. 
+Auf Android aktiviert der `POWER` Knopf das Display immer.
 Für den Komfort wird, wenn `POWER` via scrcpy gesendet wird (über Rechtsklick oder <kbd>MOD</kbd>+<kbd>p</kbd>), wird versucht, das Display nach einer kurzen Zeit wieder auszuschalten (falls es möglich ist).
 Der physische `POWER` Button aktiviert das Display jedoch immer.
 
@@ -704,10 +701,10 @@ Um kopieren, ausschneiden und einfügen in diesen Fällen zu verwenden (nur bei 
  - <kbd>MOD</kbd>+<kbd>x</kbd> gibt `CUT` ein
  - <kbd>MOD</kbd>+<kbd>v</kbd> gibt `PASTE` ein (nach der Computer-zu-Gerät-Synchronisation)
 
-Zusätzlich erlaubt es <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> den momentanen Inhalt der Zwischenablage als eine Serie von Tastenevents einzugeben. 
+Zusätzlich erlaubt es <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> den momentanen Inhalt der Zwischenablage als eine Serie von Tastenevents einzugeben.
 Dies ist nützlich, fall die Applikation kein Einfügen unterstützt (z.B. _Termux_). Jedoch kann nicht-ASCII-Inhalt dabei zerstört werden.
 
-**WARNUNG:** Das Einfügen der Computer-Zwischenablage in das Gerät (entweder mit <kbd>Strg</kbd>+<kbd>v</kbd> oder <kbd>MOD</kbd>+<kbd>v</kbd>) kopiert den Inhalt in die Zwischenablage des Gerätes. 
+**WARNUNG:** Das Einfügen der Computer-Zwischenablage in das Gerät (entweder mit <kbd>Strg</kbd>+<kbd>v</kbd> oder <kbd>MOD</kbd>+<kbd>v</kbd>) kopiert den Inhalt in die Zwischenablage des Gerätes.
 Als Konsequenz kann somit jede Android-Applikation diesen Inhalt lesen. Das Einfügen von sensiblen Informationen wie Passwörtern sollte aus diesem Grund vermieden werden.
 
 Mache Geräte verhalten sich nicht wie erwartet, wenn die Zwischenablage per Programm verändert wird.
@@ -741,10 +738,10 @@ scrcpy --hid-keyboard
 scrcpy -K  # kurze Version
 ```
 
-Falls dies auf gewissen Gründen fehlschlägt (z.B. Gerät ist nicht über USB verbunden), so fällt scrcpy auf den Standardmodus zurück (mit einer Ausgabe in der Konsole). 
+Falls dies auf gewissen Gründen fehlschlägt (z.B. Gerät ist nicht über USB verbunden), so fällt scrcpy auf den Standardmodus zurück (mit einer Ausgabe in der Konsole).
 Dies erlaubt es, dieselben Kommandozeilenargumente zu verwenden, egal ob das Gerät per USB oder TCP/IP verbunden ist.
 
-In diesem Modus werden rohe Tastenevents (scancodes) an das Gerät gesendet. 
+In diesem Modus werden rohe Tastenevents (scancodes) an das Gerät gesendet.
 Aus diesem Grund muss ein nicht passenden Tastaturformat in den Einstellungen des Android-Gerätes unter Einstellungen → System → Sprache und Eingabe → [Physical keyboard] konfiguriert werden.
 
 Diese Einstellungsseite kann direkt mit diesem Befehl geöffnet werden:
@@ -759,10 +756,10 @@ Diese Option ist jedoch nur verfügbar, wenn eine HID-Tastatur oder eine physisc
 
 #### Simulation einer physikalischen Maus mit HID
 
-Ähnlich zu einer Tastatur kann auch eine Maus mithilfe von HID simuliert werden. 
+Ähnlich zu einer Tastatur kann auch eine Maus mithilfe von HID simuliert werden.
 Wie zuvor funktioniert dies jedoch nur, wenn das Gerät über USB verbunden ist. Zudem wird dies momentan nur unter Linux unterstützt.
 
-Standardmäßig verwendet scrcpy Android Maus Injektionen mit absoluten Koordinaten. 
+Standardmäßig verwendet scrcpy Android Maus Injektionen mit absoluten Koordinaten.
 Durch die Simulation einer physischen Maus erscheint auf dem Display des Geräts ein Mauszeiger, zu welchem die Bewegungen, Klicks und Scrollbewegungen relativ eingegeben werden.
 
 Um diesen Modus zu aktivieren:
@@ -804,7 +801,7 @@ scrcpy --otg --hid-keyboard --hid-mouse  # Tastatur und Maus
 scrcpy --otg                             # Tastatur und Maus
 ```
 
-Wie `--hid-keyboard` und `--hid-mouse` funktioniert dies nur, wenn das Gerät per USB verbunden ist. 
+Wie `--hid-keyboard` und `--hid-mouse` funktioniert dies nur, wenn das Gerät per USB verbunden ist.
 Zudem wird dies momentan nur unter Linux unterstützt.
 
 
@@ -941,13 +938,13 @@ _<kbd>[Super]</kbd> ist typischerweise die <kbd>Windows</kbd> oder <kbd>Cmd</kbd
 | Drag-and-drop mit Nicht-APK Datei                      | [Datei auf das Gerät schieben](#Datei auf Gerät schieben) |                          |
 
 
-_¹Doppelklick auf die schwarzen Balken, um diese zu entfernen._
-_²Rechtsklick aktiviert den Bildschirm, falls dieser aus war, ansonsten ZURÜCK._
-_³4. und 5. Maustasten, wenn diese an der jeweiligen Maus vorhanden sind._
-_⁴Für react-native Applikationen in Entwicklung, `MENU` öffnet das Entwickler-Menü._
+_¹Doppelklick auf die schwarzen Balken, um diese zu entfernen._  
+_²Rechtsklick aktiviert den Bildschirm, falls dieser aus war, ansonsten ZURÜCK._  
+_³4. und 5. Maustasten, wenn diese an der jeweiligen Maus vorhanden sind._  
+_⁴Für react-native Applikationen in Entwicklung, `MENU` öffnet das Entwickler-Menü._  
 _⁵Nur für Android >= 7._
 
-Abkürzungen mit mehreren Tastenanschlägen werden durch das Loslassen und erneute Drücken der Taste erreicht. 
+Abkürzungen mit mehreren Tastenanschlägen werden durch das Loslassen und erneute Drücken der Taste erreicht.
 Beispielhaft, um "Erweitere das Einstellungs-Menü" auszuführen:
 
  1. Drücke und halte <kbd>MOD</kbd>.
@@ -1019,19 +1016,3 @@ Siehe [FAQ](FAQ.md).
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
-## Translations
-
-This README is available in other languages:
-
-- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
-- [Italiano (Italiano, `it`) - v1.19](README.it.md)
-- [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
-- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
-- [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
-- [Español (Spanish, `sp`) - v1.21](README.sp.md)
-- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](README.zh-Hans.md)
-- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
-- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
-
-German Version translated by [Firq-ow](https://github.com/Firq-ow)
