@@ -6,9 +6,7 @@ _Only the original [README](README.md) is guaranteed to be up-to-date._
 
 _ausgesprochen "**scr**een **c**o**py**"_
 
-[Read in another language](#Translations)
-
-Diese Anwendung liefert sowohl Anzeige als auch Steuerung eines Android-Gerätes über USB (oder [über TCP/IP](#TCP/IP Kabellos)). Dabei wird kein _root_ Zugriff benötigt.
+Diese Anwendung liefert sowohl Anzeige als auch Steuerung eines Android-Gerätes über USB (oder [über TCP/IP](#tcpip-kabellos)). Dabei wird kein _root_ Zugriff benötigt.
 Die Anwendung funktioniert unter _GNU/Linux_, _Windows_ und _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -28,13 +26,13 @@ Dabei liegt der Fokus auf:
 
 Die Features beinhalten:
  - [Aufnahme](#Aufnahme)
- - Spiegeln mit [ausgeschaltetem Bildschirm](#Bildschirm ausschalten)
+ - Spiegeln mit [ausgeschaltetem Bildschirm](#bildschirm-ausschalten)
  - [Copy&Paste](#copy-paste) in beide Richtungen
  - [Einstellbare Qualität](#Aufnahmekonfiguration)
  - Gerätebildschirm [als Webcam (V4L2)](#v4l2loopback) (nur Linux)
- - [Simulation einer physischen Tastatur (HID)](#Simulation einer physikalischen Tastatur mit HID)
+ - [Simulation einer physischen Tastatur (HID)](#simulation-einer-physischen-tastatur-mit-hid)
    (nur Linux)
- - [Simulation einer physischen Maus (HID)](#Simulation einer physikalischen Maus mit HID)
+ - [Simulation einer physischen Maus (HID)](##simulation-einer-physischen-maus-mit-hid)
    (nur Linux)
  - [OTG Modus](#otg) (nur Linux)
  - und mehr…
@@ -571,7 +569,7 @@ _(links)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(rechts)_ angepasst werden.
 
 _scrcpy_ schafft 3 verschiedene Rotationen:
  - <kbd>MOD</kbd>+<kbd>r</kbd> erfordert von Gerät den Wechsel zwischen Hochformat und Querformat (die momentane App kann dies verweigern, wenn die geforderte Ausrichtung nicht unterstützt wird).
- - [`--lock-video-orientation`](#Feststellen der Videoorientierung) ändert die Ausrichtung der Spiegelung (die Ausrichtung des an den Computer gesendeten Videos). Dies beeinflusst eventuelle Aufnahmen.
+ - [`--lock-video-orientation`](#feststellen-der-videoorientierung) ändert die Ausrichtung der Spiegelung (die Ausrichtung des an den Computer gesendeten Videos). Dies beeinflusst eventuelle Aufnahmen.
  - `--rotation` (or <kbd>MOD</kbd>+<kbd>←</kbd>/<kbd>MOD</kbd>+<kbd>→</kbd>) rotiert nur das Fenster, eventuelle Aufnahmen sind hiervon nicht beeinflusst.
 
 
@@ -721,7 +719,7 @@ Genauer: <kbd>Strg</kbd> halten, während Linksklick gehalten wird. Solange Link
 
 Konkret erzeugt scrcpy einen am Mittelpunkt des Displays gespiegelten, "virtuellen" Finger.
 
-#### Simulation einer physikalischen Tastatur mit HID
+#### Simulation einer physischen Tastatur mit HID
 
 Standardmäßig verwendet scrcpy Android-Tasten oder Textinjektion. Dies funktioniert zwar immer, jedoch nur mit ASCII.
 
@@ -754,7 +752,7 @@ Diese Option ist jedoch nur verfügbar, wenn eine HID-Tastatur oder eine physisc
 
 [Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
-#### Simulation einer physikalischen Maus mit HID
+#### Simulation einer physischen Maus mit HID
 
 Ähnlich zu einer Tastatur kann auch eine Maus mithilfe von HID simuliert werden.
 Wie zuvor funktioniert dies jedoch nur, wenn das Gerät über USB verbunden ist. Zudem wird dies momentan nur unter Linux unterstützt.
@@ -769,7 +767,7 @@ scrcpy --hid-mouse
 scrcpy -M  # kurze Version
 ```
 
-Es kann zudem`--forward-all-clicks` übergeben werden, um [alle Mausklicks an das Gerät weiterzugeben](#Rechtsklick und Mittelklick).
+Es kann zudem`--forward-all-clicks` übergeben werden, um [alle Mausklicks an das Gerät weiterzugeben](#rechtsklick-und-mittelklick).
 
 Wenn dieser Modus aktiv ist, ist der Mauszeiger des Computers auf dem Fenster gefangen (Zeiger verschwindet von Computer und erscheint auf dem Android-Gerät).
 
@@ -935,7 +933,7 @@ _<kbd>[Super]</kbd> ist typischerweise die <kbd>Windows</kbd> oder <kbd>Cmd</kbd
 | FPS-Zähler aktivieren/deaktivieren (ing stdout)        | <kbd>MOD</kbd>+<kbd>i</kbd>                               |                          |
 | Ziehen zum Zoomen                                      | <kbd>Strg</kbd>+_Klicken-und-Bewegen_                     |                          |
 | Drag-and-drop mit APK-Datei                            | APK von Computer installieren                             |                          |
-| Drag-and-drop mit Nicht-APK Datei                      | [Datei auf das Gerät schieben](#Datei auf Gerät schieben) |                          |
+| Drag-and-drop mit Nicht-APK Datei                      | [Datei auf das Gerät schieben](#datei-auf-gerät-schieben) |                          |
 
 
 _¹Doppelklick auf die schwarzen Balken, um diese zu entfernen._  
