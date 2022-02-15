@@ -2,7 +2,7 @@
 #
 # name: scrcpy
 # auth: hltdev [hltdev8642@gmail.com]
-# desc: completion file for scrcpy (linux/mac)
+# desc: completion file for scrcpy (all OSes)
 #
 
 local arguments
