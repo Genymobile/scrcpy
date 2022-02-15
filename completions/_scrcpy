@@ -1,4 +1,4 @@
-#compdef scrcpy
+#compdef -N scrcpy -N scrcpy.exe
 #
 # name: scrcpy
 # auth: hltdev [hltdev8642@gmail.com]
