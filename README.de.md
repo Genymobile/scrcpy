@@ -57,7 +57,7 @@ Auf manchen Geräten müssen zudem [weitere Optionen][control] aktiv sein um das
 ### Zusammenfassung
 
  - Linux: `apt install scrcpy`
- - Windows: [download][direct-win64]
+ - Windows: [download (siehe README)](README.md#windows)
  - macOS: `brew install scrcpy`
 
 Direkt von der Source bauen: [BUILD] ([vereinfachter Prozess (englisch)][BUILD_simple])
@@ -274,7 +274,7 @@ scrcpy -Nr file.mkv
 
 "Übersprungene Bilder" werden aufgenommen, selbst wenn sie in Echtzeit (aufgrund von Performancegründen) nicht dargestellt werden. Die Einzelbilder sind mit _Zeitstempeln_ des Gerätes versehen are, sodass eine [Paketverzögerungsvariation] nicht die Aufnahmedatei beeinträchtigt.
 
-[Paketverzögerungs-Variation]: https://www.wikide.wiki/wiki/en/Packet_delay_variation
+[Paketverzögerungsvariation]: https://www.wikide.wiki/wiki/en/Packet_delay_variation
 
 
 #### v4l2loopback
@@ -394,7 +394,7 @@ scrcpy --bit-rate 2M --max-size 800
 scrcpy -b2M -m800  # kurze Version
 ```
 
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
+[verbinden]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 
 #### Mehrere Geräte
