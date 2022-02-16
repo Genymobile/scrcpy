@@ -57,7 +57,7 @@ display_fps(struct fps_counter *counter) {
 
 // must be called with mutex locked
 static void
-check_interval_expired(struct fps_counter *counter, uint32_t now) {
+check_interval_expired(struct fps_counter *counter, sc_tick now) {
     if (now < counter->next_timestamp) {
         return;
     }
