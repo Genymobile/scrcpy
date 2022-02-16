@@ -136,7 +136,9 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline) {
         return false; // timeout
     }
 
-    uint32_t ms = SC_TICK_TO_MS(deadline - now);
+    // Round up to the next millisecond to guarantee that the deadline is
+    // reached when returning due to timeout
+    uint32_t ms = SC_TICK_TO_MS(deadline - now + SC_TICK_FROM_MS(1) - 1);
     int r = SDL_CondWaitTimeout(cond->cond, mutex->mutex, ms);
 #ifndef NDEBUG
     if (r < 0) {
@@ -148,6 +150,8 @@ sc_cond_timedwait(sc_cond *cond, sc_mutex *mutex, sc_tick deadline) {
                           memory_order_relaxed);
 #endif
     assert(r == 0 || r == SDL_MUTEX_TIMEDOUT);
+    // The deadline is reached on timeout
+    assert(r != SDL_MUTEX_TIMEDOUT || sc_tick_now() >= deadline);
     return r == 0;
 }
 
