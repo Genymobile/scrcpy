@@ -186,8 +186,7 @@ static const struct sc_option options[] = {
                 "It provides a better experience for IME users, and allows to "
                 "generate non-ASCII characters, contrary to the default "
                 "injection method.\n"
-                "It may only work over USB, and is currently only supported "
-                "on Linux.\n"
+                "It may only work over USB.\n"
                 "The keyboard layout must be configured (once and for all) on "
                 "the device, via Settings -> System -> Languages and input -> "
                 "Physical keyboard. This settings page can be started "
@@ -239,8 +238,7 @@ static const struct sc_option options[] = {
                 "device directly (relative mouse mode).\n"
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
-                "It may only work over USB, and is currently only supported "
-                "on Linux.\n"
+                "It may only work over USB.\n"
                 "Also see --hid-keyboard.",
     },
     {
@@ -311,8 +309,7 @@ static const struct sc_option options[] = {
                 "control of the mouse back to the computer.\n"
                 "If any of --hid-keyboard or --hid-mouse is set, only enable "
                 "keyboard or mouse respectively, otherwise enable both.\n"
-                "It may only work over USB, and is currently only supported "
-                "on Linux.\n"
+                "It may only work over USB.\n"
                 "See --hid-keyboard and --hid-mouse.",
     },
     {
