@@ -247,13 +247,9 @@ switch_fps_counter_state(struct sc_fps_counter *fps_counter) {
     // is no ToCToU issue
     if (sc_fps_counter_is_started(fps_counter)) {
         sc_fps_counter_stop(fps_counter);
-        LOGI("FPS counter stopped");
     } else {
-        if (sc_fps_counter_start(fps_counter)) {
-            LOGI("FPS counter started");
-        } else {
-            LOGE("FPS counter starting failed");
-        }
+        sc_fps_counter_start(fps_counter);
+        // Any error is already logged
     }
 }
 

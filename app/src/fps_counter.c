@@ -117,6 +117,7 @@ sc_fps_counter_start(struct sc_fps_counter *counter) {
         counter->thread_started = true;
     }
 
+    LOGI("FPS counter started");
     return true;
 }
 
@@ -124,6 +125,7 @@ void
 sc_fps_counter_stop(struct sc_fps_counter *counter) {
     set_started(counter, false);
     sc_cond_signal(&counter->state_cond);
+    LOGI("FPS counter stopped");
 }
 
 bool
