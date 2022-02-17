@@ -138,6 +138,7 @@ struct scrcpy_options {
     bool select_usb;
     bool select_tcpip;
     bool cleanup;
+    bool start_fps_counter;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

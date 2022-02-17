@@ -55,6 +55,7 @@
 #define OPT_NO_DOWNSIZE_ON_ERROR   1035
 #define OPT_OTG                    1036
 #define OPT_NO_CLEANUP             1037
+#define OPT_PRINT_FPS              1038
 
 struct sc_option {
     char shortopt;
@@ -335,6 +336,12 @@ static const struct sc_option options[] = {
                 "This avoids issues when combining multiple keys to enter a "
                 "special character, but breaks the expected behavior of alpha "
                 "keys in games (typically WASD).",
+    },
+    {
+        .longopt_id = OPT_PRINT_FPS,
+        .longopt = "print-fps",
+        .text = "Start FPS counter, to print framerate logs to the console. "
+                "It can be started or stopped at any time with MOD+i.",
     },
     {
         .longopt_id = OPT_PUSH_TARGET,
@@ -1546,6 +1553,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_CLEANUP:
                 opts->cleanup = false;
+                break;
+            case OPT_PRINT_FPS:
+                opts->start_fps_counter = true;
                 break;
             case OPT_OTG:
 #ifdef HAVE_USB

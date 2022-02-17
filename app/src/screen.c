@@ -386,6 +386,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.width = params->window_width;
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;
+    screen->req.start_fps_counter = params->start_fps_counter;
 
     static const struct sc_video_buffer_callbacks cbs = {
         .on_new_frame = sc_video_buffer_on_new_frame,
@@ -560,6 +561,10 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
 
     if (screen->req.fullscreen) {
         sc_screen_switch_fullscreen(screen);
+    }
+
+    if (screen->req.start_fps_counter) {
+        sc_fps_counter_start(&screen->fps_counter);
     }
 
     SDL_ShowWindow(screen->window);

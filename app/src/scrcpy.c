@@ -588,6 +588,7 @@ aoa_hid_end:
             .rotation = options->rotation,
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
+            .start_fps_counter = options->start_fps_counter,
             .buffering_time = options->display_buffer,
         };
 

@@ -35,6 +35,7 @@ struct sc_screen {
         uint16_t width;
         uint16_t height;
         bool fullscreen;
+        bool start_fps_counter;
     } req;
 
     SDL_Window *window;
@@ -93,6 +94,7 @@ struct sc_screen_params {
     bool mipmaps;
 
     bool fullscreen;
+    bool start_fps_counter;
 
     sc_tick buffering_time;
 };

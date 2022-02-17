@@ -215,6 +215,15 @@ scrcpy --max-fps 15
 
 This is officially supported since Android 10, but may work on earlier versions.
 
+The actual capture framerate may be printed to the console:
+
+```
+scrcpy --print-fps
+```
+
+It may also be enabled or disabled at any time with <kbd>MOD</kbd>+<kbd>i</kbd>.
+
+
 #### Crop
 
 The device screen may be cropped to mirror only part of the screen.
