@@ -150,21 +150,23 @@ screen, then you might get poor quality, especially visible on text (see [#40]).
 
 [#40]: https://github.com/Genymobile/scrcpy/issues/40
 
-To improve downscaling quality, trilinear filtering is enabled automatically
-if the renderer is OpenGL and if it supports mipmapping.
+This problem should be fixed in scrcpy v1.22: **update to the latest version**.
 
-On Windows, you might want to force OpenGL:
-
-```
-scrcpy --render-driver=opengl
-```
-
-You may also need to configure the [scaling behavior]:
+On older versions, you must configure the [scaling behavior]:
 
 > `scrcpy.exe` > Properties > Compatibility > Change high DPI settings >
 > Override high DPI scaling behavior > Scaling performed by: _Application_.
 
 [scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
+
+Also, to improve downscaling quality, trilinear filtering is enabled
+automatically if the renderer is OpenGL and if it supports mipmapping.
+
+On Windows, you might want to force OpenGL to enable mipmapping:
+
+```
+scrcpy --render-driver=opengl
+```
 
 
 ### Issue with Wayland
