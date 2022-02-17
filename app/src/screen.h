@@ -26,7 +26,7 @@ struct sc_screen {
 
     struct sc_input_manager im;
     struct sc_video_buffer vb;
-    struct fps_counter fps_counter;
+    struct sc_fps_counter fps_counter;
 
     // The initial requested window properties
     struct {

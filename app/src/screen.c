@@ -347,7 +347,7 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
 
     bool need_new_event;
     if (previous_skipped) {
-        fps_counter_add_skipped_frame(&screen->fps_counter);
+        sc_fps_counter_add_skipped_frame(&screen->fps_counter);
         // The EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead, unless the previous event failed
         need_new_event = screen->event_failed;
@@ -402,7 +402,7 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_video_buffer;
     }
 
-    if (!fps_counter_init(&screen->fps_counter)) {
+    if (!sc_fps_counter_init(&screen->fps_counter)) {
         goto error_stop_and_join_video_buffer;
     }
 
@@ -534,7 +534,7 @@ error_destroy_renderer:
 error_destroy_window:
     SDL_DestroyWindow(screen->window);
 error_destroy_fps_counter:
-    fps_counter_destroy(&screen->fps_counter);
+    sc_fps_counter_destroy(&screen->fps_counter);
 error_stop_and_join_video_buffer:
     sc_video_buffer_stop(&screen->vb);
     sc_video_buffer_join(&screen->vb);
@@ -573,13 +573,13 @@ sc_screen_hide_window(struct sc_screen *screen) {
 void
 sc_screen_interrupt(struct sc_screen *screen) {
     sc_video_buffer_stop(&screen->vb);
-    fps_counter_interrupt(&screen->fps_counter);
+    sc_fps_counter_interrupt(&screen->fps_counter);
 }
 
 void
 sc_screen_join(struct sc_screen *screen) {
     sc_video_buffer_join(&screen->vb);
-    fps_counter_join(&screen->fps_counter);
+    sc_fps_counter_join(&screen->fps_counter);
 }
 
 void
@@ -591,7 +591,7 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyTexture(screen->texture);
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
-    fps_counter_destroy(&screen->fps_counter);
+    sc_fps_counter_destroy(&screen->fps_counter);
     sc_video_buffer_destroy(&screen->vb);
 }
 
@@ -701,7 +701,7 @@ sc_screen_update_frame(struct sc_screen *screen) {
     sc_video_buffer_consume(&screen->vb, screen->frame);
     AVFrame *frame = screen->frame;
 
-    fps_counter_add_rendered_frame(&screen->fps_counter);
+    sc_fps_counter_add_rendered_frame(&screen->fps_counter);
 
     struct sc_size new_frame_size = {frame->width, frame->height};
     if (!prepare_for_frame(screen, new_frame_size)) {
