@@ -163,7 +163,8 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
 }
 
 static void
-sc_screen_set_mouse_capture(bool capture) {
+sc_screen_set_mouse_capture(struct sc_screen *screen, bool capture) {
+    (void) screen;
     if (SDL_SetRelativeMouseMode(capture)) {
         LOGE("Could not set relative mouse mode to %s: %s",
              capture ? "true" : "false", SDL_GetError());
@@ -171,13 +172,16 @@ sc_screen_set_mouse_capture(bool capture) {
 }
 
 static inline bool
-sc_screen_get_mouse_capture(void) {
+sc_screen_get_mouse_capture(struct sc_screen *screen) {
+    (void) screen;
     return SDL_GetRelativeMouseMode();
 }
 
 static inline void
-sc_screen_toggle_mouse_capture(void) {
-    sc_screen_set_mouse_capture(!sc_screen_get_mouse_capture());
+sc_screen_toggle_mouse_capture(struct sc_screen *screen) {
+    (void) screen;
+    bool new_value = !sc_screen_get_mouse_capture(screen);
+    sc_screen_set_mouse_capture(screen, new_value);
 }
 
 static void
@@ -721,7 +725,7 @@ sc_screen_update_frame(struct sc_screen *screen) {
 
         if (sc_screen_is_relative_mode(screen)) {
             // Capture mouse on start
-            sc_screen_set_mouse_capture(true);
+            sc_screen_set_mouse_capture(screen, true);
         }
     }
 
@@ -834,7 +838,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                     break;
                 case SDL_WINDOWEVENT_FOCUS_LOST:
                     if (relative_mode) {
-                        sc_screen_set_mouse_capture(false);
+                        sc_screen_set_mouse_capture(screen, false);
                     }
                     break;
             }
@@ -864,7 +868,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                     if (key == cap) {
                         // A mouse capture key has been pressed then released:
                         // toggle the capture mouse mode
-                        sc_screen_toggle_mouse_capture();
+                        sc_screen_toggle_mouse_capture(screen);
                     }
                     // Mouse capture keys are never forwarded to the device
                     return;
@@ -874,7 +878,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
         case SDL_MOUSEWHEEL:
         case SDL_MOUSEMOTION:
         case SDL_MOUSEBUTTONDOWN:
-            if (relative_mode && !sc_screen_get_mouse_capture()) {
+            if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
                 // Do not forward to input manager, the mouse will be captured
                 // on SDL_MOUSEBUTTONUP
                 return;
@@ -890,8 +894,8 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
             }
             break;
         case SDL_MOUSEBUTTONUP:
-            if (relative_mode && !sc_screen_get_mouse_capture()) {
-                sc_screen_set_mouse_capture(true);
+            if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
+                sc_screen_set_mouse_capture(screen, true);
                 return;
             }
             break;
