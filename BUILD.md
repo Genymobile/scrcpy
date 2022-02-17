@@ -199,7 +199,7 @@ Install the packages with [Homebrew]:
 
 ```bash
 # runtime dependencies
-brew install sdl2 ffmpeg
+brew install sdl2 ffmpeg libusb
 
 # client build dependencies
 brew install pkg-config meson
