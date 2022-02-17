@@ -113,6 +113,7 @@ ssize_t
 sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
                      size_t devices_len) {
     size_t dev_count = 0;
+    struct sc_adb_device scratch_device;
 
 #define HEADER "List of devices attached"
 #define HEADER_LEN (sizeof(HEADER) - 1)
@@ -144,7 +145,7 @@ sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
         size_t line_len = sc_str_remove_trailing_cr(line, len);
         line[line_len] = '\0';
 
-        bool ok = sc_adb_parse_device(line, &devices[dev_count]);
+        bool ok = sc_adb_parse_device(line, devices ? &devices[dev_count] : &scratch_device);
         if (!ok) {
             continue;
         }

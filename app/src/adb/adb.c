@@ -519,9 +519,7 @@ bool
 sc_adb_select_device(struct sc_intr *intr,
                      const struct sc_adb_device_selector *selector,
                      unsigned flags, struct sc_adb_device *out_device) {
-    struct sc_adb_device devices[16];
-    ssize_t count =
-        sc_adb_list_devices(intr, flags, devices, ARRAY_LEN(devices));
+    ssize_t count = sc_adb_list_devices(intr, flags, NULL, 4096);
     if (count == -1) {
         LOGE("Could not list ADB devices");
         return false;
@@ -529,6 +527,14 @@ sc_adb_select_device(struct sc_intr *intr,
 
     if (count == 0) {
         LOGE("Could not find any ADB device");
+        return false;
+    }
+
+    struct sc_adb_device *devices = malloc(sizeof(struct sc_adb_device) * count);
+    ssize_t parseCount = sc_adb_list_devices(intr, flags, devices, count);
+    if (parseCount != count) {
+        LOGE("Missmatch in second parsing");
+        free(devices);
         return false;
     }
 
@@ -559,6 +565,7 @@ sc_adb_select_device(struct sc_intr *intr,
 
         sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
         sc_adb_devices_destroy_all(devices, count);
+        free(devices);
         return false;
     }
 
@@ -588,6 +595,7 @@ sc_adb_select_device(struct sc_intr *intr,
         LOGE("Select a device via -s (--serial), -d (--select-usb) or -e "
              "(--select-tcpip)");
         sc_adb_devices_destroy_all(devices, count);
+        free(devices);
         return false;
     }
 
@@ -597,6 +605,7 @@ sc_adb_select_device(struct sc_intr *intr,
     bool ok = sc_adb_device_check_state(device, devices, count);
     if (!ok) {
         sc_adb_devices_destroy_all(devices, count);
+        free(devices);
         return false;
     }
 
@@ -606,6 +615,7 @@ sc_adb_select_device(struct sc_intr *intr,
     // Move devics into out_device (do not destroy device)
     sc_adb_device_move(out_device, device);
     sc_adb_devices_destroy_all(devices, count);
+    free(devices);
     return true;
 }
 

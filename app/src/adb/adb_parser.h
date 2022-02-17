@@ -11,6 +11,8 @@
  * Parse the available devices from the output of `adb devices`
  *
  * The parameter must be a NUL-terminated string.
+ * If a devices is a nullptr it will parse and report the caller
+ * the amount of devices in ADB.
  *
  * Warning: this function modifies the buffer for optimization purposes.
  */
