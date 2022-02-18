@@ -282,6 +282,9 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
         ]],
+        ['test_vector', [
+            'tests/test_vector.c',
+        ]],
     ]
 
     foreach t : tests
