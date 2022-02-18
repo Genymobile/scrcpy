@@ -3,6 +3,9 @@
 #include <assert.h>
 
 #include "util/log.h"
+#include "util/vector.h"
+
+struct sc_vec_usb_devices SC_VECTOR(struct sc_usb_device);
 
 static char *
 read_string(libusb_device_handle *handle, uint8_t desc_index) {
@@ -85,33 +88,39 @@ sc_usb_device_move(struct sc_usb_device *dst, struct sc_usb_device *src) {
 }
 
 void
-sc_usb_devices_destroy_all(struct sc_usb_device *usb_devices, size_t count) {
-    for (size_t i = 0; i < count; ++i) {
-        sc_usb_device_destroy(&usb_devices[i]);
+sc_usb_devices_destroy(struct sc_vec_usb_devices *usb_devices) {
+    for (size_t i = 0; i < usb_devices->size; ++i) {
+        sc_usb_device_destroy(&usb_devices->data[i]);
     }
+    sc_vector_destroy(usb_devices);
 }
 
-static ssize_t
-sc_usb_list_devices(struct sc_usb *usb, struct sc_usb_device *devices,
-                    size_t len) {
+static bool
+sc_usb_list_devices(struct sc_usb *usb, struct sc_vec_usb_devices *out_vec) {
     libusb_device **list;
     ssize_t count = libusb_get_device_list(usb->context, &list);
     if (count < 0) {
         LOGE("List USB devices: libusb error: %s", libusb_strerror(count));
-        return -1;
+        return false;
     }
 
-    size_t idx = 0;
-    for (size_t i = 0; i < (size_t) count && idx < len; ++i) {
+    for (size_t i = 0; i < (size_t) count; ++i) {
         libusb_device *device = list[i];
 
-        if (sc_usb_read_device(device, &devices[idx])) {
-            ++idx;
+        struct sc_usb_device usb_device;
+        if (sc_usb_read_device(device, &usb_device)) {
+            bool ok = sc_vector_push(out_vec, usb_device);
+            if (!ok) {
+                LOG_OOM();
+                LOGE("Could not push usb_device to vector");
+                sc_usb_device_destroy(&usb_device);
+                // continue anyway
+            }
         }
     }
 
     libusb_free_device_list(list, 1);
-    return idx;
+    return true;
 }
 
 static bool
@@ -157,29 +166,28 @@ sc_usb_devices_log(enum sc_log_level level, struct sc_usb_device *devices,
 bool
 sc_usb_select_device(struct sc_usb *usb, const char *serial,
                      struct sc_usb_device *out_device) {
-    struct sc_usb_device usb_devices[16];
-    ssize_t count =
-        sc_usb_list_devices(usb, usb_devices, ARRAY_LEN(usb_devices));
-    if (count == -1) {
+    struct sc_vec_usb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_usb_list_devices(usb, &vec);
+    if (!ok) {
         LOGE("Could not list USB devices");
         return false;
     }
 
-    if (count == 0) {
+    if (vec.size == 0) {
         LOGE("Could not find any USB device");
         return false;
     }
 
     size_t sel_idx; // index of the single matching device if sel_count == 1
     size_t sel_count =
-        sc_usb_devices_select(usb_devices, count, serial, &sel_idx);
+        sc_usb_devices_select(vec.data, vec.size, serial, &sel_idx);
 
     if (sel_count == 0) {
         // if count > 0 && sel_count == 0, then necessarily a serial is provided
         assert(serial);
         LOGE("Could not find USB device %s", serial);
-        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, usb_devices, count);
-        sc_usb_devices_destroy_all(usb_devices, count);
+        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, vec.data, vec.size);
+        sc_usb_devices_destroy(&vec);
         return false;
     }
 
@@ -190,21 +198,21 @@ sc_usb_select_device(struct sc_usb *usb, const char *serial,
         } else {
             LOGE("Multiple (%" SC_PRIsizet ") USB devices:", sel_count);
         }
-        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, usb_devices, count);
+        sc_usb_devices_log(SC_LOG_LEVEL_ERROR, vec.data, vec.size);
         LOGE("Select a device via -s (--serial)");
-        sc_usb_devices_destroy_all(usb_devices, count);
+        sc_usb_devices_destroy(&vec);
         return false;
     }
 
     assert(sel_count == 1); // sel_idx is valid only if sel_count == 1
-    struct sc_usb_device *device = &usb_devices[sel_idx];
+    struct sc_usb_device *device = &vec.data[sel_idx];
 
     LOGD("USB device found:");
-    sc_usb_devices_log(SC_LOG_LEVEL_DEBUG, usb_devices, count);
+    sc_usb_devices_log(SC_LOG_LEVEL_DEBUG, vec.data, vec.size);
 
     // Move device into out_device (do not destroy device)
     sc_usb_device_move(out_device, device);
-    sc_usb_devices_destroy_all(usb_devices, count);
+    sc_usb_devices_destroy(&vec);
     return true;
 }
 
