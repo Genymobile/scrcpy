@@ -398,31 +398,39 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
                     struct sc_vec_adb_devices *out_vec) {
     const char *const argv[] = SC_ADB_COMMAND("devices", "-l");
 
+#define BUFSIZE 65536
+    char *buf = malloc(BUFSIZE);
+    if (!buf) {
+        return false;
+    }
+
     sc_pipe pout;
     sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
     if (pid == SC_PROCESS_NONE) {
         LOGE("Could not execute \"adb devices -l\"");
+        free(buf);
         return false;
     }
 
-    char buf[4096];
-    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, BUFSIZE - 1);
     sc_pipe_close(pout);
 
     bool ok = process_check_success_intr(intr, pid, "adb devices -l", flags);
     if (!ok) {
+        free(buf);
         return false;
     }
 
     if (r == -1) {
+        free(buf);
         return false;
     }
 
-    assert((size_t) r < sizeof(buf));
-    if (r == sizeof(buf) - 1)  {
+    assert((size_t) r < BUFSIZE);
+    if (r == BUFSIZE - 1)  {
         // The implementation assumes that the output of "adb devices -l" fits
         // in the buffer in a single pass
-        LOGW("Result of \"adb devices -l\" does not fit in 4Kb. "
+        LOGW("Result of \"adb devices -l\" does not fit in 64Kb. "
              "Please report an issue.");
         return false;
     }
@@ -431,7 +439,9 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
     buf[r] = '\0';
 
     // List all devices to the output list directly
-    return sc_adb_parse_devices(buf, out_vec);
+    ok = sc_adb_parse_devices(buf, out_vec);
+    free(buf);
+    return ok;
 }
 
 static bool
