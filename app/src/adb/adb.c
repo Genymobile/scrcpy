@@ -412,7 +412,7 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
         // The implementation assumes that the output of "adb devices -l" fits
         // in the buffer in a single pass
         LOGW("Result of \"adb devices -l\" does not fit in 4Kb. "
-             "Please report an issue.\n");
+             "Please report an issue.");
         return -1;
     }
 
@@ -676,7 +676,7 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
         // The implementation assumes that the output of "ip route" fits in the
         // buffer in a single pass
         LOGW("Result of \"ip route\" does not fit in 1Kb. "
-             "Please report an issue.\n");
+             "Please report an issue.");
         return NULL;
     }
 
