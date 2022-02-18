@@ -91,7 +91,6 @@ static void test_adb_devices_daemon_start_mixed() {
     struct sc_adb_device *device = &devices[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("unauthorized", device->state));
-    fprintf(stderr, "==== [%s]\n", device->model);
     assert(!device->model);
 
     device = &devices[1];
