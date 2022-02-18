@@ -109,11 +109,8 @@ sc_adb_parse_device(char *line, struct sc_adb_device *device) {
     return true;
 }
 
-ssize_t
-sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
-                     size_t devices_len) {
-    size_t dev_count = 0;
-
+bool
+sc_adb_parse_devices(char *str, struct sc_vec_adb_devices *out_vec) {
 #define HEADER "List of devices attached"
 #define HEADER_LEN (sizeof(HEADER) - 1)
     bool header_found = false;
@@ -144,25 +141,24 @@ sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
         size_t line_len = sc_str_remove_trailing_cr(line, len);
         line[line_len] = '\0';
 
-        bool ok = sc_adb_parse_device(line, &devices[dev_count]);
+        struct sc_adb_device device;
+        bool ok = sc_adb_parse_device(line, &device);
         if (!ok) {
             continue;
         }
 
-        ++dev_count;
-
-        assert(dev_count <= devices_len);
-        if (dev_count == devices_len) {
-            // Max number of devices reached
-            break;
+        ok = sc_vector_push(out_vec, device);
+        if (!ok) {
+            LOG_OOM();
+            LOGE("Could not push adb_device to vector");
+            sc_adb_device_destroy(&device);
+            // continue anyway
+            continue;
         }
     }
 
-    if (!header_found) {
-        return -1;
-    }
-
-    return dev_count;
+    assert(header_found || out_vec->size == 0);
+    return header_found;
 }
 
 static char *

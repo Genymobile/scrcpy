@@ -18,9 +18,10 @@ sc_adb_device_move(struct sc_adb_device *dst, struct sc_adb_device *src) {
 }
 
 void
-sc_adb_devices_destroy_all(struct sc_adb_device *devices, size_t count) {
-    for (size_t i = 0; i < count; ++i) {
-        sc_adb_device_destroy(&devices[i]);
+sc_adb_devices_destroy(struct sc_vec_adb_devices *devices) {
+    for (size_t i = 0; i < devices->size; ++i) {
+        sc_adb_device_destroy(&devices->data[i]);
     }
+    sc_vector_destroy(devices);
 }
 

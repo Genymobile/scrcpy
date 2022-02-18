@@ -13,21 +13,22 @@ static void test_adb_devices() {
         "192.168.1.1:5555	device product:MyWifiProduct model:MyWifiModel "
             "device:MyWifiDevice trandport_id:2\n";
 
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 2);
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 2);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyModel", device->model));
 
-    device = &devices[1];
+    device = &vec.data[1];
     assert(!strcmp("192.168.1.1:5555", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyWifiModel", device->model));
 
-    sc_adb_devices_destroy_all(devices, count);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_adb_devices_cr() {
@@ -38,21 +39,22 @@ static void test_adb_devices_cr() {
         "192.168.1.1:5555	device product:MyWifiProduct model:MyWifiModel "
             "device:MyWifiDevice trandport_id:2\r\n";
 
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 2);
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 2);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyModel", device->model));
 
-    device = &devices[1];
+    device = &vec.data[1];
     assert(!strcmp("192.168.1.1:5555", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyWifiModel", device->model));
 
-    sc_adb_devices_destroy_all(devices, count);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_adb_devices_daemon_start() {
@@ -63,16 +65,17 @@ static void test_adb_devices_daemon_start() {
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
             "device:MyDevice transport_id:1\n";
 
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 1);
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 1);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyModel", device->model));
 
-    sc_adb_device_destroy(device);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_adb_devices_daemon_start_mixed() {
@@ -84,21 +87,22 @@ static void test_adb_devices_daemon_start_mixed() {
         "87654321	device usb:2-1 product:MyProduct model:MyModel "
             "device:MyDevice\n";
 
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 2);
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 2);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("unauthorized", device->state));
     assert(!device->model);
 
-    device = &devices[1];
+    device = &vec.data[1];
     assert(!strcmp("87654321", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyModel", device->model));
 
-    sc_adb_devices_destroy_all(devices, count);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_adb_devices_without_eol() {
@@ -106,34 +110,39 @@ static void test_adb_devices_without_eol() {
         "List of devices attached\n"
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
             "device:MyDevice transport_id:1";
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 1);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 1);
+
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("device", device->state));
     assert(!strcmp("MyModel", device->model));
 
-    sc_adb_device_destroy(device);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_adb_devices_without_header() {
     char output[] =
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
             "device:MyDevice transport_id:1\n";
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == -1);
+
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(!ok);
 }
 
 static void test_adb_devices_corrupted() {
     char output[] =
         "List of devices attached\n"
         "corrupted_garbage\n";
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 0);
+
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 0);
 }
 
 static void test_adb_devices_spaces() {
@@ -141,16 +150,17 @@ static void test_adb_devices_spaces() {
         "List of devices attached\n"
         "0123456789abcdef       unauthorized usb:1-4 transport_id:3\n";
 
-    struct sc_adb_device devices[16];
-    ssize_t count = sc_adb_parse_devices(output, devices, ARRAY_LEN(devices));
-    assert(count == 1);
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_parse_devices(output, &vec);
+    assert(ok);
+    assert(vec.size == 1);
 
-    struct sc_adb_device *device = &devices[0];
+    struct sc_adb_device *device = &vec.data[0];
     assert(!strcmp("0123456789abcdef", device->serial));
     assert(!strcmp("unauthorized", device->state));
     assert(!device->model);
 
-    sc_adb_device_destroy(device);
+    sc_adb_devices_destroy(&vec);
 }
 
 static void test_get_ip_single_line() {

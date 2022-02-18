@@ -6,12 +6,16 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "util/vector.h"
+
 struct sc_adb_device {
     char *serial;
     char *state;
     char *model;
     bool selected;
 };
+
+struct sc_vec_adb_devices SC_VECTOR(struct sc_adb_device);
 
 void
 sc_adb_device_destroy(struct sc_adb_device *device);
@@ -29,6 +33,6 @@ void
 sc_adb_device_move(struct sc_adb_device *dst, struct sc_adb_device *src);
 
 void
-sc_adb_devices_destroy_all(struct sc_adb_device *devices, size_t count);
+sc_adb_devices_destroy(struct sc_vec_adb_devices *devices);
 
 #endif

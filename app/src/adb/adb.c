@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "adb_device.h"
 #include "adb_parser.h"
 #include "util/file.h"
 #include "util/log.h"
@@ -392,16 +393,16 @@ sc_adb_disconnect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     return process_check_success_intr(intr, pid, "adb disconnect", flags);
 }
 
-static ssize_t
+static bool
 sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
-                    struct sc_adb_device *devices, size_t len) {
+                    struct sc_vec_adb_devices *out_vec) {
     const char *const argv[] = SC_ADB_COMMAND("devices", "-l");
 
     sc_pipe pout;
     sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
     if (pid == SC_PROCESS_NONE) {
         LOGE("Could not execute \"adb devices -l\"");
-        return -1;
+        return false;
     }
 
     char buf[4096];
@@ -410,11 +411,11 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
 
     bool ok = process_check_success_intr(intr, pid, "adb devices -l", flags);
     if (!ok) {
-        return -1;
+        return false;
     }
 
     if (r == -1) {
-        return -1;
+        return false;
     }
 
     assert((size_t) r < sizeof(buf));
@@ -423,14 +424,14 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
         // in the buffer in a single pass
         LOGW("Result of \"adb devices -l\" does not fit in 4Kb. "
              "Please report an issue.");
-        return -1;
+        return false;
     }
 
     // It is parsed as a NUL-terminated string
     buf[r] = '\0';
 
     // List all devices to the output list directly
-    return sc_adb_parse_devices(buf, devices, len);
+    return sc_adb_parse_devices(buf, out_vec);
 }
 
 static bool
@@ -529,22 +530,21 @@ bool
 sc_adb_select_device(struct sc_intr *intr,
                      const struct sc_adb_device_selector *selector,
                      unsigned flags, struct sc_adb_device *out_device) {
-    struct sc_adb_device devices[16];
-    ssize_t count =
-        sc_adb_list_devices(intr, flags, devices, ARRAY_LEN(devices));
-    if (count == -1) {
+    struct sc_vec_adb_devices vec = SC_VECTOR_INITIALIZER;
+    bool ok = sc_adb_list_devices(intr, flags, &vec);
+    if (!ok) {
         LOGE("Could not list ADB devices");
         return false;
     }
 
-    if (count == 0) {
+    if (vec.size == 0) {
         LOGE("Could not find any ADB device");
         return false;
     }
 
     size_t sel_idx; // index of the single matching device if sel_count == 1
     size_t sel_count =
-        sc_adb_devices_select(devices, count, selector, &sel_idx);
+        sc_adb_devices_select(vec.data, vec.size, selector, &sel_idx);
 
     if (sel_count == 0) {
         // if count > 0 && sel_count == 0, then necessarily a selection is
@@ -567,8 +567,8 @@ sc_adb_select_device(struct sc_intr *intr,
                 break;
         }
 
-        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
-        sc_adb_devices_destroy_all(devices, count);
+        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, vec.data, vec.size);
+        sc_adb_devices_destroy(&vec);
         return false;
     }
 
@@ -594,28 +594,28 @@ sc_adb_select_device(struct sc_intr *intr,
                 assert(!"Unexpected selector type");
                 break;
         }
-        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, devices, count);
+        sc_adb_devices_log(SC_LOG_LEVEL_ERROR, vec.data, vec.size);
         LOGE("Select a device via -s (--serial), -d (--select-usb) or -e "
              "(--select-tcpip)");
-        sc_adb_devices_destroy_all(devices, count);
+        sc_adb_devices_destroy(&vec);
         return false;
     }
 
     assert(sel_count == 1); // sel_idx is valid only if sel_count == 1
-    struct sc_adb_device *device = &devices[sel_idx];
+    struct sc_adb_device *device = &vec.data[sel_idx];
 
-    bool ok = sc_adb_device_check_state(device, devices, count);
+    ok = sc_adb_device_check_state(device, vec.data, vec.size);
     if (!ok) {
-        sc_adb_devices_destroy_all(devices, count);
+        sc_adb_devices_destroy(&vec);
         return false;
     }
 
     LOGD("ADB device found:");
-    sc_adb_devices_log(SC_LOG_LEVEL_DEBUG, devices, count);
+    sc_adb_devices_log(SC_LOG_LEVEL_DEBUG, vec.data, vec.size);
 
     // Move devics into out_device (do not destroy device)
     sc_adb_device_move(out_device, device);
-    sc_adb_devices_destroy_all(devices, count);
+    sc_adb_devices_destroy(&vec);
     return true;
 }
 

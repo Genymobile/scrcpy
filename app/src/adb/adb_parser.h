@@ -14,9 +14,8 @@
  *
  * Warning: this function modifies the buffer for optimization purposes.
  */
-ssize_t
-sc_adb_parse_devices(char *str, struct sc_adb_device *devices,
-                     size_t devices_len);
+bool
+sc_adb_parse_devices(char *str, struct sc_vec_adb_devices *out_vec);
 
 /**
  * Parse the ip from the output of `adb shell ip route`
