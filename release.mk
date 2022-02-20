@@ -75,10 +75,12 @@ prepare-deps-win64:
 	@app/prebuilt-deps/prepare-libusb.sh
 
 build-win32: prepare-deps-win32
+	# -Dusb=false because of libusb-win32 build issue, cf #3011
 	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
 		meson "$(WIN32_BUILD_DIR)" \
 			--cross-file cross_win32.txt \
 			--buildtype release --strip -Db_lto=true \
+			-Dusb=false \
 			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN32_BUILD_DIR)"
@@ -109,7 +111,7 @@ dist-win32: build-server build-win32
 	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-31.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/SDL2-2.0.20/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/libusb-1.0.25/MinGW32/dll/libusb-1.0.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	#cp app/prebuilt-deps/data/libusb-1.0.25/MinGW32/dll/libusb-1.0.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
