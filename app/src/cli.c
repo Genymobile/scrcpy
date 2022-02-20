@@ -118,7 +118,7 @@ static const struct sc_option options[] = {
         .text = "Crop the device screen on the server.\n"
                 "The values are expressed in the device natural orientation "
                 "(typically, portrait for a phone, landscape for a tablet). "
-                "Any --max-size value is cmoputed on the cropped size.",
+                "Any --max-size value is computed on the cropped size.",
     },
     {
         .shortopt = 'd',
