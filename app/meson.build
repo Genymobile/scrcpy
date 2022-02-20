@@ -224,7 +224,7 @@ executable('scrcpy', src,
            c_args: [])
 
 install_man('scrcpy.1')
-install_data('../data/icon.png',
+install_data('data/icon.png',
              rename: 'scrcpy.png',
              install_dir: 'share/icons/hicolor/256x256/apps')
 

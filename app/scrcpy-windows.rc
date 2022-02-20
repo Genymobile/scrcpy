@@ -1,6 +1,6 @@
 #include <winuser.h>
 
-0 ICON "../data/icon.ico"
+0 ICON "data/icon.ico"
 1 RT_MANIFEST "scrcpy-windows.manifest"
 2 VERSIONINFO
 BEGIN
