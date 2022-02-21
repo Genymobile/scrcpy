@@ -1,0 +1,121 @@
+_scrcpy() {
+    local cur prev words cword
+    local opts="
+        --always-on-top
+        -b --bit-rate=
+        --codec-options=
+        --crop=
+        -d --select-usb
+        --disable-screensaver
+        --display=
+        --display-buffer=
+        -e --select-tcpip
+        --encoder=
+        --force-adb-forward
+        --forward-all-clicks
+        -f --fullscreen
+        -K --hid-keyboard
+        -h --help
+        --legacy-paste
+        --lock-video-orientation
+        --lock-video-orientation=
+        --max-fps=
+        -M --hid-mouse
+        -m --max-size=
+        --no-cleanup
+        --no-clipboard-on-error
+        --no-downsize-on-error
+        -n --no-control
+        -N --no-display
+        --no-key-repeat
+        --no-mipmaps
+        --otg
+        -p --port=
+        --power-off-on-close
+        --prefer-text
+        --print-fps
+        --push-target=
+        --raw-key-events
+        -r --record=
+        --record-format=
+        --render-driver=
+        --rotation=
+        -s --serial=
+        --shortcut-mod=
+        -S --turn-screen-off
+        -t --show-touches
+        --tcpip
+        --tcpip=
+        --tunnel-host=
+        --tunnel-port=
+        --v4l2-buffer=
+        --v4l2-sink=
+        -V --verbosity=
+        -v --version
+        -w --stay-awake
+        --window-borderless
+        --window-title=
+        --window-x=
+        --window-y=
+        --window-width=
+        --window-height="
+
+    _init_completion -s || return
+
+    case "$prev" in
+        --lock-video-orientation)
+            COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
+            return
+            ;;
+        -r|--record)
+            COMPREPLY=($(compgen -f -- "$cur"))
+            return
+            ;;
+        --record-format)
+            COMPREPLY=($(compgen -W 'mkv mp4' -- "$cur"))
+            return
+            ;;
+        --render-driver)
+            COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
+            return
+            ;;
+        --rotation)
+            COMPREPLY=($(compgen -W '0 1 2 3' -- "$cur"))
+            return
+            ;;
+        --shortcut-mod)
+            # Only auto-complete a single key
+            COMPREPLY=($(compgen -W 'lctrl rctrl lalt ralt lsuper rsuper' -- "$cur"))
+            return
+            ;;
+        -V|--verbosity)
+            COMPREPLY=($(compgen -W 'verbose debug info warn error' -- "$cur"))
+            return
+            ;;
+        -b|--bitrate \
+        |--codec-options \
+        |--crop \
+        |--display \
+        |--display-buffer \
+        |--encoder \
+        |--max-fps \
+        |-m|--max-size \
+        |-p|--port \
+        |--push-target \
+        |-s|--serial \
+        |--tunnel-host \
+        |--tunnel-port \
+        |--v4l2-buffer \
+        |--v4l2-sink \
+        |--tcpip \
+        |--window-*)
+            # Option accepting an argument, but nothing to auto-complete
+            return
+            ;;
+    esac
+
+    COMPREPLY=($(compgen -W "$opts" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+complete -F _scrcpy scrcpy
