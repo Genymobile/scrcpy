@@ -32,10 +32,8 @@ Its features include:
  - [configurable quality](#capture-configuration)
  - device screen [as a webcam (V4L2)](#v4l2loopback) (Linux-only)
  - [physical keyboard simulation (HID)](#physical-keyboard-simulation-hid)
-   (Linux-only)
  - [physical mouse simulation (HID)](#physical-mouse-simulation-hid)
-   (Linux-only)
- - [OTG mode](#otg) (Linux-only)
+ - [OTG mode](#otg)
  - and more…
 
 ## Requirements
@@ -807,14 +805,17 @@ a location inverted through the center of the screen.
 By default, scrcpy uses Android key or text injection: it works everywhere, but
 is limited to ASCII.
 
-On Linux, scrcpy can simulate a physical USB keyboard on Android to provide a
-better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
+Alternatively, scrcpy can simulate a physical USB keyboard on Android to provide
+a better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
 keyboard is disabled and it works for all characters and IME.
 
 [hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
 
-However, it only works if the device is connected by USB, and is currently only
-supported on Linux.
+However, it only works if the device is connected by USB.
+
+Note: On Windows, it may only work in [OTG mode](#otg), not while mirroring (it
+is not possible to open a USB device if it is already open by another process
+like the adb daemon).
 
 To enable this mode:
 
@@ -847,8 +848,7 @@ a physical keyboard is connected).
 #### Physical mouse simulation (HID)
 
 Similarly to the physical keyboard simulation, it is possible to simulate a
-physical mouse. Likewise, it only works if the device is connected by USB, and
-is currently only supported on Linux.
+physical mouse. Likewise, it only works if the device is connected by USB.
 
 By default, scrcpy uses Android mouse events injection, using absolute
 coordinates. By simulating a physical mouse, a mouse pointer appears on the
@@ -901,7 +901,7 @@ scrcpy --otg                             # keyboard and mouse
 ```
 
 Like `--hid-keyboard` and `--hid-mouse`, it only works if the device is
-connected by USB, and is currently only supported on Linux.
+connected by USB.
 
 
 #### Text injection preference
