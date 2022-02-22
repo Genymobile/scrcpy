@@ -1105,7 +1105,9 @@ See [BUILD].
 
 ## Common issues
 
-See the [FAQ](FAQ.md).
+See the [FAQ].md).
+
+[FAQ]: FAQ.md
 
 
 ## Developers
@@ -1139,6 +1141,17 @@ Read the [developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+## Contact
+
+If you encounter a bug, please read the [FAQ] first, then open an [issue].
+
+[issue]: https://github.com/Genymobile/scrcpy/issues
+
+For general questions or discussions, you could also use:
+
+ - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
 
 ## Translations
 
