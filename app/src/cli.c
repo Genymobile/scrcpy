@@ -423,6 +423,20 @@ static const struct sc_option options[] = {
                 "It only shows physical touches (not clicks from scrcpy).",
     },
     {
+        .longopt_id = OPT_TCPIP,
+        .longopt = "tcpip",
+        .argdesc = "ip[:port]",
+        .optional_arg = true,
+        .text = "Configure and reconnect the device over TCP/IP.\n"
+                "If a destination address is provided, then scrcpy connects to "
+                "this address before starting. The device must listen on the "
+                "given TCP port (default is 5555).\n"
+                "If no destination address is provided, then scrcpy attempts "
+                "to find the IP address of the current device (typically "
+                "connected over USB), enables TCP/IP mode, then connects to "
+                "this address before starting.",
+    },
+    {
         .longopt_id = OPT_TUNNEL_HOST,
         .longopt = "tunnel-host",
         .argdesc = "ip",
@@ -482,20 +496,6 @@ static const struct sc_option options[] = {
         .longopt = "stay-awake",
         .text = "Keep the device on while scrcpy is running, when the device "
                 "is plugged in.",
-    },
-    {
-        .longopt_id = OPT_TCPIP,
-        .longopt = "tcpip",
-        .argdesc = "ip[:port]",
-        .optional_arg = true,
-        .text = "Configure and reconnect the device over TCP/IP.\n"
-                "If a destination address is provided, then scrcpy connects to "
-                "this address before starting. The device must listen on the "
-                "given TCP port (default is 5555).\n"
-                "If no destination address is provided, then scrcpy attempts "
-                "to find the IP address of the current device (typically "
-                "connected over USB), enables TCP/IP mode, then connects to "
-                "this address before starting.",
     },
     {
         .longopt_id = OPT_WINDOW_BORDERLESS,
