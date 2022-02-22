@@ -23,20 +23,6 @@ On Windows, the current directory is in your `PATH`, and `adb.exe` is included
 in the release, so it should work out-of-the-box.
 
 
-### Device unauthorized
-
->    ERROR: Device is unauthorized:
->    ERROR:     -->   (usb)  0123456789abcdef          unauthorized
->    ERROR: A popup should open on the device to request authorization.
-
-When connecting, a popup should open on the device. You must authorize USB
-debugging.
-
-If it does not open, check [stackoverflow][device-unauthorized].
-
-[device-unauthorized]: https://stackoverflow.com/questions/23081263/adb-android-device-unauthorized
-
-
 ### Device not detected
 
 >     ERROR: Could not find any ADB device
@@ -54,6 +40,20 @@ If your device is not detected, you may need some [drivers] (on Windows). There 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 [drivers]: https://developer.android.com/studio/run/oem-usb.html
 [google-usb-driver]: https://developer.android.com/studio/run/win-usb
+
+
+### Device unauthorized
+
+>    ERROR: Device is unauthorized:
+>    ERROR:     -->   (usb)  0123456789abcdef          unauthorized
+>    ERROR: A popup should open on the device to request authorization.
+
+When connecting, a popup should open on the device. You must authorize USB
+debugging.
+
+If it does not open, check [stackoverflow][device-unauthorized].
+
+[device-unauthorized]: https://stackoverflow.com/questions/23081263/adb-android-device-unauthorized
 
 
 ### Several devices connected
