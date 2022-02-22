@@ -11,7 +11,6 @@ import java.util.Locale;
 
 public final class Server {
 
-
     private Server() {
         // not instantiable
     }
