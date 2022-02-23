@@ -1,6 +1,6 @@
 # scrcpy (v1.23)
 
-<img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _pronounced "**scr**een **c**o**py**"_
 
