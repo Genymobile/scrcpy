@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It does not require any _root_ access.
+USB (or [over TCP/IP](#tcpip-wireless)). It _does not require_ any root access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -56,52 +56,44 @@ control it using keyboard and mouse.
 
 ### Summary
 
- - Linux: `apt install scrcpy`
+ - Linux (Debian and Ubuntu): `apt install scrcpy`
  - Windows: [download][direct-win64]
- - macOS: `brew install scrcpy`
+ - macOS ([Homebrew](https://brew.sh/)): `brew install scrcpy`  
+   \* You need `adb`, accessible from your `PATH` *\*.
 
-Build from sources: [BUILD] ([simplified process][BUILD_simple])
-
-[BUILD]: BUILD.md
-[BUILD_simple]: BUILD.md#simple
-
-
-### Linux
-
-On Debian and Ubuntu:
-
-```
-apt install scrcpy
+*\*:
+```bash
+brew install android-platform-tools
 ```
 
-On Arch Linux:
+### More
+
+**Linux > Arch Linux**
 
 ```
 pacman -S scrcpy
 ```
 
-A [Snap] package is available: [`scrcpy`][snap-link].
+**Linux > [Snap] package**
 
-[snap-link]: https://snapstats.org/snaps/scrcpy
+[`scrcpy`](https://snapstats.org/snaps/scrcpy)
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
-For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
+**Linux > Fedora / [COPR] package**
+
+[`scrcpy`](https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/)
 
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
-[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
+**Linux > Gentoo / [Ebuild]**
 
-For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
+Available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
 
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
-[ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
-
-You could also [build the app manually][BUILD] ([simplified
-process][BUILD_simple]).
 
 
-### Windows
+**Windows > archive**
 
 For Windows, for simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
@@ -111,58 +103,40 @@ For Windows, for simplicity, a prebuilt archive with all the dependencies
 
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-win64-v1.23.zip
 
-It is also available in [Chocolatey]:
+**Windows > Chocolatey**
 
-[Chocolatey]: https://chocolatey.org/
+It is also available in [Chocolatey](https://chocolatey.org/):
 
 ```bash
 choco install scrcpy
 choco install adb    # if you don't have it yet
 ```
 
-And in [Scoop]:
+**Windows > Scoop (<https://scoop.sh>)**:
 
 ```bash
 scoop install scrcpy
 scoop install adb    # if you don't have it yet
 ```
 
-[Scoop]: https://scoop.sh
 
-You can also [build the app manually][BUILD].
+**macOS > in [MacPorts](https://www.macports.org/)**
 
-
-### macOS
-
-The application is available in [Homebrew]. Just install it:
-
-[Homebrew]: https://brew.sh/
-
-```bash
-brew install scrcpy
-```
-
-You need `adb`, accessible from your `PATH`. If you don't have it yet:
-
-```bash
-brew install android-platform-tools
-```
-
-It's also available in [MacPorts], which sets up adb for you:
+(which sets up adb for you)
 
 ```bash
 sudo port install scrcpy
 ```
 
-[MacPorts]: https://www.macports.org/
 
+**Manual build**
 
-You can also [build the app manually][BUILD].
+You could build manually from sources: [BUILD.md](BUILD.md). [Simplified process][BUILD.md#simple].
 
 
 ## Run
 
-Plug an Android device, and execute:
+Plug in an Android device, **connect with [`adb`](https://developer.android.com/studio/command-line/adb)** and execute:
 
 ```bash
 scrcpy
@@ -173,6 +147,24 @@ It accepts command-line arguments, listed by:
 ```bash
 scrcpy --help
 ```
+
+
+## Custom paths
+
+(Linux): For Android Studio (SDK) `adb` to be `adb` command, do `sudo ln --symbolic ### /usr/local/bin/adb`.  
+"###" should be a path to your Android Debug Bridge file.
+
+To use a specific _adb_ binary, configure its path in the environment variable `ADB`:
+
+```bash
+ADB=/path/to/adb scrcpy
+```
+
+To override the path of the `scrcpy-server` file, configure its path in
+`SCRCPY_SERVER_PATH`.
+
+To override the icon, configure its path in `SCRCPY_ICON_PATH`.
+
 
 ## Features
 
@@ -1071,21 +1063,6 @@ second time. For example, to execute "Expand settings panel":
 
 All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
 handled by the active application.
-
-
-## Custom paths
-
-To use a specific _adb_ binary, configure its path in the environment variable
-`ADB`:
-
-```bash
-ADB=/path/to/adb scrcpy
-```
-
-To override the path of the `scrcpy-server` file, configure its path in
-`SCRCPY_SERVER_PATH`.
-
-To override the icon, configure its path in `SCRCPY_ICON_PATH`.
 
 
 ## Why _scrcpy_?
