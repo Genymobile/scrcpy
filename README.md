@@ -1105,7 +1105,7 @@ See [BUILD].
 
 ## Common issues
 
-See the [FAQ].md).
+See the [FAQ].
 
 [FAQ]: FAQ.md
 
