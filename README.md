@@ -61,7 +61,7 @@ control it using keyboard and mouse.
  - macOS ([Homebrew](https://brew.sh/)): `brew install scrcpy`  
    \* You need `adb`, accessible from your `PATH` *\*.
 
-*\*:
+*\*
 ```bash
 brew install android-platform-tools
 ```
@@ -131,7 +131,7 @@ sudo port install scrcpy
 
 **Manual build**
 
-You could build manually from sources: [BUILD.md](BUILD.md). [Simplified process][BUILD.md#simple].
+You could build manually from sources: [BUILD.md](BUILD.md). [Simplified process](BUILD.md#simple).
 
 
 ## Run
@@ -1082,10 +1082,7 @@ See [BUILD].
 
 ## Common issues
 
-See the [FAQ].md).
-
-[FAQ]: FAQ.md
-
+See the [FAQ](FAQ.md).
 
 ## Developers
 
@@ -1121,7 +1118,7 @@ Read the [developers page].
 
 ## Contact
 
-If you encounter a bug, please read the [FAQ] first, then open an [issue].
+If you encounter a bug, please read the [FAQ](FAQ.md) first, then open an [issue].
 
 [issue]: https://github.com/Genymobile/scrcpy/issues
 
