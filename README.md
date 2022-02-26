@@ -710,6 +710,10 @@ To turn the device screen off when closing scrcpy:
 scrcpy --power-off-on-close
 ```
 
+#### Restart
+
+To restart it in the Power button screen/menu, hold `POWER` (<kbd>MOD</kbd>+<kbd>p</kbd>).  
+This opens a menu where "restart" or "shutdown"/"power off" can be selected.
 
 #### Show touches
 
