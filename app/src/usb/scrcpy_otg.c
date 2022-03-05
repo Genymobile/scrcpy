@@ -36,10 +36,10 @@ event_loop(struct scrcpy_otg *s) {
         switch (event.type) {
             case EVENT_USB_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
-                return false;
+                return EVENT_USB_DEVICE_DISCONNECTED;
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return true;
+                return SDL_QUIT;
             default:
                 sc_screen_otg_handle_event(&s->screen_otg, &event);
                 break;
@@ -67,7 +67,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         LOGW("Could not enable mouse focus clickthrough");
     }
 
-    bool ret = false;
+    int ret = 0;
 
     struct sc_hid_keyboard *keyboard = NULL;
     struct sc_hid_mouse *mouse = NULL;

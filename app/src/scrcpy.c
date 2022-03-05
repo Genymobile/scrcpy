@@ -149,17 +149,17 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 }
 
-static bool
+static int
 event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case EVENT_STREAM_STOPPED:
                 LOGW("Device disconnected");
-                return false;
+                return EVENT_STREAM_STOPPED;
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return true;
+                return SDL_QUIT;
             default:
                 sc_screen_handle_event(&s->screen, &event);
                 break;
@@ -168,20 +168,20 @@ event_loop(struct scrcpy *s) {
     return false;
 }
 
-static bool
+static int
 await_for_server(void) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return false;
+                return SDL_QUIT;
             case EVENT_SERVER_CONNECTION_FAILED:
                 LOGE("Server connection failed");
-                return false;
+                return EVENT_SERVER_CONNECTION_FAILED;
             case EVENT_SERVER_CONNECTED:
                 LOGD("Server connected");
-                return true;
+                return 0;
             default:
                 break;
         }
@@ -262,7 +262,7 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
-bool
+int
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
@@ -275,7 +275,7 @@ scrcpy(struct scrcpy_options *options) {
 
     atexit(SDL_Quit);
 
-    bool ret = false;
+    int ret = 0;
 
     bool server_started = false;
     bool file_pusher_initialized = false;
@@ -351,7 +351,8 @@ scrcpy(struct scrcpy_options *options) {
     sdl_configure(options->display, options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
-    if (!await_for_server()) {
+    ret = await_for_server();
+    if (ret > 0) {
         goto end;
     }
 
@@ -707,5 +708,14 @@ end:
 
     sc_server_destroy(&s->server);
 
-    return ret;
+    switch (ret) {
+      case EVENT_STREAM_STOPPED:
+        return 2;
+      case EVENT_SERVER_CONNECTION_FAILED:
+        return 1;
+      case SDL_QUIT:
+        return 0;
+      default:
+        return ret;
+    }
 }

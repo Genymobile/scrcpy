@@ -70,13 +70,13 @@ main(int argc, char *argv[]) {
     }
 
 #ifdef HAVE_USB
-    bool ok = args.opts.otg ? scrcpy_otg(&args.opts)
+    int ret = args.opts.otg ? scrcpy_otg(&args.opts)
                             : scrcpy(&args.opts);
 #else
-    bool ok = scrcpy(&args.opts);
+    int ret = scrcpy(&args.opts);
 #endif
 
     avformat_network_deinit(); // ignore failure
 
-    return ok ? 0 : 1;
+    return ret;
 }
