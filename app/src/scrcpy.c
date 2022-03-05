@@ -149,23 +149,23 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 }
 
-static bool
+static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case EVENT_STREAM_STOPPED:
                 LOGW("Device disconnected");
-                return false;
+                return SCRCPY_EXIT_DISCONNECTED;
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return true;
+                return SCRCPY_EXIT_SUCCESS;
             default:
                 sc_screen_handle_event(&s->screen, &event);
                 break;
         }
     }
-    return false;
+    return SCRCPY_EXIT_FAILURE;
 }
 
 // Return true on success, false on error
@@ -265,7 +265,7 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
-bool
+enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
@@ -273,12 +273,12 @@ scrcpy(struct scrcpy_options *options) {
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     atexit(SDL_Quit);
 
-    bool ret = false;
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     bool server_started = false;
     bool file_pusher_initialized = false;
@@ -332,7 +332,7 @@ scrcpy(struct scrcpy_options *options) {
         .on_disconnected = sc_server_on_disconnected,
     };
     if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     if (!sc_server_start(&s->server)) {
@@ -361,7 +361,7 @@ scrcpy(struct scrcpy_options *options) {
 
     if (!connected) {
         // This is not an error, user requested to quit
-        ret = true;
+        ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
 

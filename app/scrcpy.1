@@ -355,6 +355,12 @@ Set the initial window height.
 
 Default is 0 (automatic).
 
+.SH EXIT STATUS
+.B scrcpy
+will exit with code 0 on normal program termination. If an initial
+connection cannot be established, the exit code 1 will be returned. If the
+device disconnects while a session is active, exit code 2 will be returned.
+
 .SH SHORTCUTS
 
 In the following list, MOD is the shortcut modifier. By default, it's (left)

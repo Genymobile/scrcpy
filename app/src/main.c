@@ -40,19 +40,19 @@ main(int argc, char *argv[]) {
 #endif
 
     if (!scrcpy_parse_args(&args, argc, argv)) {
-        return 1;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     sc_set_log_level(args.opts.log_level);
 
     if (args.help) {
         scrcpy_print_usage(argv[0]);
-        return 0;
+        return SCRCPY_EXIT_SUCCESS;
     }
 
     if (args.version) {
         scrcpy_print_version();
-        return 0;
+        return SCRCPY_EXIT_SUCCESS;
     }
 
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
@@ -66,17 +66,17 @@ main(int argc, char *argv[]) {
 #endif
 
     if (avformat_network_init()) {
-        return 1;
+        return SCRCPY_EXIT_FAILURE;
     }
 
 #ifdef HAVE_USB
-    bool ok = args.opts.otg ? scrcpy_otg(&args.opts)
-                            : scrcpy(&args.opts);
+    enum scrcpy_exit_code ret = args.opts.otg ? scrcpy_otg(&args.opts)
+                                              : scrcpy(&args.opts);
 #else
-    bool ok = scrcpy(&args.opts);
+    enum scrcpy_exit_code ret = scrcpy(&args.opts);
 #endif
 
     avformat_network_deinit(); // ignore failure
 
-    return ok ? 0 : 1;
+    return ret;
 }
