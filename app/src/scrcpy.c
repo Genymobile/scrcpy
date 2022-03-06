@@ -168,19 +168,22 @@ event_loop(struct scrcpy *s) {
     return false;
 }
 
+// Return true on success, false on error
 static bool
-await_for_server(void) {
+await_for_server(bool *connected) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return false;
+                *connected = false;
+                return true;
             case EVENT_SERVER_CONNECTION_FAILED:
                 LOGE("Server connection failed");
                 return false;
             case EVENT_SERVER_CONNECTED:
                 LOGD("Server connected");
+                *connected = true;
                 return true;
             default:
                 break;
@@ -351,7 +354,14 @@ scrcpy(struct scrcpy_options *options) {
     sdl_configure(options->display, options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
-    if (!await_for_server()) {
+    bool connected;
+    if (!await_for_server(&connected)) {
+        goto end;
+    }
+
+    if (!connected) {
+        // This is not an error, user requested to quit
+        ret = true;
         goto end;
     }
 
