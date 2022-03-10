@@ -79,11 +79,11 @@ pacman -S scrcpy
 
 - Gentoo / [Ebuild], available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
 
+[Snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
-
-[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
 
 ### Windows
@@ -103,7 +103,7 @@ choco install scrcpy
 choco install adb    # if you don't have it yet
 ```
 
-and Scoop (<https://scoop.sh>)**:
+and Scoop (<https://scoop.sh>):
 
 ```bash
 scoop install scrcpy
