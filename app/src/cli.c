@@ -80,6 +80,11 @@ struct sc_envvar {
     const char *text;
 };
 
+struct sc_exit_status {
+    unsigned value;
+    const char *text;
+};
+
 struct sc_getopt_adapter {
     char *optstring;
     struct option *longopts;
@@ -662,7 +667,22 @@ static const struct sc_envvar envvars[] = {
     {
         .name = "SCRCPY_SERVER_PATH",
         .text = "Path to the server binary",
-    }
+    },
+};
+
+static const struct sc_exit_status exit_statuses[] = {
+    {
+        .value = 0,
+        .text = "Normal program termination",
+    },
+    {
+        .value = 1,
+        .text = "Start failure",
+    },
+    {
+        .value = 2,
+        .text = "Device disconnected while running",
+    },
 };
 
 static char *
@@ -901,6 +921,25 @@ print_envvar(const struct sc_envvar *envvar, unsigned cols) {
     free(text);
 }
 
+static void
+print_exit_status(const struct sc_exit_status *status, unsigned cols) {
+    assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
+    assert(status->text);
+
+    // The text starts at 9: 4 ident spaces, 3 chars for numeric value, 2 spaces
+    char *text = sc_str_wrap_lines(status->text, cols, 9);
+    if (!text) {
+        printf("<ERROR>\n");
+        return;
+    }
+
+    assert(strlen(text) >= 9); // Contains at least the initial identation
+
+    // text + 9 to remove the initial indentation
+    printf("    %3d  %s\n", status->value, text + 9);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
 #define SC_TERM_COLS_DEFAULT 80
@@ -938,6 +977,11 @@ scrcpy_print_usage(const char *arg0) {
     printf("\nEnvironment variables:\n");
     for (size_t i = 0; i < ARRAY_LEN(envvars); ++i) {
         print_envvar(&envvars[i], cols);
+    }
+
+    printf("\nExit status:\n\n");
+    for (size_t i = 0; i < ARRAY_LEN(exit_statuses); ++i) {
+        print_exit_status(&exit_statuses[i], cols);
     }
 }
 
