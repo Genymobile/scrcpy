@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It _does not require_ any root access.
+USB (or [over TCP/IP](#tcpip-wireless)). It does **not** require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -66,44 +66,35 @@ control it using keyboard and mouse.
 brew install android-platform-tools
 ```
 
-### More
+### Linux
 
-**Linux > Arch Linux**
-
+- Arch Linux
 ```
 pacman -S scrcpy
 ```
 
-**Linux > [Snap] package**
+- [Snap] package, available at [`scrcpy`](https://snapstats.org/snaps/scrcpy)
 
-[`scrcpy`](https://snapstats.org/snaps/scrcpy)
+- Fedora / [COPR] package, available at [`scrcpy`](https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/)
 
-[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
-
-**Linux > Fedora / [COPR] package**
-
-[`scrcpy`](https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/)
+- Gentoo / [Ebuild], available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
 
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 
-**Linux > Gentoo / [Ebuild]**
-
-Available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
-
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 
+[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
-**Windows > archive**
 
-For Windows, for simplicity, a prebuilt archive with all the dependencies
+### Windows
+
+For simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
  - [`scrcpy-win64-v1.23.zip`][direct-win64]  
    _(SHA-256: d2f601b1d0157faf65153d8a093d827fd65aec5d5842d677ac86fb2b5b7704cc)_
 
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-win64-v1.23.zip
-
-**Windows > Chocolatey**
 
 It is also available in [Chocolatey](https://chocolatey.org/):
 
@@ -112,7 +103,7 @@ choco install scrcpy
 choco install adb    # if you don't have it yet
 ```
 
-**Windows > Scoop (<https://scoop.sh>)**:
+and Scoop (<https://scoop.sh>)**:
 
 ```bash
 scoop install scrcpy
@@ -120,18 +111,17 @@ scoop install adb    # if you don't have it yet
 ```
 
 
-**macOS > in [MacPorts](https://www.macports.org/)**
+### macOS, in [MacPorts](https://www.macports.org/)
 
-(which sets up adb for you)
+(sets up adb for you)
 
 ```bash
 sudo port install scrcpy
 ```
 
+### Manual build
 
-**Manual build**
-
-You could build manually from sources: [BUILD.md](BUILD.md). [Simplified process](BUILD.md#simple).
+You could build manually from sources: [BUILD.md](BUILD.md), [Simplified process](BUILD.md#simple).
 
 
 ## Run
