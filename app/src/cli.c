@@ -661,6 +661,11 @@ static const struct sc_envvar envvars[] = {
         .text = "Path to adb executable",
     },
     {
+        .name = "ANDROID_SERIAL",
+        .text = "Device serial to use if no selector (-s, -d, -e or "
+                "--tcpip=<addr>) is specified",
+    },
+    {
         .name = "SCRCPY_ICON_PATH",
         .text = "Path to the program icon",
     },

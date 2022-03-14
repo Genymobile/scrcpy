@@ -707,7 +707,15 @@ run_server(void *data) {
         } else if (params->select_tcpip) {
             selector.type = SC_ADB_DEVICE_SELECT_TCPIP;
         } else {
-            selector.type = SC_ADB_DEVICE_SELECT_ALL;
+            // No explicit selection, check $ANDROID_SERIAL
+            const char *env_serial = getenv("ANDROID_SERIAL");
+            if (env_serial) {
+                LOGI("Using ANDROID_SERIAL: %s", env_serial);
+                selector.type = SC_ADB_DEVICE_SELECT_SERIAL;
+                selector.serial = env_serial;
+            } else {
+                selector.type = SC_ADB_DEVICE_SELECT_ALL;
+            }
         }
         struct sc_adb_device device;
         ok = sc_adb_select_device(&server->intr, &selector, 0, &device);

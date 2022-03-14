@@ -448,6 +448,9 @@ scrcpy --serial 0123456789abcdef
 scrcpy -s 0123456789abcdef  # short version
 ```
 
+The serial may also be provided via the environment variable `ANDROID_SERIAL`
+(also used by `adb`).
+
 If the device is connected over TCP/IP:
 
 ```bash
