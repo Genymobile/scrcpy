@@ -19,6 +19,7 @@ struct sc_decoder {
 
     AVCodecContext *codec_ctx;
     AVFrame *frame;
+    AVFrame *hw_frame;
 };
 
 void
