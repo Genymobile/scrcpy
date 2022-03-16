@@ -55,6 +55,13 @@ public class ControlMessageReader {
 
         int type = buffer.get();
         ControlMessage msg;
+
+	msg = preParseMsg(type);
+	if (msg != null) {
+	    Ln.i("pre parsed msg: " + msg.getType());
+	    return msg;
+        }
+
         switch (type) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 msg = parseInjectKeycode();
@@ -209,5 +216,28 @@ public class ControlMessageReader {
 
     private static int toUnsigned(byte value) {
         return value & 0xff;
+    }
+
+    static final int SET_BITRATE_LENGTH = 4;
+
+    private ControlMessage preParseMsg(int type) {
+	    switch(type) {
+            case ControlMessage.TYPE_REQ_IDR:
+		        Ln.v("pre get msg TYPE_REQ_IDR event");
+                return ControlMessage.createEmpty(type);
+            case ControlMessage.TYPE_SET_BITRATE:
+                Ln.v("pre get msg TYPE_SET_BITRATE event" );
+                return parseSetBitrate();
+	        default:
+                return null;
+	    }
+    }
+
+    private ControlMessage parseSetBitrate() {
+        if (buffer.remaining() < SET_BITRATE_LENGTH) {
+            return null;
+        }
+        int bitRate = buffer.getInt();
+        return ControlMessage.createSetBitrate(bitRate);
     }
 }

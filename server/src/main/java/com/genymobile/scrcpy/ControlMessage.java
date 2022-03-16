@@ -179,4 +179,20 @@ public final class ControlMessage {
     public long getSequence() {
         return sequence;
     }
+
+    public static final int TYPE_REQ_IDR  = 100;
+    public static final int TYPE_SET_BITRATE = 101;
+
+    private int bitRate;
+
+    public int getBitRate() {
+        return bitRate;
+    }
+
+    public static ControlMessage createSetBitrate(int bitRate) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_BITRATE;
+        msg.bitRate = bitRate;
+        return msg;
+    }
 }

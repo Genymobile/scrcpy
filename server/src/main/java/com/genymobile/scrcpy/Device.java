@@ -319,4 +319,29 @@ public final class Device {
     public static Settings getSettings() {
         return SETTINGS;
     }
+
+    public interface CodecChangeLister {
+        void onBitrateChanged(int bitrate);
+        void onReqIDRFrame();
+    }
+
+    private CodecChangeLister codecChangeLister;
+
+    public void setCodecChangeLister(CodecChangeLister listener) {
+        codecChangeLister = listener;
+    }
+
+    public void reqIDRFrame() {
+        Ln.i("do reqIDRFrame: " + codecChangeLister);
+        if (codecChangeLister != null) {
+            codecChangeLister.onReqIDRFrame();
+        }
+    }
+
+    public void setBitRate(int bitrate) {
+        Ln.i("do setBitRate: " + bitrate + codecChangeLister);
+        if (codecChangeLister != null) {
+            codecChangeLister.onBitrateChanged(bitrate);
+        }
+    }
 }

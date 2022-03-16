@@ -35,7 +35,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private final String encoderName;
     private final List<CodecOption> codecOptions;
-    private final int bitRate;
+    private int bitRate;
     private final int maxFps;
     private final boolean sendFrameMeta;
     private final boolean downsizeOnError;
@@ -80,6 +80,7 @@ public class ScreenEncoder implements Device.RotationListener {
         try {
             do {
                 MediaCodec codec = createCodec(encoderName);
+                initCodec(codec);
                 IBinder display = createDisplay();
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
@@ -292,5 +293,36 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private static void destroyDisplay(IBinder display) {
         SurfaceControl.destroyDisplay(display);
+    }
+
+    private MediaCodec codec;
+    private Device.CodecChangeLister codecChangeLister;
+
+    private void initCodec(MediaCodec codec) {
+        this.codec = codec;
+    }
+
+    public Device.CodecChangeLister getCodecChangeLister() {
+        if (codecChangeLister == null) {
+            codecChangeLister = new Device.CodecChangeLister() {
+                    public void onBitrateChanged(int bitrate) {
+                        bitRate = bitrate;
+                        try {
+                            Ln.i("do onBitrateChanged: " + bitrate);
+                            android.os.Bundle b = new android.os.Bundle();
+                            b.putInt(MediaCodec.PARAMETER_KEY_VIDEO_BITRATE, bitRate);
+                            codec.setParameters(b);
+                        } catch (IllegalStateException e) {
+                            Ln.e("onBitrateChanged failed", e);
+                        }
+                    }
+
+                    public void onReqIDRFrame() {
+                        Ln.i("do reqIDRFrame: " + rotationChanged);
+                        rotationChanged.set(true);
+                    }
+            };
+        }
+        return codecChangeLister;
     }
 }

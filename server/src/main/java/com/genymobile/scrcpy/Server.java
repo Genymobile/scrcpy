@@ -93,6 +93,8 @@ public final class Server {
                         controller.getSender().pushClipboardText(text);
                     }
                 });
+
+                device.setCodecChangeLister(screenEncoder.getCodecChangeLister());
             }
 
             try {

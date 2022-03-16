@@ -80,6 +80,10 @@ public class Controller {
 
     private void handleEvent() throws IOException {
         ControlMessage msg = connection.receiveControlMessage();
+        if (preHandlerEvent(msg)) {
+                Ln.i("pre handled event: " + msg.getType());
+            return;
+        }
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
@@ -311,5 +315,24 @@ public class Controller {
         }
 
         return ok;
+    }
+
+    private boolean preHandlerEvent(ControlMessage msg) {
+	boolean handled = true;
+        switch(msg.getType()) {
+            case ControlMessage.TYPE_REQ_IDR:
+                Ln.i("Device ControlMessage.TYPE_REQ_IDR ");
+                device.reqIDRFrame();
+                break;
+            case ControlMessage.TYPE_SET_BITRATE:
+                int bitrate = msg.getBitRate();
+                Ln.i("Device ControlMessage.TYPE_SET_BITRATE ");
+                device.setBitRate(bitrate);
+                break;
+            default:
+                handled = false;
+                break;
+        }
+        return handled;
     }
 }
