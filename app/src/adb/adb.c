@@ -531,6 +531,8 @@ sc_adb_device_check_state(struct sc_adb_device *device,
         LOGE("A popup should open on the device to request authorization.");
         LOGE("Check the FAQ: "
              "<https://github.com/Genymobile/scrcpy/blob/master/FAQ.md>");
+    } else {
+        LOGE("Device could not be connected (state=%s)", state);
     }
 
     return false;
