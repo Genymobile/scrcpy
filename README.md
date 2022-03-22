@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It does **not** require any _root_ access.
+USB (or [over TCP/IP](#tcpip-wireless)). It does **not** _require any root access_.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -60,6 +60,7 @@ control it using keyboard and mouse.
  - Windows: [download][direct-win64]
  - macOS ([Homebrew](https://brew.sh/)): `brew install scrcpy`  
    \* You need `adb`, accessible from your `PATH` *\*.
+ - [From sources](#manual-build)
 
 *\*
 ```bash
@@ -73,11 +74,11 @@ brew install android-platform-tools
 pacman -S scrcpy
 ```
 
-- [Snap] package, available at [`scrcpy`](https://snapstats.org/snaps/scrcpy)
+- [Snap] package, available at <https://snapstats.org/snaps/scrcpy>
 
-- Fedora / [COPR] package, available at [`scrcpy`](https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/)
+- Fedora / [COPR] package, available at <https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/>
 
-- Gentoo / [Ebuild], available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
+- Gentoo / [Ebuild], available at <https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy>.
 
 [Snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
@@ -126,7 +127,8 @@ You could build manually from sources: [BUILD.md](BUILD.md), [Simplified process
 
 ## Run
 
-Plug in an Android device, **connect with [`adb`](https://developer.android.com/studio/command-line/adb)** and execute:
+Plug in an Android device, **connect with [`adb`](https://developer.android.com/studio/command-line/adb)**
+and execute:
 
 ```bash
 scrcpy
@@ -140,9 +142,6 @@ scrcpy --help
 
 
 ## Custom paths
-
-(Linux): For Android Studio (SDK) `adb` to be `adb` command, do `sudo ln --symbolic ### /usr/local/bin/adb`.  
-"###" should be a path to your Android Debug Bridge file.
 
 To use a specific _adb_ binary, configure its path in the environment variable `ADB`:
 
@@ -332,10 +331,8 @@ For example, you could capture the video within [OBS].
 
 #### Buffering
 
-It is possible to add buffering. This increases latency but reduces jitter (see
-[#2464]).
-
-[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+It is possible to add buffering. This increases latency but reduces jitter
+(see [#2464](https://github.com/Genymobile/scrcpy/issues/2464)).
 
 The option is available for display buffering:
 
