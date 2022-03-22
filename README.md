@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It _does not require_ any root access.
+USB (or [over TCP/IP](#tcpip-wireless)). It does **not** _require any root access_.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -60,50 +60,42 @@ control it using keyboard and mouse.
  - Windows: [download][direct-win64]
  - macOS ([Homebrew](https://brew.sh/)): `brew install scrcpy`  
    \* You need `adb`, accessible from your `PATH` *\*.
+ - [From sources](#manual-build)
 
 *\*
 ```bash
 brew install android-platform-tools
 ```
 
-### More
+### Linux
 
-**Linux > Arch Linux**
-
+- Arch Linux
 ```
 pacman -S scrcpy
 ```
 
-**Linux > [Snap] package**
+- [Snap] package, available at <https://snapstats.org/snaps/scrcpy>
 
-[`scrcpy`](https://snapstats.org/snaps/scrcpy)
+- Fedora / [COPR] package, available at <https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/>
 
-[snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+- Gentoo / [Ebuild], available at <https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy>.
 
-**Linux > Fedora / [COPR] package**
-
-[`scrcpy`](https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/)
+[Snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
-
-**Linux > Gentoo / [Ebuild]**
-
-Available at [`scrcpy/`](https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy).
 
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 
 
-**Windows > archive**
+### Windows
 
-For Windows, for simplicity, a prebuilt archive with all the dependencies
+For simplicity, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
  - [`scrcpy-win64-v1.23.zip`][direct-win64]  
    _(SHA-256: d2f601b1d0157faf65153d8a093d827fd65aec5d5842d677ac86fb2b5b7704cc)_
 
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-win64-v1.23.zip
-
-**Windows > Chocolatey**
 
 It is also available in [Chocolatey](https://chocolatey.org/):
 
@@ -112,7 +104,7 @@ choco install scrcpy
 choco install adb    # if you don't have it yet
 ```
 
-**Windows > Scoop (<https://scoop.sh>)**:
+and Scoop (<https://scoop.sh>):
 
 ```bash
 scoop install scrcpy
@@ -120,23 +112,23 @@ scoop install adb    # if you don't have it yet
 ```
 
 
-**macOS > in [MacPorts](https://www.macports.org/)**
+### macOS, in [MacPorts](https://www.macports.org/)
 
-(which sets up adb for you)
+(sets up adb for you)
 
 ```bash
 sudo port install scrcpy
 ```
 
+### Manual build
 
-**Manual build**
-
-You could build manually from sources: [BUILD.md](BUILD.md). [Simplified process](BUILD.md#simple).
+You could build manually from sources: [BUILD.md](BUILD.md), [Simplified process](BUILD.md#simple).
 
 
 ## Run
 
-Plug in an Android device, **connect with [`adb`](https://developer.android.com/studio/command-line/adb)** and execute:
+Plug in an Android device, **connect with [`adb`](https://developer.android.com/studio/command-line/adb)**
+and execute:
 
 ```bash
 scrcpy
@@ -150,9 +142,6 @@ scrcpy --help
 
 
 ## Custom paths
-
-(Linux): For Android Studio (SDK) `adb` to be `adb` command, do `sudo ln --symbolic ### /usr/local/bin/adb`.  
-"###" should be a path to your Android Debug Bridge file.
 
 To use a specific _adb_ binary, configure its path in the environment variable `ADB`:
 
@@ -342,10 +331,8 @@ For example, you could capture the video within [OBS].
 
 #### Buffering
 
-It is possible to add buffering. This increases latency but reduces jitter (see
-[#2464]).
-
-[#2464]: https://github.com/Genymobile/scrcpy/issues/2464
+It is possible to add buffering. This increases latency but reduces jitter
+(see [#2464](https://github.com/Genymobile/scrcpy/issues/2464)).
 
 The option is available for display buffering:
 
