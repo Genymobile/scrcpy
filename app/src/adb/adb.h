@@ -114,13 +114,4 @@ sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
 char *
 sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
 
-/**
- * Indicate if the serial represents an IP address
- *
- * In practice, it just returns true if and only if it contains a ':', which is
- * sufficient to distinguish an ip:port from a real USB serial.
- */
-bool
-sc_adb_is_serial_tcpip(const char *serial);
-
 #endif
