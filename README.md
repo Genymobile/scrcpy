@@ -1068,7 +1068,7 @@ A colleague challenged me to find a name as unpronounceable as [gnirehtet].
 
 ## How to build?
 
-See [BUILD].
+See [this](BUILD.md).
 
 
 ## Common issues
