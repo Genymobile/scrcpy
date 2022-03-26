@@ -1159,7 +1159,7 @@ This README is available in other languages:
 
 - [Deutsch (German, `de`) - v1.22](README.de.md)
 - [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
-- [Italiano (Italiano, `it`) - v1.19](README.it.md)
+- [Italiano (Italiano, `it`) - v1.23](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
 - [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
