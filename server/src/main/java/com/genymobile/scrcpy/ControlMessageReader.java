@@ -53,13 +53,14 @@ public class ControlMessageReader {
         }
         int savedPosition = buffer.position();
 
-        int type = buffer.get();
+        byte _type = buffer.get();
+        int type = (int) _type;
         ControlMessage msg;
 
-	msg = preParseMsg(type);
-	if (msg != null) {
-	    Ln.i("pre parsed msg: " + msg.getType());
-	    return msg;
+        Ln.i("receiving msg, type:" + String.format("0x%02x", _type) + " pos:" + buffer.position());
+        msg = parseUdtEvent(type);
+        if (msg != null) {
+            return msg;
         }
 
         switch (type) {
@@ -220,13 +221,13 @@ public class ControlMessageReader {
 
     static final int SET_BITRATE_LENGTH = 4;
 
-    private ControlMessage preParseMsg(int type) {
+    private ControlMessage parseUdtEvent(int type) {
 	    switch(type) {
             case ControlMessage.TYPE_REQ_IDR:
-		        Ln.v("pre get msg TYPE_REQ_IDR event");
+		        Ln.v("udt: event: TYPE_REQ_IDR");
                 return ControlMessage.createEmpty(type);
             case ControlMessage.TYPE_SET_BITRATE:
-                Ln.v("pre get msg TYPE_SET_BITRATE event" );
+                Ln.v("udt: event: TYPE_SET_BITRATE");
                 return parseSetBitrate();
 	        default:
                 return null;

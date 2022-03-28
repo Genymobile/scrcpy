@@ -180,11 +180,10 @@ public final class ControlMessage {
         return sequence;
     }
 
+    // for udt
     public static final int TYPE_REQ_IDR  = 100;
     public static final int TYPE_SET_BITRATE = 101;
-
     private int bitRate;
-
     public int getBitRate() {
         return bitRate;
     }
