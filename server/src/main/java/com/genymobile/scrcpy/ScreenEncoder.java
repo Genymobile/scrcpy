@@ -145,7 +145,7 @@ public class ScreenEncoder implements Device.RotationListener {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         while (!consumeRotationChange() && !eof) {
-            int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
+            int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, timeoutUS);
             eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
             try {
                 if (consumeRotationChange()) {
@@ -164,6 +164,9 @@ public class ScreenEncoder implements Device.RotationListener {
                         // If this is not a config packet, then it contains a frame
                         firstFrameSent = true;
                     }
+                }
+                if (outputBufferId == MediaCodec.INFO_TRY_AGAIN_LATER) {
+                    Ln.d("wait dequeueOutputBuffer timeout, retry again later");
                 }
             } finally {
                 if (outputBufferId >= 0) {
@@ -256,6 +259,9 @@ public class ScreenEncoder implements Device.RotationListener {
 
         if (codecOptions != null) {
             for (CodecOption option : codecOptions) {
+                if (setUdtCodecOption(format, option)) {
+                    continue;
+                }
                 setCodecOption(format, option);
             }
         }
@@ -298,6 +304,9 @@ public class ScreenEncoder implements Device.RotationListener {
     private MediaCodec codec;
     private Device.CodecChangeLister codecChangeLister;
 
+    private static final String KEY_TIMEOUT = "timeout";
+    private static long timeoutUS = -1;
+
     private void initCodec(MediaCodec codec) {
         this.codec = codec;
     }
@@ -324,5 +333,18 @@ public class ScreenEncoder implements Device.RotationListener {
             };
         }
         return codecChangeLister;
+    }
+
+    private static boolean setUdtCodecOption(MediaFormat format, CodecOption codecOption) {
+        String key = codecOption.getKey();
+        if (KEY_TIMEOUT.equals(key)) {
+            Object value = codecOption.getValue();
+            if (value instanceof Integer) {
+                timeoutUS = (Integer) value * 1000 * 1000;
+                Ln.d("Udt Codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
+                return true;
+            }
+        }
+        return false;
     }
 }
