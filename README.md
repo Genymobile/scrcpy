@@ -190,7 +190,7 @@ scrcpy --max-size 1024
 scrcpy -m 1024  # short version
 ```
 
-The other dimension is computed to that the device aspect ratio is preserved.
+The other dimension is computed so that the device aspect ratio is preserved.
 That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
@@ -789,7 +789,7 @@ break non-ASCII content.
 **WARNING:** Pasting the computer clipboard to the device (either via
 <kbd>Ctrl</kbd>+<kbd>v</kbd> or <kbd>MOD</kbd>+<kbd>v</kbd>) copies the content
 into the device clipboard. As a consequence, any Android application could read
-its content. You should avoid to paste sensitive content (like passwords) that
+its content. You should avoid pasting sensitive content (like passwords) that
 way.
 
 Some devices do not behave as expected when setting the device clipboard
@@ -838,7 +838,7 @@ scrcpy -K  # short version
 
 If it fails for some reason (for example because the device is not connected via
 USB), it automatically fallbacks to the default mode (with a log in the
-console). This allows to use the same command line options when connected over
+console). This allows using the same command line options when connected over
 USB and TCP/IP.
 
 In this mode, raw key events (scancodes) are sent to the device, independently
@@ -1062,7 +1062,7 @@ _³4th and 5th mouse buttons, if your mouse has them._
 _⁴For react-native apps in development, `MENU` triggers development menu._  
 _⁵Only on Android >= 7._
 
-Shortcuts with repeated keys are executted by releasing and pressing the key a
+Shortcuts with repeated keys are executed by releasing and pressing the key a
 second time. For example, to execute "Expand settings panel":
 
  1. Press and keep pressing <kbd>MOD</kbd>.
