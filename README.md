@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It does not require any _root_ access.
+USB or [over TCP/IP](#tcpip-wireless). It does not require any _root_ access.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -19,7 +19,7 @@ It focuses on:
  - **quality**: 1920×1080 or above
  - **low latency**: [35~70ms][lowlatency]
  - **low startup time**: ~1 second to display the first image
- - **non-intrusiveness**: nothing is left installed on the device
+ - **non-intrusiveness**: nothing is left installed on the Android device
  - **user benefits**: no account, no ads, no internet required
  - **freedom**: free and open source software
 
@@ -27,10 +27,10 @@ It focuses on:
 
 Its features include:
  - [recording](#recording)
- - mirroring with [device screen off](#turn-screen-off)
+ - mirroring with [Android device screen off](#turn-screen-off)
  - [copy-paste](#copy-paste) in both directions
  - [configurable quality](#capture-configuration)
- - device screen [as a webcam (V4L2)](#v4l2loopback) (Linux-only)
+ - Android device [as a webcam (V4L2)](#v4l2loopback) (Linux-only)
  - [physical keyboard simulation (HID)](#physical-keyboard-simulation-hid)
  - [physical mouse simulation (HID)](#physical-mouse-simulation-hid)
  - [OTG mode](#otg)
@@ -40,12 +40,12 @@ Its features include:
 
 The Android device requires at least API 21 (Android 5.0).
 
-Make sure you [enabled adb debugging][enable-adb] on your device(s).
+Make sure you [enable adb debugging][enable-adb] on your device(s).
 
 [enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
 
 On some devices, you also need to enable [an additional option][control] to
-control it using keyboard and mouse.
+control it using a keyboard and mouse.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
@@ -97,13 +97,13 @@ For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
 [Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
 [ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
-You could also [build the app manually][BUILD] ([simplified
+You can also [build the app manually][BUILD] ([simplified
 process][BUILD_simple]).
 
 
 ### Windows
 
-For Windows, for simplicity, a prebuilt archive with all the dependencies
+For Windows, a prebuilt archive with all the dependencies
 (including `adb`) is available:
 
  - [`scrcpy-win64-v1.23.zip`][direct-win64]  
@@ -148,7 +148,7 @@ You need `adb`, accessible from your `PATH`. If you don't have it yet:
 brew install android-platform-tools
 ```
 
-It's also available in [MacPorts], which sets up adb for you:
+It's also available in [MacPorts], which sets up `adb` for you:
 
 ```bash
 sudo port install scrcpy
@@ -162,7 +162,7 @@ You can also [build the app manually][BUILD].
 
 ## Run
 
-Plug an Android device, and execute:
+Plug in an Android device to your computer, and execute:
 
 ```bash
 scrcpy
@@ -180,7 +180,7 @@ scrcpy --help
 
 #### Reduce size
 
-Sometimes, it is useful to mirror an Android device at a lower definition to
+Sometimes, it is useful to mirror an Android device at a lower resolution to
 increase performance.
 
 To limit both the width and height to some value (e.g. 1024):
@@ -190,7 +190,7 @@ scrcpy --max-size 1024
 scrcpy -m 1024  # short version
 ```
 
-The other dimension is computed to that the device aspect ratio is preserved.
+The other dimension is computed to that the Android device aspect ratio is preserved.
 That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
@@ -226,7 +226,7 @@ It may also be enabled or disabled at any time with <kbd>MOD</kbd>+<kbd>i</kbd>.
 
 The device screen may be cropped to mirror only part of the screen.
 
-This is useful for example to mirror only one eye of the Oculus Go:
+This is useful, for example, to mirror only one eye of the Oculus Go:
 
 ```bash
 scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
@@ -236,7 +236,6 @@ If `--max-size` is also specified, resizing is applied after cropping.
 
 
 #### Lock video orientation
-
 
 To lock the orientation of the mirroring:
 
@@ -262,7 +261,7 @@ crash. It is possible to select a different encoder:
 scrcpy --encoder OMX.qcom.video.encoder.avc
 ```
 
-To list the available encoders, you could pass an invalid encoder name, the
+To list the available encoders, you can pass an invalid encoder name; the
 error will give the available encoders:
 
 ```bash
@@ -326,7 +325,7 @@ v4l2-ctl --list-devices
 ls /dev/video*
 ```
 
-To start scrcpy using a v4l2 sink:
+To start `scrcpy` using a v4l2 sink:
 
 ```bash
 scrcpy --v4l2-sink=/dev/videoN
@@ -334,7 +333,7 @@ scrcpy --v4l2-sink=/dev/videoN --no-display  # disable mirroring window
 scrcpy --v4l2-sink=/dev/videoN -N            # short version
 ```
 
-(replace `N` by the device ID, check with `ls /dev/video*`)
+(replace `N` with the device ID, check with `ls /dev/video*`)
 
 Once enabled, you can open your video stream with a v4l2-capable tool:
 
@@ -350,7 +349,7 @@ For example, you could capture the video within [OBS].
 
 #### Buffering
 
-It is possible to add buffering. This increases latency but reduces jitter (see
+It is possible to add buffering. This increases latency, but reduces jitter (see
 [#2464]).
 
 [#2464]: https://github.com/Genymobile/scrcpy/issues/2464
@@ -372,7 +371,7 @@ scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
 
 #### TCP/IP (wireless)
 
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+`Scrcpy` uses `adb` to communicate with the device, and `adb` can [connect] to a
 device over TCP/IP. The device must be connected on the same network as the
 computer.
 
@@ -382,14 +381,14 @@ An option `--tcpip` allows to configure the connection automatically. There are
 two variants.
 
 If the device (accessible at 192.168.1.1 in this example) already listens on a
-port (typically 5555) for incoming adb connections, then run:
+port (typically 5555) for incoming `adb` connections, then run:
 
 ```bash
 scrcpy --tcpip=192.168.1.1       # default port is 5555
 scrcpy --tcpip=192.168.1.1:5555
 ```
 
-If adb TCP/IP mode is disabled on the device (or if you don't know the IP
+If `adb` TCP/IP mode is disabled on the device (or if you don't know the IP
 address), connect the device over USB, then run:
 
 ```bash
@@ -413,7 +412,7 @@ Alternatively, it is possible to enable the TCP/IP connection manually using
     adb shell ip route | awk '{print $9}'
     ```
 
-4. Enable adb over TCP/IP on your device: `adb tcpip 5555`.
+4. Enable `adb` over TCP/IP on your device: `adb tcpip 5555`.
 5. Unplug your device.
 6. Connect to your device: `adb connect DEVICE_IP:5555` _(replace `DEVICE_IP`
 with the device IP address you found)_.
@@ -427,9 +426,9 @@ having to physically connect your device directly to your computer.
 If the connection randomly drops, run your `scrcpy` command to reconnect. If it
 says there are no devices/emulators found, try running `adb connect
 DEVICE_IP:5555` again, and then `scrcpy` as usual. If it still says there are
-none found, try running `adb disconnect` and then run those two commands again.
+none found, try running `adb disconnect`, and then run those two commands again.
 
-It may be useful to decrease the bit-rate and the definition:
+It may be useful to decrease the bit-rate and the resolution:
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
@@ -483,12 +482,12 @@ autoadb scrcpy -s '{}'
 #### Tunnels
 
 To connect to a remote device, it is possible to connect a local `adb` client to
-a remote `adb` server (provided they use the same version of the _adb_
+a remote `adb` server (provided they use the same version of the `adb`
 protocol).
 
 ##### Remote ADB server
 
-To connect to a remote ADB server, make the server listen on all interfaces:
+To connect to a remote `adb` server, make the server listen on all interfaces:
 
 ```bash
 adb kill-server
@@ -496,17 +495,17 @@ adb -a nodaemon server start
 # keep this open
 ```
 
-**Warning: all communications between clients and ADB server are unencrypted.**
+**Warning: all communications between clients and the `adb` server are unencrypted.**
 
 Suppose that this server is accessible at 192.168.1.2. Then, from another
-terminal, run scrcpy:
+terminal, run `scrcpy`:
 
 ```bash
 export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
 scrcpy --tunnel-host=192.168.1.2
 ```
 
-By default, scrcpy uses the local port used for `adb forward` tunnel
+By default, `scrcpy` uses the local port used for `adb forward` tunnel
 establishment (typically `27183`, see `--port`). It is also possible to force a
 different tunnel port (it may be useful in more complex situations, when more
 redirections are involved):
@@ -518,16 +517,16 @@ scrcpy --tunnel-port=1234
 
 ##### SSH tunnel
 
-To communicate with a remote ADB server securely, it is preferable to use a SSH
+To communicate with a remote `adb` server securely, it is preferable to use an SSH
 tunnel.
 
-First, make sure the ADB server is running on the remote computer:
+First, make sure the `adb` server is running on the remote computer:
 
 ```bash
 adb start-server
 ```
 
-Then, establish a SSH tunnel:
+Then, establish an SSH tunnel:
 
 ```bash
 # local  5038 --> remote  5037
@@ -536,7 +535,7 @@ ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal, run scrcpy:
+From another terminal, run `scrcpy`:
 
 ```bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
@@ -553,7 +552,7 @@ ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # keep this open
 ```
 
-From another terminal, run scrcpy:
+From another terminal, run `scrcpy`:
 
 ```bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
@@ -595,7 +594,7 @@ scrcpy --window-borderless
 
 #### Always on top
 
-To keep the scrcpy window always on top:
+To keep the `scrcpy` window always on top:
 
 ```bash
 scrcpy --always-on-top
@@ -620,7 +619,7 @@ The window may be rotated:
 scrcpy --rotation 1
 ```
 
-Possibles values are:
+Possible values:
  - `0`: no rotation
  - `1`: 90 degrees counterclockwise
  - `2`: 180 degrees
@@ -629,7 +628,7 @@ Possibles values are:
 The rotation can also be changed dynamically with <kbd>MOD</kbd>+<kbd>←</kbd>
 _(left)_ and <kbd>MOD</kbd>+<kbd>→</kbd> _(right)_.
 
-Note that _scrcpy_ manages 3 different rotations:
+Note that `scrcpy` manages 3 different rotations:
  - <kbd>MOD</kbd>+<kbd>r</kbd> requests the device to switch between portrait
    and landscape (the current running app may refuse, if it does not support the
    requested orientation).
@@ -669,19 +668,19 @@ adb shell dumpsys display   # search "mDisplayId=" in the output
 ```
 
 The secondary display may only be controlled if the device runs at least Android
-10 (otherwise it is mirrored in read-only).
+10 (otherwise it is mirrored as read-only).
 
 
 #### Stay awake
 
-To prevent the device to sleep after some delay when the device is plugged in:
+To prevent the device from sleeping after a delay when the device is plugged in:
 
 ```bash
 scrcpy --stay-awake
 scrcpy -w
 ```
 
-The initial state is restored when scrcpy is closed.
+The initial state is restored when `scrcpy` is closed.
 
 
 #### Turn screen off
@@ -699,7 +698,7 @@ Or by pressing <kbd>MOD</kbd>+<kbd>o</kbd> at any time.
 To turn it back on, press <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>o</kbd>.
 
 On Android, the `POWER` button always turns the screen on. For convenience, if
-`POWER` is sent via scrcpy (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>), it
+`POWER` is sent via `scrcpy` (via right-click or <kbd>MOD</kbd>+<kbd>p</kbd>), it
 will force to turn the screen off after a small delay (on a best effort basis).
 The physical `POWER` button will still cause the screen to be turned on.
 
@@ -712,7 +711,7 @@ scrcpy -Sw
 
 #### Power off on close
 
-To turn the device screen off when closing scrcpy:
+To turn the device screen off when closing `scrcpy`:
 
 ```bash
 scrcpy --power-off-on-close
@@ -726,7 +725,7 @@ device).
 
 Android provides this feature in _Developers options_.
 
-_Scrcpy_ provides an option to enable this feature on start and restore the
+`Scrcpy` provides an option to enable this feature on start and restore the
 initial value on exit:
 
 ```bash
@@ -734,12 +733,12 @@ scrcpy --show-touches
 scrcpy -t
 ```
 
-Note that it only shows _physical_ touches (with the finger on the device).
+Note that it only shows _physical_ touches (by a finger on the device).
 
 
 #### Disable screensaver
 
-By default, scrcpy does not prevent the screensaver to run on the computer.
+By default, `scrcpy` does not prevent the screensaver from running on the computer.
 
 To disable it:
 
@@ -772,7 +771,7 @@ Any <kbd>Ctrl</kbd> shortcut is forwarded to the device. In particular:
 This typically works as you expect.
 
 The actual behavior depends on the active application though. For example,
-_Termux_ sends SIGINT on <kbd>Ctrl</kbd>+<kbd>c</kbd> instead, and _K-9 Mail_
+`Termux` sends SIGINT on <kbd>Ctrl</kbd>+<kbd>c</kbd> instead, and `K-9 Mail`
 composes a new message.
 
 To copy, cut and paste in such cases (but only supported on Android >= 7):
@@ -781,18 +780,18 @@ To copy, cut and paste in such cases (but only supported on Android >= 7):
  - <kbd>MOD</kbd>+<kbd>v</kbd> injects `PASTE` (after computer-to-device
    clipboard synchronization)
 
-In addition, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> allows to inject the
-computer clipboard text as a sequence of key events. This is useful when the
-component does not accept text pasting (for example in _Termux_), but it can
-break non-ASCII content.
+In addition, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> allows you to inject
+the computer clipboard text as a sequence of key events. This is useful when
+the component does not accept text pasting (for example in _Termux_), but it
+can break non-ASCII content.
 
 **WARNING:** Pasting the computer clipboard to the device (either via
 <kbd>Ctrl</kbd>+<kbd>v</kbd> or <kbd>MOD</kbd>+<kbd>v</kbd>) copies the content
-into the device clipboard. As a consequence, any Android application could read
-its content. You should avoid to paste sensitive content (like passwords) that
+into the Android clipboard. As a consequence, any Android application could read
+its content. You should avoid pasting sensitive content (like passwords) that
 way.
 
-Some devices do not behave as expected when setting the device clipboard
+Some Android devices do not behave as expected when setting the device clipboard
 programmatically. An option `--legacy-paste` is provided to change the behavior
 of <kbd>Ctrl</kbd>+<kbd>v</kbd> and <kbd>MOD</kbd>+<kbd>v</kbd> so that they
 also inject the computer clipboard text as a sequence of key events (the same
@@ -805,29 +804,29 @@ To disable automatic clipboard synchronization, use
 
 To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.
 
-More precisely, hold <kbd>Ctrl</kbd> while pressing the left-click button. Until
-the left-click button is released, all mouse movements scale and rotate the
-content (if supported by the app) relative to the center of the screen.
+More precisely, hold <kbd>Ctrl</kbd> down while pressing the left-click button.
+Until the left-click button is released, all mouse movements scale and rotate
+the content (if supported by the app) relative to the center of the screen.
 
-Concretely, scrcpy generates additional touch events from a "virtual finger" at
+Technically, `scrcpy` generates additional touch events from a "virtual finger" at
 a location inverted through the center of the screen.
 
 #### Physical keyboard simulation (HID)
 
-By default, scrcpy uses Android key or text injection: it works everywhere, but
+By default, `scrcpy` uses Android key or text injection: it works everywhere, but
 is limited to ASCII.
 
-Alternatively, scrcpy can simulate a physical USB keyboard on Android to provide
+Alternatively, `scrcpy` can simulate a physical USB keyboard on Android to provide
 a better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
 keyboard is disabled and it works for all characters and IME.
 
 [hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
 
-However, it only works if the device is connected by USB.
+However, it only works if the device is connected via USB.
 
 Note: On Windows, it may only work in [OTG mode](#otg), not while mirroring (it
 is not possible to open a USB device if it is already open by another process
-like the adb daemon).
+like the `adb` daemon).
 
 To enable this mode:
 
@@ -862,7 +861,7 @@ a physical keyboard is connected).
 Similarly to the physical keyboard simulation, it is possible to simulate a
 physical mouse. Likewise, it only works if the device is connected by USB.
 
-By default, scrcpy uses Android mouse events injection, using absolute
+By default, `scrcpy` uses Android mouse events injection with absolute
 coordinates. By simulating a physical mouse, a mouse pointer appears on the
 Android device, and relative mouse motion, clicks and scrolls are injected.
 
@@ -873,7 +872,7 @@ scrcpy --hid-mouse
 scrcpy -M  # short version
 ```
 
-You could also add `--forward-all-clicks` to [forward all mouse
+You can also add `--forward-all-clicks` to [forward all mouse
 buttons][forward_all_clicks].
 
 [forward_all_clicks]: #right-click-and-middle-click
@@ -888,11 +887,11 @@ the mouse back to the computer.
 
 #### OTG
 
-It is possible to run _scrcpy_ with only physical keyboard and mouse simulation
+It is possible to run `scrcpy` with only physical keyboard and mouse simulation
 (HID), as if the computer keyboard and mouse were plugged directly to the device
 via an OTG cable.
 
-In this mode, _adb_ (USB debugging) is not necessary, and mirroring is disabled.
+In this mode, `adb` (USB debugging) is not necessary, and mirroring is disabled.
 
 To enable OTG mode:
 
@@ -918,7 +917,7 @@ connected by USB.
 
 #### Text injection preference
 
-There are two kinds of [events][textevents] generated when typing text:
+Two kinds of [events][textevents] are generated when typing text:
  - _key events_, signaling that a key is pressed or released;
  - _text events_, signaling that a text has been entered.
 
@@ -976,7 +975,7 @@ scrcpy --forward-all-clicks
 
 #### Install APK
 
-To install an APK, drag & drop an APK file (ending with `.apk`) to the _scrcpy_
+To install an APK, drag & drop an APK file (ending with `.apk`) to the `scrcpy`
 window.
 
 There is no visual feedback, a log is printed to the console.
@@ -985,7 +984,7 @@ There is no visual feedback, a log is printed to the console.
 #### Push file to device
 
 To push a file to `/sdcard/Download/` on the device, drag & drop a (non-APK)
-file to the _scrcpy_ window.
+file to the `scrcpy` window.
 
 There is no visual feedback, a log is printed to the console.
 
@@ -998,7 +997,7 @@ scrcpy --push-target=/sdcard/Movies/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [sndcpy].
+Audio is not forwarded by `scrcpy`. Use [sndcpy].
 
 Also see [issue #14].
 
@@ -1075,7 +1074,7 @@ handled by the active application.
 
 ## Custom paths
 
-To use a specific _adb_ binary, configure its path in the environment variable
+To use a specific `adb` binary, configure its path in the environment variable
 `ADB`:
 
 ```bash
@@ -1088,7 +1087,7 @@ To override the path of the `scrcpy-server` file, configure its path in
 To override the icon, configure its path in `SCRCPY_ICON_PATH`.
 
 
-## Why _scrcpy_?
+## Why the name _scrcpy_?
 
 A colleague challenged me to find a name as unpronounceable as [gnirehtet].
 
@@ -1148,7 +1147,7 @@ If you encounter a bug, please read the [FAQ] first, then open an [issue].
 
 [issue]: https://github.com/Genymobile/scrcpy/issues
 
-For general questions or discussions, you could also use:
+For general questions or discussions, you can also use:
 
  - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
  - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
