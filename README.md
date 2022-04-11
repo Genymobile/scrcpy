@@ -7,7 +7,7 @@ _pronounced "**scr**een **c**o**py**"_
 [Read in another language](#translations)
 
 This application provides display and control of Android devices connected via
-USB (or [over TCP/IP](#tcpip-wireless)). It does **not** _require any root access_.
+USB (or [over TCP/IP](#tcpip-wireless)). It does **not** require any _root access_.
 It works on _GNU/Linux_, _Windows_ and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
@@ -23,8 +23,6 @@ It focuses on:
  - **user benefits**: no account, no ads, no internet required
  - **freedom**: free and open source software
 
-[lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
-
 Its features include:
  - [recording](#recording)
  - mirroring with [device screen off](#turn-screen-off)
@@ -36,19 +34,21 @@ Its features include:
  - [OTG mode](#otg)
  - and more…
 
+
+[lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
+
 ## Requirements
 
 The Android device requires at least API 21 (Android 5.0).
 
 Make sure you [enabled adb debugging][enable-adb] on your device(s).
 
-[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
-
 On some devices, you also need to enable [an additional option][control] to
 control it using keyboard and mouse.
 
-[control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
+[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
+[control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 ## Get the app
 
@@ -80,13 +80,6 @@ pacman -S scrcpy
 
 - Gentoo / [Ebuild], available at <https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy>.
 
-[Snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
-
-[COPR]: https://fedoraproject.org/wiki/Category:Copr
-
-[Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
-
-
 ### Windows
 
 For simplicity, a prebuilt archive with all the dependencies
@@ -94,8 +87,6 @@ For simplicity, a prebuilt archive with all the dependencies
 
  - [`scrcpy-win64-v1.23.zip`][direct-win64]  
    _(SHA-256: d2f601b1d0157faf65153d8a093d827fd65aec5d5842d677ac86fb2b5b7704cc)_
-
-[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-win64-v1.23.zip
 
 It is also available in [Chocolatey](https://chocolatey.org/):
 
@@ -111,7 +102,6 @@ scoop install scrcpy
 scoop install adb    # if you don't have it yet
 ```
 
-
 ### macOS, in [MacPorts](https://www.macports.org/)
 
 (sets up adb for you)
@@ -124,6 +114,12 @@ sudo port install scrcpy
 
 You could build manually from sources: [BUILD.md](BUILD.md), [Simplified process](BUILD.md#simple).
 
+
+[Snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[Ebuild]: https://wiki.gentoo.org/wiki/Ebuild
+
+[direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-win64-v1.23.zip
 
 ## Run
 
@@ -271,10 +267,7 @@ scrcpy -Nr file.mkv
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for
 performance reasons). Frames are _timestamped_ on the device, so [packet delay
-variation] does not impact the recorded file.
-
-[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
-
+variation][] does not impact the recorded file.
 
 #### v4l2loopback
 
@@ -324,10 +317,7 @@ ffplay -i /dev/videoN
 vlc v4l2:///dev/videoN   # VLC might add some buffering delay
 ```
 
-For example, you could capture the video within [OBS].
-
-[OBS]: https://obsproject.com/
-
+For example, you could capture the video within [OBS][].
 
 #### Buffering
 
@@ -347,11 +337,14 @@ scrcpy --v4l2-buffer=500    # add 500 ms buffering for v4l2 sink
 ```
 
 
+[OBS]: https://obsproject.com/
+[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+
 ### Connection
 
 #### TCP/IP (wireless)
 
-_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect] to a
+_Scrcpy_ uses `adb` to communicate with the device, and `adb` can [connect][] to a
 device over TCP/IP. The device must be connected on the same network as the
 computer.
 
@@ -401,8 +394,6 @@ with the device IP address you found)_.
 Since Android 11, a [Wireless debugging option][adb-wireless] allows to bypass
 having to physically connect your device directly to your computer.
 
-[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
-
 If the connection randomly drops, run your `scrcpy` command to reconnect. If it
 says there are no devices/emulators found, try running `adb connect
 DEVICE_IP:5555` again, and then `scrcpy` as usual. If it still says there are
@@ -414,9 +405,6 @@ It may be useful to decrease the bit-rate and the definition:
 scrcpy --bit-rate 2M --max-size 800
 scrcpy -b2M -m800  # short version
 ```
-
-[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
-
 
 #### Multi-devices
 
@@ -451,13 +439,11 @@ You can start several instances of _scrcpy_ for several devices.
 
 #### Autostart on device connection
 
-You could use [AutoAdb]:
+You could use [AutoAdb][]:
 
 ```bash
 autoadb scrcpy -s '{}'
 ```
-
-[AutoAdb]: https://github.com/rom1v/autoadb
 
 #### Tunnels
 
@@ -493,7 +479,6 @@ redirections are involved):
 ```
 scrcpy --tunnel-port=1234
 ```
-
 
 ##### SSH tunnel
 
@@ -545,6 +530,11 @@ Like for wireless connections, it may be useful to reduce quality:
 ```
 scrcpy -b2M -m800 --max-fps 15
 ```
+
+
+[AutoAdb]: https://github.com/rom1v/autoadb
+[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
+[connect]: https://developer.android.com/studio/command-line/adb.html#wireless
 
 ### Window configuration
 
@@ -804,8 +794,6 @@ Alternatively, scrcpy can simulate a physical USB keyboard on Android to provide
 a better input experience (using [USB HID over AOAv2][hid-aoav2]): the virtual
 keyboard is disabled and it works for all characters and IME.
 
-[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
-
 However, it only works if the device is connected by USB.
 
 Note: On Windows, it may only work in [OTG mode](#otg), not while mirroring (it
@@ -827,7 +815,7 @@ USB and TCP/IP.
 In this mode, raw key events (scancodes) are sent to the device, independently
 of the host key mapping. Therefore, if your keyboard layout does not match, it
 must be configured on the Android device, in Settings → System → Languages and
-input → [Physical keyboard].
+input → [Physical keyboard][].
 
 This settings page can be started directly:
 
@@ -838,6 +826,8 @@ adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
 However, the option is only available when the HID keyboard is enabled (or when
 a physical keyboard is connected).
 
+
+[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
 [Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
 #### Physical mouse simulation (HID)
@@ -859,8 +849,6 @@ scrcpy -M  # short version
 You could also add `--forward-all-clicks` to [forward all mouse
 buttons][forward_all_clicks].
 
-[forward_all_clicks]: #right-click-and-middle-click
-
 When this mode is enabled, the computer mouse is "captured" (the mouse pointer
 disappears from the computer and appears on the Android device instead).
 
@@ -868,6 +856,8 @@ Special capture keys, either <kbd>Alt</kbd> or <kbd>Super</kbd>, toggle
 (disable or enable) the mouse capture. Use one of them to give the control of
 the mouse back to the computer.
 
+
+[forward_all_clicks]: #right-click-and-middle-click
 
 #### OTG
 
@@ -926,9 +916,9 @@ scrcpy --raw-key-events
 These options have no effect on HID keyboard (all key events are sent as
 scancodes in this mode).
 
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
-
 
 #### Key repeat
 
@@ -943,7 +933,6 @@ scrcpy --no-key-repeat
 
 This option has no effect on HID keyboard (key repeat is handled by Android
 directly in this mode).
-
 
 #### Right-click and middle-click
 
@@ -981,13 +970,13 @@ scrcpy --push-target=/sdcard/Movies/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [sndcpy].
+Audio is not forwarded by _scrcpy_. Use [sndcpy][].
 
-Also see [issue #14].
+Also see [issue #14][].
+
 
 [sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
-
 
 ## Shortcuts
 
@@ -1005,9 +994,7 @@ scrcpy --shortcut-mod=rctrl
 scrcpy --shortcut-mod=lctrl+lalt,lsuper
 ```
 
-_<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
-
-[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+_<kbd>[Super][]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
 
  | Action                                      |   Shortcut
  | ------------------------------------------- |:-----------------------------
@@ -1056,31 +1043,25 @@ All <kbd>Ctrl</kbd>+_key_ shortcuts are forwarded to the device, so they are
 handled by the active application.
 
 
+[Super]: https://en.wikipedia.org/wiki/Super_key_(keyboard_button)
+
 ## Why _scrcpy_?
 
 A colleague challenged me to find a name as unpronounceable as [gnirehtet].
 
-[`strcpy`] copies a **str**ing; `scrcpy` copies a **scr**een.
-
-[gnirehtet]: https://github.com/Genymobile/gnirehtet
-[`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
-
+[`strcpy`][] copies a **str**ing; `scrcpy` copies a **scr**een.
 
 ## How to build?
 
 See [this](BUILD.md).
 
-
 ## Common issues
 
-See the [FAQ](FAQ.md).
+See this [FAQ][].
 
 ## Developers
 
-Read the [developers page].
-
-[developers page]: DEVELOP.md
-
+Read the [developers page][].
 
 ## Licence
 
@@ -1104,14 +1085,9 @@ Read the [developers page].
 - [Introducing scrcpy][article-intro]
 - [Scrcpy now works wirelessly][article-tcpip]
 
-[article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
-[article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
 ## Contact
 
-If you encounter a bug, please read the [FAQ](FAQ.md) first, then open an [issue].
-
-[issue]: https://github.com/Genymobile/scrcpy/issues
+If you encounter a bug, please read the [FAQ][] first, then open an [issue][].
 
 For general questions or discussions, you could also use:
 
@@ -1134,3 +1110,14 @@ This README is available in other languages:
 - [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
 
 Only this README file is guaranteed to be up-to-date.
+
+
+[gnirehtet]: https://github.com/Genymobile/gnirehtet
+[`strcpy`]: http://man7.org/linux/man-pages/man3/strcpy.3.html
+
+[developers page]: DEVELOP.md
+[article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
+[article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+[issue]: https://github.com/Genymobile/scrcpy/issues
+[FAQ]: FAQ.md
