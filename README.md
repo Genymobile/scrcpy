@@ -1073,7 +1073,11 @@ See [this](BUILD.md).
 
 ## Common issues
 
-See the [FAQ](FAQ.md).
+See this [FAQ][].
+
+[FAQ]: FAQ.md
+
+**https://github.github.com/gfm/#collapsed-reference-link**
 
 ## Developers
 
