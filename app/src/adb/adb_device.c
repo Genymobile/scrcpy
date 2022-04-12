@@ -1,6 +1,7 @@
 #include "adb_device.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 void
 sc_adb_device_destroy(struct sc_adb_device *device) {
