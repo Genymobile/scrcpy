@@ -219,8 +219,7 @@ The actual capture framerate may be printed to the console:
 scrcpy --print-fps
 ```
 
-It may also be enabled or disabled at any time with <kbd>MOD</kbd>+<kbd>i</kbd>. (See
-[Shortcuts](#shortcuts) for what is meant by <kbd>MOD</kbd>).
+It may also be enabled or disabled at any time with <kbd>MOD</kbd>+<kbd>i</kbd>.
 
 
 #### Crop
