@@ -839,7 +839,7 @@ scrcpy -K  # short version
 
 If it fails for some reason (for example because the device is not connected via
 USB), it automatically fallbacks to the default mode (with a log in the
-console). This allows you to use the same command line options when connected over
+console). This allows using the same command line options when connected over
 USB and TCP/IP.
 
 In this mode, raw key events (scancodes) are sent to the device, independently
