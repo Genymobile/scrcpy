@@ -1,5 +1,5 @@
-#ifndef CONTROLMSG_H
-#define CONTROLMSG_H
+#ifndef SC_CONTROLMSG_H
+#define SC_CONTROLMSG_H
 
 #include "common.h"
 

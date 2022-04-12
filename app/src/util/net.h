@@ -1,5 +1,5 @@
-#ifndef NET_H
-#define NET_H
+#ifndef SC_NET_H
+#define SC_NET_H
 
 #include "common.h"
 
