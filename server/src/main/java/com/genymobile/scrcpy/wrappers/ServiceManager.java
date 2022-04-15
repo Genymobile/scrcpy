@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.IBinder;
 import android.os.IInterface;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -56,7 +57,13 @@ public final class ServiceManager {
 
     public InputManager getInputManager() {
         if (inputManager == null) {
-            inputManager = new InputManager(getService("input", "android.hardware.input.IInputManager"));
+            try {
+                Method getInstanceMethod = android.hardware.input.InputManager.class.getDeclaredMethod("getInstance");
+                android.hardware.input.InputManager im = (android.hardware.input.InputManager) getInstanceMethod.invoke(null);
+                inputManager = new InputManager(im);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new AssertionError(e);
+            }
         }
         return inputManager;
     }
