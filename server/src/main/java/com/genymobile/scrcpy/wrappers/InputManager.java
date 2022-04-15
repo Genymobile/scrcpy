@@ -2,7 +2,6 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
-import android.os.IInterface;
 import android.view.InputEvent;
 
 import java.lang.reflect.InvocationTargetException;
@@ -14,13 +13,13 @@ public final class InputManager {
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT = 1;
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2;
 
-    private final IInterface manager;
+    private final android.hardware.input.InputManager manager;
     private Method injectInputEventMethod;
     private boolean alternativeInjectInputEventMethod;
 
     private static Method setDisplayIdMethod;
 
-    public InputManager(IInterface manager) {
+    public InputManager(android.hardware.input.InputManager manager) {
         this.manager = manager;
     }
 
