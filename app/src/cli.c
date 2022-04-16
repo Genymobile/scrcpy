@@ -56,6 +56,7 @@
 #define OPT_OTG                    1036
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
+#define OPT_HOOK_SCRIPT            1039
 
 struct sc_option {
     char shortopt;
@@ -205,6 +206,18 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_HOOK_SCRIPT,
+        .longopt = "hook-script",
+        .argdesc = "path",
+        .text = "The path to a linux shell script which is run on your device "
+                "when a meaningful event happens.\n"
+                "The script is run with multiple parameters. The ones actually "
+                "used will depend on the event and intended functionality.\n"
+                "In this version, only the events ('START', 'STOP') have been "
+                "implemented. Others may be implemented in the future.\n"
+                "For details on the parameters, check the README manual",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,
@@ -1326,6 +1339,47 @@ sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
 }
 #endif
 
+
+static bool
+parse_hook_script(const char *hook_script_path, char **hook_script) {
+    const int MAX_ACCEPTABLE_SIZE = 1048576; // 1MB
+    if(!hook_script_path) {
+        return false;
+    }
+
+    FILE *script_file = fopen(hook_script_path, "rb");
+    if(script_file == NULL){
+        perror("Cannot open script file\n");
+        return false;
+    }
+    fseek(script_file, 0, SEEK_END);
+    long ssize = ftell(script_file);
+    fseek(script_file, 0, SEEK_SET);
+
+    if(ssize > MAX_ACCEPTABLE_SIZE){
+        LOGE("Script file too large. "
+            "Only up to 1MB (%d bytes) is accepted\n", MAX_ACCEPTABLE_SIZE);
+        return false;
+    }
+
+
+    *hook_script = malloc(ssize + 1);
+    if(*hook_script == NULL){
+        LOG_OOM();
+        return false;
+    }
+    if(!fread(*hook_script, ssize, 1, script_file)){
+        perror("Cannot read script file");
+        return false;
+    }
+    fclose(script_file);
+
+    (*hook_script)[ssize] = '\0';
+
+
+    return true;
+}
+
 static bool
 parse_record_format(const char *optarg, enum sc_record_format *format) {
     if (!strcmp(optarg, "mp4")) {
@@ -1573,6 +1627,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_FORWARD_ALL_CLICKS:
                 opts->forward_all_clicks = true;
+                break;
+            case OPT_HOOK_SCRIPT:
+                if (!parse_hook_script(optarg, &opts->hook_script)) {
+                    return false;
+                }
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;

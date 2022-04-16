@@ -318,6 +318,7 @@ scrcpy(struct scrcpy_options *options) {
         .codec_options = options->codec_options,
         .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
+        .hook_script = options->hook_script,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
         .downsize_on_error = options->downsize_on_error,
