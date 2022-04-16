@@ -27,6 +27,27 @@ size_t
 sc_str_join(char *dst, const char *const tokens[], char sep, size_t n);
 
 /**
+ * String find and replace all occurrences.
+ * Compatible with different sizes of find and the replacement
+ * Only creates output string if changes exist
+ * WARNING: You are responsible for freeing the output if it's not NULL
+ *
+ * @param input The string to find on and replace with matches found
+ * @param find What to find in the input
+ * @param replace What to replace with for each found instance from find
+ * @param output Null or a pointer to the char* which contains the replaced char*
+ * @return int64_t
+ *  if > 0: The size of the string in output
+ *  if < 1: output should be ignored and:
+ *  if == 0: Nothing changed from the original string
+ *  if == -2: Overflow when trying to create the replaced string or OOM
+ *
+ *
+ */
+int64_t
+sc_str_find_replace(char* input, char* find, char* replace, char** output);
+
+/**
  * Quote a string
  *
  * Return a new allocated string, surrounded with quotes (`"`).
