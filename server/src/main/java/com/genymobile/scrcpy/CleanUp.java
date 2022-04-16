@@ -33,9 +33,9 @@ public final class CleanUp {
             }
         };
 
-        private static final int FLAG_DISABLE_SHOW_TOUCHES = 1;
-        private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 2;
-        private static final int FLAG_POWER_OFF_SCREEN = 4;
+        private static final int FLAG_DISABLE_SHOW_TOUCHES = 1 << 0;
+        private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 1 << 1;
+        private static final int FLAG_POWER_OFF_SCREEN = 1 << 2;
 
         private int displayId;
 
@@ -46,6 +46,7 @@ public final class CleanUp {
         private boolean disableShowTouches;
         private boolean restoreNormalPowerMode;
         private boolean powerOffScreen;
+        public String hookScript;
 
         public Config() {
             // Default constructor, the fields are initialized by CleanUp.configure()
@@ -58,6 +59,7 @@ public final class CleanUp {
             disableShowTouches = (options & FLAG_DISABLE_SHOW_TOUCHES) != 0;
             restoreNormalPowerMode = (options & FLAG_RESTORE_NORMAL_POWER_MODE) != 0;
             powerOffScreen = (options & FLAG_POWER_OFF_SCREEN) != 0;
+            hookScript = in.readString();
         }
 
         @Override
@@ -75,6 +77,7 @@ public final class CleanUp {
                 options |= FLAG_POWER_OFF_SCREEN;
             }
             dest.writeByte(options);
+            dest.writeString(hookScript);
         }
 
         private boolean hasWork() {
@@ -116,7 +119,10 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode, boolean powerOffScreen)
+    public static void configure(
+            int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode, boolean powerOffScreen,
+            String hookScript
+    )
             throws IOException {
         Config config = new Config();
         config.displayId = displayId;
@@ -124,6 +130,7 @@ public final class CleanUp {
         config.restoreStayOn = restoreStayOn;
         config.restoreNormalPowerMode = restoreNormalPowerMode;
         config.powerOffScreen = powerOffScreen;
+        config.hookScript = hookScript == null ? "" : hookScript;
 
         if (config.hasWork()) {
             startProcess(config);
@@ -191,6 +198,16 @@ public final class CleanUp {
             } else if (config.restoreNormalPowerMode) {
                 Ln.i("Restoring normal power mode");
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            }
+        }
+
+        if (!config.hookScript.isEmpty()) {
+            try {
+                Command.execShellScript(config.hookScript, "stop");
+            } catch (IOException e) {
+                Ln.e("Something failed while trying to run the stop hook", e);
+            } catch (InterruptedException e) {
+                Ln.e("Got interrupted while running the start hook", e);
             }
         }
     }

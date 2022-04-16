@@ -6,6 +6,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -53,10 +54,21 @@ public final class Server {
         if (options.getCleanup()) {
             try {
                 CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
-                        options.getPowerOffScreenOnClose());
+                        options.getPowerOffScreenOnClose(), options.getHookScript());
             } catch (IOException e) {
                 Ln.e("Could not configure cleanup", e);
             }
+        }
+
+        try {
+            String hookScript = options.getHookScript();
+            if(hookScript != null && !hookScript.isEmpty()){
+                Command.execShellScript(hookScript, "start", "--pid", String.valueOf(android.os.Process.myPid()));
+            }
+        } catch (IOException e) {
+            Ln.e("Something failed while trying to run the start hook", e);
+        } catch (InterruptedException e) {
+            Ln.e("Got interrupted while running the start hook", e);
         }
     }
 
@@ -170,6 +182,8 @@ public final class Server {
 
         Options options = new Options();
 
+        Ln.e("Args are these: " + Arrays.toString(args));
+
         for (int i = 1; i < args.length; ++i) {
             String arg = args[i];
             int equalIndex = arg.indexOf('=');
@@ -230,6 +244,11 @@ public final class Server {
                 case "encoder_name":
                     if (!value.isEmpty()) {
                         options.setEncoderName(value);
+                    }
+                    break;
+                case "hook_script":
+                    if (!value.isEmpty()) {
+                        options.setHookScript(value);
                     }
                     break;
                 case "power_off_on_close":
