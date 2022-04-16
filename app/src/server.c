@@ -93,6 +93,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(crop);
     COPY(codec_options);
     COPY(encoder_name);
+    COPY(hook_script);
     COPY(tcpip_dst);
 #undef COPY
 
@@ -232,6 +233,23 @@ execute_server(struct sc_server *server,
     }
     if (params->encoder_name) {
         ADD_PARAM("encoder_name=%s", params->encoder_name);
+    }
+    if (params->hook_script) {
+        char* requoted_hook;
+        int64_t replace_result = sc_str_find_replace(params->hook_script, "'", "'\"'\"'", &requoted_hook);
+        switch(replace_result){
+            case -2:
+                LOG_OOM();
+                break;
+            case -1:
+            case 0:
+                ADD_PARAM("hook_script='%s'", params->hook_script);
+                break;
+            default:
+                ADD_PARAM("hook_script='%s'", requoted_hook);
+                free(requoted_hook);
+        }
+
     }
     if (params->power_off_on_close) {
         ADD_PARAM("power_off_on_close=true");
