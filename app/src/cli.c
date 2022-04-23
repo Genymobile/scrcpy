@@ -56,6 +56,7 @@
 #define OPT_OTG                    1036
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
+#define OPT_NO_POWER_ON            1039
 
 struct sc_option {
     char shortopt;
@@ -301,6 +302,11 @@ static const struct sc_option options[] = {
         .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
                 "mipmaps are automatically generated to improve downscaling "
                 "quality. This option disables the generation of mipmaps.",
+    },
+    {
+        .longopt_id = OPT_NO_POWER_ON,
+        .longopt = "no-power-on",
+        .text = "Do not power on the device on start.",
     },
     {
         .longopt_id = OPT_OTG,
@@ -1597,6 +1603,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_CLEANUP:
                 opts->cleanup = false;
+                break;
+            case OPT_NO_POWER_ON:
+                opts->power_on = false;
                 break;
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;

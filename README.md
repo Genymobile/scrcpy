@@ -721,6 +721,16 @@ To turn the device screen off when closing scrcpy:
 scrcpy --power-off-on-close
 ```
 
+#### Power on on start
+
+By default, on start, the device is powered on.
+
+To prevent this behavior:
+
+```bash
+scrcpy --no-power-on
+```
+
 
 #### Show touches
 
