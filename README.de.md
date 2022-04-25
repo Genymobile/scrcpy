@@ -375,7 +375,7 @@ Dies finden automatisch das Gerät und aktiviert den TCP/IP-Modus. Anschließend
 
 Alternativ kann die TCP/IP-Verbindung auch manuell per `adb` aktiviert werden:
 
-1. Gerät mit demselben Wifi wie den Computer verbinden.
+1. Gerät mit demselben Wi-Fi wie den Computer verbinden.
 2. IP-Adresse des Gerätes herausfinden, entweder über Einstellungen → Über das Telefon → Status, oder indem dieser Befehl ausgeführt wird:
 
     ```bash
