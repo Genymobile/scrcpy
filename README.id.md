@@ -218,7 +218,7 @@ variation] does not impact the recorded file.
 
 #### Wireless
 
-_Scrcpy_ menggunakan `adb` untuk berkomunikasi dengan perangkat, dan` adb` dapat [terhubung] ke perangkat melalui TCP / IP:
+_Scrcpy_ menggunakan `adb` untuk berkomunikasi dengan perangkat, dan `adb` dapat [terhubung] ke perangkat melalui TCP / IP:
 
 1. Hubungkan perangkat ke Wi-Fi yang sama dengan komputer Anda.
 2. Dapatkan alamat IP perangkat Anda (dalam Pengaturan → Tentang ponsel → Status).
@@ -281,7 +281,7 @@ Dari terminal lain:
 scrcpy
 ```
 
-Untuk menghindari mengaktifkan penerusan port jarak jauh, Anda dapat memaksa sambungan maju sebagai gantinya (perhatikan `-L`, bukan` -R`):
+Untuk menghindari mengaktifkan penerusan port jarak jauh, Anda dapat memaksa sambungan maju sebagai gantinya (perhatikan `-L`, bukan `-R`):
 
 ```bash
 adb kill-server    # matikan server adb lokal di 5037
@@ -579,7 +579,7 @@ Lihat juga [Masalah #14].
 
 Dalam daftar berikut, <kbd>MOD</kbd> adalah pengubah pintasan. Secara default, ini (kiri) <kbd>Alt</kbd> atau (kiri) <kbd>Super</kbd>.
 
-Ini dapat diubah menggunakan `--shortcut-mod`. Kunci yang memungkinkan adalah `lctrl`,`rctrl`, `lalt`,` ralt`, `lsuper` dan` rsuper`. Sebagai contoh:
+Ini dapat diubah menggunakan `--shortcut-mod`. Kunci yang memungkinkan adalah `lctrl`, `rctrl`, `lalt`, `ralt`, `lsuper` dan `rsuper`. Sebagai contoh:
 
 ```bash
 # gunakan RCtrl untuk jalan pintas
