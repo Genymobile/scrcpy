@@ -162,6 +162,8 @@ scrcpy_otg(struct scrcpy_options *options) {
         .always_on_top = options->always_on_top,
         .window_x = options->window_x,
         .window_y = options->window_y,
+        .window_width = options->window_width,
+        .window_height = options->window_height,
         .window_borderless = options->window_borderless,
     };
 
