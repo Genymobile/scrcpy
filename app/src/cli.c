@@ -577,7 +577,7 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Click on BACK",
     },
     {
-        .shortcuts = { "MOD+s" },
+        .shortcuts = { "MOD+s", "4th-click" },
         .text = "Click on APP_SWITCH",
     },
     {
@@ -613,7 +613,7 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Rotate device screen",
     },
     {
-        .shortcuts = { "MOD+n" },
+        .shortcuts = { "MOD+n", "5th-click" },
         .text = "Expand notification panel",
     },
     {
