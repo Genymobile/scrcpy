@@ -18,6 +18,7 @@ public class Options {
     private boolean stayAwake;
     private List<CodecOption> codecOptions;
     private String encoderName;
+    private String hookScript;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
@@ -130,6 +131,14 @@ public class Options {
 
     public void setEncoderName(String encoderName) {
         this.encoderName = encoderName;
+    }
+
+    public void setHookScript(String hookScript) {
+        this.hookScript = hookScript;
+    }
+
+    public String getHookScript() {
+        return this.hookScript;
     }
 
     public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {

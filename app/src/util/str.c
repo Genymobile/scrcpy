@@ -48,6 +48,76 @@ truncated:
     return n;
 }
 
+int64_t
+sc_str_find_replace(char* input, char* find, char* replace, char** output) {
+
+    uint64_t inputLen;
+    int64_t findLen = strlen(find);
+    int64_t replaceLen = strlen(replace);
+
+    if(findLen < 1){
+        return 0;
+    }
+
+
+    uint64_t first_match = -1;
+    uint32_t matchCount = 0;
+
+    for(inputLen = 0; input[inputLen] != '\0'; inputLen++){
+        // strncmp and not memcmp because it needs to detect null terminating string. Otherwise, it may overrrun.
+        if(input[inputLen] == find[0] && strncmp(&(input[inputLen]), find, findLen) == 0){
+            if(first_match == (uint64_t) -1){
+                first_match = inputLen;
+            }
+            matchCount++;
+        }
+    }
+    printf("matches: %u; \n", matchCount);
+    inputLen++;
+    if(matchCount == 0){
+        return 0;
+    }
+
+    int64_t output_size = inputLen - ( matchCount * (findLen - replaceLen));
+
+    if(output_size <= 0){
+        return -2;
+    }
+
+    // Caller is responsible for freeing this
+    char* output_str = malloc(output_size);
+
+    if(output_str == NULL){
+        printf("inputi: %p\n", output_str);
+        return -2;
+    }
+    *output = output_str;
+
+    memcpy(output_str, input, first_match);
+
+    uint64_t inputi = first_match;
+    uint64_t desti = first_match;
+
+    while (input[inputi] != '\0') {
+        printf("inputi: %lu; %i; %lu; %lu; %s\n", inputi, input[inputi] == find[0], output_size, inputLen, &(input[inputi]));
+        if(input[inputi] == find[0] && strncmp(&(input[inputi]), find, findLen) == 0){
+            memcpy(&(output_str[desti]), replace, replaceLen);
+            // printf("replaced: %s\n", output_str);
+            desti += replaceLen;
+            inputi += findLen;
+        } else {
+            // printf("outputstr: %s\n", output_str);
+            output_str[desti++] = input[inputi++];
+        }
+    }
+
+    output_str[output_size - 1] = '\0';
+
+    return output_size;
+
+}
+
+
 char *
 sc_str_quote(const char *src) {
     size_t len = strlen(src);

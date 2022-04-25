@@ -39,6 +39,7 @@ struct sc_server_params {
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
+    const char * hook_script;
     bool power_off_on_close;
     bool clipboard_autosync;
     bool downsize_on_error;
