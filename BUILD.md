@@ -305,11 +305,14 @@ After a successful build, you can install _scrcpy_ on the system:
 sudo ninja -Cx install    # without sudo on Windows
 ```
 
-This installs three files:
+This installs several files:
 
- - `/usr/local/bin/scrcpy`
- - `/usr/local/share/scrcpy/scrcpy-server`
- - `/usr/local/share/man/man1/scrcpy.1`
+ - `/usr/local/bin/scrcpy` (main app)
+ - `/usr/local/share/scrcpy/scrcpy-server` (server to push to the device)
+ - `/usr/local/share/man/man1/scrcpy.1` (manpage)
+ - `/usr/local/share/icons/hicolor/256x256/apps/icon.png` (app icon)
+ - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
+ - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
 
 You can then [run](README.md#run) _scrcpy_.
 
