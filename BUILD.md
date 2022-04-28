@@ -273,7 +273,7 @@ install` must be run as root)._
 #### Option 2: Use prebuilt server
 
  - [`scrcpy-server-v1.24`][direct-scrcpy-server]  
-   _(SHA-256: ae74a81ea79c0dc7250e586627c278c0a9a8c5de46c9fb5c38c167fb1a36f056)_
+   <sub>SHA-256: `ae74a81ea79c0dc7250e586627c278c0a9a8c5de46c9fb5c38c167fb1a36f056`</sub>
 
 [direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v1.24/scrcpy-server-v1.24
 
