@@ -46,7 +46,7 @@ sudo ninja -Cbuild-auto uninstall
 ### `master`
 
 The `master` branch concerns the latest release, and is the home page of the
-project on Github.
+project on GitHub.
 
 
 ### `dev`
