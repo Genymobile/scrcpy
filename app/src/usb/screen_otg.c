@@ -98,7 +98,7 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
 
-        if (!SDL_RenderSetLogicalSize(screen->renderer, icon->w, icon->h)) {
+        if (SDL_RenderSetLogicalSize(screen->renderer, icon->w, icon->h)) {
             LOGW("Could not set renderer logical size: %s", SDL_GetError());
             // don't fail
         }
