@@ -55,6 +55,10 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     const char *serial = options->serial;
 
+    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
+        LOGW("Could not enable linear filtering");
+    }
+
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
