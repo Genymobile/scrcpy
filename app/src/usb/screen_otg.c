@@ -72,8 +72,7 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
     int width = params->window_width ? params->window_width : 256;
     int height = params->window_height ? params->window_height : 256;
 
-    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI
-                          | SDL_WINDOW_RESIZABLE;
+    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
     if (params->always_on_top) {
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
     }
