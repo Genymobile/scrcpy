@@ -314,7 +314,7 @@ This installs several files:
  - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
  - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
 
-You can then [run](README.md#run) _scrcpy_.
+You can then [run](README.md#run) `scrcpy`.
 
 ### Uninstall
 
