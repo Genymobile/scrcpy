@@ -1,0 +1,25 @@
+# apt install mingw-w64 mingw-w64-tools
+
+[binaries]
+name = 'mingw'
+c = 'aarch64-w64-mingw32-gcc'
+cpp = 'aarch64-w64-mingw32-g++'
+ar = 'aarch64-w64-mingw32-ar'
+strip = 'aarch64-w64-mingw32-strip'
+pkgconfig = 'aarch64-w64-mingw32-pkg-config'
+windres = 'aarch64-w64-mingw32-windres'
+
+[host_machine]
+system = 'windows'
+cpu_family = 'aarch64'
+cpu = 'aarch64'
+endian = 'little'
+
+[properties]
+ffmpeg_avcodec = 'avcodec-58'
+ffmpeg_avformat = 'avformat-58'
+ffmpeg_avutil = 'avutil-56'
+prebuilt_ffmpeg = 'ffmpeg-aarch64-4.3.1'
+prebuilt_sdl2 = 'SDL2-2.0.22/aarch64-w64-mingw32'
+prebuilt_libusb_root = 'libusb-1.0.26'
+prebuilt_libusb = 'libusb-1.0.26/MinGW-aarch64'
