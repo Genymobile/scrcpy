@@ -1,6 +1,6 @@
 // generic circular buffer (bounded queue) implementation
-#ifndef CBUF_H
-#define CBUF_H
+#ifndef SC_CBUF_H
+#define SC_CBUF_H
 
 #include "common.h"
 

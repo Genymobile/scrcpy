@@ -1,5 +1,5 @@
-#ifndef DEVICEMSG_H
-#define DEVICEMSG_H
+#ifndef SC_DEVICEMSG_H
+#define SC_DEVICEMSG_H
 
 #include "common.h"
 

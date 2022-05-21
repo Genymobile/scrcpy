@@ -35,6 +35,7 @@ arguments=(
     {-N,--no-display}'[Do not display device \(during screen recording or when V4L2 sink is enabled\)]'
     '--no-key-repeat[Do not forward repeated key events when a key is held down]'
     '--no-mipmaps[Disable the generation of mipmaps]'
+    '--no-power-on[Do not power on the device on start]'
     '--otg[Run in OTG mode \(simulating physical keyboard and mouse\)]'
     {-p,--port=}'[\[port\[\:port\]\] Set the TCP port \(range\) used by the client to listen]'
     '--power-off-on-close[Turn the device screen off when closing scrcpy]'

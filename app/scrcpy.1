@@ -181,6 +181,10 @@ Do not forward repeated key events when a key is held down.
 If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
 
 .TP
+.B \-\-no\-power\-on
+Do not power on the device on start.
+
+.TP
 .B \-\-otg
 Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable.
 
@@ -355,6 +359,12 @@ Set the initial window height.
 
 Default is 0 (automatic).
 
+.SH EXIT STATUS
+.B scrcpy
+will exit with code 0 on normal program termination. If an initial
+connection cannot be established, the exit code 1 will be returned. If the
+device disconnects while a session is active, exit code 2 will be returned.
+
 .SH SHORTCUTS
 
 In the following list, MOD is the shortcut modifier. By default, it's (left)
@@ -470,6 +480,10 @@ Push file to device (see \fB\-\-push\-target\fR)
 .TP
 .B ADB
 Path to adb.
+
+.TP
+.B ANDROID_SERIAL
+Device serial to use if no selector (-s, -d, -e or --tcpip=<addr>) is specified.
 
 .TP
 .B SCRCPY_ICON_PATH

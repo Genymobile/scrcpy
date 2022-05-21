@@ -56,6 +56,7 @@
 #define OPT_OTG                    1036
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
+#define OPT_NO_POWER_ON            1039
 
 struct sc_option {
     char shortopt;
@@ -77,6 +78,11 @@ struct sc_shortcut {
 
 struct sc_envvar {
     const char *name;
+    const char *text;
+};
+
+struct sc_exit_status {
+    unsigned value;
     const char *text;
 };
 
@@ -296,6 +302,11 @@ static const struct sc_option options[] = {
         .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
                 "mipmaps are automatically generated to improve downscaling "
                 "quality. This option disables the generation of mipmaps.",
+    },
+    {
+        .longopt_id = OPT_NO_POWER_ON,
+        .longopt = "no-power-on",
+        .text = "Do not power on the device on start.",
     },
     {
         .longopt_id = OPT_OTG,
@@ -572,7 +583,7 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Click on BACK",
     },
     {
-        .shortcuts = { "MOD+s" },
+        .shortcuts = { "MOD+s", "4th-click" },
         .text = "Click on APP_SWITCH",
     },
     {
@@ -608,7 +619,7 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Rotate device screen",
     },
     {
-        .shortcuts = { "MOD+n" },
+        .shortcuts = { "MOD+n", "5th-click" },
         .text = "Expand notification panel",
     },
     {
@@ -656,13 +667,33 @@ static const struct sc_envvar envvars[] = {
         .text = "Path to adb executable",
     },
     {
+        .name = "ANDROID_SERIAL",
+        .text = "Device serial to use if no selector (-s, -d, -e or "
+                "--tcpip=<addr>) is specified",
+    },
+    {
         .name = "SCRCPY_ICON_PATH",
         .text = "Path to the program icon",
     },
     {
         .name = "SCRCPY_SERVER_PATH",
         .text = "Path to the server binary",
-    }
+    },
+};
+
+static const struct sc_exit_status exit_statuses[] = {
+    {
+        .value = 0,
+        .text = "Normal program termination",
+    },
+    {
+        .value = 1,
+        .text = "Start failure",
+    },
+    {
+        .value = 2,
+        .text = "Device disconnected while running",
+    },
 };
 
 static char *
@@ -901,6 +932,25 @@ print_envvar(const struct sc_envvar *envvar, unsigned cols) {
     free(text);
 }
 
+static void
+print_exit_status(const struct sc_exit_status *status, unsigned cols) {
+    assert(cols > 8); // sc_str_wrap_lines() requires indent < columns
+    assert(status->text);
+
+    // The text starts at 9: 4 ident spaces, 3 chars for numeric value, 2 spaces
+    char *text = sc_str_wrap_lines(status->text, cols, 9);
+    if (!text) {
+        printf("<ERROR>\n");
+        return;
+    }
+
+    assert(strlen(text) >= 9); // Contains at least the initial identation
+
+    // text + 9 to remove the initial indentation
+    printf("    %3d  %s\n", status->value, text + 9);
+    free(text);
+}
+
 void
 scrcpy_print_usage(const char *arg0) {
 #define SC_TERM_COLS_DEFAULT 80
@@ -938,6 +988,11 @@ scrcpy_print_usage(const char *arg0) {
     printf("\nEnvironment variables:\n");
     for (size_t i = 0; i < ARRAY_LEN(envvars); ++i) {
         print_envvar(&envvars[i], cols);
+    }
+
+    printf("\nExit status:\n\n");
+    for (size_t i = 0; i < ARRAY_LEN(exit_statuses); ++i) {
+        print_exit_status(&exit_statuses[i], cols);
     }
 }
 
@@ -1548,6 +1603,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_CLEANUP:
                 opts->cleanup = false;
+                break;
+            case OPT_NO_POWER_ON:
+                opts->power_on = false;
                 break;
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;

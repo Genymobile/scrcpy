@@ -3,10 +3,10 @@
 
 #include "common.h"
 
-#include <stdbool.h>
 #include "options.h"
+#include "scrcpy.h"
 
-bool
+enum scrcpy_exit_code
 scrcpy_otg(struct scrcpy_options *options);
 
 #endif

@@ -6,10 +6,11 @@ cd "$DIR"
 mkdir -p "$PREBUILT_DATA_DIR"
 cd "$PREBUILT_DATA_DIR"
 
-DEP_DIR=ffmpeg-win64-5.0
+VERSION=5.0.1
+DEP_DIR=ffmpeg-win64-$VERSION
 
-FILENAME=ffmpeg-5.0-full_build-shared.7z
-SHA256SUM=e5900f6cecd4c438d398bd2fc308736c10b857cd8dd61c11bcfb05bff5d1211a
+FILENAME=ffmpeg-$VERSION-full_build-shared.7z
+SHA256SUM=ded28435b6f04b74f5ef5a6a13761233bce9e8e9f8ecb0eabe936fd36a778b0c
 
 if [[ -d "$DEP_DIR" ]]
 then
@@ -17,13 +18,13 @@ then
     exit 0
 fi
 
-get_file "https://github.com/GyanD/codexffmpeg/releases/download/5.0/$FILENAME" \
+get_file "https://github.com/GyanD/codexffmpeg/releases/download/$VERSION/$FILENAME" \
     "$FILENAME" "$SHA256SUM"
 
 mkdir "$DEP_DIR"
 cd "$DEP_DIR"
 
-ZIP_PREFIX=ffmpeg-5.0-full_build-shared
+ZIP_PREFIX=ffmpeg-$VERSION-full_build-shared
 7z x "../$FILENAME" \
     "$ZIP_PREFIX"/bin/avutil-57.dll \
     "$ZIP_PREFIX"/bin/avcodec-59.dll \
