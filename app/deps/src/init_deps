@@ -1,0 +1,44 @@
+set -e
+
+# The caller must set the following environment variable
+#  - $HOST (e.g. "x86_64-linux-gnu")
+#  - $HOST_SYSTEM ("linux", "windows", "apple"), for scripts convenience
+
+fail() {
+    echo "$1" >&2
+    exit 1
+}
+
+[[ -z "$HOST" ]] && fail '$HOST not defined'
+[[ -z "$HOST_SYSTEM" ]] && fail '$HOST_SYSTEM not defined'
+
+DIR=$(dirname ${BASH_SOURCE[0]})
+cd "$DIR"
+
+DATA_DIR=$(realpath ../data)
+INSTALL_DIR=$(realpath ../target-"$HOST")
+NJOBS=$(grep -c ^processor /proc/cpuinfo)
+
+mkdir -p "$DATA_DIR"
+cd "$DATA_DIR"
+
+checksum() {
+    local file="$1"
+    local sum="$2"
+    echo "$file: verifying checksum..."
+    echo "$sum  $file" | sha256sum -c
+}
+
+get_file() {
+    local url="$1"
+    local file="$2"
+    local sum="$3"
+    if [[ -f "$file" ]]
+    then
+        echo "$file: found"
+    else
+        echo "$file: not found, downloading..."
+        wget "$url" -O "$file"
+    fi
+    checksum "$file" "$sum"
+}
