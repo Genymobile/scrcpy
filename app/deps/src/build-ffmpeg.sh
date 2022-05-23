@@ -29,6 +29,7 @@ cd "build-$HOST"
 
 params=(
     --prefix="$INSTALL_DIR"
+    --arch="$ARCH"
     --disable-autodetect
     --disable-programs
     --disable-everything
@@ -44,10 +45,19 @@ params=(
     --enable-muxer=mp4
     --enable-muxer=matroska
 )
-if [[ "$HOST_SYSTEM" == 'linux' ]]
-then
-    params+=(--enable-libv4l2)
-fi
+
+case "$HOST_SYSTEM" in
+    linux)
+        params+=(--enable-libv4l2)
+        ;;
+    windows)
+        params+=(--target-os=mingw32)
+        params+=(--cross-prefix="$HOST-")
+        ;;
+    *)
+        fail "Unsupported platform: $HOST"
+        ;;
+esac
 
 ../configure "${params[@]}"
 make -j $NJOBS

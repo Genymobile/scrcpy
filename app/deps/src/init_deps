@@ -10,7 +10,19 @@ fail() {
 }
 
 [[ -z "$HOST" ]] && fail '$HOST not defined'
-[[ -z "$HOST_SYSTEM" ]] && fail '$HOST_SYSTEM not defined'
+
+if [[ "$HOST" == *linux* ]]
+then
+    HOST_SYSTEM='linux'
+elif [[ "$HOST" == *mingw* ]]
+then
+    HOST_SYSTEM='windows'
+else
+    fail "Host system could not be deduced from '$HOST'"
+fi
+
+ARCH="${HOST%%-*}"
+[[ -z "$ARCH" ]] && fail "Arch could not be deduced from '$HOST'"
 
 DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DIR"
