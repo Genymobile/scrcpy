@@ -199,7 +199,7 @@ sc_adb_parse_device_ip_from_line(char *line) {
 }
 
 char *
-sc_adb_parse_device_ip_from_output(char *str) {
+sc_adb_parse_device_ip(char *str) {
     size_t idx_line = 0;
     while (str[idx_line] != '\0') {
         char *line = &str[idx_line];

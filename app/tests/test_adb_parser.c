@@ -167,7 +167,7 @@ static void test_get_ip_single_line(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
     free(ip);
@@ -177,7 +177,7 @@ static void test_get_ip_single_line_without_eol(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
     free(ip);
@@ -187,7 +187,7 @@ static void test_get_ip_single_line_with_trailing_space(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34 \n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(ip);
     assert(!strcmp(ip, "192.168.12.34"));
     free(ip);
@@ -199,7 +199,7 @@ static void test_get_ip_multiline_first_ok(void) {
                       "10.0.0.0/24 dev rmnet  proto kernel  scope link  src "
                       "10.0.0.2\r\n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(ip);
     assert(!strcmp(ip, "192.168.1.2"));
     free(ip);
@@ -211,7 +211,7 @@ static void test_get_ip_multiline_second_ok(void) {
                       "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.1.3\r\n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(ip);
     assert(!strcmp(ip, "192.168.1.3"));
     free(ip);
@@ -221,7 +221,7 @@ static void test_get_ip_no_wlan(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(!ip);
 }
 
@@ -229,7 +229,7 @@ static void test_get_ip_no_wlan_without_eol(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "192.168.12.34";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(!ip);
 }
 
@@ -237,7 +237,7 @@ static void test_get_ip_truncated(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "\n";
 
-    char *ip = sc_adb_parse_device_ip_from_output(ip_route);
+    char *ip = sc_adb_parse_device_ip(ip_route);
     assert(!ip);
 }
 
