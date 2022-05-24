@@ -241,6 +241,28 @@ static void test_get_ip_truncated(void) {
     assert(!ip);
 }
 
+static void test_apk_path(void) {
+    char str[] = "package:/data/app/~~71mguyc6p-kNjQdNaNkToA==/com.genymobile."
+                 "scrcpy-l6fiqqUSU7Ok7QLg-rIyJA==/base.apk=com.genymobile."
+                 "scrcpy\n";
+
+    const char *expected = "/data/app/~~71mguyc6p-kNjQdNaNkToA==/com.genymobile"
+                           ".scrcpy-l6fiqqUSU7Ok7QLg-rIyJA==/base.apk";
+    char *path = sc_adb_parse_installed_apk_path(str);
+    assert(!strcmp(path, expected));
+    free(path);
+}
+
+static void test_apk_path_invalid(void) {
+    // Does not start with "package:"
+    char str[] = "garbage:/data/app/~~71mguyc6p-kNjQdNaNkToA==/com.genymobile."
+                 "scrcpy-l6fiqqUSU7Ok7QLg-rIyJA==/base.apk=com.genymobile."
+                 "scrcpy\n";
+
+    char *path = sc_adb_parse_installed_apk_path(str);
+    assert(!path);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -262,6 +284,9 @@ int main(int argc, char *argv[]) {
     test_get_ip_no_wlan();
     test_get_ip_no_wlan_without_eol();
     test_get_ip_truncated();
+
+    test_apk_path();
+    test_apk_path_invalid();
 
     return 0;
 }
