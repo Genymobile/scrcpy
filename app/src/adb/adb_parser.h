@@ -27,4 +27,15 @@ sc_adb_parse_devices(char *str, struct sc_vec_adb_devices *out_vec);
 char *
 sc_adb_parse_device_ip(char *str);
 
+/**
+ * Parse the package path from the output of
+ * `adb shell pm list packages -f <package>`
+ *
+ * The parameter must be a NUL-terminated string.
+ *
+ * Warning: this function modifies the buffer for optimization purposes.
+ */
+char *
+sc_adb_parse_installed_apk_path(char *str);
+
 #endif

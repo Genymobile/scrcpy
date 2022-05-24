@@ -712,3 +712,48 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
 
     return sc_adb_parse_device_ip(buf);
 }
+
+char *
+sc_adb_get_installed_apk_path(struct sc_intr *intr, const char *serial,
+                              unsigned flags) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "shell", "pm", "list", "package", "-f",
+                       SC_ANDROID_PACKAGE);
+
+    sc_pipe pout;
+    sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGD("Could not execute \"pm list packages\"");
+        return NULL;
+    }
+
+    // "pm list packages -f <package>" output should contain only one line, so
+    // the output should be short
+    char buf[1024];
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "pm list packages", flags);
+    if (!ok) {
+        return NULL;
+    }
+
+    if (r == -1) {
+        return NULL;
+    }
+
+    assert((size_t) r < sizeof(buf));
+    if (r == sizeof(buf) - 1)  {
+        // The implementation assumes that the output of "ip route" fits in the
+        // buffer in a single pass
+        LOGW("Result of \"pm list package\" does not fit in 1Kb. "
+             "Please report an issue.");
+        return NULL;
+    }
+
+    // It is parsed as a NUL-terminated string
+    buf[r] = '\0';
+
+    return sc_adb_parse_installed_apk_path(buf);
+}

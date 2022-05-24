@@ -225,3 +225,31 @@ sc_adb_parse_device_ip(char *str) {
 
     return NULL;
 }
+
+char *
+sc_adb_parse_installed_apk_path(char *str) {
+    // str is expected to look like:
+    // "package:/data/app/.../base.apk=com.genymobile.scrcpy"
+    //          ^^^^^^^^^^^^^^^^^^^^^^
+    // We want to extract the path (which may contain '=', even in practice)
+
+    if (strncmp(str, "package:", 8)) {
+        // Does not start with "package:"
+        return NULL;
+    }
+
+    char *s = str + 8;
+    size_t len = strcspn(s, " \r\n");
+    s[len] = '\0';
+
+    char *p = strrchr(s, '=');
+    if (!p) {
+        // No '=' found
+        return NULL;
+    }
+
+    // Truncate at the last '='
+    *p = '\0';
+
+    return strdup(s);
+}
