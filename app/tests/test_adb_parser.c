@@ -5,7 +5,7 @@
 #include "adb/adb_device.h"
 #include "adb/adb_parser.h"
 
-static void test_adb_devices() {
+static void test_adb_devices(void) {
     char output[] =
         "List of devices attached\n"
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
@@ -31,7 +31,7 @@ static void test_adb_devices() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_adb_devices_cr() {
+static void test_adb_devices_cr(void) {
     char output[] =
         "List of devices attached\r\n"
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
@@ -57,7 +57,7 @@ static void test_adb_devices_cr() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_adb_devices_daemon_start() {
+static void test_adb_devices_daemon_start(void) {
     char output[] =
         "* daemon not running; starting now at tcp:5037\n"
         "* daemon started successfully\n"
@@ -78,7 +78,7 @@ static void test_adb_devices_daemon_start() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_adb_devices_daemon_start_mixed() {
+static void test_adb_devices_daemon_start_mixed(void) {
     char output[] =
         "List of devices attached\n"
         "adb server version (41) doesn't match this client (39); killing...\n"
@@ -105,7 +105,7 @@ static void test_adb_devices_daemon_start_mixed() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_adb_devices_without_eol() {
+static void test_adb_devices_without_eol(void) {
     char output[] =
         "List of devices attached\n"
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
@@ -124,7 +124,7 @@ static void test_adb_devices_without_eol() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_adb_devices_without_header() {
+static void test_adb_devices_without_header(void) {
     char output[] =
         "0123456789abcdef	device usb:2-1 product:MyProduct model:MyModel "
             "device:MyDevice transport_id:1\n";
@@ -134,7 +134,7 @@ static void test_adb_devices_without_header() {
     assert(!ok);
 }
 
-static void test_adb_devices_corrupted() {
+static void test_adb_devices_corrupted(void) {
     char output[] =
         "List of devices attached\n"
         "corrupted_garbage\n";
@@ -145,7 +145,7 @@ static void test_adb_devices_corrupted() {
     assert(vec.size == 0);
 }
 
-static void test_adb_devices_spaces() {
+static void test_adb_devices_spaces(void) {
     char output[] =
         "List of devices attached\n"
         "0123456789abcdef       unauthorized usb:1-4 transport_id:3\n";
@@ -163,7 +163,7 @@ static void test_adb_devices_spaces() {
     sc_adb_devices_destroy(&vec);
 }
 
-static void test_get_ip_single_line() {
+static void test_get_ip_single_line(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
 
@@ -173,7 +173,7 @@ static void test_get_ip_single_line() {
     free(ip);
 }
 
-static void test_get_ip_single_line_without_eol() {
+static void test_get_ip_single_line_without_eol(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34";
 
@@ -183,7 +183,7 @@ static void test_get_ip_single_line_without_eol() {
     free(ip);
 }
 
-static void test_get_ip_single_line_with_trailing_space() {
+static void test_get_ip_single_line_with_trailing_space(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.12.34 \n";
 
@@ -193,7 +193,7 @@ static void test_get_ip_single_line_with_trailing_space() {
     free(ip);
 }
 
-static void test_get_ip_multiline_first_ok() {
+static void test_get_ip_multiline_first_ok(void) {
     char ip_route[] = "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
                       "192.168.1.2\r\n"
                       "10.0.0.0/24 dev rmnet  proto kernel  scope link  src "
@@ -205,7 +205,7 @@ static void test_get_ip_multiline_first_ok() {
     free(ip);
 }
 
-static void test_get_ip_multiline_second_ok() {
+static void test_get_ip_multiline_second_ok(void) {
     char ip_route[] = "10.0.0.0/24 dev rmnet  proto kernel  scope link  src "
                       "10.0.0.3\r\n"
                       "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
@@ -217,7 +217,7 @@ static void test_get_ip_multiline_second_ok() {
     free(ip);
 }
 
-static void test_get_ip_no_wlan() {
+static void test_get_ip_no_wlan(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
 
@@ -225,7 +225,7 @@ static void test_get_ip_no_wlan() {
     assert(!ip);
 }
 
-static void test_get_ip_no_wlan_without_eol() {
+static void test_get_ip_no_wlan_without_eol(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "192.168.12.34";
 
@@ -233,7 +233,7 @@ static void test_get_ip_no_wlan_without_eol() {
     assert(!ip);
 }
 
-static void test_get_ip_truncated() {
+static void test_get_ip_truncated(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "\n";
 
