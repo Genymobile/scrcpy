@@ -262,4 +262,6 @@ int main(int argc, char *argv[]) {
     test_get_ip_no_wlan();
     test_get_ip_no_wlan_without_eol();
     test_get_ip_truncated();
+
+    return 0;
 }
