@@ -20,11 +20,10 @@ The client captures relevant keyboard and mouse events, that it transmits to the
 server, which injects them to the device.
 
 
-
 ## Server
 
-
 ### Privileges
+
 
 Capturing the screen requires some privileges, which are granted to `shell`.
 
