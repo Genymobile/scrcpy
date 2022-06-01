@@ -47,6 +47,7 @@ struct sc_server_params {
     bool select_usb;
     bool select_tcpip;
     bool cleanup;
+    bool power_on;
 };
 
 struct sc_server {

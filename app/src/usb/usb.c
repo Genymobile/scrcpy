@@ -15,6 +15,7 @@ read_string(libusb_device_handle *handle, uint8_t desc_index) {
                                            (unsigned char *) buffer,
                                            sizeof(buffer));
     if (result < 0) {
+        LOGD("Read string: libusb error: %s", libusb_strerror(result));
         return NULL;
     }
 

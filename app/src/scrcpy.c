@@ -149,38 +149,41 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 }
 
-static bool
+static enum scrcpy_exit_code
 event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case EVENT_STREAM_STOPPED:
                 LOGW("Device disconnected");
-                return false;
+                return SCRCPY_EXIT_DISCONNECTED;
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return true;
+                return SCRCPY_EXIT_SUCCESS;
             default:
                 sc_screen_handle_event(&s->screen, &event);
                 break;
         }
     }
-    return false;
+    return SCRCPY_EXIT_FAILURE;
 }
 
+// Return true on success, false on error
 static bool
-await_for_server(void) {
+await_for_server(bool *connected) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
-                return false;
+                *connected = false;
+                return true;
             case EVENT_SERVER_CONNECTION_FAILED:
                 LOGE("Server connection failed");
                 return false;
             case EVENT_SERVER_CONNECTED:
                 LOGD("Server connected");
+                *connected = true;
                 return true;
             default:
                 break;
@@ -262,7 +265,7 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
-bool
+enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
     struct scrcpy *s = &scrcpy;
@@ -270,12 +273,12 @@ scrcpy(struct scrcpy_options *options) {
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     atexit(SDL_Quit);
 
-    bool ret = false;
+    enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     bool server_started = false;
     bool file_pusher_initialized = false;
@@ -321,6 +324,7 @@ scrcpy(struct scrcpy_options *options) {
         .tcpip = options->tcpip,
         .tcpip_dst = options->tcpip_dst,
         .cleanup = options->cleanup,
+        .power_on = options->power_on,
     };
 
     static const struct sc_server_callbacks cbs = {
@@ -329,7 +333,7 @@ scrcpy(struct scrcpy_options *options) {
         .on_disconnected = sc_server_on_disconnected,
     };
     if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     if (!sc_server_start(&s->server)) {
@@ -351,7 +355,14 @@ scrcpy(struct scrcpy_options *options) {
     sdl_configure(options->display, options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
-    if (!await_for_server()) {
+    bool connected;
+    if (!await_for_server(&connected)) {
+        goto end;
+    }
+
+    if (!connected) {
+        // This is not an error, user requested to quit
+        ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
 

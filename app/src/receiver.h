@@ -1,5 +1,5 @@
-#ifndef RECEIVER_H
-#define RECEIVER_H
+#ifndef SC_RECEIVER_H
+#define SC_RECEIVER_H
 
 #include "common.h"
 

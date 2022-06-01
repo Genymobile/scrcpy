@@ -248,6 +248,10 @@ execute_server(struct sc_server *server,
         // By default, cleanup is true
         ADD_PARAM("cleanup=false");
     }
+    if (!params->power_on) {
+        // By default, power_on is true
+        ADD_PARAM("power_on=false");
+    }
 
 #undef ADD_PARAM
 
@@ -649,7 +653,8 @@ sc_server_configure_tcpip_known_address(struct sc_server *server,
 static bool
 sc_server_configure_tcpip_unknown_address(struct sc_server *server,
                                           const char *serial) {
-    bool is_already_tcpip = sc_adb_is_serial_tcpip(serial);
+    bool is_already_tcpip =
+        sc_adb_device_get_type(serial) == SC_ADB_DEVICE_TYPE_TCPIP;
     if (is_already_tcpip) {
         // Nothing to do
         LOGI("Device already connected via TCP/IP: %s", serial);
@@ -707,7 +712,15 @@ run_server(void *data) {
         } else if (params->select_tcpip) {
             selector.type = SC_ADB_DEVICE_SELECT_TCPIP;
         } else {
-            selector.type = SC_ADB_DEVICE_SELECT_ALL;
+            // No explicit selection, check $ANDROID_SERIAL
+            const char *env_serial = getenv("ANDROID_SERIAL");
+            if (env_serial) {
+                LOGI("Using ANDROID_SERIAL: %s", env_serial);
+                selector.type = SC_ADB_DEVICE_SELECT_SERIAL;
+                selector.serial = env_serial;
+            } else {
+                selector.type = SC_ADB_DEVICE_SELECT_ALL;
+            }
         }
         struct sc_adb_device device;
         ok = sc_adb_select_device(&server->intr, &selector, 0, &device);

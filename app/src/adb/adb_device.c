@@ -1,6 +1,7 @@
 #include "adb_device.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 void
 sc_adb_device_destroy(struct sc_adb_device *device) {
@@ -25,3 +26,18 @@ sc_adb_devices_destroy(struct sc_vec_adb_devices *devices) {
     sc_vector_destroy(devices);
 }
 
+enum sc_adb_device_type
+sc_adb_device_get_type(const char *serial) {
+    // Starts with "emulator-"
+    if (!strncmp(serial, "emulator-", sizeof("emulator-") - 1)) {
+        return SC_ADB_DEVICE_TYPE_EMULATOR;
+    }
+
+    // If the serial contains a ':', then it is a TCP/IP device (it is
+    // sufficient to distinguish an ip:port from a real USB serial)
+    if (strchr(serial, ':')) {
+        return SC_ADB_DEVICE_TYPE_TCPIP;
+    }
+
+    return SC_ADB_DEVICE_TYPE_USB;
+}

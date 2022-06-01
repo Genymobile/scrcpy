@@ -181,7 +181,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
-        LOGW("Could request HID event");
+        LOGW("Could not request HID event (mouse motion)");
     }
 }
 
@@ -203,7 +203,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
-        LOGW("Could request HID event");
+        LOGW("Could not request HID event (mouse click)");
     }
 }
 
@@ -228,7 +228,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
-        LOGW("Could request HID event");
+        LOGW("Could not request HID event (mouse scroll)");
     }
 }
 

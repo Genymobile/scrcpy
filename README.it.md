@@ -1,22 +1,41 @@
-_Apri il [README](README.md) originale e sempre aggiornato._
+_Apri il [README](README.md) originale (in inglese) e sempre aggiornato._
 
-# scrcpy (v1.19)
+<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
-Questa applicazione fornisce la visualizzazione e il controllo dei dispositivi Android collegati via USB (o [via TCP/IP][article-tcpip]). Non richiede alcun accesso _root_.
+# scrcpy (v1.23)
+
+_si pronuncia "**scr**een **c**o**py**"_
+
+[Leggi in altre lingue](#traduzioni)
+
+Questa applicazione fornisce la visualizzazione e il controllo di dispositivi Android collegati via USB (o [via TCP/IP](#tcpip-wireless)). Non richiede alcun accesso _root_.
 Funziona su _GNU/Linux_, _Windows_ e _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
 Si concentra su:
 
- - **leggerezza** (nativo, mostra solo lo schermo del dispositivo)
- - **prestazioni** (30~60fps)
- - **qualità** (1920×1080 o superiore)
- - **bassa latenza** ([35~70ms][lowlatency])
- - **tempo di avvio basso** (~ 1secondo per visualizzare la prima immagine)
- - **non invadenza** (nulla viene lasciato installato sul dispositivo)
+ - **leggerezza**: nativo, mostra solo lo schermo del dispositivo
+ - **prestazioni**: 30~120fps, in funzione del dispositivo
+ - **qualità**: 1920×1080 o superiore
+ - **bassa latenza**: [35~70ms][lowlatency]
+ - **tempo di avvio basso**: ~ 1secondo per visualizzare la prima immagine
+ - **non invadenza**: nulla rimane installato sul dispositivo
+ - **vantaggi per l'utente**: nessun account, nessuna pubblicità, non è richiesta alcuna connessione a internet
+ - **libertà**: software libero e a codice aperto (_free and open source_)
 
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
+
+Le sue caratteristiche includono:
+ - [registrazione](#registrazione)
+ - mirroring con [schermo del dispositivo spento](#spegnere-lo-schermo)
+ - [copia-incolla](#copia-incolla) in entrambe le direzioni
+ - [qualità configurabile](#configurazione-di-acquisizione)
+ - schermo del dispositivo [come webcam (V4L2)](#v4l2loopback) (solo per Linux)
+ - [simulazione della tastiera fisica (HID)](#simulazione-della-tastiera-fisica-HID)
+ - [simulazione mouse fisico (HID)](#simulazione-del-mouse-fisico-HID)
+ - [modalità OTG](#otg)
+ - e altro ancora...
 
 
 ## Requisiti
@@ -49,10 +68,16 @@ Compila dai sorgenti: [BUILD] (in inglese) ([procedimento semplificato][BUILD_si
 
 ### Linux
 
-Su Debian (_testing_ e _sid_ per ora) e Ubuntu (20.04):
+Su Debian e Ubuntu:
 
 ```
 apt install scrcpy
+```
+
+Su Arch Linux:
+
+```
+pacman -S scrcpy
 ```
 
 È disponibile anche un pacchetto [Snap]: [`scrcpy`][snap-link].
@@ -66,10 +91,6 @@ Per Fedora, è disponibile un pacchetto [COPR]: [`scrcpy`][copr-link].
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 [copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
-Per Arch Linux, è disponibile un pacchetto [AUR]: [`scrcpy`][aur-link].
-
-[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
-[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 Per Gentoo, è disponibile una [Ebuild]: [`scrcpy/`][ebuild-link].
 
@@ -142,7 +163,7 @@ Collega un dispositivo Android ed esegui:
 scrcpy
 ```
 
-Scrcpy accetta argomenti da riga di comando, essi sono listati con:
+Scrcpy accetta argomenti da riga di comando, elencati con:
 
 ```bash
 scrcpy --help
@@ -185,6 +206,14 @@ scrcpy --max-fps 15
 ```
 
 Questo è supportato ufficialmente a partire da Android 10, ma potrebbe funzionare in versioni precedenti.
+
+L'attuale frame rate di acquisizione può essere stampato sulla console:
+
+```
+scrcpy --print-fps
+```
+
+Può anche essere abilitato o disabilitato in qualsiasi momento con <kbd>MOD</kbd>+<kbd>i</kbd>.
 
 #### Ritaglio
 
@@ -258,7 +287,7 @@ I "fotogrammi saltati" sono registrati nonostante non siano mostrati in tempo re
 
 #### v4l2loopback
 
-Su Linux è possibile inviare il flusso video ad un dispositivo v4l2 loopback, cosicchè un dispositivo Android possa essere aperto come una webcam da qualsiasi strumento compatibile con v4l2.
+Su Linux è possibile inviare il flusso video ad un dispositivo v4l2 loopback, cosicché un dispositivo Android possa essere aperto come una webcam da qualsiasi strumento compatibile con v4l2.
 
 Il modulo `v4l2loopback` deve essere installato:
 
@@ -321,42 +350,72 @@ scrcpy --display-buffer=50  # aggiungi 50 ms di buffer per la visualizzazione
 e per il V4L2 sink:
 
 ```bash
-scrcpy --v4l2-buffer=500    #  aggiungi 50 ms di buffer per il v4l2 sink
+scrcpy --v4l2-buffer=500    #  aggiungi 500 ms di buffer per il v4l2 sink
 ```
 
 
 ### Connessione
 
-#### Wireless
+#### TCP/IP (wireless)
 
+_Scrcpy_ usa `adb` per comunicare col dispositivo e `adb` può [connettersi][connect] a un dispositivo mediante TCP/IP. Il dispositivo deve essere collegato alla stessa rete del computer.
 
-_Scrcpy_ usa `adb` per comunicare col dispositivo e `adb` può [connettersi][connect] al dispositivo mediante TCP/IP:
+##### Automatico
 
-1. Connetti il dispositivo alla stessa rete Wi-Fi del tuo computer.
-2. Trova l'indirizzo IP del tuo dispositivo in Impostazioni → Informazioni sul telefono → Stato, oppure   eseguendo questo comando:
+Un'opzione `--tcpip` permette di configurare automaticamente la connessione. Ci sono due varianti.
+
+Se il dispositivo (accessibile a 192.168.1.1 in questo esempio) ascolta già su una porta (tipicamente 5555) per le connessioni adb in entrata, allora esegui:
+
+```bash
+scrcpy --tcpip=192.168.1.1       # la porta predefinita è 5555
+scrcpy --tcpip=192.168.1.1:5555
+```
+
+Se la modalità TCP/IP di adb è disabilitata sul dispositivo (o se non si conosce l'indirizzo IP indirizzo), collegare il dispositivo tramite USB, quindi eseguire:
+
+```bash
+scrcpy --tcpip # senza argomenti
+```
+
+Il comando troverà automaticamente l'indirizzo IP del dispositivo, abiliterà la modalità TCP/IP, quindi connettersi al dispositivo prima di iniziare.
+
+##### Manuale
+
+In alternativa, è possibile abilitare la connessione TCP/IP manualmente usando `adb`:
+
+1. Inserisci il dispositivo in una porta USB del tuo computer.
+2. Connetti il dispositivo alla stessa rete Wi-Fi del tuo computer.
+3. Ottieni l'indirizzo IP del tuo dispositivo, in Impostazioni → Informazioni sul telefono → Stato, o
+   eseguendo questo comando:
 
     ```bash
     adb shell ip route | awk '{print $9}'
     ```
 
-3. Abilita adb via TCP/IP sul tuo dispositivo: `adb tcpip 5555`.
-4. Scollega il tuo dispositivo.
-5. Connetti il tuo dispositivo: `adb connect IP_DISPOSITVO:5555` _(rimpiazza `IP_DISPOSITIVO`)_.
-6. Esegui `scrcpy` come al solito.
+4. Abilita adb via TCP/IP sul tuo dispositivo: `adb tcpip 5555`.
+5. Scollega il tuo dispositivo.
+6. Connettiti al tuo dispositivo: `adb connect DEVICE_IP:5555` _(sostituisci `DEVICE_IP`
+con l'indirizzo IP del dispositivo che hai trovato)_.
+7. Esegui `scrcpy` come al solito.
 
-Potrebbe essere utile diminuire il bit-rate e la definizione
+Da Android 11, una [opzione di debug wireless][adb-wireless] permette di evitare di dover collegare fisicamente il dispositivo direttamente al computer.
+
+[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
+
+Se la connessione cade casualmente, esegui il comando `scrcpy` per riconnetterti. Se il comando dice che non ci sono dispositivi/emulatori trovati, prova ad eseguire `adb connect DEVICE_IP:5555` di nuovo, e poi `scrcpy` come al solito. Se dice ancora che non ne ha trovato nessuno, prova ad eseguire `adb disconnect` e poi esegui di nuovo questi due comandi.
+
+Potrebbe essere utile diminuire il bit-rate e la definizione:
 
 ```bash
 scrcpy --bit-rate 2M --max-size 800
-scrcpy -b2M -m800  # versione breve
+scrcpy -b2M -m800 # versione breve
 ```
 
 [connect]: https://developer.android.com/studio/command-line/adb.html#wireless
 
-
 #### Multi dispositivo
 
-Se in `adb devices` sono listati più dispositivi, è necessario specificare il _seriale_:
+Se in `adb devices` sono elencati più dispositivi, è necessario specificare il _seriale_:
 
 ```bash
 scrcpy --serial 0123456789abcdef
@@ -368,6 +427,18 @@ Se il dispositivo è collegato mediante TCP/IP:
 ```bash
 scrcpy --serial 192.168.0.1:5555
 scrcpy -s 192.168.0.1:5555  # versione breve
+```
+
+Se solo un dispositivo è collegato via USB o TCP/IP, è possibile selezionarlo automaticamente:
+
+```bash
+# Select the only device connected via USB
+scrcpy -d             # like adb -d
+scrcpy --select-usb   # long version
+
+# Select the only device connected via TCP/IP
+scrcpy -e             # like adb -e
+scrcpy --select-tcpip # long version
 ```
 
 Puoi avviare più istanze di _scrcpy_ per diversi dispositivi.
@@ -383,36 +454,76 @@ autoadb scrcpy -s '{}'
 
 [AutoAdb]: https://github.com/rom1v/autoadb
 
-#### Tunnel SSH
+#### Tunnels
 
-Per connettersi a un dispositivo remoto è possibile collegare un client `adb` locale ad un server `adb` remoto (assunto che entrambi stiano usando la stessa versione del protocollo _adb_):
+Per connettersi a un dispositivo remoto, è possibile collegare un client `adb` locale a un server remoto `adb` (purché usino la stessa versione del protocollo _adb_). ).
+
+##### Server ADB remoto
+
+Per connettersi a un server ADB remoto, fate ascoltare il server su tutte le interfacce:
 
 ```bash
-adb kill-server    # termina il server adb locale su 5037
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
-# tieni questo aperto
+adb kill-server
+adb -a nodaemon server start
+# tienilo aperto
 ```
 
-Da un altro terminale:
+**Attenzione: tutte le comunicazioni tra i client e il server ADB non sono criptate.**
+
+Supponi che questo server sia accessibile a 192.168.1.2. Poi, da un altro terminale, esegui scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+Per impostazione predefinita, scrcpy utilizza la porta locale utilizzata per il tunnel `adb forward` (tipicamente `27183`, vedi `--port`). È anche possibile forzare una diversa porta del tunnel (può essere utile in situazioni più complesse, quando sono coinvolti più reindirizzamenti):
+
+```
+scrcpy --tunnel-port=1234
+```
+
+##### SSH tunnel
+
+Per comunicare con un server ADB remoto in modo sicuro, è preferibile utilizzare un tunnel SSH.
+
+Per prima cosa, assicurati che il server ADB sia in esecuzione sul computer remoto:
+
+```bash
+adb start-server
+```
+
+Poi, crea un tunnel SSH:
+
+```bash
+# local  5038 --> remote  5037
+# local 27183 <-- remote 27183
+ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
+# keep this open
+```
+
+Da un altro terminale, esegui scrcpy:
+
+```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy
 ```
 
 Per evitare l'abilitazione dell'apertura porte remota potresti invece forzare una "forward connection" (notare il `-L` invece di `-R`)
 
 ```bash
-adb kill-server    # termina il server adb locale su 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# local  5038 --> remote  5037
+# local 27183 --> remote 27183
+ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 # tieni questo aperto
 ```
 
-Da un altro terminale:
+Da un altro terminale, esegui scrcpy:
 
 ```bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
 scrcpy --force-adb-forward
 ```
-
 
 Come per le connessioni wireless potrebbe essere utile ridurre la qualità:
 
@@ -551,6 +662,14 @@ scrcpy --turn-screen-off --stay-awake
 scrcpy -Sw
 ```
 
+#### Spegnimento alla chiusura
+
+Per spegnere lo schermo del dispositivo quando si chiude scrcpy:
+
+```bash
+scrcpy --power-off-on-close
+```
+
 
 #### Mostrare i tocchi
 
@@ -596,20 +715,22 @@ Qualsiasi scorciatoia <kbd>Ctrl</kbd> viene inoltrata al dispositivo. In partico
  - <kbd>Ctrl</kbd>+<kbd>x</kbd> taglia
  - <kbd>Ctrl</kbd>+<kbd>v</kbd> incolla (dopo la sincronizzazione degli appunti da computer a dispositivo)
 
-Questo solitamente funziona nella maniera più comune.
+Questo solitamente funziona come ci si aspetta.
 
 Il comportamento reale, però, dipende dall'applicazione attiva. Per esempio _Termux_ invia SIGINT con <kbd>Ctrl</kbd>+<kbd>c</kbd>, e _K-9 Mail_ compone un nuovo messaggio.
 
 Per copiare, tagliare e incollare in questi casi (ma è solo supportato in Android >= 7):
- - <kbd>MOD</kbd>+<kbd>c</kbd> inietta `COPY`
- - <kbd>MOD</kbd>+<kbd>x</kbd> inietta `CUT`
- - <kbd>MOD</kbd>+<kbd>v</kbd> inietta `PASTE` (dopo la sincronizzazione degli appunti da computer a dispositivo)
+ - <kbd>MOD</kbd>+<kbd>c</kbd> invia `COPY`
+ - <kbd>MOD</kbd>+<kbd>x</kbd> invia `CUT`
+ - <kbd>MOD</kbd>+<kbd>v</kbd> invia `PASTE` (dopo la sincronizzazione degli appunti da computer a dispositivo)
 
-In aggiunta, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permette l'iniezione del testo degli appunti del computer come una sequenza di eventi pressione dei tasti. Questo è utile quando il componente non accetta l'incollaggio di testo (per esempio in _Termux_), ma questo può rompere il contenuto non ASCII.
+In aggiunta, <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd> permette l'invio del testo degli appunti del computer come una sequenza di eventi pressione dei tasti. Questo è utile quando il componente non accetta l'incollaggio di testo (per esempio in _Termux_), ma questo può compromettere il contenuto non ASCII.
 
 **AVVISO:** Incollare gli appunti del computer nel dispositivo (sia con <kbd>Ctrl</kbd>+<kbd>v</kbd> che con <kbd>MOD</kbd>+<kbd>v</kbd>) copia il contenuto negli appunti del dispositivo. Come conseguenza, qualsiasi applicazione Android potrebbe leggere il suo contenuto. Dovresti evitare di incollare contenuti sensibili (come password) in questa maniera.
 
-Alcuni dispositivi non si comportano come aspettato quando si modificano gli appunti del dispositivo a livello di codice. L'opzione `--legacy-paste` è fornita per cambiare il comportamento di <kbd>Ctrl</kbd>+<kbd>v</kbd> and <kbd>MOD</kbd>+<kbd>v</kbd> in modo tale che anch'essi iniettino il testo gli appunti del computer come una sequenza di eventi pressione dei tasti (nella stessa maniera di <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
+Alcuni dispositivi non si comportano come aspettato quando si modificano gli appunti del dispositivo a livello di codice. L'opzione `--legacy-paste` è fornita per cambiare il comportamento di <kbd>Ctrl</kbd>+<kbd>v</kbd> and <kbd>MOD</kbd>+<kbd>v</kbd> in modo tale che anch'essi inviino il testo degli appunti del computer come una sequenza di eventi di pressione dei tasti (nella stessa maniera di <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
+
+Per disabilitare la sincronizzazione automatica degli appunti, usa `--no-clipboard-autosync`.
 
 #### Pizzica per zoomare (pinch-to-zoom)
 
@@ -617,16 +738,98 @@ Per simulare il "pizzica per zoomare": <kbd>Ctrl</kbd>+_click e trascina_.
 
 Più precisamente, tieni premuto <kbd>Ctrl</kbd> mentre premi il pulsante sinistro. Finchè il pulsante non sarà rilasciato, tutti i movimenti del mouse ridimensioneranno e ruoteranno il contenuto (se supportato dall'applicazione) relativamente al centro dello schermo.
 
-Concretamente scrcpy genera degli eventi di tocco addizionali di un "dito virtuale" nella posizione simmetricamente opposta rispetto al centro dello schermo.
+Concretamente, scrcpy genera degli eventi di tocco addizionali di un "dito virtuale" nella posizione simmetricamente opposta rispetto al centro dello schermo.
+
+#### Simulazione della tastiera fisica (HID)
+
+Per impostazione predefinita, scrcpy utilizza l'invio dei tasti o del testo di Android: funziona ovunque, ma è limitato all'ASCII.
+
+In alternativa scrcpy può simulare una tastiera fisica USB su Android per fornire una migliore esperienza di input (utilizzando [USB HID over AOAv2][hid-aoav2]): la tastiera virtuale è disabilitata e funziona per tutti i caratteri e IME.
+
+[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
+
+Tuttavia, funziona solo se il dispositivo è collegato via USB.
+
+Nota: su Windows, può funzionare solo in [odalità OTG](#otg), non durante il mirroring (non è possibile aprire un dispositivo USB se è già aperto da un altro processo come il daemon adb).
+
+Per abilitare questa modalità:
+
+```bash
+scrcpy --hid-keyboard
+scrcpy -K # versione breve
+```
+
+Se fallisce per qualche motivo (per esempio perché il dispositivo non è connesso via USB), ritorna automaticamente alla modalità predefinita (con un log nella console). Questo permette di usare le stesse opzioni della linea di comando quando si è connessi via USB e TCP/IP.
+
+In questa modalità, gli eventi i pressione originali (scancodes) sono inviati al dispositivo, indipendentemente dalla mappatura dei tasti dell'host. Pertanto, se il layout della tua tastiera non corrisponde, deve essere configurato sul dispositivo Android, in Impostazioni → Sistema → Lingue e input → [Tastiera fisica] (in inglese).
+
+Questa pagina di impostazioni può essere avviata direttamente:
+
+```bash
+adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+```
+
+Tuttavia, l'opzione è disponibile solo quando la tastiera HID è abilitata (o quando una tastiera fisica è collegata).
+
+[Tastiera fisica]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+
+#### Simulazione del mouse fisico (HID)
+
+In modo simile alla simulazione della tastiera fisica, è possibile simulare un mouse fisico. Allo stesso modo funziona solo se il dispositivo è connesso via USB.
+
+Per impostazione predefinita, scrcpy utilizza l'invio degli eventi del mouse di Android, utilizzando coordinate assolute. Simulando un mouse fisico, un puntatore del mouse appare sul dispositivo Android e vengono inviati i movimenti relativi del mouse, i click e gli scorrimenti.
+
+Per abilitare questa modalità:
+
+```bash
+scrcpy --hid-mouse
+scrcpy -M # versione breve
+```
+
+Si potrebbe anche aggiungere `--forward-all-clicks` a [inoltra tutti i pulsanti del mouse][forward_all_clicks].
+
+[forward_all_clicks]: #click-destro-e-click-centrale
 
 
-#### Preferenze di iniezione del testo
+Quando questa modalità è attivata, il mouse del computer viene "catturato" (il puntatore del mouse scompare dal computer e appare invece sul dispositivo Android).
+
+I tasti speciali di cattura, <kbd>Alt</kbd> o <kbd>Super</kbd>, commutano (disabilitano o abilitano) la cattura del mouse. Usa uno di essi per ridare il controllo del mouse al computer.
+
+
+#### OTG
+
+È possibile eseguire _scrcpy_ con la sola simulazione della tastiera fisica e del mouse (HID), come se la tastiera e il mouse del computer fossero collegati direttamente al dispositivo tramite un cavo OTG.
+
+In questa modalità, _adb_ (debug USB) non è necessario e il mirroring è disabilitato.
+
+Per attivare la modallità OTG:
+
+```bash
+scrcpy --otg
+# Passa la seriale se sono disponibili diversi dispositivi USB
+scrcpy --otg -s 0123456789abcdef
+```
+
+È possibile abilitare solo la tastiera HID o il mouse HID:
+
+```bash
+scrcpy --otg --hid-keyboard # solo la tastiera
+scrcpy --otg --hid-mouse # solo mouse
+scrcpy --otg --hid-keyboard --hid-mouse # tastiera e mouse
+# per comodità, abilita entrambi per default
+scrcpy --otg # tastiera e mouse
+```
+
+Come `--hid-keyboard` e `--hid-mouse`, funziona solo se il dispositivo è collegato via USB.
+
+
+#### Preferenze di invio del testo
 
 Ci sono due tipi di [eventi][textevents] generati quando si scrive testo:
  - _eventi di pressione_, segnalano che tasto è stato premuto o rilasciato;
  - _eventi di testo_, segnalano che del testo è stato inserito.
 
-In maniera predefinita le lettere sono "iniettate" usando gli eventi di pressione, in maniera tale che la tastiera si comporti come aspettato nei giochi (come accade solitamente per i tasti WASD).
+In maniera predefinita le lettere sono inviate usando gli eventi di pressione, in maniera tale che la tastiera si comporti come aspettato nei giochi (come accade solitamente per i tasti WASD).
 
 Questo, però, può [causare problemi][prefertext]. Se incontri un problema del genere, puoi evitarlo con:
 
@@ -636,13 +839,21 @@ scrcpy --prefer-text
 
 (ma questo romperà il normale funzionamento della tastiera nei giochi)
 
+Al contrario, si potrebbe forzare per inviare sempre eventi di pressione grezzi:
+
+```bash
+scrcpy --raw-key-events
+```
+
+Queste opzioni non hanno effetto sulla tastiera HID (tutti gli eventi di pressione sono inviati come scancodes in questa modalità).
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
 
 #### Ripetizione di tasti
 
-In maniera predefinita tenere premuto un tasto genera una ripetizione degli eventi di pressione di tale tasto. Questo può creare problemi di performance in alcuni giochi, dove questi eventi sono inutilizzati.
+In maniera predefinita, tenere premuto un tasto genera una ripetizione degli eventi di pressione di tale tasto. Questo può creare problemi di performance in alcuni giochi, dove questi eventi sono inutilizzati.
 
 Per prevenire l'inoltro ripetuto degli eventi di pressione:
 
@@ -650,9 +861,12 @@ Per prevenire l'inoltro ripetuto degli eventi di pressione:
 scrcpy --no-key-repeat
 ```
 
+Questa opzione non ha effetto sulla tastiera HID (la ripetizione dei tasti è gestita da Android direttamente in questa modalità).
+
+
 #### Click destro e click centrale
 
-In maniera predefinita, click destro aziona BACK (indietro) e il click centrale aziona HOME. Per disabilitare queste scorciatoie e, invece, inviare i click al dispositivo:
+In maniera predefinita, click destro aziona BACK (indietro) o POWER on (accensione) e il click centrale aziona HOME. Per disabilitare queste scorciatoie e, invece, inviare i click al dispositivo:
 
 ```bash
 scrcpy --forward-all-clicks
@@ -705,7 +919,7 @@ scrcpy --shortcut-mod=rctrl
 scrcpy --shortcut-mod=lctrl+lalt,lsuper
 ```
 
-_<kbd>[Super]</kbd> è il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
+_<kbd>[Super]</kbd> è solitamente il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
 
 [Super]: https://it.wikipedia.org/wiki/Tasto_Windows
 <!-- https://en.wikipedia.org/wiki/Super_key_(keyboard_button) è la pagina originale di Wikipedia inglese, l'ho sostituita con una simile in quello italiano -->
@@ -720,7 +934,7 @@ _<kbd>[Super]</kbd> è il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
  | Premi il tasto `HOME`                             | <kbd>MOD</kbd>+<kbd>h</kbd> \| _Click centrale_
  | Premi il tasto `BACK`                             | <kbd>MOD</kbd>+<kbd>b</kbd> \| _Click destro²_
  | Premi il tasto `APP_SWITCH`                       | <kbd>MOD</kbd>+<kbd>s</kbd> \| _4° click³_
- | Premi il tasto `MENU` (sblocca lo schermo)             | <kbd>MOD</kbd>+<kbd>m</kbd>
+ | Premi il tasto `MENU` (sblocca lo schermo)⁴           | <kbd>MOD</kbd>+<kbd>m</kbd>
  | Premi il tasto `VOLUME_UP`                        | <kbd>MOD</kbd>+<kbd>↑</kbd> _(su)_
  | Premi il tasto `VOLUME_DOWN`                      | <kbd>MOD</kbd>+<kbd>↓</kbd> _(giù)_
  | Premi il tasto `POWER`                            | <kbd>MOD</kbd>+<kbd>p</kbd>
@@ -731,17 +945,20 @@ _<kbd>[Super]</kbd> è il pulsante <kbd>Windows</kbd> o <kbd>Cmd</kbd>._
  | Espandi il pannello delle notifiche                   | <kbd>MOD</kbd>+<kbd>n</kbd> \| _5° click³_
  | Espandi il pannello delle impostazioni                   | <kbd>MOD</kbd>+<kbd>n</kbd>+<kbd>n</kbd> \| _Doppio 5° click³_
  | Chiudi pannelli                 | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>n</kbd>
- | Copia negli appunti⁴                          | <kbd>MOD</kbd>+<kbd>c</kbd>
- | Taglia negli appunti⁴                           | <kbd>MOD</kbd>+<kbd>x</kbd>
- | Sincronizza gli appunti e incolla⁴           | <kbd>MOD</kbd>+<kbd>v</kbd>
- | Inietta il testo degli appunti del computer              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
+ | Copia negli appunti⁵                          | <kbd>MOD</kbd>+<kbd>c</kbd>
+ | Taglia negli appunti⁵                           | <kbd>MOD</kbd>+<kbd>x</kbd>
+ | Sincronizza gli appunti e incolla⁵           | <kbd>MOD</kbd>+<kbd>v</kbd>
+ | Invia il testo degli appunti del computer              | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Abilita/Disabilita il contatore FPS (su stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pizzica per zoomare                               | <kbd>Ctrl</kbd>+_click e trascina_
+ | Trascina file APK                        | Installa APK dal computer
+ | Trascina file non-APK                    | [Trasferisci file verso il dispositivo](#push-file-to-device)
 
 _¹Doppio click sui bordi neri per rimuoverli._  
 _²Il tasto destro accende lo schermo se era spento, preme BACK in caso contrario._  
 _³4° e 5° pulsante del mouse, se il tuo mouse ne dispone._  
-_⁴Solo in Android >= 7._
+_⁴Per le app native react in sviluppo, `MENU` attiva il menu di sviluppo._  
+_⁵Solo in Android >= 7._
 
 Le scorciatoie con pulsanti ripetuti sono eseguite rilasciando e premendo il pulsante una seconda volta. Per esempio, per eseguire "Espandi il pannello delle impostazioni":
 
@@ -811,3 +1028,14 @@ Leggi la [pagina per sviluppatori].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+## Contatti
+
+Se incontri un bug, per favore leggi prima le [FAQ](FAQ.it.md), poi apri una [issue].
+
+[issue]: https://github.com/Genymobile/scrcpy/issues
+
+Per domande generali o discussioni, puoi anche usare:
+
+ - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
