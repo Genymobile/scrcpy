@@ -2,7 +2,6 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
-import android.os.IInterface;
 import android.view.InputEvent;
 
 import java.lang.reflect.InvocationTargetException;
@@ -14,24 +13,18 @@ public final class InputManager {
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT = 1;
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2;
 
-    private final IInterface manager;
+    private final android.hardware.input.InputManager manager;
     private Method injectInputEventMethod;
-    private boolean alternativeInjectInputEventMethod;
 
     private static Method setDisplayIdMethod;
 
-    public InputManager(IInterface manager) {
+    public InputManager(android.hardware.input.InputManager manager) {
         this.manager = manager;
     }
 
     private Method getInjectInputEventMethod() throws NoSuchMethodException {
         if (injectInputEventMethod == null) {
-            try {
-                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
-            } catch (NoSuchMethodException e) {
-                injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class, int.class);
-                alternativeInjectInputEventMethod = true;
-            }
+            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
         }
         return injectInputEventMethod;
     }
@@ -39,10 +32,6 @@ public final class InputManager {
     public boolean injectInputEvent(InputEvent inputEvent, int mode) {
         try {
             Method method = getInjectInputEventMethod();
-            if (alternativeInjectInputEventMethod) {
-                // See <https://github.com/Genymobile/scrcpy/issues/2250>
-                return (boolean) method.invoke(manager, inputEvent, mode, 0);
-            }
             return (boolean) method.invoke(manager, inputEvent, mode);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);

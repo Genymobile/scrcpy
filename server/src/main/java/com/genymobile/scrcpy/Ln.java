@@ -36,6 +36,8 @@ public final class Ln {
         return level.ordinal() >= threshold.ordinal();
     }
 
+    // "v", "d", "i" (functions?) -> to a (public static void) "log_msg" ?
+
     public static void v(String message) {
         if (isEnabled(Level.VERBOSE)) {
             Log.v(TAG, message);

@@ -340,7 +340,7 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
 
     if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
-        LOGW("Could request HID event");
+        LOGW("Could not request HID event (mod lock state)");
         return false;
     }
 
@@ -382,7 +382,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
             sc_hid_event_destroy(&hid_event);
-            LOGW("Could request HID event");
+            LOGW("Could not request HID event (key)");
         }
     }
 }

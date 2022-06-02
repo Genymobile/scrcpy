@@ -1,5 +1,5 @@
-#ifndef ICON_H
-#define ICON_H
+#ifndef SC_ICON_H
+#define SC_ICON_H
 
 #include "common.h"
 

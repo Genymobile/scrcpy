@@ -29,6 +29,7 @@ _scrcpy() {
         -N --no-display
         --no-key-repeat
         --no-mipmaps
+        --no-power-on
         --otg
         -p --port=
         --power-off-on-close

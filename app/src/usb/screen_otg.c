@@ -69,10 +69,10 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
           ? params->window_x : (int) SDL_WINDOWPOS_UNDEFINED;
     int y = params->window_y != SC_WINDOW_POSITION_UNDEFINED
           ? params->window_y : (int) SDL_WINDOWPOS_UNDEFINED;
-    int width = 256;
-    int height = 256;
+    int width = params->window_width ? params->window_width : 256;
+    int height = params->window_height ? params->window_height : 256;
 
-    uint32_t window_flags = 0;
+    uint32_t window_flags = SDL_WINDOW_ALLOW_HIGHDPI;
     if (params->always_on_top) {
         window_flags |= SDL_WINDOW_ALWAYS_ON_TOP;
     }
@@ -96,6 +96,11 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
 
     if (icon) {
         SDL_SetWindowIcon(screen->window, icon);
+
+        if (SDL_RenderSetLogicalSize(screen->renderer, icon->w, icon->h)) {
+            LOGW("Could not set renderer logical size: %s", SDL_GetError());
+            // don't fail
+        }
 
         screen->texture = SDL_CreateTextureFromSurface(screen->renderer, icon);
         scrcpy_icon_destroy(icon);

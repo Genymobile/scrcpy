@@ -22,6 +22,7 @@ public class Controller {
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
+    private final boolean powerOn;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -32,10 +33,11 @@ public class Controller {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync) {
+    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
         this.connection = connection;
         this.clipboardAutosync = clipboardAutosync;
+        this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(connection);
     }
@@ -56,7 +58,7 @@ public class Controller {
 
     public void control() throws IOException {
         // on start, power on the device
-        if (!Device.isScreenOn()) {
+        if (powerOn && !Device.isScreenOn()) {
             device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
 
             // dirty hack

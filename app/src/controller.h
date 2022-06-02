@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef SC_CONTROLLER_H
+#define SC_CONTROLLER_H
 
 #include "common.h"
 

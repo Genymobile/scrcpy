@@ -473,9 +473,12 @@ sc_adb_accept_device(const struct sc_adb_device *device,
             }
             return !strcmp(selector->serial, device->serial);
         case SC_ADB_DEVICE_SELECT_USB:
-            return !sc_adb_is_serial_tcpip(device->serial);
+            return sc_adb_device_get_type(device->serial) ==
+                    SC_ADB_DEVICE_TYPE_USB;
         case SC_ADB_DEVICE_SELECT_TCPIP:
-            return sc_adb_is_serial_tcpip(device->serial);
+            // Both emulators and TCP/IP devices are selected via -e
+            return sc_adb_device_get_type(device->serial) !=
+                    SC_ADB_DEVICE_TYPE_USB;
         default:
             assert(!"Missing SC_ADB_DEVICE_SELECT_* handling");
             break;
@@ -509,8 +512,10 @@ sc_adb_devices_log(enum sc_log_level level, struct sc_adb_device *devices,
     for (size_t i = 0; i < count; ++i) {
         struct sc_adb_device *d = &devices[i];
         const char *selection = d->selected ? "-->" : "   ";
-        const char *type = sc_adb_is_serial_tcpip(d->serial) ? "(tcpip)"
-                                                             : "  (usb)";
+        bool is_usb =
+            sc_adb_device_get_type(d->serial) == SC_ADB_DEVICE_TYPE_USB;
+        const char *type = is_usb ? "  (usb)"
+                                  : "(tcpip)";
         LOG(level, "    %s %s  %-20s  %16s  %s",
              selection, type, d->serial, d->state, d->model ? d->model : "");
     }
@@ -531,6 +536,8 @@ sc_adb_device_check_state(struct sc_adb_device *device,
         LOGE("A popup should open on the device to request authorization.");
         LOGE("Check the FAQ: "
              "<https://github.com/Genymobile/scrcpy/blob/master/FAQ.md>");
+    } else {
+        LOGE("Device could not be connected (state=%s)", state);
     }
 
     return false;
@@ -704,9 +711,4 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
     buf[r] = '\0';
 
     return sc_adb_parse_device_ip_from_output(buf);
-}
-
-bool
-sc_adb_is_serial_tcpip(const char *serial) {
-    return strchr(serial, ':');
 }

@@ -82,7 +82,7 @@ public final class Server {
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
             if (control) {
-                final Controller controller = new Controller(device, connection, options.getClipboardAutosync());
+                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
 
                 // asynchronous
                 controllerThread = startController(controller);
@@ -247,6 +247,10 @@ public final class Server {
                 case "cleanup":
                     boolean cleanup = Boolean.parseBoolean(value);
                     options.setCleanup(cleanup);
+                    break;
+                case "power_on":
+                    boolean powerOn = Boolean.parseBoolean(value);
+                    options.setPowerOn(powerOn);
                     break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);

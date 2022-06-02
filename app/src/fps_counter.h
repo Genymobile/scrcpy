@@ -1,5 +1,5 @@
-#ifndef FPSCOUNTER_H
-#define FPSCOUNTER_H
+#ifndef SC_FPSCOUNTER_H
+#define SC_FPSCOUNTER_H
 
 #include "common.h"
 

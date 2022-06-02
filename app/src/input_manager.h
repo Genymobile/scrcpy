@@ -1,5 +1,5 @@
-#ifndef INPUTMANAGER_H
-#define INPUTMANAGER_H
+#ifndef SC_INPUTMANAGER_H
+#define SC_INPUTMANAGER_H
 
 #include "common.h"
 

@@ -1,5 +1,5 @@
-#ifndef COMMON_H
-#define COMMON_H
+#ifndef SC_COMMON_H
+#define SC_COMMON_H
 
 #include "config.h"
 #include "compat.h"
