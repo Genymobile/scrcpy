@@ -40,33 +40,15 @@ mkdir -p scrcpy_dir/usr/share/scrcpy/ 1> /dev/null
 cp scrcpy/scrcpy-server scrcpy_dir/usr/share/scrcpy/scrcpy-server 1> /dev/null
 
 
-echo "packaging ffmpeg"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e /usr/bin/ffmpeg 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e /usr/bin/ffplay 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e /usr/bin/ffprobe 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e /usr/bin/qt-faststart 1> /dev/null
-
-echo "packaging libSDL"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.10.0 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 1> /dev/null
-
-echo "packaging adb"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /usr/lib/android-sdk/platform-tools/adb 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e /usr/bin/adb 1> /dev/null
-
-echo "packaging libusb"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /lib/x86_64-linux-gnu/libusb-1.0.so.0 1> /dev/null
-
-echo "packaging libs required at runtime"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /lib/x86_64-linux-gnu/libpango-1.0.so.0 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0 1> /dev/null
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -l /lib/x86_64-linux-gnu/libgobject-2.0.so.0 1> /dev/null
-
-echo "packaging scrcpy"
-./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e scrcpy/x/app/scrcpy -i scrcpy/app/data/scrcpy.png \
---create-desktop-file --custom-apprun=AppRun --output appimage 1> /dev/null
+./linuxdeploy-x86_64.AppImage --appdir scrcpy_dir -e scrcpy/x/app/scrcpy -i scrcpy/app/data/scrcpy.png --create-desktop-file --custom-apprun=AppRun \
+-e /usr/bin/ffmpeg -e /usr/bin/ffplay  -e /usr/bin/ffprobe  -e /usr/bin/qt-faststart \
+-l /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0.10.0 -l /usr/lib/x86_64-linux-gnu/libSDL2-2.0.so.0 \
+-l /usr/lib/android-sdk/platform-tools/adb -e /usr/bin/adb \
+-l /lib/x86_64-linux-gnu/libusb-1.0.so.0.2.0 -l /lib/x86_64-linux-gnu/libusb-1.0.so.0 \
+-l /lib/x86_64-linux-gnu/libpango-1.0.so.0 -l /lib/x86_64-linux-gnu/libpangoft2-1.0.so.0 -l /lib/x86_64-linux-gnu/libgobject-2.0.so.0 \
+--output appimage
 
 echo "Done"
+
 
 
