@@ -43,6 +43,6 @@ jobs:
       - name: Upload output file
         uses: actions/upload-artifact@v3
         with:
-          name: scrcpy-x86_64.AppImage
+          name: scrcpy-x86_64-${{ env.LATEST_TAG }}.AppImage
           path: ./scrcpy*.AppImage
           

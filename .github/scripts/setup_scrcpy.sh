@@ -11,6 +11,8 @@ git clone https://github.com/Genymobile/scrcpy
 cd scrcpy
 
 latest_tag=$(git describe --tags --abbrev=0)
+echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV # will be used to upload artifact with tag
+
 wget https://github.com/Genymobile/scrcpy/releases/download/$latest_tag/scrcpy-server-$latest_tag \
 -O scrcpy-server
 
