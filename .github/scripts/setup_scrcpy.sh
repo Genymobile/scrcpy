@@ -10,7 +10,8 @@ sudo rm -rf scrcpy
 git clone https://github.com/Genymobile/scrcpy
 cd scrcpy
 
-wget https://github.com/Genymobile/scrcpy/releases/download/v1.23/scrcpy-server-v1.23 \
+latest_tag=$(git describe --tags --abbrev=0)
+wget https://github.com/Genymobile/scrcpy/releases/download/$latest_tag/scrcpy-server-$latest_tag \
 -O scrcpy-server
 
 meson x --buildtype=release --strip -Db_lto=true \
