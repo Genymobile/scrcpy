@@ -38,4 +38,13 @@ sc_adb_parse_device_ip(char *str);
 char *
 sc_adb_parse_installed_apk_path(char *str);
 
+/**
+ * Parse the package version from the output of
+ * `adb shell dumpsys package <package>`
+ *
+ * The parameter must be a NUL-terminated string.
+ */
+char *
+sc_adb_parse_installed_apk_version(const char *str);
+
 #endif
