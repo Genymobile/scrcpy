@@ -253,3 +253,34 @@ sc_adb_parse_installed_apk_path(char *str) {
 
     return strdup(s);
 }
+
+char *
+sc_adb_parse_installed_apk_version(const char *str) {
+    // str is the (beginning of the) output of `dumpsys package`
+    // We want to extract the version string from a line starting with 4 spaces
+    // then `versionName=` then the version string.
+
+#define VERSION_NAME_PREFIX "\n    versionName="
+    char *s = strstr(str, VERSION_NAME_PREFIX);
+    if (!s) {
+        // Not found
+        return NULL;
+    }
+
+    s+= sizeof(VERSION_NAME_PREFIX) - 1;
+
+    size_t len = strspn(s, "0123456789.");
+    if (!len) {
+        LOGW("Unexpected version name with no value");
+        return NULL;
+    }
+
+    char *version = malloc(len + 1);
+    if (!version) {
+        return NULL;
+    }
+
+    memcpy(version, s, len);
+    version[len] = '\0';
+    return version;
+}
