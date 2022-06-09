@@ -160,6 +160,8 @@ execute_server(struct sc_server *server,
     const char *serial = server->serial;
     assert(serial);
 
+    fprintf(stderr, "=== [%s]\n", sc_adb_get_installed_apk_version(&server->intr, serial, 0));
+
     const char *cmd[128];
     unsigned count = 0;
     cmd[count++] = sc_adb_get_executable();

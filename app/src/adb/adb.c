@@ -434,6 +434,7 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
              "Please report an issue.");
         return false;
     }
+#undef BUFSIZE
 
     // It is parsed as a NUL-terminated string
     buf[r] = '\0';
@@ -756,4 +757,51 @@ sc_adb_get_installed_apk_path(struct sc_intr *intr, const char *serial,
     buf[r] = '\0';
 
     return sc_adb_parse_installed_apk_path(buf);
+}
+
+char *
+sc_adb_get_installed_apk_version(struct sc_intr *intr, const char *serial,
+                                 unsigned flags) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "shell", "dumpsys", "package",
+                       SC_ANDROID_PACKAGE);
+
+    sc_pipe pout;
+    sc_pid pid = sc_adb_execute_p(argv, flags, &pout);
+    if (pid == SC_PROCESS_NONE) {
+        LOGD("Could not execute \"dumpsys package\"");
+        return NULL;
+    }
+
+    // "dumpsys package" output can be huge (e.g. 16k), but versionName is at
+    // the beginning, typically in the first 1024 bytes (64k should be enough
+    // for the whole output anyway)
+#define BUFSIZE 65536
+    char *buf = malloc(BUFSIZE);
+    if (!buf) {
+        return false;
+    }
+    ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, BUFSIZE - 1);
+    sc_pipe_close(pout);
+
+    bool ok = process_check_success_intr(intr, pid, "dumpsys package", flags);
+    if (!ok) {
+        return NULL;
+    }
+
+    if (r == -1) {
+        return NULL;
+    }
+
+    assert((size_t) r < BUFSIZE);
+#undef BUFSIZE
+    // if r == sizeof(buf), then the output is truncated, but we don't care,
+    // versionName is at the beginning in practice, and is unlikely to be
+    // truncated at 64k
+
+    // It is parsed as a NUL-terminated string
+    buf[r] = '\0';
+
+    return sc_adb_parse_installed_apk_version(buf);
 }
