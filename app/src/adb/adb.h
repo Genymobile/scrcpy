@@ -123,4 +123,11 @@ char *
 sc_adb_get_installed_apk_path(struct sc_intr *intr, const char *serial,
                               unsigned flags);
 
+/**
+ * Return the version of the installed APK for com.genymobile.scrcpy (if any)
+ */
+char *
+sc_adb_get_installed_apk_version(struct sc_intr *intr, const char *serial,
+                                 unsigned flags);
+
 #endif

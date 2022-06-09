@@ -263,6 +263,32 @@ static void test_apk_path_invalid(void) {
     assert(!path);
 }
 
+static void test_apk_version(void) {
+    char str[] =
+        "Key Set Manager:\n"
+        "  [com.genymobile.scrcpy]\n"
+        "      Signing KeySets: 128\n"
+        "\n"
+        "Packages:\n"
+        "  Package [com.genymobile.scrcpy] (89abcdef):\n"
+        "    userId=12345\n"
+        "    pkg=Package{012345 com.genymobile.scrcpy}\n"
+        "    codePath=/data/app/~~abcdef==/com.genymobile.scrcpy-012345==\n"
+        "    resourcePath=/data/app/~~abcdef==/com.genymobile.scrcpy-013245==\n"
+        "    primaryCpuAbi=null\n"
+        "    secondaryCpuAbi=null\n"
+        "    versionCode=12400 minSdk=21 targetSdk=31\n"
+        "    versionName=1.24\n"
+        "    splits=[base]\n"
+        "    apkSigningVersion=2\n"
+        "    applicationInfo=ApplicationInfo{012345 com.genymobile.scrcpy}\n";
+
+    const char *expected = "1.24";
+    char *version = sc_adb_parse_installed_apk_version(str);
+    assert(!strcmp(version, expected));
+    free(version);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -287,6 +313,7 @@ int main(int argc, char *argv[]) {
 
     test_apk_path();
     test_apk_path_invalid();
+    test_apk_version();
 
     return 0;
 }
