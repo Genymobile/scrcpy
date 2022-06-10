@@ -16,6 +16,7 @@ SCRCPY_VERSION_NAME=1.24
 
 PLATFORM=${ANDROID_PLATFORM:-33}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-33.0.0}
+BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
@@ -41,9 +42,8 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
-    android/view/IRotationWatcher.aidl
-"$ANDROID_HOME/build-tools/$BUILD_TOOLS/aidl" -o"$CLASSES_DIR" \
+"$BUILD_TOOLS_DIR/aidl" -o"$CLASSES_DIR" android/view/IRotationWatcher.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$CLASSES_DIR" \
     android/content/IOnPrimaryClipChangedListener.aidl
 
 echo "Compiling java sources..."
@@ -59,8 +59,7 @@ cd "$CLASSES_DIR"
 if [[ $PLATFORM -lt 31 ]]
 then
     # use dx
-    "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
-        --output "$BUILD_DIR/classes.dex" \
+    "$BUILD_TOOLS_DIR/dx" --dex --output "$BUILD_DIR/classes.dex" \
         android/view/*.class \
         android/content/*.class \
         com/genymobile/scrcpy/*.class \
@@ -72,7 +71,7 @@ then
     rm -rf classes.dex classes
 else
     # use d8
-    "$ANDROID_HOME/build-tools/$BUILD_TOOLS/d8" --classpath "$ANDROID_JAR" \
+    "$BUILD_TOOLS_DIR/d8" --classpath "$ANDROID_JAR" \
         --output "$BUILD_DIR/classes.zip" \
         android/view/*.class \
         android/content/*.class \
