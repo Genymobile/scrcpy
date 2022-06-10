@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public final class CleanUp {
 
-    public static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
+    public static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.apk";
 
     // A simple struct to be passed from the main process to the cleanup process
     public static class Config implements Parcelable {

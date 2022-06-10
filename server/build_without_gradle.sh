@@ -21,7 +21,7 @@ BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 SERVER_DIR=$(dirname "$0")
-SERVER_BINARY=scrcpy-server
+SERVER_BINARY=scrcpy-server.apk
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
 
 echo "Platform: android-$PLATFORM"
