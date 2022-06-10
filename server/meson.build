@@ -6,7 +6,7 @@ if prebuilt_server == ''
                   # gradle is responsible for tracking source changes
                   build_by_default: true,
                   build_always_stale: true,
-                  output: 'scrcpy-server',
+                  output: 'scrcpy-server.apk',
                   command: [find_program('./scripts/build-wrapper.sh'), meson.current_source_dir(), '@OUTPUT@', get_option('buildtype')],
                   console: true,
                   install: true,
@@ -18,7 +18,7 @@ else
     endif
     custom_target('scrcpy-server-prebuilt',
                   input: prebuilt_server,
-                  output: 'scrcpy-server',
+                  output: 'scrcpy-server.apk',
                   command: ['cp', '@INPUT@', '@OUTPUT@'],
                   install: true,
                   install_dir: 'share/scrcpy')

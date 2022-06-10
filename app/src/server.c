@@ -14,10 +14,10 @@
 #include "util/process_intr.h"
 #include "util/str.h"
 
-#define SC_SERVER_FILENAME "scrcpy-server"
+#define SC_SERVER_FILENAME "scrcpy-server.apk"
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
-#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.apk"
 
 static char *
 get_server_path(void) {
