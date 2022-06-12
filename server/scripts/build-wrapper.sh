@@ -25,5 +25,5 @@ then
     cp "$PROJECT_ROOT/build/outputs/apk/debug/server-debug.apk" "$OUTPUT"
 else
     "$GRADLE" -p "$PROJECT_ROOT" assembleRelease
-    cp "$PROJECT_ROOT/build/outputs/apk/release/server-release-unsigned.apk" "$OUTPUT"
+    cp "$PROJECT_ROOT/build/outputs/apk/release/server-release.apk" "$OUTPUT"
 fi
