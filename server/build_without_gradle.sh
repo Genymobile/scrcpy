@@ -14,13 +14,41 @@ set -e
 SCRCPY_DEBUG=false
 SCRCPY_VERSION_NAME=1.24
 
+SERVER_DIR="$(realpath $(dirname "$0"))"
+KEYSTORE_PROPERTIES_FILE="$SERVER_DIR/keystore.properties"
+
+if [[ ! -f "$KEYSTORE_PROPERTIES_FILE" ]]
+then
+    echo "The file '$KEYSTORE_PROPERTIES_FILE' does not exist." >&2
+    echo "Please read '$SERVER_DIR/HOWTO_keystore.txt'." >&2
+    exit 1
+fi
+
+declare -A props
+while IFS='=' read -r key value
+do
+    props["$key"]="$value"
+done < "$KEYSTORE_PROPERTIES_FILE"
+
+KEYSTORE_FILE=${props['storeFile']}
+KEYSTORE_PASSWORD=${props['storePassword']}
+KEYSTORE_KEY_ALIAS=${props['keyAlias']}
+KEYSTORE_KEY_PASSWORD=${props['keyPassword']}
+
+if [[ ! -f "$KEYSTORE_FILE" ]]
+then
+    echo "Keystore '$KEYSTORE_FILE' (read from '$KEYSTORE_PROPERTIES_FILE')" \
+         "does not exist." >&2
+    echo "Please read '$SERVER_DIR/HOWTO_keystore.txt'." >&2
+    exit 2
+fi
+
 PLATFORM=${ANDROID_PLATFORM:-31}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-31.0.0}
 BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
-SERVER_DIR=$(dirname "$0")
 SERVER_BINARY=scrcpy-server.apk
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
 
@@ -64,11 +92,7 @@ then
         android/content/*.class \
         com/genymobile/scrcpy/*.class \
         com/genymobile/scrcpy/wrappers/*.class
-
-    echo "Archiving..."
     cd "$BUILD_DIR"
-    jar cvf "$SERVER_BINARY" classes.dex
-    rm -rf classes.dex classes
 else
     # use d8
     "$BUILD_TOOLS_DIR/d8" --classpath "$ANDROID_JAR" \
@@ -79,8 +103,24 @@ else
         com/genymobile/scrcpy/wrappers/*.class
 
     cd "$BUILD_DIR"
-    mv classes.zip "$SERVER_BINARY"
-    rm -rf classes
+    unzip -o classes.zip classes.dex  # we need the inner classes.dex
 fi
+
+echo "Packaging..."
+# note: if a res directory exists, add: -S "$SERVER_DIR/src/main/res"
+"$BUILD_TOOLS_DIR/aapt" package -f \
+    -M "$SERVER_DIR/src/main/AndroidManifest.xml" \
+    -I "$ANDROID_JAR" \
+    -F "$SERVER_BINARY.unaligned"
+"$BUILD_TOOLS_DIR/aapt" add "$SERVER_BINARY.unaligned" classes.dex
+"$BUILD_TOOLS_DIR/zipalign" -p 4 "$SERVER_BINARY.unaligned" "$SERVER_BINARY"
+rm "$SERVER_BINARY.unaligned"
+
+"$BUILD_TOOLS_DIR/apksigner" sign \
+    --ks "$KEYSTORE_FILE" \
+    --ks-pass "pass:$KEYSTORE_PASSWORD" \
+    --ks-key-alias "$KEYSTORE_KEY_ALIAS" \
+    --key-pass "pass:$KEYSTORE_KEY_PASSWORD" \
+    "$SERVER_BINARY"
 
 echo "Server generated in $BUILD_DIR/$SERVER_BINARY"
