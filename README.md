@@ -505,7 +505,20 @@ Suppose that this server is accessible at 192.168.1.2. Then, from another
 terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:192.168.1.2:5037'
 scrcpy --tunnel-host=192.168.1.2
 ```
 
@@ -542,7 +555,20 @@ ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
 From another terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy
 ```
 
@@ -559,7 +585,20 @@ ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 From another terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy --force-adb-forward
 ```
 

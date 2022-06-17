@@ -103,7 +103,20 @@ You could overwrite the `adb` binary in the other program, or ask _scrcpy_ to
 use a specific `adb` binary, by setting the `ADB` environment variable:
 
 ```bash
+# in bash
 export ADB=/path/to/your/adb
+scrcpy
+```
+
+```cmd
+:: in cmd
+set ADB=C:\path\to\your\adb.exe
+scrcpy
+```
+
+```powershell
+# in PowerShell
+$env:ADB = 'C:\path\to\your\adb.exe'
 scrcpy
 ```
 
