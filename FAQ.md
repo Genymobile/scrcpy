@@ -103,7 +103,7 @@ You could overwrite the `adb` binary in the other program, or ask _scrcpy_ to
 use a specific `adb` binary, by setting the `ADB` environment variable:
 
 ```bash
-set ADB=/path/to/your/adb
+export ADB=/path/to/your/adb
 scrcpy
 ```
 
