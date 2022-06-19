@@ -22,6 +22,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.13.1'
     compileOnly rootProject.fileTree("thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar")
+    compileOnly project(':libcore')
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"

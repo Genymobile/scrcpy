@@ -54,6 +54,8 @@ classpath="$CLASSES_DIR"
 classpath="$classpath:$ROOT_PROJECT_DIR/thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar"
 javac -bootclasspath "$ANDROID_JAR" -cp "$classpath" -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
+    android/system/*.java \
+    $ROOT_PROJECT_DIR/libcore/src/main/java/libcore/io/*.java \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
 
@@ -65,6 +67,7 @@ then
     # use dx
     "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
         --output "$BUILD_DIR/classes.dex" \
+        android/system/*.class \
         android/view/*.class \
         android/content/*.class \
         com/genymobile/scrcpy/*.class \
@@ -78,6 +81,7 @@ else
     # use d8
     "$ANDROID_HOME/build-tools/$BUILD_TOOLS/d8" --classpath "$ANDROID_JAR" \
         --output "$BUILD_DIR/classes.zip" \
+        android/system/*.class \
         android/view/*.class \
         android/content/*.class \
         com/genymobile/scrcpy/*.class \

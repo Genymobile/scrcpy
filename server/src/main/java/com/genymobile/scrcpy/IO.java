@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import android.annotation.TargetApi;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
@@ -13,6 +14,7 @@ public final class IO {
         // not instantiable
     }
 
+    @TargetApi(21) // Backported subset of android.system.
     public static void writeFully(FileDescriptor fd, ByteBuffer from) throws IOException {
         // ByteBuffer position is not updated as expected by Os.write() on old Android versions, so
         // count the remaining bytes manually.
