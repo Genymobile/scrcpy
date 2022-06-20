@@ -18,6 +18,7 @@
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_DEVICE_ANDROID_DATA_PATH "/data/local/tmp"
 
 static char *
 get_server_path(void) {
@@ -166,6 +167,9 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
+    cmd[count++] = "mkdir -p " SC_DEVICE_ANDROID_DATA_PATH "/dalvik-cache";
+    cmd[count++] = "&&";
+    cmd[count++] = "ANDROID_DATA=" SC_DEVICE_ANDROID_DATA_PATH;
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
     cmd[count++] = "app_process";
 
