@@ -5,7 +5,9 @@ import android.media.MediaCodecList;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static android.media.MediaCodecList.REGULAR_CODECS;
 import static android.os.Build.VERSION.SDK_INT;
@@ -35,6 +37,18 @@ abstract class MediaCodecListCompat {
      */
     @NonNull
     abstract MediaCodecInfo[] getCodecInfos();
+
+    @NonNull
+    final MediaCodecInfo[] getEncoderInfosForType(@NonNull String mimeType) {
+        List<MediaCodecInfo> result = new ArrayList<>();
+        MediaCodecInfo[] codecInfos = MediaCodecListCompat.regular().getCodecInfos();
+        for (MediaCodecInfo codecInfo : codecInfos) {
+            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(mimeType)) {
+                result.add(codecInfo);
+            }
+        }
+        return result.toArray(new MediaCodecInfo[result.size()]);
+    }
 
     @SuppressWarnings("deprecation")
     private static class Backport extends MediaCodecListCompat {

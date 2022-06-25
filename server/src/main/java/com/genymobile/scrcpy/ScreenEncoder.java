@@ -13,8 +13,6 @@ import android.view.Surface;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -201,24 +199,14 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
-    private static MediaCodecInfo[] listEncoders() {
-        List<MediaCodecInfo> result = new ArrayList<>();
-        MediaCodecInfo[] codecInfos = MediaCodecListCompat.regular().getCodecInfos();
-        for (MediaCodecInfo codecInfo : codecInfos) {
-            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(MediaFormat.MIMETYPE_VIDEO_AVC)) {
-                result.add(codecInfo);
-            }
-        }
-        return result.toArray(new MediaCodecInfo[result.size()]);
-    }
-
     private static MediaCodec createCodec(String encoderName) throws IOException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                MediaCodecInfo[] encoders = listEncoders();
+                MediaCodecInfo[] encoders = MediaCodecListCompat.regular()
+                        .getEncoderInfosForType(MediaFormat.MIMETYPE_VIDEO_AVC);
                 throw new InvalidEncoderException(encoderName, encoders);
             }
         }
