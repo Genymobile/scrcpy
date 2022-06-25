@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -21,6 +22,9 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
     private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
+
+    @SuppressLint("InlinedApi")
+    public static final String MIMETYPE_VIDEO_AVC = MediaFormat.MIMETYPE_VIDEO_AVC;
 
     // Keep the values in descending order
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
@@ -206,11 +210,11 @@ public class ScreenEncoder implements Device.RotationListener {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
                 MediaCodecInfo[] encoders = MediaCodecListCompat.regular()
-                        .getEncoderInfosForType(MediaFormat.MIMETYPE_VIDEO_AVC);
+                        .getEncoderInfosForType(MIMETYPE_VIDEO_AVC);
                 throw new InvalidEncoderException(encoderName, encoders);
             }
         }
-        MediaCodec codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+        MediaCodec codec = MediaCodec.createEncoderByType(MIMETYPE_VIDEO_AVC);
         Ln.d("Using encoder: '" + codec.getName() + "'");
         return codec;
     }
@@ -234,7 +238,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private static MediaFormat createFormat(int bitRate, int maxFps, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
-        format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_VIDEO_AVC);
+        format.setString(MediaFormat.KEY_MIME, MIMETYPE_VIDEO_AVC);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
