@@ -144,11 +144,10 @@ public class ScreenEncoder implements Device.RotationListener {
         return 0;
     }
 
-    @SuppressWarnings("deprecation") // Android API 19 requires to call deprecated methods
-    private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
+    private boolean encode(MediaCodec platformCodec, FileDescriptor fd) throws IOException {
+        final MediaCodecCompat codec = MediaCodecCompat.wrap(platformCodec);
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
-        ByteBuffer[] cachedOutputBuffers = null;
 
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
@@ -159,15 +158,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     break;
                 }
                 if (outputBufferId >= 0) {
-                    ByteBuffer codecBuffer;
-                    if (Build.VERSION.SDK_INT >= 21) {
-                        codecBuffer = codec.getOutputBuffer(outputBufferId);
-                    } else {
-                        if (cachedOutputBuffers == null) {
-                            cachedOutputBuffers = codec.getOutputBuffers();
-                        }
-                        codecBuffer = cachedOutputBuffers[outputBufferId];
-                    }
+                    ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
 
                     if (sendFrameMeta) {
                         writeFrameMeta(fd, bufferInfo, codecBuffer.remaining());
@@ -178,8 +169,6 @@ public class ScreenEncoder implements Device.RotationListener {
                         // If this is not a config packet, then it contains a frame
                         firstFrameSent = true;
                     }
-                } else if (outputBufferId == MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED) {
-                    cachedOutputBuffers = null;
                 }
             } finally {
                 if (outputBufferId >= 0) {
