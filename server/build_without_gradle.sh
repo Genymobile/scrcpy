@@ -20,12 +20,14 @@ BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-31.0.0}
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 SERVER_DIR=$(dirname "$0")
+ROOT_PROJECT_DIR=$(realpath $SERVER_DIR/..)
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
 
 echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
 echo "Build dir: $BUILD_DIR"
+echo "Root project dir: $ROOT_PROJECT_DIR"
 
 rm -rf "$CLASSES_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
 mkdir -p "$CLASSES_DIR/com/genymobile/scrcpy"
@@ -48,7 +50,9 @@ cd "$SERVER_DIR/src/main/aidl"
 
 echo "Compiling java sources..."
 cd ../java
-javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
+classpath="$CLASSES_DIR"
+classpath="$classpath:$ROOT_PROJECT_DIR/thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar"
+javac -bootclasspath "$ANDROID_JAR" -cp "$classpath" -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
