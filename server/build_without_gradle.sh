@@ -53,6 +53,7 @@ cd ../java
 classpath="$CLASSES_DIR"
 classpath="$classpath:$ROOT_PROJECT_DIR/thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar"
 javac -bootclasspath "$ANDROID_JAR" -cp "$classpath" -d "$CLASSES_DIR" \
+    -encoding UTF-8 \
     -source 1.8 -target 1.8 \
     android/system/*.java \
     $ROOT_PROJECT_DIR/libcore/src/main/java/libcore/io/*.java \
