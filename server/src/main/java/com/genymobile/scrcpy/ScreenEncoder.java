@@ -5,7 +5,6 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
@@ -202,24 +201,9 @@ public class ScreenEncoder implements Device.RotationListener {
         IO.writeFully(fd, headerBuffer);
     }
 
-    @SuppressWarnings("deprecation") // Android API 19 requires to call deprecated methods
-    private static MediaCodecInfo[] getCodecInfosCompat() {
-        if (Build.VERSION.SDK_INT >= 21) {
-            MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-            return list.getCodecInfos();
-        } else {
-            final int size = MediaCodecList.getCodecCount();
-            final MediaCodecInfo[] infos = new MediaCodecInfo[size];
-            for (int i = 0; i < size; i++) {
-                infos[i] = MediaCodecList.getCodecInfoAt(i);
-            }
-            return infos;
-        }
-    }
-
     private static MediaCodecInfo[] listEncoders() {
         List<MediaCodecInfo> result = new ArrayList<>();
-        MediaCodecInfo[] codecInfos = getCodecInfosCompat();
+        MediaCodecInfo[] codecInfos = MediaCodecListCompat.regular().getCodecInfos();
         for (MediaCodecInfo codecInfo : codecInfos) {
             if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(MediaFormat.MIMETYPE_VIDEO_AVC)) {
                 result.add(codecInfo);
