@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=scrcpy (console)
+GenericName=Android Remote Control
+Comment=Display and control your Android device
+# For some users, `adb` is not in default $PATH but the one configured in .bashrc/ or .zshrc/...
+# Run an interactive shell to get the same path used in terminals.
+Exec=/bin/bash -i -c '"$SHELL" -i -c scrcpy || read -p "Press any key to quit..."'
+Icon=scrcpy
+Terminal=true
+Type=Application
+Categories=Utility;RemoteAccess;
+StartupNotify=false
