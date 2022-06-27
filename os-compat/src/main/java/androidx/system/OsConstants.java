@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package libcore.io;
+package androidx.system;
 
-import java.io.FileDescriptor;
-import java.nio.ByteBuffer;
+interface OsConstants {
 
-public interface Os {
-    String strerror(int errno);
-    int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException;
+    String errnoName(int errno);
 }

@@ -13,41 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package android.system;
-
-import android.annotation.TargetApi;
+package androidx.system;
 
 import java.io.FileDescriptor;
 import java.io.InterruptedIOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
 import java.nio.ByteBuffer;
 
-import libcore.io.Libcore;
+import static android.os.Build.VERSION.SDK_INT;
 
 /**
  * Access to low-level system functionality. Most of these are system calls. Most users will want
  * to use higher-level APIs where available, but this class provides access to the underlying
  * primitives used to implement the higher-level APIs.
  *
- * <p>The corresponding constants can be found in {@link OsConstants}.
+ * <p>The corresponding constants can be found in {@link OsConstantsCompat}.
  */
-@SuppressWarnings("unused")
-@TargetApi(21)
-public final class Os {
-  private Os() {}
-
-  /**
-   * See <a href="http://man7.org/linux/man-pages/man2/write.2.html">write(2)</a>.
-   */
-  public static int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException, InterruptedIOException {
-    try {
-      return Libcore.os.write(fd, buffer);
-    } catch (libcore.io.ErrnoException e) {
-      throw new ErrnoException("write", e.errno);
+public final class OsCompat {
+    private OsCompat() {
     }
-  }
+
+    private static final Os IMPL;
+
+    static {
+        if (SDK_INT >= 21) {
+            IMPL = new OsApi21();
+        } else {
+            IMPL = new OsLibcore();
+        }
+    }
+
+    /**
+     * See <a href="http://man7.org/linux/man-pages/man3/strerror.3.html">strerror(2)</a>.
+     */
+    public static String strerror(int errno) {
+        return IMPL.strerror(errno);
+    }
+
+    /**
+     * See <a href="http://man7.org/linux/man-pages/man2/write.2.html">write(2)</a>.
+     */
+    public static int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException, InterruptedIOException {
+        return IMPL.write(fd, buffer);
+    }
 }

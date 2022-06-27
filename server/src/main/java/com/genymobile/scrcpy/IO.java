@@ -1,9 +1,7 @@
 package com.genymobile.scrcpy;
 
-import android.annotation.TargetApi;
-import android.system.ErrnoException;
-import android.system.Os;
-import android.system.OsConstants;
+import androidx.system.ErrnoException;
+import androidx.system.OsCompat;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -14,25 +12,13 @@ public final class IO {
         // not instantiable
     }
 
-    @TargetApi(21) // Backported subset of android.system.
     public static void writeFully(FileDescriptor fd, ByteBuffer from) throws IOException {
-        // ByteBuffer position is not updated as expected by Os.write() on old Android versions, so
-        // count the remaining bytes manually.
-        // See <https://github.com/Genymobile/scrcpy/issues/291>.
-        int remaining = from.remaining();
-        while (remaining > 0) {
-            try {
-                int w = Os.write(fd, from);
-                if (BuildConfig.DEBUG && w < 0) {
-                    // w should not be negative, since an exception is thrown on error
-                    throw new AssertionError("Os.write() returned a negative value (" + w + ")");
-                }
-                remaining -= w;
-            } catch (ErrnoException e) {
-                if (e.errno != OsConstants.EINTR) {
-                    throw new IOException(e);
-                }
+        try {
+            while (from.hasRemaining()) {
+                OsCompat.write(fd, from);
             }
+        } catch (ErrnoException e) {
+            throw new IOException(e);
         }
     }
 

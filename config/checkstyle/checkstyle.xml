@@ -154,10 +154,4 @@ page at http://checkstyle.sourceforge.net/config.html -->
     <module name="UpperEll" />
   </module>
 
-  <!-- Excludes android.system polyfill.                  -->
-  <!-- See https://checkstyle.org/config_filefilters.html -->
-  <module name="BeforeExecutionExclusionFileFilter">
-    <property name="fileNamePattern" value=".*[\\/]java[\\/]android[\\/]system[\\/].*$" />
-  </module>
-
 </module>

@@ -1,2 +1,3 @@
 include ':server'
+include ':os-compat'
 include ':libcore'

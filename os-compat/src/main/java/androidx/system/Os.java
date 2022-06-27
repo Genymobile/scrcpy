@@ -13,23 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package android.system;
+package androidx.system;
 
-import android.annotation.TargetApi;
+import java.io.FileDescriptor;
+import java.io.InterruptedIOException;
+import java.nio.ByteBuffer;
 
-@SuppressWarnings("unused")
-@TargetApi(21)
-public final class OsConstants {
+interface Os {
+    String strerror(int errno);
 
-    private OsConstants() { }
+    int write(FileDescriptor fd, ByteBuffer buffer) throws ErrnoException, InterruptedIOException;
 
-    public static final int EINTR = libcore.io.OsConstants.EINTR;
-
-    /**
-     * Returns the string name of an errno value.
-     * For example, "EACCES". See {@link Os#strerror} for human-readable errno descriptions.
-     */
-    public static String errnoName(int errno) {
-        return libcore.io.OsConstants.errnoName(errno);
+    // https://android.googlesource.com/platform/libcore/+/lollipop-mr1-release/luni/src/main/java/libcore/io/Posix.java#253
+    static void maybeUpdateBufferPosition(ByteBuffer buffer, int originalPosition, int bytesReadOrWritten) {
+        if (bytesReadOrWritten > 0) {
+            buffer.position(bytesReadOrWritten + originalPosition);
+        }
     }
 }
