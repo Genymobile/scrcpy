@@ -223,14 +223,17 @@ executable('scrcpy', src,
            install: true,
            c_args: [])
 
+# <https://mesonbuild.com/Builtin-options.html#directories>
+datadir = get_option('datadir') # by default 'share'
+
 install_man('scrcpy.1')
 install_data('data/icon.png',
              rename: 'scrcpy.png',
-             install_dir: 'share/icons/hicolor/256x256/apps')
+             install_dir: join_paths(datadir, 'icons/hicolor/256x256/apps'))
 install_data('data/zsh-completion/_scrcpy',
-             install_dir: 'share/zsh/site-functions')
+             install_dir: join_paths(datadir, 'zsh/site-functions'))
 install_data('data/bash-completion/scrcpy',
-             install_dir: 'share/bash-completion/completions')
+             install_dir: join_paths(datadir, 'bash-completion/completions'))
 
 
 ### TESTS
