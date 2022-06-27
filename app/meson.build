@@ -240,6 +240,8 @@ if host_machine.system() == 'linux'
     # Install a launcher (ex: /usr/local/share/applications/scrcpy.desktop)
     install_data('data/scrcpy.desktop',
                  install_dir: join_paths(datadir, 'applications'))
+    install_data('data/scrcpy-console.desktop',
+                 install_dir: join_paths(datadir, 'applications'))
 endif
 
 
