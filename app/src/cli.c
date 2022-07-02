@@ -57,6 +57,7 @@
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
+#define OPT_INSTALL                1040
 
 struct sc_option {
     char shortopt;
@@ -206,6 +207,12 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_INSTALL,
+        .longopt = "install",
+        .text = "Install the server (via 'adb install') instead of just "
+                "pushing it (via 'adb push').",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,
@@ -1609,6 +1616,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;
+                break;
+            case OPT_INSTALL:
+                opts->install = true;
                 break;
             case OPT_OTG:
 #ifdef HAVE_USB
