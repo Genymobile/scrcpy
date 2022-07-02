@@ -52,8 +52,8 @@ public final class Server {
 
         if (options.getCleanup()) {
             try {
-                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
-                        options.getPowerOffScreenOnClose());
+                CleanUp.configure(options.getInstalled(), options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp,
+                        restoreNormalPowerMode, options.getPowerOffScreenOnClose());
             } catch (IOException e) {
                 Ln.e("Could not configure cleanup", e);
             }
@@ -251,6 +251,10 @@ public final class Server {
                 case "power_on":
                     boolean powerOn = Boolean.parseBoolean(value);
                     options.setPowerOn(powerOn);
+                    break;
+                case "installed":
+                    boolean installed = Boolean.parseBoolean(value);
+                    options.setInstalled(installed);
                     break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);
