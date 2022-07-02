@@ -66,6 +66,10 @@ bool
 sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
                unsigned flags);
 
+bool
+sc_adb_uninstall(struct sc_intr *intr, const char *serial, const char *pkg,
+                 unsigned flags);
+
 /**
  * Execute `adb tcpip <port>`
  */
