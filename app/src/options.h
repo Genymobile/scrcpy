@@ -141,6 +141,7 @@ struct scrcpy_options {
     bool start_fps_counter;
     bool power_on;
     bool install;
+    bool reinstall;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
