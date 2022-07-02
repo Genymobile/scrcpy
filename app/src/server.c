@@ -15,6 +15,7 @@
 #include "util/str.h"
 
 #define SC_SERVER_FILENAME "scrcpy-server.apk"
+#define SC_SERVER_PACKAGE "com.genymobile.scrcpy"
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.apk"
@@ -104,7 +105,7 @@ error:
 }
 
 static bool
-push_server(struct sc_intr *intr, const char *serial) {
+push_server(struct sc_intr *intr, const char *serial, bool install) {
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -114,7 +115,28 @@ push_server(struct sc_intr *intr, const char *serial) {
         free(server_path);
         return false;
     }
-    bool ok = sc_adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH, 0);
+    bool ok;
+
+    if (install) {
+        char *version = sc_adb_get_installed_apk_version(intr, serial, 0);
+        bool same_version = version && !strcmp(version, SCRCPY_VERSION);
+        free(version);
+        if (same_version) {
+            LOGI("Server " SCRCPY_VERSION " already installed");
+            ok = true;
+        } else {
+            LOGI("Installing server " SCRCPY_VERSION);
+            // If a server with a different signature is installed, or if a
+            // newer server is already installed, we must uninstall it first.
+            ok = sc_adb_uninstall(intr, serial, SC_SERVER_PACKAGE,
+                                  SC_ADB_SILENT);
+            (void) ok; // expected to fail if it is not installed
+            ok = sc_adb_install(intr, serial, server_path, 0);
+        }
+    } else {
+        ok = sc_adb_push(intr, serial, server_path, SC_DEVICE_SERVER_PATH, 0);
+    }
+
     free(server_path);
     return ok;
 }
@@ -152,6 +174,38 @@ sc_server_sleep(struct sc_server *server, sc_tick deadline) {
     return !stopped;
 }
 
+static char *
+get_classpath_cmd(struct sc_intr *intr, const char *serial, bool install) {
+    if (!install) {
+        // In push mode, the path is known statically
+        char *cp = strdup("CLASSPATH=" SC_DEVICE_SERVER_PATH);
+        if (!cp) {
+            LOG_OOM();
+        }
+        return cp;
+    }
+
+    char *apk_path = sc_adb_get_installed_apk_path(intr, serial, 0);
+    if (!apk_path) {
+        LOGE("Could not get device apk path");
+        return NULL;
+    }
+
+#define PREFIX_SIZE (sizeof("CLASSPATH=") - 1)
+    size_t len = strlen(apk_path);
+    char *cp = malloc(PREFIX_SIZE + len + 1);
+    if (!cp) {
+        LOG_OOM();
+        free(apk_path);
+        return NULL;
+    }
+
+    memcpy(cp, "CLASSPATH=", PREFIX_SIZE);
+    memcpy(cp + PREFIX_SIZE, apk_path, len + 1);
+    free(apk_path);
+    return cp;
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
@@ -160,13 +214,20 @@ execute_server(struct sc_server *server,
     const char *serial = server->serial;
     assert(serial);
 
+    char *classpath = get_classpath_cmd(&server->intr, serial, params->install);
+    if (!classpath) {
+        return SC_PROCESS_NONE;
+    }
+
+    LOGD("Using %s", classpath);
+
     const char *cmd[128];
     unsigned count = 0;
     cmd[count++] = sc_adb_get_executable();
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
-    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
+    cmd[count++] = classpath;
     cmd[count++] = "app_process";
 
 #ifdef SERVER_DEBUGGER
@@ -272,6 +333,8 @@ execute_server(struct sc_server *server,
     pid = sc_adb_execute(cmd, 0);
 
 end:
+    free(classpath);
+
     for (unsigned i = dyn_idx; i < count; ++i) {
         free((char *) cmd[i]);
     }
@@ -755,8 +818,9 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
-    ok = push_server(&server->intr, serial);
+    ok = push_server(&server->intr, serial, params->install);
     if (!ok) {
+        LOGE("Failed to push server");
         goto error_connection_failed;
     }
 
