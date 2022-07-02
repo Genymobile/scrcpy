@@ -330,6 +330,17 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
 }
 
 bool
+sc_adb_uninstall(struct sc_intr *intr, const char *serial, const char *pkg,
+                 unsigned flags) {
+    assert(serial);
+    const char *const argv[] =
+        SC_ADB_COMMAND("-s", serial, "uninstall", pkg);
+
+    sc_pid pid = sc_adb_execute(argv, flags);
+    return process_check_success_intr(intr, pid, "adb uninstall", flags);
+}
+
+bool
 sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
              unsigned flags) {
     char port_string[5 + 1];
