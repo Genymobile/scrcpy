@@ -326,6 +326,7 @@ scrcpy(struct scrcpy_options *options) {
         .cleanup = options->cleanup,
         .power_on = options->power_on,
         .install = options->install,
+        .reinstall = options->reinstall,
     };
 
     static const struct sc_server_callbacks cbs = {
