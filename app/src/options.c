@@ -66,4 +66,5 @@ const struct scrcpy_options scrcpy_options_default = {
     .start_fps_counter = false,
     .power_on = true,
     .install = false,
+    .reinstall = false,
 };

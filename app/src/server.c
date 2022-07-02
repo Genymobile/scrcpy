@@ -105,7 +105,10 @@ error:
 }
 
 static bool
-push_server(struct sc_intr *intr, const char *serial, bool install) {
+push_server(struct sc_intr *intr, const char *serial, bool install,
+            bool reinstall) {
+    assert(install || !reinstall); // reinstall implies install
+
     char *server_path = get_server_path();
     if (!server_path) {
         return false;
@@ -121,7 +124,7 @@ push_server(struct sc_intr *intr, const char *serial, bool install) {
         char *version = sc_adb_get_installed_apk_version(intr, serial, 0);
         bool same_version = version && !strcmp(version, SCRCPY_VERSION);
         free(version);
-        if (same_version) {
+        if (!reinstall && same_version) {
             LOGI("Server " SCRCPY_VERSION " already installed");
             ok = true;
         } else {
@@ -818,7 +821,7 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
-    ok = push_server(&server->intr, serial, params->install);
+    ok = push_server(&server->intr, serial, params->install, params->reinstall);
     if (!ok) {
         LOGE("Failed to push server");
         goto error_connection_failed;
