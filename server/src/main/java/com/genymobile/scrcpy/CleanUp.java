@@ -37,6 +37,8 @@ public final class CleanUp {
         private static final int FLAG_RESTORE_NORMAL_POWER_MODE = 2;
         private static final int FLAG_POWER_OFF_SCREEN = 4;
 
+        private boolean installed;
+
         private int displayId;
 
         // Restore the value (between 0 and 7), -1 to not restore
@@ -52,6 +54,7 @@ public final class CleanUp {
         }
 
         protected Config(Parcel in) {
+            installed = in.readInt() != 0;
             displayId = in.readInt();
             restoreStayOn = in.readInt();
             byte options = in.readByte();
@@ -62,6 +65,7 @@ public final class CleanUp {
 
         @Override
         public void writeToParcel(Parcel dest, int flags) {
+            dest.writeInt(installed ? 1 : 0);
             dest.writeInt(displayId);
             dest.writeInt(restoreStayOn);
             byte options = 0;
@@ -116,9 +120,10 @@ public final class CleanUp {
         // not instantiable
     }
 
-    public static void configure(int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode, boolean powerOffScreen)
+    public static void configure(boolean installed, int displayId, int restoreStayOn, boolean disableShowTouches, boolean restoreNormalPowerMode, boolean powerOffScreen)
             throws IOException {
         Config config = new Config();
+        config.installed = installed;
         config.displayId = displayId;
         config.disableShowTouches = disableShowTouches;
         config.restoreStayOn = restoreStayOn;
@@ -127,8 +132,9 @@ public final class CleanUp {
 
         if (config.hasWork()) {
             startProcess(config);
-        } else {
-            // There is no additional clean up to do when scrcpy dies
+        } else if (!installed) {
+            // There is no additional clean up to do when scrcpy dies.
+            // If the APK has been pushed to /data/local/tmp, remove it.
             unlinkSelf();
         }
     }
@@ -136,6 +142,7 @@ public final class CleanUp {
     private static void startProcess(Config config) throws IOException {
         String[] cmd = {"app_process", "/", CleanUp.class.getName(), config.toBase64()};
 
+        // TODO if scrcpy is "installed", then we must find the install path!
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", SERVER_PATH);
         builder.start();
@@ -150,7 +157,12 @@ public final class CleanUp {
     }
 
     public static void main(String... args) {
-        unlinkSelf();
+        Config config = Config.fromBase64(args[0]);
+
+        if (!config.installed) {
+            // If the APK has been pushed to /data/local/tmp, remove it.
+            unlinkSelf();
+        }
 
         try {
             // Wait for the server to die
@@ -160,8 +172,6 @@ public final class CleanUp {
         }
 
         Ln.i("Cleaning up");
-
-        Config config = Config.fromBase64(args[0]);
 
         if (config.disableShowTouches || config.restoreStayOn != -1) {
             ServiceManager serviceManager = new ServiceManager();
