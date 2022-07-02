@@ -58,6 +58,7 @@
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
 #define OPT_INSTALL                1040
+#define OPT_REINSTALL              1041
 
 struct sc_option {
     char shortopt;
@@ -384,6 +385,13 @@ static const struct sc_option options[] = {
         .longopt = "record-format",
         .argdesc = "format",
         .text = "Force recording format (either mp4 or mkv).",
+    },
+    {
+        .longopt_id = OPT_REINSTALL,
+        .longopt = "reinstall",
+        .text = "Reinstall the server (via 'adb install'), even if the correct "
+                "version is already installed.\n"
+                "Implies --install.",
     },
     {
         .longopt_id = OPT_RENDER_DRIVER,
@@ -1619,6 +1627,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_INSTALL:
                 opts->install = true;
+                break;
+            case OPT_REINSTALL:
+                opts->install = true;
+                opts->reinstall = true;
                 break;
             case OPT_OTG:
 #ifdef HAVE_USB
