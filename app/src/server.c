@@ -316,6 +316,8 @@ execute_server(struct sc_server *server,
         // By default, power_on is true
         ADD_PARAM("power_on=false");
     }
+    // TODO ADD_PARAM("install=…");
+    // The server must not rm in /data/local/tmp if installed
 
 #undef ADD_PARAM
 
