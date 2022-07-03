@@ -747,8 +747,13 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
             .point = sc_screen_convert_window_to_frame_coords(im->screen,
                                                               mouse_x, mouse_y),
         },
-        .hscroll = event->x,
-        .vscroll = event->y,
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+        .hscroll = CLAMP(event->preciseX, -1.0f, 1.0f),
+        .vscroll = CLAMP(event->preciseY, -1.0f, 1.0f),
+#else
+        .hscroll = CLAMP(event->x, -1, 1),
+        .vscroll = CLAMP(event->y, -1, 1),
+#endif
         .buttons_state =
             sc_mouse_buttons_state_from_sdl(buttons, im->forward_all_clicks),
     };
