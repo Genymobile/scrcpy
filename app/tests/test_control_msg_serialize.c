@@ -132,14 +132,14 @@ static void test_serialize_inject_scroll_event(void) {
 
     unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
-    assert(size == 25);
+    assert(size == 21);
 
     const unsigned char expected[] = {
         SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
         0x04, 0x38, 0x07, 0x80, // 1080 1920
-        0x00, 0x00, 0x00, 0x01, // 1
-        0xFF, 0xFF, 0xFF, 0xFF, // -1
+        0x7F, 0xFF, // 1 (float encoded as i16)
+        0x80, 0x00, // -1 (float encoded as i16)
         0x00, 0x00, 0x00, 0x01, // 1
     };
     assert(!memcmp(buf, expected, sizeof(expected)));

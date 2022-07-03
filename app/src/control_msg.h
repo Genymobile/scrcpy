@@ -68,8 +68,8 @@ struct sc_control_msg {
         } inject_touch_event;
         struct {
             struct sc_position position;
-            int32_t hscroll;
-            int32_t vscroll;
+            float hscroll;
+            float vscroll;
             enum android_motionevent_buttons buttons;
         } inject_scroll_event;
         struct {
