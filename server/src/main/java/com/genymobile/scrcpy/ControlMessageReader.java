@@ -152,8 +152,10 @@ public class ControlMessageReader {
             return null;
         }
         Position position = readPosition(buffer);
-        int hScroll = buffer.getInt();
-        int vScroll = buffer.getInt();
+        int hScrollInt = buffer.getInt();
+        int vScrollInt = buffer.getInt();
+        float hScroll = hScrollInt / 1000f;
+        float vScroll = vScrollInt / 1000f;
         int buttons = buffer.getInt();
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll, buttons);
     }
