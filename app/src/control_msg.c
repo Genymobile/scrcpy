@@ -115,12 +115,15 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             return 28;
         case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
-            sc_write32be(&buf[13],
-                             (uint32_t) msg->inject_scroll_event.hscroll);
-            sc_write32be(&buf[17],
-                             (uint32_t) msg->inject_scroll_event.vscroll);
-            sc_write32be(&buf[21], msg->inject_scroll_event.buttons);
-            return 25;
+            // map [-1, 1] to [0, 1], then to uint16
+            uint16_t hscroll =
+                to_fixed_point_16((msg->inject_scroll_event.hscroll + 1) / 2);
+            uint16_t vscroll =
+                to_fixed_point_16((msg->inject_scroll_event.vscroll + 1) / 2);
+            sc_write16be(&buf[13], hscroll);
+            sc_write16be(&buf[15], vscroll);
+            sc_write32be(&buf[17], msg->inject_scroll_event.buttons);
+            return 21;
         case SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON:
             buf[1] = msg->inject_keycode.action;
             return 2;
@@ -191,8 +194,8 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         }
         case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
-            LOG_CMSG("scroll position=%" PRIi32 ",%" PRIi32 " hscroll=%" PRIi32
-                         " vscroll=%" PRIi32 " buttons=%06lx",
+            LOG_CMSG("scroll position=%" PRIi32 ",%" PRIi32 " hscroll=%g"
+                         " vscroll=%g buttons=%06lx",
                      msg->inject_scroll_event.position.point.x,
                      msg->inject_scroll_event.position.point.y,
                      msg->inject_scroll_event.hscroll,
