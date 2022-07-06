@@ -741,14 +741,26 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     int mouse_y;
     uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
+    float hscroll;
+    float vscroll;
+    if (SDL_VERSION_ATLEAST(2, 0, 18)) {
+      // right is positive
+      hscroll = CLAMP(-event->preciseX, -1.0f, 1.0f);
+      // up is positive
+      vscroll = CLAMP(event->preciseY, -1.0f, 1.0f);
+    } else {
+      hscroll = CLAMP(-event->x, -1, 1);
+      vscroll = CLAMP(event->y, -1, 1);
+    }
+
     struct sc_mouse_scroll_event evt = {
         .position = {
             .screen_size = im->screen->frame_size,
             .point = sc_screen_convert_window_to_frame_coords(im->screen,
                                                               mouse_x, mouse_y),
         },
-        .hscroll = (int32_t)(event->preciseX * 1000),
-        .vscroll = (int32_t)(event->preciseY * 1000),
+        .hscroll = hscroll,
+        .vscroll = vscroll,
         .buttons_state =
             sc_mouse_buttons_state_from_sdl(buttons, im->forward_all_clicks),
     };
