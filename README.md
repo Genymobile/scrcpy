@@ -1054,10 +1054,10 @@ scrcpy --push-target=/sdcard/Movies/
 
 Audio is not forwarded by _scrcpy_. Use [sndcpy].
 
-Also see [issue #14].
+Also see [issue_#14].
 
 [sndcpy]: https://github.com/rom1v/sndcpy
-[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
+[issue_#14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
@@ -1166,9 +1166,9 @@ See the [FAQ].
 
 ## Developers
 
-Read the [developers page].
+Read the [developers_page].
 
-[developers page]: DEVELOP.md
+[developers_page]: DEVELOP.md
 
 
 ## Licence
