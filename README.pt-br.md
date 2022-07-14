@@ -1,6 +1,6 @@
 _Apenas o [README](README.md) original é garantido estar atualizado._
 
-# scrcpy (v1.19)
+# scrcpy (v1.24)
 
 Esta aplicação fornece exibição e controle de dispositivos Android conectados via
 USB (ou [via TCP/IP][article-tcpip]). Não requer nenhum acesso _root_.
@@ -11,7 +11,7 @@ Funciona em _GNU/Linux_, _Windows_ e _macOS_.
 Foco em:
 
  - **leveza** (nativo, mostra apenas a tela do dispositivo)
- - **performance** (30~60fps)
+ - **performance** (30~120fps, dependendo do dispositivo)
  - **qualidade** (1920×1080 ou acima)
  - **baixa latência** ([35~70ms][lowlatency])
  - **baixo tempo de inicialização** (~1 segundo para mostrar a primeira imagem)
@@ -52,10 +52,16 @@ controlá-lo usando teclado e mouse.
 
 ### Linux
 
-No Debian (_testing_ e _sid_ por enquanto) e Ubuntu (20.04):
+No Debian e Ubuntu:
 
 ```
 apt install scrcpy
+```
+
+No Arch Linux:
+
+```
+pacman -S scrcpy
 ```
 
 Um pacote [Snap] está disponível: [`scrcpy`][snap-link].
@@ -68,11 +74,6 @@ Para Fedora, um pacote [COPR] está disponível: [`scrcpy`][copr-link].
 
 [COPR]: https://fedoraproject.org/wiki/Category:Copr
 [copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
-
-Para Arch Linux, um pacote [AUR] está disponível: [`scrcpy`][aur-link].
-
-[AUR]: https://wiki.archlinux.org/index.php/Arch_User_Repository
-[aur-link]: https://aur.archlinux.org/packages/scrcpy/
 
 Para Gentoo, uma [Ebuild] está disponível: [`scrcpy/`][ebuild-link].
 
@@ -191,6 +192,14 @@ scrcpy --max-fps 15
 
 Isso é oficialmente suportado desde o Android 10, mas pode funcionar em versões anteriores.
 
+O frame rate atual pode ser exibido no console:
+
+```
+scrcpy --print-fps
+```
+
+E pode ser desabilitado a qualquer momento com <kbd>MOD</kbd>+<kbd>i</kbd>.
+
 #### Cortar
 
 A tela do dispositivo pode ser cortada para espelhar apenas uma parte da tela.
@@ -258,8 +267,7 @@ scrcpy -Nr file.mkv
 ```
 
 "Frames pulados" são gravados, mesmo que não sejam exibidos em tempo real (por
-motivos de performance). Frames têm seu _horário carimbado_ no dispositivo, então [variação de atraso nos
-pacotes][packet delay variation] não impacta o arquivo gravado.
+motivos de performance). Frames têm seu _horário carimbado_ no dispositivo, então [variação de atraso nos pacotes] não impacta o arquivo gravado.
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
@@ -267,7 +275,7 @@ pacotes][packet delay variation] não impacta o arquivo gravado.
 #### v4l2loopback
 
 Em Linux, é possível enviar a transmissão do video para um disposiivo v4l2 loopback, assim
-o dispositivo Android pode ser aberto como uma webcam por qualquer ferramneta capaz de v4l2
+o dispositivo Android pode ser aberto como uma webcam por qualquer ferramenta capaz de v4l2
 
 The module `v4l2loopback` must be installed:
 
@@ -295,7 +303,7 @@ v4l2-ctl --list-devices
 ls /dev/video*
 ```
 
-Para iniciar o scrcpy usando o coletor v4l2 (sink):
+Para iniciar o `scrcpy` usando o coletor v4l2 (sink):
 
 ```bash
 scrcpy --v4l2-sink=/dev/videoN
@@ -342,20 +350,55 @@ scrcpy --v4l2-buffer=500    # adiciona 500 ms de buffering para coletor V4L2
 #### Sem fio
 
 _Scrcpy_ usa `adb` para se comunicar com o dispositivo, e `adb` pode [conectar-se][connect] a um
-dispositivo via TCP/IP:
+dispositivo via TCP/IP. O dispositivo precisa estar conectado na mesma rede 
+que o computador.
 
-1. Conecte o dispositivo no mesmo Wi-Fi do seu computador.
-2. Pegue o endereço IP do seu dispositivo, em Configurações → Sobre o telefone → Status, ou
+#### Automático
+
+A opção `--tcpip` permite configurar a conexão automaticamente. Há duas 
+variantes.
+
+Se o dispositivo (acessível em 192.168.1.1 neste exemplo) escuta em uma porta
+(geralmente 5555) para conexões _adb_ de entrada, então execute:
+
+```bash
+scrcpy --tcpip=192.168.1.1       # porta padrão é 5555
+scrcpy --tcpip=192.168.1.1:5555
+```
+
+Se o modo TCP/IP do _adb_ estiver desabilitado no dispositivo (ou se você não 
+souber o endereço de IP), conecte-o via USB e execute:
+
+```bash
+scrcpy --tcpip    # sem argumentos
+```
+
+Ele vai encontrar o endereço de IP do dispositivo automaticamente, habilitar 
+o modo TCP/IP, e então, conectar-se ao dispositivo antes de iniciar.
+
+#### Manual
+
+1. Conecte o dispositivo em uma porta USB do seu computador.
+2. Conecte o dispositivo no mesmo Wi-Fi do seu computador.
+3. Pegue o endereço IP do seu dispositivo, em Configurações → Sobre o telefone → Status, ou
    executando este comando:
 
     ```bash
     adb shell ip route | awk '{print $9}'
     ```
 
-3. Ative o adb via TCP/IP no seu dispositivo: `adb tcpip 5555`.
-4. Desconecte seu dispositivo.
-5. Conecte-se ao seu dispositivo: `adb connect DEVICE_IP:5555` _(substitua `DEVICE_IP`)_.
-6. Execute `scrcpy` como de costume.
+4. Ative o adb via TCP/IP no seu dispositivo: `adb tcpip 5555`.
+5. Desconecte seu dispositivo.
+6. Conecte-se ao seu dispositivo: `adb connect DEVICE_IP:5555` _(substitua `DEVICE_IP`)_.
+7. Execute `scrcpy` como de costume.
+
+Desde o Android 11, a opção [Depuração por Wi-Fi][adb-wireless]
+
+[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
+
+Se a conexão cair aleatoriamente, execute o comando `scrcpy` para reconectar. Se disser 
+que não encontrou dispositivos/emuladores, tente executar `adb connect DEVICE_IP:5555` novamente, e então `scrcpy` como de costume. Se ainda disser 
+que não encontrou nada, tente executar `adb disconnect`, e então execute os dois comandos novamente.
 
 Pode ser útil diminuir o bit-rate e a resolução:
 
@@ -376,12 +419,27 @@ scrcpy --serial 0123456789abcdef
 scrcpy -s 0123456789abcdef  # versão curta
 ```
 
+O serial também pode ser consultado pela variável de ambiente `ANDROID _SERIAL`
+(também utilizado por `adb`)
+
 Se o dispositivo está conectado via TCP/IP:
 
 ```bash
 scrcpy --serial 192.168.0.1:5555
 scrcpy -s 192.168.0.1:5555  # versão curta
 ```
+
+Se somente um dispositivo está conectado via USB ou TCP/IP, é possível 
+selecioná-lo automaticamente:
+
+```bash
+# Seleciona o único dispositivo conectado via USB
+scrcpy -d             # assim como adb -d
+scrcpy --select-usb   # método extenso
+
+# Seleciona o único dispositivo conectado via TCP/IP`
+scrcpy -e             # assim como adb -e
+scrcpy --select-tcpip # método extenso
 
 Você pode iniciar várias instâncias do _scrcpy_ para vários dispositivos.
 
@@ -399,17 +457,88 @@ autoadb scrcpy -s '{}'
 
 Para conectar-se a um dispositivo remoto, é possível conectar um cliente `adb` local a
 um servidor `adb` remoto (contanto que eles usem a mesma versão do protocolo
-_adb_):
+_adb_)
+
+#### Servidor ADB remoto
+
+Para se conectar a um _adb server_ remoto, o servidor precisa escutar em todas as interfaces:
 
 ```bash
-adb kill-server    # encerra o servidor adb local em 5037
-ssh -CN -L5037:localhost:5037 -R27183:localhost:27183 your_remote_computer
+adb kill-server
+adb -a nodaemon server start
 # mantenha isso aberto
 ```
 
-De outro terminal:
+**Aviso: todas a comunicações entre clientes e o _adb server_ não são criptografadas.**
+
+Supondo que o servidor esteja acessível em 192.168.1.2. Então, em outro 
+terminal, execute `scrcpy`:
 
 ```bash
+# no bash
+export ADB_server_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:192.168.1.2:5037'
+scrcpy --tunnel-host=192.168.1.2
+```
+
+Por padrão, `scrcpy` usa a porta local utilizada por `adb forward` no estabelecimento de tunelagem (Tipicamente `27183`, veja `--port`). Também
+é possível forçar uma porta de tunelagem diferente (pode ser útil em 
+situações mais complexas, quando há mais redirecionamentos envolvidos):
+
+```
+scrcpy --tunnel-port=1234
+```
+
+#### Túnel SSH
+
+Para se comunicar a um _adb server_ remoto de um jeito seguro, é 
+preferível utilizar um túnel SSH.
+
+Primeiro, tenha certeza de que o _adb server_ esteja rodando em um 
+computador remoto:
+
+```bash
+adb start-server
+```
+
+Então, estabeleça um túnel SSH:
+
+```bash
+# local  5038 --> remoto  5037
+# local 27183 <-- remoto 27183
+
+ssg -CN -L5038:localhost:5037 -R27183:localhost:27183 seu_computador_remoto
+# mantenha isso aberto
+```
+
+De outro terminal, execute `scrcpy`:
+
+```bash
+# in bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy
 ```
 
@@ -417,14 +546,29 @@ Para evitar ativar o encaminhamento de porta remota, você pode forçar uma cone
 de encaminhamento (note o `-L` em vez de `-R`):
 
 ```bash
-adb kill-server    # encerra o servidor adb local em 5037
-ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 your_remote_computer
+# local  5038 --> remoto  5037
+# local 27183 <-- remoto 27183
+ssh -CN -L5037:localhost:5037 -L27183:localhost:27183 seu_computador_remoto
 # mantenha isso aberto
 ```
 
-De outro terminal:
+De outro terminal, execute `scrcpy`:
 
 ```bash
+# no bash
+export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```powershell
+# no PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy --force-adb-forward
 ```
 
@@ -532,7 +676,7 @@ scrcpy --display 1
 
 A lista de IDs dos displays pode ser obtida por:
 
-```
+```bash
 adb shell dumpsys display   # busca "mDisplayId=" na saída
 ```
 
@@ -549,7 +693,7 @@ scrcpy --stay-awake
 scrcpy -w
 ```
 
-O estado inicial é restaurado quando o scrcpy é fechado.
+O estado inicial é restaurado quando o _scrcpy_ é fechado.
 
 
 #### Desligar tela
@@ -578,6 +722,25 @@ scrcpy --turn-screen-off --stay-awake
 scrcpy -Sw
 ```
 
+#### Desligar ao fechar
+
+Para desligar a tela do dispositivo ao fechar _scrcpy_:
+
+```bash
+scrcpy --power-off-on-close
+```
+
+#### Ligar ao iniciar
+
+Por padrão, ao iniciar, o dispositivo é ligado.
+
+Para prevenir esse comportamento:
+
+```bash
+scrcpy --no-power-on
+```
+
+
 
 #### Mostrar toques
 
@@ -599,7 +762,7 @@ Note que isto mostra apenas toques _físicos_ (com o dedo no dispositivo).
 
 #### Desativar descanso de tela
 
-Por padrão, scrcpy não evita que o descanso de tela rode no computador.
+Por padrão, _scrcpy_ não evita que o descanso de tela rode no computador.
 
 Para desativá-lo:
 
@@ -658,6 +821,9 @@ de <kbd>Ctrl</kbd>+<kbd>v</kbd> e <kbd>MOD</kbd>+<kbd>v</kbd> para que eles
 também injetem o texto da área de transferência do computador como uma sequência de eventos de tecla (da mesma
 forma que <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
 
+Para desabilitar a sincronização automática da área de transferência, utilize
+`--no-clipboard-autosync`
+
 #### Pinçar para dar zoom
 
 Para simular "pinçar para dar zoom": <kbd>Ctrl</kbd>+_clicar-e-mover_.
@@ -666,8 +832,105 @@ Mais precisamente, segure <kbd>Ctrl</kbd> enquanto pressiona o botão de clique-
 o botão de clique-esquerdo seja liberado, todos os movimentos do mouse ampliar e rotacionam o
 conteúdo (se suportado pelo app) relativo ao centro da tela.
 
-Concretamente, scrcpy gera eventos adicionais de toque de um "dedo virtual" em
+Concretamente, _scrcpy_ gera eventos adicionais de toque de um "dedo virtual" em
 uma posição invertida em relação ao centro da tela.
+
+#### Simulação de teclado físico (HID)
+
+Por padrão, _scrcpy_ utiliza injeção de chave ou texto: funciona em qualquer lugar,
+mas é limitado a ASCII.
+
+Alternativamente, `scrcpy` pode simular um teclado USB físico no Android
+para servir uma melhor experiência de entrada de teclas (utilizando [USB HID por AOAv2][hid-aoav2]): 
+o teclado virtual é desabilitado e funciona para todos os caractéres e IME.
+
+[hid-aoav2]: https://source.android.com/devices/accessories/aoa2#hid-support
+
+Porém, só funciona se o dispositivo estiver conectado via USB.
+
+Nota: No Windows, pode funcionar somente no [modo OTG](#otg), não esquanto espelhando (não 
+é possível abrir um dispositivo USB se ele já estiver em uso por outro processo
+como o  _adb daemon_).
+
+Para habilitar esse modo:
+
+```bash
+scrcpy --hid-keyboard
+scrcpy -K  # versão curta
+```
+
+Se falhar por algum motivo (por exemplo, se o dispositivo não estiver conectado via
+USB), ele automaticamente retorna para o modo padrão (com um log no console). Isso permite utilizar as mesmas linhas de comando de quando conectado por
+USB e TCP/IP.
+
+Neste modo, eventos de tecla bruta (scancodes) são enviados ao dispositivo, independentemente
+do mapeamento de teclas do hospedeiro. Portanto, se o seu layout de teclas não é igual, ele
+precisará ser configurado no dispositivo Android, em Configurações → Sistema → Idiomas e entrada → [Teclado_físico].
+
+Essa página de configurações pode ser aberta diretamente:
+
+```bash
+adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+```
+
+Porém, essa opção só está disponível quando o teclado HID está habilitado (ou quando
+um teclado físico é conectado).
+
+[Teclado_físico]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+
+#### Simulação de mouse físico (HID)
+
+Similar a simulação de teclado físico, é possível simular um mouse físico. Da mesma forma, só funciona se o dispositivo está conectado por USB.
+
+Por padrão, _scrcpy_ utilizada injeção de eventos do mouse com coordenadas absolutas. Ao simular um mouse físico, o ponteiro de mouse aparece no
+dispositivo Android, e o movimento relativo do mouse, cliques e scrolls são injetados.
+
+Para habilitar esse modo:
+
+```bash
+scrcpy --hid-mouse
+scrcpy -M  # versão curta
+```
+
+Você também pode adicionar `--forward-all-clicks` para [enviar todos os botões do mouse][forward_all_clicks].
+
+[forward_all_clicks]: #clique-direito-e-clique-do-meio
+
+Quando esse modo é habilitado, o mouse do computador é "capturado" (o ponteiro do mouse
+desaparece do computador e aparece no dispositivo Android).
+
+Teclas especiais de captura, como <kbd>Alt</kbd> ou <kbd>Super</kbd>, alterna
+(desabilita e habilita) a captura do mouse. Utilize uma delas para dar o controle
+do mouse de volta para o computador.
+
+
+#### OTG
+
+É possível executar _scrcpy_ somente com simulação de mouse e teclado físicos
+(HID), como se o teclado e mouse do computador estivessem conectados diretamente ao dispositivo
+via cabo OTG.
+
+Nesse modo, `adb` (Depuração USB) não é necessária, e o espelhamento é desabilitado.
+
+Para habilitar o modo OTG:
+
+```bash
+scrcpy --otg
+# Passe o serial de houver diversos dispositivos USB disponíveis
+scrcpy --otg -s 0123456789abcdef
+```
+
+É possível habilitar somente teclado HID ou mouse HID:
+
+```bash
+scrcpy --otg --hid-keyboard              # somente teclado
+scrcpy --otg --hid-mouse                 # somente mouse
+scrcpy --otg --hid-keyboard --hid-mouse  # teclado e mouse
+# para conveniência, habilite ambos por padrão
+scrcpy --otg                             # teclado e mouse
+```
+
+Como `--hid-keyboard` e `--hid-mouse`, só funciona se o dispositivo estiver conectado por USB.
 
 
 #### Preferência de injeção de texto
@@ -688,6 +951,14 @@ scrcpy --prefer-text
 
 (mas isso vai quebrar o comportamento do teclado em jogos)
 
+Ao contrário, você pode forçar para sempre injetar eventos de teclas brutas:
+
+```bash
+scrcpy --raw-key-events
+```
+
+Essas opções não surgem efeito no teclado HID (todos os eventos de tecla são enviados como scancodes nesse modo).
+
 [textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
 [prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
 
@@ -703,6 +974,8 @@ Para evitar o encaminhamento eventos de tecla repetidos:
 scrcpy --no-key-repeat
 ```
 
+Essa opção não surge efeito no teclado HID (repetição de tecla é gerida diretamente pelo 
+Android nesse modo).
 
 #### Clique-direito e clique-do-meio
 
@@ -734,7 +1007,7 @@ Não existe feedback visual, um log é imprimido no console.
 O diretório alvo pode ser mudado ao iniciar:
 
 ```bash
-scrcpy --push-target /sdcard/foo/bar/
+scrcpy --push-target=/sdcard/Movies/
 ```
 
 
@@ -742,10 +1015,10 @@ scrcpy --push-target /sdcard/foo/bar/
 
 Áudio não é encaminhado pelo _scrcpy_. Use [sndcpy].
 
-Também veja [issue #14].
+Também veja [issue_#14].
 
 [sndcpy]: https://github.com/rom1v/sndcpy
-[issue #14]: https://github.com/Genymobile/scrcpy/issues/14
+[issue_#14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Atalhos
@@ -795,11 +1068,14 @@ _<kbd>[Super]</kbd> é tipicamente a tecla <kbd>Windows</kbd> ou <kbd>Cmd</kbd>.
  | Injetar texto da área de transferência do computador | <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>
  | Ativar/desativar contador de FPS (em stdout) | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pinçar para dar zoom                        | <kbd>Ctrl</kbd>+_Clicar-e-mover_
+ | Segure e arraste um arquivo APK                        | Instala APK pelo computador
+ | Segure e arraste arquivo não-APK                        | [Enviar arquivo para o dispositivo](#push-file-to-device)
 
 _¹Clique-duplo-esquerdo na borda preta para remove-la._  
 _²Clique-direito liga a tela caso esteja desligada, pressione BACK caso contrário._  
-_³4.° and 5.° botões do mouse, caso o mouse possua._  
-_⁴Apenas em Android >= 7._
+_³4.° and 5.° botões do mouse, caso o mouse possua._
+_⁴Para aplicativos react-native em desenvolvimento,`MENU` dispara o menu de desenvolvimento_
+_⁵Apenas em Android >= 7._
 
 Atalhos com teclas reptidas são executados soltando e precionando a tecla
 uma segunda vez. Por exemplo, para executar "Expandir painel de Configurção":
@@ -824,7 +1100,7 @@ ADB=/caminho/para/adb scrcpy
 Para sobrepor o caminho do arquivo `scrcpy-server`, configure seu caminho em
 `SCRCPY_SERVER_PATH`.
 
-[useful]: https://github.com/Genymobile/scrcpy/issues/278#issuecomment-429330345
+Para sobrepor o ícone, configure seu caminho em `SCRCPY_ICON_PATH`. 
 
 
 ## Por quê _scrcpy_?
@@ -844,14 +1120,16 @@ Veja [BUILD].
 
 ## Problemas comuns
 
-Veja o [FAQ](FAQ.md).
+Veja o [FAQ].
+
+[FAQ:] FAQ.md
 
 
 ## Desenvolvedores
 
-Leia a [página dos desenvolvedores][developers page].
+Leia a [página dos desenvolvedores][developers_page].
 
-[developers page]: DEVELOP.md
+[developers_page]: DEVELOP.md
 
 
 ## Licença
@@ -878,3 +1156,28 @@ Leia a [página dos desenvolvedores][developers page].
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
+
+## Contato
+
+Se você encontrar um bug, por favor leia o [FAQ] primeiro, depois abra um [issue].
+
+[issue]: https://github.com/Genymobile/scrcpy/issues
+
+Para perguntar em geral ou discussões, você também pode usar:
+
+ - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
+
+## Traduções
+
+Esse README está disponível em outros idiomas:
+
+- [Deutsch (German, `de`) - v1.22](README.de.md)
+- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
+- [Italiano (Italiano, `it`) - v1.23](README.it.md)
+- [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
+- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
+- [Español (Spanish, `sp`) - v1.21](README.sp.md)
+- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](README.zh-Hans.md)
+- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
+- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
