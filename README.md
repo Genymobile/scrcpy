@@ -17,13 +17,13 @@ It focuses on:
  - **lightness**: native, displays only the device screen
  - **performance**: 30~120fps, depending on the device
  - **quality**: 1920×1080 or above
- - **low latency**: [35~70ms][lowlatency]
+ - **low latency**: [35~70ms][low-latency]
  - **low startup time**: ~1 second to display the first image
  - **non-intrusiveness**: nothing is left installed on the Android device
  - **user benefits**: no account, no ads, no internet required
  - **freedom**: free and open source software
 
-[lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
+[low-latency]: https://github.com/Genymobile/scrcpy/pull/646
 
 Its features include:
  - [recording](#recording)
@@ -288,10 +288,10 @@ scrcpy -Nr file.mkv
 ```
 
 "Skipped frames" are recorded, even if they are not displayed in real time (for
-performance reasons). Frames are _timestamped_ on the device, so [packet delay
-variation] does not impact the recorded file.
+performance reasons). Frames are _timestamped_ on the device, so [packet-delay-variation] 
+does not impact the recorded file.
 
-[packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+[packet-delay-variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
 #### v4l2loopback
@@ -898,7 +898,7 @@ USB and TCP/IP.
 In this mode, raw key events (scancodes) are sent to the device, independently
 of the host key mapping. Therefore, if your keyboard layout does not match, it
 must be configured on the Android device, in Settings → System → Languages and
-input → [Physical keyboard].
+input → [Physical-keyboard].
 
 This settings page can be started directly:
 
@@ -909,7 +909,7 @@ adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
 However, the option is only available when the HID keyboard is enabled (or when
 a physical keyboard is connected).
 
-[Physical keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
+[Physical-keyboard]: https://github.com/Genymobile/scrcpy/pull/2632#issuecomment-923756915
 
 #### Physical mouse simulation (HID)
 
@@ -1054,10 +1054,10 @@ scrcpy --push-target=/sdcard/Movies/
 
 Audio is not forwarded by _scrcpy_. Use [sndcpy].
 
-Also see [issue_#14].
+Also see [issue-#14].
 
 [sndcpy]: https://github.com/rom1v/sndcpy
-[issue_#14]: https://github.com/Genymobile/scrcpy/issues/14
+[issue-#14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
 ## Shortcuts
@@ -1166,9 +1166,9 @@ See the [FAQ].
 
 ## Developers
 
-Read the [developers_page].
+Read the [developers-page].
 
-[developers_page]: DEVELOP.md
+[developers-page]: DEVELOP.md
 
 
 ## Licence
@@ -1216,7 +1216,7 @@ This README is available in other languages:
 - [Italiano (Italiano, `it`) - v1.23](README.it.md)
 - [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
 - [한국어 (Korean, `ko`) - v1.11](README.ko.md)
-- [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
+- [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.24](README.pt-br.md)
 - [Español (Spanish, `sp`) - v1.21](README.sp.md)
 - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](README.zh-Hans.md)
 - [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
