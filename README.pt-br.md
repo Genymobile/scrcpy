@@ -1167,17 +1167,3 @@ Para perguntar em geral ou discussões, você também pode usar:
 
  - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
  - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
-
-## Traduções
-
-Esse README está disponível em outros idiomas:
-
-- [Deutsch (German, `de`) - v1.22](README.de.md)
-- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
-- [Italiano (Italiano, `it`) - v1.23](README.it.md)
-- [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
-- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
-- [Español (Spanish, `sp`) - v1.21](README.sp.md)
-- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](README.zh-Hans.md)
-- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
-- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
