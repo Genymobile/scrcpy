@@ -23,6 +23,11 @@ read_string(libusb_device_handle *handle, uint8_t desc_index) {
 
     // When non-negative, 'result' contains the number of bytes written
     char *s = malloc(result + 1);
+    if (!s) {
+        LOG_OOM();
+        return NULL;
+    }
+
     memcpy(s, buffer, result);
     s[result] = '\0';
     return s;
