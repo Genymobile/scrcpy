@@ -401,6 +401,7 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
 #define BUFSIZE 65536
     char *buf = malloc(BUFSIZE);
     if (!buf) {
+        LOG_OOM();
         return false;
     }
 
