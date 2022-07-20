@@ -37,8 +37,8 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // CK...... ........ ........ ........ ........ ........ ........ ........
     // ^^<------------------------------------------------------------------->
     // ||                                PTS
-    // | `- config packet
-    //  `-- key frame
+    // | `- key frame
+    //  `-- config packet
 
     uint8_t header[SC_PACKET_HEADER_SIZE];
     ssize_t r = net_recv_all(demuxer->socket, header, SC_PACKET_HEADER_SIZE);
