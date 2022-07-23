@@ -324,8 +324,8 @@ to add some arguments.
 
 ## Translations
 
-This FAQ is available in other languages:
+Translations of this FAQ in other languages are available in the [wiki].
 
- - [Italiano (Italiano, `it`) - v1.19](FAQ.it.md)
- - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
- - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](FAQ.zh-Hans.md)
+[wiki]: https://github.com/Genymobile/scrcpy/wiki
+
+Only this README file is guaranteed to be up-to-date.
