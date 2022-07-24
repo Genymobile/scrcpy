@@ -139,10 +139,7 @@ public class ControlMessageReader {
         int action = toUnsigned(buffer.get());
         long pointerId = buffer.getLong();
         Position position = readPosition(buffer);
-        // 16 bits fixed-point
-        int pressureInt = toUnsigned(buffer.getShort());
-        // convert it to a float between 0 and 1 (0x1p16f is 2^16 as float)
-        float pressure = pressureInt == 0xffff ? 1f : (pressureInt / 0x1p16f);
+        float pressure = fixedPointToFloat(buffer.getShort());
         int buttons = buffer.getInt();
         return ControlMessage.createInjectTouchEvent(action, pointerId, position, pressure, buttons);
     }
@@ -209,5 +206,11 @@ public class ControlMessageReader {
 
     private static int toUnsigned(byte value) {
         return value & 0xff;
+    }
+
+    private static float fixedPointToFloat(short value) {
+        int unsignedShort = toUnsigned(value);
+        // convert 16 bits fixed-point to a float between 0 and 1 (0x1p16f is 2^16 as float)
+        return unsignedShort == 0xffff ? 1f : (unsignedShort / 0x1p16f);
     }
 }
