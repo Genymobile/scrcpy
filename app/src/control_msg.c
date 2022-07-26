@@ -170,7 +170,7 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             if (id == POINTER_ID_MOUSE || id == POINTER_ID_VIRTUAL_FINGER) {
                 // string pointer id
                 LOG_CMSG("touch [id=%s] %-4s position=%" PRIi32 ",%" PRIi32
-                             " pressure=%g buttons=%06lx",
+                             " pressure=%f buttons=%06lx",
                          id == POINTER_ID_MOUSE ? "mouse" : "vfinger",
                          MOTIONEVENT_ACTION_LABEL(action),
                          msg->inject_touch_event.position.point.x,
@@ -180,7 +180,7 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             } else {
                 // numeric pointer id
                 LOG_CMSG("touch [id=%" PRIu64_ "] %-4s position=%" PRIi32 ",%"
-                             PRIi32 " pressure=%g buttons=%06lx",
+                             PRIi32 " pressure=%f buttons=%06lx",
                          id,
                          MOTIONEVENT_ACTION_LABEL(action),
                          msg->inject_touch_event.position.point.x,

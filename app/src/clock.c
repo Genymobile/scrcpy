@@ -98,7 +98,7 @@ sc_clock_update(struct sc_clock *clock, sc_tick system, sc_tick stream) {
         sc_clock_estimate(clock, &clock->slope, &clock->offset);
 
 #ifndef SC_CLOCK_NDEBUG
-        LOGD("Clock estimation: %g * pts + %" PRItick,
+        LOGD("Clock estimation: %f * pts + %" PRItick,
              clock->slope, clock->offset);
 #endif
     }
