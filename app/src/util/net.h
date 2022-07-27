@@ -5,9 +5,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <SDL2/SDL_platform.h>
 
-#ifdef __WINDOWS__
+#ifdef _WIN32
 
 # include <winsock2.h>
 # include <stdatomic.h>
@@ -17,7 +16,7 @@
       atomic_flag closed;
   } *sc_socket;
 
-#else // not __WINDOWS__
+#else // not _WIN32
 
 # include <sys/socket.h>
 # define SC_SOCKET_NONE -1

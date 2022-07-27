@@ -3,11 +3,10 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
-#include <SDL2/SDL_platform.h>
 
 #include "log.h"
 
-#ifdef __WINDOWS__
+#ifdef _WIN32
 # include <ws2tcpip.h>
   typedef int socklen_t;
   typedef SOCKET sc_raw_socket;
@@ -29,7 +28,7 @@
 
 bool
 net_init(void) {
-#ifdef __WINDOWS__
+#ifdef _WIN32
     WSADATA wsa;
     int res = WSAStartup(MAKEWORD(2, 2), &wsa) < 0;
     if (res < 0) {
@@ -42,14 +41,14 @@ net_init(void) {
 
 void
 net_cleanup(void) {
-#ifdef __WINDOWS__
+#ifdef _WIN32
     WSACleanup();
 #endif
 }
 
 static inline sc_socket
 wrap(sc_raw_socket sock) {
-#ifdef __WINDOWS__
+#ifdef _WIN32
     if (sock == INVALID_SOCKET) {
         return SC_SOCKET_NONE;
     }
@@ -72,7 +71,7 @@ wrap(sc_raw_socket sock) {
 
 static inline sc_raw_socket
 unwrap(sc_socket socket) {
-#ifdef __WINDOWS__
+#ifdef _WIN32
     if (socket == SC_SOCKET_NONE) {
         return INVALID_SOCKET;
     }
@@ -248,7 +247,7 @@ net_interrupt(sc_socket socket) {
 
     sc_raw_socket raw_sock = unwrap(socket);
 
-#ifdef __WINDOWS__
+#ifdef _WIN32
     if (!atomic_flag_test_and_set(&socket->closed)) {
         return !closesocket(raw_sock);
     }
@@ -262,7 +261,7 @@ bool
 net_close(sc_socket socket) {
     sc_raw_socket raw_sock = unwrap(socket);
 
-#ifdef __WINDOWS__
+#ifdef _WIN32
     bool ret = true;
     if (!atomic_flag_test_and_set(&socket->closed)) {
         ret = !closesocket(raw_sock);
