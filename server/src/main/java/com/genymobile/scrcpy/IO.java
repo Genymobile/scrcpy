@@ -6,7 +6,9 @@ import android.system.OsConstants;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.Scanner;
 
 public final class IO {
     private IO() {
@@ -36,5 +38,14 @@ public final class IO {
 
     public static void writeFully(FileDescriptor fd, byte[] buffer, int offset, int len) throws IOException {
         writeFully(fd, ByteBuffer.wrap(buffer, offset, len));
+    }
+
+    public static String toString(InputStream inputStream) {
+        StringBuilder builder = new StringBuilder();
+        Scanner scanner = new Scanner(inputStream);
+        while (scanner.hasNextLine()) {
+            builder.append(scanner.nextLine()).append('\n');
+        }
+        return builder.toString();
     }
 }
