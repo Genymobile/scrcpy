@@ -7,7 +7,7 @@
 #include "decoder.h"
 #include "events.h"
 #include "recorder.h"
-#include "util/buffer_util.h"
+#include "util/binary.h"
 #include "util/log.h"
 
 #define SC_PACKET_HEADER_SIZE 12

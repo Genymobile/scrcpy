@@ -1,5 +1,5 @@
-#ifndef SC_BUFFER_UTIL_H
-#define SC_BUFFER_UTIL_H
+#ifndef SC_BINARY_H
+#define SC_BINARY_H
 
 #include "common.h"
 
