@@ -245,8 +245,8 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
         ]],
-        ['test_buffer_util', [
-            'tests/test_buffer_util.c',
+        ['test_binary', [
+            'tests/test_binary.c',
         ]],
         ['test_cbuf', [
             'tests/test_cbuf.c',

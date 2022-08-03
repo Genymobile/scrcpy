@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util/buffer_util.h"
+#include "util/binary.h"
 #include "util/log.h"
 
 ssize_t
