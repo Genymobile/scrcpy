@@ -78,6 +78,25 @@ static void test_float_to_u16fp(void) {
     assert(sc_float_to_u16fp(1.0f) == 0xffff);
 }
 
+static void test_float_to_i16fp(void) {
+    assert(sc_float_to_i16fp(0.0f) == 0);
+    assert(sc_float_to_i16fp(0.03125f) == 0x400);
+    assert(sc_float_to_i16fp(0.0625f) == 0x800);
+    assert(sc_float_to_i16fp(0.125f) == 0x1000);
+    assert(sc_float_to_i16fp(0.25f) == 0x2000);
+    assert(sc_float_to_i16fp(0.5f) == 0x4000);
+    assert(sc_float_to_i16fp(0.75f) == 0x6000);
+    assert(sc_float_to_i16fp(1.0f) == 0x7fff);
+
+    assert(sc_float_to_i16fp(-0.03125f) == -0x400);
+    assert(sc_float_to_i16fp(-0.0625f) == -0x800);
+    assert(sc_float_to_i16fp(-0.125f) == -0x1000);
+    assert(sc_float_to_i16fp(-0.25f) == -0x2000);
+    assert(sc_float_to_i16fp(-0.5f) == -0x4000);
+    assert(sc_float_to_i16fp(-0.75f) == -0x6000);
+    assert(sc_float_to_i16fp(-1.0f) == -0x8000);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -90,5 +109,6 @@ int main(int argc, char *argv[]) {
     test_read64be();
 
     test_float_to_u16fp();
+    test_float_to_i16fp();
     return 0;
 }
