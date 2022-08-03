@@ -4,7 +4,6 @@ import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
-import android.os.Build;
 import android.os.IInterface;
 import android.view.Display;
 
@@ -43,24 +42,8 @@ public final class DisplayManager {
             method = manager.getClass().getMethod(methodName);
             return (int[]) method.invoke(manager);
         } catch (NoSuchMethodException e) {
-            Ln.d("Failed to get display ids");
-            Ln.d("Available methods:");
-            for (Method m: manager.getClass().getMethods()) {
-                Ln.d(m.getName() + " parameters:");
-                if (m.getName().equals(methodName)) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        if (m.getParameterCount() > 0) {
-                            for (Class c : m.getParameterTypes()) {
-                                Ln.d(c.getName());
-                            }
-                        } else {
-                            Ln.d("No parameters");
-                        }
-                    }
-                }
-                Ln.d("Return type: " + m.getReturnType().getName());
-            }
-            Ln.d("///");
+            Ln.e("FIXME: Returning only default display.");
+            Ln.e("See https://github.com/NetrisTV/ws-scrcpy/issues/217");
             return new int[]{Display.DEFAULT_DISPLAY};
         } catch (Exception e) {
             throw new AssertionError(e);
