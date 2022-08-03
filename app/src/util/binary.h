@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -41,6 +42,20 @@ sc_read64be(const uint8_t *buf) {
     uint32_t msb = sc_read32be(buf);
     uint32_t lsb = sc_read32be(&buf[4]);
     return ((uint64_t) msb << 32) | lsb;
+}
+
+/**
+ * Convert a float between 0 and 1 to an unsigned 16-bit fixed-point value
+ */
+static inline uint16_t
+sc_float_to_u16fp(float f) {
+    assert(f >= 0.0f && f <= 1.0f);
+    uint32_t u = f * 0x1p16f; // 2^16
+    if (u >= 0xffff) {
+        assert(u == 0x10000); // for f == 1.0f
+        u = 0xffff;
+    }
+    return (uint16_t) u;
 }
 
 #endif

@@ -78,16 +78,6 @@ write_string(const char *utf8, size_t max_len, unsigned char *buf) {
     return 4 + len;
 }
 
-static uint16_t
-to_fixed_point_16(float f) {
-    assert(f >= 0.0f && f <= 1.0f);
-    uint32_t u = f * 0x1p16f; // 2^16
-    if (u >= 0xffff) {
-        u = 0xffff;
-    }
-    return (uint16_t) u;
-}
-
 size_t
 sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
     buf[0] = msg->type;
@@ -109,7 +99,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             sc_write64be(&buf[2], msg->inject_touch_event.pointer_id);
             write_position(&buf[10], &msg->inject_touch_event.position);
             uint16_t pressure =
-                to_fixed_point_16(msg->inject_touch_event.pressure);
+                sc_float_to_u16fp(msg->inject_touch_event.pressure);
             sc_write16be(&buf[22], pressure);
             sc_write32be(&buf[24], msg->inject_touch_event.buttons);
             return 28;
