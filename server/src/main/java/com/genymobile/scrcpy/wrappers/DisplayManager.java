@@ -3,12 +3,10 @@ package com.genymobile.scrcpy.wrappers;
 import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Size;
 
-import android.os.IInterface;
-
 public final class DisplayManager {
-    private final IInterface manager;
+    private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
 
-    public DisplayManager(IInterface manager) {
+    public DisplayManager(Object manager) {
         this.manager = manager;
     }
 
