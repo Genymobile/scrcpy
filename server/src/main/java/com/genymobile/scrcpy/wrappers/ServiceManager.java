@@ -50,6 +50,14 @@ public final class ServiceManager {
 
     public DisplayManager getDisplayManager() {
         if (displayManager == null) {
+            try {
+                Class<?> clazz = Class.forName("android.hardware.display.DisplayManagerGlobal");
+                Method getInstanceMethod = clazz.getDeclaredMethod("getInstance");
+                Object dmg = getInstanceMethod.invoke(null);
+                displayManager = new DisplayManager(dmg);
+            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                throw new AssertionError(e);
+            }
             displayManager = new DisplayManager(getService("display", "android.hardware.display.IDisplayManager"));
         }
         return displayManager;
