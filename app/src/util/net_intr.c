@@ -15,14 +15,14 @@ net_connect_intr(struct sc_intr *intr, sc_socket socket, uint32_t addr,
 }
 
 bool
-net_listen_intr(struct sc_intr *intr, sc_socket socket, uint32_t addr,
+net_listen_intr(struct sc_intr *intr, sc_socket server_socket, uint32_t addr,
                 uint16_t port, int backlog) {
-    if (!sc_intr_set_socket(intr, socket)) {
+    if (!sc_intr_set_socket(intr, server_socket)) {
         // Already interrupted
         return false;
     }
 
-    bool ret = net_listen(socket, addr, port, backlog);
+    bool ret = net_listen(server_socket, addr, port, backlog);
 
     sc_intr_set_socket(intr, SC_SOCKET_NONE);
     return ret;

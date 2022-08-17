@@ -159,8 +159,8 @@ net_connect(sc_socket socket, uint32_t addr, uint16_t port) {
 }
 
 bool
-net_listen(sc_socket socket, uint32_t addr, uint16_t port, int backlog) {
-    sc_raw_socket raw_sock = unwrap(socket);
+net_listen(sc_socket server_socket, uint32_t addr, uint16_t port, int backlog) {
+    sc_raw_socket raw_sock = unwrap(server_socket);
 
     int reuse = 1;
     if (setsockopt(raw_sock, SOL_SOCKET, SO_REUSEADDR, (const void *) &reuse,
