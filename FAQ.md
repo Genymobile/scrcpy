@@ -44,9 +44,9 @@ If your device is not detected, you may need some [drivers] (on Windows). There 
 
 ### Device unauthorized
 
->    ERROR: Device is unauthorized:
->    ERROR:     -->   (usb)  0123456789abcdef          unauthorized
->    ERROR: A popup should open on the device to request authorization.
+>     ERROR: Device is unauthorized:
+>     ERROR:     -->   (usb)  0123456789abcdef          unauthorized
+>     ERROR: A popup should open on the device to request authorization.
 
 When connecting, a popup should open on the device. You must authorize USB
 debugging.
@@ -60,10 +60,10 @@ If it does not open, check [stackoverflow][device-unauthorized].
 
 If several devices are connected, you will encounter this error:
 
-ERROR: Multiple (2) ADB devices:
-ERROR:     -->   (usb)  0123456789abcdef                device  Nexus_5
-ERROR:     --> (tcpip)  192.168.1.5:5555                device  GM1913
-ERROR: Select a device via -s (--serial), -d (--select-usb) or -e (--select-tcpip)
+>     ERROR: Multiple (2) ADB devices:
+>     ERROR:     -->   (usb)  0123456789abcdef                device  Nexus_5
+>     ERROR:     --> (tcpip)  192.168.1.5:5555                device  GM1913
+>     ERROR: Select a device via -s (--serial), -d (--select-usb) or -e (--select-tcpip)
 
 In that case, you can either provide the identifier of the device you want to
 mirror:
