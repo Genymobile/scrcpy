@@ -488,7 +488,20 @@ Suppose that this server is accessible at 192.168.1.2. Then, from another
 terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:192.168.1.2:5037
+scrcpy --tunnel-host=192.168.1.2
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:192.168.1.2:5037'
 scrcpy --tunnel-host=192.168.1.2
 ```
 
@@ -525,7 +538,20 @@ ssh -CN -L5038:localhost:5037 -R27183:localhost:27183 your_remote_computer
 From another terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy
 ```
 
@@ -542,7 +568,20 @@ ssh -CN -L5038:localhost:5037 -L27183:localhost:27183 your_remote_computer
 From another terminal, run `scrcpy`:
 
 ```bash
+# in bash
 export ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```cmd
+:: in cmd
+set ADB_SERVER_SOCKET=tcp:localhost:5038
+scrcpy --force-adb-forward
+```
+
+```powershell
+# in PowerShell
+$env:ADB_SERVER_SOCKET = 'tcp:localhost:5038'
 scrcpy --force-adb-forward
 ```
 
@@ -1141,18 +1180,9 @@ For general questions or discussions, you can also use:
 
 ## Translations
 
-This README is available in other languages:
+Translations of this README in other languages are available in the [wiki].
 
-- [Deutsch (German, `de`) - v1.22](README.de.md)
-- [Indonesian (Indonesia, `id`) - v1.16](README.id.md)
-- [Italiano (Italiano, `it`) - v1.23](README.it.md)
-- [日本語 (Japanese, `jp`) - v1.19](README.jp.md)
-- [한국어 (Korean, `ko`) - v1.11](README.ko.md)
-- [Português Brasileiro (Brazilian Portuguese, `pt-BR`) - v1.19](README.pt-br.md)
-- [Español (Spanish, `sp`) - v1.21](README.sp.md)
-- [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](README.zh-Hans.md)
-- [繁體中文 (Traditional Chinese, `zh-Hant`) - v1.15](README.zh-Hant.md)
-- [Turkish (Turkish, `tr`) - v1.18](README.tr.md)
+[wiki]: https://github.com/Genymobile/scrcpy/wiki
 
 Only this README file is guaranteed to be up-to-date.
 

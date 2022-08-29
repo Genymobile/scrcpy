@@ -44,9 +44,9 @@ If your device is not detected, you may need some [drivers] (on Windows). There 
 
 ### Device unauthorized
 
->    ERROR: Device is unauthorized:
->    ERROR:     -->   (usb)  0123456789abcdef          unauthorized
->    ERROR: A popup should open on the device to request authorization.
+>     ERROR: Device is unauthorized:
+>     ERROR:     -->   (usb)  0123456789abcdef          unauthorized
+>     ERROR: A popup should open on the device to request authorization.
 
 When connecting, a popup should open on the device. You must authorize USB
 debugging.
@@ -60,10 +60,10 @@ If it does not open, check [stackoverflow][device-unauthorized].
 
 If several devices are connected, you will encounter this error:
 
-ERROR: Multiple (2) ADB devices:
-ERROR:     -->   (usb)  0123456789abcdef                device  Nexus_5
-ERROR:     --> (tcpip)  192.168.1.5:5555                device  GM1913
-ERROR: Select a device via -s (--serial), -d (--select-usb) or -e (--select-tcpip)
+>     ERROR: Multiple (2) ADB devices:
+>     ERROR:     -->   (usb)  0123456789abcdef                device  Nexus_5
+>     ERROR:     --> (tcpip)  192.168.1.5:5555                device  GM1913
+>     ERROR: Select a device via -s (--serial), -d (--select-usb) or -e (--select-tcpip)
 
 In that case, you can either provide the identifier of the device you want to
 mirror:
@@ -103,7 +103,20 @@ You could overwrite the `adb` binary in the other program, or ask _scrcpy_ to
 use a specific `adb` binary, by setting the `ADB` environment variable:
 
 ```bash
-set ADB=/path/to/your/adb
+# in bash
+export ADB=/path/to/your/adb
+scrcpy
+```
+
+```cmd
+:: in cmd
+set ADB=C:\path\to\your\adb.exe
+scrcpy
+```
+
+```powershell
+# in PowerShell
+$env:ADB = 'C:\path\to\your\adb.exe'
 scrcpy
 ```
 
@@ -311,8 +324,8 @@ to add some arguments.
 
 ## Translations
 
-This FAQ is available in other languages:
+Translations of this FAQ in other languages are available in the [wiki].
 
- - [Italiano (Italiano, `it`) - v1.19](FAQ.it.md)
- - [한국어 (Korean, `ko`) - v1.11](FAQ.ko.md)
- - [简体中文 (Simplified Chinese, `zh-Hans`) - v1.22](FAQ.zh-Hans.md)
+[wiki]: https://github.com/Genymobile/scrcpy/wiki
+
+Only this README file is guaranteed to be up-to-date.
