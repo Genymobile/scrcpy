@@ -18,7 +18,8 @@ public final class DisplayManager {
         this.manager = manager;
     }
 
-    private static DisplayInfo parseDisplayInfo(String dumpsysDisplayOutput, int displayId) {
+    // public to call it from unit tests
+    public static DisplayInfo parseDisplayInfo(String dumpsysDisplayOutput, int displayId) {
         Pattern regex = Pattern.compile(
                 "^    mBaseDisplayInfo=DisplayInfo\\{\".*\", displayId " + displayId + "(, FLAG_.*)?, real ([0-9]+) x ([0-9]+).*, rotation ([0-9]+)"
                         + ".*, layerStack ([0-9]+)",
