@@ -92,8 +92,14 @@ sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
                 close(in[0]);
             }
             close(in[1]);
+        } else {
+            int devnull = open("/dev/null", O_RDONLY | O_CREAT, 0666);
+            if (devnull != -1) {
+                dup2(devnull, STDIN_FILENO);
+            } else {
+                LOGE("Could not open /dev/null for stdin");
+            }
         }
-        // Do not close stdin in the child process, this makes adb fail on Linux
 
         if (pout) {
             if (out[1] != STDOUT_FILENO) {
@@ -102,8 +108,12 @@ sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
             }
             close(out[0]);
         } else if (!inherit_stdout) {
-            // Close stdout in the child process
-            close(STDOUT_FILENO);
+            int devnull = open("/dev/null", O_WRONLY | O_CREAT, 0666);
+            if (devnull != -1) {
+                dup2(devnull, STDOUT_FILENO);
+            } else {
+                LOGE("Could not open /dev/null for stdout");
+            }
         }
 
         if (perr) {
@@ -113,8 +123,12 @@ sc_process_execute_p(const char *const argv[], sc_pid *pid, unsigned flags,
             }
             close(err[0]);
         } else if (!inherit_stderr) {
-            // Close stderr in the child process
-            close(STDERR_FILENO);
+            int devnull = open("/dev/null", O_WRONLY | O_CREAT, 0666);
+            if (devnull != -1) {
+                dup2(devnull, STDERR_FILENO);
+            } else {
+                LOGE("Could not open /dev/null for stderr");
+            }
         }
 
         close(internal[0]);
