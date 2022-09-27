@@ -37,7 +37,7 @@ static const char *const android_motionevent_action_labels[] = {
     "move",
     "cancel",
     "outside",
-    "ponter-down",
+    "pointer-down",
     "pointer-up",
     "hover-move",
     "scroll",
