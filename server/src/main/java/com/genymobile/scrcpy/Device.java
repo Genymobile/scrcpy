@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.content.IOnPrimaryClipChangedListener;
+import android.content.pm.ApplicationInfo;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
@@ -20,6 +21,8 @@ import android.view.KeyEvent;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class Device {
+
+    private static final String SCRCPY_PACKAGE_NAME = "com.genymobile.scrcpy";
 
     public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
     public static final int POWER_MODE_NORMAL = SurfaceControl.POWER_MODE_NORMAL;
@@ -311,5 +314,13 @@ public final class Device {
         if (accelerometerRotation) {
             wm.thawRotation();
         }
+    }
+
+    public static String getInstalledApkPath() {
+        ApplicationInfo info = ServiceManager.getPackageManager().getApplicationInfo(SCRCPY_PACKAGE_NAME);
+        if (info == null) {
+            return null;
+        }
+        return info.sourceDir;
     }
 }

@@ -29,6 +29,7 @@ public final class ServiceManager {
     private static StatusBarManager statusBarManager;
     private static ClipboardManager clipboardManager;
     private static ActivityManager activityManager;
+    private static PackageManager packageManager;
 
     private ServiceManager() {
         /* not instantiable */
@@ -121,5 +122,21 @@ public final class ServiceManager {
         }
 
         return activityManager;
+    }
+
+    public static PackageManager getPackageManager() {
+        if (packageManager == null) {
+            try {
+                //IInterface manager = getService("package", "android.content.pm.IPackageManager");
+                Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+                Method getPackageManager = activityThreadClass.getDeclaredMethod("getPackageManager");
+                IInterface manager = (IInterface) getPackageManager.invoke(null);
+                return new PackageManager(manager);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        return packageManager;
     }
 }
