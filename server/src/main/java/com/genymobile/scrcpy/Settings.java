@@ -7,16 +7,14 @@ import android.os.Build;
 
 import java.io.IOException;
 
-public class Settings {
+public final class Settings {
 
     public static final String TABLE_SYSTEM = ContentProvider.TABLE_SYSTEM;
     public static final String TABLE_SECURE = ContentProvider.TABLE_SECURE;
     public static final String TABLE_GLOBAL = ContentProvider.TABLE_GLOBAL;
 
-    private final ServiceManager serviceManager;
-
-    public Settings(ServiceManager serviceManager) {
-        this.serviceManager = serviceManager;
+    private Settings() {
+        /* not instantiable */
     }
 
     private static void execSettingsPut(String table, String key, String value) throws SettingsException {
@@ -35,10 +33,10 @@ public class Settings {
         }
     }
 
-    public String getValue(String table, String key) throws SettingsException {
+    public static String getValue(String table, String key) throws SettingsException {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             // on Android >= 12, it always fails: <https://github.com/Genymobile/scrcpy/issues/2788>
-            try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
+            try (ContentProvider provider = ServiceManager.getActivityManager().createSettingsProvider()) {
                 return provider.getValue(table, key);
             } catch (SettingsException e) {
                 Ln.w("Could not get settings value via ContentProvider, fallback to settings process", e);
@@ -48,10 +46,10 @@ public class Settings {
         return execSettingsGet(table, key);
     }
 
-    public void putValue(String table, String key, String value) throws SettingsException {
+    public static void putValue(String table, String key, String value) throws SettingsException {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             // on Android >= 12, it always fails: <https://github.com/Genymobile/scrcpy/issues/2788>
-            try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
+            try (ContentProvider provider = ServiceManager.getActivityManager().createSettingsProvider()) {
                 provider.putValue(table, key, value);
             } catch (SettingsException e) {
                 Ln.w("Could not put settings value via ContentProvider, fallback to settings process", e);
@@ -61,10 +59,10 @@ public class Settings {
         execSettingsPut(table, key, value);
     }
 
-    public String getAndPutValue(String table, String key, String value) throws SettingsException {
+    public static String getAndPutValue(String table, String key, String value) throws SettingsException {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             // on Android >= 12, it always fails: <https://github.com/Genymobile/scrcpy/issues/2788>
-            try (ContentProvider provider = serviceManager.getActivityManager().createSettingsProvider()) {
+            try (ContentProvider provider = ServiceManager.getActivityManager().createSettingsProvider()) {
                 String oldValue = provider.getValue(table, key);
                 if (!value.equals(oldValue)) {
                     provider.putValue(table, key, value);

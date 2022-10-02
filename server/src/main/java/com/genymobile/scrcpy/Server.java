@@ -20,10 +20,9 @@ public final class Server {
         int restoreStayOn = -1;
         boolean restoreNormalPowerMode = options.getControl(); // only restore power mode if control is enabled
         if (options.getShowTouches() || options.getStayAwake()) {
-            Settings settings = Device.getSettings();
             if (options.getShowTouches()) {
                 try {
-                    String oldValue = settings.getAndPutValue(Settings.TABLE_SYSTEM, "show_touches", "1");
+                    String oldValue = Settings.getAndPutValue(Settings.TABLE_SYSTEM, "show_touches", "1");
                     // If "show touches" was disabled, it must be disabled back on clean up
                     mustDisableShowTouchesOnCleanUp = !"1".equals(oldValue);
                 } catch (SettingsException e) {
@@ -34,7 +33,7 @@ public final class Server {
             if (options.getStayAwake()) {
                 int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
                 try {
-                    String oldValue = settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
+                    String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
                     try {
                         restoreStayOn = Integer.parseInt(oldValue);
                         if (restoreStayOn == stayOn) {

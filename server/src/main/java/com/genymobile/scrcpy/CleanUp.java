@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy;
 
-import com.genymobile.scrcpy.wrappers.ServiceManager;
-
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Base64;
@@ -164,12 +162,10 @@ public final class CleanUp {
         Config config = Config.fromBase64(args[0]);
 
         if (config.disableShowTouches || config.restoreStayOn != -1) {
-            ServiceManager serviceManager = new ServiceManager();
-            Settings settings = new Settings(serviceManager);
             if (config.disableShowTouches) {
                 Ln.i("Disabling \"show touches\"");
                 try {
-                    settings.putValue(Settings.TABLE_SYSTEM, "show_touches", "0");
+                    Settings.putValue(Settings.TABLE_SYSTEM, "show_touches", "0");
                 } catch (SettingsException e) {
                     Ln.e("Could not restore \"show_touches\"", e);
                 }
@@ -177,7 +173,7 @@ public final class CleanUp {
             if (config.restoreStayOn != -1) {
                 Ln.i("Restoring \"stay awake\"");
                 try {
-                    settings.putValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(config.restoreStayOn));
+                    Settings.putValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(config.restoreStayOn));
                 } catch (SettingsException e) {
                     Ln.e("Could not restore \"stay_on_while_plugged_in\"", e);
                 }

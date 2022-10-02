@@ -31,9 +31,6 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    private static final ServiceManager SERVICE_MANAGER = new ServiceManager();
-    private static final Settings SETTINGS = new Settings(SERVICE_MANAGER);
-
     public interface RotationListener {
         void onRotationChanged(int rotation);
     }
@@ -66,9 +63,9 @@ public final class Device {
 
     public Device(Options options) {
         displayId = options.getDisplayId();
-        DisplayInfo displayInfo = SERVICE_MANAGER.getDisplayManager().getDisplayInfo(displayId);
+        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         if (displayInfo == null) {
-            int[] displayIds = SERVICE_MANAGER.getDisplayManager().getDisplayIds();
+            int[] displayIds = ServiceManager.getDisplayManager().getDisplayIds();
             throw new InvalidDisplayIdException(displayId, displayIds);
         }
 
@@ -82,7 +79,7 @@ public final class Device {
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
         layerStack = displayInfo.getLayerStack();
 
-        SERVICE_MANAGER.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
+        ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
             @Override
             public void onRotationChanged(int rotation) {
                 synchronized (Device.this) {
@@ -98,7 +95,7 @@ public final class Device {
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
-            ClipboardManager clipboardManager = SERVICE_MANAGER.getClipboardManager();
+            ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
             if (clipboardManager != null) {
                 clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
                     @Override
@@ -192,7 +189,7 @@ public final class Device {
             return false;
         }
 
-        return SERVICE_MANAGER.getInputManager().injectInputEvent(inputEvent, injectMode);
+        return ServiceManager.getInputManager().injectInputEvent(inputEvent, injectMode);
     }
 
     public boolean injectEvent(InputEvent event, int injectMode) {
@@ -220,7 +217,7 @@ public final class Device {
     }
 
     public static boolean isScreenOn() {
-        return SERVICE_MANAGER.getPowerManager().isScreenOn();
+        return ServiceManager.getPowerManager().isScreenOn();
     }
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
@@ -232,19 +229,19 @@ public final class Device {
     }
 
     public static void expandNotificationPanel() {
-        SERVICE_MANAGER.getStatusBarManager().expandNotificationsPanel();
+        ServiceManager.getStatusBarManager().expandNotificationsPanel();
     }
 
     public static void expandSettingsPanel() {
-        SERVICE_MANAGER.getStatusBarManager().expandSettingsPanel();
+        ServiceManager.getStatusBarManager().expandSettingsPanel();
     }
 
     public static void collapsePanels() {
-        SERVICE_MANAGER.getStatusBarManager().collapsePanels();
+        ServiceManager.getStatusBarManager().collapsePanels();
     }
 
     public static String getClipboardText() {
-        ClipboardManager clipboardManager = SERVICE_MANAGER.getClipboardManager();
+        ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
         if (clipboardManager == null) {
             return null;
         }
@@ -256,7 +253,7 @@ public final class Device {
     }
 
     public boolean setClipboardText(String text) {
-        ClipboardManager clipboardManager = SERVICE_MANAGER.getClipboardManager();
+        ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
         if (clipboardManager == null) {
             return false;
         }
@@ -299,7 +296,7 @@ public final class Device {
      * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
      */
     public static void rotateDevice() {
-        WindowManager wm = SERVICE_MANAGER.getWindowManager();
+        WindowManager wm = ServiceManager.getWindowManager();
 
         boolean accelerometerRotation = !wm.isRotationFrozen();
 
@@ -314,9 +311,5 @@ public final class Device {
         if (accelerometerRotation) {
             wm.thawRotation();
         }
-    }
-
-    public static Settings getSettings() {
-        return SETTINGS;
     }
 }
