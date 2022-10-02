@@ -22,6 +22,7 @@ public final class ServiceManager {
     private StatusBarManager statusBarManager;
     private ClipboardManager clipboardManager;
     private ActivityManager activityManager;
+    private PackageManager packageManager;
 
     public ServiceManager() {
         try {
@@ -118,5 +119,21 @@ public final class ServiceManager {
         }
 
         return activityManager;
+    }
+
+    public PackageManager getPackageManager() {
+        if (packageManager == null) {
+            try {
+                //IInterface manager = getService("package", "android.content.pm.IPackageManager");
+                Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+                Method getPackageManager = activityThreadClass.getDeclaredMethod("getPackageManager");
+                IInterface manager = (IInterface) getPackageManager.invoke(null);
+                return new PackageManager(manager);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+
+        return packageManager;
     }
 }
