@@ -95,7 +95,7 @@ _scrcpy() {
             ;;
         -s|--serial)
             # Use 'adb devices' to list serial numbers.
-            COMPREPLY=($(compgen -W "$(adb devices | awk '/(device|recovery|sideload)$/{print $1}')" -- ${cur} ) )
+            COMPREPLY=($(compgen -W "$(adb devices | awk '/device$/{print $1}')" -- ${cur} ) )
             return
             ;;
         -b|--bitrate \
