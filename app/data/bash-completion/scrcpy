@@ -93,6 +93,11 @@ _scrcpy() {
             COMPREPLY=($(compgen -W 'verbose debug info warn error' -- "$cur"))
             return
             ;;
+        -s|--serial)
+            # Use 'adb devices' to list serial numbers
+            COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
+            return
+            ;;
         -b|--bitrate \
         |--codec-options \
         |--crop \
@@ -103,7 +108,6 @@ _scrcpy() {
         |-m|--max-size \
         |-p|--port \
         |--push-target \
-        |-s|--serial \
         |--tunnel-host \
         |--tunnel-port \
         |--v4l2-buffer \
