@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Adapted from vlc_vector:
 // <https://code.videolan.org/videolan/vlc/-/blob/0857947abaed9c89810cd96353aaa1b7e6ba3b0d/include/vlc_vector.h>
