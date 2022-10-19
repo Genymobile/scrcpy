@@ -1,6 +1,7 @@
 #include "thread.h"
 
 #include <assert.h>
+#include <string.h>
 #include <SDL2/SDL_thread.h>
 
 #include "log.h"
