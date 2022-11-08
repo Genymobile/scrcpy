@@ -353,6 +353,7 @@ struct sc_mouse_click_event {
     struct sc_position position;
     enum sc_action action;
     enum sc_mouse_button button;
+    uint64_t pointer_id;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 
@@ -365,6 +366,7 @@ struct sc_mouse_scroll_event {
 
 struct sc_mouse_motion_event {
     struct sc_position position;
+    uint64_t pointer_id;
     int32_t xrel;
     int32_t yrel;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values

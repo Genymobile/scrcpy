@@ -16,6 +16,10 @@ public class Controller {
 
     private static final int DEFAULT_DEVICE_ID = 0;
 
+    // control_msg.h values of the pointerId field in inject_touch_event message
+    private static final int POINTER_ID_MOUSE = -1;
+    private static final int POINTER_ID_VIRTUAL_MOUSE = -3;
+
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
     private final Device device;
@@ -194,7 +198,19 @@ public class Controller {
         pointer.setPressure(pressure);
         pointer.setUp(action == MotionEvent.ACTION_UP);
 
+        int source;
         int pointerCount = pointersState.update(pointerProperties, pointerCoords);
+        if (pointerId == POINTER_ID_MOUSE || pointerId == POINTER_ID_VIRTUAL_MOUSE) {
+            // real mouse event (forced by the client when --forward-on-click)
+            pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_MOUSE;
+            source = InputDevice.SOURCE_MOUSE;
+        } else {
+            // POINTER_ID_GENERIC_FINGER, POINTER_ID_VIRTUAL_FINGER or real touch from device
+            pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_FINGER;
+            source = InputDevice.SOURCE_TOUCHSCREEN;
+            // Buttons must not be set for touch events
+            buttons = 0;
+        }
 
         if (pointerCount == 1) {
             if (action == MotionEvent.ACTION_DOWN) {
@@ -207,14 +223,6 @@ public class Controller {
             } else if (action == MotionEvent.ACTION_DOWN) {
                 action = MotionEvent.ACTION_POINTER_DOWN | (pointerIndex << MotionEvent.ACTION_POINTER_INDEX_SHIFT);
             }
-        }
-
-        // Right-click and middle-click only work if the source is a mouse
-        boolean nonPrimaryButtonPressed = (buttons & ~MotionEvent.BUTTON_PRIMARY) != 0;
-        int source = nonPrimaryButtonPressed ? InputDevice.SOURCE_MOUSE : InputDevice.SOURCE_TOUCHSCREEN;
-        if (source != InputDevice.SOURCE_MOUSE) {
-            // Buttons must not be set for touch events
-            buttons = 0;
         }
 
         MotionEvent event = MotionEvent

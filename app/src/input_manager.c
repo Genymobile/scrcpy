@@ -335,7 +335,9 @@ simulate_virtual_finger(struct sc_input_manager *im,
     msg.inject_touch_event.action = action;
     msg.inject_touch_event.position.screen_size = im->screen->frame_size;
     msg.inject_touch_event.position.point = point;
-    msg.inject_touch_event.pointer_id = POINTER_ID_VIRTUAL_FINGER;
+    msg.inject_touch_event.pointer_id =
+        im->forward_all_clicks ? POINTER_ID_VIRTUAL_MOUSE
+                               : POINTER_ID_VIRTUAL_FINGER;
     msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
     msg.inject_touch_event.buttons = 0;
 
@@ -564,6 +566,8 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                                               event->x,
                                                               event->y),
         },
+        .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
+                                             : POINTER_ID_GENERIC_FINGER,
         .xrel = event->xrel,
         .yrel = event->yrel,
         .buttons_state =
@@ -687,6 +691,8 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         },
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
+        .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
+                                             : POINTER_ID_GENERIC_FINGER,
         .buttons_state =
             sc_mouse_buttons_state_from_sdl(sdl_buttons_state,
                                             im->forward_all_clicks),

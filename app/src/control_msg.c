@@ -61,6 +61,22 @@ static const char *const copy_key_labels[] = {
     "cut",
 };
 
+static inline const char *
+get_well_known_pointer_id_name(uint64_t pointer_id) {
+    switch (pointer_id) {
+        case POINTER_ID_MOUSE:
+            return "mouse";
+        case POINTER_ID_GENERIC_FINGER:
+            return "finger";
+        case POINTER_ID_VIRTUAL_MOUSE:
+            return "vmouse";
+        case POINTER_ID_VIRTUAL_FINGER:
+            return "vfinger";
+        default:
+            return NULL;
+    }
+}
+
 static void
 write_position(uint8_t *buf, const struct sc_position *position) {
     sc_write32be(&buf[0], position->point.x);
@@ -159,11 +175,12 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             int action = msg->inject_touch_event.action
                        & AMOTION_EVENT_ACTION_MASK;
             uint64_t id = msg->inject_touch_event.pointer_id;
-            if (id == POINTER_ID_MOUSE || id == POINTER_ID_VIRTUAL_FINGER) {
+            const char *pointer_name = get_well_known_pointer_id_name(id);
+            if (pointer_name) {
                 // string pointer id
                 LOG_CMSG("touch [id=%s] %-4s position=%" PRIi32 ",%" PRIi32
                              " pressure=%f buttons=%06lx",
-                         id == POINTER_ID_MOUSE ? "mouse" : "vfinger",
+                         pointer_name,
                          MOTIONEVENT_ACTION_LABEL(action),
                          msg->inject_touch_event.position.point.x,
                          msg->inject_touch_event.position.point.y,
