@@ -152,7 +152,6 @@ page at http://checkstyle.sourceforge.net/config.html -->
       <property name="severity" value="info" />
     </module>
     <module name="UpperEll" />
-
   </module>
 
 </module>

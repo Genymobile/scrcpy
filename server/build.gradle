@@ -4,7 +4,7 @@ android {
     compileSdkVersion 31
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 31
         versionCode 12400
         versionName "1.24"
@@ -21,6 +21,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     testImplementation 'junit:junit:4.13.1'
+    compileOnly rootProject.fileTree("thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar")
+    implementation project(':os-compat')
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"

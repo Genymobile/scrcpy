@@ -38,7 +38,7 @@ Its features include:
 
 ## Requirements
 
-The Android device requires at least API 21 (Android 5.0).
+The Android device requires at least API 19 (Android 4.4).
 
 Make sure you [enable adb debugging][enable-adb] on your device(s).
 

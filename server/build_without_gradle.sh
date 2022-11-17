@@ -20,12 +20,14 @@ BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-31.0.0}
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 SERVER_DIR=$(dirname "$0")
+ROOT_PROJECT_DIR=$(realpath $SERVER_DIR/..)
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
 
 echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
 echo "Build dir: $BUILD_DIR"
+echo "Root project dir: $ROOT_PROJECT_DIR"
 
 rm -rf "$CLASSES_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
 mkdir -p "$CLASSES_DIR/com/genymobile/scrcpy"
@@ -48,8 +50,15 @@ cd "$SERVER_DIR/src/main/aidl"
 
 echo "Compiling java sources..."
 cd ../java
-javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
+classpath="$CLASSES_DIR"
+classpath="$classpath:$ROOT_PROJECT_DIR/thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar"
+# https://stackoverflow.com/a/58768648/2444099
+classpath="$classpath:$ANDROID_HOME/build-tools/$BUILD_TOOLS/core-lambda-stubs.jar"
+javac -bootclasspath "$ANDROID_JAR" -cp "$classpath" -d "$CLASSES_DIR" \
+    -encoding UTF-8 \
     -source 1.8 -target 1.8 \
+    $ROOT_PROJECT_DIR/os-compat/src/main/java/androidx/system/*.java \
+    $ROOT_PROJECT_DIR/libcore/src/main/java/libcore/io/*.java \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
 
@@ -61,6 +70,7 @@ then
     # use dx
     "$ANDROID_HOME/build-tools/$BUILD_TOOLS/dx" --dex \
         --output "$BUILD_DIR/classes.dex" \
+        androidx/system/*.class \
         android/view/*.class \
         android/content/*.class \
         com/genymobile/scrcpy/*.class \
@@ -74,6 +84,7 @@ else
     # use d8
     "$ANDROID_HOME/build-tools/$BUILD_TOOLS/d8" --classpath "$ANDROID_JAR" \
         --output "$BUILD_DIR/classes.zip" \
+        androidx/system/*.class \
         android/view/*.class \
         android/content/*.class \
         com/genymobile/scrcpy/*.class \

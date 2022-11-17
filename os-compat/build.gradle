@@ -1,0 +1,24 @@
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 31
+    defaultConfig {
+        minSdkVersion 19
+        targetSdkVersion 31
+    }
+    androidResources {
+        namespace = "androidx.system"
+    }
+    buildFeatures {
+        aidl = false
+        androidResources = false
+        buildConfig = false
+    }
+}
+
+dependencies {
+    compileOnly rootProject.fileTree("thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar")
+    compileOnly project(':libcore')
+}
+
+apply from: "$project.rootDir/config/android-checkstyle.gradle"
