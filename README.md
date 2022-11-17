@@ -186,7 +186,7 @@ increase performance.
 To limit both the width and height to some value (e.g. 1024):
 
 ```bash
-scrcpy --max-size 1024
+scrcpy --max-size=1024
 scrcpy -m 1024  # short version
 ```
 
@@ -199,7 +199,7 @@ preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
 The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
 
 ```bash
-scrcpy --bit-rate 2M
+scrcpy --bit-rate=2M
 scrcpy -b 2M  # short version
 ```
 
@@ -208,7 +208,7 @@ scrcpy -b 2M  # short version
 The capture frame rate can be limited:
 
 ```bash
-scrcpy --max-fps 15
+scrcpy --max-fps=15
 ```
 
 This is officially supported since Android 10, but may work on earlier versions.
@@ -229,7 +229,7 @@ The device screen may be cropped to mirror only part of the screen.
 This is useful, for example, to mirror only one eye of the Oculus Go:
 
 ```bash
-scrcpy --crop 1224:1440:0:0   # 1224x1440 at offset (0,0)
+scrcpy --crop=1224:1440:0:0   # 1224x1440 at offset (0,0)
 ```
 
 If `--max-size` is also specified, resizing is applied after cropping.
@@ -258,14 +258,14 @@ Some devices have more than one encoder, and some of them may cause issues or
 crash. It is possible to select a different encoder:
 
 ```bash
-scrcpy --encoder OMX.qcom.video.encoder.avc
+scrcpy --encoder=OMX.qcom.video.encoder.avc
 ```
 
 To list the available encoders, you can pass an invalid encoder name; the
 error will give the available encoders:
 
 ```bash
-scrcpy --encoder _
+scrcpy --encoder=_
 ```
 
 ### Capture
@@ -275,14 +275,14 @@ scrcpy --encoder _
 It is possible to record the screen while mirroring:
 
 ```bash
-scrcpy --record file.mp4
+scrcpy --record=file.mp4
 scrcpy -r file.mkv
 ```
 
 To disable mirroring while recording:
 
 ```bash
-scrcpy --no-display --record file.mp4
+scrcpy --no-display --record=file.mp4
 scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
 ```
@@ -431,7 +431,7 @@ none found, try running `adb disconnect`, and then run those two commands again.
 It may be useful to decrease the bit-rate and the resolution:
 
 ```bash
-scrcpy --bit-rate 2M --max-size 800
+scrcpy --bit-rate=2M --max-size=800
 scrcpy -b2M -m800  # short version
 ```
 
@@ -443,7 +443,7 @@ scrcpy -b2M -m800  # short version
 If several devices are listed in `adb devices`, you can specify the _serial_:
 
 ```bash
-scrcpy --serial 0123456789abcdef
+scrcpy --serial=0123456789abcdef
 scrcpy -s 0123456789abcdef  # short version
 ```
 
@@ -453,7 +453,7 @@ The serial may also be provided via the environment variable `ANDROID_SERIAL`
 If the device is connected over TCP/IP:
 
 ```bash
-scrcpy --serial 192.168.0.1:5555
+scrcpy --serial=192.168.0.1:5555
 scrcpy -s 192.168.0.1:5555  # short version
 ```
 
@@ -606,7 +606,7 @@ scrcpy --force-adb-forward
 Like for wireless connections, it may be useful to reduce quality:
 
 ```
-scrcpy -b2M -m800 --max-fps 15
+scrcpy -b2M -m800 --max-fps=15
 ```
 
 ### Window configuration
@@ -616,7 +616,7 @@ scrcpy -b2M -m800 --max-fps 15
 By default, the window title is the device model. It can be changed:
 
 ```bash
-scrcpy --window-title 'My device'
+scrcpy --window-title='My device'
 ```
 
 #### Position and size
@@ -624,7 +624,7 @@ scrcpy --window-title 'My device'
 The initial window position and size may be specified:
 
 ```bash
-scrcpy --window-x 100 --window-y 100 --window-width 800 --window-height 600
+scrcpy --window-x=100 --window-y=100 --window-width=800 --window-height=600
 ```
 
 #### Borderless
@@ -659,7 +659,7 @@ Fullscreen can then be toggled dynamically with <kbd>MOD</kbd>+<kbd>f</kbd>.
 The window may be rotated:
 
 ```bash
-scrcpy --rotation 1
+scrcpy --rotation=1
 ```
 
 Possible values:
@@ -701,7 +701,7 @@ If several displays are available, it is possible to select the display to
 mirror:
 
 ```bash
-scrcpy --display 1
+scrcpy --display=1
 ```
 
 The list of display ids can be retrieved by:
