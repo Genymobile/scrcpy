@@ -275,7 +275,7 @@ Configure and reconnect the device over TCP/IP.
 
 If a destination address is provided, then scrcpy connects to this address before starting. The device must listen on the given TCP port (default is 5555).
 
-If no destination address is provided, then scrcpy attempts to find the IP address of the current device (typically connected over USB), enables TCP/IP mode, then connects to this address before starting.
+If no destination address is provided, then scrcpy attempts to find the IP address and adb port of the current device (typically connected over USB), enables TCP/IP mode if necessary, then connects to this address before starting.
 
 .TP
 .B \-S, \-\-turn\-screen\-off

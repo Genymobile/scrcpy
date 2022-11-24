@@ -395,8 +395,8 @@ address), connect the device over USB, then run:
 scrcpy --tcpip    # without arguments
 ```
 
-It will automatically find the device IP address, enable TCP/IP mode, then
-connect to the device before starting.
+It will automatically find the device IP address and adb port, enable TCP/IP
+mode if necessary, then connect to the device before starting.
 
 ##### Manual
 

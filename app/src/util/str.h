@@ -6,6 +6,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+/* Stringify a numeric value  */
+#define SC_STR(s) SC_XSTR(s)
+#define SC_XSTR(s) #s
+
 /**
  * Like strncpy(), except:
  *  - it copies at most n-1 chars
