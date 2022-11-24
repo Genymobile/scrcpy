@@ -3,7 +3,6 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 
 import android.view.Display;
-
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -188,49 +187,49 @@ public class CommandParserTest {
     @Test
     public void testParseDisplayInfoFromDumpsysDisplayAPI29WithNoFlags() {
         /* @formatter:off */
-        String partialOutput = "Logical Displays: size=2\n" +
-                "  Display 0:\n" +
-                "    mDisplayId=0\n" +
-                "    mLayerStack=0\n" +
-                "    mHasContent=true\n" +
-                "    mAllowedDisplayModes=[1]\n" +
-                "    mRequestedColorMode=0\n" +
-                "    mDisplayOffset=(0, 0)\n" +
-                "    mDisplayScalingDisabled=false\n" +
-                "    mPrimaryDisplayDevice=Built-in Screen\n" +
-                "    mBaseDisplayInfo=DisplayInfo{\"Built-in Screen, displayId 0\", uniqueId \"local:0\", app 3664 x 1920, " +
-                "real 3664 x 1920, largest app 3664 x 1920, smallest app 3664 x 1920, mode 61, defaultMode 61, modes [" +
-                "{id=1, width=3664, height=1920, fps=60.000004}, {id=2, width=3664, height=1920, fps=61.000004}, " +
-                "{id=61, width=3664, height=1920, fps=120.00001}], colorMode 0, supportedColorModes [0], " +
-                "hdrCapabilities android.view.Display$HdrCapabilities@4a41fe79, rotation 0, density 290 (320.842 x 319.813) dpi, " +
-                "layerStack 0, appVsyncOff 1000000, presDeadline 8333333, type BUILT_IN, address {port=129, model=0}, " +
-                "state ON, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS, removeMode 0}\n" +
-                "    mOverrideDisplayInfo=DisplayInfo{\"Built-in Screen, displayId 0\", uniqueId \"local:0\", app 3664 x 1920, " +
-                "real 3664 x 1920, largest app 3664 x 3620, smallest app 1920 x 1876, mode 61, defaultMode 61, modes [" +
-                "{id=1, width=3664, height=1920, fps=60.000004}, {id=2, width=3664, height=1920, fps=61.000004}, " +
-                "{id=61, width=3664, height=1920, fps=120.00001}], colorMode 0, supportedColorModes [0], " +
-                "hdrCapabilities android.view.Display$HdrCapabilities@4a41fe79, rotation 0, density 290 (320.842 x 319.813) dpi, " +
-                "layerStack 0, appVsyncOff 1000000, presDeadline 8333333, type BUILT_IN, address {port=129, model=0}, " +
-                "state ON, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS, removeMode 0}\n" +
-                "  Display 31:\n" +
-                "    mDisplayId=31\n" +
-                "    mLayerStack=31\n" +
-                "    mHasContent=true\n" +
-                "    mAllowedDisplayModes=[92]\n" +
-                "    mRequestedColorMode=0\n" +
-                "    mDisplayOffset=(0, 0)\n" +
-                "    mDisplayScalingDisabled=false\n" +
-                "    mPrimaryDisplayDevice=PanelLayer-#main\n" +
-                "    mBaseDisplayInfo=DisplayInfo{\"PanelLayer-#main, displayId 31\", uniqueId \"virtual:com.test.system,10040,PanelLayer-#main,0\", " +
-                "app 800 x 110, real 800 x 110, largest app 800 x 110, smallest app 800 x 110, mode 92, defaultMode 92, modes [" +
-                "{id=92, width=800, height=110, fps=60.0}], colorMode 0, supportedColorModes [0], " +
-                "hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 31, appVsyncOff 0, presDeadline 16666666, " +
-                "type VIRTUAL, state ON, owner com.test.system (uid 10040), FLAG_PRIVATE, removeMode 1}\n" +
-                "    mOverrideDisplayInfo=DisplayInfo{\"PanelLayer-#main, displayId 31\", uniqueId \"virtual:com.test.system,10040,PanelLayer-#main,0\", " +
-                "app 800 x 110, real 800 x 110, largest app 800 x 800, smallest app 110 x 110, mode 92, defaultMode 92, modes [" +
-                "{id=92, width=800, height=110, fps=60.0}], colorMode 0, supportedColorModes [0], " +
-                "hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 31, appVsyncOff 0, presDeadline 16666666, " +
-                "type VIRTUAL, state OFF, owner com.test.system (uid 10040), FLAG_PRIVATE, removeMode 1}\n";
+        String partialOutput = "Logical Displays: size=2\n"
+                + "  Display 0:\n"
+                + "    mDisplayId=0\n"
+                + "    mLayerStack=0\n"
+                + "    mHasContent=true\n"
+                + "    mAllowedDisplayModes=[1]\n"
+                + "    mRequestedColorMode=0\n"
+                + "    mDisplayOffset=(0, 0)\n"
+                + "    mDisplayScalingDisabled=false\n"
+                + "    mPrimaryDisplayDevice=Built-in Screen\n"
+                + "    mBaseDisplayInfo=DisplayInfo{\"Built-in Screen, displayId 0\", uniqueId \"local:0\", app 3664 x 1920, "
+                + "real 3664 x 1920, largest app 3664 x 1920, smallest app 3664 x 1920, mode 61, defaultMode 61, modes ["
+                + "{id=1, width=3664, height=1920, fps=60.000004}, {id=2, width=3664, height=1920, fps=61.000004}, "
+                + "{id=61, width=3664, height=1920, fps=120.00001}], colorMode 0, supportedColorModes [0], "
+                + "hdrCapabilities android.view.Display$HdrCapabilities@4a41fe79, rotation 0, density 290 (320.842 x 319.813) dpi, "
+                + "layerStack 0, appVsyncOff 1000000, presDeadline 8333333, type BUILT_IN, address {port=129, model=0}, "
+                + "state ON, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS, removeMode 0}\n"
+                + "    mOverrideDisplayInfo=DisplayInfo{\"Built-in Screen, displayId 0\", uniqueId \"local:0\", app 3664 x 1920, "
+                + "real 3664 x 1920, largest app 3664 x 3620, smallest app 1920 x 1876, mode 61, defaultMode 61, modes ["
+                + "{id=1, width=3664, height=1920, fps=60.000004}, {id=2, width=3664, height=1920, fps=61.000004}, "
+                + "{id=61, width=3664, height=1920, fps=120.00001}], colorMode 0, supportedColorModes [0], "
+                + "hdrCapabilities android.view.Display$HdrCapabilities@4a41fe79, rotation 0, density 290 (320.842 x 319.813) dpi, "
+                + "layerStack 0, appVsyncOff 1000000, presDeadline 8333333, type BUILT_IN, address {port=129, model=0}, "
+                + "state ON, FLAG_SECURE, FLAG_SUPPORTS_PROTECTED_BUFFERS, removeMode 0}\n"
+                + "  Display 31:\n"
+                + "    mDisplayId=31\n"
+                + "    mLayerStack=31\n"
+                + "    mHasContent=true\n"
+                + "    mAllowedDisplayModes=[92]\n"
+                + "    mRequestedColorMode=0\n"
+                + "    mDisplayOffset=(0, 0)\n"
+                + "    mDisplayScalingDisabled=false\n"
+                + "    mPrimaryDisplayDevice=PanelLayer-#main\n"
+                + "    mBaseDisplayInfo=DisplayInfo{\"PanelLayer-#main, displayId 31\", uniqueId "
+                + "\"virtual:com.test.system,10040,PanelLayer-#main,0\", app 800 x 110, real 800 x 110, largest app 800 x 110, smallest app 800 x "
+                + "110, mode 92, defaultMode 92, modes [{id=92, width=800, height=110, fps=60.0}], colorMode 0, supportedColorModes [0], "
+                + "hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 31, appVsyncOff 0, presDeadline 16666666, "
+                + "type VIRTUAL, state ON, owner com.test.system (uid 10040), FLAG_PRIVATE, removeMode 1}\n"
+                + "    mOverrideDisplayInfo=DisplayInfo{\"PanelLayer-#main, displayId 31\", uniqueId "
+                + "\"virtual:com.test.system,10040,PanelLayer-#main,0\", app 800 x 110, real 800 x 110, largest app 800 x 800, smallest app 110 x "
+                + "110, mode 92, defaultMode 92, modes [{id=92, width=800, height=110, fps=60.0}], colorMode 0, supportedColorModes [0], "
+                + "hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 31, appVsyncOff 0, presDeadline 16666666, "
+                + "type VIRTUAL, state OFF, owner com.test.system (uid 10040), FLAG_PRIVATE, removeMode 1}\n";
         DisplayInfo displayInfo = DisplayManager.parseDisplayInfo(partialOutput, 31);
         Assert.assertNotNull(displayInfo);
         Assert.assertEquals(31, displayInfo.getDisplayId());
