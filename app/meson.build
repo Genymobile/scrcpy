@@ -145,13 +145,21 @@ else
     prebuilt_libusb_root = meson.get_cross_property('prebuilt_libusb_root')
     libusb_bin_dir = meson.current_source_dir() + '/prebuilt-deps/data/' + prebuilt_libusb
     libusb_include_dir = 'prebuilt-deps/data/' + prebuilt_libusb_root + '/include'
-
-    libusb = declare_dependency(
-        dependencies: [
-            cc.find_library('msys-usb-1.0', dirs: libusb_bin_dir),
+    if host_machine.cpu_family() == 'x86'
+      libusb = declare_dependency(
+	dependencies: [
+	  cc.find_library('msys-usb-1.0', dirs: libusb_bin_dir),
         ],
         include_directories: include_directories(libusb_include_dir)
-    )
+      )
+    elif host_machine.cpu_family() == 'aarch64'
+      libusb = declare_dependency(
+	dependencies: [
+	  cc.find_library('libusb-1.0', dirs: libusb_bin_dir),
+        ],
+        include_directories: include_directories(libusb_include_dir)
+      )
+    endif
 
     dependencies = [
         ffmpeg,

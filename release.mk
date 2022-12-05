@@ -23,14 +23,17 @@ TEST_BUILD_DIR := build-test
 SERVER_BUILD_DIR := build-server
 WIN32_BUILD_DIR := build-win32
 WIN64_BUILD_DIR := build-win64
+WIN_ARM64_BUILD_DIR := build-win-arm64
 
 DIST := dist
 WIN32_TARGET_DIR := scrcpy-win32
 WIN64_TARGET_DIR := scrcpy-win64
+WIN_ARM64_TARGET_DIR := scrcpy-win-arm64
 
 VERSION := $(shell git describe --tags --always)
 WIN32_TARGET := $(WIN32_TARGET_DIR)-$(VERSION).zip
 WIN64_TARGET := $(WIN64_TARGET_DIR)-$(VERSION).zip
+WIN_ARM64_TARGET := $(WIN_ARM64_TARGET_DIR)-$(VERSION).zip
 
 RELEASE_DIR := release-$(VERSION)
 
@@ -74,6 +77,12 @@ prepare-deps-win64:
 	@app/prebuilt-deps/prepare-ffmpeg-win64.sh
 	@app/prebuilt-deps/prepare-libusb.sh
 
+prepare-deps-win-arm64:
+	@app/prebuilt-deps/prepare-adb.sh
+	@app/prebuilt-deps/prepare-sdl-win-arm64.sh
+	@app/prebuilt-deps/prepare-ffmpeg-win-arm64.sh
+	@app/prebuilt-deps/prepare-libusb-win-arm64.sh
+
 build-win32: prepare-deps-win32
 	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
 		meson "$(WIN32_BUILD_DIR)" \
@@ -91,6 +100,17 @@ build-win64: prepare-deps-win64
 			-Dcompile_server=false \
 			-Dportable=true )
 	ninja -C "$(WIN64_BUILD_DIR)"
+
+
+build-win-arm64: prepare-deps-win-arm64
+	[ -d "$(WIN_ARM64_BUILD_DIR)" ] || ( mkdir "$(WIN_ARM64_BUILD_DIR)" && \
+		meson "$(WIN_ARM64_BUILD_DIR)" \
+		--cross-file cross_win_arm64.txt \
+		--buildtype release --strip -Db_lto=true \
+		-Dcompile_server=false \
+		-Dportable=true )
+	sed -i 's/-Wl,--allow-shlib-undefined//g' "$(WIN_ARM64_BUILD_DIR)/build.ninja"
+	ninja -C "$(WIN_ARM64_BUILD_DIR)"
 
 dist-win32: build-server build-win32
 	mkdir -p "$(DIST)/$(WIN32_TARGET_DIR)"
@@ -130,6 +150,25 @@ dist-win64: build-server build-win64
 	cp app/prebuilt-deps/data/SDL2-2.0.22/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/libusb-1.0.26/MinGW-x64/msys-usb-1.0.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
+dist-win-arm64: build-server build-win-arm64
+	mkdir -p "$(DIST)/$(WIN_ARM64_TARGET_DIR)"
+	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp "$(WIN_ARM64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/data/scrcpy-console.bat "$(DIST)/$(WIN_ARM64_TARGET_DIR)"
+	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN_ARM64_TARGET_DIR)"
+	cp app/data/icon.png "$(DIST)/$(WIN_ARM64_TARGET_DIR)"
+	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN_ARM64_TARGET_DIR)"
+	cp app/prebuilt-deps/data/ffmpeg-aarch64-4.3.1/bin/avutil-56.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-aarch64-4.3.1/bin/avcodec-58.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-aarch64-4.3.1/bin/avformat-58.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-aarch64-4.3.1/bin/swresample-3.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/ffmpeg-aarch64-4.3.1/bin/swscale-5.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-33.0.1/adb.exe "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-33.0.1/AdbWinApi.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/platform-tools-33.0.1/AdbWinUsbApi.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/SDL2-2.0.22/aarch64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/libusb-1.0.26/MinGW-aarch64/libusb-1.0.dll "$(DIST)/$(WIN_ARM64_TARGET_DIR)/"
+
 zip-win32: dist-win32
 	cd "$(DIST)/$(WIN32_TARGET_DIR)"; \
 		zip -r "../$(WIN32_TARGET)" .
@@ -137,3 +176,7 @@ zip-win32: dist-win32
 zip-win64: dist-win64
 	cd "$(DIST)/$(WIN64_TARGET_DIR)"; \
 		zip -r "../$(WIN64_TARGET)" .
+
+zip-win-arm64: dist-win-arm64
+	cd "$(DIST)/$(WIN_ARM64_TARGET_DIR)"; \
+		zip -r "../$(WIN_ARM64_TARGET)" .
