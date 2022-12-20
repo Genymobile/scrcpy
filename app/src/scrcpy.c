@@ -21,6 +21,7 @@
 #include "keyboard_inject.h"
 #include "mouse_inject.h"
 #include "recorder.h"
+#include "rtp.h"
 #include "screen.h"
 #include "server.h"
 #ifdef HAVE_USB
@@ -42,6 +43,7 @@ struct scrcpy {
     struct sc_demuxer demuxer;
     struct sc_decoder decoder;
     struct sc_recorder recorder;
+    struct sc_rtp rtp;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
 #endif
@@ -283,6 +285,7 @@ scrcpy(struct scrcpy_options *options) {
     bool server_started = false;
     bool file_pusher_initialized = false;
     bool recorder_initialized = false;
+    bool rtp_initialized = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -419,6 +422,14 @@ scrcpy(struct scrcpy_options *options) {
     if (rec) {
         sc_demuxer_add_sink(&s->demuxer, &rec->packet_sink);
     }
+
+    struct sc_rtp *rtp = NULL;
+    if (!sc_rtp_init(&s->rtp, "rtp://127.0.0.1:1234", info->frame_size)) {
+        goto end;
+    }
+    rtp = &s->rtp;
+    rtp_initialized = true;
+    sc_demuxer_add_sink(&s->demuxer, &rtp->packet_sink);
 
     struct sc_controller *controller = NULL;
     struct sc_key_processor *kp = NULL;
@@ -705,6 +716,10 @@ end:
     }
     if (controller_initialized) {
         sc_controller_destroy(&s->controller);
+    }
+
+    if (rtp_initialized) {
+        sc_rtp_destroy(&s->rtp);
     }
 
     if (recorder_initialized) {

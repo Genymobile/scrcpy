@@ -12,7 +12,7 @@
 #include "util/net.h"
 #include "util/thread.h"
 
-#define SC_DEMUXER_MAX_SINKS 2
+#define SC_DEMUXER_MAX_SINKS 3
 
 struct sc_demuxer {
     sc_socket socket;
