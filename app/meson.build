@@ -23,6 +23,7 @@ src = [
     'src/options.c',
     'src/receiver.c',
     'src/recorder.c',
+    'src/rtp.c',
     'src/scrcpy.c',
     'src/screen.c',
     'src/server.c',
