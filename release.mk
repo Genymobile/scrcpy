@@ -24,13 +24,13 @@ SERVER_BUILD_DIR := build-server
 WIN32_BUILD_DIR := build-win32
 WIN64_BUILD_DIR := build-win64
 
-DIST := dist
-WIN32_TARGET_DIR := scrcpy-win32
-WIN64_TARGET_DIR := scrcpy-win64
-
 VERSION := $(shell git describe --tags --always)
-WIN32_TARGET := $(WIN32_TARGET_DIR)-$(VERSION).zip
-WIN64_TARGET := $(WIN64_TARGET_DIR)-$(VERSION).zip
+
+DIST := dist
+WIN32_TARGET_DIR := scrcpy-win32-$(VERSION)
+WIN64_TARGET_DIR := scrcpy-win64-$(VERSION)
+WIN32_TARGET := $(WIN32_TARGET_DIR).zip
+WIN64_TARGET := $(WIN64_TARGET_DIR).zip
 
 RELEASE_DIR := release-$(VERSION)
 
@@ -131,9 +131,9 @@ dist-win64: build-server build-win64
 	cp app/prebuilt-deps/data/libusb-1.0.26/MinGW-x64/msys-usb-1.0.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
-	cd "$(DIST)/$(WIN32_TARGET_DIR)"; \
-		zip -r "../$(WIN32_TARGET)" .
+	cd "$(DIST)"; \
+		zip -r "$(WIN32_TARGET)" "$(WIN32_TARGET_DIR)"
 
 zip-win64: dist-win64
-	cd "$(DIST)/$(WIN64_TARGET_DIR)"; \
-		zip -r "../$(WIN64_TARGET)" .
+	cd "$(DIST)"; \
+		zip -r "$(WIN64_TARGET)" "$(WIN64_TARGET_DIR)"
