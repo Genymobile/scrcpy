@@ -19,7 +19,7 @@ android {
 }
 
 dependencies {
-    testImplementation 'junit:junit:4.13.1'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"
