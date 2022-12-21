@@ -53,13 +53,13 @@ clean:
 
 test:
 	[ -d "$(TEST_BUILD_DIR)" ] || ( mkdir "$(TEST_BUILD_DIR)" && \
-		meson "$(TEST_BUILD_DIR)" -Db_sanitize=address )
+		meson setup "$(TEST_BUILD_DIR)" -Db_sanitize=address )
 	ninja -C "$(TEST_BUILD_DIR)"
 	$(GRADLE) -p server check
 
 build-server:
 	[ -d "$(SERVER_BUILD_DIR)" ] || ( mkdir "$(SERVER_BUILD_DIR)" && \
-		meson "$(SERVER_BUILD_DIR)" --buildtype release -Dcompile_app=false )
+		meson setup "$(SERVER_BUILD_DIR)" --buildtype release -Dcompile_app=false )
 	ninja -C "$(SERVER_BUILD_DIR)"
 
 prepare-deps-win32:
@@ -76,7 +76,7 @@ prepare-deps-win64:
 
 build-win32: prepare-deps-win32
 	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
-		meson "$(WIN32_BUILD_DIR)" \
+		meson setup "$(WIN32_BUILD_DIR)" \
 			--cross-file cross_win32.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcompile_server=false \
@@ -85,7 +85,7 @@ build-win32: prepare-deps-win32
 
 build-win64: prepare-deps-win64
 	[ -d "$(WIN64_BUILD_DIR)" ] || ( mkdir "$(WIN64_BUILD_DIR)" && \
-		meson "$(WIN64_BUILD_DIR)" \
+		meson setup "$(WIN64_BUILD_DIR)" \
 			--cross-file cross_win64.txt \
 			--buildtype release --strip -Db_lto=true \
 			-Dcompile_server=false \

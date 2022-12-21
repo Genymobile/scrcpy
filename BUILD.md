@@ -260,7 +260,7 @@ set ANDROID_SDK_ROOT=%LOCALAPPDATA%\Android\sdk
 Then, build:
 
 ```bash
-meson x --buildtype=release --strip -Db_lto=true
+meson setup x --buildtype=release --strip -Db_lto=true
 ninja -Cx  # DO NOT RUN AS ROOT
 ```
 
@@ -281,7 +281,7 @@ Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
 
 ```bash
-meson x --buildtype=release --strip -Db_lto=true \
+meson setup x --buildtype=release --strip -Db_lto=true \
     -Dprebuilt_server=/path/to/scrcpy-server
 ninja -Cx  # DO NOT RUN AS ROOT
 ```

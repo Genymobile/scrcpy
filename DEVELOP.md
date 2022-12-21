@@ -277,7 +277,7 @@ The server is pushed to the device by the client on startup.
 To debug it, enable the server debugger during configuration:
 
 ```bash
-meson x -Dserver_debugger=true
+meson setup x -Dserver_debugger=true
 # or, if x is already configured
 meson configure x -Dserver_debugger=true
 ```
@@ -286,7 +286,7 @@ If your device runs Android 8 or below, set the `server_debugger_method` to
 `old` in addition:
 
 ```bash
-meson x -Dserver_debugger=true -Dserver_debugger_method=old
+meson setup x -Dserver_debugger=true -Dserver_debugger_method=old
 # or, if x is already configured
 meson configure x -Dserver_debugger=true -Dserver_debugger_method=old
 ```
