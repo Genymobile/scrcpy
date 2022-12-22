@@ -108,7 +108,7 @@ dist-win32: build-server build-win32
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/SDL2-2.0.22/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/SDL2-2.26.1/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/libusb-1.0.26/MinGW-Win32/msys-usb-1.0.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
@@ -127,7 +127,7 @@ dist-win64: build-server build-win64
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-33.0.3/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/SDL2-2.0.22/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/prebuilt-deps/data/SDL2-2.26.1/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/libusb-1.0.26/MinGW-x64/msys-usb-1.0.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
