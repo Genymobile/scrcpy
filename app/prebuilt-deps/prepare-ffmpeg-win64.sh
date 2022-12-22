@@ -6,11 +6,11 @@ cd "$DIR"
 mkdir -p "$PREBUILT_DATA_DIR"
 cd "$PREBUILT_DATA_DIR"
 
-VERSION=5.0.1
+VERSION=5.1.2
 DEP_DIR=ffmpeg-win64-$VERSION
 
 FILENAME=ffmpeg-$VERSION-full_build-shared.7z
-SHA256SUM=ded28435b6f04b74f5ef5a6a13761233bce9e8e9f8ecb0eabe936fd36a778b0c
+SHA256SUM=d9eb97b72d7cfdae4d0f7eaea59ccffb8c364d67d88018ea715d5e2e193f00e9
 
 if [[ -d "$DEP_DIR" ]]
 then
