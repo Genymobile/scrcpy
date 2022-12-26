@@ -306,14 +306,13 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
 }
 
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) || defined(__WINDOWS__)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
 
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
 // On Windows and MacOS, resizing blocks the event loop, so resizing events are
-// not triggered. On MacOS, as a workaround, handle them in an event handler
-// (it does not work for Windows unfortunately).
+// not triggered. As a workaround, handle them in an event handler.
 //
 // <https://bugzilla.libsdl.org/show_bug.cgi?id=2077>
 // <https://stackoverflow.com/a/40693139/1987178>
