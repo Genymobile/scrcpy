@@ -16,14 +16,14 @@
 
 size_t
 sc_strncpy(char *dest, const char *src, size_t n) {
-    size_t i;
-    for (i = 0; i < n - 1 && src[i] != '\0'; ++i)
-        dest[i] = src[i];
+    size_t i=0;
+    while(i < n - 1 && src[i] != '\0')
+        dest[i] = src[i++];
     if (n)
         dest[i] = '\0';
     return src[i] == '\0' ? i : n;
 }
-
+//use of while loop insted of using for loop
 size_t
 sc_str_join(char *dst, const char *const tokens[], char sep, size_t n) {
     const char *const *remaining = tokens;
