@@ -95,28 +95,26 @@ sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // A config packet must not be decoded immediately (it contains no
     // frame); instead, it must be concatenated with the future data packet.
     if (demuxer->pending || is_config) {
-        size_t offset;
         if (demuxer->pending) {
-            offset = demuxer->pending->size;
+            size_t offset = demuxer->pending->size;
             if (av_grow_packet(demuxer->pending, packet->size)) {
                 LOG_OOM();
                 return false;
             }
+
+            memcpy(demuxer->pending->data + offset, packet->data, packet->size);
         } else {
-            offset = 0;
             demuxer->pending = av_packet_alloc();
             if (!demuxer->pending) {
                 LOG_OOM();
                 return false;
             }
-            if (av_new_packet(demuxer->pending, packet->size)) {
+            if (av_packet_ref(demuxer->pending, packet)) {
                 LOG_OOM();
                 av_packet_free(&demuxer->pending);
                 return false;
             }
         }
-
-        memcpy(demuxer->pending->data + offset, packet->data, packet->size);
 
         if (!is_config) {
             // prepare the concat packet to send to the decoder
