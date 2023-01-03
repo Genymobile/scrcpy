@@ -7,7 +7,7 @@ Here are the common reported problems and their status.
 If you encounter any error, the first step is to upgrade to the latest version.
 
 
-## `adb` issues
+## `adb` and USB issues
 
 `scrcpy` execute `adb` commands to initialize the connection with the device. If
 `adb` fails, then scrcpy will not work.
@@ -132,6 +132,21 @@ Try with another USB cable or plug it into another USB port. See [#281] and
 [#281]: https://github.com/Genymobile/scrcpy/issues/281
 [#283]: https://github.com/Genymobile/scrcpy/issues/283
 
+
+## HID/OTG issues on Windows
+
+On Windows, if `scrcpy --otg` (or `--hid-keyboard`/`--hid-mouse`) results in:
+
+>     ERROR: Could not find any USB device
+
+(or if only unrelated USB devices are detected), there might be drivers issues.
+
+Please read [#3654], in particular [this comment][#3654-comment1] and [the next
+one][#3654-comment2].
+
+[#3654]: https://github.com/Genymobile/scrcpy/issues/3654
+[#3654-comment1]: https://github.com/Genymobile/scrcpy/issues/3654#issuecomment-1369278232
+[#3654-comment2]: https://github.com/Genymobile/scrcpy/issues/3654#issuecomment-1369295011
 
 
 ## Control issues
