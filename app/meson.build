@@ -69,12 +69,12 @@ else
     endif
 endif
 
-v4l2_support = get_option('v4l2') and host_machine.system() == 'linux'
+v4l2_support = get_option('v4l2').enabled() and host_machine.system() == 'linux'
 if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
-usb_support = get_option('usb')
+usb_support = get_option('usb').enabled()
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
