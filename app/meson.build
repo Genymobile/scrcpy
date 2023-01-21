@@ -170,6 +170,8 @@ check_functions = [
     'strdup',
     'asprintf',
     'vasprintf',
+    'nrand48',
+    'jrand48',
 ]
 
 foreach f : check_functions

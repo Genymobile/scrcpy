@@ -59,4 +59,12 @@ int asprintf(char **strp, const char *fmt, ...);
 int vasprintf(char **strp, const char *fmt, va_list ap);
 #endif
 
+#ifndef HAVE_NRAND48
+long nrand48(unsigned short xsubi[3]);
+#endif
+
+#ifndef HAVE_JRAND48
+long jrand48(unsigned short xsubi[3]);
+#endif
+
 #endif
