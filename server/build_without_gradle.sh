@@ -20,6 +20,7 @@ BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
+GEN_DIR="$BUILD_DIR/gen"
 SERVER_DIR=$(dirname "$0")
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
@@ -28,10 +29,11 @@ echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
 echo "Build dir: $BUILD_DIR"
 
-rm -rf "$CLASSES_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
-mkdir -p "$CLASSES_DIR/com/genymobile/scrcpy"
+rm -rf "$CLASSES_DIR" "$GEN_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
+mkdir -p "$CLASSES_DIR"
+mkdir -p "$GEN_DIR/com/genymobile/scrcpy"
 
-<< EOF cat > "$CLASSES_DIR/com/genymobile/scrcpy/BuildConfig.java"
+<< EOF cat > "$GEN_DIR/com/genymobile/scrcpy/BuildConfig.java"
 package com.genymobile.scrcpy;
 
 public final class BuildConfig {
@@ -42,13 +44,13 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$BUILD_TOOLS_DIR/aidl" -o"$CLASSES_DIR" android/view/IRotationWatcher.aidl
-"$BUILD_TOOLS_DIR/aidl" -o"$CLASSES_DIR" \
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" android/view/IRotationWatcher.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" \
     android/content/IOnPrimaryClipChangedListener.aidl
 
 echo "Compiling java sources..."
 cd ../java
-javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
+javac -bootclasspath "$ANDROID_JAR" -cp "$GEN_DIR" -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
@@ -68,7 +70,7 @@ then
     echo "Archiving..."
     cd "$BUILD_DIR"
     jar cvf "$SERVER_BINARY" classes.dex
-    rm -rf classes.dex classes
+    rm -rf classes.dex
 else
     # use d8
     "$BUILD_TOOLS_DIR/d8" --classpath "$ANDROID_JAR" \
@@ -80,7 +82,8 @@ else
 
     cd "$BUILD_DIR"
     mv classes.zip "$SERVER_BINARY"
-    rm -rf classes
 fi
+
+rm -rf "$GEN_DIR" "$CLASSES_DIR"
 
 echo "Server generated in $BUILD_DIR/$SERVER_BINARY"
