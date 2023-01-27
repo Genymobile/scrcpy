@@ -94,7 +94,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
                 Surface surface = null;
                 try {
-                    configure(codec, format);
+                    codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = codec.createInputSurface();
                     setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
                     codec.start();
@@ -277,10 +277,6 @@ public class ScreenEncoder implements Device.RotationListener {
         boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
                 .equals(Build.VERSION.CODENAME));
         return SurfaceControl.createDisplay("scrcpy", secure);
-    }
-
-    private static void configure(MediaCodec codec, MediaFormat format) {
-        codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
     }
 
     private static void setSize(MediaFormat format, int width, int height) {
