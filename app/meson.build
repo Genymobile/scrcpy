@@ -37,6 +37,7 @@ src = [
     'src/util/net_intr.c',
     'src/util/process.c',
     'src/util/process_intr.c',
+    'src/util/rand.c',
     'src/util/strbuf.c',
     'src/util/str.c',
     'src/util/term.c',
