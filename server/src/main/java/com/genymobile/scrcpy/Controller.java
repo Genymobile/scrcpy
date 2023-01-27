@@ -258,12 +258,9 @@ public class Controller {
      * Schedule a call to set power mode to off after a small delay.
      */
     private static void schedulePowerModeOff() {
-        EXECUTOR.schedule(new Runnable() {
-            @Override
-            public void run() {
-                Ln.i("Forcing screen off");
-                Device.setScreenPowerMode(Device.POWER_MODE_OFF);
-            }
+        EXECUTOR.schedule(() -> {
+            Ln.i("Forcing screen off");
+            Device.setScreenPowerMode(Device.POWER_MODE_OFF);
         }, 200, TimeUnit.MILLISECONDS);
     }
 

@@ -88,12 +88,7 @@ public final class Server {
                 controllerThread = startController(controller);
                 deviceMessageSenderThread = startDeviceMessageSender(controller.getSender());
 
-                device.setClipboardListener(new Device.ClipboardListener() {
-                    @Override
-                    public void onClipboardTextChanged(String text) {
-                        controller.getSender().pushClipboardText(text);
-                    }
-                });
+                device.setClipboardListener(text -> controller.getSender().pushClipboardText(text));
             }
 
             try {
@@ -115,26 +110,18 @@ public final class Server {
     }
 
     private static Thread startInitThread(final Options options) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                initAndCleanUp(options);
-            }
-        });
+        Thread thread = new Thread(() -> initAndCleanUp(options));
         thread.start();
         return thread;
     }
 
     private static Thread startController(final Controller controller) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    controller.control();
-                } catch (IOException e) {
-                    // this is expected on close
-                    Ln.d("Controller stopped");
-                }
+        Thread thread = new Thread(() -> {
+            try {
+                controller.control();
+            } catch (IOException e) {
+                // this is expected on close
+                Ln.d("Controller stopped");
             }
         });
         thread.start();
@@ -142,15 +129,12 @@ public final class Server {
     }
 
     private static Thread startDeviceMessageSender(final DeviceMessageSender sender) {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    sender.loop();
-                } catch (IOException | InterruptedException e) {
-                    // this is expected on close
-                    Ln.d("Device message sender stopped");
-                }
+        Thread thread = new Thread(() -> {
+            try {
+                sender.loop();
+            } catch (IOException | InterruptedException e) {
+                // this is expected on close
+                Ln.d("Device message sender stopped");
             }
         });
         thread.start();
@@ -327,12 +311,9 @@ public final class Server {
     }
 
     public static void main(String... args) throws Exception {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                Ln.e("Exception on thread " + t, e);
-                suggestFix(e);
-            }
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            Ln.e("Exception on thread " + t, e);
+            suggestFix(e);
         });
 
         Options options = createOptions(args);
