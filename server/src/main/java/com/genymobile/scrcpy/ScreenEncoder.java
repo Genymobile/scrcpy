@@ -75,13 +75,13 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private void internalStreamScreen(Device device, FileDescriptor fd) throws IOException {
+        MediaCodec codec = createCodec(encoderName);
         MediaFormat format = createFormat(bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
         boolean alive;
         try {
             do {
-                MediaCodec codec = createCodec(encoderName);
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
                 // include the locked video orientation
@@ -120,13 +120,14 @@ public class ScreenEncoder implements Device.RotationListener {
                     device.setMaxSize(newMaxSize);
                     alive = true;
                 } finally {
-                    codec.release();
+                    codec.reset();
                     if (surface != null) {
                         surface.release();
                     }
                 }
             } while (alive);
         } finally {
+            codec.release();
             device.setRotationListener(null);
             SurfaceControl.destroyDisplay(display);
         }
