@@ -25,7 +25,7 @@ public final class DeviceMessageSender {
     }
 
     public void loop() throws IOException, InterruptedException {
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             String text;
             long sequence;
             synchronized (this) {

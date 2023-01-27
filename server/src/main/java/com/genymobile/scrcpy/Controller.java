@@ -75,7 +75,7 @@ public class Controller {
             SystemClock.sleep(500);
         }
 
-        while (true) {
+        while (!Thread.currentThread().isInterrupted()) {
             handleEvent();
         }
     }
