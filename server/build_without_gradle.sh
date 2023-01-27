@@ -24,6 +24,7 @@ GEN_DIR="$BUILD_DIR/gen"
 SERVER_DIR=$(dirname "$0")
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
+LAMBDA_JAR="$BUILD_TOOLS_DIR/core-lambda-stubs.jar"
 
 echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
@@ -50,7 +51,9 @@ cd "$SERVER_DIR/src/main/aidl"
 
 echo "Compiling java sources..."
 cd ../java
-javac -bootclasspath "$ANDROID_JAR" -cp "$GEN_DIR" -d "$CLASSES_DIR" \
+javac -bootclasspath "$ANDROID_JAR" \
+    -cp "$LAMBDA_JAR:$GEN_DIR" \
+    -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
