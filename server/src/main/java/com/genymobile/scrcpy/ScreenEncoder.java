@@ -128,7 +128,7 @@ public class ScreenEncoder implements Device.RotationListener {
             } while (alive);
         } finally {
             device.setRotationListener(null);
-            destroyDisplay(display);
+            SurfaceControl.destroyDisplay(display);
         }
     }
 
@@ -296,9 +296,5 @@ public class ScreenEncoder implements Device.RotationListener {
         } finally {
             SurfaceControl.closeTransaction();
         }
-    }
-
-    private static void destroyDisplay(IBinder display) {
-        SurfaceControl.destroyDisplay(display);
     }
 }
