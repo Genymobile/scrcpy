@@ -108,20 +108,10 @@ public class ScreenEncoder implements Device.RotationListener {
                     codec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
-                    if (!downsizeOnError || firstFrameSent) {
-                        // Fail immediately
+                    if (!prepareRetry(device, screenInfo)) {
                         throw e;
                     }
-
-                    int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
-                    if (newMaxSize == 0) {
-                        // Definitively fail
-                        throw e;
-                    }
-
-                    // Retry with a smaller device size
-                    Ln.i("Retrying with -m" + newMaxSize + "...");
-                    device.setMaxSize(newMaxSize);
+                    Ln.i("Retrying...");
                     alive = true;
                 } finally {
                     codec.reset();
@@ -135,6 +125,25 @@ public class ScreenEncoder implements Device.RotationListener {
             device.setRotationListener(null);
             SurfaceControl.destroyDisplay(display);
         }
+    }
+
+    private boolean prepareRetry(Device device, ScreenInfo screenInfo) {
+        if (!downsizeOnError || firstFrameSent) {
+            // Must fail immediately
+            return false;
+        }
+
+        int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
+        Ln.i("newMaxSize = " + newMaxSize);
+        if (newMaxSize == 0) {
+            // Must definitively fail
+            return false;
+        }
+
+        // Retry with a smaller device size
+        Ln.i("Retrying with -m" + newMaxSize + "...");
+        device.setMaxSize(newMaxSize);
+        return true;
     }
 
     private static int chooseMaxSizeFallback(Size failedSize) {
