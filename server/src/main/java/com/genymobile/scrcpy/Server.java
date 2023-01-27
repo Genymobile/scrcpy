@@ -69,18 +69,27 @@ public final class Server {
         int uid = options.getUid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
+        boolean audio = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R; // TODO option
         boolean sendDummyByte = options.getSendDummyByte();
 
         Workarounds.prepareMainLooper();
-        if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            // Workarounds must be applied for Meizu phones:
-            //  - <https://github.com/Genymobile/scrcpy/issues/240>
-            //  - <https://github.com/Genymobile/scrcpy/issues/365>
-            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
-            //
-            // But only apply when strictly necessary, since workarounds can cause other issues:
-            //  - <https://github.com/Genymobile/scrcpy/issues/940>
-            //  - <https://github.com/Genymobile/scrcpy/issues/994>
+
+        // Workarounds must be applied for Meizu phones:
+        //  - <https://github.com/Genymobile/scrcpy/issues/240>
+        //  - <https://github.com/Genymobile/scrcpy/issues/365>
+        //  - <https://github.com/Genymobile/scrcpy/issues/2656>
+        //
+        // But only apply when strictly necessary, since workarounds can cause other issues:
+        //  - <https://github.com/Genymobile/scrcpy/issues/940>
+        //  - <https://github.com/Genymobile/scrcpy/issues/994>
+        boolean mustFillAppInfo = Build.BRAND.equalsIgnoreCase("meizu");
+
+        // Before Android 11, audio is not supported.
+        // Since Android 12, we can properly set a context on the AudioRecord.
+        // Only on Android 11 we must fill app info for the AudioRecord to work.
+        mustFillAppInfo |= audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R;
+
+        if (mustFillAppInfo) {
             Workarounds.fillAppInfo();
         }
 
@@ -102,6 +111,12 @@ public final class Server {
                 device.setClipboardListener(text -> controllerRef.getSender().pushClipboardText(text));
             }
 
+            AudioEncoder audioEncoder = null;
+            if (audio) {
+                audioEncoder = new AudioEncoder();
+                audioEncoder.start();
+            }
+
             try {
                 // synchronous
                 VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), options.getSendFrameMeta());
@@ -116,6 +131,9 @@ public final class Server {
                 initThread.interrupt();
                 if (controller != null) {
                     controller.stop();
+                }
+                if (audioEncoder != null) {
+                    audioEncoder.stop();
                 }
             }
         }
