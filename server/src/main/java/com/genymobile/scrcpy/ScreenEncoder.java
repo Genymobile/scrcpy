@@ -90,16 +90,17 @@ public class ScreenEncoder implements Device.RotationListener {
                 format.setInteger(MediaFormat.KEY_WIDTH, videoRect.width());
                 format.setInteger(MediaFormat.KEY_HEIGHT, videoRect.height());
 
-                // does not include the locked video orientation
-                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
-                int videoRotation = screenInfo.getVideoRotation();
-                int layerStack = device.getLayerStack();
-
                 Surface surface = null;
                 try {
                     codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = codec.createInputSurface();
+
+                    // does not include the locked video orientation
+                    Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
+                    int videoRotation = screenInfo.getVideoRotation();
+                    int layerStack = device.getLayerStack();
                     setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+
                     codec.start();
 
                     alive = encode(codec, fd);
