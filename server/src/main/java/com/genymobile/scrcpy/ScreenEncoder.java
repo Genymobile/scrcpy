@@ -84,13 +84,16 @@ public class ScreenEncoder implements Device.RotationListener {
             do {
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
+
                 // include the locked video orientation
                 Rect videoRect = screenInfo.getVideoSize().toRect();
+                format.setInteger(MediaFormat.KEY_WIDTH, videoRect.width());
+                format.setInteger(MediaFormat.KEY_HEIGHT, videoRect.height());
+
                 // does not include the locked video orientation
                 Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
                 int videoRotation = screenInfo.getVideoRotation();
                 int layerStack = device.getLayerStack();
-                setSize(format, videoRect.width(), videoRect.height());
 
                 Surface surface = null;
                 try {
@@ -277,11 +280,6 @@ public class ScreenEncoder implements Device.RotationListener {
         boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
                 .equals(Build.VERSION.CODENAME));
         return SurfaceControl.createDisplay("scrcpy", secure);
-    }
-
-    private static void setSize(MediaFormat format, int width, int height) {
-        format.setInteger(MediaFormat.KEY_WIDTH, width);
-        format.setInteger(MediaFormat.KEY_HEIGHT, height);
     }
 
     private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect, int layerStack) {
