@@ -111,7 +111,7 @@ public final class DesktopConnection implements Closeable {
             }
             if (forwardAudio) {
                 try {
-                    audioSocket = connect(SOCKET_NAME);
+                    audioSocket = connect(socketName);
                 } catch (IOException | RuntimeException e) {
                     videoSocket.close();
                     if (controlSocket != null) {
