@@ -32,6 +32,7 @@
 #include "util/acksync.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/rand.h"
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -265,6 +266,14 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
+static uint32_t
+scrcpy_generate_uid() {
+    struct sc_rand rand;
+    sc_rand_init(&rand);
+    // Only use 31 bits to avoid issues with signed values on the Java-side
+    return sc_rand_u32(&rand) & 0x7FFFFFFF;
+}
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -298,7 +307,10 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_acksync *acksync = NULL;
 
+    uint32_t uid = scrcpy_generate_uid();
+
     struct sc_server_params params = {
+        .uid = uid,
         .req_serial = options->serial,
         .select_usb = options->select_usb,
         .select_tcpip = options->select_tcpip,

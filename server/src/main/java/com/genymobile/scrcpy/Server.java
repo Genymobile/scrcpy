@@ -66,11 +66,12 @@ public final class Server {
 
         Thread initThread = startInitThread(options);
 
+        int uid = options.getUid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
         boolean sendDummyByte = options.getSendDummyByte();
 
-        try (DesktopConnection connection = DesktopConnection.open(tunnelForward, control, sendDummyByte)) {
+        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
@@ -178,6 +179,13 @@ public final class Server {
             String key = arg.substring(0, equalIndex);
             String value = arg.substring(equalIndex + 1);
             switch (key) {
+                case "uid":
+                    int uid = Integer.parseInt(value, 0x10);
+                    if (uid < -1) {
+                        throw new IllegalArgumentException("uid may not be negative (except -1 for 'none'): " + uid);
+                    }
+                    options.setUid(uid);
+                    break;
                 case "log_level":
                     Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
                     options.setLogLevel(level);

@@ -7,8 +7,6 @@
 #include "util/net_intr.h"
 #include "util/process_intr.h"
 
-#define SC_SOCKET_NAME "scrcpy"
-
 static bool
 listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {
     return net_listen_intr(intr, socket, IPV4_LOCALHOST, port, 1);
@@ -17,10 +15,11 @@ listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {
 static bool
 enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
                                struct sc_intr *intr, const char *serial,
+                               const char *device_socket_name,
                                struct sc_port_range port_range) {
     uint16_t port = port_range.first;
     for (;;) {
-        if (!sc_adb_reverse(intr, serial, SC_SOCKET_NAME, port,
+        if (!sc_adb_reverse(intr, serial, device_socket_name, port,
                             SC_ADB_NO_STDOUT)) {
             // the command itself failed, it will fail on any port
             return false;
@@ -52,7 +51,7 @@ enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
         }
 
         // failure, disable tunnel and try another port
-        if (!sc_adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
+        if (!sc_adb_reverse_remove(intr, serial, device_socket_name,
                                 SC_ADB_NO_STDOUT)) {
             LOGW("Could not remove reverse tunnel on port %" PRIu16, port);
         }
@@ -78,12 +77,13 @@ enable_tunnel_reverse_any_port(struct sc_adb_tunnel *tunnel,
 static bool
 enable_tunnel_forward_any_port(struct sc_adb_tunnel *tunnel,
                                struct sc_intr *intr, const char *serial,
+                               const char *device_socket_name,
                                struct sc_port_range port_range) {
     tunnel->forward = true;
 
     uint16_t port = port_range.first;
     for (;;) {
-        if (sc_adb_forward(intr, serial, port, SC_SOCKET_NAME,
+        if (sc_adb_forward(intr, serial, port, device_socket_name,
                            SC_ADB_NO_STDOUT)) {
             // success
             tunnel->local_port = port;
@@ -123,13 +123,14 @@ sc_adb_tunnel_init(struct sc_adb_tunnel *tunnel) {
 
 bool
 sc_adb_tunnel_open(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
-                   const char *serial, struct sc_port_range port_range,
-                   bool force_adb_forward) {
+                   const char *serial, const char *device_socket_name,
+                   struct sc_port_range port_range, bool force_adb_forward) {
     assert(!tunnel->enabled);
 
     if (!force_adb_forward) {
         // Attempt to use "adb reverse"
-        if (enable_tunnel_reverse_any_port(tunnel, intr, serial, port_range)) {
+        if (enable_tunnel_reverse_any_port(tunnel, intr, serial,
+                                           device_socket_name, port_range)) {
             return true;
         }
 
@@ -139,12 +140,13 @@ sc_adb_tunnel_open(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
         LOGW("'adb reverse' failed, fallback to 'adb forward'");
     }
 
-    return enable_tunnel_forward_any_port(tunnel, intr, serial, port_range);
+    return enable_tunnel_forward_any_port(tunnel, intr, serial,
+                                          device_socket_name, port_range);
 }
 
 bool
 sc_adb_tunnel_close(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
-                    const char *serial) {
+                    const char *serial, const char *device_socket_name) {
     assert(tunnel->enabled);
 
     bool ret;
@@ -152,7 +154,7 @@ sc_adb_tunnel_close(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
         ret = sc_adb_forward_remove(intr, serial, tunnel->local_port,
                                     SC_ADB_NO_STDOUT);
     } else {
-        ret = sc_adb_reverse_remove(intr, serial, SC_SOCKET_NAME,
+        ret = sc_adb_reverse_remove(intr, serial, device_socket_name,
                                     SC_ADB_NO_STDOUT);
 
         assert(tunnel->server_socket != SC_SOCKET_NONE);

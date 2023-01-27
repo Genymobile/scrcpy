@@ -6,6 +6,7 @@ import java.util.List;
 
 public class Options {
     private Ln.Level logLevel = Ln.Level.DEBUG;
+    private int uid = -1; // 31-bit non-negative value, or -1
     private int maxSize;
     private int bitRate = 8000000;
     private int maxFps;
@@ -35,6 +36,14 @@ public class Options {
 
     public void setLogLevel(Ln.Level logLevel) {
         this.logLevel = logLevel;
+    }
+
+    public int getUid() {
+        return uid;
+    }
+
+    public void setUid(int uid) {
+        this.uid = uid;
     }
 
     public int getMaxSize() {

@@ -34,14 +34,14 @@ sc_adb_tunnel_init(struct sc_adb_tunnel *tunnel);
  */
 bool
 sc_adb_tunnel_open(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
-                   const char *serial, struct sc_port_range port_range,
-                   bool force_adb_forward);
+                   const char *serial, const char *device_socket_name,
+                   struct sc_port_range port_range, bool force_adb_forward);
 
 /**
  * Close the tunnel
  */
 bool
 sc_adb_tunnel_close(struct sc_adb_tunnel *tunnel, struct sc_intr *intr,
-                    const char *serial);
+                    const char *serial, const char *device_socket_name);
 
 #endif

@@ -15,7 +15,7 @@ public final class DesktopConnection implements Closeable {
 
     private static final int DEVICE_NAME_FIELD_LENGTH = 64;
 
-    private static final String SOCKET_NAME = "scrcpy";
+    private static final String SOCKET_NAME_PREFIX = "scrcpy";
 
     private final LocalSocket videoSocket;
     private final FileDescriptor videoFd;
@@ -46,11 +46,22 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    public static DesktopConnection open(boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
+    private static String getSocketName(int uid) {
+        if (uid == -1) {
+            // If no UID is set, use "scrcpy" to simplify using scrcpy-server alone
+            return SOCKET_NAME_PREFIX;
+        }
+
+        return SOCKET_NAME_PREFIX + String.format("_%08x", uid);
+    }
+
+    public static DesktopConnection open(int uid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
+        String socketName = getSocketName(uid);
+
         LocalSocket videoSocket;
         LocalSocket controlSocket = null;
         if (tunnelForward) {
-            LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
+            LocalServerSocket localServerSocket = new LocalServerSocket(socketName);
             try {
                 videoSocket = localServerSocket.accept();
                 if (sendDummyByte) {
@@ -69,10 +80,10 @@ public final class DesktopConnection implements Closeable {
                 localServerSocket.close();
             }
         } else {
-            videoSocket = connect(SOCKET_NAME);
+            videoSocket = connect(socketName);
             if (control) {
                 try {
-                    controlSocket = connect(SOCKET_NAME);
+                    controlSocket = connect(socketName);
                 } catch (IOException | RuntimeException e) {
                     videoSocket.close();
                     throw e;

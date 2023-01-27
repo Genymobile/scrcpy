@@ -22,6 +22,7 @@ struct sc_server_info {
 };
 
 struct sc_server_params {
+    uint32_t uid;
     const char *req_serial;
     enum sc_log_level log_level;
     const char *crop;
@@ -54,6 +55,7 @@ struct sc_server {
     // The internal allocated strings are copies owned by the server
     struct sc_server_params params;
     char *serial;
+    char *device_socket_name;
 
     sc_thread thread;
     struct sc_server_info info; // initialized once connected

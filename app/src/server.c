@@ -20,6 +20,7 @@
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
 
 #define SC_ADB_PORT_DEFAULT 5555
+#define SC_SOCKET_NAME_PREFIX "scrcpy_"
 
 static char *
 get_server_path(void) {
@@ -197,6 +198,7 @@ execute_server(struct sc_server *server,
         cmd[count++] = p; \
     }
 
+    ADD_PARAM("uid=%08x", params->uid);
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
 
@@ -364,6 +366,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     }
 
     server->serial = NULL;
+    server->device_socket_name = NULL;
     server->stopped = false;
 
     server->video_socket = SC_SOCKET_NONE;
@@ -463,7 +466,8 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     }
 
     // we don't need the adb tunnel anymore
-    sc_adb_tunnel_close(tunnel, &server->intr, serial);
+    sc_adb_tunnel_close(tunnel, &server->intr, serial,
+                        server->device_socket_name);
 
     // The sockets will be closed on stop if device_read_info() fails
     bool ok = device_read_info(&server->intr, video_socket, info);
@@ -494,7 +498,8 @@ fail:
 
     if (tunnel->enabled) {
         // Always leave this function with tunnel disabled
-        sc_adb_tunnel_close(tunnel, &server->intr, serial);
+        sc_adb_tunnel_close(tunnel, &server->intr, serial,
+                            server->device_socket_name);
     }
 
     return false;
@@ -764,13 +769,23 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
+    int r = asprintf(&server->device_socket_name, SC_SOCKET_NAME_PREFIX "%08x",
+                     params->uid);
+    if (r == -1) {
+        LOG_OOM();
+        goto error_connection_failed;
+    }
+    assert(r == sizeof(SC_SOCKET_NAME_PREFIX) - 1 + 8);
+    assert(server->device_socket_name);
+
     ok = push_server(&server->intr, serial);
     if (!ok) {
         goto error_connection_failed;
     }
 
     ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, serial,
-                            params->port_range, params->force_adb_forward);
+                            server->device_socket_name, params->port_range,
+                            params->force_adb_forward);
     if (!ok) {
         goto error_connection_failed;
     }
@@ -778,7 +793,8 @@ run_server(void *data) {
     // server will connect to our server socket
     sc_pid pid = execute_server(server, params);
     if (pid == SC_PROCESS_NONE) {
-        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial,
+                            server->device_socket_name);
         goto error_connection_failed;
     }
 
@@ -790,7 +806,8 @@ run_server(void *data) {
     if (!ok) {
         sc_process_terminate(pid);
         sc_process_wait(pid, true); // ignore exit code
-        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial);
+        sc_adb_tunnel_close(&server->tunnel, &server->intr, serial,
+                            server->device_socket_name);
         goto error_connection_failed;
     }
 
@@ -884,6 +901,7 @@ sc_server_destroy(struct sc_server *server) {
     }
 
     free(server->serial);
+    free(server->device_socket_name);
     sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);
