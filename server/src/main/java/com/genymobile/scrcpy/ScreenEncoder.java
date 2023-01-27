@@ -9,6 +9,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
@@ -106,6 +107,17 @@ public class ScreenEncoder implements Device.RotationListener {
                     alive = encode(codec, fd);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
+                } catch (MediaCodec.CodecException e) {
+                    Ln.e("Codec error: " + e.getMessage());
+                    // <https://developer.android.com/reference/android/media/MediaCodec#error-handling>
+                    // For simplicity, handle isTransient() like isRecoverable()
+                    if (e.isRecoverable() || e.isTransient()) {
+                        // Avoid busy-loop if too many errors are generated
+                        SystemClock.sleep(50);
+                    } else if (!prepareDownsizeRetry(device, screenInfo)) {
+                         throw e;
+                    }
+                    alive = true;
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareDownsizeRetry(device, screenInfo)) {
