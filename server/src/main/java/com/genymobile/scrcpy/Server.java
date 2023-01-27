@@ -1,15 +1,30 @@
 package com.genymobile.scrcpy;
 
+import android.content.AttributionSource;
+import android.content.ContextWrapper;
 import android.graphics.Rect;
+import android.media.AudioFormat;
+import android.media.AudioRecord;
 import android.media.MediaCodecInfo;
+import android.media.MediaRecorder;
+import android.net.LocalServerSocket;
+import android.net.LocalSocket;
 import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.Locale;
 
 public final class Server {
+
+    private static final int SAMPLE_RATE = 48000;
+    private static final int CHANNELS = 2;
+
+    private static final String SOCKET_NAME = "sndcpy";
+
+    private static Thread recorderThread;
 
     private Server() {
         // not instantiable
@@ -59,6 +74,86 @@ public final class Server {
         }
     }
 
+    public static class FakeAttributionSourceContext extends ContextWrapper {
+        public FakeAttributionSourceContext() {
+            super(null);
+        }
+
+        @Override
+        public AttributionSource getAttributionSource() {
+            try {
+                return (AttributionSource) AttributionSource.class.getConstructor(int.class, String.class, String.class)
+                        .newInstance(2000,
+                                "com.android.shell", null);
+            } catch (Throwable e) {
+                Ln.e("Can't create fake AttributionSource", e);
+                return null;
+            }
+        }
+    }
+
+    private static AudioFormat createAudioFormat() {
+        AudioFormat.Builder builder = new AudioFormat.Builder();
+        builder.setEncoding(AudioFormat.ENCODING_PCM_16BIT);
+        builder.setSampleRate(SAMPLE_RATE);
+        builder.setChannelMask(AudioFormat.CHANNEL_IN_STEREO);
+        return builder.build();
+    }
+
+    private static AudioRecord createAudioRecord() {
+        AudioRecord.Builder builder = new AudioRecord.Builder();
+        builder.setContext(new FakeAttributionSourceContext());
+        builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
+        builder.setAudioFormat(createAudioFormat());
+        builder.setBufferSizeInBytes(1024 * 1024);
+        return builder.build();
+    }
+
+    private static LocalSocket connect() throws IOException {
+        LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
+        try {
+            return localServerSocket.accept();
+        } finally {
+            localServerSocket.close();
+        }
+    }
+
+    private static void startRecording() {
+        final AudioRecord recorder = createAudioRecord();
+        Ln.i("Audio capture created");
+
+        recorderThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try (LocalSocket socket = connect()) {
+                        OutputStream stream = socket.getOutputStream();
+                        Ln.i("Audio capture connected");
+
+                        recorder.startRecording();
+                        int BUFFER_MS = 15; // do not buffer more than BUFFER_MS milliseconds
+                        byte[] buf = new byte[SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000];
+                        while (true) {
+                            int r = recorder.read(buf, 0, buf.length);
+                            if (r > 0) {
+                                stream.write(buf, 0, r);
+                            }
+                            if (r < 0) {
+                                Ln.e("Audio capture error: " + r);
+                            }
+                        }
+                    } catch (IOException e) {
+                        // ignore
+                    } finally {
+                        Ln.i("Audio capture stop");
+                        recorder.stop();
+                    }
+                }
+            }
+        });
+        recorderThread.start();
+    }
+
     private static void scrcpy(Options options) throws IOException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
@@ -92,6 +187,8 @@ public final class Server {
             }
 
             try {
+                startRecording();
+
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {
