@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CodecOption {
-    private String key;
-    private Object value;
+    private final String key;
+    private final Object value;
 
     public CodecOption(String key, Object value) {
         this.key = key;
