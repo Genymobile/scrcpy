@@ -50,8 +50,10 @@ sc_mutex_destroy(sc_mutex *mutex) {
 
 void
 sc_mutex_lock(sc_mutex *mutex) {
+#ifndef NDEBUG
     // SDL mutexes are recursive, but we don't want to use recursive mutexes
     assert(!sc_mutex_held(mutex));
+#endif
     int r = SDL_LockMutex(mutex->mutex);
 #ifndef NDEBUG
     if (r) {
