@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import android.app.Application;
 import android.content.AttributionSource;
 import android.content.ContextWrapper;
 import android.graphics.Rect;
@@ -14,6 +15,9 @@ import android.os.Build;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Locale;
 
@@ -74,14 +78,21 @@ public final class Server {
         }
     }
 
-    public static class FakeAttributionSourceContext extends ContextWrapper {
-        public FakeAttributionSourceContext() {
+    public static class FakePackageNameContext extends ContextWrapper {
+        public FakePackageNameContext() {
             super(null);
+        }
+
+        @Override
+        public String getOpPackageName() {
+            // Android 11
+            return "com.android.shell";
         }
 
         @Override
         public AttributionSource getAttributionSource() {
             try {
+                // Android 12+
                 return (AttributionSource) AttributionSource.class.getConstructor(int.class, String.class, String.class)
                         .newInstance(2000,
                                 "com.android.shell", null);
@@ -100,9 +111,33 @@ public final class Server {
         return builder.build();
     }
 
-    private static AudioRecord createAudioRecord() {
+    private static AudioRecord createAudioRecord()
+            throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException,
+            IllegalArgumentException, InstantiationException, InvocationTargetException, NoSuchFieldException {
         AudioRecord.Builder builder = new AudioRecord.Builder();
-        builder.setContext(new FakeAttributionSourceContext());
+        try {
+            // Android 12+
+            builder.setContext(new FakePackageNameContext());
+        } catch (NoSuchMethodError e) {
+            // Android 11
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
+            activityThreadConstructor.setAccessible(true);
+            Object activityThread = activityThreadConstructor.newInstance();
+
+            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
+            sCurrentActivityThreadField.setAccessible(true);
+            sCurrentActivityThreadField.set(null, activityThread);
+
+            Application app = Application.class.newInstance();
+            Field baseField = ContextWrapper.class.getDeclaredField("mBase");
+            baseField.setAccessible(true);
+            baseField.set(app, new FakePackageNameContext());
+
+            Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
+            mInitialApplicationField.setAccessible(true);
+            mInitialApplicationField.set(activityThread, app);
+        }
         builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
         builder.setAudioFormat(createAudioFormat());
         builder.setBufferSizeInBytes(1024 * 1024);
@@ -119,39 +154,42 @@ public final class Server {
     }
 
     private static void startRecording() {
-        final AudioRecord recorder = createAudioRecord();
-        Ln.i("Audio capture created");
+        try {
+            final AudioRecord recorder = createAudioRecord();
+            Ln.i("AudioRecord created");
 
-        recorderThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try (LocalSocket socket = connect()) {
-                        OutputStream stream = socket.getOutputStream();
-                        Ln.i("Audio capture connected");
-
-                        recorder.startRecording();
-                        int BUFFER_MS = 15; // do not buffer more than BUFFER_MS milliseconds
-                        byte[] buf = new byte[SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000];
-                        while (true) {
-                            int r = recorder.read(buf, 0, buf.length);
-                            if (r > 0) {
-                                stream.write(buf, 0, r);
+            recorderThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try (LocalSocket socket = connect()) {
+                            OutputStream stream = socket.getOutputStream();
+                            recorder.startRecording();
+                            Ln.i("AudioRecord started");
+                            int BUFFER_MS = 15; // do not buffer more than BUFFER_MS milliseconds
+                            byte[] buf = new byte[SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000];
+                            while (true) {
+                                int r = recorder.read(buf, 0, buf.length);
+                                if (r > 0) {
+                                    stream.write(buf, 0, r);
+                                }
+                                if (r < 0) {
+                                    Ln.e("Audio capture error: " + r);
+                                }
                             }
-                            if (r < 0) {
-                                Ln.e("Audio capture error: " + r);
-                            }
+                        } catch (IOException e) {
+                            // ignore
+                        } finally {
+                            Ln.i("Audio capture stop");
+                            recorder.stop();
                         }
-                    } catch (IOException e) {
-                        // ignore
-                    } finally {
-                        Ln.i("Audio capture stop");
-                        recorder.stop();
                     }
                 }
-            }
-        });
-        recorderThread.start();
+            });
+            recorderThread.start();
+        } catch (Throwable e) {
+            Ln.e("Can't create AudioRecord", e);
+        }
     }
 
     private static void scrcpy(Options options) throws IOException {
@@ -187,8 +225,8 @@ public final class Server {
             }
 
             try {
+                Workarounds.prepareMainLooper();
                 startRecording();
-
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {

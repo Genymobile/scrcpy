@@ -64,7 +64,6 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
-        Workarounds.prepareMainLooper();
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
             // <https://github.com/Genymobile/scrcpy/issues/240>
             // <https://github.com/Genymobile/scrcpy/issues/2656>
