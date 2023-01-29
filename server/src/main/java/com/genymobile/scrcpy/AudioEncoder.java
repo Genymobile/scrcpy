@@ -1,7 +1,11 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.content.ComponentName;
+import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
@@ -12,6 +16,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.os.SystemClock;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -217,6 +222,32 @@ public final class AudioEncoder {
         }
     }
 
+    private static void startWorkaroundAndroid11() {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            // Android 11 requires Apps to be at foreground to record audio.
+            // Normally, each App has its own user ID, so Android checks whether the requesting App has the user ID that's at the foreground.
+            // But Scrcpy server is NOT an App, it's a Java application started from Android shell, so it has the same user ID (2000) with Android
+            // shell ("com.android.shell").
+            // If there is an Activity from Android shell running at foreground, then the permission system will believe Scrcpy is also in the
+            // foreground.
+            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                Intent intent = new Intent(Intent.ACTION_MAIN);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intent.addCategory(Intent.CATEGORY_LAUNCHER);
+                intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
+                ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
+                // Wait for activity to start
+                SystemClock.sleep(150);
+            }
+        }
+    }
+
+    private static void stopWorkaroundAndroid11() {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
+        }
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
     public void encode() throws IOException, ConfigurationException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
@@ -241,8 +272,21 @@ public final class AudioEncoder {
             mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
             mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
-            recorder = createAudioRecord();
-            recorder.startRecording();
+            startWorkaroundAndroid11();
+            try {
+                recorder = createAudioRecord();
+                recorder.startRecording();
+            } catch (UnsupportedOperationException e) {
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                    Ln.e("Failed to start audio capture");
+                    Ln.e("On Android 11, it is only possible to capture in foreground, make sure that the device is unlocked when starting scrcpy.");
+                    // Continue to mirror without audio (configurationError is left to false)
+                    streamer.writeDisableStream(false);
+                    return;
+                }
+            } finally {
+                stopWorkaroundAndroid11();
+            }
             recorderStarted = true;
 
             final MediaCodec mediaCodecRef = mediaCodec;
