@@ -49,6 +49,7 @@ struct sc_server_params {
     bool select_tcpip;
     bool cleanup;
     bool power_on;
+    bool forward_audio;
 };
 
 struct sc_server {
@@ -69,6 +70,7 @@ struct sc_server {
 
     sc_socket video_socket;
     sc_socket control_socket;
+    sc_socket audio_socket;
 
     const struct sc_server_callbacks *cbs;
     void *cbs_userdata;

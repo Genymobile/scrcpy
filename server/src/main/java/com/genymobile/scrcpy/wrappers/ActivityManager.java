@@ -2,7 +2,9 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.content.Intent;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
 
@@ -16,6 +18,8 @@ public class ActivityManager {
     private Method getContentProviderExternalMethod;
     private boolean getContentProviderExternalMethodNewVersion = true;
     private Method removeContentProviderExternalMethod;
+    private Method startActivityAsUserWithFeatureMethod;
+    private Method forceStopPackageMethod;
 
     public ActivityManager(IInterface manager) {
         this.manager = manager;
@@ -83,5 +87,66 @@ public class ActivityManager {
 
     public ContentProvider createSettingsProvider() {
         return getContentProviderExternal("settings", new Binder());
+    }
+
+    private Method getStartActivityAsUserWithFeatureMethod()
+            throws NoSuchMethodException, SecurityException, ClassNotFoundException {
+        if (startActivityAsUserWithFeatureMethod == null) {
+            startActivityAsUserWithFeatureMethod = manager.getClass().getMethod("startActivityAsUserWithFeature",
+                    Class.forName("android.app.IApplicationThread"),
+                    String.class,
+                    String.class,
+                    Intent.class,
+                    String.class,
+                    IBinder.class,
+                    String.class,
+                    int.class,
+                    int.class,
+                    Class.forName("android.app.ProfilerInfo"),
+                    Bundle.class,
+                    int.class);
+        }
+        return startActivityAsUserWithFeatureMethod;
+    }
+
+    public int startActivityAsUserWithFeature(Intent intent) {
+        try {
+            Method startActivityAsUserWithFeatureMethod = getStartActivityAsUserWithFeatureMethod();
+            return (int) startActivityAsUserWithFeatureMethod.invoke(
+                    /* this */ manager,
+                    /* caller */ null,
+                    /* callingPackage */ ServiceManager.PACKAGE_NAME,
+                    /* callingFeatureId */ null,
+                    /* intent */ intent,
+                    /* resolvedType */ null,
+                    /* resultTo */ null,
+                    /* resultWho */ null,
+                    /* requestCode */ 0,
+                    /* startFlags */ 0,
+                    /* profilerInfo */ null,
+                    /* bOptions */ null,
+                    /* userId */ /* UserHandle.USER_CURRENT */ -2);
+        } catch (Throwable e) {
+            Ln.e("Could not invoke method", e);
+            return 0;
+        }
+    }
+
+    private Method getForceStopPackageMethod()
+            throws NoSuchMethodException, SecurityException, ClassNotFoundException {
+        if (forceStopPackageMethod == null) {
+            forceStopPackageMethod = manager.getClass().getMethod("forceStopPackage",
+                    String.class, int.class);
+        }
+        return forceStopPackageMethod;
+    }
+
+    public void forceStopPackage(String packageName) {
+        try {
+            Method forceStopPackageMethod = getForceStopPackageMethod();
+            forceStopPackageMethod.invoke(manager, packageName, /* userId */ /* UserHandle.USER_CURRENT */ -2);
+        } catch (Throwable e) {
+            Ln.e("Could not invoke method", e);
+        }
     }
 }

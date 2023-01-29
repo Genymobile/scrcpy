@@ -24,6 +24,7 @@ public class Options {
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
     private boolean powerOn = true;
+    private boolean forwardAudio = true;
 
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
@@ -180,6 +181,14 @@ public class Options {
 
     public void setPowerOn(boolean powerOn) {
         this.powerOn = powerOn;
+    }
+
+    public boolean getForwardAudio() {
+        return forwardAudio;
+    }
+
+    public void setForwardAudio(boolean forwardAudio) {
+        this.forwardAudio = forwardAudio;
     }
 
     public boolean getSendDeviceMeta() {

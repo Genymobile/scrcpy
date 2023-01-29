@@ -256,6 +256,9 @@ execute_server(struct sc_server *server,
         // By default, power_on is true
         ADD_PARAM("power_on=false");
     }
+    if (!params->forward_audio) {
+        ADD_PARAM("forward_audio=false");
+    }
 
 #undef ADD_PARAM
 
@@ -371,6 +374,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
 
     server->video_socket = SC_SOCKET_NONE;
     server->control_socket = SC_SOCKET_NONE;
+    server->audio_socket = SC_SOCKET_NONE;
 
     sc_adb_tunnel_init(&server->tunnel);
 
@@ -415,9 +419,11 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     assert(serial);
 
     bool control = server->params.control;
+    bool forward_audio = server->params.forward_audio;
 
     sc_socket video_socket = SC_SOCKET_NONE;
     sc_socket control_socket = SC_SOCKET_NONE;
+    sc_socket audio_socket = SC_SOCKET_NONE;
     if (!tunnel->forward) {
         video_socket = net_accept_intr(&server->intr, tunnel->server_socket);
         if (video_socket == SC_SOCKET_NONE) {
@@ -428,6 +434,14 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             control_socket =
                 net_accept_intr(&server->intr, tunnel->server_socket);
             if (control_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
+        }
+
+        if (forward_audio) {
+            audio_socket =
+                net_accept_intr(&server->intr, tunnel->server_socket);
+            if (audio_socket == SC_SOCKET_NONE) {
                 goto fail;
             }
         }
@@ -463,6 +477,18 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
                 goto fail;
             }
         }
+
+        if (forward_audio) {
+            audio_socket = net_socket();
+            if (audio_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
+            bool ok = net_connect_intr(&server->intr, audio_socket, tunnel_host,
+                                       tunnel_port);
+            if (!ok) {
+                goto fail;
+            }
+        }
     }
 
     // we don't need the adb tunnel anymore
@@ -477,9 +503,11 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
 
     assert(video_socket != SC_SOCKET_NONE);
     assert(!control || control_socket != SC_SOCKET_NONE);
+    assert(!forward_audio || audio_socket != SC_SOCKET_NONE);
 
     server->video_socket = video_socket;
     server->control_socket = control_socket;
+    server->audio_socket = audio_socket;
 
     return true;
 
@@ -493,6 +521,12 @@ fail:
     if (control_socket != SC_SOCKET_NONE) {
         if (!net_close(control_socket)) {
             LOGW("Could not close control socket");
+        }
+    }
+
+    if (audio_socket != SC_SOCKET_NONE) {
+        if (!net_close(audio_socket)) {
+            LOGW("Could not close audio socket");
         }
     }
 
@@ -840,6 +874,11 @@ run_server(void *data) {
         net_interrupt(server->control_socket);
     }
 
+    if (server->audio_socket != SC_SOCKET_NONE) {
+        // There is no audio_socket if --no-forward-audio is set
+        net_interrupt(server->audio_socket);
+    }
+
     // Give some delay for the server to terminate properly
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
     sc_tick deadline = sc_tick_now() + WATCHDOG_DELAY;
@@ -898,6 +937,9 @@ sc_server_destroy(struct sc_server *server) {
     }
     if (server->control_socket != SC_SOCKET_NONE) {
         net_close(server->control_socket);
+    }
+    if (server->audio_socket != SC_SOCKET_NONE) {
+        net_close(server->audio_socket);
     }
 
     free(server->serial);

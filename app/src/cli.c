@@ -57,6 +57,7 @@
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
+#define OPT_NO_FORWARD_AUDIO       1040
 
 struct sc_option {
     char shortopt;
@@ -307,6 +308,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_FORWARD_AUDIO,
+        .longopt = "no-forward-audio",
+        .text = "Disable audio forwarding",
     },
     {
         .longopt_id = OPT_OTG,
@@ -1606,6 +1612,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_POWER_ON:
                 opts->power_on = false;
+                break;
+            case OPT_NO_FORWARD_AUDIO:
+                opts->forward_audio = false;
                 break;
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;

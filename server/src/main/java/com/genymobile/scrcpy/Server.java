@@ -1,34 +1,15 @@
 package com.genymobile.scrcpy;
 
-import android.app.Application;
-import android.content.AttributionSource;
-import android.content.ContextWrapper;
 import android.graphics.Rect;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
 import android.media.MediaCodecInfo;
-import android.media.MediaRecorder;
-import android.net.LocalServerSocket;
-import android.net.LocalSocket;
 import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Locale;
 
 public final class Server {
-
-    private static final int SAMPLE_RATE = 48000;
-    private static final int CHANNELS = 2;
-
-    private static final String SOCKET_NAME = "sndcpy";
-
-    private static Thread recorderThread;
 
     private Server() {
         // not instantiable
@@ -50,9 +31,11 @@ public final class Server {
             }
 
             if (options.getStayAwake()) {
-                int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
+                int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB
+                        | BatteryManager.BATTERY_PLUGGED_WIRELESS;
                 try {
-                    String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
+                    String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in",
+                            String.valueOf(stayOn));
                     try {
                         restoreStayOn = Integer.parseInt(oldValue);
                         if (restoreStayOn == stayOn) {
@@ -70,125 +53,12 @@ public final class Server {
 
         if (options.getCleanup()) {
             try {
-                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
+                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp,
+                        restoreNormalPowerMode,
                         options.getPowerOffScreenOnClose());
             } catch (IOException e) {
                 Ln.e("Could not configure cleanup", e);
             }
-        }
-    }
-
-    public static class FakePackageNameContext extends ContextWrapper {
-        public FakePackageNameContext() {
-            super(null);
-        }
-
-        @Override
-        public String getOpPackageName() {
-            // Android 11
-            return "com.android.shell";
-        }
-
-        @Override
-        public AttributionSource getAttributionSource() {
-            try {
-                // Android 12+
-                return (AttributionSource) AttributionSource.class.getConstructor(int.class, String.class, String.class)
-                        .newInstance(2000,
-                                "com.android.shell", null);
-            } catch (Throwable e) {
-                Ln.e("Can't create fake AttributionSource", e);
-                return null;
-            }
-        }
-    }
-
-    private static AudioFormat createAudioFormat() {
-        AudioFormat.Builder builder = new AudioFormat.Builder();
-        builder.setEncoding(AudioFormat.ENCODING_PCM_16BIT);
-        builder.setSampleRate(SAMPLE_RATE);
-        builder.setChannelMask(AudioFormat.CHANNEL_IN_STEREO);
-        return builder.build();
-    }
-
-    private static AudioRecord createAudioRecord()
-            throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException,
-            IllegalArgumentException, InstantiationException, InvocationTargetException, NoSuchFieldException {
-        AudioRecord.Builder builder = new AudioRecord.Builder();
-        try {
-            // Android 12+
-            builder.setContext(new FakePackageNameContext());
-        } catch (NoSuchMethodError e) {
-            // Android 11
-            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
-            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
-            activityThreadConstructor.setAccessible(true);
-            Object activityThread = activityThreadConstructor.newInstance();
-
-            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
-            sCurrentActivityThreadField.setAccessible(true);
-            sCurrentActivityThreadField.set(null, activityThread);
-
-            Application app = Application.class.newInstance();
-            Field baseField = ContextWrapper.class.getDeclaredField("mBase");
-            baseField.setAccessible(true);
-            baseField.set(app, new FakePackageNameContext());
-
-            Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
-            mInitialApplicationField.setAccessible(true);
-            mInitialApplicationField.set(activityThread, app);
-        }
-        builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
-        builder.setAudioFormat(createAudioFormat());
-        builder.setBufferSizeInBytes(1024 * 1024);
-        return builder.build();
-    }
-
-    private static LocalSocket connect() throws IOException {
-        LocalServerSocket localServerSocket = new LocalServerSocket(SOCKET_NAME);
-        try {
-            return localServerSocket.accept();
-        } finally {
-            localServerSocket.close();
-        }
-    }
-
-    private static void startRecording() {
-        try {
-            final AudioRecord recorder = createAudioRecord();
-            Ln.i("AudioRecord created");
-
-            recorderThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    while (true) {
-                        try (LocalSocket socket = connect()) {
-                            OutputStream stream = socket.getOutputStream();
-                            recorder.startRecording();
-                            Ln.i("AudioRecord started");
-                            int BUFFER_MS = 15; // do not buffer more than BUFFER_MS milliseconds
-                            byte[] buf = new byte[SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000];
-                            while (true) {
-                                int r = recorder.read(buf, 0, buf.length);
-                                if (r > 0) {
-                                    stream.write(buf, 0, r);
-                                }
-                                if (r < 0) {
-                                    Ln.e("Audio capture error: " + r);
-                                }
-                            }
-                        } catch (IOException e) {
-                            // ignore
-                        } finally {
-                            Ln.i("Audio capture stop");
-                            recorder.stop();
-                        }
-                    }
-                }
-            });
-            recorderThread.start();
-        } catch (Throwable e) {
-            Ln.e("Can't create AudioRecord", e);
         }
     }
 
@@ -203,19 +73,22 @@ public final class Server {
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
         boolean sendDummyByte = options.getSendDummyByte();
+        boolean forwardAudio = options.getForwardAudio();
 
-        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte)) {
+        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte,
+                forwardAudio)) {
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             }
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName(), options.getDownsizeOnError());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(),
+                    options.getMaxFps(), codecOptions, options.getEncoderName(), options.getDownsizeOnError());
 
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
             if (control) {
-                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
+                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(),
+                        options.getPowerOn());
 
                 // asynchronous
                 controllerThread = startController(controller);
@@ -224,18 +97,29 @@ public final class Server {
                 device.setClipboardListener(text -> controller.getSender().pushClipboardText(text));
             }
 
+            // Both AudioEncoder and ScreenEncoder might require this
+            Workarounds.prepareMainLooper();
+
+            Thread audioRecordingThread = null;
+            if (forwardAudio) {
+                final AudioEncoder audioEncoder = new AudioEncoder(connection);
+                audioRecordingThread = audioEncoder.startRecording();
+            }
+
             try {
-                Workarounds.prepareMainLooper();
-                startRecording();
                 // synchronous
                 screenEncoder.streamScreen(device, connection.getVideoFd());
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
             } finally {
+                Ln.i("Stopping");
                 initThread.interrupt();
                 if (controllerThread != null) {
                     controllerThread.interrupt();
+                }
+                if (audioRecordingThread != null) {
+                    audioRecordingThread.interrupt();
                 }
                 if (deviceMessageSenderThread != null) {
                     deviceMessageSenderThread.interrupt();
@@ -284,7 +168,8 @@ public final class Server {
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
             throw new IllegalArgumentException(
-                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
+                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "("
+                            + clientVersion + ")");
         }
 
         Options options = new Options();
@@ -377,6 +262,10 @@ public final class Server {
                 case "power_on":
                     boolean powerOn = Boolean.parseBoolean(value);
                     options.setPowerOn(powerOn);
+                    break;
+                case "forward_audio":
+                    boolean forwardAudio = Boolean.parseBoolean(value);
+                    options.setForwardAudio(forwardAudio);
                     break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);

@@ -24,10 +24,14 @@ public final class DesktopConnection implements Closeable {
     private final InputStream controlInputStream;
     private final OutputStream controlOutputStream;
 
+    private final LocalSocket audioSocket;
+    private final OutputStream audioOutputStream;
+
     private final ControlMessageReader reader = new ControlMessageReader();
     private final DeviceMessageWriter writer = new DeviceMessageWriter();
 
-    private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
+    private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket, LocalSocket audioSocket)
+            throws IOException {
         this.videoSocket = videoSocket;
         this.controlSocket = controlSocket;
         if (controlSocket != null) {
@@ -36,6 +40,12 @@ public final class DesktopConnection implements Closeable {
         } else {
             controlInputStream = null;
             controlOutputStream = null;
+        }
+        this.audioSocket = audioSocket;
+        if (audioSocket != null) {
+            this.audioOutputStream = audioSocket.getOutputStream();
+        } else {
+            this.audioOutputStream = null;
         }
         videoFd = videoSocket.getFileDescriptor();
     }
@@ -55,11 +65,13 @@ public final class DesktopConnection implements Closeable {
         return SOCKET_NAME_PREFIX + String.format("_%08x", uid);
     }
 
-    public static DesktopConnection open(int uid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
+    public static DesktopConnection open(int uid, boolean tunnelForward, boolean control, boolean sendDummyByte,
+            boolean forwardAudio) throws IOException {
         String socketName = getSocketName(uid);
 
         LocalSocket videoSocket;
         LocalSocket controlSocket = null;
+        LocalSocket audioSocket = null;
         if (tunnelForward) {
             try (LocalServerSocket localServerSocket = new LocalServerSocket(socketName)) {
                 videoSocket = localServerSocket.accept();
@@ -75,6 +87,17 @@ public final class DesktopConnection implements Closeable {
                         throw e;
                     }
                 }
+                if (forwardAudio) {
+                    try {
+                        audioSocket = localServerSocket.accept();
+                    } catch (IOException | RuntimeException e) {
+                        videoSocket.close();
+                        if (controlSocket != null) {
+                            controlSocket.close();
+                        }
+                        throw e;
+                    }
+                }
             }
         } else {
             videoSocket = connect(socketName);
@@ -86,9 +109,20 @@ public final class DesktopConnection implements Closeable {
                     throw e;
                 }
             }
+            if (forwardAudio) {
+                try {
+                    audioSocket = connect(SOCKET_NAME);
+                } catch (IOException | RuntimeException e) {
+                    videoSocket.close();
+                    if (controlSocket != null) {
+                        controlSocket.close();
+                    }
+                    throw e;
+                }
+            }
         }
 
-        return new DesktopConnection(videoSocket, controlSocket);
+        return new DesktopConnection(videoSocket, controlSocket, audioSocket);
     }
 
     public void close() throws IOException {
@@ -99,6 +133,11 @@ public final class DesktopConnection implements Closeable {
             controlSocket.shutdownInput();
             controlSocket.shutdownOutput();
             controlSocket.close();
+        }
+        if (audioSocket != null) {
+            audioSocket.shutdownInput();
+            audioSocket.shutdownOutput();
+            audioSocket.close();
         }
     }
 
@@ -132,5 +171,9 @@ public final class DesktopConnection implements Closeable {
 
     public void sendDeviceMessage(DeviceMessage msg) throws IOException {
         writer.writeTo(msg, controlOutputStream);
+    }
+
+    public void sendAudioData(byte[] buffer, int offset, int length) throws IOException {
+        audioOutputStream.write(buffer, offset, length);
     }
 }

@@ -13,6 +13,7 @@
 # include <windows.h>
 #endif
 
+#include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
 #include "demuxer.h"
@@ -48,6 +49,7 @@ struct scrcpy {
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
+    struct sc_audio_player audio_player;
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
@@ -303,6 +305,7 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
+    bool audio_player_initialized = false;
     bool screen_initialized = false;
 
     struct sc_acksync *acksync = NULL;
@@ -337,6 +340,7 @@ scrcpy(struct scrcpy_options *options) {
         .tcpip_dst = options->tcpip_dst,
         .cleanup = options->cleanup,
         .power_on = options->power_on,
+        .forward_audio = options->forward_audio,
     };
 
     static const struct sc_server_callbacks cbs = {
@@ -572,6 +576,13 @@ aoa_hid_end:
         controller_started = true;
         controller = &s->controller;
 
+        if (!sc_audio_player_init(&s->audio_player, s->server.audio_socket)) {
+            goto end;
+        }
+        audio_player_initialized = true;
+
+        sc_audio_player_start(&s->audio_player);
+
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
             msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
@@ -717,6 +728,10 @@ end:
     }
     if (controller_initialized) {
         sc_controller_destroy(&s->controller);
+    }
+
+    if (audio_player_initialized) {
+        sc_audio_player_destory(&s->audio_player);
     }
 
     if (recorder_initialized) {
