@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.wrappers;
 import com.genymobile.scrcpy.Ln;
 
 import android.view.InputEvent;
+import android.view.MotionEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -17,6 +18,7 @@ public final class InputManager {
     private Method injectInputEventMethod;
 
     private static Method setDisplayIdMethod;
+    private static Method setActionButtonMethod;
 
     public InputManager(android.hardware.input.InputManager manager) {
         this.manager = manager;
@@ -53,6 +55,24 @@ public final class InputManager {
             return true;
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Cannot associate a display id to the input event", e);
+            return false;
+        }
+    }
+
+    private static Method getSetActionButtonMethod() throws NoSuchMethodException {
+        if (setActionButtonMethod == null) {
+            setActionButtonMethod = MotionEvent.class.getMethod("setActionButton", int.class);
+        }
+        return setActionButtonMethod;
+    }
+
+    public static boolean setActionButton(MotionEvent motionEvent, int actionButton) {
+        try {
+            Method method = getSetActionButtonMethod();
+            method.invoke(motionEvent, actionButton);
+            return true;
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            Ln.e("Cannot set action button on MotionEvent", e);
             return false;
         }
     }
