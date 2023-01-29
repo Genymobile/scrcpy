@@ -93,6 +93,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
             .pointer_id = event->pointer_id,
             .position = event->position,
             .pressure = event->action == SC_ACTION_DOWN ? 1.f : 0.f,
+            .action_button = convert_mouse_buttons(event->button),
             .buttons = convert_mouse_buttons(event->buttons_state),
         },
     };

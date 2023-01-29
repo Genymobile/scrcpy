@@ -65,6 +65,7 @@ struct sc_control_msg {
         } inject_text;
         struct {
             enum android_motionevent_action action;
+            enum android_motionevent_buttons action_button;
             enum android_motionevent_buttons buttons;
             uint64_t pointer_id;
             struct sc_position position;

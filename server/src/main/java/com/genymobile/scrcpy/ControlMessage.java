@@ -29,6 +29,7 @@ public final class ControlMessage {
     private int metaState; // KeyEvent.META_*
     private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_*
     private int keycode; // KeyEvent.KEYCODE_*
+    private int actionButton; // MotionEvent.BUTTON_*
     private int buttons; // MotionEvent.BUTTON_*
     private long pointerId;
     private float pressure;
@@ -60,13 +61,15 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure, int buttons) {
+    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure, int actionButton,
+            int buttons) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_TOUCH_EVENT;
         msg.action = action;
         msg.pointerId = pointerId;
         msg.pressure = pressure;
         msg.position = position;
+        msg.actionButton = actionButton;
         msg.buttons = buttons;
         return msg;
     }
@@ -138,6 +141,10 @@ public final class ControlMessage {
 
     public int getKeycode() {
         return keycode;
+    }
+
+    public int getActionButton() {
+        return actionButton;
     }
 
     public int getButtons() {

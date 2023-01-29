@@ -117,8 +117,9 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             uint16_t pressure =
                 sc_float_to_u16fp(msg->inject_touch_event.pressure);
             sc_write16be(&buf[22], pressure);
-            sc_write32be(&buf[24], msg->inject_touch_event.buttons);
-            return 28;
+            sc_write32be(&buf[24], msg->inject_touch_event.action_button);
+            sc_write32be(&buf[28], msg->inject_touch_event.buttons);
+            return 32;
         case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
             int16_t hscroll =
@@ -179,22 +180,25 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             if (pointer_name) {
                 // string pointer id
                 LOG_CMSG("touch [id=%s] %-4s position=%" PRIi32 ",%" PRIi32
-                             " pressure=%f buttons=%06lx",
+                             " pressure=%f action_button=%06lx buttons=%06lx",
                          pointer_name,
                          MOTIONEVENT_ACTION_LABEL(action),
                          msg->inject_touch_event.position.point.x,
                          msg->inject_touch_event.position.point.y,
                          msg->inject_touch_event.pressure,
+                         (long) msg->inject_touch_event.action_button,
                          (long) msg->inject_touch_event.buttons);
             } else {
                 // numeric pointer id
                 LOG_CMSG("touch [id=%" PRIu64_ "] %-4s position=%" PRIi32 ",%"
-                             PRIi32 " pressure=%f buttons=%06lx",
+                             PRIi32 " pressure=%f action_button=%06lx"
+                             " buttons=%06lx",
                          id,
                          MOTIONEVENT_ACTION_LABEL(action),
                          msg->inject_touch_event.position.point.x,
                          msg->inject_touch_event.position.point.y,
                          msg->inject_touch_event.pressure,
+                         (long) msg->inject_touch_event.action_button,
                          (long) msg->inject_touch_event.buttons);
             }
             break;
