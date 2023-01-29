@@ -14,6 +14,9 @@ static void callback(void *userdata, unsigned char *buf, int len) {
         ssize_t r =
             net_recv(audio_player->audio_socket, buf + head, len - head);
         if (r <= 0) {
+            // Stop player immediately on EOF.
+            // Otherwise SDL will play what's in `buf` repeatly
+            // until `sc_audio_player_destory` is called.
             SDL_PauseAudioDevice(audio_player->dev, 1);
             return;
         }

@@ -12,7 +12,6 @@
 struct sc_audio_player {
     sc_socket audio_socket;
     SDL_AudioDeviceID dev;
-    sc_thread thread;
 };
 
 bool sc_audio_player_init(struct sc_audio_player *audio_player,
