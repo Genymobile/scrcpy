@@ -34,6 +34,7 @@ Its features include:
  - [physical keyboard simulation (HID)](#physical-keyboard-simulation-hid)
  - [physical mouse simulation (HID)](#physical-mouse-simulation-hid)
  - [OTG mode](#otg)
+ - Audio forwarding
  - and more…
 
 ## Requirements
@@ -106,7 +107,7 @@ process][BUILD_simple]).
 For Windows, a prebuilt archive with all the dependencies (including `adb`) is
 available:
 
- - [`scrcpy-win64-v1.25.zip`][direct-win64]  
+ - [`scrcpy-win64-v1.25.zip`][direct-win64]
    <sub>SHA-256: `db65125e9c65acd00359efb7cea9c05f63cc7ccd5833000cd243cc92f5053028`</sub>
 
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v1.25/scrcpy-win64-v1.25.zip
@@ -1052,11 +1053,18 @@ scrcpy --push-target=/sdcard/Movies/
 
 ### Audio forwarding
 
-Audio is not forwarded by _scrcpy_. Use [sndcpy].
+Audio forwarding is supported on Android 11 or newer. On older devices, Scrcpy doesn't have the permission to record system audio.
+
+Most sound will be redirected to Scrcpy client (which means they will stop playing on device), except rington, alarm and notification sound will continue to play on device.
+
+To disable audio forwarding:
+
+```bash
+scrcpy --no-forward-audio
+```
 
 Also see [issue #14].
 
-[sndcpy]: https://github.com/rom1v/sndcpy
 [issue #14]: https://github.com/Genymobile/scrcpy/issues/14
 
 
@@ -1110,10 +1118,10 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Drag & drop APK file                        | Install APK from computer
  | Drag & drop non-APK file                    | [Push file to device](#push-file-to-device)
 
-_¹Double-click on black borders to remove them._  
-_²Right-click turns the screen on if it was off, presses BACK otherwise._  
-_³4th and 5th mouse buttons, if your mouse has them._  
-_⁴For react-native apps in development, `MENU` triggers development menu._  
+_¹Double-click on black borders to remove them._
+_²Right-click turns the screen on if it was off, presses BACK otherwise._
+_³4th and 5th mouse buttons, if your mouse has them._
+_⁴For react-native apps in development, `MENU` triggers development menu._
 _⁵Only on Android >= 7._
 
 Shortcuts with repeated keys are executed by releasing and pressing the key a
