@@ -150,6 +150,7 @@ public class AudioEncoder {
                     } finally {
                         Ln.i("Audio capture stop");
                         recorder.stop();
+                        recorder.release();
                     }
                 }
             });

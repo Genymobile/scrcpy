@@ -576,12 +576,14 @@ aoa_hid_end:
         controller_started = true;
         controller = &s->controller;
 
-        if (!sc_audio_player_init(&s->audio_player, s->server.audio_socket)) {
-            goto end;
-        }
-        audio_player_initialized = true;
+        if (s->server.audio_socket) {
+            if (!sc_audio_player_init(&s->audio_player, s->server.audio_socket)) {
+                goto end;
+            }
+            audio_player_initialized = true;
 
-        sc_audio_player_start(&s->audio_player);
+            sc_audio_player_start(&s->audio_player);
+        }
 
         if (options->turn_screen_off) {
             struct sc_control_msg msg;
