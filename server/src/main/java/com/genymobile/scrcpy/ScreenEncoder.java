@@ -9,6 +9,7 @@ import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import java.io.FileDescriptor;
@@ -27,6 +28,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     // Keep the values in descending order
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
+    private static final int MAX_CONSECUTIVE_ERRORS = 3;
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
@@ -43,6 +45,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private long ptsOrigin;
 
     private boolean firstFrameSent;
+    private int consecutiveErrors;
 
     public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
             boolean downsizeOnError) {
@@ -128,10 +131,24 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     private boolean prepareRetry(Device device, ScreenInfo screenInfo) {
-        if (!downsizeOnError || firstFrameSent) {
+        if (firstFrameSent) {
+            ++consecutiveErrors;
+            if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
+                // Definitively fail
+                return false;
+            }
+
+            // Wait a bit to increase the probability that retrying will fix the problem
+            SystemClock.sleep(50);
+            return true;
+        }
+
+        if (!downsizeOnError) {
             // Must fail immediately
             return false;
         }
+
+        // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
 
         int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
         Ln.i("newMaxSize = " + newMaxSize);
@@ -181,6 +198,7 @@ public class ScreenEncoder implements Device.RotationListener {
                     if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
                         // If this is not a config packet, then it contains a frame
                         firstFrameSent = true;
+                        consecutiveErrors = 0;
                     }
                 }
             } finally {
