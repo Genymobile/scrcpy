@@ -196,22 +196,23 @@ public class Controller {
         Pointer pointer = pointersState.get(pointerIndex);
         pointer.setPoint(point);
         pointer.setPressure(pressure);
-        pointer.setUp(action == MotionEvent.ACTION_UP);
 
         int source;
-        int pointerCount = pointersState.update(pointerProperties, pointerCoords);
         if (pointerId == POINTER_ID_MOUSE || pointerId == POINTER_ID_VIRTUAL_MOUSE) {
             // real mouse event (forced by the client when --forward-on-click)
             pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_MOUSE;
             source = InputDevice.SOURCE_MOUSE;
+            pointer.setUp(buttons == 0);
         } else {
             // POINTER_ID_GENERIC_FINGER, POINTER_ID_VIRTUAL_FINGER or real touch from device
             pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_FINGER;
             source = InputDevice.SOURCE_TOUCHSCREEN;
             // Buttons must not be set for touch events
             buttons = 0;
+            pointer.setUp(action == MotionEvent.ACTION_UP);
         }
 
+        int pointerCount = pointersState.update(pointerProperties, pointerCoords);
         if (pointerCount == 1) {
             if (action == MotionEvent.ACTION_DOWN) {
                 lastTouchDown = now;
