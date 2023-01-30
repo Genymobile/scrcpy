@@ -31,11 +31,9 @@ public final class Server {
             }
 
             if (options.getStayAwake()) {
-                int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB
-                        | BatteryManager.BATTERY_PLUGGED_WIRELESS;
+                int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
                 try {
-                    String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in",
-                            String.valueOf(stayOn));
+                    String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
                     try {
                         restoreStayOn = Integer.parseInt(oldValue);
                         if (restoreStayOn == stayOn) {
@@ -53,8 +51,7 @@ public final class Server {
 
         if (options.getCleanup()) {
             try {
-                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp,
-                        restoreNormalPowerMode,
+                CleanUp.configure(options.getDisplayId(), restoreStayOn, mustDisableShowTouchesOnCleanUp, restoreNormalPowerMode,
                         options.getPowerOffScreenOnClose());
             } catch (IOException e) {
                 Ln.e("Could not configure cleanup", e);
@@ -75,20 +72,18 @@ public final class Server {
         boolean sendDummyByte = options.getSendDummyByte();
         boolean forwardAudio = options.getForwardAudio();
 
-        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte,
-                forwardAudio)) {
+        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte, forwardAudio)) {
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             }
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(),
-                    options.getMaxFps(), codecOptions, options.getEncoderName(), options.getDownsizeOnError());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
+                    options.getEncoderName(), options.getDownsizeOnError());
 
             Thread controllerThread = null;
             Thread deviceMessageSenderThread = null;
             if (control) {
-                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(),
-                        options.getPowerOn());
+                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
 
                 // asynchronous
                 controllerThread = startController(controller);
@@ -113,7 +108,6 @@ public final class Server {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
             } finally {
-                Ln.i("Stopping");
                 initThread.interrupt();
                 if (controllerThread != null) {
                     controllerThread.interrupt();
@@ -168,8 +162,7 @@ public final class Server {
         String clientVersion = args[0];
         if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
             throw new IllegalArgumentException(
-                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "("
-                            + clientVersion + ")");
+                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
         Options options = new Options();
