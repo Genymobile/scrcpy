@@ -71,6 +71,13 @@ public final class Server {
         boolean control = options.getControl();
         boolean sendDummyByte = options.getSendDummyByte();
 
+        Workarounds.prepareMainLooper();
+        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            // <https://github.com/Genymobile/scrcpy/issues/240>
+            // <https://github.com/Genymobile/scrcpy/issues/2656>
+            Workarounds.fillAppInfo();
+        }
+
         try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();

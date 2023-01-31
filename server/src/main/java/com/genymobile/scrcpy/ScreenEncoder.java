@@ -67,17 +67,6 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     public void streamScreen(Device device, FileDescriptor fd) throws IOException {
-        Workarounds.prepareMainLooper();
-        if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            // <https://github.com/Genymobile/scrcpy/issues/240>
-            // <https://github.com/Genymobile/scrcpy/issues/2656>
-            Workarounds.fillAppInfo();
-        }
-
-        internalStreamScreen(device, fd);
-    }
-
-    private void internalStreamScreen(Device device, FileDescriptor fd) throws IOException {
         MediaCodec codec = createCodec(encoderName);
         MediaFormat format = createFormat(bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
