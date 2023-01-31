@@ -3,13 +3,11 @@ package com.genymobile.scrcpy;
 import android.annotation.SuppressLint;
 import android.app.Application;
 import android.app.Instrumentation;
-import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Looper;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 public final class Workarounds {
     private Workarounds() {
@@ -62,11 +60,7 @@ public final class Workarounds {
             mBoundApplicationField.setAccessible(true);
             mBoundApplicationField.set(activityThread, appBindData);
 
-            // Context ctx = activityThread.getSystemContext();
-            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
-            Context ctx = (Context) getSystemContextMethod.invoke(activityThread);
-
-            Application app = Instrumentation.newApplication(Application.class, ctx);
+            Application app = Instrumentation.newApplication(Application.class, FakeContext.get());
 
             // activityThread.mInitialApplication = app;
             Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
