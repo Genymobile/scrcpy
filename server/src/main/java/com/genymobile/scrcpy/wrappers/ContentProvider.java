@@ -1,9 +1,12 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.SettingsException;
 
 import android.annotation.SuppressLint;
+import android.content.AttributionSource;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -51,11 +54,10 @@ public class ContentProvider implements Closeable {
     @SuppressLint("PrivateApi")
     private Method getCallMethod() throws NoSuchMethodException {
         if (callMethod == null) {
-            try {
-                Class<?> attributionSourceClass = Class.forName("android.content.AttributionSource");
-                callMethod = provider.getClass().getMethod("call", attributionSourceClass, String.class, String.class, String.class, Bundle.class);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                callMethod = provider.getClass().getMethod("call", AttributionSource.class, String.class, String.class, String.class, Bundle.class);
                 callMethodVersion = 0;
-            } catch (NoSuchMethodException | ClassNotFoundException e0) {
+            } else {
                 // old versions
                 try {
                     callMethod = provider.getClass()
@@ -75,40 +77,29 @@ public class ContentProvider implements Closeable {
         return callMethod;
     }
 
-    @SuppressLint("PrivateApi")
-    private Object getAttributionSource()
-            throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        if (attributionSource == null) {
-            Class<?> cl = Class.forName("android.content.AttributionSource$Builder");
-            Object builder = cl.getConstructor(int.class).newInstance(ServiceManager.USER_ID);
-            cl.getDeclaredMethod("setPackageName", String.class).invoke(builder, ServiceManager.PACKAGE_NAME);
-            attributionSource = cl.getDeclaredMethod("build").invoke(builder);
-        }
-
-        return attributionSource;
-    }
-
     private Bundle call(String callMethod, String arg, Bundle extras)
-            throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         try {
             Method method = getCallMethod();
             Object[] args;
-            switch (callMethodVersion) {
-                case 0:
-                    args = new Object[]{getAttributionSource(), "settings", callMethod, arg, extras};
-                    break;
-                case 1:
-                    args = new Object[]{ServiceManager.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
-                    break;
-                case 2:
-                    args = new Object[]{ServiceManager.PACKAGE_NAME, "settings", callMethod, arg, extras};
-                    break;
-                default:
-                    args = new Object[]{ServiceManager.PACKAGE_NAME, callMethod, arg, extras};
-                    break;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callMethodVersion == 0) {
+                args = new Object[]{FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras};
+            } else {
+                switch (callMethodVersion) {
+                    case 1:
+                        args = new Object[]{ServiceManager.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
+                        break;
+                    case 2:
+                        args = new Object[]{ServiceManager.PACKAGE_NAME, "settings", callMethod, arg, extras};
+                        break;
+                    default:
+                        args = new Object[]{ServiceManager.PACKAGE_NAME, callMethod, arg, extras};
+                        break;
+                }
             }
             return (Bundle) method.invoke(provider, args);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException | InstantiationException e) {
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
             throw e;
         }
