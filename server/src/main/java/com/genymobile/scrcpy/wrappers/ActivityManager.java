@@ -5,6 +5,7 @@ import com.genymobile.scrcpy.Ln;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
+import android.os.Process;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -48,10 +49,10 @@ public class ActivityManager {
             Object[] args;
             if (getContentProviderExternalMethodNewVersion) {
                 // new version
-                args = new Object[]{name, ServiceManager.USER_ID, token, null};
+                args = new Object[]{name, Process.ROOT_UID, token, null};
             } else {
                 // old version
-                args = new Object[]{name, ServiceManager.USER_ID, token};
+                args = new Object[]{name, Process.ROOT_UID, token};
             }
             // ContentProviderHolder providerHolder = getContentProviderExternal(...);
             Object providerHolder = method.invoke(manager, args);

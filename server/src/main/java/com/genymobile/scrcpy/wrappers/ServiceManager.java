@@ -11,7 +11,6 @@ import java.lang.reflect.Method;
 public final class ServiceManager {
 
     public static final String PACKAGE_NAME = "com.android.shell";
-    public static final int USER_ID = 0;
 
     private static final Method GET_SERVICE_METHOD;
     static {
