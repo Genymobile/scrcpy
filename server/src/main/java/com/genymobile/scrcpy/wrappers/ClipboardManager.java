@@ -6,6 +6,7 @@ import android.content.ClipData;
 import android.content.IOnPrimaryClipChangedListener;
 import android.os.Build;
 import android.os.IInterface;
+import android.os.Process;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -61,9 +62,9 @@ public class ClipboardManager {
             return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME);
         }
         if (alternativeMethod) {
-            return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, null, Process.ROOT_UID);
         }
-        return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+        return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, Process.ROOT_UID);
     }
 
     private static void setPrimaryClip(Method method, boolean alternativeMethod, IInterface manager, ClipData clipData)
@@ -71,9 +72,9 @@ public class ClipboardManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, null, Process.ROOT_UID);
         } else {
-            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, Process.ROOT_UID);
         }
     }
 
@@ -108,9 +109,9 @@ public class ClipboardManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, null, Process.ROOT_UID);
         } else {
-            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, Process.ROOT_UID);
         }
     }
 
