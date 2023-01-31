@@ -66,6 +66,13 @@ public final class Server {
 
         Thread initThread = startInitThread(options);
 
+        Workarounds.prepareMainLooper();
+        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            // <https://github.com/Genymobile/scrcpy/issues/240>
+            // <https://github.com/Genymobile/scrcpy/issues/2656>
+            Workarounds.fillAppInfo();
+        }
+
         int uid = options.getUid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
