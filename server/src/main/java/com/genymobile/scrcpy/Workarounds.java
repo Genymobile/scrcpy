@@ -50,7 +50,7 @@ public final class Workarounds {
             Object appBindData = appBindDataConstructor.newInstance();
 
             ApplicationInfo applicationInfo = new ApplicationInfo();
-            applicationInfo.packageName = "com.genymobile.scrcpy";
+            applicationInfo.packageName = FakeContext.PACKAGE_NAME;
 
             // appBindData.appInfo = applicationInfo;
             Field appInfoField = appBindDataClass.getDeclaredField("appInfo");
