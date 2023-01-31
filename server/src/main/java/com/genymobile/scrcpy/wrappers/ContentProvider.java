@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.SettingsException;
 import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Process;
 
 import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
@@ -80,7 +81,7 @@ public class ContentProvider implements Closeable {
             throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         if (attributionSource == null) {
             Class<?> cl = Class.forName("android.content.AttributionSource$Builder");
-            Object builder = cl.getConstructor(int.class).newInstance(ServiceManager.USER_ID);
+            Object builder = cl.getConstructor(int.class).newInstance(Process.ROOT_UID);
             cl.getDeclaredMethod("setPackageName", String.class).invoke(builder, ServiceManager.PACKAGE_NAME);
             attributionSource = cl.getDeclaredMethod("build").invoke(builder);
         }
@@ -147,7 +148,7 @@ public class ContentProvider implements Closeable {
     public String getValue(String table, String key) throws SettingsException {
         String method = getGetMethod(table);
         Bundle arg = new Bundle();
-        arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
+        arg.putInt(CALL_METHOD_USER_KEY, Process.ROOT_UID);
         try {
             Bundle bundle = call(method, key, arg);
             if (bundle == null) {
@@ -163,7 +164,7 @@ public class ContentProvider implements Closeable {
     public void putValue(String table, String key, String value) throws SettingsException {
         String method = getPutMethod(table);
         Bundle arg = new Bundle();
-        arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
+        arg.putInt(CALL_METHOD_USER_KEY, Process.ROOT_UID);
         arg.putString(NAME_VALUE_TABLE_VALUE, value);
         try {
             call(method, key, arg);
