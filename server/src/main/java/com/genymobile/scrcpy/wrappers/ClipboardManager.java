@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Ln;
 
 import android.content.ClipData;
@@ -58,22 +59,22 @@ public class ClipboardManager {
     private static ClipData getPrimaryClip(Method method, boolean alternativeMethod, IInterface manager)
             throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME);
+            return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME);
         }
         if (alternativeMethod) {
-            return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
         }
-        return (ClipData) method.invoke(manager, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+        return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
     }
 
     private static void setPrimaryClip(Method method, boolean alternativeMethod, IInterface manager, ClipData clipData)
             throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME);
+            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
         } else {
-            method.invoke(manager, clipData, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
         }
     }
 
@@ -106,11 +107,11 @@ public class ClipboardManager {
     private static void addPrimaryClipChangedListener(Method method, boolean alternativeMethod, IInterface manager,
             IOnPrimaryClipChangedListener listener) throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
-            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME);
+            method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
         } else {
-            method.invoke(manager, listener, ServiceManager.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
         }
     }
 
