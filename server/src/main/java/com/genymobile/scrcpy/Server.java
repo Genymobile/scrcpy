@@ -79,16 +79,13 @@ public final class Server {
             ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
 
-            Thread controllerThread = null;
-            Thread deviceMessageSenderThread = null;
+            Controller controller = null;
             if (control) {
-                final Controller controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
+                controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
+                controller.start();
 
-                // asynchronous
-                controllerThread = startController(controller);
-                deviceMessageSenderThread = startDeviceMessageSender(controller.getSender());
-
-                device.setClipboardListener(text -> controller.getSender().pushClipboardText(text));
+                final Controller controllerRef = controller;
+                device.setClipboardListener(text -> controllerRef.getSender().pushClipboardText(text));
             }
 
             try {
@@ -99,11 +96,8 @@ public final class Server {
                 Ln.d("Screen streaming stopped");
             } finally {
                 initThread.interrupt();
-                if (controllerThread != null) {
-                    controllerThread.interrupt();
-                }
-                if (deviceMessageSenderThread != null) {
-                    deviceMessageSenderThread.interrupt();
+                if (controller != null) {
+                    controller.stop();
                 }
             }
         }
@@ -111,32 +105,6 @@ public final class Server {
 
     private static Thread startInitThread(final Options options) {
         Thread thread = new Thread(() -> initAndCleanUp(options));
-        thread.start();
-        return thread;
-    }
-
-    private static Thread startController(final Controller controller) {
-        Thread thread = new Thread(() -> {
-            try {
-                controller.control();
-            } catch (IOException e) {
-                // this is expected on close
-                Ln.d("Controller stopped");
-            }
-        });
-        thread.start();
-        return thread;
-    }
-
-    private static Thread startDeviceMessageSender(final DeviceMessageSender sender) {
-        Thread thread = new Thread(() -> {
-            try {
-                sender.loop();
-            } catch (IOException | InterruptedException e) {
-                // this is expected on close
-                Ln.d("Device message sender stopped");
-            }
-        });
         thread.start();
         return thread;
     }
