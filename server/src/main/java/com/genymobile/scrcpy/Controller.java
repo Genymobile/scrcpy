@@ -24,6 +24,8 @@ public class Controller {
 
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
+    private Thread thread;
+
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
@@ -62,7 +64,7 @@ public class Controller {
         }
     }
 
-    public void control() throws IOException {
+    private void control() throws IOException {
         // on start, power on the device
         if (powerOn && !Device.isScreenOn()) {
             device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
@@ -80,6 +82,27 @@ public class Controller {
         while (!Thread.currentThread().isInterrupted()) {
             handleEvent();
         }
+    }
+
+    public void start() {
+        thread = new Thread(() -> {
+            try {
+                control();
+            } catch (IOException e) {
+                // this is expected on close
+                Ln.d("Controller stopped");
+            }
+        });
+        thread.start();
+        sender.start();
+    }
+
+    public void stop() {
+        if (thread != null) {
+            thread.interrupt();
+            thread = null;
+        }
+        sender.stop();
     }
 
     public DeviceMessageSender getSender() {
