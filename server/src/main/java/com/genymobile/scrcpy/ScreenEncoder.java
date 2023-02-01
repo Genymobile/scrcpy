@@ -42,7 +42,6 @@ public class ScreenEncoder implements Device.RotationListener {
     private final int maxFps;
     private final boolean sendFrameMeta;
     private final boolean downsizeOnError;
-    private long ptsOrigin;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
@@ -207,10 +206,7 @@ public class ScreenEncoder implements Device.RotationListener {
         if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
             pts = PACKET_FLAG_CONFIG; // non-media data packet
         } else {
-            if (ptsOrigin == 0) {
-                ptsOrigin = bufferInfo.presentationTimeUs;
-            }
-            pts = bufferInfo.presentationTimeUs - ptsOrigin;
+            pts = bufferInfo.presentationTimeUs;
             if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
                 pts |= PACKET_FLAG_KEY_FRAME;
             }

@@ -11,6 +11,8 @@
 /** Downcast packet_sink to recorder */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_recorder, packet_sink)
 
+#define SC_PTS_ORIGIN_NONE UINT64_C(-1)
+
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
 static const AVOutputFormat *
@@ -169,6 +171,18 @@ run_recorder(void *data) {
 
         sc_mutex_unlock(&recorder->mutex);
 
+        if (recorder->pts_origin == SC_PTS_ORIGIN_NONE
+                && rec->packet->pts != AV_NOPTS_VALUE) {
+            // First PTS received
+            recorder->pts_origin = rec->packet->pts;
+        }
+
+        if (rec->packet->pts != AV_NOPTS_VALUE) {
+            // Set PTS relatve to the origin
+            rec->packet->pts -= recorder->pts_origin;
+            rec->packet->dts = rec->packet->pts;
+        }
+
         // recorder->previous is only written from this thread, no need to lock
         struct sc_record_packet *previous = recorder->previous;
         recorder->previous = rec;
@@ -243,6 +257,7 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     recorder->failed = false;
     recorder->header_written = false;
     recorder->previous = NULL;
+    recorder->pts_origin = SC_PTS_ORIGIN_NONE;
 
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
