@@ -28,6 +28,8 @@ struct sc_recorder {
     struct sc_size declared_frame_size;
     bool header_written;
 
+    uint64_t pts_origin;
+
     sc_thread thread;
     sc_mutex mutex;
     sc_cond queue_cond;
