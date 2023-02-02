@@ -73,8 +73,14 @@ public final class Server {
 
         Workarounds.prepareMainLooper();
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            // <https://github.com/Genymobile/scrcpy/issues/240>
-            // <https://github.com/Genymobile/scrcpy/issues/2656>
+            // Workarounds must be applied for Meizu phones:
+            //  - <https://github.com/Genymobile/scrcpy/issues/240>
+            //  - <https://github.com/Genymobile/scrcpy/issues/365>
+            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
+            //
+            // But only apply when strictly necessary, since workarounds can cause other issues:
+            //  - <https://github.com/Genymobile/scrcpy/issues/940>
+            //  - <https://github.com/Genymobile/scrcpy/issues/994>
             Workarounds.fillAppInfo();
         }
 
