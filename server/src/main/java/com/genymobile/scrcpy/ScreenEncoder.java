@@ -12,7 +12,6 @@ import android.os.IBinder;
 import android.os.SystemClock;
 import android.view.Surface;
 
-import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -22,6 +21,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenEncoder implements Device.RotationListener {
 
+    public interface Callbacks {
+        void onPacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException;
+    }
+
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
     private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
@@ -30,25 +33,18 @@ public class ScreenEncoder implements Device.RotationListener {
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
     private static final int MAX_CONSECUTIVE_ERRORS = 3;
 
-    private static final long PACKET_FLAG_CONFIG = 1L << 63;
-    private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
-
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
-    private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int bitRate;
     private final int maxFps;
-    private final boolean sendFrameMeta;
     private final boolean downsizeOnError;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
-    public ScreenEncoder(boolean sendFrameMeta, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
-            boolean downsizeOnError) {
-        this.sendFrameMeta = sendFrameMeta;
+    public ScreenEncoder(int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
@@ -65,7 +61,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, FileDescriptor fd) throws IOException {
+    public void streamScreen(Device device, Callbacks callbacks) throws IOException {
         MediaCodec codec = createCodec(encoderName);
         MediaFormat format = createFormat(bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
@@ -94,7 +90,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
                     codec.start();
 
-                    alive = encode(codec, fd);
+                    alive = encode(codec, callbacks);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
@@ -163,7 +159,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return 0;
     }
 
-    private boolean encode(MediaCodec codec, FileDescriptor fd) throws IOException {
+    private boolean encode(MediaCodec codec, Callbacks callbacks) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
@@ -179,16 +175,14 @@ public class ScreenEncoder implements Device.RotationListener {
                 if (outputBufferId >= 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
 
-                    if (sendFrameMeta) {
-                        writeFrameMeta(fd, bufferInfo, codecBuffer.remaining());
-                    }
-
-                    IO.writeFully(fd, codecBuffer);
-                    if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) == 0) {
+                    boolean isConfig = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
+                    if (!isConfig) {
                         // If this is not a config packet, then it contains a frame
                         firstFrameSent = true;
                         consecutiveErrors = 0;
                     }
+
+                    callbacks.onPacket(codecBuffer, bufferInfo);
                 }
             } finally {
                 if (outputBufferId >= 0) {
@@ -198,25 +192,6 @@ public class ScreenEncoder implements Device.RotationListener {
         }
 
         return !eof;
-    }
-
-    private void writeFrameMeta(FileDescriptor fd, MediaCodec.BufferInfo bufferInfo, int packetSize) throws IOException {
-        headerBuffer.clear();
-
-        long pts;
-        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
-            pts = PACKET_FLAG_CONFIG; // non-media data packet
-        } else {
-            pts = bufferInfo.presentationTimeUs;
-            if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
-                pts |= PACKET_FLAG_KEY_FRAME;
-            }
-        }
-
-        headerBuffer.putLong(pts);
-        headerBuffer.putInt(packetSize);
-        headerBuffer.flip();
-        IO.writeFully(fd, headerBuffer);
     }
 
     private static MediaCodecInfo[] listEncoders() {

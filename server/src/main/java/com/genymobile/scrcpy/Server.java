@@ -89,8 +89,8 @@ public final class Server {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             }
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getSendFrameMeta(), options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName(), options.getDownsizeOnError());
+            ScreenEncoder screenEncoder = new ScreenEncoder(options.getBitRate(), options.getMaxFps(), codecOptions, options.getEncoderName(),
+                    options.getDownsizeOnError());
 
             Controller controller = null;
             if (control) {
@@ -103,7 +103,8 @@ public final class Server {
 
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, connection.getVideoFd());
+                VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), options.getSendFrameMeta());
+                screenEncoder.streamScreen(device, videoStreamer);
             } catch (IOException e) {
                 // this is expected on close
                 Ln.d("Screen streaming stopped");
