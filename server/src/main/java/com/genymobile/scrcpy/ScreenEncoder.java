@@ -169,12 +169,13 @@ public class ScreenEncoder implements Device.RotationListener {
 
         while (!consumeRotationChange() && !eof) {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
-            eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
             try {
                 if (consumeRotationChange()) {
                     // must restart encoding with new size
                     break;
                 }
+
+                eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                 if (outputBufferId >= 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
 
