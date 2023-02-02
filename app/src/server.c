@@ -8,6 +8,7 @@
 #include <SDL2/SDL_platform.h>
 
 #include "adb/adb.h"
+#include "util/binary.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/net_intr.h"
@@ -398,10 +399,9 @@ device_read_info(struct sc_intr *intr, sc_socket device_socket,
     buf[SC_DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
     memcpy(info->device_name, (char *) buf, sizeof(info->device_name));
 
-    info->frame_size.width = (buf[SC_DEVICE_NAME_FIELD_LENGTH] << 8)
-                           | buf[SC_DEVICE_NAME_FIELD_LENGTH + 1];
-    info->frame_size.height = (buf[SC_DEVICE_NAME_FIELD_LENGTH + 2] << 8)
-                            | buf[SC_DEVICE_NAME_FIELD_LENGTH + 3];
+    unsigned char *fields = &buf[SC_DEVICE_NAME_FIELD_LENGTH];
+    info->frame_size.width = sc_read16be(fields);
+    info->frame_size.height = sc_read16be(&fields[2]);
     return true;
 }
 
