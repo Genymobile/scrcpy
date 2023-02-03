@@ -59,6 +59,7 @@ enum {
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
     OPT_CODEC,
+    OPT_NO_AUDIO,
 };
 
 struct sc_option {
@@ -266,6 +267,11 @@ static const struct sc_option options[] = {
                 "other dimension is computed so that the device aspect-ratio "
                 "is preserved.\n"
                 "Default is 0 (unlimited).",
+    },
+    {
+        .longopt_id = OPT_NO_AUDIO,
+        .longopt = "no-audio",
+        .text = "Disable audio forwarding.",
     },
     {
         .longopt_id = OPT_NO_CLEANUP,
@@ -1629,6 +1635,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_DOWNSIZE_ON_ERROR:
                 opts->downsize_on_error = false;
+                break;
+            case OPT_NO_AUDIO:
+                opts->audio = false;
                 break;
             case OPT_NO_CLEANUP:
                 opts->cleanup = false;
