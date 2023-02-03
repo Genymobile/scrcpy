@@ -93,7 +93,7 @@ public final class AudioEncoder {
             private boolean ended;
 
             private void notifyEnded() {
-                assert(!ended);
+                assert !ended;
                 ended = true;
                 endSemaphore.release();
             }
