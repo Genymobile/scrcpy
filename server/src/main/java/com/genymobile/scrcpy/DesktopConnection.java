@@ -58,34 +58,34 @@ public final class DesktopConnection implements Closeable {
     public static DesktopConnection open(int scid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
         String socketName = getSocketName(scid);
 
-        LocalSocket videoSocket;
+        LocalSocket videoSocket = null;
         LocalSocket controlSocket = null;
-        if (tunnelForward) {
-            try (LocalServerSocket localServerSocket = new LocalServerSocket(socketName)) {
-                videoSocket = localServerSocket.accept();
-                if (sendDummyByte) {
-                    // send one byte so the client may read() to detect a connection error
-                    videoSocket.getOutputStream().write(0);
-                }
-                if (control) {
-                    try {
+        try {
+            if (tunnelForward) {
+                try (LocalServerSocket localServerSocket = new LocalServerSocket(socketName)) {
+                    videoSocket = localServerSocket.accept();
+                    if (sendDummyByte) {
+                        // send one byte so the client may read() to detect a connection error
+                        videoSocket.getOutputStream().write(0);
+                    }
+                    if (control) {
                         controlSocket = localServerSocket.accept();
-                    } catch (IOException | RuntimeException e) {
-                        videoSocket.close();
-                        throw e;
                     }
                 }
-            }
-        } else {
-            videoSocket = connect(socketName);
-            if (control) {
-                try {
+            } else {
+                videoSocket = connect(socketName);
+                if (control) {
                     controlSocket = connect(socketName);
-                } catch (IOException | RuntimeException e) {
-                    videoSocket.close();
-                    throw e;
                 }
             }
+        } catch (IOException | RuntimeException e) {
+            if (videoSocket != null) {
+                videoSocket.close();
+            }
+            if (controlSocket != null) {
+                controlSocket.close();
+            }
+            throw e;
         }
 
         return new DesktopConnection(videoSocket, controlSocket);
