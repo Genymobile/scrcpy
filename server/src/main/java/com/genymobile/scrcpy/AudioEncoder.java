@@ -142,7 +142,7 @@ public final class AudioEncoder {
                 try {
                     boolean isConfig = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
                     long pts = bufferInfo.presentationTimeUs;
-                    Ln.i("Audio packet: pts=" + pts  + " " + codecBuffer.remaining() + " bytes");
+                    Ln.i("Audio packet: pts=" + pts + " " + codecBuffer.remaining() + " bytes");
                 } finally {
                     codec.releaseOutputBuffer(index, false);
                 }
