@@ -87,6 +87,7 @@ public final class AudioEncoder {
         class AudioEncoderCallbacks extends MediaCodec.Callback {
 
             private final AudioTimestamp timestamp = new AudioTimestamp();
+            private long previousPts;
             private long nextPts;
             private boolean eofSignaled;
             private boolean ended;
@@ -129,7 +130,18 @@ public final class AudioEncoder {
                     eofSignaled = true;
                 }
 
+                if (previousPts != 0 && pts < previousPts) {
+                    // Audio PTS may come from two sources:
+                    //  - recorder.getTimestamp() if the call works;
+                    //  - an estimation from the previous PTS and the packet size as a fallback.
+                    //
+                    // Therefore, the property that PTS are monotonically increasing is no guaranteed in corner cases, so enforce it.
+                    pts = previousPts + 1;
+                }
+
                 codec.queueInputBuffer(index, 0, r, pts, flags);
+
+                previousPts = pts;
             }
 
             @Override
