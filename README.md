@@ -252,10 +252,19 @@ This affects recording orientation.
 The [window may also be rotated](#rotation) independently.
 
 
-#### Encoder
+#### Codec
 
-Some devices have more than one encoder, and some of them may cause issues or
-crash. It is possible to select a different encoder:
+The video codec can be selected:
+
+```bash
+scrcpy --codec=h264  # default
+```
+
+
+##### Encoder
+
+Some devices have more than one encoder for a specific codec, and some of them
+may cause issues or crash. It is possible to select a different encoder:
 
 ```bash
 scrcpy --encoder=OMX.qcom.video.encoder.avc
@@ -265,7 +274,8 @@ To list the available encoders, you can pass an invalid encoder name; the
 error will give the available encoders:
 
 ```bash
-scrcpy --encoder=_
+scrcpy --encoder=_               # for the default codec
+scrcpy --codec=h264 --encoder=_  # for a specific codec
 ```
 
 ### Capture

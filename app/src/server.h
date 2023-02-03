@@ -25,6 +25,7 @@ struct sc_server_params {
     uint32_t uid;
     const char *req_serial;
     enum sc_log_level log_level;
+    enum sc_codec codec;
     const char *crop;
     const char *codec_options;
     const char *encoder_name;

@@ -13,6 +13,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .v4l2_device = NULL,
 #endif
     .log_level = SC_LOG_LEVEL_INFO,
+    .codec = SC_CODEC_H264,
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT,
     .port_range = {

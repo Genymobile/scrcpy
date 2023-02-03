@@ -21,6 +21,13 @@ public final class VideoStreamer implements ScreenEncoder.Callbacks {
         this.sendFrameMeta = sendFrameMeta;
     }
 
+    public void writeHeader(int codecId) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(4);
+        buffer.putInt(codecId);
+        buffer.flip();
+        IO.writeFully(fd, buffer);
+    }
+
     @Override
     public void onPacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
         if (sendFrameMeta) {

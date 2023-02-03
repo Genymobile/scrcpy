@@ -57,6 +57,7 @@
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
+#define OPT_CODEC                  1040
 
 struct sc_option {
     char shortopt;
@@ -104,6 +105,12 @@ static const struct sc_option options[] = {
         .text = "Encode the video at the gitven bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is " STR(DEFAULT_BIT_RATE) ".",
+    },
+    {
+        .longopt_id = OPT_CODEC,
+        .longopt = "codec",
+        .argdesc = "name",
+        .text = "Select a video codec (h264).",
     },
     {
         .longopt_id = OPT_CODEC_OPTIONS,
@@ -1378,6 +1385,16 @@ guess_record_format(const char *filename) {
 }
 
 static bool
+parse_codec(const char *optarg, enum sc_codec *codec) {
+    if (!strcmp(optarg, "h264")) {
+        *codec = SC_CODEC_H264;
+        return true;
+    }
+    LOGE("Unsupported codec: %s (expected h264)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -1609,6 +1626,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;
+                break;
+            case OPT_CODEC:
+                if (!parse_codec(optarg, &opts->codec)) {
+                    return false;
+                }
                 break;
             case OPT_OTG:
 #ifdef HAVE_USB

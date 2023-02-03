@@ -23,6 +23,10 @@ enum sc_record_format {
     SC_RECORD_FORMAT_MKV,
 };
 
+enum sc_codec {
+    SC_CODEC_H264,
+};
+
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
@@ -93,6 +97,7 @@ struct scrcpy_options {
     const char *v4l2_device;
 #endif
     enum sc_log_level log_level;
+    enum sc_codec codec;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;

@@ -5,9 +5,12 @@ import android.graphics.Rect;
 import java.util.List;
 
 public class Options {
+    private static final String VIDEO_CODEC_H264 = "h264";
+
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int uid = -1; // 31-bit non-negative value, or -1
     private int maxSize;
+    private VideoCodec codec = VideoCodec.H264;
     private int bitRate = 8000000;
     private int maxFps;
     private int lockVideoOrientation = -1;
@@ -29,6 +32,7 @@ public class Options {
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
+    private boolean sendCodecId = true; // write the codec ID (4 bytes) before the stream
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -52,6 +56,14 @@ public class Options {
 
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
+    }
+
+    public VideoCodec getCodec() {
+        return codec;
+    }
+
+    public void setCodec(VideoCodec codec) {
+        this.codec = codec;
     }
 
     public int getBitRate() {
@@ -204,5 +216,13 @@ public class Options {
 
     public void setSendDummyByte(boolean sendDummyByte) {
         this.sendDummyByte = sendDummyByte;
+    }
+
+    public boolean getSendCodecId() {
+        return sendCodecId;
+    }
+
+    public void setSendCodecId(boolean sendCodecId) {
+        this.sendCodecId = sendCodecId;
     }
 }
