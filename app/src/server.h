@@ -70,6 +70,7 @@ struct sc_server {
     struct sc_adb_tunnel tunnel;
 
     sc_socket video_socket;
+    sc_socket audio_socket;
     sc_socket control_socket;
 
     const struct sc_server_callbacks *cbs;
