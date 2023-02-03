@@ -70,7 +70,6 @@ public final class AudioEncoder {
     }
 
 
-
     @TargetApi(Build.VERSION_CODES.M)
     public void start() throws IOException {
         mediaCodec = MediaCodec.createEncoderByType(MIMETYPE); // may throw IOException
