@@ -391,6 +391,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     server->stopped = false;
 
     server->video_socket = SC_SOCKET_NONE;
+    server->audio_socket = SC_SOCKET_NONE;
     server->control_socket = SC_SOCKET_NONE;
 
     sc_adb_tunnel_init(&server->tunnel);
@@ -434,14 +435,24 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     const char *serial = server->serial;
     assert(serial);
 
+    bool audio = server->params.audio;
     bool control = server->params.control;
 
     sc_socket video_socket = SC_SOCKET_NONE;
+    sc_socket audio_socket = SC_SOCKET_NONE;
     sc_socket control_socket = SC_SOCKET_NONE;
     if (!tunnel->forward) {
         video_socket = net_accept_intr(&server->intr, tunnel->server_socket);
         if (video_socket == SC_SOCKET_NONE) {
             goto fail;
+        }
+
+        if (audio) {
+            audio_socket =
+                net_accept_intr(&server->intr, tunnel->server_socket);
+            if (audio_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
         }
 
         if (control) {
@@ -470,6 +481,18 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             goto fail;
         }
 
+        if (audio) {
+            audio_socket = net_socket();
+            if (audio_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
+            bool ok = net_connect_intr(&server->intr, audio_socket, tunnel_host,
+                                       tunnel_port);
+            if (!ok) {
+                goto fail;
+            }
+        }
+
         if (control) {
             // we know that the device is listening, we don't need several
             // attempts
@@ -496,9 +519,11 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     }
 
     assert(video_socket != SC_SOCKET_NONE);
+    assert(!audio || audio_socket != SC_SOCKET_NONE);
     assert(!control || control_socket != SC_SOCKET_NONE);
 
     server->video_socket = video_socket;
+    server->audio_socket = audio_socket;
     server->control_socket = control_socket;
 
     return true;
@@ -507,6 +532,12 @@ fail:
     if (video_socket != SC_SOCKET_NONE) {
         if (!net_close(video_socket)) {
             LOGW("Could not close video socket");
+        }
+    }
+
+    if (audio_socket != SC_SOCKET_NONE) {
+        if (!net_close(audio_socket)) {
+            LOGW("Could not close audio socket");
         }
     }
 
@@ -860,6 +891,11 @@ run_server(void *data) {
     assert(server->video_socket != SC_SOCKET_NONE);
     net_interrupt(server->video_socket);
 
+    if (server->audio_socket != SC_SOCKET_NONE) {
+        // There is no audio_socket if --no-audio is set
+        net_interrupt(server->audio_socket);
+    }
+
     if (server->control_socket != SC_SOCKET_NONE) {
         // There is no control_socket if --no-control is set
         net_interrupt(server->control_socket);
@@ -923,6 +959,9 @@ void
 sc_server_destroy(struct sc_server *server) {
     if (server->video_socket != SC_SOCKET_NONE) {
         net_close(server->video_socket);
+    }
+    if (server->audio_socket != SC_SOCKET_NONE) {
+        net_close(server->audio_socket);
     }
     if (server->control_socket != SC_SOCKET_NONE) {
         net_close(server->control_socket);
