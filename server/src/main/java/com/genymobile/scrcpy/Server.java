@@ -169,6 +169,10 @@ public final class Server {
                     Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
                     options.setLogLevel(level);
                     break;
+                case "audio":
+                    boolean audio = Boolean.parseBoolean(value);
+                    options.setAudio(audio);
+                    break;
                 case "codec":
                     VideoCodec codec = VideoCodec.findByName(value);
                     if (codec == null) {
