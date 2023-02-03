@@ -8,6 +8,7 @@ public class Options {
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int scid = -1; // 31-bit non-negative value, or -1
+    private boolean audio = true;
     private int maxSize;
     private VideoCodec codec = VideoCodec.H264;
     private int bitRate = 8000000;
@@ -47,6 +48,14 @@ public class Options {
 
     public void setScid(int scid) {
         this.scid = scid;
+    }
+
+    public boolean getAudio() {
+        return audio;
+    }
+
+    public void setAudio(boolean audio) {
+        this.audio = audio;
     }
 
     public int getMaxSize() {
