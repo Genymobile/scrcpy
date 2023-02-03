@@ -20,6 +20,9 @@ public final class DesktopConnection implements Closeable {
     private final LocalSocket videoSocket;
     private final FileDescriptor videoFd;
 
+    private final LocalSocket audioSocket;
+    private final FileDescriptor audioFd;
+
     private final LocalSocket controlSocket;
     private final InputStream controlInputStream;
     private final OutputStream controlOutputStream;
@@ -27,9 +30,10 @@ public final class DesktopConnection implements Closeable {
     private final ControlMessageReader reader = new ControlMessageReader();
     private final DeviceMessageWriter writer = new DeviceMessageWriter();
 
-    private DesktopConnection(LocalSocket videoSocket, LocalSocket controlSocket) throws IOException {
+    private DesktopConnection(LocalSocket videoSocket, LocalSocket audioSocket, LocalSocket controlSocket) throws IOException {
         this.videoSocket = videoSocket;
         this.controlSocket = controlSocket;
+        this.audioSocket = audioSocket;
         if (controlSocket != null) {
             controlInputStream = controlSocket.getInputStream();
             controlOutputStream = controlSocket.getOutputStream();
@@ -38,6 +42,7 @@ public final class DesktopConnection implements Closeable {
             controlOutputStream = null;
         }
         videoFd = videoSocket.getFileDescriptor();
+        audioFd = audioSocket != null ? audioSocket.getFileDescriptor() : null;
     }
 
     private static LocalSocket connect(String abstractName) throws IOException {
@@ -55,10 +60,11 @@ public final class DesktopConnection implements Closeable {
         return SOCKET_NAME_PREFIX + String.format("_%08x", scid);
     }
 
-    public static DesktopConnection open(int scid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
+    public static DesktopConnection open(int scid, boolean tunnelForward, boolean audio, boolean control, boolean sendDummyByte) throws IOException {
         String socketName = getSocketName(scid);
 
         LocalSocket videoSocket = null;
+        LocalSocket audioSocket = null;
         LocalSocket controlSocket = null;
         try {
             if (tunnelForward) {
@@ -68,12 +74,18 @@ public final class DesktopConnection implements Closeable {
                         // send one byte so the client may read() to detect a connection error
                         videoSocket.getOutputStream().write(0);
                     }
+                    if (audio) {
+                        audioSocket = localServerSocket.accept();
+                    }
                     if (control) {
                         controlSocket = localServerSocket.accept();
                     }
                 }
             } else {
                 videoSocket = connect(socketName);
+                if (audio) {
+                    audioSocket = connect(socketName);
+                }
                 if (control) {
                     controlSocket = connect(socketName);
                 }
@@ -82,19 +94,27 @@ public final class DesktopConnection implements Closeable {
             if (videoSocket != null) {
                 videoSocket.close();
             }
+            if (audioSocket != null) {
+                audioSocket.close();
+            }
             if (controlSocket != null) {
                 controlSocket.close();
             }
             throw e;
         }
 
-        return new DesktopConnection(videoSocket, controlSocket);
+        return new DesktopConnection(videoSocket, audioSocket, controlSocket);
     }
 
     public void close() throws IOException {
         videoSocket.shutdownInput();
         videoSocket.shutdownOutput();
         videoSocket.close();
+        if (audioSocket != null) {
+            audioSocket.shutdownInput();
+            audioSocket.shutdownOutput();
+            audioSocket.close();
+        }
         if (controlSocket != null) {
             controlSocket.shutdownInput();
             controlSocket.shutdownOutput();
@@ -119,6 +139,10 @@ public final class DesktopConnection implements Closeable {
 
     public FileDescriptor getVideoFd() {
         return videoFd;
+    }
+
+    public FileDescriptor getAudioFd() {
+        return audioFd;
     }
 
     public ControlMessage receiveControlMessage() throws IOException {

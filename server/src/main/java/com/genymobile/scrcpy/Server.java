@@ -68,6 +68,7 @@ public final class Server {
         int scid = options.getScid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
+        boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
         Workarounds.prepareMainLooper();
@@ -85,7 +86,7 @@ public final class Server {
 
         Controller controller = null;
 
-        try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, control, sendDummyByte)) {
+        try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
             VideoCodec codec = options.getCodec();
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
