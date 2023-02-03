@@ -26,6 +26,7 @@ enum sc_record_format {
 enum sc_codec {
     SC_CODEC_H264,
     SC_CODEC_H265,
+    SC_CODEC_AV1,
 };
 
 enum sc_lock_video_orientation {

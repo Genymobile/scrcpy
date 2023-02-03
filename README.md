@@ -254,12 +254,13 @@ The [window may also be rotated](#rotation) independently.
 
 #### Codec
 
-The video codec can be selected. The possible values are `h264` (default) and
-`h265`:
+The video codec can be selected. The possible values are `h264` (default),
+`h265` and `av1`:
 
 ```bash
 scrcpy --codec=h264  # default
 scrcpy --codec=h265
+scrcpy --codec=av1
 ```
 
 
