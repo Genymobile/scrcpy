@@ -38,6 +38,7 @@ struct sc_server_params {
     int8_t lock_video_orientation;
     bool control;
     uint32_t display_id;
+    bool audio;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;
