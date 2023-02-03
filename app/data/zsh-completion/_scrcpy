@@ -29,6 +29,7 @@ arguments=(
     '--max-fps=[Limit the frame rate of screen capture]'
     {-M,--hid-mouse}'[Simulate a physical mouse by using HID over AOAv2]'
     {-m,--max-size=}'[Limit both the width and height of the video to value]'
+    '--no-audio[Disable audio forwarding]'
     '--no-cleanup[Disable device cleanup actions on exit]'
     '--no-clipboard-autosync[Disable automatic clipboard synchronization]'
     '--no-downsize-on-error[Disable lowering definition on MediaCodec error]'
