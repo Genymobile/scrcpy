@@ -26,7 +26,7 @@ Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are 
 Default is 8000000.
 
 .TP
-.BI "\-\-codec\-options " key[:type]=value[,...]
+.BI "\-\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
 Set a list of comma-separated key:type=value options for the device encoder.
 
 The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
@@ -117,7 +117,7 @@ Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+S
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
 
 .TP
-.BI "\-\-lock\-video\-orientation[=value]
+\fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
 Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees rotation counterclockwise.
 
 Default is "unlocked".
@@ -199,7 +199,7 @@ It may only work over USB.
 See \fB\-\-hid\-keyboard\fR and \fB\-\-hid\-mouse\fR.
 
 .TP
-.BI "\-p, \-\-port " port[:port]
+.BI "\-p, \-\-port " port\fR[:\fIport\fR]
 Set the TCP port (range) used by the client to listen.
 
 Default is 27183:27199.
@@ -260,7 +260,7 @@ Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each incre
 The device serial number. Mandatory only if several devices are connected to adb.
 
 .TP
-.BI "\-\-shortcut\-mod " key[+...]][,...]
+.BI "\-\-shortcut\-mod " key\fR[+...]][,...]
 Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lsuper" and "rsuper".
 
 A shortcut can consist in several keys, separated by '+'. Several shortcuts can be specified, separated by ','.
@@ -270,7 +270,7 @@ For example, to use either LCtrl+LAlt or LSuper for scrcpy shortcuts, pass "lctr
 Default is "lalt,lsuper" (left-Alt or left-Super).
 
 .TP
-.BI "\-\-tcpip[=ip[:port]]
+.BI "\-\-tcpip\fR[=\fIip\fR[:\fIport\fR]]
 Configure and reconnect the device over TCP/IP.
 
 If a destination address is provided, then scrcpy connects to this address before starting. The device must listen on the given TCP port (default is 5555).
