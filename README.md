@@ -254,10 +254,12 @@ The [window may also be rotated](#rotation) independently.
 
 #### Codec
 
-The video codec can be selected:
+The video codec can be selected. The possible values are `h264` (default) and
+`h265`:
 
 ```bash
 scrcpy --codec=h264  # default
+scrcpy --codec=h265
 ```
 
 
@@ -275,7 +277,7 @@ error will give the available encoders:
 
 ```bash
 scrcpy --encoder=_               # for the default codec
-scrcpy --codec=h264 --encoder=_  # for a specific codec
+scrcpy --codec=h265 --encoder=_  # for a specific codec
 ```
 
 ### Capture
