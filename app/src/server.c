@@ -217,6 +217,9 @@ execute_server(struct sc_server *server,
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
 
+    if (!params->audio) {
+        ADD_PARAM("audio=false");
+    }
     if (params->codec != SC_CODEC_H264) {
         ADD_PARAM("codec=%s", sc_server_get_codec_name(params->codec));
     }
