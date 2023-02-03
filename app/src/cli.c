@@ -110,7 +110,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CODEC,
         .longopt = "codec",
         .argdesc = "name",
-        .text = "Select a video codec (h264 or h265).",
+        .text = "Select a video codec (h264, h265 or av1).",
     },
     {
         .longopt_id = OPT_CODEC_OPTIONS,
@@ -1394,7 +1394,11 @@ parse_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_H265;
         return true;
     }
-    LOGE("Unsupported codec: %s (expected h264 or h265)", optarg);
+    if (!strcmp(optarg, "av1")) {
+        *codec = SC_CODEC_AV1;
+        return true;
+    }
+    LOGE("Unsupported codec: %s (expected h264, h265 or av1)", optarg);
     return false;
 }
 
@@ -1742,6 +1746,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                  opts->record_filename);
             return false;
         }
+    }
+
+    if (opts->record_format == SC_RECORD_FORMAT_MP4
+            && opts->codec == SC_CODEC_AV1) {
+        LOGE("Could not mux AV1 stream into MP4 container "
+             "(record to mkv or select another video codec)");
+        return false;
     }
 
     if (!opts->control) {
