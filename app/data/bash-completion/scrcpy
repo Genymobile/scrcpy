@@ -23,6 +23,7 @@ _scrcpy() {
         --max-fps=
         -M --hid-mouse
         -m --max-size=
+        --no-audio
         --no-cleanup
         --no-clipboard-autosync
         --no-downsize-on-error
