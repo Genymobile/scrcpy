@@ -85,12 +85,13 @@ public final class Server {
         }
 
         try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte)) {
+            VideoCodec codec = options.getCodec();
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             }
-            ScreenEncoder screenEncoder = new ScreenEncoder(options.getBitRate(), options.getMaxFps(), codecOptions, options.getEncoderName(),
-                    options.getDownsizeOnError());
+            ScreenEncoder screenEncoder = new ScreenEncoder(codec.getMimeType(), options.getBitRate(), options.getMaxFps(), codecOptions,
+                    options.getEncoderName(), options.getDownsizeOnError());
 
             Controller controller = null;
             if (control) {
@@ -104,6 +105,9 @@ public final class Server {
             try {
                 // synchronous
                 VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), options.getSendFrameMeta());
+                if (options.getSendCodecId()) {
+                    videoStreamer.writeHeader(codec.getId());
+                }
                 screenEncoder.streamScreen(device, videoStreamer);
             } catch (IOException e) {
                 // this is expected on close
@@ -155,6 +159,13 @@ public final class Server {
                 case "log_level":
                     Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
                     options.setLogLevel(level);
+                    break;
+                case "codec":
+                    VideoCodec codec = VideoCodec.findByName(value);
+                    if (codec == null) {
+                        throw new IllegalArgumentException("Video codec " + value + " not supported");
+                    }
+                    options.setCodec(codec);
                     break;
                 case "max_size":
                     int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
@@ -237,12 +248,17 @@ public final class Server {
                     boolean sendDummyByte = Boolean.parseBoolean(value);
                     options.setSendDummyByte(sendDummyByte);
                     break;
+                case "send_codec_id":
+                    boolean sendCodecId = Boolean.parseBoolean(value);
+                    options.setSendCodecId(sendCodecId);
+                    break;
                 case "raw_video_stream":
                     boolean rawVideoStream = Boolean.parseBoolean(value);
                     if (rawVideoStream) {
                         options.setSendDeviceMeta(false);
                         options.setSendFrameMeta(false);
                         options.setSendDummyByte(false);
+                        options.setSendCodecId(false);
                     }
                     break;
                 default:

@@ -17,6 +17,25 @@
 
 #define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_KEY_FRAME - 1)
 
+static enum AVCodecID
+sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
+    uint8_t data[4];
+    ssize_t r = net_recv_all(demuxer->socket, data, 4);
+    if (r < 4) {
+        return false;
+    }
+
+#define SC_CODEC_ID_H264 UINT32_C(0x68323634) // "h264" in ASCII
+    uint32_t codec_id = sc_read32be(data);
+    switch (codec_id) {
+        case SC_CODEC_ID_H264:
+            return AV_CODEC_ID_H264;
+        default:
+            LOGE("Unknown codec id 0x%08" PRIx32, codec_id);
+            return AV_CODEC_ID_NONE;
+    }
+}
+
 static bool
 sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // The video stream contains raw packets, without time information. When we
@@ -171,7 +190,13 @@ static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
 
-    const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    enum AVCodecID codec_id = sc_demuxer_recv_codec_id(demuxer);
+    if (codec_id == AV_CODEC_ID_NONE) {
+        // Error already logged
+        goto end;
+    }
+
+    const AVCodec *codec = avcodec_find_decoder(codec_id);
     if (!codec) {
         LOGE("H.264 decoder not found");
         goto end;
@@ -188,7 +213,7 @@ run_demuxer(void *data) {
         goto finally_free_codec_ctx;
     }
 
-    demuxer->parser = av_parser_init(AV_CODEC_ID_H264);
+    demuxer->parser = av_parser_init(codec_id);
     if (!demuxer->parser) {
         LOGE("Could not initialize parser");
         goto finally_close_sinks;

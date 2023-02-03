@@ -156,6 +156,16 @@ sc_server_sleep(struct sc_server *server, sc_tick deadline) {
     return !stopped;
 }
 
+static const char *
+sc_server_get_codec_name(enum sc_codec codec) {
+    switch (codec) {
+        case SC_CODEC_H264:
+            return "h264";
+        default:
+            return NULL;
+    }
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
@@ -203,6 +213,9 @@ execute_server(struct sc_server *server,
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
 
+    if (params->codec != SC_CODEC_H264) {
+        ADD_PARAM("codec=%s", sc_server_get_codec_name(params->codec));
+    }
     if (params->max_size) {
         ADD_PARAM("max_size=%" PRIu16, params->max_size);
     }

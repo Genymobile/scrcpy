@@ -35,6 +35,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
 
+    private final String videoMimeType;
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int bitRate;
@@ -44,7 +45,8 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
-    public ScreenEncoder(int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
+    public ScreenEncoder(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
+        this.videoMimeType = videoMimeType;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
@@ -62,8 +64,8 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     public void streamScreen(Device device, Callbacks callbacks) throws IOException {
-        MediaCodec codec = createCodec(encoderName);
-        MediaFormat format = createFormat(bitRate, maxFps, codecOptions);
+        MediaCodec codec = createCodec(videoMimeType, encoderName);
+        MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
         boolean alive;
@@ -194,28 +196,28 @@ public class ScreenEncoder implements Device.RotationListener {
         return !eof;
     }
 
-    private static MediaCodecInfo[] listEncoders() {
+    private static MediaCodecInfo[] listEncoders(String videoMimeType) {
         List<MediaCodecInfo> result = new ArrayList<>();
         MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
         for (MediaCodecInfo codecInfo : list.getCodecInfos()) {
-            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(MediaFormat.MIMETYPE_VIDEO_AVC)) {
+            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(videoMimeType)) {
                 result.add(codecInfo);
             }
         }
         return result.toArray(new MediaCodecInfo[result.size()]);
     }
 
-    private static MediaCodec createCodec(String encoderName) throws IOException {
+    private static MediaCodec createCodec(String videoMimeType, String encoderName) throws IOException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                MediaCodecInfo[] encoders = listEncoders();
+                MediaCodecInfo[] encoders = listEncoders(videoMimeType);
                 throw new InvalidEncoderException(encoderName, encoders);
             }
         }
-        MediaCodec codec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
+        MediaCodec codec = MediaCodec.createEncoderByType(videoMimeType);
         Ln.d("Using encoder: '" + codec.getName() + "'");
         return codec;
     }
@@ -237,9 +239,9 @@ public class ScreenEncoder implements Device.RotationListener {
         Ln.d("Codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
     }
 
-    private static MediaFormat createFormat(int bitRate, int maxFps, List<CodecOption> codecOptions) {
+    private static MediaFormat createFormat(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
-        format.setString(MediaFormat.KEY_MIME, MediaFormat.MIMETYPE_VIDEO_AVC);
+        format.setString(MediaFormat.KEY_MIME, videoMimeType);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         // must be present to configure the encoder, but does not impact the actual frame rate, which is variable
         format.setInteger(MediaFormat.KEY_FRAME_RATE, 60);

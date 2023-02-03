@@ -194,6 +194,15 @@ The other dimension is computed so that the Android device aspect ratio is
 preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
 
 
+#### Select codec
+
+The video codec can be selected:
+
+```bash
+scrcpy --codec=h264  # default
+```
+
+
 #### Change bit-rate
 
 The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
@@ -254,8 +263,8 @@ The [window may also be rotated](#rotation) independently.
 
 #### Encoder
 
-Some devices have more than one encoder, and some of them may cause issues or
-crash. It is possible to select a different encoder:
+Some devices have more than one encoder for a specific codec, and some of them
+may cause issues or crash. It is possible to select a different encoder:
 
 ```bash
 scrcpy --encoder=OMX.qcom.video.encoder.avc
@@ -267,6 +276,8 @@ error will give the available encoders:
 ```bash
 scrcpy --encoder=_
 ```
+
+Note that you can also select a different [codec](#select-codec).
 
 ### Capture
 
