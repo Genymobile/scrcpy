@@ -161,6 +161,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
     switch (codec) {
         case SC_CODEC_H264:
             return "h264";
+        case SC_CODEC_H265:
+            return "h265";
         default:
             return NULL;
     }

@@ -3,7 +3,8 @@ package com.genymobile.scrcpy;
 import android.media.MediaFormat;
 
 public enum VideoCodec {
-    H264(0x68_32_36_34, "h264", MediaFormat.MIMETYPE_VIDEO_AVC);
+    H264(0x68_32_36_34, "h264", MediaFormat.MIMETYPE_VIDEO_AVC),
+    H265(0x68_32_36_35, "h265", MediaFormat.MIMETYPE_VIDEO_HEVC);
 
     private final int id; // 4-byte ASCII representation of the name
     private final String name;

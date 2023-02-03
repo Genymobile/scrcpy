@@ -110,7 +110,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CODEC,
         .longopt = "codec",
         .argdesc = "name",
-        .text = "Select a video codec (h264).",
+        .text = "Select a video codec (h264 or h265).",
     },
     {
         .longopt_id = OPT_CODEC_OPTIONS,
@@ -1390,7 +1390,11 @@ parse_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_H264;
         return true;
     }
-    LOGE("Unsupported codec: %s (expected h264)", optarg);
+    if (!strcmp(optarg, "h265")) {
+        *codec = SC_CODEC_H265;
+        return true;
+    }
+    LOGE("Unsupported codec: %s (expected h264 or h265)", optarg);
     return false;
 }
 
