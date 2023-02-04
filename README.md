@@ -80,16 +80,22 @@ On Arch Linux:
 pacman -S scrcpy
 ```
 
+On Fedora, a [COPR] package is available: [`scrcpy`][copr-link]:
+
+```
+dnf copr enable zeno/scrcpy
+dnf install scrcpy
+```
+
+[COPR]: https://fedoraproject.org/wiki/Category:Copr
+[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
+
 A [Snap] package is available: [`scrcpy`][snap-link].
 
 [snap-link]: https://snapstats.org/snaps/scrcpy
 
 [snap]: https://en.wikipedia.org/wiki/Snappy_(package_manager)
 
-For Fedora, a [COPR] package is available: [`scrcpy`][copr-link].
-
-[COPR]: https://fedoraproject.org/wiki/Category:Copr
-[copr-link]: https://copr.fedorainfracloud.org/coprs/zeno/scrcpy/
 
 
 For Gentoo, an [Ebuild] is available: [`scrcpy/`][ebuild-link].
