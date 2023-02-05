@@ -9,8 +9,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build
       run: |
-        ANDROID_BUILD_TOOLS="33.0.1" BUILD_DIR="./out" ./server/build_without_gradle.sh
+        ./gradlew -p server assembleRelease
     - uses: actions/upload-artifact@v2
       with:
         name: scrcpy
-        path: ./out
+        path: ./server/build/outputs/apk/release/
