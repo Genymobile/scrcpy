@@ -1,0 +1,16 @@
+on:
+  push:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    container: cimg/android:2022.12.1
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        ANDROID_BUILD_TOOLS="33.0.1" BUILD_DIR="./out" ./server/build_without_gradle.sh
+    - uses: actions/upload-artifact@v2
+      with:
+        name: scrcpy
+        path: ./out

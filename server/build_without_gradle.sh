@@ -50,6 +50,7 @@ echo "Compiling java sources..."
 cd ../java
 javac -bootclasspath "$ANDROID_JAR" -cp "$CLASSES_DIR" -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
+    -encoding UTF-8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
 
