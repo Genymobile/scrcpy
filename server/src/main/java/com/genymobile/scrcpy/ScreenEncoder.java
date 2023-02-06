@@ -21,10 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenEncoder implements Device.RotationListener {
 
-    public interface Callbacks {
-        void onPacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException;
-    }
-
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
     private static final String KEY_MAX_FPS_TO_ENCODER = "max-fps-to-encoder";
@@ -63,7 +59,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, Callbacks callbacks) throws IOException, ConfigurationException {
+    public void streamScreen(Device device, VideoStreamer streamer) throws IOException, ConfigurationException {
         MediaCodec codec = createCodec(videoMimeType, encoderName);
         MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
@@ -92,7 +88,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
                     codec.start();
 
-                    alive = encode(codec, callbacks);
+                    alive = encode(codec, streamer);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
@@ -161,7 +157,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return 0;
     }
 
-    private boolean encode(MediaCodec codec, Callbacks callbacks) throws IOException {
+    private boolean encode(MediaCodec codec, VideoStreamer streamer) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
@@ -184,7 +180,7 @@ public class ScreenEncoder implements Device.RotationListener {
                         consecutiveErrors = 0;
                     }
 
-                    callbacks.onPacket(codecBuffer, bufferInfo);
+                    streamer.writePacket(codecBuffer, bufferInfo);
                 }
             } finally {
                 if (outputBufferId >= 0) {
