@@ -32,7 +32,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
 
     private final Device device;
-    private final VideoStreamer streamer;
+    private final Streamer streamer;
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int bitRate;
@@ -42,7 +42,7 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
-    public ScreenEncoder(Device device, VideoStreamer streamer, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
+    public ScreenEncoder(Device device, Streamer streamer, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
             boolean downsizeOnError) {
         this.device = device;
         this.streamer = streamer;
@@ -164,7 +164,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return 0;
     }
 
-    private boolean encode(MediaCodec codec, VideoStreamer streamer) throws IOException {
+    private boolean encode(MediaCodec codec, Streamer streamer) throws IOException {
         boolean eof = false;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
