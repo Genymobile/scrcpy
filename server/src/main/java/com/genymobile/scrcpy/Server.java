@@ -91,8 +91,6 @@ public final class Server {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
             }
-            ScreenEncoder screenEncoder = new ScreenEncoder(codec.getMimeType(), options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName(), options.getDownsizeOnError());
 
             if (control) {
                 controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
@@ -102,9 +100,11 @@ public final class Server {
                 device.setClipboardListener(text -> controllerRef.getSender().pushClipboardText(text));
             }
 
+            VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
+            ScreenEncoder screenEncoder = new ScreenEncoder(codec.getMimeType(), options.getBitRate(), options.getMaxFps(), codecOptions,
+                    options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
-                VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
                 screenEncoder.streamScreen(device, videoStreamer);
             } catch (IOException e) {
                 // Broken pipe is expected on close, because the socket is closed by the client
