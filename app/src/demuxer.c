@@ -28,6 +28,7 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
 #define SC_CODEC_ID_H264 UINT32_C(0x68323634) // "h264" in ASCII
 #define SC_CODEC_ID_H265 UINT32_C(0x68323635) // "h265" in ASCII
 #define SC_CODEC_ID_AV1 UINT32_C(0x00617631) // "av1" in ASCII
+#define SC_CODEC_ID_OPUS UINT32_C(0x6f707573) // "opus" in ASCII
     uint32_t codec_id = sc_read32be(data);
     switch (codec_id) {
         case SC_CODEC_ID_H264:
@@ -36,6 +37,8 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
             return AV_CODEC_ID_HEVC;
         case SC_CODEC_ID_AV1:
             return AV_CODEC_ID_AV1;
+        case SC_CODEC_ID_OPUS:
+            return AV_CODEC_ID_OPUS;
         default:
             LOGE("Unknown codec id 0x%08" PRIx32, codec_id);
             return AV_CODEC_ID_NONE;
@@ -272,6 +275,8 @@ end:
 void
 sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
+    assert(socket != SC_SOCKET_NONE);
+
     demuxer->socket = socket;
     demuxer->pending = NULL;
     demuxer->sink_count = 0;
