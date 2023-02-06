@@ -6,26 +6,26 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class VideoStreamer {
+public final class Streamer {
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
 
     private final FileDescriptor fd;
-    private final VideoCodec codec;
+    private final Codec codec;
     private final boolean sendCodecId;
     private final boolean sendFrameMeta;
 
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
-    public VideoStreamer(FileDescriptor fd, VideoCodec codec, boolean sendCodecId, boolean sendFrameMeta) {
+    public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecId, boolean sendFrameMeta) {
         this.fd = fd;
         this.codec = codec;
         this.sendCodecId = sendCodecId;
         this.sendFrameMeta = sendFrameMeta;
     }
 
-    public VideoCodec getCodec() {
+    public Codec getCodec() {
         return codec;
     }
 
