@@ -41,6 +41,7 @@ struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
     struct sc_demuxer video_demuxer;
+    struct sc_demuxer audio_demuxer;
     struct sc_decoder decoder;
     struct sc_recorder recorder;
 #ifdef HAVE_V4L2
@@ -241,6 +242,14 @@ sc_video_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
 }
 
 static void
+sc_audio_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
+    (void) demuxer;
+    (void) userdata;
+
+    // TODO
+}
+
+static void
 sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
@@ -296,6 +305,7 @@ scrcpy(struct scrcpy_options *options) {
     bool v4l2_sink_initialized = false;
 #endif
     bool video_demuxer_started = false;
+    bool audio_demuxer_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
@@ -426,6 +436,14 @@ scrcpy(struct scrcpy_options *options) {
     };
     sc_demuxer_init(&s->video_demuxer, s->server.video_socket,
                     &video_demuxer_cbs, NULL);
+
+    if (options->audio) {
+        static const struct sc_demuxer_callbacks audio_demuxer_cbs = {
+            .on_eos = sc_audio_demuxer_on_eos,
+        };
+        sc_demuxer_init(&s->audio_demuxer, s->server.audio_socket,
+                        &audio_demuxer_cbs, NULL);
+    }
 
     if (dec) {
         sc_demuxer_add_sink(&s->video_demuxer, &dec->packet_sink);
@@ -646,6 +664,13 @@ aoa_hid_end:
     }
     video_demuxer_started = true;
 
+    if (options->audio) {
+        if (!sc_demuxer_start(&s->audio_demuxer)) {
+            goto end;
+        }
+        audio_demuxer_started = true;
+    }
+
     ret = event_loop(s);
     LOGD("quit...");
 
@@ -690,6 +715,10 @@ end:
     // interrupted, we can join them
     if (video_demuxer_started) {
         sc_demuxer_join(&s->video_demuxer);
+    }
+
+    if (audio_demuxer_started) {
+        sc_demuxer_join(&s->audio_demuxer);
     }
 
 #ifdef HAVE_V4L2
