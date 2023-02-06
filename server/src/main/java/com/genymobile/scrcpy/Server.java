@@ -101,11 +101,11 @@ public final class Server {
             }
 
             VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(codec.getMimeType(), options.getBitRate(), options.getMaxFps(), codecOptions,
+            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
-                screenEncoder.streamScreen(device, videoStreamer);
+                screenEncoder.streamScreen();
             } catch (IOException e) {
                 // Broken pipe is expected on close, because the socket is closed by the client
                 if (!IO.isBrokenPipe(e)) {

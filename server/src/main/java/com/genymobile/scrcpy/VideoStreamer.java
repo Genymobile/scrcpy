@@ -25,6 +25,10 @@ public final class VideoStreamer {
         this.sendFrameMeta = sendFrameMeta;
     }
 
+    public VideoCodec getCodec() {
+        return codec;
+    }
+
     public void writeHeader() throws IOException {
         if (sendCodecId) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
