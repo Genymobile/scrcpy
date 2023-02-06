@@ -100,9 +100,9 @@ public final class Server {
                 device.setClipboardListener(text -> controllerRef.getSender().pushClipboardText(text));
             }
 
-            VideoStreamer videoStreamer = new VideoStreamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName(), options.getDownsizeOnError());
+            Streamer videoStreamer = new Streamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
+            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(),
+                    codecOptions, options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
                 screenEncoder.streamScreen();
