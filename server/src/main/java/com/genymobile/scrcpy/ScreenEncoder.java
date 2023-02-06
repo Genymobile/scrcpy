@@ -31,7 +31,8 @@ public class ScreenEncoder implements Device.RotationListener {
 
     private final AtomicBoolean rotationChanged = new AtomicBoolean();
 
-    private final String videoMimeType;
+    private final Device device;
+    private final VideoStreamer streamer;
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int bitRate;
@@ -41,8 +42,10 @@ public class ScreenEncoder implements Device.RotationListener {
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
-    public ScreenEncoder(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
-        this.videoMimeType = videoMimeType;
+    public ScreenEncoder(Device device, VideoStreamer streamer, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
+            boolean downsizeOnError) {
+        this.device = device;
+        this.streamer = streamer;
         this.bitRate = bitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
@@ -59,7 +62,8 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, VideoStreamer streamer) throws IOException, ConfigurationException {
+    public void streamScreen() throws IOException, ConfigurationException {
+        String videoMimeType = streamer.getCodec().getMimeType();
         MediaCodec codec = createCodec(videoMimeType, encoderName);
         MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
