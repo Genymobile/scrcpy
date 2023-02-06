@@ -6,7 +6,7 @@ import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public final class VideoStreamer implements ScreenEncoder.Callbacks {
+public final class VideoStreamer {
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
@@ -28,8 +28,7 @@ public final class VideoStreamer implements ScreenEncoder.Callbacks {
         IO.writeFully(fd, buffer);
     }
 
-    @Override
-    public void onPacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
+    public void writePacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
         if (sendFrameMeta) {
             writeFrameMeta(fd, bufferInfo, codecBuffer.remaining());
         }
