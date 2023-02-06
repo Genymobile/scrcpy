@@ -64,6 +64,9 @@ public class ScreenEncoder implements Device.RotationListener {
         MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
+
+        streamer.writeHeader();
+
         boolean alive;
         try {
             do {
