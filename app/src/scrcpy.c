@@ -40,7 +40,7 @@
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
-    struct sc_demuxer demuxer;
+    struct sc_demuxer video_demuxer;
     struct sc_decoder decoder;
     struct sc_recorder recorder;
 #ifdef HAVE_V4L2
@@ -233,7 +233,7 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 }
 
 static void
-sc_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
+sc_video_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
     (void) demuxer;
     (void) userdata;
 
@@ -295,7 +295,7 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
-    bool demuxer_started = false;
+    bool video_demuxer_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
@@ -421,17 +421,18 @@ scrcpy(struct scrcpy_options *options) {
 
     av_log_set_callback(av_log_callback);
 
-    static const struct sc_demuxer_callbacks demuxer_cbs = {
-        .on_eos = sc_demuxer_on_eos,
+    static const struct sc_demuxer_callbacks video_demuxer_cbs = {
+        .on_eos = sc_video_demuxer_on_eos,
     };
-    sc_demuxer_init(&s->demuxer, s->server.video_socket, &demuxer_cbs, NULL);
+    sc_demuxer_init(&s->video_demuxer, s->server.video_socket,
+                    &video_demuxer_cbs, NULL);
 
     if (dec) {
-        sc_demuxer_add_sink(&s->demuxer, &dec->packet_sink);
+        sc_demuxer_add_sink(&s->video_demuxer, &dec->packet_sink);
     }
 
     if (rec) {
-        sc_demuxer_add_sink(&s->demuxer, &rec->packet_sink);
+        sc_demuxer_add_sink(&s->video_demuxer, &rec->packet_sink);
     }
 
     struct sc_controller *controller = NULL;
@@ -639,17 +640,17 @@ aoa_hid_end:
 #endif
 
     // now we consumed the header values, the socket receives the video stream
-    // start the demuxer
-    if (!sc_demuxer_start(&s->demuxer)) {
+    // start the video demuxer
+    if (!sc_demuxer_start(&s->video_demuxer)) {
         goto end;
     }
-    demuxer_started = true;
+    video_demuxer_started = true;
 
     ret = event_loop(s);
     LOGD("quit...");
 
     // Close the window immediately on closing, because screen_destroy() may
-    // only be called once the demuxer thread is joined (it may take time)
+    // only be called once the video demuxer thread is joined (it may take time)
     sc_screen_hide_window(&s->screen);
 
 end:
@@ -687,8 +688,8 @@ end:
 
     // now that the sockets are shutdown, the demuxer and controller are
     // interrupted, we can join them
-    if (demuxer_started) {
-        sc_demuxer_join(&s->demuxer);
+    if (video_demuxer_started) {
+        sc_demuxer_join(&s->video_demuxer);
     }
 
 #ifdef HAVE_V4L2
@@ -707,8 +708,9 @@ end:
     }
 #endif
 
-    // Destroy the screen only after the demuxer is guaranteed to be finished,
-    // because otherwise the screen could receive new frames after destruction
+    // Destroy the screen only after the video demuxer is guaranteed to be
+    // finished, because otherwise the screen could receive new frames after
+    // destruction
     if (screen_initialized) {
         sc_screen_join(&s->screen);
         sc_screen_destroy(&s->screen);
