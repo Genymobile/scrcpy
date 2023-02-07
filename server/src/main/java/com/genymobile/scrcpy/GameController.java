@@ -38,6 +38,31 @@ public final class GameController {
         }
     }
 
+    public static class input_absinfo extends Structure {
+        public int value = 0;
+        public int minimum = 0;
+        public int maximum = 0;
+        public int fuzz = 0;
+        public int flat = 0;
+        public int resolution = 0;
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("value", "minimum", "maximum", "fuzz", "flat", "resolution");
+        }
+    };
+
+    public static class uinput_abs_setup extends Structure {
+        public short code;
+        public input_absinfo absinfo;
+    
+        @Override
+        protected List<String> getFieldOrder()
+        {
+            return Arrays.asList("code", "absinfo");
+        }
+    };
+
     public static class input_event32 extends Structure {
         public long time = 0;
         public short type = 0;
@@ -96,6 +121,7 @@ public final class GameController {
     private static final int UI_SET_EVBIT = _IOW(UINPUT_IOCTL_BASE, 100, 4);
     private static final int UI_SET_KEYBIT = _IOW(UINPUT_IOCTL_BASE, 101, 4);
     private static final int UI_SET_ABSBIT = _IOW(UINPUT_IOCTL_BASE, 103, 4);
+    private static final int UI_ABS_SETUP = _IOW(UINPUT_IOCTL_BASE, 4, new uinput_abs_setup().size());
 
     private static final int UI_DEV_SETUP = _IOW(UINPUT_IOCTL_BASE, 3, new uinput_setup().size());
     private static final int UI_DEV_CREATE = _IO(UINPUT_IOCTL_BASE, 1, 0);
@@ -194,27 +220,29 @@ public final class GameController {
         }
     
         LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_KEY);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_A);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_B);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_X);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_Y);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_BACK);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_START);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_LB);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_RB);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_GUIDE);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_LS);
-        LibC.fn.ioctl(fd, UI_SET_KEYBIT, XBOX_BTN_RS);
+        add_key(XBOX_BTN_A);
+        add_key(XBOX_BTN_B);
+        add_key(XBOX_BTN_X);
+        add_key(XBOX_BTN_Y);
+        add_key(XBOX_BTN_BACK);
+        add_key(XBOX_BTN_START);
+        add_key(XBOX_BTN_LB);
+        add_key(XBOX_BTN_RB);
+        add_key(XBOX_BTN_GUIDE);
+        add_key(XBOX_BTN_LS);
+        add_key(XBOX_BTN_RS);
     
         LibC.fn.ioctl(fd, UI_SET_EVBIT, EV_ABS);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_LSX);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_LSY);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_RSX);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_RSY);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_DPADX);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_DPADY);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_LT);
-        LibC.fn.ioctl(fd, UI_SET_ABSBIT, XBOX_ABS_RT);
+        add_abs(XBOX_ABS_LSX, -32768, 32767, 16, 128);
+        add_abs(XBOX_ABS_LSY, -32768, 32767, 16, 128);
+        add_abs(XBOX_ABS_RSX, -32768, 32767, 16, 128);
+        add_abs(XBOX_ABS_RSY, -32768, 32767, 16, 128);
+        add_abs(XBOX_ABS_DPADX, -1, 1, 0, 0);
+        add_abs(XBOX_ABS_DPADY, -1, 1, 0, 0);
+        // These values deviate from the real Xbox 360 controller,
+        // but allow higher precision (eg. Xbox One controller)
+        add_abs(XBOX_ABS_LT, 0, 32767, 0, 0);
+        add_abs(XBOX_ABS_RT, 0, 32767, 0, 0);
 
         uinput_setup usetup = new uinput_setup();
         usetup.id.bustype = BUS_USB;
@@ -239,6 +267,30 @@ public final class GameController {
             LibC.fn.ioctl(fd, UI_DEV_DESTROY);
             LibC.fn.close(fd);
             fd = -1;
+        }
+    }
+
+    private void add_key(int key) {
+        if (LibC.fn.ioctl(fd, UI_SET_KEYBIT, key) == -1) {
+            Ln.e("Could not add key event.");
+        }
+    }
+
+    private void add_abs(short code, int minimum, int maximum, int fuzz, int flat) {
+        if (LibC.fn.ioctl(fd, UI_SET_ABSBIT, code) == -1) {
+            Ln.e("Could not add absolute event.");
+        }
+
+        uinput_abs_setup abs_setup = new uinput_abs_setup();
+
+        abs_setup.code = code;
+        abs_setup.absinfo.minimum = minimum;
+        abs_setup.absinfo.maximum = maximum;
+        abs_setup.absinfo.fuzz = fuzz;
+        abs_setup.absinfo.flat = flat;
+
+        if (LibC.fn.ioctl(fd, UI_ABS_SETUP, abs_setup) == -1) {
+            Ln.e("Could not set absolute event info.");
         }
     }
 
@@ -340,7 +392,7 @@ public final class GameController {
     }
 
     public void setAxis(int axis, int value) {
-        emit(fd, EV_ABS, translateAxis(axis), (value + 0x8000) >> 8);
+        emit(fd, EV_ABS, translateAxis(axis), value);
         emit(fd, EV_SYN, SYN_REPORT, 0);
     }
 
@@ -349,19 +401,19 @@ public final class GameController {
 
         switch (button) {
             case SDL_CONTROLLER_BUTTON_DPAD_UP:
-                emit(fd, EV_ABS, XBOX_ABS_DPADY, state != 0 ? 0 : 127);
+                emit(fd, EV_ABS, XBOX_ABS_DPADY, state != 0 ? -1 : 0);
                 break;
 
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                emit(fd, EV_ABS, XBOX_ABS_DPADY, state != 0 ? 255 : 127);
+                emit(fd, EV_ABS, XBOX_ABS_DPADY, state != 0 ? 1 : 0);
                 break;
 
             case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
-                emit(fd, EV_ABS, XBOX_ABS_DPADX, state != 0 ? 0 : 127);
+                emit(fd, EV_ABS, XBOX_ABS_DPADX, state != 0 ? -1 : 0);
                 break;
 
             case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
-                emit(fd, EV_ABS, XBOX_ABS_DPADX, state != 0 ? 255 : 127);
+                emit(fd, EV_ABS, XBOX_ABS_DPADX, state != 0 ? 1 : 0);
                 break;
         
             default:
