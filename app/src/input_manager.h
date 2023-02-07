@@ -14,10 +14,13 @@
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"
 
+#define MAX_GAME_CONTROLLERS 16
+
 struct sc_input_manager {
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
     struct sc_screen *screen;
+    SDL_GameController *game_controllers[MAX_GAME_CONTROLLERS];
 
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;

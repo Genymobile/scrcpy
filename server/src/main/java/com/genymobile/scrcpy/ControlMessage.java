@@ -17,6 +17,9 @@ public final class ControlMessage {
     public static final int TYPE_SET_CLIPBOARD = 9;
     public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
     public static final int TYPE_ROTATE_DEVICE = 11;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_AXIS = 12;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_BUTTON = 13;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_DEVICE = 14;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -40,6 +43,12 @@ public final class ControlMessage {
     private boolean paste;
     private int repeat;
     private long sequence;
+    private int gameControllerId;
+    private int gameControllerAxis;
+    private int gameControllerAxisValue;
+    private int gameControllerButton;
+    private int gameControllerButtonState;
+    private int gameControllerDeviceEvent;
 
     private ControlMessage() {
     }
@@ -117,6 +126,32 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createInjectGameControllerAxis(int id, int axis, int value) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_AXIS;
+        msg.gameControllerId = id;
+        msg.gameControllerAxis = axis;
+        msg.gameControllerAxisValue = value;
+        return msg;
+    }
+
+    public static ControlMessage createInjectGameControllerButton(int id, int button, int state) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_BUTTON;
+        msg.gameControllerId = id;
+        msg.gameControllerButton = button;
+        msg.gameControllerButtonState = state;
+        return msg;
+    }
+
+    public static ControlMessage createInjectGameControllerDevice(int id, int event) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_DEVICE;
+        msg.gameControllerId = id;
+        msg.gameControllerDeviceEvent = event;
+        return msg;
+    }
+
     public static ControlMessage createEmpty(int type) {
         ControlMessage msg = new ControlMessage();
         msg.type = type;
@@ -186,4 +221,29 @@ public final class ControlMessage {
     public long getSequence() {
         return sequence;
     }
+
+    public int getGameControllerId() {
+        return gameControllerId;
+    }
+
+    public int getGameControllerAxis() {
+        return gameControllerAxis;
+    }
+
+    public int getGameControllerAxisValue() {
+        return gameControllerAxisValue;
+    }
+
+    public int getGameControllerButton() {
+        return gameControllerButton;
+    }
+
+    public int getGameControllerButtonState() {
+        return gameControllerButtonState;
+    }
+
+    public int getGameControllerDeviceEvent() {
+        return gameControllerDeviceEvent;
+    }
+
 }

@@ -58,6 +58,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->controller = params->controller;
     im->fp = params->fp;
     im->screen = params->screen;
+    memset(im->game_controllers, 0, sizeof(im->game_controllers));
     im->kp = params->kp;
     im->mp = params->mp;
 
@@ -844,5 +845,85 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
             }
             sc_input_manager_process_file(im, &event->drop);
         }
+        case SDL_CONTROLLERAXISMOTION:
+            if (!control) {
+                break;
+            }
+            input_manager_process_controller_axis(&input_manager, &event->caxis);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            if (!control) {
+                break;
+            }
+            input_manager_process_controller_button(&input_manager, &event->cbutton);
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+        // case SDL_CONTROLLERDEVICEREMAPPED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+            if (!control) {
+                break;
+            }
+            input_manager_process_controller_device(&input_manager, &event->cdevice);
+            break;
     }
+}
+
+void
+input_manager_process_controller_device(struct input_manager *im,
+                                        const SDL_ControllerDeviceEvent *event) {
+    SDL_JoystickID id;
+
+    switch (event->type) {
+        case SDL_CONTROLLERDEVICEADDED: {
+            SDL_GameController **freeGc = find_free_game_controller_slot(im);
+
+            if (!freeGc) {
+                LOGW("Controller limit reached.");
+                return;
+            }
+
+            SDL_GameController *game_controller;
+            game_controller = SDL_GameControllerOpen(event->which);
+
+            if (game_controller) {
+                *freeGc = game_controller;
+
+                SDL_Joystick *joystick;
+                joystick = SDL_GameControllerGetJoystick(game_controller);
+
+                id = SDL_JoystickInstanceID(joystick);
+            } else {
+                LOGW("Could not open game controller #%d", event->which);
+                return;
+            }
+            break;
+        }
+
+        case SDL_CONTROLLERDEVICEREMOVED: {
+            id = event->which;
+
+            SDL_GameController *game_controller;
+            game_controller = SDL_GameControllerFromInstanceID(id);
+
+            SDL_GameControllerClose(game_controller);
+
+            if (!free_game_controller_slot(im, game_controller)) {
+                LOGW("Could not find removed game controller.");
+                return;
+            }
+
+            break;
+        }
+
+        default:
+            return;
+    }
+
+    struct control_msg msg;
+    msg.type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE;
+    msg.inject_game_controller_device.id = id;
+    msg.inject_game_controller_device.event = event->type;
+    msg.inject_game_controller_device.event -= SDL_CONTROLLERDEVICEADDED;
+    controller_push_msg(im->controller, &msg);
 }

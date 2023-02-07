@@ -367,6 +367,11 @@ scrcpy(struct scrcpy_options *options) {
 
     sdl_configure(options->display, options->disable_screensaver);
 
+    if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
+        LOGC("Could not initialize SDL: %s", SDL_GetError());
+        return false;
+    }
+
     // Await for server without blocking Ctrl+C handling
     bool connected;
     if (!await_for_server(&connected)) {
