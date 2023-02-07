@@ -100,9 +100,15 @@ public class Controller {
     public void stop() {
         if (thread != null) {
             thread.interrupt();
-            thread = null;
         }
         sender.stop();
+    }
+
+    public void join() throws InterruptedException {
+        if (thread != null) {
+            thread.join();
+        }
+        sender.join();
     }
 
     public DeviceMessageSender getSender() {

@@ -117,6 +117,15 @@ public final class Server {
                 if (controller != null) {
                     controller.stop();
                 }
+
+                try {
+                    initThread.join();
+                    if (controller != null) {
+                        controller.join();
+                    }
+                } catch (InterruptedException e) {
+                    // ignore
+                }
             }
         }
     }
