@@ -367,11 +367,6 @@ scrcpy(struct scrcpy_options *options) {
 
     sdl_configure(options->display, options->disable_screensaver);
 
-    if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
-        LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-
     // Await for server without blocking Ctrl+C handling
     bool connected;
     if (!await_for_server(&connected)) {
@@ -382,6 +377,14 @@ scrcpy(struct scrcpy_options *options) {
         // This is not an error, user requested to quit
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;
+    }
+
+    // Initialize GAMECONTROLLER subsystem after server connected
+    // Otherwise the initial CONTROLLERDEVICEADDED event might
+    // be handled by `await_for_server`
+    if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
+        LOGE("Could not initialize SDL: %s", SDL_GetError());
+        return false;
     }
 
     // It is necessarily initialized here, since the device is connected
