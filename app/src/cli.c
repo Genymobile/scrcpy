@@ -58,6 +58,7 @@
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
 #define OPT_CODEC                  1040
+#define OPT_NO_GAME_CONTROLLER     1041
 
 struct sc_option {
     char shortopt;
@@ -297,6 +298,11 @@ static const struct sc_option options[] = {
         .longopt = "no-display",
         .text = "Do not display device (only when screen recording or V4L2 "
                 "sink is enabled).",
+    },
+    {
+        .longopt_id = OPT_NO_GAME_CONTROLLER,
+        .longopt = "no-game-controller",
+        .text = "Disable game controller support.",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -1581,6 +1587,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_GAME_CONTROLLER:
+                opts->forward_game_controllers = false;
                 break;
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;

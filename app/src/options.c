@@ -53,6 +53,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .stay_awake = false,
     .force_adb_forward = false,
     .disable_screensaver = false,
+    .forward_game_controllers = true,
     .forward_key_repeat = true,
     .forward_all_clicks = false,
     .legacy_paste = false,
