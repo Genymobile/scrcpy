@@ -5,7 +5,6 @@ import android.graphics.Rect;
 import java.util.List;
 
 public class Options {
-    private static final String VIDEO_CODEC_H264 = "h264";
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int uid = -1; // 31-bit non-negative value, or -1
