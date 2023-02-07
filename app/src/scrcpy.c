@@ -367,8 +367,8 @@ scrcpy(struct scrcpy_options *options) {
 
     sdl_configure(options->display, options->disable_screensaver);
 
-    if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
-        LOGC("Could not initialize SDL: %s", SDL_GetError());
+    if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
+        LOGE("Could not initialize SDL: %s", SDL_GetError());
         return false;
     }
 
@@ -602,6 +602,7 @@ aoa_hid_end:
             .fp = fp,
             .kp = kp,
             .mp = mp,
+            .forward_game_controllers = options->forward_game_controllers,
             .forward_all_clicks = options->forward_all_clicks,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,

@@ -74,6 +74,7 @@ struct sc_screen_params {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
+    bool forward_game_controllers;
     bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;

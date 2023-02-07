@@ -62,7 +62,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->kp = params->kp;
     im->mp = params->mp;
 
-    im->forward_game_controllers = options->forward_game_controllers;
+    im->forward_game_controllers = params->forward_game_controllers;
     im->forward_all_clicks = params->forward_all_clicks;
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
@@ -799,29 +799,29 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 }
 
 void
-input_manager_process_controller_axis(struct input_manager *im,
+input_manager_process_controller_axis(struct sc_input_manager *im,
                                       const SDL_ControllerAxisEvent *event) {
-    struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS;
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS;
     msg.inject_game_controller_axis.id = event->which;
     msg.inject_game_controller_axis.axis = event->axis;
     msg.inject_game_controller_axis.value = event->value;
-    controller_push_msg(im->controller, &msg);
+    sc_controller_push_msg(im->controller, &msg);
 }
 
 void
-input_manager_process_controller_button(struct input_manager *im,
+input_manager_process_controller_button(struct sc_input_manager *im,
                                         const SDL_ControllerButtonEvent *event) {
-    struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON;
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON;
     msg.inject_game_controller_button.id = event->which;
     msg.inject_game_controller_button.button = event->button;
     msg.inject_game_controller_button.state = event->state;
-    controller_push_msg(im->controller, &msg);
+    sc_controller_push_msg(im->controller, &msg);
 }
 
 static SDL_GameController **
-find_free_game_controller_slot(struct input_manager *im) {
+find_free_game_controller_slot(struct sc_input_manager *im) {
     for (unsigned i = 0; i < MAX_GAME_CONTROLLERS; ++i) {
         if (!im->game_controllers[i]) {
             return &im->game_controllers[i];
@@ -831,8 +831,21 @@ find_free_game_controller_slot(struct input_manager *im) {
     return NULL;
 }
 
+static bool
+free_game_controller_slot(struct sc_input_manager *im,
+                          SDL_GameController *game_controller) {
+    for (unsigned i = 0; i < MAX_GAME_CONTROLLERS; ++i) {
+        if (im->game_controllers[i] == game_controller) {
+            im->game_controllers[i] = NULL;
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void
-input_manager_process_controller_device(struct input_manager *im,
+input_manager_process_controller_device(struct sc_input_manager *im,
                                         const SDL_ControllerDeviceEvent *event) {
     SDL_JoystickID id;
 
@@ -882,12 +895,12 @@ input_manager_process_controller_device(struct input_manager *im,
             return;
     }
 
-    struct control_msg msg;
+    struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE;
     msg.inject_game_controller_device.id = id;
     msg.inject_game_controller_device.event = event->type;
     msg.inject_game_controller_device.event -= SDL_CONTROLLERDEVICEADDED;
-    controller_push_msg(im->controller, &msg);
+    sc_controller_push_msg(im->controller, &msg);
 }
 
 void
@@ -937,6 +950,7 @@ sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
                 break;
             }
             sc_input_manager_process_file(im, &event->drop);
+            break;
         }
         case SDL_CONTROLLERAXISMOTION:
             if (!control || !im->forward_game_controllers) {

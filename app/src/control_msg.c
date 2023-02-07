@@ -153,17 +153,17 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
             // no additional data
             return 1;
         case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS:
-            buffer_write16be(&buf[1], msg->inject_game_controller_axis.id);
+            sc_write16be(&buf[1], msg->inject_game_controller_axis.id);
             buf[3] = msg->inject_game_controller_axis.axis;
-            buffer_write16be(&buf[4], msg->inject_game_controller_axis.value);
+            sc_write16be(&buf[4], msg->inject_game_controller_axis.value);
             return 6;
         case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON:
-            buffer_write16be(&buf[1], msg->inject_game_controller_button.id);
+            sc_write16be(&buf[1], msg->inject_game_controller_button.id);
             buf[3] = msg->inject_game_controller_button.button;
             buf[4] = msg->inject_game_controller_button.state;
             return 5;
         case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE:
-            buffer_write16be(&buf[1], msg->inject_game_controller_device.id);
+            sc_write16be(&buf[1], msg->inject_game_controller_device.id);
             buf[3] = msg->inject_game_controller_device.event;
             return 4;
         default:
