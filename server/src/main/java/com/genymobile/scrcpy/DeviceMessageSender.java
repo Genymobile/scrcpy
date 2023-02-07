@@ -66,7 +66,12 @@ public final class DeviceMessageSender {
     public void stop() {
         if (thread != null) {
             thread.interrupt();
-            thread = null;
+        }
+    }
+
+    public void join() throws InterruptedException {
+        if (thread != null) {
+            thread.join();
         }
     }
 }
