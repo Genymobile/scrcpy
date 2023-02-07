@@ -921,7 +921,7 @@ input_manager_process_controller_device(struct input_manager *im,
     }
 
     struct control_msg msg;
-    msg.type = CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE;
     msg.inject_game_controller_device.id = id;
     msg.inject_game_controller_device.event = event->type;
     msg.inject_game_controller_device.event -= SDL_CONTROLLERDEVICEADDED;
