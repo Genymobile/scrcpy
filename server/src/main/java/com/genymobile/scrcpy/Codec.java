@@ -4,6 +4,7 @@ public interface Codec {
 
     enum Type {
         VIDEO,
+        AUDIO,
     }
 
     Type getType();
