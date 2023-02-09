@@ -49,6 +49,8 @@ public final class AudioEncoder {
     private static final int READ_MS = 5; // milliseconds
     private static final int READ_SIZE = SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE * READ_MS / 1000;
 
+    private final Streamer streamer;
+
     // Capacity of 64 is in practice "infinite" (it is limited by the number of available MediaCodec buffers, typically 4).
     // So many pending tasks would lead to an unacceptable delay anyway.
     private final BlockingQueue<InputTask> inputTasks = new ArrayBlockingQueue<>(64);
@@ -61,6 +63,10 @@ public final class AudioEncoder {
     private Thread outputThread;
 
     private boolean ended;
+
+    public AudioEncoder(Streamer streamer) {
+        this.streamer = streamer;
+    }
 
     private static AudioFormat createAudioFormat() {
         AudioFormat.Builder builder = new AudioFormat.Builder();
@@ -141,11 +147,13 @@ public final class AudioEncoder {
     }
 
     private void outputThread(MediaCodec mediaCodec) throws IOException, InterruptedException {
+        streamer.writeHeader();
+
         while (!Thread.currentThread().isInterrupted()) {
             OutputTask task = outputTasks.take();
             ByteBuffer buffer = mediaCodec.getOutputBuffer(task.index);
             try {
-                Ln.i("Audio packet [pts=" + task.bufferInfo.presentationTimeUs + "] " + buffer.remaining() + " bytes");
+                streamer.writePacket(buffer, task.bufferInfo);
             } finally {
                 mediaCodec.releaseOutputBuffer(task.index, false);
             }
