@@ -2,7 +2,7 @@ package com.genymobile.scrcpy;
 
 public interface Codec {
 
-    enum Type {VIDEO}
+    enum Type {VIDEO, AUDIO}
 
     Type getType();
 
