@@ -111,7 +111,8 @@ public final class Server {
             }
 
             if (audio) {
-                audioEncoder = new AudioEncoder();
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), AudioCodec.OPUS, options.getSendCodecId(), options.getSendFrameMeta());
+                audioEncoder = new AudioEncoder(audioStreamer);
                 audioEncoder.start();
             }
 
