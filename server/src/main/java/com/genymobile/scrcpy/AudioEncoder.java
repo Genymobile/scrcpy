@@ -47,6 +47,8 @@ public final class AudioEncoder {
     private static int BUFFER_MS = 15; // milliseconds
     private static final int BUFFER_SIZE = SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000;
 
+    private final Streamer streamer;
+
     private AudioRecord recorder;
     private MediaCodec mediaCodec;
 
@@ -62,6 +64,10 @@ public final class AudioEncoder {
     private Thread outputThread;
 
     private boolean ended;
+
+    public AudioEncoder(Streamer streamer) {
+        this.streamer = streamer;
+    }
 
     private static AudioFormat createAudioFormat() {
         AudioFormat.Builder builder = new AudioFormat.Builder();
@@ -140,11 +146,13 @@ public final class AudioEncoder {
     }
 
     private void outputThread() throws IOException, InterruptedException {
+        streamer.writeHeader();
+
         while (!Thread.currentThread().isInterrupted()) {
             OutputTask task = outputTasks.take();
             ByteBuffer buffer = mediaCodec.getOutputBuffer(task.index);
             try {
-                Ln.i("Audio packet [pts=" + task.bufferInfo.presentationTimeUs + "] " + buffer.remaining() + " bytes");
+                streamer.writePacket(buffer, task.bufferInfo);
             } finally {
                 mediaCodec.releaseOutputBuffer(task.index, false);
             }
