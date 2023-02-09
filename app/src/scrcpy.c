@@ -434,15 +434,15 @@ scrcpy(struct scrcpy_options *options) {
     static const struct sc_demuxer_callbacks video_demuxer_cbs = {
         .on_eos = sc_video_demuxer_on_eos,
     };
-    sc_demuxer_init(&s->video_demuxer, s->server.video_socket,
-                    &video_demuxer_cbs, NULL);
+    sc_demuxer_init(&s->video_demuxer, SC_STREAM_ID_VIDEO,
+                    s->server.video_socket, &video_demuxer_cbs, NULL);
 
     if (options->audio) {
         static const struct sc_demuxer_callbacks audio_demuxer_cbs = {
             .on_eos = sc_audio_demuxer_on_eos,
         };
-        sc_demuxer_init(&s->audio_demuxer, s->server.audio_socket,
-                        &audio_demuxer_cbs, NULL);
+        sc_demuxer_init(&s->audio_demuxer, SC_STREAM_ID_AUDIO,
+                        s->server.audio_socket, &audio_demuxer_cbs, NULL);
     }
 
     if (dec) {

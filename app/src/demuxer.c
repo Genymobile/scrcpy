@@ -273,10 +273,12 @@ end:
 }
 
 void
-sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
-                const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
+sc_demuxer_init(struct sc_demuxer *demuxer, enum sc_stream_id stream_id,
+                sc_socket socket, const struct sc_demuxer_callbacks *cbs,
+                void *cbs_userdata) {
     assert(socket != SC_SOCKET_NONE);
 
+    demuxer->stream_id = stream_id;
     demuxer->socket = socket;
     demuxer->pending = NULL;
     demuxer->sink_count = 0;

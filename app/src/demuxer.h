@@ -14,7 +14,13 @@
 
 #define SC_DEMUXER_MAX_SINKS 2
 
+enum sc_stream_id {
+    SC_STREAM_ID_VIDEO,
+    SC_STREAM_ID_AUDIO,
+};
+
 struct sc_demuxer {
+    enum sc_stream_id stream_id;
     sc_socket socket;
     sc_thread thread;
 
@@ -36,8 +42,9 @@ struct sc_demuxer_callbacks {
 };
 
 void
-sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
-                const struct sc_demuxer_callbacks *cbs, void *cbs_userdata);
+sc_demuxer_init(struct sc_demuxer *demuxer, enum sc_stream_id stream_id,
+                sc_socket socket, const struct sc_demuxer_callbacks *cbs,
+                void *cbs_userdata);
 
 void
 sc_demuxer_add_sink(struct sc_demuxer *demuxer, struct sc_packet_sink *sink);
