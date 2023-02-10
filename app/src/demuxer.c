@@ -228,20 +228,10 @@ run_demuxer(void *data) {
         goto end;
     }
 
-    demuxer->parser = av_parser_init(codec_id);
-    if (!demuxer->parser) {
-        LOGE("Could not initialize parser");
-        goto finally_close_sinks;
-    }
-
-    // We must only pass complete frames to av_parser_parse2()!
-    // It's more complicated, but this allows to reduce the latency by 1 frame!
-    demuxer->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
         LOG_OOM();
-        goto finally_close_parser;
+        goto finally_close_sinks;
     }
 
     for (;;) {
@@ -267,8 +257,6 @@ run_demuxer(void *data) {
     }
 
     av_packet_free(&packet);
-finally_close_parser:
-    av_parser_close(demuxer->parser);
 finally_close_sinks:
     sc_demuxer_close_sinks(demuxer);
 end:
