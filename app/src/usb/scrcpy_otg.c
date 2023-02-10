@@ -22,7 +22,7 @@ sc_usb_on_disconnected(struct sc_usb *usb, void *userdata) {
     (void) userdata;
 
     SDL_Event event;
-    event.type = EVENT_USB_DEVICE_DISCONNECTED;
+    event.type = SC_EVENT_USB_DEVICE_DISCONNECTED;
     int ret = SDL_PushEvent(&event);
     if (ret < 0) {
         LOGE("Could not post USB disconnection event: %s", SDL_GetError());
@@ -34,7 +34,7 @@ event_loop(struct scrcpy_otg *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-            case EVENT_USB_DEVICE_DISCONNECTED:
+            case SC_EVENT_USB_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
                 return SCRCPY_EXIT_DISCONNECTED;
             case SDL_QUIT:

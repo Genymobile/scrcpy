@@ -371,7 +371,7 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
     bool need_new_event;
     if (previous_skipped) {
         sc_fps_counter_add_skipped_frame(&screen->fps_counter);
-        // The EVENT_NEW_FRAME triggered for the previous frame will consume
+        // The SC_EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead, unless the previous event failed
         need_new_event = screen->event_failed;
     } else {
@@ -380,7 +380,7 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
 
     if (need_new_event) {
         static SDL_Event new_frame_event = {
-            .type = EVENT_NEW_FRAME,
+            .type = SC_EVENT_NEW_FRAME,
         };
 
         // Post the event on the UI thread
@@ -820,7 +820,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
     bool relative_mode = sc_screen_is_relative_mode(screen);
 
     switch (event->type) {
-        case EVENT_NEW_FRAME: {
+        case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGW("Frame update failed\n");

@@ -155,7 +155,7 @@ event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-            case EVENT_STREAM_STOPPED:
+            case SC_EVENT_STREAM_STOPPED:
                 LOGW("Device disconnected");
                 return SCRCPY_EXIT_DISCONNECTED;
             case SDL_QUIT:
@@ -179,10 +179,10 @@ await_for_server(bool *connected) {
                 LOGD("User requested to quit");
                 *connected = false;
                 return true;
-            case EVENT_SERVER_CONNECTION_FAILED:
+            case SC_EVENT_SERVER_CONNECTION_FAILED:
                 LOGE("Server connection failed");
                 return false;
-            case EVENT_SERVER_CONNECTED:
+            case SC_EVENT_SERVER_CONNECTED:
                 LOGD("Server connected");
                 *connected = true;
                 return true;
@@ -237,7 +237,7 @@ sc_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
     (void) demuxer;
     (void) userdata;
 
-    PUSH_EVENT(EVENT_STREAM_STOPPED);
+    PUSH_EVENT(SC_EVENT_STREAM_STOPPED);
 }
 
 static void
@@ -245,7 +245,7 @@ sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
-    PUSH_EVENT(EVENT_SERVER_CONNECTION_FAILED);
+    PUSH_EVENT(SC_EVENT_SERVER_CONNECTION_FAILED);
 }
 
 static void
@@ -253,7 +253,7 @@ sc_server_on_connected(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
-    PUSH_EVENT(EVENT_SERVER_CONNECTED);
+    PUSH_EVENT(SC_EVENT_SERVER_CONNECTED);
 }
 
 static void
