@@ -240,6 +240,9 @@ run_recorder(void *data) {
 
     LOGD("Recorder thread ended");
 
+    recorder->cbs->on_ended(recorder, !recorder->failed,
+                            recorder->cbs_userdata);
+
     return 0;
 }
 
@@ -387,10 +390,10 @@ sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
 }
 
 bool
-sc_recorder_init(struct sc_recorder *recorder,
-                 const char *filename,
+sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format,
-                 struct sc_size declared_frame_size) {
+                 struct sc_size declared_frame_size,
+                 const struct sc_recorder_callbacks *cbs, void *cbs_userdata) {
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOG_OOM();
@@ -399,6 +402,10 @@ sc_recorder_init(struct sc_recorder *recorder,
 
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
+
+    assert(cbs && cbs->on_ended);
+    recorder->cbs = cbs;
+    recorder->cbs_userdata = cbs_userdata;
 
     static const struct sc_packet_sink_ops ops = {
         .open = sc_recorder_packet_sink_open,
