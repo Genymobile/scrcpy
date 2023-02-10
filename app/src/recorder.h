@@ -34,12 +34,21 @@ struct sc_recorder {
     bool stopped; // set on recorder_close()
     bool failed; // set on packet write failure
     struct sc_recorder_queue queue;
+
+    const struct sc_recorder_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct sc_recorder_callbacks {
+    void (*on_ended)(struct sc_recorder *recorder, bool success,
+                     void *userdata);
 };
 
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format,
-                 struct sc_size declared_frame_size);
+                 struct sc_size declared_frame_size,
+                 const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
 void
 sc_recorder_destroy(struct sc_recorder *recorder);
