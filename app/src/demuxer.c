@@ -18,17 +18,10 @@
 #define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_KEY_FRAME - 1)
 
 static enum AVCodecID
-sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
-    uint8_t data[4];
-    ssize_t r = net_recv_all(demuxer->socket, data, 4);
-    if (r < 4) {
-        return AV_CODEC_ID_NONE;
-    }
-
+sc_demuxer_to_avcodec_id(uint32_t codec_id) {
 #define SC_CODEC_ID_H264 UINT32_C(0x68323634) // "h264" in ASCII
 #define SC_CODEC_ID_H265 UINT32_C(0x68323635) // "h265" in ASCII
 #define SC_CODEC_ID_AV1 UINT32_C(0x00617631) // "av1" in ASCII
-    uint32_t codec_id = sc_read32be(data);
     switch (codec_id) {
         case SC_CODEC_ID_H264:
             return AV_CODEC_ID_H264;
@@ -40,6 +33,18 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
             LOGE("Unknown codec id 0x%08" PRIx32, codec_id);
             return AV_CODEC_ID_NONE;
     }
+}
+
+static bool
+sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer, uint32_t *codec_id) {
+    uint8_t data[4];
+    ssize_t r = net_recv_all(demuxer->socket, data, 4);
+    if (r < 4) {
+        return false;
+    }
+
+    *codec_id = sc_read32be(data);
+    return true;
 }
 
 static bool
@@ -196,7 +201,13 @@ static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
 
-    enum AVCodecID codec_id = sc_demuxer_recv_codec_id(demuxer);
+    uint32_t raw_codec_id;
+    bool ok = sc_demuxer_recv_codec_id(demuxer, &raw_codec_id);
+    if (!ok) {
+        goto end;
+    }
+
+    enum AVCodecID codec_id = sc_demuxer_to_avcodec_id(raw_codec_id);
     if (codec_id == AV_CODEC_ID_NONE) {
         // Error already logged
         goto end;
