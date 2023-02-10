@@ -105,7 +105,7 @@ push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
     for (unsigned i = 0; i < demuxer->sink_count; ++i) {
         struct sc_packet_sink *sink = demuxer->sinks[i];
         if (!sink->ops->push(sink, packet)) {
-            LOGE("Could not send config packet to sink %d", i);
+            LOGE("Could not send packet to sink %d", i);
             return false;
         }
     }
