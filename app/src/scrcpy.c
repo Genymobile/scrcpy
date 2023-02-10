@@ -155,9 +155,12 @@ event_loop(struct scrcpy *s) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
-            case SC_EVENT_STREAM_STOPPED:
+            case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
                 return SCRCPY_EXIT_DISCONNECTED;
+            case SC_EVENT_DEMUXER_ERROR:
+                LOGE("Demuxer error");
+                return SCRCPY_EXIT_FAILURE;
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
@@ -233,11 +236,15 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
 }
 
 static void
-sc_demuxer_on_eos(struct sc_demuxer *demuxer, void *userdata) {
+sc_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos, void *userdata) {
     (void) demuxer;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_STREAM_STOPPED);
+    if (eos) {
+        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+    } else {
+        PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
+    }
 }
 
 static void
@@ -421,7 +428,7 @@ scrcpy(struct scrcpy_options *options) {
     av_log_set_callback(av_log_callback);
 
     static const struct sc_demuxer_callbacks demuxer_cbs = {
-        .on_eos = sc_demuxer_on_eos,
+        .on_ended = sc_demuxer_on_ended,
     };
     sc_demuxer_init(&s->demuxer, s->server.video_socket, &demuxer_cbs, NULL);
 

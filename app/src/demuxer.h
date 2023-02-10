@@ -31,7 +31,7 @@ struct sc_demuxer {
 };
 
 struct sc_demuxer_callbacks {
-    void (*on_eos)(struct sc_demuxer *demuxer, void *userdata);
+    void (*on_ended)(struct sc_demuxer *demuxer, bool eos, void *userdata);
 };
 
 void

@@ -201,9 +201,13 @@ static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
 
+    // Flag to report end-of-stream (i.e. device disconnected)
+    bool eos = false;
+
     uint32_t raw_codec_id;
     bool ok = sc_demuxer_recv_codec_id(demuxer, &raw_codec_id);
     if (!ok) {
+        eos = true;
         goto end;
     }
 
@@ -244,6 +248,7 @@ run_demuxer(void *data) {
         bool ok = sc_demuxer_recv_packet(demuxer, packet);
         if (!ok) {
             // end of stream
+            eos = true;
             break;
         }
 
@@ -267,7 +272,7 @@ finally_close_parser:
 finally_close_sinks:
     sc_demuxer_close_sinks(demuxer);
 end:
-    demuxer->cbs->on_eos(demuxer, demuxer->cbs_userdata);
+    demuxer->cbs->on_ended(demuxer, eos, demuxer->cbs_userdata);
 
     return 0;
 }
@@ -279,7 +284,7 @@ sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
     demuxer->pending = NULL;
     demuxer->sink_count = 0;
 
-    assert(cbs && cbs->on_eos);
+    assert(cbs && cbs->on_ended);
 
     demuxer->cbs = cbs;
     demuxer->cbs_userdata = cbs_userdata;
