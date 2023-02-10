@@ -161,6 +161,9 @@ event_loop(struct scrcpy *s) {
             case SC_EVENT_DEMUXER_ERROR:
                 LOGE("Demuxer error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_RECORDER_ERROR:
+                LOGE("Recorder error");
+                return SCRCPY_EXIT_FAILURE;
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
@@ -233,6 +236,17 @@ av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     memcpy(local_fmt + 9, fmt, fmt_len + 1); // include '\0'
     SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
     free(local_fmt);
+}
+
+static void
+sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
+                     void *userdata) {
+    (void) recorder;
+    (void) userdata;
+
+    if (!success) {
+        PUSH_EVENT(SC_EVENT_RECORDER_ERROR);
+    }
 }
 
 static void
@@ -416,10 +430,12 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_recorder *rec = NULL;
     if (options->record_filename) {
-        if (!sc_recorder_init(&s->recorder,
-                              options->record_filename,
-                              options->record_format,
-                              info->frame_size)) {
+        static const struct sc_recorder_callbacks recorder_cbs = {
+            .on_ended = sc_recorder_on_ended,
+        };
+        if (!sc_recorder_init(&s->recorder, options->record_filename,
+                              options->record_format, info->frame_size,
+                              &recorder_cbs, NULL)) {
             goto end;
         }
         rec = &s->recorder;
