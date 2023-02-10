@@ -57,6 +57,7 @@ public final class DeviceMessageSender {
                 loop();
             } catch (IOException | InterruptedException e) {
                 // this is expected on close
+            } finally {
                 Ln.d("Device message sender stopped");
             }
         });

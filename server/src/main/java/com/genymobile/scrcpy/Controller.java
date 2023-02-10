@@ -90,6 +90,7 @@ public class Controller {
                 control();
             } catch (IOException e) {
                 // this is expected on close
+            } finally {
                 Ln.d("Controller stopped");
             }
         });
