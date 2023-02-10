@@ -22,7 +22,7 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer) {
     uint8_t data[4];
     ssize_t r = net_recv_all(demuxer->socket, data, 4);
     if (r < 4) {
-        return false;
+        return AV_CODEC_ID_NONE;
     }
 
 #define SC_CODEC_ID_H264 UINT32_C(0x68323634) // "h264" in ASCII
