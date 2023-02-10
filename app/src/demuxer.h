@@ -21,10 +21,6 @@ struct sc_demuxer {
     struct sc_packet_sink *sinks[SC_DEMUXER_MAX_SINKS];
     unsigned sink_count;
 
-    // successive packets may need to be concatenated, until a non-config
-    // packet is available
-    AVPacket *pending;
-
     const struct sc_demuxer_callbacks *cbs;
     void *cbs_userdata;
 };

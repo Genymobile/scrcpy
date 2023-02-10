@@ -6,6 +6,7 @@
 
 #include "decoder.h"
 #include "events.h"
+#include "packet_merger.h"
 #include "recorder.h"
 #include "util/binary.h"
 #include "util/log.h"
@@ -120,48 +121,7 @@ push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
 
 static bool
 sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
-    bool is_config = packet->pts == AV_NOPTS_VALUE;
-
-    // A config packet must not be decoded immediately (it contains no
-    // frame); instead, it must be concatenated with the future data packet.
-    if (demuxer->pending || is_config) {
-        if (demuxer->pending) {
-            size_t offset = demuxer->pending->size;
-            if (av_grow_packet(demuxer->pending, packet->size)) {
-                LOG_OOM();
-                return false;
-            }
-
-            memcpy(demuxer->pending->data + offset, packet->data, packet->size);
-        } else {
-            demuxer->pending = av_packet_alloc();
-            if (!demuxer->pending) {
-                LOG_OOM();
-                return false;
-            }
-            if (av_packet_ref(demuxer->pending, packet)) {
-                LOG_OOM();
-                av_packet_free(&demuxer->pending);
-                return false;
-            }
-        }
-
-        if (!is_config) {
-            // prepare the concat packet to send to the decoder
-            demuxer->pending->pts = packet->pts;
-            demuxer->pending->dts = packet->dts;
-            demuxer->pending->flags = packet->flags;
-            packet = demuxer->pending;
-        }
-    }
-
     bool ok = push_packet_to_sinks(demuxer, packet);
-
-    if (!is_config && demuxer->pending) {
-        // the pending packet must be discarded (consumed or error)
-        av_packet_free(&demuxer->pending);
-    }
-
     if (!ok) {
         LOGE("Could not process packet");
         return false;
@@ -228,6 +188,9 @@ run_demuxer(void *data) {
         goto end;
     }
 
+    struct sc_packet_merger merger;
+    sc_packet_merger_init(&merger);
+
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
         LOG_OOM();
@@ -242,6 +205,13 @@ run_demuxer(void *data) {
             break;
         }
 
+        // Prepend any config packet to the next media packet
+        ok = sc_packet_merger_merge(&merger, packet);
+        if (!ok) {
+            av_packet_unref(packet);
+            break;
+        }
+
         ok = sc_demuxer_push_packet(demuxer, packet);
         av_packet_unref(packet);
         if (!ok) {
@@ -252,9 +222,7 @@ run_demuxer(void *data) {
 
     LOGD("End of frames");
 
-    if (demuxer->pending) {
-        av_packet_free(&demuxer->pending);
-    }
+    sc_packet_merger_destroy(&merger);
 
     av_packet_free(&packet);
 finally_close_sinks:
@@ -269,7 +237,6 @@ void
 sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
     demuxer->socket = socket;
-    demuxer->pending = NULL;
     demuxer->sink_count = 0;
 
     assert(cbs && cbs->on_ended);
