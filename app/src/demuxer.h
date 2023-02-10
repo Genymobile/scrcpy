@@ -21,7 +21,6 @@ struct sc_demuxer {
     struct sc_packet_sink *sinks[SC_DEMUXER_MAX_SINKS];
     unsigned sink_count;
 
-    AVCodecContext *codec_ctx;
     AVCodecParserContext *parser;
     // successive packets may need to be concatenated, until a non-config
     // packet is available

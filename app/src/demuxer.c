@@ -208,15 +208,9 @@ run_demuxer(void *data) {
         goto end;
     }
 
-    demuxer->codec_ctx = avcodec_alloc_context3(codec);
-    if (!demuxer->codec_ctx) {
-        LOG_OOM();
-        goto end;
-    }
-
     if (!sc_demuxer_open_sinks(demuxer, codec)) {
         LOGE("Could not open demuxer sinks");
-        goto finally_free_codec_ctx;
+        goto end;
     }
 
     demuxer->parser = av_parser_init(codec_id);
@@ -261,8 +255,6 @@ finally_close_parser:
     av_parser_close(demuxer->parser);
 finally_close_sinks:
     sc_demuxer_close_sinks(demuxer);
-finally_free_codec_ctx:
-    avcodec_free_context(&demuxer->codec_ctx);
 end:
     demuxer->cbs->on_eos(demuxer, demuxer->cbs_userdata);
 
