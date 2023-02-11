@@ -22,7 +22,7 @@ struct sc_server_info {
 };
 
 struct sc_server_params {
-    uint32_t uid;
+    uint32_t scid;
     const char *req_serial;
     enum sc_log_level log_level;
     enum sc_codec codec;

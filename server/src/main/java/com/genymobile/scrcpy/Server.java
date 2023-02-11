@@ -66,7 +66,7 @@ public final class Server {
 
         Thread initThread = startInitThread(options);
 
-        int uid = options.getUid();
+        int scid = options.getScid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
         boolean sendDummyByte = options.getSendDummyByte();
@@ -84,7 +84,7 @@ public final class Server {
             Workarounds.fillAppInfo();
         }
 
-        try (DesktopConnection connection = DesktopConnection.open(uid, tunnelForward, control, sendDummyByte)) {
+        try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, control, sendDummyByte)) {
             VideoCodec codec = options.getCodec();
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
@@ -158,12 +158,12 @@ public final class Server {
             String key = arg.substring(0, equalIndex);
             String value = arg.substring(equalIndex + 1);
             switch (key) {
-                case "uid":
-                    int uid = Integer.parseInt(value, 0x10);
-                    if (uid < -1) {
-                        throw new IllegalArgumentException("uid may not be negative (except -1 for 'none'): " + uid);
+                case "scid":
+                    int scid = Integer.parseInt(value, 0x10);
+                    if (scid < -1) {
+                        throw new IllegalArgumentException("scid may not be negative (except -1 for 'none'): " + scid);
                     }
-                    options.setUid(uid);
+                    options.setScid(scid);
                     break;
                 case "log_level":
                     Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));

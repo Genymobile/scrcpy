@@ -46,17 +46,17 @@ public final class DesktopConnection implements Closeable {
         return localSocket;
     }
 
-    private static String getSocketName(int uid) {
-        if (uid == -1) {
-            // If no UID is set, use "scrcpy" to simplify using scrcpy-server alone
+    private static String getSocketName(int scid) {
+        if (scid == -1) {
+            // If no SCID is set, use "scrcpy" to simplify using scrcpy-server alone
             return SOCKET_NAME_PREFIX;
         }
 
-        return SOCKET_NAME_PREFIX + String.format("_%08x", uid);
+        return SOCKET_NAME_PREFIX + String.format("_%08x", scid);
     }
 
-    public static DesktopConnection open(int uid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
-        String socketName = getSocketName(uid);
+    public static DesktopConnection open(int scid, boolean tunnelForward, boolean control, boolean sendDummyByte) throws IOException {
+        String socketName = getSocketName(scid);
 
         LocalSocket videoSocket;
         LocalSocket controlSocket = null;

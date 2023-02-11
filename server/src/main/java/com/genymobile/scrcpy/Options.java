@@ -7,7 +7,7 @@ import java.util.List;
 public class Options {
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
-    private int uid = -1; // 31-bit non-negative value, or -1
+    private int scid = -1; // 31-bit non-negative value, or -1
     private int maxSize;
     private VideoCodec codec = VideoCodec.H264;
     private int bitRate = 8000000;
@@ -41,12 +41,12 @@ public class Options {
         this.logLevel = logLevel;
     }
 
-    public int getUid() {
-        return uid;
+    public int getScid() {
+        return scid;
     }
 
-    public void setUid(int uid) {
-        this.uid = uid;
+    public void setScid(int scid) {
+        this.scid = scid;
     }
 
     public int getMaxSize() {

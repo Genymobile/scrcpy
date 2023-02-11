@@ -213,7 +213,7 @@ execute_server(struct sc_server *server,
         cmd[count++] = p; \
     }
 
-    ADD_PARAM("uid=%08x", params->uid);
+    ADD_PARAM("scid=%08x", params->scid);
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
     ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
 
@@ -787,7 +787,7 @@ run_server(void *data) {
     LOGD("Device serial: %s", serial);
 
     int r = asprintf(&server->device_socket_name, SC_SOCKET_NAME_PREFIX "%08x",
-                     params->uid);
+                     params->scid);
     if (r == -1) {
         LOG_OOM();
         goto error_connection_failed;

@@ -273,8 +273,9 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
+// Generate a scrcpy id to differentiate multiple running scrcpy instances
 static uint32_t
-scrcpy_generate_uid() {
+scrcpy_generate_scid() {
     struct sc_rand rand;
     sc_rand_init(&rand);
     // Only use 31 bits to avoid issues with signed values on the Java-side
@@ -314,10 +315,10 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_acksync *acksync = NULL;
 
-    uint32_t uid = scrcpy_generate_uid();
+    uint32_t scid = scrcpy_generate_scid();
 
     struct sc_server_params params = {
-        .uid = uid,
+        .scid = scid,
         .req_serial = options->serial,
         .select_usb = options->select_usb,
         .select_tcpip = options->select_tcpip,
