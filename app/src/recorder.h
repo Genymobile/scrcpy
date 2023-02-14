@@ -31,9 +31,13 @@ struct sc_recorder {
     sc_thread thread;
     sc_mutex mutex;
     sc_cond queue_cond;
-    bool stopped; // set on recorder_close()
-    bool failed; // set on packet write failure
+    // set on sc_recorder_stop(), packet_sink close or recording failure
+    bool stopped;
     struct sc_recorder_queue queue;
+
+    // wake up the recorder thread once the codec in known
+    sc_cond stream_cond;
+    const AVCodec *codec;
 
     const struct sc_recorder_callbacks *cbs;
     void *cbs_userdata;
@@ -49,6 +53,12 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format,
                  struct sc_size declared_frame_size,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
+
+void
+sc_recorder_stop(struct sc_recorder *recorder);
+
+void
+sc_recorder_join(struct sc_recorder *recorder);
 
 void
 sc_recorder_destroy(struct sc_recorder *recorder);
