@@ -660,6 +660,9 @@ end:
     if (file_pusher_initialized) {
         sc_file_pusher_stop(&s->file_pusher);
     }
+    if (recorder_initialized) {
+        sc_recorder_stop(&s->recorder);
+    }
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
     }
@@ -706,6 +709,7 @@ end:
     }
 
     if (recorder_initialized) {
+        sc_recorder_join(&s->recorder);
         sc_recorder_destroy(&s->recorder);
     }
 
