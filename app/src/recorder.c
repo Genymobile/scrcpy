@@ -248,33 +248,18 @@ run_recorder(void *data) {
 
 static bool
 sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
-    bool ok = sc_mutex_init(&recorder->mutex);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_cond_init(&recorder->queue_cond);
-    if (!ok) {
-        goto error_mutex_destroy;
-    }
-
-    sc_queue_init(&recorder->queue);
-    recorder->stopped = false;
-    recorder->failed = false;
-    recorder->header_written = false;
-
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
     if (!format) {
         LOGE("Could not find muxer");
-        goto error_cond_destroy;
+        return false;
     }
 
     recorder->ctx = avformat_alloc_context();
     if (!recorder->ctx) {
         LOG_OOM();
-        goto error_cond_destroy;
+        return false;
     }
 
     // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
@@ -306,8 +291,8 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     }
 
     LOGD("Starting recorder thread");
-    ok = sc_thread_create(&recorder->thread, run_recorder, "scrcpy-recorder",
-                          recorder);
+    bool ok = sc_thread_create(&recorder->thread, run_recorder,
+                               "scrcpy-recorder", recorder);
     if (!ok) {
         LOGE("Could not start recorder thread");
         goto error_avio_close;
@@ -321,10 +306,6 @@ error_avio_close:
     avio_close(recorder->ctx->pb);
 error_avformat_free_context:
     avformat_free_context(recorder->ctx);
-error_cond_destroy:
-    sc_cond_destroy(&recorder->queue_cond);
-error_mutex_destroy:
-    sc_mutex_destroy(&recorder->mutex);
 
     return false;
 }
@@ -340,8 +321,6 @@ sc_recorder_close(struct sc_recorder *recorder) {
 
     avio_close(recorder->ctx->pb);
     avformat_free_context(recorder->ctx);
-    sc_cond_destroy(&recorder->queue_cond);
-    sc_mutex_destroy(&recorder->mutex);
 }
 
 static bool
@@ -400,6 +379,21 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
         return false;
     }
 
+    bool ok = sc_mutex_init(&recorder->mutex);
+    if (!ok) {
+        goto error_free_filename;
+    }
+
+    ok = sc_cond_init(&recorder->queue_cond);
+    if (!ok) {
+        goto error_mutex_destroy;
+    }
+
+    sc_queue_init(&recorder->queue);
+    recorder->stopped = false;
+    recorder->failed = false;
+    recorder->header_written = false;
+
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
 
@@ -416,9 +410,18 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->packet_sink.ops = &ops;
 
     return true;
+
+error_mutex_destroy:
+    sc_mutex_destroy(&recorder->mutex);
+error_free_filename:
+    free(recorder->filename);
+
+    return false;
 }
 
 void
 sc_recorder_destroy(struct sc_recorder *recorder) {
+    sc_cond_destroy(&recorder->queue_cond);
+    sc_mutex_destroy(&recorder->mutex);
     free(recorder->filename);
 }
