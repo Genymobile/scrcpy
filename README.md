@@ -975,6 +975,9 @@ scrcpy --otg                             # keyboard and mouse
 Like `--hid-keyboard` and `--hid-mouse`, it only works if the device is
 connected by USB.
 
+#### Restart
+
+To restart the device, hold <kbd>MOD</kbd>+<kbd>p</kbd> (`POWER` button). Depending on the device, this opens a menu where `restart` or `shutdown` can be selected.
 
 #### Text injection preference
 
