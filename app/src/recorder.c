@@ -247,7 +247,11 @@ run_recorder(void *data) {
 }
 
 static bool
-sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
+sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
+                             const AVCodec *codec) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+    assert(codec);
+
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
     const AVOutputFormat *format = find_muxer(format_name);
@@ -271,13 +275,13 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     av_dict_set(&recorder->ctx->metadata, "comment",
                 "Recorded by scrcpy " SCRCPY_VERSION, 0);
 
-    AVStream *ostream = avformat_new_stream(recorder->ctx, input_codec);
+    AVStream *ostream = avformat_new_stream(recorder->ctx, codec);
     if (!ostream) {
         goto error_avformat_free_context;
     }
 
     ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    ostream->codecpar->codec_id = input_codec->id;
+    ostream->codecpar->codec_id = codec->id;
     ostream->codecpar->format = AV_PIX_FMT_YUV420P;
     ostream->codecpar->width = recorder->declared_frame_size.width;
     ostream->codecpar->height = recorder->declared_frame_size.height;
@@ -311,7 +315,9 @@ error_avformat_free_context:
 }
 
 static void
-sc_recorder_close(struct sc_recorder *recorder) {
+sc_recorder_packet_sink_close(struct sc_packet_sink *sink) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+
     sc_mutex_lock(&recorder->mutex);
     recorder->stopped = true;
     sc_cond_signal(&recorder->queue_cond);
@@ -324,7 +330,10 @@ sc_recorder_close(struct sc_recorder *recorder) {
 }
 
 static bool
-sc_recorder_push(struct sc_recorder *recorder, const AVPacket *packet) {
+sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
+                             const AVPacket *packet) {
+    struct sc_recorder *recorder = DOWNCAST(sink);
+
     sc_mutex_lock(&recorder->mutex);
     assert(!recorder->stopped);
 
@@ -346,26 +355,6 @@ sc_recorder_push(struct sc_recorder *recorder, const AVPacket *packet) {
 
     sc_mutex_unlock(&recorder->mutex);
     return true;
-}
-
-static bool
-sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
-                             const AVCodec *codec) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
-    return sc_recorder_open(recorder, codec);
-}
-
-static void
-sc_recorder_packet_sink_close(struct sc_packet_sink *sink) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
-    sc_recorder_close(recorder);
-}
-
-static bool
-sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
-                             const AVPacket *packet) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
-    return sc_recorder_push(recorder, packet);
 }
 
 bool
