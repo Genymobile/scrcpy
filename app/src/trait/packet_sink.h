@@ -19,6 +19,7 @@ struct sc_packet_sink {
 };
 
 struct sc_packet_sink_ops {
+    /* The codec instance is static, it is valid until the end of the program */
     bool (*open)(struct sc_packet_sink *sink, const AVCodec *codec);
     void (*close)(struct sc_packet_sink *sink);
     bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
