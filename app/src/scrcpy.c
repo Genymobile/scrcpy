@@ -435,7 +435,7 @@ scrcpy(struct scrcpy_options *options) {
         }
         recorder_started = true;
 
-        sc_demuxer_add_sink(&s->video_demuxer, &s->recorder.packet_sink);
+        sc_demuxer_add_sink(&s->video_demuxer, &s->recorder.video_packet_sink);
     }
 
     struct sc_controller *controller = NULL;
