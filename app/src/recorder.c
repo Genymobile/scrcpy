@@ -8,8 +8,9 @@
 #include "util/log.h"
 #include "util/str.h"
 
-/** Downcast packet_sink to recorder */
-#define DOWNCAST(SINK) container_of(SINK, struct sc_recorder, packet_sink)
+/** Downcast video packet_sink to recorder */
+#define DOWNCAST_VIDEO(SINK) \
+    container_of(SINK, struct sc_recorder, video_packet_sink)
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
@@ -154,10 +155,10 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
 static bool
 sc_recorder_wait_video_stream(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
-    while (!recorder->codec && !recorder->stopped) {
+    while (!recorder->video_codec && !recorder->stopped) {
         sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
     }
-    const AVCodec *codec = recorder->codec;
+    const AVCodec *codec = recorder->video_codec;
     sc_mutex_unlock(&recorder->mutex);
 
     if (codec) {
@@ -180,17 +181,17 @@ static bool
 sc_recorder_process_header(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
 
-    while (!recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+    while (!recorder->stopped && sc_queue_is_empty(&recorder->video_queue)) {
         sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
     }
 
-    if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+    if (recorder->stopped && sc_queue_is_empty(&recorder->video_queue)) {
         sc_mutex_unlock(&recorder->mutex);
         return false;
     }
 
     struct sc_record_packet *rec;
-    sc_queue_take(&recorder->queue, next, &rec);
+    sc_queue_take(&recorder->video_queue, next, &rec);
 
     sc_mutex_unlock(&recorder->mutex);
 
@@ -226,20 +227,21 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
 
-        while (!recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+        while (!recorder->stopped
+                && sc_queue_is_empty(&recorder->video_queue)) {
             sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
         }
 
         // if stopped is set, continue to process the remaining events (to
         // finish the recording) before actually stopping
 
-        if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+        if (recorder->stopped && sc_queue_is_empty(&recorder->video_queue)) {
             sc_mutex_unlock(&recorder->mutex);
             break;
         }
 
         struct sc_record_packet *rec;
-        sc_queue_take(&recorder->queue, next, &rec);
+        sc_queue_take(&recorder->video_queue, next, &rec);
 
         sc_mutex_unlock(&recorder->mutex);
 
@@ -336,7 +338,7 @@ run_recorder(void *data) {
     // Prevent the producer to push any new packet
     recorder->stopped = true;
     // Discard pending packets
-    sc_recorder_queue_clear(&recorder->queue);
+    sc_recorder_queue_clear(&recorder->video_queue);
     sc_mutex_unlock(&recorder->mutex);
 
     if (success) {
@@ -355,9 +357,9 @@ run_recorder(void *data) {
 }
 
 static bool
-sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
-                             const AVCodec *codec) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
+sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
+                                   const AVCodec *codec) {
+    struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
     assert(codec);
 
     sc_mutex_lock(&recorder->mutex);
@@ -366,7 +368,7 @@ sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    recorder->codec = codec;
+    recorder->video_codec = codec;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 
@@ -374,8 +376,8 @@ sc_recorder_packet_sink_open(struct sc_packet_sink *sink,
 }
 
 static void
-sc_recorder_packet_sink_close(struct sc_packet_sink *sink) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
+sc_recorder_video_packet_sink_close(struct sc_packet_sink *sink) {
+    struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
 
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
@@ -385,9 +387,9 @@ sc_recorder_packet_sink_close(struct sc_packet_sink *sink) {
 }
 
 static bool
-sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
-                             const AVPacket *packet) {
-    struct sc_recorder *recorder = DOWNCAST(sink);
+sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
+                                   const AVPacket *packet) {
+    struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
 
     sc_mutex_lock(&recorder->mutex);
 
@@ -404,7 +406,7 @@ sc_recorder_packet_sink_push(struct sc_packet_sink *sink,
         return false;
     }
 
-    sc_queue_push(&recorder->queue, next, rec);
+    sc_queue_push(&recorder->video_queue, next, rec);
     sc_cond_signal(&recorder->queue_cond);
 
     sc_mutex_unlock(&recorder->mutex);
@@ -437,10 +439,10 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
         goto error_queue_cond_destroy;
     }
 
-    sc_queue_init(&recorder->queue);
+    sc_queue_init(&recorder->video_queue);
     recorder->stopped = false;
 
-    recorder->codec = NULL;
+    recorder->video_codec = NULL;
 
     recorder->format = format;
     recorder->declared_frame_size = declared_frame_size;
@@ -449,13 +451,13 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->cbs = cbs;
     recorder->cbs_userdata = cbs_userdata;
 
-    static const struct sc_packet_sink_ops ops = {
-        .open = sc_recorder_packet_sink_open,
-        .close = sc_recorder_packet_sink_close,
-        .push = sc_recorder_packet_sink_push,
+    static const struct sc_packet_sink_ops video_ops = {
+        .open = sc_recorder_video_packet_sink_open,
+        .close = sc_recorder_video_packet_sink_close,
+        .push = sc_recorder_video_packet_sink_push,
     };
 
-    recorder->packet_sink.ops = &ops;
+    recorder->video_packet_sink.ops = &video_ops;
 
     return true;
 
