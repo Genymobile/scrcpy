@@ -477,7 +477,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     if (rec) {
-        sc_demuxer_add_sink(&s->video_demuxer, &rec->packet_sink);
+        sc_demuxer_add_sink(&s->video_demuxer, &rec->video_packet_sink);
     }
 
     struct sc_controller *controller = NULL;
