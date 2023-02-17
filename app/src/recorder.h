@@ -34,12 +34,6 @@ struct sc_recorder {
     bool stopped; // set on recorder_close()
     bool failed; // set on packet write failure
     struct sc_recorder_queue queue;
-
-    // we can write a packet only once we received the next one so that we can
-    // set its duration (next_pts - current_pts)
-    // "previous" is only accessed from the recorder thread, so it does not
-    // need to be protected by the mutex
-    struct sc_record_packet *previous;
 };
 
 bool
