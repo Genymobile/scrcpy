@@ -48,4 +48,9 @@ public final class IO {
         }
         return builder.toString();
     }
+
+    public static boolean isBrokenPipe(IOException e) {
+        Throwable cause = e.getCause();
+        return cause instanceof ErrnoException && ((ErrnoException) cause).errno == OsConstants.EPIPE;
+    }
 }

@@ -110,7 +110,10 @@ public final class Server {
                 }
                 screenEncoder.streamScreen(device, videoStreamer);
             } catch (IOException e) {
-                // this is expected on close
+                // Broken pipe is expected on close, because the socket is closed by the client
+                if (!IO.isBrokenPipe(e)) {
+                    Ln.e("Video encoding error", e);
+                }
             } finally {
                 Ln.d("Screen streaming stopped");
                 initThread.interrupt();
