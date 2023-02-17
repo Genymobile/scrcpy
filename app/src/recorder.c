@@ -136,6 +136,8 @@ static int
 run_recorder(void *data) {
     struct sc_recorder *recorder = data;
 
+    int64_t pts_origin = AV_NOPTS_VALUE;
+
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
 
@@ -169,15 +171,15 @@ run_recorder(void *data) {
 
         sc_mutex_unlock(&recorder->mutex);
 
-        if (recorder->pts_origin == AV_NOPTS_VALUE
+        if (pts_origin == AV_NOPTS_VALUE
                 && rec->packet->pts != AV_NOPTS_VALUE) {
             // First PTS received
-            recorder->pts_origin = rec->packet->pts;
+            pts_origin = rec->packet->pts;
         }
 
         if (rec->packet->pts != AV_NOPTS_VALUE) {
             // Set PTS relatve to the origin
-            rec->packet->pts -= recorder->pts_origin;
+            rec->packet->pts -= pts_origin;
             rec->packet->dts = rec->packet->pts;
         }
 
@@ -255,7 +257,6 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     recorder->failed = false;
     recorder->header_written = false;
     recorder->previous = NULL;
-    recorder->pts_origin = AV_NOPTS_VALUE;
 
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
