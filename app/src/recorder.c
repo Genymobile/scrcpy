@@ -138,6 +138,10 @@ run_recorder(void *data) {
 
     int64_t pts_origin = AV_NOPTS_VALUE;
 
+    // We can write a packet only once we received the next one so that we can
+    // set its duration (next_pts - current_pts)
+    struct sc_record_packet *previous = NULL;
+
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
 
@@ -150,7 +154,7 @@ run_recorder(void *data) {
 
         if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
             sc_mutex_unlock(&recorder->mutex);
-            struct sc_record_packet *last = recorder->previous;
+            struct sc_record_packet *last = previous;
             if (last) {
                 // assign an arbitrary duration to the last packet
                 last->packet->duration = 100000;
@@ -183,12 +187,9 @@ run_recorder(void *data) {
             rec->packet->dts = rec->packet->pts;
         }
 
-        // recorder->previous is only written from this thread, no need to lock
-        struct sc_record_packet *previous = recorder->previous;
-        recorder->previous = rec;
-
         if (!previous) {
             // we just received the first packet
+            previous = rec;
             continue;
         }
 
@@ -212,6 +213,8 @@ run_recorder(void *data) {
             sc_mutex_unlock(&recorder->mutex);
             break;
         }
+
+        previous = rec;
     }
 
     if (!recorder->failed) {
@@ -256,7 +259,6 @@ sc_recorder_open(struct sc_recorder *recorder, const AVCodec *input_codec) {
     recorder->stopped = false;
     recorder->failed = false;
     recorder->header_written = false;
-    recorder->previous = NULL;
 
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
