@@ -40,6 +40,12 @@ public final class Streamer {
         }
     }
 
+    public void writeDisableStream() throws IOException {
+        // Writing 0 (32-bit) as codec-id means that the device disables the stream (because it could not capture)
+        byte[] zeros = new byte[4];
+        IO.writeFully(fd, zeros, 0, zeros.length);
+    }
+
     public void writePacket(ByteBuffer buffer, long pts, boolean config, boolean keyFrame) throws IOException {
         if (config && codec == AudioCodec.OPUS) {
             fixOpusConfigPacket(buffer);
