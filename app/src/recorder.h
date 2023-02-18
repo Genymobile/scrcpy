@@ -20,7 +20,10 @@ struct sc_record_packet {
 struct sc_recorder_queue SC_QUEUE(struct sc_record_packet);
 
 struct sc_recorder {
-    struct sc_packet_sink video_packet_sink; // packet sink trait
+    struct sc_packet_sink video_packet_sink;
+    struct sc_packet_sink audio_packet_sink;
+
+    bool audio;
 
     char *filename;
     enum sc_record_format format;
@@ -33,10 +36,15 @@ struct sc_recorder {
     // set on sc_recorder_stop(), packet_sink close or recording failure
     bool stopped;
     struct sc_recorder_queue video_queue;
+    struct sc_recorder_queue audio_queue;
 
-    // wake up the recorder thread once the video codec is known
+    // wake up the recorder thread once the video or audio codec is known
     sc_cond stream_cond;
     const AVCodec *video_codec;
+    const AVCodec *audio_codec;
+
+    int video_stream_index;
+    int audio_stream_index;
 
     const struct sc_recorder_callbacks *cbs;
     void *cbs_userdata;
@@ -49,7 +57,7 @@ struct sc_recorder_callbacks {
 
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
-                 enum sc_record_format format,
+                 enum sc_record_format format, bool audio,
                  struct sc_size declared_frame_size,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
