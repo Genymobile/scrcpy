@@ -215,8 +215,10 @@ execute_server(struct sc_server *server,
 
     ADD_PARAM("scid=%08x", params->scid);
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
-    ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
 
+    if (params->bit_rate) {
+        ADD_PARAM("bit_rate=%" PRIu32, params->bit_rate);
+    }
     if (!params->audio) {
         ADD_PARAM("audio=false");
     }
