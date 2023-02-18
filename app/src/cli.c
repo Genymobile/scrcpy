@@ -110,7 +110,8 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CODEC,
         .longopt = "codec",
         .argdesc = "name",
-        .text = "Select a video codec (h264, h265 or av1).",
+        .text = "Select a video codec (h264, h265 or av1).\n"
+                "Default is h264.",
     },
     {
         .longopt_id = OPT_CODEC_OPTIONS,
