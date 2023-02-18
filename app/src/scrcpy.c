@@ -357,6 +357,7 @@ scrcpy(struct scrcpy_options *options) {
         .tunnel_port = options->tunnel_port,
         .max_size = options->max_size,
         .bit_rate = options->bit_rate,
+        .audio_bit_rate = options->audio_bit_rate,
         .max_fps = options->max_fps,
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
