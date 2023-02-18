@@ -249,7 +249,9 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
     }
 
-    if (recorder->stopped && sc_recorder_has_empty_queues(recorder)) {
+    if (recorder->stopped && sc_queue_is_empty(&recorder->video_queue)) {
+        // If the recorder is stopped, don't process anything if there are not
+        // at least video packets
         sc_mutex_unlock(&recorder->mutex);
         return false;
     }
@@ -257,8 +259,9 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     struct sc_record_packet *video_pkt;
     sc_queue_take(&recorder->video_queue, next, &video_pkt);
 
-    struct sc_record_packet *audio_pkt;
-    if (recorder->audio) {
+    struct sc_record_packet *audio_pkt = NULL;
+    if (!sc_queue_is_empty(&recorder->audio_queue)) {
+        assert(recorder->audio);
         sc_queue_take(&recorder->audio_queue, next, &audio_pkt);
     }
 
@@ -279,7 +282,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
         goto end;
     }
 
-    if (recorder->audio) {
+    if (audio_pkt) {
         if (audio_pkt->packet->pts != AV_NOPTS_VALUE) {
             LOGE("The first audio packet is not a config packet");
             goto end;
@@ -304,7 +307,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
 
 end:
     sc_record_packet_delete(video_pkt);
-    if (recorder->audio) {
+    if (audio_pkt) {
         sc_record_packet_delete(audio_pkt);
     }
 
@@ -392,6 +395,21 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
             } else if (video_pkt && audio_pkt) {
                 pts_origin =
                     MIN(video_pkt->packet->pts, audio_pkt->packet->pts);
+            } else if (recorder->stopped) {
+                if (video_pkt) {
+                    // The recorder is stopped without audio, record the video
+                    // packets
+                    pts_origin = video_pkt->packet->pts;
+                } else {
+                    // Fail if there is no video
+                    error = true;
+                    goto end;
+                }
+                // If the recorder is stopped while one of the streams has no
+                // packets, then we must avoid a live-loop and correctly record
+                // the stream having packets.
+                pts_origin = video_pkt ? video_pkt->packet->pts
+                                       : audio_pkt->packet->pts;
             } else {
                 // We need both video and audio packets to initialize pts_origin
                 continue;
