@@ -73,7 +73,7 @@ _scrcpy() {
             return
             ;;
         --audio-codec)
-            COMPREPLY=($(compgen -W 'opus' -- "$cur"))
+            COMPREPLY=($(compgen -W 'opus aac' -- "$cur"))
             return
             ;;
         --lock-video-orientation)
