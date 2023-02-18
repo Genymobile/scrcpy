@@ -255,6 +255,11 @@ public final class AudioEncoder {
 
             waitEnded();
         } finally {
+            if (!recorderStarted) {
+                // Notify the client that the audio could not be captured
+                streamer.writeDisableStream();
+            }
+
             // Cleanup everything (either at the end or on error at any step of the initialization)
             if (mediaCodecThread != null) {
                 Looper looper = mediaCodecThread.getLooper();
