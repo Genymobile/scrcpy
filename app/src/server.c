@@ -167,6 +167,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "av1";
         case SC_CODEC_OPUS:
             return "opus";
+        case SC_CODEC_AAC:
+            return "aac";
         default:
             return NULL;
     }
