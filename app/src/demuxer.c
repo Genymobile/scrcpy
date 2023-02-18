@@ -160,6 +160,16 @@ sc_demuxer_open_sinks(struct sc_demuxer *demuxer, const AVCodec *codec) {
     return true;
 }
 
+static void
+sc_demuxer_disable_sinks(struct sc_demuxer *demuxer) {
+    for (unsigned i = 0; i < demuxer->sink_count; ++i) {
+        struct sc_packet_sink *sink = demuxer->sinks[i];
+        if (sink->ops->disable) {
+            sink->ops->disable(sink);
+        }
+    }
+}
+
 static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
@@ -170,6 +180,13 @@ run_demuxer(void *data) {
     uint32_t raw_codec_id;
     bool ok = sc_demuxer_recv_codec_id(demuxer, &raw_codec_id);
     if (!ok) {
+        eos = true;
+        goto end;
+    }
+
+    if (raw_codec_id == 0) {
+        // Stream explicitly disabled by the device
+        sc_demuxer_disable_sinks(demuxer);
         eos = true;
         goto end;
     }
