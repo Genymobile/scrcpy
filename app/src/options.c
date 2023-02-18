@@ -28,7 +28,7 @@ const struct scrcpy_options scrcpy_options_default = {
         .count = 2,
     },
     .max_size = 0,
-    .bit_rate = DEFAULT_BIT_RATE,
+    .bit_rate = 0,
     .max_fps = 0,
     .lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED,
     .rotation = 0,
