@@ -195,10 +195,6 @@ conf.set('PORTABLE', get_option('portable'))
 conf.set('DEFAULT_LOCAL_PORT_RANGE_FIRST', '27183')
 conf.set('DEFAULT_LOCAL_PORT_RANGE_LAST', '27199')
 
-# the default video bitrate, in bits/second
-# overridden by option --bit-rate
-conf.set('DEFAULT_BIT_RATE', '8000000')  # 8Mbps
-
 # run a server debugger and wait for a client to be attached
 conf.set('SERVER_DEBUGGER', get_option('server_debugger'))
 
