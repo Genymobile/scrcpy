@@ -109,7 +109,8 @@ public final class Server {
             }
 
             if (audio) {
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), AudioCodec.OPUS, options.getSendCodecId(), options.getSendFrameMeta());
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
+                        options.getSendFrameMeta());
                 audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate());
                 audioEncoder.start();
             }
@@ -201,6 +202,13 @@ public final class Server {
                         throw new IllegalArgumentException("Video codec " + value + " not supported");
                     }
                     options.setVideoCodec(videoCodec);
+                    break;
+                case "audio_codec":
+                    AudioCodec audioCodec = AudioCodec.findByName(value);
+                    if (audioCodec == null) {
+                        throw new IllegalArgumentException("Audio codec " + value + " not supported");
+                    }
+                    options.setAudioCodec(audioCodec);
                     break;
                 case "max_size":
                     int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
