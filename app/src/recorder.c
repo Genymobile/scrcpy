@@ -220,19 +220,6 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
 
         if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
             sc_mutex_unlock(&recorder->mutex);
-            struct sc_record_packet *last = previous;
-            if (last) {
-                // assign an arbitrary duration to the last packet
-                last->packet->duration = 100000;
-                bool ok = sc_recorder_write(recorder, last->packet);
-                if (!ok) {
-                    // failing to write the last frame is not very serious, no
-                    // future frame may depend on it, so the resulting file
-                    // will still be valid
-                    LOGW("Could not record last packet");
-                }
-                sc_record_packet_delete(last);
-            }
             break;
         }
 
@@ -281,6 +268,21 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
     if (!recorder->header_written) {
         // the recorded file is empty
         return false;
+    }
+
+    // Write the last packet
+    struct sc_record_packet *last = previous;
+    if (last) {
+        // assign an arbitrary duration to the last packet
+        last->packet->duration = 100000;
+        bool ok = sc_recorder_write(recorder, last->packet);
+        if (!ok) {
+            // failing to write the last frame is not very serious, no
+            // future frame may depend on it, so the resulting file
+            // will still be valid
+            LOGW("Could not record last packet");
+        }
+        sc_record_packet_delete(last);
     }
 
     int ret = av_write_trailer(recorder->ctx);
