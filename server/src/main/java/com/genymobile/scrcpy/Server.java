@@ -110,7 +110,7 @@ public final class Server {
 
             if (audio) {
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), AudioCodec.OPUS, options.getSendCodecId(), options.getSendFrameMeta());
-                audioEncoder = new AudioEncoder(audioStreamer);
+                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate());
                 audioEncoder.start();
             }
 
@@ -209,6 +209,10 @@ public final class Server {
                 case "video_bit_rate":
                     int videoBitRate = Integer.parseInt(value);
                     options.setVideoBitRate(videoBitRate);
+                    break;
+                case "audio_bit_rate":
+                    int audioBitRate = Integer.parseInt(value);
+                    options.setAudioBitRate(audioBitRate);
                     break;
                 case "max_fps":
                     int maxFps = Integer.parseInt(value);
