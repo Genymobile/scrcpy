@@ -387,7 +387,7 @@ scrcpy(struct scrcpy_options *options) {
     static const struct sc_demuxer_callbacks video_demuxer_cbs = {
         .on_ended = sc_video_demuxer_on_ended,
     };
-    sc_demuxer_init(&s->video_demuxer, s->server.video_socket,
+    sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
                     &video_demuxer_cbs, NULL);
 
     bool needs_decoder = options->display;
