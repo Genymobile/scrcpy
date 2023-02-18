@@ -107,7 +107,7 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Encode the video at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
-                "Default is " STR(DEFAULT_BIT_RATE) ".",
+                "Default is 8M (8000000).",
     },
     {
         .longopt_id = OPT_CODEC,
