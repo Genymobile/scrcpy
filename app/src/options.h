@@ -27,6 +27,7 @@ enum sc_codec {
     SC_CODEC_H264,
     SC_CODEC_H265,
     SC_CODEC_AV1,
+    SC_CODEC_OPUS,
 };
 
 enum sc_lock_video_orientation {
@@ -100,6 +101,7 @@ struct scrcpy_options {
 #endif
     enum sc_log_level log_level;
     enum sc_codec video_codec;
+    enum sc_codec audio_codec;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;

@@ -11,6 +11,7 @@ public class Options {
     private boolean audio = true;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
+    private AudioCodec audioCodec = AudioCodec.OPUS;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private int maxFps;
@@ -73,6 +74,14 @@ public class Options {
 
     public void setVideoCodec(VideoCodec videoCodec) {
         this.videoCodec = videoCodec;
+    }
+
+    public AudioCodec getAudioCodec() {
+        return audioCodec;
+    }
+
+    public void setAudioCodec(AudioCodec audioCodec) {
+        this.audioCodec = audioCodec;
     }
 
     public int getVideoBitRate() {
