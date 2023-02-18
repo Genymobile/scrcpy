@@ -64,6 +64,7 @@ enum {
     OPT_CODEC,
     OPT_VIDEO_CODEC,
     OPT_NO_AUDIO,
+    OPT_AUDIO_BIT_RATE,
 };
 
 struct sc_option {
@@ -104,6 +105,14 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
         .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .longopt_id = OPT_AUDIO_BIT_RATE,
+        .longopt = "audio-bit-rate",
+        .argdesc = "value",
+        .text = "Encode the audio at the given bit-rate, expressed in bits/s. "
+                "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
+                "Default is 128K (128000).",
     },
     {
         .shortopt = 'b',
@@ -1458,6 +1467,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 // fall through
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->video_bit_rate)) {
+                    return false;
+                }
+                break;
+            case OPT_AUDIO_BIT_RATE:
+                if (!parse_bit_rate(optarg, &opts->audio_bit_rate)) {
                     return false;
                 }
                 break;
