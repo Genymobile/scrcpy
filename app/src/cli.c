@@ -119,7 +119,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_CODEC,
         .longopt = "audio-codec",
         .argdesc = "name",
-        .text = "Select an audio codec (opus).\n"
+        .text = "Select an audio codec (opus or aac).\n"
                 "Default is opus.",
     },
     {
@@ -1466,7 +1466,11 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_OPUS;
         return true;
     }
-    LOGE("Unsupported audio codec: %s (expected opus)", optarg);
+    if (!strcmp(optarg, "aac")) {
+        *codec = SC_CODEC_AAC;
+        return true;
+    }
+    LOGE("Unsupported audio codec: %s (expected opus or aac)", optarg);
     return false;
 }
 
