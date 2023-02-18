@@ -15,6 +15,8 @@
 #define SC_DEMUXER_MAX_SINKS 2
 
 struct sc_demuxer {
+    const char *name; // must be statically allocated (e.g. a string literal)
+
     sc_socket socket;
     sc_thread thread;
 
@@ -29,8 +31,9 @@ struct sc_demuxer_callbacks {
     void (*on_ended)(struct sc_demuxer *demuxer, bool eos, void *userdata);
 };
 
+// The name must be statically allocated (e.g. a string literal)
 void
-sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
+sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata);
 
 void
