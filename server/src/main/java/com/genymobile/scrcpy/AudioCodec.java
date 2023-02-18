@@ -3,7 +3,8 @@ package com.genymobile.scrcpy;
 import android.media.MediaFormat;
 
 public enum AudioCodec implements Codec {
-    OPUS(0x6f_70_75_73, "opus", MediaFormat.MIMETYPE_AUDIO_OPUS);
+    OPUS(0x6f_70_75_73, "opus", MediaFormat.MIMETYPE_AUDIO_OPUS),
+    AAC(0x00_61_61_63, "aac", MediaFormat.MIMETYPE_AUDIO_AAC);
 
     private final int id; // 4-byte ASCII representation of the name
     private final String name;
