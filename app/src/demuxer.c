@@ -191,8 +191,15 @@ run_demuxer(void *data) {
         goto end;
     }
 
+    // Config packets must be merged with the next non-config packet only for
+    // video streams
+    bool must_merge_config_packet = codec->type == AVMEDIA_TYPE_VIDEO;
+
     struct sc_packet_merger merger;
-    sc_packet_merger_init(&merger);
+
+    if (must_merge_config_packet) {
+        sc_packet_merger_init(&merger);
+    }
 
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
@@ -208,11 +215,13 @@ run_demuxer(void *data) {
             break;
         }
 
-        // Prepend any config packet to the next media packet
-        ok = sc_packet_merger_merge(&merger, packet);
-        if (!ok) {
-            av_packet_unref(packet);
-            break;
+        if (must_merge_config_packet) {
+            // Prepend any config packet to the next media packet
+            ok = sc_packet_merger_merge(&merger, packet);
+            if (!ok) {
+                av_packet_unref(packet);
+                break;
+            }
         }
 
         ok = sc_demuxer_push_packet(demuxer, packet);
@@ -225,7 +234,9 @@ run_demuxer(void *data) {
 
     LOGD("End of frames");
 
-    sc_packet_merger_destroy(&merger);
+    if (must_merge_config_packet) {
+        sc_packet_merger_destroy(&merger);
+    }
 
     av_packet_free(&packet);
 finally_close_sinks:
