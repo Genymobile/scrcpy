@@ -158,6 +158,16 @@ sc_demuxer_open_sinks(struct sc_demuxer *demuxer, const AVCodec *codec) {
     return true;
 }
 
+static void
+sc_demuxer_disable_sinks(struct sc_demuxer *demuxer) {
+    for (unsigned i = 0; i < demuxer->sink_count; ++i) {
+        struct sc_packet_sink *sink = demuxer->sinks[i];
+        if (sink->ops->disable) {
+            sink->ops->disable(sink);
+        }
+    }
+}
+
 static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
@@ -168,19 +178,33 @@ run_demuxer(void *data) {
     uint32_t raw_codec_id;
     bool ok = sc_demuxer_recv_codec_id(demuxer, &raw_codec_id);
     if (!ok) {
+        LOGE("Demuxer '%s': stream disabled due to connection error",
+             demuxer->name);
+        eos = true;
+        goto end;
+    }
+
+    if (raw_codec_id == 0) {
+        LOGW("Demuxer '%s': stream explicitly disabled by the device",
+             demuxer->name);
+        sc_demuxer_disable_sinks(demuxer);
         eos = true;
         goto end;
     }
 
     enum AVCodecID codec_id = sc_demuxer_to_avcodec_id(raw_codec_id);
     if (codec_id == AV_CODEC_ID_NONE) {
-        // Error already logged
+        LOGE("Demuxer '%s': stream disabled due to unsupported codec",
+             demuxer->name);
+        sc_demuxer_disable_sinks(demuxer);
         goto end;
     }
 
     const AVCodec *codec = avcodec_find_decoder(codec_id);
     if (!codec) {
-        LOGE("Demuxer '%s': decoder not found", demuxer->name);
+        LOGE("Demuxer '%s': stream disabled due to missing decoder",
+             demuxer->name);
+        sc_demuxer_disable_sinks(demuxer);
         goto end;
     }
 
