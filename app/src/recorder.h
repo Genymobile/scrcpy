@@ -26,7 +26,6 @@ struct sc_recorder {
     enum sc_record_format format;
     AVFormatContext *ctx;
     struct sc_size declared_frame_size;
-    bool header_written;
 
     sc_thread thread;
     sc_mutex mutex;
