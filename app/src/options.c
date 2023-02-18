@@ -14,6 +14,7 @@ const struct scrcpy_options scrcpy_options_default = {
 #endif
     .log_level = SC_LOG_LEVEL_INFO,
     .video_codec = SC_CODEC_H264,
+    .audio_codec = SC_CODEC_OPUS,
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT,
     .mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT,
