@@ -109,6 +109,7 @@ struct scrcpy_options {
     struct sc_shortcut_mods shortcut_mods;
     uint16_t max_size;
     uint32_t video_bit_rate;
+    uint32_t audio_bit_rate;
     uint16_t max_fps;
     enum sc_lock_video_orientation lock_video_orientation;
     uint8_t rotation;
