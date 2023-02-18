@@ -200,19 +200,24 @@ public final class AudioEncoder {
 
     @TargetApi(Build.VERSION_CODES.M)
     public void encode() throws IOException {
-        mediaCodec = MediaCodec.createEncoderByType(MIMETYPE); // may throw IOException
-
         try {
-            recorder = createAudioRecord();
+            try {
+                mediaCodec = MediaCodec.createEncoderByType(MIMETYPE); // may throw IOException
+                recorder = createAudioRecord();
 
-            mediaCodecThread = new HandlerThread("AudioEncoder");
-            mediaCodecThread.start();
+                mediaCodecThread = new HandlerThread("AudioEncoder");
+                mediaCodecThread.start();
 
-            MediaFormat format = createFormat();
-            mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
-            mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+                MediaFormat format = createFormat();
+                mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
+                mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
-            recorder.startRecording();
+                recorder.startRecording();
+            } catch (Throwable e) {
+                // Notify the client that the audio could not be captured
+                streamer.writeDisableStream();
+                throw e;
+            }
 
             inputThread = new Thread(() -> {
                 try {
@@ -243,7 +248,9 @@ public final class AudioEncoder {
             inputThread.start();
             outputThread.start();
         } catch (Throwable e) {
-            mediaCodec.release();
+            if (mediaCodec != null) {
+                mediaCodec.release();
+            }
             if (recorder != null) {
                 recorder.release();
             }
