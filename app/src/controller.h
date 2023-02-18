@@ -21,7 +21,7 @@ struct sc_controller {
     sc_cond msg_cond;
     bool stopped;
     struct sc_control_msg_queue queue;
-    struct receiver receiver;
+    struct sc_receiver receiver;
 };
 
 bool

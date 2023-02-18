@@ -9,20 +9,20 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
                    struct sc_acksync *acksync) {
     cbuf_init(&controller->queue);
 
-    bool ok = receiver_init(&controller->receiver, control_socket, acksync);
+    bool ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
     if (!ok) {
         return false;
     }
 
     ok = sc_mutex_init(&controller->mutex);
     if (!ok) {
-        receiver_destroy(&controller->receiver);
+        sc_receiver_destroy(&controller->receiver);
         return false;
     }
 
     ok = sc_cond_init(&controller->msg_cond);
     if (!ok) {
-        receiver_destroy(&controller->receiver);
+        sc_receiver_destroy(&controller->receiver);
         sc_mutex_destroy(&controller->mutex);
         return false;
     }
@@ -43,7 +43,7 @@ sc_controller_destroy(struct sc_controller *controller) {
         sc_control_msg_destroy(&msg);
     }
 
-    receiver_destroy(&controller->receiver);
+    sc_receiver_destroy(&controller->receiver);
 }
 
 bool
@@ -117,7 +117,7 @@ sc_controller_start(struct sc_controller *controller) {
         return false;
     }
 
-    if (!receiver_start(&controller->receiver)) {
+    if (!sc_receiver_start(&controller->receiver)) {
         sc_controller_stop(controller);
         sc_thread_join(&controller->thread, NULL);
         return false;
@@ -137,5 +137,5 @@ sc_controller_stop(struct sc_controller *controller) {
 void
 sc_controller_join(struct sc_controller *controller) {
     sc_thread_join(&controller->thread, NULL);
-    receiver_join(&controller->receiver);
+    sc_receiver_join(&controller->receiver);
 }

@@ -7,7 +7,7 @@
 #include "util/log.h"
 
 bool
-receiver_init(struct receiver *receiver, sc_socket control_socket,
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
               struct sc_acksync *acksync) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
@@ -21,12 +21,12 @@ receiver_init(struct receiver *receiver, sc_socket control_socket,
 }
 
 void
-receiver_destroy(struct receiver *receiver) {
+sc_receiver_destroy(struct sc_receiver *receiver) {
     sc_mutex_destroy(&receiver->mutex);
 }
 
 static void
-process_msg(struct receiver *receiver, struct device_msg *msg) {
+process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
             char *current = SDL_GetClipboardText();
@@ -51,7 +51,7 @@ process_msg(struct receiver *receiver, struct device_msg *msg) {
 }
 
 static ssize_t
-process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
+process_msgs(struct sc_receiver *receiver, const unsigned char *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -76,7 +76,7 @@ process_msgs(struct receiver *receiver, const unsigned char *buf, size_t len) {
 
 static int
 run_receiver(void *data) {
-    struct receiver *receiver = data;
+    struct sc_receiver *receiver = data;
 
     static unsigned char buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
@@ -108,7 +108,7 @@ run_receiver(void *data) {
 }
 
 bool
-receiver_start(struct receiver *receiver) {
+sc_receiver_start(struct sc_receiver *receiver) {
     LOGD("Starting receiver thread");
 
     bool ok = sc_thread_create(&receiver->thread, run_receiver,
@@ -122,6 +122,6 @@ receiver_start(struct receiver *receiver) {
 }
 
 void
-receiver_join(struct receiver *receiver) {
+sc_receiver_join(struct sc_receiver *receiver) {
     sc_thread_join(&receiver->thread, NULL);
 }
