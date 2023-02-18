@@ -1,0 +1,38 @@
+Build started at 2018-11-12T14:04:31.900569
+Main binary: /usr/bin/python3
+Python system: Linux
+The Meson build system
+Version: 0.48.1
+Source dir: /home/rom/projects/scrcpy
+Build dir: /home/rom/projects/scrcpy/u
+Build type: native build
+Project name: scrcpy
+Project version: 1.6
+Native C compiler: ccache cc (gcc 8.2.0 "cc (Debian 8.2.0-9) 8.2.0")
+Build machine cpu family: x86_64
+Build machine cpu: x86_64
+Dependency libavformat found: YES (cached)
+Dependency libavcodec found: YES (cached)
+Dependency libavutil found: YES (cached)
+Dependency sdl2 found: YES (cached)
+Configuring config.h using configuration
+Adding test "test_control_event_queue"
+Adding test "test_control_event_serialize"
+Adding test "test_strutil"
+Program ./scripts/build-wrapper.sh found: YES (/home/rom/projects/scrcpy/server/./scripts/build-wrapper.sh)
+DEPRECATION: build_always is deprecated. Combine build_by_default and build_always_stale instead.
+Build targets in project: 6
+Found ninja-1.8.2 at /usr/bin/ninja
+Running compile:
+Working directory:  /tmp/tmpk1bh9k5g
+Command line:  ccache cc /tmp/tmpk1bh9k5g/testfile.c -pipe -D_FILE_OFFSET_BITS=64 -c -o /tmp/tmpk1bh9k5g/output.obj -O0 --print-search-dirs 
+
+Code:
+ 
+Compiler stdout:
+ install: /usr/lib/gcc/x86_64-linux-gnu/8/
+programs: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/bin/
+libraries: =/usr/lib/gcc/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/8/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../lib/:/lib/x86_64-linux-gnu/8/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/8/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../../x86_64-linux-gnu/lib/:/usr/lib/gcc/x86_64-linux-gnu/8/../../../:/lib/:/usr/lib/
+
+Compiler stderr:
+ 
