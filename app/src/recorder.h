@@ -23,6 +23,14 @@ struct sc_recorder {
     struct sc_packet_sink video_packet_sink;
     struct sc_packet_sink audio_packet_sink;
 
+    /* The audio flag is unprotected:
+     *  - it is initialized from sc_recorder_init() from the main thread;
+     *  - it may be reset once from the recorder thread if the audio is
+     *    disabled dynamically.
+     *
+     * Therefore, once the recorder thread is started, only the recorder thread
+     * may access it without data races.
+     */
     bool audio;
 
     char *filename;
@@ -42,6 +50,9 @@ struct sc_recorder {
     sc_cond stream_cond;
     const AVCodec *video_codec;
     const AVCodec *audio_codec;
+    // Instead of providing an audio_codec, the demuxer may notify that the
+    // stream is disabled if the device could not capture audio
+    bool audio_disabled;
 
     int video_stream_index;
     int audio_stream_index;
