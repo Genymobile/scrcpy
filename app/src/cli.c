@@ -102,7 +102,7 @@ static const struct sc_option options[] = {
         .shortopt = 'b',
         .longopt = "bit-rate",
         .argdesc = "value",
-        .text = "Encode the video at the gitven bit-rate, expressed in bits/s. "
+        .text = "Encode the video at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is " STR(DEFAULT_BIT_RATE) ".",
     },
