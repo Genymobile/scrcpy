@@ -40,12 +40,12 @@ public final class AudioEncoder {
     private static final String MIMETYPE = MediaFormat.MIMETYPE_AUDIO_OPUS;
     private static final int SAMPLE_RATE = 48000;
     private static final int CHANNELS = 2;
-    private static final int BIT_RATE = 196000;
 
     private static final int BUFFER_MS = 15; // milliseconds
     private static final int BUFFER_SIZE = SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000;
 
     private final Streamer streamer;
+    private final int bitRate;
 
     private AudioRecord recorder;
     private MediaCodec mediaCodec;
@@ -63,8 +63,9 @@ public final class AudioEncoder {
 
     private boolean ended;
 
-    public AudioEncoder(Streamer streamer) {
+    public AudioEncoder(Streamer streamer, int bitRate) {
         this.streamer = streamer;
+        this.bitRate = bitRate;
     }
 
     private static AudioFormat createAudioFormat() {
@@ -89,10 +90,10 @@ public final class AudioEncoder {
         return builder.build();
     }
 
-    private static MediaFormat createFormat() {
+    private static MediaFormat createFormat(int bitRate) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, MIMETYPE);
-        format.setInteger(MediaFormat.KEY_BIT_RATE, BIT_RATE);
+        format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNELS);
         format.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
         return format;
@@ -214,7 +215,7 @@ public final class AudioEncoder {
                 mediaCodecThread = new HandlerThread("AudioEncoder");
                 mediaCodecThread.start();
 
-                MediaFormat format = createFormat();
+                MediaFormat format = createFormat(bitRate);
                 mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
                 mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 

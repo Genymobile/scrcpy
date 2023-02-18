@@ -59,6 +59,7 @@
 #define OPT_NO_POWER_ON            1039
 #define OPT_CODEC                  1040
 #define OPT_NO_AUDIO               1041
+#define OPT_AUDIO_BIT_RATE         1042
 
 struct sc_option {
     char shortopt;
@@ -98,6 +99,14 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
         .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .longopt_id = OPT_AUDIO_BIT_RATE,
+        .longopt = "audio-bit-rate",
+        .argdesc = "value",
+        .text = "Encode the audio at the given bit-rate, expressed in bits/s. "
+                "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
+                "Default is 196K (196000).",
     },
     {
         .shortopt = 'b',
@@ -1422,6 +1431,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         switch (c) {
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->bit_rate)) {
+                    return false;
+                }
+                break;
+            case OPT_AUDIO_BIT_RATE:
+                if (!parse_bit_rate(optarg, &opts->audio_bit_rate)) {
                     return false;
                 }
                 break;
