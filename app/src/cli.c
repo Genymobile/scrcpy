@@ -60,6 +60,7 @@
 #define OPT_CODEC                  1040
 #define OPT_NO_AUDIO               1041
 #define OPT_AUDIO_BIT_RATE         1042
+#define OPT_AUDIO_CODEC            1043
 
 struct sc_option {
     char shortopt;
@@ -107,6 +108,13 @@ static const struct sc_option options[] = {
         .text = "Encode the audio at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 196K (196000).",
+    },
+    {
+        .longopt_id = OPT_AUDIO_CODEC,
+        .longopt = "audio-codec",
+        .argdesc = "name",
+        .text = "Select an audio codec (opus).\n"
+                "Default is opus.",
     },
     {
         .shortopt = 'b',
@@ -1420,6 +1428,16 @@ parse_codec(const char *optarg, enum sc_codec *codec) {
 }
 
 static bool
+parse_audio_codec(const char *optarg, enum sc_codec *codec) {
+    if (!strcmp(optarg, "opus")) {
+        *codec = SC_CODEC_OPUS;
+        return true;
+    }
+    LOGE("Unsupported audio codec: %s (expected opus)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -1662,6 +1680,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CODEC:
                 if (!parse_codec(optarg, &opts->codec)) {
+                    return false;
+                }
+                break;
+            case OPT_AUDIO_CODEC:
+                if (!parse_audio_codec(optarg, &opts->audio_codec)) {
                     return false;
                 }
                 break;
