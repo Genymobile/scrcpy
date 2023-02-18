@@ -122,7 +122,7 @@ static bool
 sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     bool ok = push_packet_to_sinks(demuxer, packet);
     if (!ok) {
-        LOGE("Could not process packet");
+        LOGE("Demuxer '%s': could not process packet", demuxer->name);
         return false;
     }
 
@@ -177,7 +177,7 @@ run_demuxer(void *data) {
 
     const AVCodec *codec = avcodec_find_decoder(codec_id);
     if (!codec) {
-        LOGE("Decoder not found");
+        LOGE("Demuxer '%s': decoder not found", demuxer->name);
         goto end;
     }
 
@@ -217,7 +217,7 @@ run_demuxer(void *data) {
         }
     }
 
-    LOGD("End of frames");
+    LOGD("Demuxer '%s': end of frames", demuxer->name);
 
     sc_packet_merger_destroy(&merger);
 
@@ -231,8 +231,9 @@ end:
 }
 
 void
-sc_demuxer_init(struct sc_demuxer *demuxer, sc_socket socket,
+sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
                 const struct sc_demuxer_callbacks *cbs, void *cbs_userdata) {
+    demuxer->name = name; // statically allocated
     demuxer->socket = socket;
     demuxer->sink_count = 0;
 
@@ -252,12 +253,12 @@ sc_demuxer_add_sink(struct sc_demuxer *demuxer, struct sc_packet_sink *sink) {
 
 bool
 sc_demuxer_start(struct sc_demuxer *demuxer) {
-    LOGD("Starting demuxer thread");
+    LOGD("Demuxer '%s': starting thread", demuxer->name);
 
     bool ok = sc_thread_create(&demuxer->thread, run_demuxer, "scrcpy-demuxer",
                                demuxer);
     if (!ok) {
-        LOGE("Could not start demuxer thread");
+        LOGE("Demuxer '%s': could not start thread", demuxer->name);
         return false;
     }
     return true;
