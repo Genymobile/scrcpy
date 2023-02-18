@@ -179,7 +179,7 @@ run_demuxer(void *data) {
 
     const AVCodec *codec = avcodec_find_decoder(codec_id);
     if (!codec) {
-        LOGE("H.264 decoder not found");
+        LOGE("Decoder not found");
         goto end;
     }
 
