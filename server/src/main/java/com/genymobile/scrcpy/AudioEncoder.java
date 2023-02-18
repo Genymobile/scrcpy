@@ -255,6 +255,10 @@ public final class AudioEncoder {
             outputThread.start();
 
             waitEnded();
+        } catch (Throwable e) {
+            // Notify the client that the audio could not be captured
+            streamer.writeDisableStream();
+            throw e;
         } finally {
             // Cleanup everything (either at the end or on error at any step of the initialization)
             if (mediaCodecThread != null) {

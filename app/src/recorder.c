@@ -194,9 +194,17 @@ sc_recorder_wait_video_stream(struct sc_recorder *recorder) {
 static bool
 sc_recorder_wait_audio_stream(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
-    while (!recorder->audio_codec && !recorder->stopped) {
+    while (!recorder->audio_codec && !recorder->audio_disabled
+            && !recorder->stopped) {
         sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
     }
+
+    if (recorder->audio_disabled) {
+        // Reset audio flag. From there, the recorder thread may access this
+        // flag without any mutex.
+        recorder->audio = false;
+    }
+
     const AVCodec *codec = recorder->audio_codec;
     sc_mutex_unlock(&recorder->mutex);
 
@@ -585,6 +593,8 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
                                    const AVCodec *codec) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
+    // only written from this thread, no need to lock
+    assert(!recorder->audio_disabled);
     assert(codec);
 
     sc_mutex_lock(&recorder->mutex);
@@ -599,6 +609,8 @@ static void
 sc_recorder_audio_packet_sink_close(struct sc_packet_sink *sink) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
+    // only written from this thread, no need to lock
+    assert(!recorder->audio_disabled);
 
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
@@ -612,6 +624,8 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
                                    const AVPacket *packet) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
+    // only written from this thread, no need to lock
+    assert(!recorder->audio_disabled);
 
     sc_mutex_lock(&recorder->mutex);
 
@@ -635,6 +649,22 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
 
     sc_mutex_unlock(&recorder->mutex);
     return true;
+}
+
+static void
+sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
+    struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
+    assert(recorder->audio);
+    // only written from this thread, no need to lock
+    assert(!recorder->audio_disabled);
+    assert(!recorder->audio_codec);
+
+    LOGW("Audio stream recording disabled");
+
+    sc_mutex_lock(&recorder->mutex);
+    recorder->audio_disabled = true;
+    sc_cond_signal(&recorder->stream_cond);
+    sc_mutex_unlock(&recorder->mutex);
 }
 
 bool
@@ -671,6 +701,7 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     recorder->video_codec = NULL;
     recorder->audio_codec = NULL;
+    recorder->audio_disabled = false;
 
     recorder->video_stream_index = -1;
     recorder->audio_stream_index = -1;
@@ -695,6 +726,7 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
             .open = sc_recorder_audio_packet_sink_open,
             .close = sc_recorder_audio_packet_sink_close,
             .push = sc_recorder_audio_packet_sink_push,
+            .disable = sc_recorder_audio_packet_sink_disable,
         };
 
         recorder->audio_packet_sink.ops = &audio_ops;
