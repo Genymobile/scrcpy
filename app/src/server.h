@@ -34,6 +34,7 @@ struct sc_server_params {
     uint16_t tunnel_port;
     uint16_t max_size;
     uint32_t video_bit_rate;
+    uint32_t audio_bit_rate;
     uint16_t max_fps;
     int8_t lock_video_orientation;
     bool control;
