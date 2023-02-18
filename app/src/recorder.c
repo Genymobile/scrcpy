@@ -93,13 +93,7 @@ sc_recorder_write_header(struct sc_recorder *recorder, const AVPacket *packet) {
     ostream->codecpar->extradata = extradata;
     ostream->codecpar->extradata_size = packet->size;
 
-    int ret = avformat_write_header(recorder->ctx, NULL);
-    if (ret < 0) {
-        LOGE("Failed to write header to %s", recorder->filename);
-        return false;
-    }
-
-    return true;
+    return avformat_write_header(recorder->ctx, NULL) >= 0;
 }
 
 static void
@@ -110,24 +104,6 @@ sc_recorder_rescale_packet(struct sc_recorder *recorder, AVPacket *packet) {
 
 static bool
 sc_recorder_write(struct sc_recorder *recorder, AVPacket *packet) {
-    if (!recorder->header_written) {
-        if (packet->pts != AV_NOPTS_VALUE) {
-            LOGE("The first packet is not a config packet");
-            return false;
-        }
-        bool ok = sc_recorder_write_header(recorder, packet);
-        if (!ok) {
-            return false;
-        }
-        recorder->header_written = true;
-        return true;
-    }
-
-    if (packet->pts == AV_NOPTS_VALUE) {
-        // ignore config packets
-        return true;
-    }
-
     sc_recorder_rescale_packet(recorder, packet);
     return av_write_frame(recorder->ctx, packet) >= 0;
 }
@@ -201,12 +177,51 @@ sc_recorder_wait_video_stream(struct sc_recorder *recorder) {
 }
 
 static bool
+sc_recorder_process_header(struct sc_recorder *recorder) {
+    sc_mutex_lock(&recorder->mutex);
+
+    while (!recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+        sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
+    }
+
+    if (recorder->stopped && sc_queue_is_empty(&recorder->queue)) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
+
+    struct sc_record_packet *rec;
+    sc_queue_take(&recorder->queue, next, &rec);
+
+    sc_mutex_unlock(&recorder->mutex);
+
+    if (rec->packet->pts != AV_NOPTS_VALUE) {
+        LOGE("The first packet is not a config packet");
+        sc_record_packet_delete(rec);
+        return false;
+    }
+
+    bool ok = sc_recorder_write_header(recorder, rec->packet);
+    sc_record_packet_delete(rec);
+    if (!ok) {
+        LOGE("Failed to write header to %s", recorder->filename);
+        return false;
+    }
+
+    return true;
+}
+
+static bool
 sc_recorder_process_packets(struct sc_recorder *recorder) {
     int64_t pts_origin = AV_NOPTS_VALUE;
 
     // We can write a packet only once we received the next one so that we can
     // set its duration (next_pts - current_pts)
     struct sc_record_packet *previous = NULL;
+
+    bool header_written = sc_recorder_process_header(recorder);
+    if (!header_written) {
+        return false;
+    }
 
     for (;;) {
         sc_mutex_lock(&recorder->mutex);
@@ -228,46 +243,43 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
 
         sc_mutex_unlock(&recorder->mutex);
 
-        if (pts_origin == AV_NOPTS_VALUE
-                && rec->packet->pts != AV_NOPTS_VALUE) {
-            // First PTS received
-            pts_origin = rec->packet->pts;
-        }
+        if (rec->packet->pts == AV_NOPTS_VALUE) {
+            // Ignore further config packets (e.g. on device orientation
+            // change). The next non-config packet will have the config packet
+            // data prepended.
+            sc_record_packet_delete(rec);
+        } else {
+            assert(rec->packet->pts != AV_NOPTS_VALUE);
 
-        if (rec->packet->pts != AV_NOPTS_VALUE) {
-            // Set PTS relatve to the origin
+            if (!previous) {
+                // This is the first non-config packet
+                assert(pts_origin == AV_NOPTS_VALUE);
+                pts_origin = rec->packet->pts;
+                rec->packet->pts = 0;
+                rec->packet->dts = 0;
+                previous = rec;
+                continue;
+            }
+
+            assert(previous);
+            assert(pts_origin != AV_NOPTS_VALUE);
+
             rec->packet->pts -= pts_origin;
             rec->packet->dts = rec->packet->pts;
-        }
 
-        if (!previous) {
-            // we just received the first packet
-            previous = rec;
-            continue;
-        }
-
-        // config packets have no PTS, we must ignore them
-        if (rec->packet->pts != AV_NOPTS_VALUE
-            && previous->packet->pts != AV_NOPTS_VALUE) {
             // we now know the duration of the previous packet
             previous->packet->duration =
                 rec->packet->pts - previous->packet->pts;
+
+            bool ok = sc_recorder_write(recorder, previous->packet);
+            sc_record_packet_delete(previous);
+            if (!ok) {
+                LOGE("Could not record packet");
+                return false;
+            }
+
+            previous = rec;
         }
-
-        bool ok = sc_recorder_write(recorder, previous->packet);
-        sc_record_packet_delete(previous);
-        if (!ok) {
-            LOGE("Could not record packet");
-
-            return false;
-        }
-
-        previous = rec;
-    }
-
-    if (!recorder->header_written) {
-        // the recorded file is empty
-        return false;
     }
 
     // Write the last packet
@@ -427,7 +439,6 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     sc_queue_init(&recorder->queue);
     recorder->stopped = false;
-    recorder->header_written = false;
 
     recorder->codec = NULL;
 
