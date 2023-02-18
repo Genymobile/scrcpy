@@ -26,6 +26,7 @@ struct sc_server_params {
     const char *req_serial;
     enum sc_log_level log_level;
     enum sc_codec video_codec;
+    enum sc_codec audio_codec;
     const char *crop;
     const char *video_codec_options;
     const char *video_encoder;
