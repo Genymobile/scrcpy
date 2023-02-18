@@ -315,6 +315,7 @@ scrcpy(struct scrcpy_options *options) {
         .select_tcpip = options->select_tcpip,
         .log_level = options->log_level,
         .video_codec = options->video_codec,
+        .audio_codec = options->audio_codec,
         .crop = options->crop,
         .port_range = options->port_range,
         .tunnel_host = options->tunnel_host,

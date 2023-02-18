@@ -165,6 +165,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "h265";
         case SC_CODEC_AV1:
             return "av1";
+        case SC_CODEC_OPUS:
+            return "opus";
         default:
             return NULL;
     }
@@ -227,6 +229,10 @@ execute_server(struct sc_server *server,
     if (params->video_codec != SC_CODEC_H264) {
         ADD_PARAM("video_codec=%s",
                   sc_server_get_codec_name(params->video_codec));
+    }
+    if (params->audio_codec != SC_CODEC_OPUS) {
+        ADD_PARAM("audio_codec=%s",
+            sc_server_get_codec_name(params->audio_codec));
     }
     if (params->max_size) {
         ADD_PARAM("max_size=%" PRIu16, params->max_size);
