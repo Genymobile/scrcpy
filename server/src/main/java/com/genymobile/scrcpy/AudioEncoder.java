@@ -38,7 +38,6 @@ public final class AudioEncoder {
         }
     }
 
-    private static final String MIMETYPE = MediaFormat.MIMETYPE_AUDIO_OPUS;
     private static final int SAMPLE_RATE = 48000;
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     private static final int CHANNELS = 2;
@@ -93,9 +92,9 @@ public final class AudioEncoder {
         return builder.build();
     }
 
-    private static MediaFormat createFormat(int bitRate) {
+    private static MediaFormat createFormat(String mimeType, int bitRate) {
         MediaFormat format = new MediaFormat();
-        format.setString(MediaFormat.KEY_MIME, MIMETYPE);
+        format.setString(MediaFormat.KEY_MIME, mimeType);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNELS);
         format.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
@@ -216,12 +215,13 @@ public final class AudioEncoder {
         boolean mediaCodecStarted = false;
         boolean recorderStarted = false;
         try {
-            mediaCodec = MediaCodec.createEncoderByType(MIMETYPE); // may throw IOException
+            String mimeType = streamer.getCodec().getMimeType();
+            mediaCodec = MediaCodec.createEncoderByType(mimeType); // may throw IOException
 
             mediaCodecThread = new HandlerThread("AudioEncoder");
             mediaCodecThread.start();
 
-            MediaFormat format = createFormat(bitRate);
+            MediaFormat format = createFormat(mimeType, bitRate);
             mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
             mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 

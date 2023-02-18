@@ -3,6 +3,7 @@ _scrcpy() {
     local opts="
         --always-on-top
         --audio-bit-rate=
+        --audio-codec=
         -b --video-bit-rate=
         --crop=
         -d --select-usb
@@ -69,6 +70,10 @@ _scrcpy() {
     case "$prev" in
         --video-codec)
             COMPREPLY=($(compgen -W 'h264 h265 av1' -- "$cur"))
+            return
+            ;;
+        --audio-codec)
+            COMPREPLY=($(compgen -W 'opus' -- "$cur"))
             return
             ;;
         --lock-video-orientation)
