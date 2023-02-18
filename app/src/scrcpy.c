@@ -424,8 +424,8 @@ scrcpy(struct scrcpy_options *options) {
             .on_ended = sc_recorder_on_ended,
         };
         if (!sc_recorder_init(&s->recorder, options->record_filename,
-                              options->record_format, info->frame_size,
-                              &recorder_cbs, NULL)) {
+                              options->record_format, options->audio,
+                              info->frame_size, &recorder_cbs, NULL)) {
             goto end;
         }
         recorder_initialized = true;
@@ -436,6 +436,10 @@ scrcpy(struct scrcpy_options *options) {
         recorder_started = true;
 
         sc_demuxer_add_sink(&s->video_demuxer, &s->recorder.video_packet_sink);
+        if (options->audio) {
+            sc_demuxer_add_sink(&s->audio_demuxer,
+                                &s->recorder.audio_packet_sink);
+        }
     }
 
     struct sc_controller *controller = NULL;
