@@ -111,7 +111,7 @@ public final class Server {
             if (audio) {
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
                         options.getSendFrameMeta());
-                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions());
+                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
                 audioEncoder.start();
             }
 
@@ -267,6 +267,10 @@ public final class Server {
                         options.setVideoEncoder(value);
                     }
                     break;
+                case "audio_encoder":
+                    if (!value.isEmpty()) {
+                        options.setAudioEncoder(value);
+                    }
                 case "power_off_on_close":
                     boolean powerOffScreenOnClose = Boolean.parseBoolean(value);
                     options.setPowerOffScreenOnClose(powerOffScreenOnClose);
