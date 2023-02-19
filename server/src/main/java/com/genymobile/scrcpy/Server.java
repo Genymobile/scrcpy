@@ -84,6 +84,8 @@ public final class Server {
             Workarounds.fillAppInfo();
         }
 
+        Controller controller = null;
+
         try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, control, sendDummyByte)) {
             VideoCodec codec = options.getCodec();
             if (options.getSendDeviceMeta()) {
@@ -93,7 +95,6 @@ public final class Server {
             ScreenEncoder screenEncoder = new ScreenEncoder(codec.getMimeType(), options.getBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
 
-            Controller controller = null;
             if (control) {
                 controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
                 controller.start();
@@ -114,21 +115,21 @@ public final class Server {
                 if (!IO.isBrokenPipe(e)) {
                     Ln.e("Video encoding error", e);
                 }
-            } finally {
-                Ln.d("Screen streaming stopped");
-                initThread.interrupt();
-                if (controller != null) {
-                    controller.stop();
-                }
+            }
+        } finally {
+            Ln.d("Screen streaming stopped");
+            initThread.interrupt();
+            if (controller != null) {
+                controller.stop();
+            }
 
-                try {
-                    initThread.join();
-                    if (controller != null) {
-                        controller.join();
-                    }
-                } catch (InterruptedException e) {
-                    // ignore
+            try {
+                initThread.join();
+                if (controller != null) {
+                    controller.join();
                 }
+            } catch (InterruptedException e) {
+                // ignore
             }
         }
     }
