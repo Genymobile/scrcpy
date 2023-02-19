@@ -64,7 +64,7 @@ public class ScreenEncoder implements Device.RotationListener {
 
     public void streamScreen() throws IOException, ConfigurationException {
         String videoMimeType = streamer.getCodec().getMimeType();
-        MediaCodec codec = createCodec(videoMimeType, encoderName);
+        MediaCodec mediaCodec = createMediaCodec(videoMimeType, encoderName);
         MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
@@ -84,8 +84,8 @@ public class ScreenEncoder implements Device.RotationListener {
 
                 Surface surface = null;
                 try {
-                    codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
-                    surface = codec.createInputSurface();
+                    mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
+                    surface = mediaCodec.createInputSurface();
 
                     // does not include the locked video orientation
                     Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
@@ -93,11 +93,11 @@ public class ScreenEncoder implements Device.RotationListener {
                     int layerStack = device.getLayerStack();
                     setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
 
-                    codec.start();
+                    mediaCodec.start();
 
-                    alive = encode(codec, streamer);
+                    alive = encode(mediaCodec, streamer);
                     // do not call stop() on exception, it would trigger an IllegalStateException
-                    codec.stop();
+                    mediaCodec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareRetry(device, screenInfo)) {
@@ -106,14 +106,14 @@ public class ScreenEncoder implements Device.RotationListener {
                     Ln.i("Retrying...");
                     alive = true;
                 } finally {
-                    codec.reset();
+                    mediaCodec.reset();
                     if (surface != null) {
                         surface.release();
                     }
                 }
             } while (alive);
         } finally {
-            codec.release();
+            mediaCodec.release();
             device.setRotationListener(null);
             SurfaceControl.destroyDisplay(display);
         }
@@ -210,7 +210,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return result.toArray(new MediaCodecInfo[result.size()]);
     }
 
-    private static MediaCodec createCodec(String videoMimeType, String encoderName) throws IOException, ConfigurationException {
+    private static MediaCodec createMediaCodec(String videoMimeType, String encoderName) throws IOException, ConfigurationException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             try {
@@ -220,9 +220,9 @@ public class ScreenEncoder implements Device.RotationListener {
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
             }
         }
-        MediaCodec codec = MediaCodec.createEncoderByType(videoMimeType);
-        Ln.d("Using encoder: '" + codec.getName() + "'");
-        return codec;
+        MediaCodec mediaCodec = MediaCodec.createEncoderByType(videoMimeType);
+        Ln.d("Using encoder: '" + mediaCodec.getName() + "'");
+        return mediaCodec;
     }
 
     private static String buildUnknownEncoderMessage(String videoMimeType, String encoderName) {
