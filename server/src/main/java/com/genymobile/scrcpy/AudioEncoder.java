@@ -200,6 +200,12 @@ public final class AudioEncoder {
 
     @TargetApi(Build.VERSION_CODES.M)
     public void encode() throws IOException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            Ln.w("Audio disabled: it is not supported before Android 11");
+            streamer.writeDisableStream();
+            return;
+        }
+
         try {
             try {
                 mediaCodec = MediaCodec.createEncoderByType(MIMETYPE); // may throw IOException
