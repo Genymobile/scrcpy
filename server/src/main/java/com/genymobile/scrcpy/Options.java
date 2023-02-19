@@ -26,6 +26,7 @@ public class Options {
     private List<CodecOption> audioCodecOptions;
 
     private String videoEncoder;
+    private String audioEncoder;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
@@ -188,6 +189,14 @@ public class Options {
 
     public void setVideoEncoder(String videoEncoder) {
         this.videoEncoder = videoEncoder;
+    }
+
+    public String getAudioEncoder() {
+        return audioEncoder;
+    }
+
+    public void setAudioEncoder(String audioEncoder) {
+        this.audioEncoder = audioEncoder;
     }
 
     public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {
