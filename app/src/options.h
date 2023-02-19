@@ -98,6 +98,7 @@ struct scrcpy_options {
     const char *video_codec_options;
     const char *audio_codec_options;
     const char *video_encoder;
+    const char *audio_encoder;
 #ifdef HAVE_V4L2
     const char *v4l2_device;
 #endif
