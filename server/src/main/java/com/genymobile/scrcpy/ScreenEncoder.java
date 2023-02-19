@@ -237,23 +237,6 @@ public class ScreenEncoder implements Device.RotationListener {
         return msg.toString();
     }
 
-    private static void setCodecOption(MediaFormat format, CodecOption codecOption) {
-        String key = codecOption.getKey();
-        Object value = codecOption.getValue();
-
-        if (value instanceof Integer) {
-            format.setInteger(key, (Integer) value);
-        } else if (value instanceof Long) {
-            format.setLong(key, (Long) value);
-        } else if (value instanceof Float) {
-            format.setFloat(key, (Float) value);
-        } else if (value instanceof String) {
-            format.setString(key, (String) value);
-        }
-
-        Ln.d("Codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
-    }
-
     private static MediaFormat createFormat(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, videoMimeType);
@@ -273,7 +256,10 @@ public class ScreenEncoder implements Device.RotationListener {
 
         if (codecOptions != null) {
             for (CodecOption option : codecOptions) {
-                setCodecOption(format, option);
+                String key = option.getKey();
+                Object value = option.getValue();
+                CodecUtils.setCodecOption(format, key, value);
+                Ln.d("Video codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
             }
         }
 
