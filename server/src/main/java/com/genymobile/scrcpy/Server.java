@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy;
 
 import android.graphics.Rect;
-import android.media.MediaCodecInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 
@@ -59,7 +58,7 @@ public final class Server {
         }
     }
 
-    private static void scrcpy(Options options) throws IOException {
+    private static void scrcpy(Options options) throws IOException, ConfigurationException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
         List<CodecOption> codecOptions = options.getCodecOptions();
@@ -299,38 +298,19 @@ public final class Server {
         return new Rect(x, y, x + width, y + height);
     }
 
-    private static void suggestFix(Throwable e) {
-        if (e instanceof InvalidDisplayIdException) {
-            InvalidDisplayIdException idie = (InvalidDisplayIdException) e;
-            int[] displayIds = idie.getAvailableDisplayIds();
-            if (displayIds != null && displayIds.length > 0) {
-                Ln.e("Try to use one of the available display ids:");
-                for (int id : displayIds) {
-                    Ln.e("    scrcpy --display=" + id);
-                }
-            }
-        } else if (e instanceof InvalidEncoderException) {
-            InvalidEncoderException iee = (InvalidEncoderException) e;
-            MediaCodecInfo[] encoders = iee.getAvailableEncoders();
-            if (encoders != null && encoders.length > 0) {
-                Ln.e("Try to use one of the available encoders:");
-                for (MediaCodecInfo encoder : encoders) {
-                    Ln.e("    scrcpy --encoder='" + encoder.getName() + "'");
-                }
-            }
-        }
-    }
-
     public static void main(String... args) throws Exception {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Ln.e("Exception on thread " + t, e);
-            suggestFix(e);
         });
 
         Options options = createOptions(args);
 
         Ln.initLogLevel(options.getLogLevel());
 
-        scrcpy(options);
+        try {
+            scrcpy(options);
+        } catch (ConfigurationException e) {
+            // Do not print stack trace, a user-friendly error-message has already been logged
+        }
     }
 }
