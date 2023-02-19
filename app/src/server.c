@@ -73,6 +73,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     free((char *) params->crop);
     free((char *) params->codec_options);
     free((char *) params->encoder_name);
+    free((char *) params->audio_encoder_name);
     free((char *) params->tcpip_dst);
 }
 
@@ -97,6 +98,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(crop);
     COPY(codec_options);
     COPY(encoder_name);
+    COPY(audio_encoder_name);
     COPY(tcpip_dst);
 #undef COPY
 
@@ -270,6 +272,9 @@ execute_server(struct sc_server *server,
     }
     if (params->encoder_name) {
         ADD_PARAM("encoder_name=%s", params->encoder_name);
+    }
+    if (params->audio_encoder_name) {
+        ADD_PARAM("audio_encoder_name=%s", params->audio_encoder_name);
     }
     if (params->power_off_on_close) {
         ADD_PARAM("power_off_on_close=true");

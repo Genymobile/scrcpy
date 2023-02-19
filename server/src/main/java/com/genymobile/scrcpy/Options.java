@@ -24,6 +24,7 @@ public class Options {
     private boolean stayAwake;
     private List<CodecOption> codecOptions;
     private String encoderName;
+    private String audioEncoderName;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
@@ -178,6 +179,14 @@ public class Options {
 
     public void setEncoderName(String encoderName) {
         this.encoderName = encoderName;
+    }
+
+    public String getAudioEncoderName() {
+        return audioEncoderName;
+    }
+
+    public void setAudioEncoderName(String audioEncoderName) {
+        this.audioEncoderName = audioEncoderName;
     }
 
     public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {

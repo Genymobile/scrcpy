@@ -368,6 +368,7 @@ scrcpy(struct scrcpy_options *options) {
         .stay_awake = options->stay_awake,
         .codec_options = options->codec_options,
         .encoder_name = options->encoder_name,
+        .audio_encoder_name = options->audio_encoder_name,
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
