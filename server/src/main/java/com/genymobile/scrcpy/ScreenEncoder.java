@@ -63,7 +63,7 @@ public class ScreenEncoder implements Device.RotationListener {
         return rotationChanged.getAndSet(false);
     }
 
-    public void streamScreen(Device device, Callbacks callbacks) throws IOException {
+    public void streamScreen(Device device, Callbacks callbacks) throws IOException, ConfigurationException {
         MediaCodec codec = createCodec(videoMimeType, encoderName);
         MediaFormat format = createFormat(videoMimeType, bitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
@@ -207,19 +207,31 @@ public class ScreenEncoder implements Device.RotationListener {
         return result.toArray(new MediaCodecInfo[result.size()]);
     }
 
-    private static MediaCodec createCodec(String videoMimeType, String encoderName) throws IOException {
+    private static MediaCodec createCodec(String videoMimeType, String encoderName) throws IOException, ConfigurationException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                MediaCodecInfo[] encoders = listEncoders(videoMimeType);
-                throw new InvalidEncoderException(encoderName, encoders);
+                Ln.e(buildUnknownEncoderMessage(videoMimeType, encoderName));
+                throw new ConfigurationException("Unknown encoder: " + encoderName);
             }
         }
         MediaCodec codec = MediaCodec.createEncoderByType(videoMimeType);
         Ln.d("Using encoder: '" + codec.getName() + "'");
         return codec;
+    }
+
+    private static String buildUnknownEncoderMessage(String videoMimeType, String encoderName) {
+        StringBuilder msg = new StringBuilder("Encoder '").append(encoderName).append("' not found");
+        MediaCodecInfo[] encoders = listEncoders(videoMimeType);
+        if (encoders != null && encoders.length > 0) {
+            msg.append("\nTry to use one of the available encoders:");
+            for (MediaCodecInfo encoder : encoders) {
+                msg.append("\n    scrcpy --encoder='").append(encoder.getName()).append("'");
+            }
+        }
+        return msg.toString();
     }
 
     private static void setCodecOption(MediaFormat format, CodecOption codecOption) {
