@@ -111,7 +111,6 @@ push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
     for (unsigned i = 0; i < demuxer->sink_count; ++i) {
         struct sc_packet_sink *sink = demuxer->sinks[i];
         if (!sink->ops->push(sink, packet)) {
-            LOGE("Could not send packet to sink %d", i);
             return false;
         }
     }
@@ -148,7 +147,6 @@ sc_demuxer_open_sinks(struct sc_demuxer *demuxer, const AVCodec *codec) {
     for (unsigned i = 0; i < demuxer->sink_count; ++i) {
         struct sc_packet_sink *sink = demuxer->sinks[i];
         if (!sink->ops->open(sink, codec)) {
-            LOGE("Could not open packet sink %d", i);
             sc_demuxer_close_first_sinks(demuxer, i);
             return false;
         }
@@ -184,7 +182,6 @@ run_demuxer(void *data) {
     }
 
     if (!sc_demuxer_open_sinks(demuxer, codec)) {
-        LOGE("Could not open demuxer sinks");
         goto end;
     }
 

@@ -29,7 +29,6 @@ sc_decoder_open_sinks(struct sc_decoder *decoder) {
     for (unsigned i = 0; i < decoder->sink_count; ++i) {
         struct sc_frame_sink *sink = decoder->sinks[i];
         if (!sink->ops->open(sink)) {
-            LOGE("Could not open frame sink %d", i);
             sc_decoder_close_first_sinks(decoder, i);
             return false;
         }
@@ -63,7 +62,6 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
     }
 
     if (!sc_decoder_open_sinks(decoder)) {
-        LOGE("Could not open decoder sinks");
         av_frame_free(&decoder->frame);
         avcodec_close(decoder->codec_ctx);
         avcodec_free_context(&decoder->codec_ctx);
@@ -86,7 +84,6 @@ push_frame_to_sinks(struct sc_decoder *decoder, const AVFrame *frame) {
     for (unsigned i = 0; i < decoder->sink_count; ++i) {
         struct sc_frame_sink *sink = decoder->sinks[i];
         if (!sink->ops->push(sink, frame)) {
-            LOGE("Could not send frame to sink %d", i);
             return false;
         }
     }
