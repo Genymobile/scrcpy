@@ -306,7 +306,7 @@ public final class Server {
             if (displayIds != null && displayIds.length > 0) {
                 Ln.e("Try to use one of the available display ids:");
                 for (int id : displayIds) {
-                    Ln.e("    scrcpy --display " + id);
+                    Ln.e("    scrcpy --display=" + id);
                 }
             }
         } else if (e instanceof InvalidEncoderException) {
@@ -315,7 +315,7 @@ public final class Server {
             if (encoders != null && encoders.length > 0) {
                 Ln.e("Try to use one of the available encoders:");
                 for (MediaCodecInfo encoder : encoders) {
-                    Ln.e("    scrcpy --encoder '" + encoder.getName() + "'");
+                    Ln.e("    scrcpy --encoder='" + encoder.getName() + "'");
                 }
             }
         }
