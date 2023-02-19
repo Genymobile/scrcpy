@@ -333,6 +333,7 @@ scrcpy(struct scrcpy_options *options) {
         .video_codec_options = options->video_codec_options,
         .audio_codec_options = options->audio_codec_options,
         .video_encoder = options->video_encoder,
+        .audio_encoder = options->audio_encoder,
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,

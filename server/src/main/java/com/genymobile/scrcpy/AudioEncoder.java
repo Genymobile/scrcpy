@@ -48,6 +48,7 @@ public final class AudioEncoder {
     private final Streamer streamer;
     private final int bitRate;
     private final List<CodecOption> codecOptions;
+    private final String encoderName;
 
     // Capacity of 64 is in practice "infinite" (it is limited by the number of available MediaCodec buffers, typically 4).
     // So many pending tasks would lead to an unacceptable delay anyway.
@@ -62,10 +63,11 @@ public final class AudioEncoder {
 
     private boolean ended;
 
-    public AudioEncoder(Streamer streamer, int bitRate, List<CodecOption> codecOptions) {
+    public AudioEncoder(Streamer streamer, int bitRate, List<CodecOption> codecOptions, String encoderName) {
         this.streamer = streamer;
         this.bitRate = bitRate;
         this.codecOptions = codecOptions;
+        this.encoderName = encoderName;
     }
 
     private static AudioFormat createAudioFormat() {
@@ -223,14 +225,14 @@ public final class AudioEncoder {
         boolean mediaCodecStarted = false;
         boolean recorderStarted = false;
         try {
-            String mimeType = streamer.getCodec().getMimeType();
-            mediaCodec = MediaCodec.createEncoderByType(mimeType); // may throw IOException
+            Codec codec = streamer.getCodec();
+            mediaCodec = createMediaCodec(codec, encoderName);
             recorder = createAudioRecord();
 
             mediaCodecThread = new HandlerThread("AudioEncoder");
             mediaCodecThread.start();
 
-            MediaFormat format = createFormat(mimeType, bitRate, codecOptions);
+            MediaFormat format = createFormat(codec.getMimeType(), bitRate, codecOptions);
             mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
             mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
@@ -270,6 +272,8 @@ public final class AudioEncoder {
             outputThread.start();
 
             waitEnded();
+        } catch (ConfigurationException e) {
+            // Do not print stack trace, a user-friendly error-message has already been logged
         } finally {
             if (!recorderStarted) {
                 // Notify the client that the audio could not be captured
@@ -318,6 +322,21 @@ public final class AudioEncoder {
                 recorder.release();
             }
         }
+    }
+
+    private static MediaCodec createMediaCodec(Codec codec, String encoderName) throws IOException, ConfigurationException {
+        if (encoderName != null) {
+            Ln.d("Creating audio encoder by name: '" + encoderName + "'");
+            try {
+                return MediaCodec.createByCodecName(encoderName);
+            } catch (IllegalArgumentException e) {
+                Ln.e(CodecUtils.buildUnknownEncoderMessage(codec, encoderName));
+                throw new ConfigurationException("Unknown encoder: " + encoderName);
+            }
+        }
+        MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
+        Ln.d("Using audio encoder: '" + mediaCodec.getName() + "'");
+        return mediaCodec;
     }
 
     private class EncoderCallback extends MediaCodec.Callback {
