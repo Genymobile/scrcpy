@@ -18,7 +18,7 @@ arguments=(
     '--display=[Specify the display id to mirror]'
     '--display-buffer=[Add a buffering delay \(in milliseconds\) before displaying]'
     {-e,--select-tcpip}'[Use TCP/IP device]'
-    '--encoder=[Use a specific MediaCodec encoder \(must be a H.264 encoder\)]'
+    '--encoder=[Use a specific MediaCodec encoder]'
     '--force-adb-forward[Do not attempt to use \"adb reverse\" to connect to the device]'
     '--forward-all-clicks[Forward clicks to device]'
     {-f,--fullscreen}'[Start in fullscreen]'
