@@ -175,7 +175,8 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ENCODER_NAME,
         .longopt = "encoder",
         .argdesc = "name",
-        .text = "Use a specific MediaCodec encoder (must be a H.264 encoder).",
+        .text = "Use a specific MediaCodec encoder (depending on the codec "
+                "provided by --codec).",
     },
     {
         .longopt_id = OPT_FORCE_ADB_FORWARD,
