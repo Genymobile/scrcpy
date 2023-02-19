@@ -61,12 +61,12 @@ public final class Device {
 
     private final boolean supportsInputEvents;
 
-    public Device(Options options) {
+    public Device(Options options) throws ConfigurationException {
         displayId = options.getDisplayId();
         DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         if (displayInfo == null) {
-            int[] displayIds = ServiceManager.getDisplayManager().getDisplayIds();
-            throw new InvalidDisplayIdException(displayId, displayIds);
+            Ln.e(buildUnknownDisplayIdMessage(displayId));
+            throw new ConfigurationException("Unknown display id: " + displayId);
         }
 
         int displayInfoFlags = displayInfo.getFlags();
@@ -128,6 +128,18 @@ public final class Device {
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
+    }
+
+    private static String buildUnknownDisplayIdMessage(int displayId) {
+        StringBuilder msg = new StringBuilder("Display ").append(displayId).append(" not found");
+        int[] displayIds = ServiceManager.getDisplayManager().getDisplayIds();
+        if (displayIds != null && displayIds.length > 0) {
+            msg.append("\nTry to use one of the available display ids:");
+            for (int id : displayIds) {
+                msg.append("\n    scrcpy --display=").append(id);
+            }
+        }
+        return msg.toString();
     }
 
     public synchronized void setMaxSize(int newMaxSize) {
