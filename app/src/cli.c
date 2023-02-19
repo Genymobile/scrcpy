@@ -66,6 +66,7 @@ enum {
     OPT_AUDIO_BIT_RATE,
     OPT_AUDIO_CODEC,
     OPT_AUDIO_CODEC_OPTIONS,
+    OPT_AUDIO_ENCODER,
 };
 
 struct sc_option {
@@ -133,6 +134,13 @@ static const struct sc_option options[] = {
                 "The list of possible codec options is available in the "
                 "Android documentation: "
                 "<https://d.android.com/reference/android/media/MediaFormat>",
+    },
+    {
+        .longopt_id = OPT_AUDIO_ENCODER,
+        .longopt = "audio-encoder",
+        .argdesc = "name",
+        .text = "Use a specific MediaCodec audio encoder (depending on the "
+                "codec provided by --audio-codec).",
     },
     {
         .shortopt = 'b',
@@ -1683,6 +1691,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 // fall through
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
+                break;
+            case OPT_AUDIO_ENCODER:
+                opts->audio_encoder = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;
