@@ -10,6 +10,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .video_codec_options = NULL,
     .audio_codec_options = NULL,
     .video_encoder = NULL,
+    .audio_encoder = NULL,
 #ifdef HAVE_V4L2
     .v4l2_device = NULL,
 #endif
