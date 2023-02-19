@@ -8,7 +8,7 @@ public class InvalidEncoderException extends RuntimeException {
     private final MediaCodecInfo[] availableEncoders;
 
     public InvalidEncoderException(String name, MediaCodecInfo[] availableEncoders) {
-        super("There is no encoder having name '" + name + '"');
+        super("There is no encoder having name '" + name + "'");
         this.name = name;
         this.availableEncoders = availableEncoders;
     }
