@@ -5,7 +5,6 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
@@ -14,8 +13,6 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -199,42 +196,19 @@ public class ScreenEncoder implements Device.RotationListener {
         return !eof;
     }
 
-    private static MediaCodecInfo[] listEncoders(String videoMimeType) {
-        List<MediaCodecInfo> result = new ArrayList<>();
-        MediaCodecList list = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
-        for (MediaCodecInfo codecInfo : list.getCodecInfos()) {
-            if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(videoMimeType)) {
-                result.add(codecInfo);
-            }
-        }
-        return result.toArray(new MediaCodecInfo[result.size()]);
-    }
-
     private static MediaCodec createMediaCodec(Codec codec, String encoderName) throws IOException, ConfigurationException {
         if (encoderName != null) {
             Ln.d("Creating encoder by name: '" + encoderName + "'");
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                Ln.e(buildUnknownEncoderMessage(codec, encoderName));
+                Ln.e(CodecUtils.buildUnknownEncoderMessage(codec, encoderName));
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
             }
         }
         MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
         Ln.d("Using encoder: '" + mediaCodec.getName() + "'");
         return mediaCodec;
-    }
-
-    private static String buildUnknownEncoderMessage(Codec codec, String encoderName) {
-        StringBuilder msg = new StringBuilder("Encoder '").append(encoderName).append("' for ").append(codec.getName()).append(" not found");
-        MediaCodecInfo[] encoders = listEncoders(codec.getMimeType());
-        if (encoders != null && encoders.length > 0) {
-            msg.append("\nTry to use one of the available encoders:");
-            for (MediaCodecInfo encoder : encoders) {
-                msg.append("\n    scrcpy --video-codec=").append(codec.getName()).append(" --encoder='").append(encoder.getName()).append("'");
-            }
-        }
-        return msg.toString();
     }
 
     private static MediaFormat createFormat(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions) {
