@@ -158,6 +158,7 @@ public final class Server {
         return thread;
     }
 
+    @SuppressWarnings("MethodLength")
     private static Options createOptions(String... args) {
         if (args.length < 1) {
             throw new IllegalArgumentException("Missing client version");
