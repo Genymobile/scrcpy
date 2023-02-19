@@ -61,6 +61,7 @@
 #define OPT_NO_AUDIO               1041
 #define OPT_AUDIO_BIT_RATE         1042
 #define OPT_AUDIO_CODEC            1043
+#define OPT_AUDIO_ENCODER_NAME     1044
 
 struct sc_option {
     char shortopt;
@@ -115,6 +116,13 @@ static const struct sc_option options[] = {
         .argdesc = "name",
         .text = "Select an audio codec (opus or aac).\n"
                 "Default is opus.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_ENCODER_NAME,
+        .longopt = "audio-encoder",
+        .argdesc = "name",
+        .text = "Use a specific MediaCodec audio encoder (depending on the "
+                "codec provided by --audio-codec).",
     },
     {
         .shortopt = 'b',
@@ -1634,6 +1642,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_ENCODER_NAME:
                 opts->encoder_name = optarg;
+                break;
+            case OPT_AUDIO_ENCODER_NAME:
+                opts->audio_encoder_name = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;

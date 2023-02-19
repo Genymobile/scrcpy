@@ -18,8 +18,10 @@ public final class CodecUtils {
         MediaCodecInfo[] encoders = listEncoders(codec.getMimeType());
         if (encoders != null && encoders.length > 0) {
             msg.append("\nTry to use one of the available encoders:");
+            String codecOption = codec.getType() == Codec.Type.VIDEO ? "codec" : "audio-codec";
             for (MediaCodecInfo encoder : encoders) {
-                msg.append("\n    scrcpy --codec=").append(codec.getName()).append(" --encoder='").append(encoder.getName()).append("'");
+                msg.append("\n    scrcpy --").append(codecOption).append("=").append(codec.getName());
+                msg.append(" --encoder='").append(encoder.getName()).append("'");
             }
         }
         return msg.toString();

@@ -30,6 +30,7 @@ struct sc_server_params {
     const char *crop;
     const char *codec_options;
     const char *encoder_name;
+    const char *audio_encoder_name;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
