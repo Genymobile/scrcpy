@@ -314,7 +314,7 @@ scrcpy(struct scrcpy_options *options) {
         .select_usb = options->select_usb,
         .select_tcpip = options->select_tcpip,
         .log_level = options->log_level,
-        .codec = options->codec,
+        .video_codec = options->video_codec,
         .crop = options->crop,
         .port_range = options->port_range,
         .tunnel_host = options->tunnel_host,
