@@ -231,7 +231,7 @@ public class ScreenEncoder implements Device.RotationListener {
         if (encoders != null && encoders.length > 0) {
             msg.append("\nTry to use one of the available encoders:");
             for (MediaCodecInfo encoder : encoders) {
-                msg.append("\n    scrcpy --codec=").append(codec.getName()).append(" --encoder='").append(encoder.getName()).append("'");
+                msg.append("\n    scrcpy --video-codec=").append(codec.getName()).append(" --encoder='").append(encoder.getName()).append("'");
             }
         }
         return msg.toString();
