@@ -3,7 +3,6 @@ _scrcpy() {
     local opts="
         --always-on-top
         -b --bit-rate=
-        --codec=
         --codec-options=
         --crop=
         -d --select-usb
@@ -55,6 +54,7 @@ _scrcpy() {
         --v4l2-sink=
         -V --verbosity=
         -v --version
+        --video-codec=
         -w --stay-awake
         --window-borderless
         --window-title=
@@ -66,7 +66,7 @@ _scrcpy() {
     _init_completion -s || return
 
     case "$prev" in
-        --codec)
+        --video-codec)
             COMPREPLY=($(compgen -W 'h264 h265 av1' -- "$cur"))
             return
             ;;
