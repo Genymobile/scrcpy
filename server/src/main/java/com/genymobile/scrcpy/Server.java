@@ -96,7 +96,6 @@ public final class Server {
         AudioEncoder audioEncoder = null;
 
         try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
-            VideoCodec codec = options.getCodec();
             if (options.getSendDeviceMeta()) {
                 Size videoSize = device.getScreenInfo().getVideoSize();
                 connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
@@ -116,9 +115,10 @@ public final class Server {
                 audioEncoder.start();
             }
 
-            Streamer videoStreamer = new Streamer(connection.getVideoFd(), codec, options.getSendCodecId(), options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(),
-                    codecOptions, options.getEncoderName(), options.getDownsizeOnError());
+            Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
+                    options.getSendFrameMeta());
+            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(), codecOptions,
+                    options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
                 screenEncoder.streamScreen();
@@ -195,12 +195,12 @@ public final class Server {
                     boolean audio = Boolean.parseBoolean(value);
                     options.setAudio(audio);
                     break;
-                case "codec":
-                    VideoCodec codec = VideoCodec.findByName(value);
-                    if (codec == null) {
+                case "video_codec":
+                    VideoCodec videoCodec = VideoCodec.findByName(value);
+                    if (videoCodec == null) {
                         throw new IllegalArgumentException("Video codec " + value + " not supported");
                     }
-                    options.setCodec(codec);
+                    options.setVideoCodec(videoCodec);
                     break;
                 case "max_size":
                     int maxSize = Integer.parseInt(value) & ~7; // multiple of 8

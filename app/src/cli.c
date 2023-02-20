@@ -57,7 +57,7 @@
 #define OPT_NO_CLEANUP             1037
 #define OPT_PRINT_FPS              1038
 #define OPT_NO_POWER_ON            1039
-#define OPT_CODEC                  1040
+#define OPT_VIDEO_CODEC            1040
 #define OPT_NO_AUDIO               1041
 
 struct sc_option {
@@ -107,9 +107,10 @@ static const struct sc_option options[] = {
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 8M (8000000).",
     },
+    // TODO keep OPT_CODEC to avoid partial matching with codec_options
     {
-        .longopt_id = OPT_CODEC,
-        .longopt = "codec",
+        .longopt_id = OPT_VIDEO_CODEC,
+        .longopt = "video-codec",
         .argdesc = "name",
         .text = "Select a video codec (h264, h265 or av1).\n"
                 "Default is h264.",
@@ -1393,7 +1394,7 @@ guess_record_format(const char *filename) {
 }
 
 static bool
-parse_codec(const char *optarg, enum sc_codec *codec) {
+parse_video_codec(const char *optarg, enum sc_codec *codec) {
     if (!strcmp(optarg, "h264")) {
         *codec = SC_CODEC_H264;
         return true;
@@ -1406,7 +1407,7 @@ parse_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_AV1;
         return true;
     }
-    LOGE("Unsupported codec: %s (expected h264, h265 or av1)", optarg);
+    LOGE("Unsupported video codec: %s (expected h264, h265 or av1)", optarg);
     return false;
 }
 
@@ -1646,8 +1647,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_PRINT_FPS:
                 opts->start_fps_counter = true;
                 break;
-            case OPT_CODEC:
-                if (!parse_codec(optarg, &opts->codec)) {
+            case OPT_VIDEO_CODEC:
+                if (!parse_video_codec(optarg, &opts->video_codec)) {
                     return false;
                 }
                 break;
