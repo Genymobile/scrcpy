@@ -10,7 +10,7 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean audio = true;
     private int maxSize;
-    private VideoCodec codec = VideoCodec.H264;
+    private VideoCodec videoCodec = VideoCodec.H264;
     private int bitRate = 8000000;
     private int maxFps;
     private int lockVideoOrientation = -1;
@@ -66,12 +66,12 @@ public class Options {
         this.maxSize = maxSize;
     }
 
-    public VideoCodec getCodec() {
-        return codec;
+    public VideoCodec getVideoCodec() {
+        return videoCodec;
     }
 
-    public void setCodec(VideoCodec codec) {
-        this.codec = codec;
+    public void setVideoCodec(VideoCodec videoCodec) {
+        this.videoCodec = videoCodec;
     }
 
     public int getBitRate() {

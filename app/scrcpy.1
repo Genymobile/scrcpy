@@ -26,12 +26,6 @@ Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are 
 Default is 8M (8000000).
 
 .TP
-.BI "\-\-codec " name
-Select a video codec (h264, h265 or av1).
-
-Default is h264.
-
-.TP
 .BI "\-\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
 Set a list of comma-separated key:type=value options for the device encoder.
 
@@ -82,7 +76,7 @@ Also see \fB\-d\fR (\fB\-\-select\-usb\fR).
 
 .TP
 .BI "\-\-encoder " name
-Use a specific MediaCodec encoder (depending on the codec provided by \fB\-\-codec\fR).
+Use a specific MediaCodec encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
 
 .TP
 .B \-\-force\-adb\-forward
@@ -328,6 +322,12 @@ Default is "info" for release builds, "debug" for debug builds.
 .TP
 .B \-v, \-\-version
 Print the version of scrcpy.
+
+.TP
+.BI "\-\-video\-codec " name
+Select a video codec (h264, h265 or av1).
+
+Default is h264.
 
 .TP
 .B \-w, \-\-stay-awake
