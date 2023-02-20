@@ -1749,13 +1749,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
-    if (opts->record_format == SC_RECORD_FORMAT_MP4
-            && opts->codec == SC_CODEC_AV1) {
-        LOGE("Could not mux AV1 stream into MP4 container "
-             "(record to mkv or select another video codec)");
-        return false;
-    }
-
     if (!opts->control) {
         if (opts->turn_screen_off) {
             LOGE("Could not request to turn screen off if control is disabled");
