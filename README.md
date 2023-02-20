@@ -258,9 +258,9 @@ The video codec can be selected. The possible values are `h264` (default),
 `h265` and `av1`:
 
 ```bash
-scrcpy --codec=h264  # default
-scrcpy --codec=h265
-scrcpy --codec=av1
+scrcpy --video-codec=h264  # default
+scrcpy --video-codec=h265
+scrcpy --video-codec=av1
 ```
 
 
@@ -277,8 +277,8 @@ To list the available encoders, you can pass an invalid encoder name; the
 error will give the available encoders:
 
 ```bash
-scrcpy --encoder=_               # for the default codec
-scrcpy --codec=h265 --encoder=_  # for a specific codec
+scrcpy --encoder=_                     # for the default codec
+scrcpy --video-codec=h265 --encoder=_  # for a specific codec
 ```
 
 ### Capture
