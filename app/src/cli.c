@@ -59,6 +59,7 @@ enum {
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
     OPT_CODEC,
+    OPT_VIDEO_CODEC,
     OPT_NO_AUDIO,
 };
 
@@ -110,11 +111,13 @@ static const struct sc_option options[] = {
                 "Default is 8M (8000000).",
     },
     {
+        // Not really deprecated (--codec has never been released), but without
+        // declaring an explicit --codec option, getopt_long() partial matching
+        // behavior would consider --codec to be equivalent to --codec-options,
+        // which would be confusing.
         .longopt_id = OPT_CODEC,
         .longopt = "codec",
-        .argdesc = "name",
-        .text = "Select a video codec (h264, h265 or av1).\n"
-                "Default is h264.",
+        .argdesc = "value",
     },
     {
         .longopt_id = OPT_CODEC_OPTIONS,
@@ -177,7 +180,7 @@ static const struct sc_option options[] = {
         .longopt = "encoder",
         .argdesc = "name",
         .text = "Use a specific MediaCodec encoder (depending on the codec "
-                "provided by --codec).",
+                "provided by --video-codec).",
     },
     {
         .longopt_id = OPT_FORCE_ADB_FORWARD,
@@ -518,6 +521,13 @@ static const struct sc_option options[] = {
         .shortopt = 'v',
         .longopt = "version",
         .text = "Print the version of scrcpy.",
+    },
+    {
+        .longopt_id = OPT_VIDEO_CODEC,
+        .longopt = "video-codec",
+        .argdesc = "name",
+        .text = "Select a video codec (h264, h265 or av1).\n"
+                "Default is h264.",
     },
     {
         .shortopt = 'w',
@@ -1395,7 +1405,7 @@ guess_record_format(const char *filename) {
 }
 
 static bool
-parse_codec(const char *optarg, enum sc_codec *codec) {
+parse_video_codec(const char *optarg, enum sc_codec *codec) {
     if (!strcmp(optarg, "h264")) {
         *codec = SC_CODEC_H264;
         return true;
@@ -1408,7 +1418,7 @@ parse_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_AV1;
         return true;
     }
-    LOGE("Unsupported codec: %s (expected h264, h265 or av1)", optarg);
+    LOGE("Unsupported video codec: %s (expected h264, h265 or av1)", optarg);
     return false;
 }
 
@@ -1649,7 +1659,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->start_fps_counter = true;
                 break;
             case OPT_CODEC:
-                if (!parse_codec(optarg, &opts->codec)) {
+                LOGW("--codec is deprecated, use --video-codec instead.");
+                // fall through
+            case OPT_VIDEO_CODEC:
+                if (!parse_video_codec(optarg, &opts->video_codec)) {
                     return false;
                 }
                 break;

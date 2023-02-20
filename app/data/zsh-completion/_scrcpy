@@ -10,7 +10,6 @@ local arguments
 arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
     {-b,--bit-rate=}'[Encode the video at the given bit-rate]'
-    '--codec=[Select the video codec]:codec:(h264 h265 av1)'
     '--codec-options=[Set a list of comma-separated key\:type=value options for the device encoder]'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'
@@ -60,6 +59,7 @@ arguments=(
     '--v4l2-sink=[\[\/dev\/videoN\] Output to v4l2loopback device]'
     {-V,--verbosity=}'[Set the log level]:verbosity:(verbose debug info warn error)'
     {-v,--version}'[Print the version of scrcpy]'
+    '--video-codec=[Select the video codec]:codec:(h264 h265 av1)'
     {-w,--stay-awake}'[Keep the device on while scrcpy is running, when the device is plugged in]'
     '--window-borderless[Disable window decorations \(display borderless window\)]'
     '--window-title=[Set a custom window title]'
