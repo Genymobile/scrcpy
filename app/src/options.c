@@ -7,7 +7,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .window_title = NULL,
     .push_target = NULL,
     .render_driver = NULL,
-    .codec_options = NULL,
+    .video_codec_options = NULL,
     .encoder_name = NULL,
 #ifdef HAVE_V4L2
     .v4l2_device = NULL,
