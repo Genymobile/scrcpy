@@ -103,7 +103,7 @@ _scrcpy() {
             COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
             return
             ;;
-        -b|--bitrate \
+        -b|--bit-rate \
         |--codec-options \
         |--crop \
         |--display \
