@@ -71,7 +71,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     // The server stores a copy of the params provided by the user
     free((char *) params->req_serial);
     free((char *) params->crop);
-    free((char *) params->codec_options);
+    free((char *) params->video_codec_options);
     free((char *) params->encoder_name);
     free((char *) params->tcpip_dst);
 }
@@ -95,7 +95,7 @@ sc_server_params_copy(struct sc_server_params *dst,
 
     COPY(req_serial);
     COPY(crop);
-    COPY(codec_options);
+    COPY(video_codec_options);
     COPY(encoder_name);
     COPY(tcpip_dst);
 #undef COPY
@@ -255,8 +255,8 @@ execute_server(struct sc_server *server,
     if (params->stay_awake) {
         ADD_PARAM("stay_awake=true");
     }
-    if (params->codec_options) {
-        ADD_PARAM("codec_options=%s", params->codec_options);
+    if (params->video_codec_options) {
+        ADD_PARAM("video_codec_options=%s", params->video_codec_options);
     }
     if (params->encoder_name) {
         ADD_PARAM("encoder_name=%s", params->encoder_name);
