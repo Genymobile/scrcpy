@@ -328,7 +328,7 @@ scrcpy(struct scrcpy_options *options) {
         .audio = options->audio,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
-        .codec_options = options->codec_options,
+        .video_codec_options = options->video_codec_options,
         .encoder_name = options->encoder_name,
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
