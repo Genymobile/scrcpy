@@ -16,6 +16,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .codec = SC_CODEC_H264,
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT,
+    .mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT,
     .port_range = {
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST,
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST,
