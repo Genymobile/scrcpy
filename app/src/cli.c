@@ -19,6 +19,7 @@
 
 enum {
     OPT_RENDER_EXPIRED_FRAMES = 1000,
+    OPT_BIT_RATE,
     OPT_WINDOW_TITLE,
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
@@ -104,11 +105,17 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'b',
-        .longopt = "bit-rate",
+        .longopt = "video-bit-rate",
         .argdesc = "value",
         .text = "Encode the video at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 8M (8000000).",
+    },
+    {
+        // deprecated
+        .longopt_id = OPT_BIT_RATE,
+        .longopt = "bit-rate",
+        .argdesc = "value",
     },
     {
         // Not really deprecated (--codec has never been released), but without
@@ -1432,8 +1439,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     int c;
     while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
         switch (c) {
+            case OPT_BIT_RATE:
+                LOGW("--bit-rate is deprecated, use --video-bit-rate instead.");
+                // fall through
             case 'b':
-                if (!parse_bit_rate(optarg, &opts->bit_rate)) {
+                if (!parse_bit_rate(optarg, &opts->video_bit_rate)) {
                     return false;
                 }
                 break;
