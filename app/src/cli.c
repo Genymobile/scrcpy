@@ -38,6 +38,7 @@ enum {
     OPT_RENDER_DRIVER,
     OPT_NO_MIPMAPS,
     OPT_CODEC_OPTIONS,
+    OPT_VIDEO_CODEC_OPTIONS,
     OPT_FORCE_ADB_FORWARD,
     OPT_DISABLE_SCREENSAVER,
     OPT_SHORTCUT_MOD,
@@ -127,16 +128,10 @@ static const struct sc_option options[] = {
         .argdesc = "value",
     },
     {
+        // deprecated
         .longopt_id = OPT_CODEC_OPTIONS,
         .longopt = "codec-options",
         .argdesc = "key[:type]=value[,...]",
-        .text = "Set a list of comma-separated key:type=value options for the "
-                "device encoder.\n"
-                "The possible values for 'type' are 'int' (default), 'long', "
-                "'float' and 'string'.\n"
-                "The list of possible codec options is available in the "
-                "Android documentation: "
-                "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
         .longopt_id = OPT_CROP,
@@ -535,6 +530,18 @@ static const struct sc_option options[] = {
         .argdesc = "name",
         .text = "Select a video codec (h264, h265 or av1).\n"
                 "Default is h264.",
+    },
+    {
+        .longopt_id = OPT_VIDEO_CODEC_OPTIONS,
+        .longopt = "video-codec-options",
+        .argdesc = "key[:type]=value[,...]",
+        .text = "Set a list of comma-separated key:type=value options for the "
+                "device video encoder.\n"
+                "The possible values for 'type' are 'int' (default), 'long', "
+                "'float' and 'string'.\n"
+                "The list of possible codec options is available in the "
+                "Android documentation: "
+                "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
         .shortopt = 'w',
@@ -1616,7 +1623,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->forward_key_repeat = false;
                 break;
             case OPT_CODEC_OPTIONS:
-                opts->codec_options = optarg;
+                LOGW("--codec-options is deprecated, use --video-codec-options "
+                     "instead.");
+                // fall through
+            case OPT_VIDEO_CODEC_OPTIONS:
+                opts->video_codec_options = optarg;
                 break;
             case OPT_ENCODER_NAME:
                 opts->encoder_name = optarg;
