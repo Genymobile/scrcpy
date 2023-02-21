@@ -26,16 +26,6 @@ Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are 
 Default is 8M (8000000).
 
 .TP
-.BI "\-\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
-Set a list of comma-separated key:type=value options for the device encoder.
-
-The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
-
-The list of possible codec options is available in the Android documentation
-.UR https://d.android.com/reference/android/media/MediaFormat
-.UE .
-
-.TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
@@ -328,6 +318,16 @@ Print the version of scrcpy.
 Select a video codec (h264, h265 or av1).
 
 Default is h264.
+
+.TP
+.BI "\-\-video\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
+Set a list of comma-separated key:type=value options for the device video encoder.
+
+The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
+
+The list of possible codec options is available in the Android documentation
+.UR https://d.android.com/reference/android/media/MediaFormat
+.UE .
 
 .TP
 .B \-w, \-\-stay-awake
