@@ -61,7 +61,6 @@ public final class Server {
     private static void scrcpy(Options options) throws IOException, ConfigurationException {
         Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
-        List<CodecOption> codecOptions = options.getCodecOptions();
 
         Thread initThread = startInitThread(options);
 
@@ -117,8 +116,8 @@ public final class Server {
 
             Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
                     options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(), codecOptions,
-                    options.getEncoderName(), options.getDownsizeOnError());
+            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                    options.getVideoCodecOptions(), options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
                 screenEncoder.streamScreen();
@@ -242,9 +241,9 @@ public final class Server {
                     boolean stayAwake = Boolean.parseBoolean(value);
                     options.setStayAwake(stayAwake);
                     break;
-                case "codec_options":
-                    List<CodecOption> codecOptions = CodecOption.parse(value);
-                    options.setCodecOptions(codecOptions);
+                case "video_codec_options":
+                    List<CodecOption> videoCodecOptions = CodecOption.parse(value);
+                    options.setVideoCodecOptions(videoCodecOptions);
                     break;
                 case "encoder_name":
                     if (!value.isEmpty()) {
