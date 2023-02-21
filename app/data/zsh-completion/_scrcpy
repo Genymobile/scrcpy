@@ -9,7 +9,7 @@ local arguments
 
 arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
-    {-b,--bit-rate=}'[Encode the video at the given bit-rate]'
+    {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
     '--codec-options=[Set a list of comma-separated key\:type=value options for the device encoder]'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'
