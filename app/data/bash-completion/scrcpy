@@ -3,6 +3,7 @@ _scrcpy() {
     local opts="
         --always-on-top
         -b --bit-rate=
+        --codec=
         --codec-options=
         --crop=
         -d --select-usb
@@ -64,6 +65,10 @@ _scrcpy() {
     _init_completion -s || return
 
     case "$prev" in
+        --codec)
+            COMPREPLY=($(compgen -W 'h264 h265 av1' -- "$cur"))
+            return
+            ;;
         --lock-video-orientation)
             COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
             return
