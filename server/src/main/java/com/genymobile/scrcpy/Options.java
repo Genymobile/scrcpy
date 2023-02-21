@@ -11,7 +11,7 @@ public class Options {
     private boolean audio = true;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
-    private int bitRate = 8000000;
+    private int videoBitRate = 8000000;
     private int maxFps;
     private int lockVideoOrientation = -1;
     private boolean tunnelForward;
@@ -74,12 +74,12 @@ public class Options {
         this.videoCodec = videoCodec;
     }
 
-    public int getBitRate() {
-        return bitRate;
+    public int getVideoBitRate() {
+        return videoBitRate;
     }
 
-    public void setBitRate(int bitRate) {
-        this.bitRate = bitRate;
+    public void setVideoBitRate(int videoBitRate) {
+        this.videoBitRate = videoBitRate;
     }
 
     public int getMaxFps() {
