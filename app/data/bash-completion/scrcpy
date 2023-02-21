@@ -3,7 +3,6 @@ _scrcpy() {
     local opts="
         --always-on-top
         -b --video-bit-rate=
-        --codec-options=
         --crop=
         -d --select-usb
         --disable-screensaver
@@ -55,6 +54,7 @@ _scrcpy() {
         -V --verbosity=
         -v --version
         --video-codec=
+        --video-codec-options=
         -w --stay-awake
         --window-borderless
         --window-title=

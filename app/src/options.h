@@ -93,7 +93,7 @@ struct scrcpy_options {
     const char *window_title;
     const char *push_target;
     const char *render_driver;
-    const char *codec_options;
+    const char *video_codec_options;
     const char *encoder_name;
 #ifdef HAVE_V4L2
     const char *v4l2_device;
