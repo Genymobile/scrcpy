@@ -117,7 +117,7 @@ public final class Server {
 
             Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
                     options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getBitRate(), options.getMaxFps(), codecOptions,
+            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(), codecOptions,
                     options.getEncoderName(), options.getDownsizeOnError());
             try {
                 // synchronous
@@ -206,9 +206,9 @@ public final class Server {
                     int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
                     options.setMaxSize(maxSize);
                     break;
-                case "bit_rate":
-                    int bitRate = Integer.parseInt(value);
-                    options.setBitRate(bitRate);
+                case "video_bit_rate":
+                    int videoBitRate = Integer.parseInt(value);
+                    options.setVideoBitRate(videoBitRate);
                     break;
                 case "max_fps":
                     int maxFps = Integer.parseInt(value);
