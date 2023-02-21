@@ -199,7 +199,7 @@ preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
 The default bit-rate is 8 Mbps. To change the video bitrate (e.g. to 2 Mbps):
 
 ```bash
-scrcpy --bit-rate=2M
+scrcpy --video-bit-rate=2M
 scrcpy -b 2M  # short version
 ```
 
@@ -444,7 +444,7 @@ none found, try running `adb disconnect`, and then run those two commands again.
 It may be useful to decrease the bit-rate and the resolution:
 
 ```bash
-scrcpy --bit-rate=2M --max-size=800
+scrcpy --video-bit-rate=2M --max-size=800
 scrcpy -b2M -m800  # short version
 ```
 
