@@ -35,18 +35,18 @@ public class ScreenEncoder implements Device.RotationListener {
     private final Streamer streamer;
     private final String encoderName;
     private final List<CodecOption> codecOptions;
-    private final int bitRate;
+    private final int videoBitRate;
     private final int maxFps;
     private final boolean downsizeOnError;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
-    public ScreenEncoder(Device device, Streamer streamer, int bitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
+    public ScreenEncoder(Device device, Streamer streamer, int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
             boolean downsizeOnError) {
         this.device = device;
         this.streamer = streamer;
-        this.bitRate = bitRate;
+        this.videoBitRate = videoBitRate;
         this.maxFps = maxFps;
         this.codecOptions = codecOptions;
         this.encoderName = encoderName;
@@ -65,7 +65,7 @@ public class ScreenEncoder implements Device.RotationListener {
     public void streamScreen() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
-        MediaFormat format = createFormat(codec.getMimeType(), bitRate, maxFps, codecOptions);
+        MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
 

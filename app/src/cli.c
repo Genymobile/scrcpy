@@ -104,7 +104,7 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'b',
-        .longopt = "bit-rate",
+        .longopt = "video-bit-rate",
         .argdesc = "value",
         .text = "Encode the video at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
@@ -1433,7 +1433,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
         switch (c) {
             case 'b':
-                if (!parse_bit_rate(optarg, &opts->bit_rate)) {
+                if (!parse_bit_rate(optarg, &opts->video_bit_rate)) {
                     return false;
                 }
                 break;
