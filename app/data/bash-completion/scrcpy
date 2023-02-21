@@ -2,7 +2,7 @@ _scrcpy() {
     local cur prev words cword
     local opts="
         --always-on-top
-        -b --bit-rate=
+        -b --video-bit-rate=
         --codec-options=
         --crop=
         -d --select-usb
@@ -104,7 +104,7 @@ _scrcpy() {
             COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
             return
             ;;
-        -b|--bit-rate \
+        -b|--video-bit-rate \
         |--codec-options \
         |--crop \
         |--display \
