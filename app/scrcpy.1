@@ -45,6 +45,8 @@ The list of possible codec options is available in the Android documentation
 .BI "\-\-audio\-encoder " name
 Use a specific MediaCodec audio encoder (depending on the codec provided by \fB\-\-audio\-codec\fR).
 
+The available encoders can be listed by \-\-list\-encoders.
+
 .TP
 .BI "\-b, \-\-video\-bit\-rate " value
 Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
@@ -127,6 +129,10 @@ Also see \fB\-\-hid\-mouse\fR.
 Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+Shift+v).
 
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
+
+.TP
+.B \-\-list\-encoders
+List video and audio encoders available on the device.
 
 .TP
 \fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
@@ -354,6 +360,8 @@ The list of possible codec options is available in the Android documentation
 .TP
 .BI "\-\-video\-encoder " name
 Use a specific MediaCodec video encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
+
+The available encoders can be listed by \-\-list\-encoders.
 
 .TP
 .B \-w, \-\-stay-awake

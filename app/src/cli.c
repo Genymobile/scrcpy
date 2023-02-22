@@ -68,6 +68,7 @@ enum {
     OPT_AUDIO_CODEC,
     OPT_AUDIO_CODEC_OPTIONS,
     OPT_AUDIO_ENCODER,
+    OPT_LIST_ENCODERS,
 };
 
 struct sc_option {
@@ -141,7 +142,8 @@ static const struct sc_option options[] = {
         .longopt = "audio-encoder",
         .argdesc = "name",
         .text = "Use a specific MediaCodec audio encoder (depending on the "
-                "codec provided by --audio-codec).",
+                "codec provided by --audio-codec).\n"
+                "The available encoders can be listed by --list-encoders.",
     },
     {
         .shortopt = 'b',
@@ -269,6 +271,11 @@ static const struct sc_option options[] = {
                 "on Ctrl+v (like MOD+Shift+v).\n"
                 "This is a workaround for some devices not behaving as "
                 "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt_id = OPT_LIST_ENCODERS,
+        .longopt = "list-encoders",
+        .text = "List video and audio encoders available on the device.",
     },
     {
         .longopt_id = OPT_LOCK_VIDEO_ORIENTATION,
@@ -586,7 +593,8 @@ static const struct sc_option options[] = {
         .longopt = "video-encoder",
         .argdesc = "name",
         .text = "Use a specific MediaCodec video encoder (depending on the "
-                "codec provided by --video-codec).",
+                "codec provided by --video-codec).\n"
+                "The available encoders can be listed by --list-encoders.",
     },
     {
         .shortopt = 'w',
@@ -1792,6 +1800,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
                 return false;
 #endif
+            case OPT_LIST_ENCODERS:
+                opts->list_encoders = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
