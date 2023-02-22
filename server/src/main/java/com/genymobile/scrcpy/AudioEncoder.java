@@ -15,6 +15,7 @@ import android.os.Looper;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -49,6 +50,7 @@ public final class AudioEncoder {
 
     private final Streamer streamer;
     private final int bitRate;
+    private final List<CodecOption> codecOptions;
 
     // Capacity of 64 is in practice "infinite" (it is limited by the number of available MediaCodec buffers, typically 4).
     // So many pending tasks would lead to an unacceptable delay anyway.
@@ -63,9 +65,10 @@ public final class AudioEncoder {
 
     private boolean ended;
 
-    public AudioEncoder(Streamer streamer, int bitRate) {
+    public AudioEncoder(Streamer streamer, int bitRate, List<CodecOption> codecOptions) {
         this.streamer = streamer;
         this.bitRate = bitRate;
+        this.codecOptions = codecOptions;
     }
 
     private static AudioFormat createAudioFormat() {
@@ -92,12 +95,22 @@ public final class AudioEncoder {
         return builder.build();
     }
 
-    private static MediaFormat createFormat(String mimeType, int bitRate) {
+    private static MediaFormat createFormat(String mimeType, int bitRate, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, mimeType);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);
         format.setInteger(MediaFormat.KEY_CHANNEL_COUNT, CHANNELS);
         format.setInteger(MediaFormat.KEY_SAMPLE_RATE, SAMPLE_RATE);
+
+        if (codecOptions != null) {
+            for (CodecOption option : codecOptions) {
+                String key = option.getKey();
+                Object value = option.getValue();
+                CodecUtils.setCodecOption(format, key, value);
+                Ln.d("Audio codec option set: " + key + " (" + value.getClass().getSimpleName() + ") = " + value);
+            }
+        }
+
         return format;
     }
 
@@ -221,7 +234,7 @@ public final class AudioEncoder {
             mediaCodecThread = new HandlerThread("AudioEncoder");
             mediaCodecThread.start();
 
-            MediaFormat format = createFormat(mimeType, bitRate);
+            MediaFormat format = createFormat(mimeType, bitRate, codecOptions);
             mediaCodec.setCallback(new EncoderCallback(), new Handler(mediaCodecThread.getLooper()));
             mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
 
