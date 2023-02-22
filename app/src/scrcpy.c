@@ -183,14 +183,11 @@ await_for_server(bool *connected) {
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
-                LOGD("User requested to quit");
                 *connected = false;
                 return true;
             case SC_EVENT_SERVER_CONNECTION_FAILED:
-                LOGE("Server connection failed");
                 return false;
             case SC_EVENT_SERVER_CONNECTED:
-                LOGD("Server connected");
                 *connected = true;
                 return true;
             default:
@@ -374,14 +371,18 @@ scrcpy(struct scrcpy_options *options) {
     // Await for server without blocking Ctrl+C handling
     bool connected;
     if (!await_for_server(&connected)) {
+        LOGE("Server connection failed");
         goto end;
     }
 
     if (!connected) {
         // This is not an error, user requested to quit
+        LOGD("User requested to quit");
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
+
+    LOGD("Server connected");
 
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
