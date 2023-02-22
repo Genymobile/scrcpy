@@ -909,7 +909,10 @@ sc_server_stop(struct sc_server *server) {
     sc_cond_signal(&server->cond_stopped);
     sc_intr_interrupt(&server->intr);
     sc_mutex_unlock(&server->mutex);
+}
 
+void
+sc_server_join(struct sc_server *server) {
     sc_thread_join(&server->thread, NULL);
 }
 
