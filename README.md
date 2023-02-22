@@ -273,12 +273,10 @@ may cause issues or crash. It is possible to select a different encoder:
 scrcpy --video-encoder=OMX.qcom.video.encoder.avc
 ```
 
-To list the available encoders, you can pass an invalid encoder name; the
-error will give the available encoders:
+To list the available encoders:
 
 ```bash
-scrcpy --video-encoder=_                     # for the default codec
-scrcpy --video-codec=h265 --video-encoder=_  # for a specific codec
+scrcpy --list-encoders
 ```
 
 ### Capture
