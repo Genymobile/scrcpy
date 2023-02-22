@@ -66,6 +66,7 @@ enum {
     OPT_NO_AUDIO,
     OPT_AUDIO_BIT_RATE,
     OPT_AUDIO_CODEC,
+    OPT_AUDIO_CODEC_OPTIONS,
 };
 
 struct sc_option {
@@ -121,6 +122,18 @@ static const struct sc_option options[] = {
         .argdesc = "name",
         .text = "Select an audio codec (opus or aac).\n"
                 "Default is opus.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_CODEC_OPTIONS,
+        .longopt = "audio-codec-options",
+        .argdesc = "key[:type]=value[,...]",
+        .text = "Set a list of comma-separated key:type=value options for the "
+                "device audio encoder.\n"
+                "The possible values for 'type' are 'int' (default), 'long', "
+                "'float' and 'string'.\n"
+                "The list of possible codec options is available in the "
+                "Android documentation: "
+                "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
         .shortopt = 'b',
@@ -1671,6 +1684,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 // fall through
             case OPT_VIDEO_CODEC_OPTIONS:
                 opts->video_codec_options = optarg;
+                break;
+            case OPT_AUDIO_CODEC_OPTIONS:
+                opts->audio_codec_options = optarg;
                 break;
             case OPT_ENCODER:
                 LOGW("--encoder is deprecated, use --video-encoder instead.");

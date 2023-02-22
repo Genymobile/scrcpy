@@ -23,6 +23,8 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
+    private List<CodecOption> audioCodecOptions;
+
     private String videoEncoder;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
@@ -170,6 +172,14 @@ public class Options {
 
     public void setVideoCodecOptions(List<CodecOption> videoCodecOptions) {
         this.videoCodecOptions = videoCodecOptions;
+    }
+
+    public List<CodecOption> getAudioCodecOptions() {
+        return audioCodecOptions;
+    }
+
+    public void setAudioCodecOptions(List<CodecOption> audioCodecOptions) {
+        this.audioCodecOptions = audioCodecOptions;
     }
 
     public String getVideoEncoder() {
