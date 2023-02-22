@@ -45,7 +45,8 @@ enum {
     OPT_NO_KEY_REPEAT,
     OPT_FORWARD_ALL_CLICKS,
     OPT_LEGACY_PASTE,
-    OPT_ENCODER_NAME,
+    OPT_ENCODER,
+    OPT_VIDEO_ENCODER,
     OPT_POWER_OFF_ON_CLOSE,
     OPT_V4L2_SINK,
     OPT_DISPLAY_BUFFER,
@@ -178,11 +179,10 @@ static const struct sc_option options[] = {
                 "Also see -d (--select-usb).",
     },
     {
-        .longopt_id = OPT_ENCODER_NAME,
+        // deprecated
+        .longopt_id = OPT_ENCODER,
         .longopt = "encoder",
         .argdesc = "name",
-        .text = "Use a specific MediaCodec encoder (depending on the codec "
-                "provided by --video-codec).",
     },
     {
         .longopt_id = OPT_FORCE_ADB_FORWARD,
@@ -542,6 +542,13 @@ static const struct sc_option options[] = {
                 "The list of possible codec options is available in the "
                 "Android documentation: "
                 "<https://d.android.com/reference/android/media/MediaFormat>",
+    },
+    {
+        .longopt_id = OPT_VIDEO_ENCODER,
+        .longopt = "video-encoder",
+        .argdesc = "name",
+        .text = "Use a specific MediaCodec video encoder (depending on the "
+                "codec provided by --video-codec).",
     },
     {
         .shortopt = 'w',
@@ -1629,8 +1636,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_VIDEO_CODEC_OPTIONS:
                 opts->video_codec_options = optarg;
                 break;
-            case OPT_ENCODER_NAME:
-                opts->encoder_name = optarg;
+            case OPT_ENCODER:
+                LOGW("--encoder is deprecated, use --video-encoder instead.");
+                // fall through
+            case OPT_VIDEO_ENCODER:
+                opts->video_encoder = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;

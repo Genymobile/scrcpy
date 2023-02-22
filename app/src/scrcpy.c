@@ -329,7 +329,7 @@ scrcpy(struct scrcpy_options *options) {
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
         .video_codec_options = options->video_codec_options,
-        .encoder_name = options->encoder_name,
+        .video_encoder = options->video_encoder,
         .force_adb_forward = options->force_adb_forward,
         .power_off_on_close = options->power_off_on_close,
         .clipboard_autosync = options->clipboard_autosync,
