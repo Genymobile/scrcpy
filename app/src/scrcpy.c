@@ -183,12 +183,16 @@ await_for_server(bool *connected) {
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SDL_QUIT:
-                *connected = false;
+                if (connected) {
+                    *connected = false;
+                }
                 return true;
             case SC_EVENT_SERVER_CONNECTION_FAILED:
                 return false;
             case SC_EVENT_SERVER_CONNECTED:
-                *connected = true;
+                if (connected) {
+                    *connected = true;
+                }
                 return true;
             default:
                 break;
@@ -339,6 +343,7 @@ scrcpy(struct scrcpy_options *options) {
         .tcpip_dst = options->tcpip_dst,
         .cleanup = options->cleanup,
         .power_on = options->power_on,
+        .list_encoders = options->list_encoders,
     };
 
     static const struct sc_server_callbacks cbs = {
@@ -355,6 +360,12 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     server_started = true;
+
+    if (options->list_encoders) {
+        bool ok = await_for_server(NULL);
+        ret = ok ? SCRCPY_EXIT_SUCCESS : SCRCPY_EXIT_FAILURE;
+        goto end;
+    }
 
     if (options->display) {
         sdl_set_hints(options->render_driver);
