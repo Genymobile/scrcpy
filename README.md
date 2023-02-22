@@ -270,15 +270,15 @@ Some devices have more than one encoder for a specific codec, and some of them
 may cause issues or crash. It is possible to select a different encoder:
 
 ```bash
-scrcpy --encoder=OMX.qcom.video.encoder.avc
+scrcpy --video-encoder=OMX.qcom.video.encoder.avc
 ```
 
 To list the available encoders, you can pass an invalid encoder name; the
 error will give the available encoders:
 
 ```bash
-scrcpy --encoder=_                     # for the default codec
-scrcpy --video-codec=h265 --encoder=_  # for a specific codec
+scrcpy --video-encoder=_                     # for the default codec
+scrcpy --video-codec=h265 --video-encoder=_  # for a specific codec
 ```
 
 ### Capture
