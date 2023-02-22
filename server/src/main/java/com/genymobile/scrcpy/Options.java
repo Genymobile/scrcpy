@@ -21,7 +21,7 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
-    private String encoderName;
+    private String videoEncoder;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
@@ -154,12 +154,12 @@ public class Options {
         this.videoCodecOptions = videoCodecOptions;
     }
 
-    public String getEncoderName() {
-        return encoderName;
+    public String getVideoEncoder() {
+        return videoEncoder;
     }
 
-    public void setEncoderName(String encoderName) {
-        this.encoderName = encoderName;
+    public void setVideoEncoder(String videoEncoder) {
+        this.videoEncoder = videoEncoder;
     }
 
     public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {

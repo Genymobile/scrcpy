@@ -9,7 +9,6 @@ _scrcpy() {
         --display=
         --display-buffer=
         -e --select-tcpip
-        --encoder=
         --force-adb-forward
         --forward-all-clicks
         -f --fullscreen
@@ -55,6 +54,7 @@ _scrcpy() {
         -v --version
         --video-codec=
         --video-codec-options=
+        --video-encoder=
         -w --stay-awake
         --window-borderless
         --window-title=

@@ -28,7 +28,7 @@ struct sc_server_params {
     enum sc_codec video_codec;
     const char *crop;
     const char *video_codec_options;
-    const char *encoder_name;
+    const char *video_encoder;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
