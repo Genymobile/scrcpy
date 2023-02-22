@@ -117,7 +117,7 @@ public final class Server {
             Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
                     options.getSendFrameMeta());
             ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
-                    options.getVideoCodecOptions(), options.getEncoderName(), options.getDownsizeOnError());
+                    options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
             try {
                 // synchronous
                 screenEncoder.streamScreen();
@@ -245,9 +245,9 @@ public final class Server {
                     List<CodecOption> videoCodecOptions = CodecOption.parse(value);
                     options.setVideoCodecOptions(videoCodecOptions);
                     break;
-                case "encoder_name":
+                case "video_encoder":
                     if (!value.isEmpty()) {
-                        options.setEncoderName(value);
+                        options.setVideoEncoder(value);
                     }
                     break;
                 case "power_off_on_close":
