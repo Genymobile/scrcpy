@@ -698,6 +698,10 @@ end:
         sc_file_pusher_destroy(&s->file_pusher);
     }
 
+    if (server_started) {
+        sc_server_join(&s->server);
+    }
+
     sc_server_destroy(&s->server);
 
     return ret;
