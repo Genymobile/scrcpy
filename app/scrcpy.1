@@ -32,6 +32,16 @@ Select an audio codec (opus or aac).
 Default is opus.
 
 .TP
+.BI "\-\-audio\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
+Set a list of comma-separated key:type=value options for the device audio encoder.
+
+The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
+
+The list of possible codec options is available in the Android documentation
+.UR https://d.android.com/reference/android/media/MediaFormat
+.UE .
+
+.TP
 .BI "\-b, \-\-video\-bit\-rate " value
 Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
 

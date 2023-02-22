@@ -11,6 +11,7 @@ arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
     '--audio-bit-rate=[Encode the audio at the given bit-rate]'
     '--audio-codec=[Select the audio codec]:codec:(opus aac)'
+    '--audio-codec-options=[Set a list of comma-separated key\:type=value options for the device audio encoder]'
     {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'
