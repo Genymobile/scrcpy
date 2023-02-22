@@ -4,6 +4,7 @@ _scrcpy() {
         --always-on-top
         --audio-bit-rate=
         --audio-codec=
+        --audio-codec-options=
         -b --video-bit-rate=
         --crop=
         -d --select-usb
