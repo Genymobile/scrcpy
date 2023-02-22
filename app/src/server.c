@@ -300,6 +300,9 @@ execute_server(struct sc_server *server,
         // By default, power_on is true
         ADD_PARAM("power_on=false");
     }
+    if (params->list_encoders) {
+        ADD_PARAM("list_encoders=true");
+    }
 
 #undef ADD_PARAM
 
@@ -848,6 +851,25 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
+    ok = push_server(&server->intr, serial);
+    if (!ok) {
+        goto error_connection_failed;
+    }
+
+    // If --list-encoders is passed, then the server just prints the encoders
+    // then exits.
+    if (params->list_encoders) {
+        sc_pid pid = execute_server(server, params);
+        if (pid == SC_PROCESS_NONE) {
+            goto error_connection_failed;
+        }
+        sc_process_wait(pid, NULL); // ignore exit code
+        sc_process_close(pid);
+        // Wake up await_for_server()
+        server->cbs->on_connected(server, server->cbs_userdata);
+        return 0;
+    }
+
     int r = asprintf(&server->device_socket_name, SC_SOCKET_NAME_PREFIX "%08x",
                      params->scid);
     if (r == -1) {
@@ -856,11 +878,6 @@ run_server(void *data) {
     }
     assert(r == sizeof(SC_SOCKET_NAME_PREFIX) - 1 + 8);
     assert(server->device_socket_name);
-
-    ok = push_server(&server->intr, serial);
-    if (!ok) {
-        goto error_connection_failed;
-    }
 
     ok = sc_adb_tunnel_open(&server->tunnel, &server->intr, serial,
                             server->device_socket_name, params->port_range,
