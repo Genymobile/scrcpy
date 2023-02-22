@@ -33,6 +33,8 @@ public class Options {
     private boolean cleanup = true;
     private boolean powerOn = true;
 
+    private boolean listEncoders;
+
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
@@ -237,6 +239,14 @@ public class Options {
 
     public void setPowerOn(boolean powerOn) {
         this.powerOn = powerOn;
+    }
+
+    public boolean getListEncoders() {
+        return listEncoders;
+    }
+
+    public void setListEncoders(boolean listEncoders) {
+        this.listEncoders = listEncoders;
     }
 
     public boolean getSendDeviceMeta() {

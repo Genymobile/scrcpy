@@ -291,6 +291,10 @@ public final class Server {
                     boolean powerOn = Boolean.parseBoolean(value);
                     options.setPowerOn(powerOn);
                     break;
+                case "list_encoders":
+                    boolean listEncoders = Boolean.parseBoolean(value);
+                    options.setListEncoders(listEncoders);
+                    break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);
                     options.setSendDeviceMeta(sendDeviceMeta);
@@ -349,6 +353,17 @@ public final class Server {
         Options options = createOptions(args);
 
         Ln.initLogLevel(options.getLogLevel());
+
+        if (options.getListEncoders()) {
+            if (options.getCleanup()) {
+                CleanUp.unlinkSelf();
+            }
+
+            Ln.i(CodecUtils.buildVideoEncoderListMessage());
+            Ln.i(CodecUtils.buildAudioEncoderListMessage());
+            // Just print the available encoders, do not mirror
+            return;
+        }
 
         try {
             scrcpy(options);

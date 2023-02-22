@@ -26,6 +26,7 @@ arguments=(
     {-K,--hid-keyboard}'[Simulate a physical keyboard by using HID over AOAv2]'
     {-h,--help}'[Print the help]'
     '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
+    '--list-encoders[List video and audio encoders available on the device]'
     '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 1 2 3)'
     '--max-fps=[Limit the frame rate of screen capture]'
     {-M,--hid-mouse}'[Simulate a physical mouse by using HID over AOAv2]'
