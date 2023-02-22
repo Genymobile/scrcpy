@@ -72,6 +72,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     free((char *) params->req_serial);
     free((char *) params->crop);
     free((char *) params->video_codec_options);
+    free((char *) params->audio_codec_options);
     free((char *) params->video_encoder);
     free((char *) params->tcpip_dst);
 }
@@ -96,6 +97,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(req_serial);
     COPY(crop);
     COPY(video_codec_options);
+    COPY(audio_codec_options);
     COPY(video_encoder);
     COPY(tcpip_dst);
 #undef COPY
@@ -267,6 +269,9 @@ execute_server(struct sc_server *server,
     }
     if (params->video_codec_options) {
         ADD_PARAM("video_codec_options=%s", params->video_codec_options);
+    }
+    if (params->audio_codec_options) {
+        ADD_PARAM("audio_codec_options=%s", params->audio_codec_options);
     }
     if (params->video_encoder) {
         ADD_PARAM("video_encoder=%s", params->video_encoder);
