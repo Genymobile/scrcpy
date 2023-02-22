@@ -111,7 +111,7 @@ public final class Server {
             if (audio) {
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
                         options.getSendFrameMeta());
-                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate());
+                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions());
                 audioEncoder.start();
             }
 
@@ -257,6 +257,10 @@ public final class Server {
                 case "video_codec_options":
                     List<CodecOption> videoCodecOptions = CodecOption.parse(value);
                     options.setVideoCodecOptions(videoCodecOptions);
+                    break;
+                case "audio_codec_options":
+                    List<CodecOption> audioCodecOptions = CodecOption.parse(value);
+                    options.setAudioCodecOptions(audioCodecOptions);
                     break;
                 case "video_encoder":
                     if (!value.isEmpty()) {
