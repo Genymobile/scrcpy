@@ -139,7 +139,7 @@ public final class CleanUp {
         builder.start();
     }
 
-    private static void unlinkSelf() {
+    public static void unlinkSelf() {
         try {
             new File(SERVER_PATH).delete();
         } catch (Exception e) {
