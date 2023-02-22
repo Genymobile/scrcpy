@@ -334,7 +334,7 @@ public final class AudioEncoder {
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                Ln.e(CodecUtils.buildUnknownEncoderMessage(codec, encoderName));
+                Ln.e("Encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + CodecUtils.buildAudioEncoderListMessage());
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
             }
         }

@@ -19,6 +19,7 @@ _scrcpy() {
         -K --hid-keyboard
         -h --help
         --legacy-paste
+        --list-encoders
         --lock-video-orientation
         --lock-video-orientation=
         --max-fps=
