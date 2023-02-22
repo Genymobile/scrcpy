@@ -24,7 +24,7 @@ _scrcpy() {
         -M --hid-mouse
         -m --max-size=
         --no-cleanup
-        --no-clipboard-on-error
+        --no-clipboard-autosync
         --no-downsize-on-error
         -n --no-control
         -N --no-display
