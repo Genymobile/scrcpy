@@ -65,10 +65,6 @@ Use TCP/IP device (if there is exactly one, like adb -e).
 Also see \fB\-d\fR (\fB\-\-select\-usb\fR).
 
 .TP
-.BI "\-\-encoder " name
-Use a specific MediaCodec encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
-
-.TP
 .B \-\-force\-adb\-forward
 Do not attempt to use "adb reverse" to connect to the device.
 
@@ -328,6 +324,10 @@ The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'
 The list of possible codec options is available in the Android documentation
 .UR https://d.android.com/reference/android/media/MediaFormat
 .UE .
+
+.TP
+.BI "\-\-video\-encoder " name
+Use a specific MediaCodec video encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
 
 .TP
 .B \-w, \-\-stay-awake
