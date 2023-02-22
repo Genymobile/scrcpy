@@ -108,6 +108,10 @@ sc_server_start(struct sc_server *server);
 void
 sc_server_stop(struct sc_server *server);
 
+// join the server thread
+void
+sc_server_join(struct sc_server *server);
+
 // close and release sockets
 void
 sc_server_destroy(struct sc_server *server);
