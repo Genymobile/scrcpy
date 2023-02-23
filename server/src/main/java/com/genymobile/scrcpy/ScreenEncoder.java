@@ -202,7 +202,7 @@ public class ScreenEncoder implements Device.RotationListener {
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                Ln.e("Encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + CodecUtils.buildVideoEncoderListMessage());
+                Ln.e("Encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + LogUtils.buildVideoEncoderListMessage());
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
             }
         }
