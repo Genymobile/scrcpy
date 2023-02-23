@@ -303,6 +303,9 @@ execute_server(struct sc_server *server,
     if (params->list_encoders) {
         ADD_PARAM("list_encoders=true");
     }
+    if (params->list_displays) {
+        ADD_PARAM("list_displays=true");
+    }
 
 #undef ADD_PARAM
 
@@ -856,9 +859,9 @@ run_server(void *data) {
         goto error_connection_failed;
     }
 
-    // If --list-encoders is passed, then the server just prints the encoders
+    // If --list-* is passed, then the server just prints the requested data
     // then exits.
-    if (params->list_encoders) {
+    if (params->list_encoders || params->list_displays) {
         sc_pid pid = execute_server(server, params);
         if (pid == SC_PROCESS_NONE) {
             goto error_connection_failed;
