@@ -73,4 +73,5 @@ const struct scrcpy_options scrcpy_options_default = {
     .power_on = true,
     .audio = true,
     .list_encoders = false,
+    .list_displays = false,
 };
