@@ -359,8 +359,8 @@ public final class Server {
                 CleanUp.unlinkSelf();
             }
 
-            Ln.i(CodecUtils.buildVideoEncoderListMessage());
-            Ln.i(CodecUtils.buildAudioEncoderListMessage());
+            Ln.i(LogUtils.buildVideoEncoderListMessage());
+            Ln.i(LogUtils.buildAudioEncoderListMessage());
             // Just print the available encoders, do not mirror
             return;
         }
