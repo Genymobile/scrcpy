@@ -382,17 +382,20 @@ scrcpy(struct scrcpy_options *options) {
         file_pusher_initialized = true;
     }
 
-    struct sc_decoder *dec = NULL;
+    static const struct sc_demuxer_callbacks demuxer_cbs = {
+        .on_ended = sc_demuxer_on_ended,
+    };
+    sc_demuxer_init(&s->demuxer, s->server.video_socket, &demuxer_cbs, NULL);
+
     bool needs_decoder = options->display;
 #ifdef HAVE_V4L2
     needs_decoder |= !!options->v4l2_device;
 #endif
     if (needs_decoder) {
         sc_decoder_init(&s->decoder);
-        dec = &s->decoder;
+        sc_demuxer_add_sink(&s->demuxer, &s->decoder.packet_sink);
     }
 
-    struct sc_recorder *rec = NULL;
     if (options->record_filename) {
         static const struct sc_recorder_callbacks recorder_cbs = {
             .on_ended = sc_recorder_on_ended,
@@ -409,20 +412,7 @@ scrcpy(struct scrcpy_options *options) {
         }
         recorder_started = true;
 
-        rec = &s->recorder;
-    }
-
-    static const struct sc_demuxer_callbacks demuxer_cbs = {
-        .on_ended = sc_demuxer_on_ended,
-    };
-    sc_demuxer_init(&s->demuxer, s->server.video_socket, &demuxer_cbs, NULL);
-
-    if (dec) {
-        sc_demuxer_add_sink(&s->demuxer, &dec->packet_sink);
-    }
-
-    if (rec) {
-        sc_demuxer_add_sink(&s->demuxer, &rec->packet_sink);
+        sc_demuxer_add_sink(&s->demuxer, &s->recorder.packet_sink);
     }
 
     struct sc_controller *controller = NULL;
