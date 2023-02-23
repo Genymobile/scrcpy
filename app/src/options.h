@@ -155,6 +155,7 @@ struct scrcpy_options {
     bool power_on;
     bool audio;
     bool list_encoders;
+    bool list_displays;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
