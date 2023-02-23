@@ -48,6 +48,7 @@ void
 sc_set_log_level(enum sc_log_level level) {
     SDL_LogPriority sdl_log = log_level_sc_to_sdl(level);
     SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, sdl_log);
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_CUSTOM, sdl_log);
 }
 
 enum sc_log_level
@@ -120,7 +121,7 @@ sc_av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     }
     memcpy(local_fmt, "[FFmpeg] ", 9); // do not write the final '\0'
     memcpy(local_fmt + 9, fmt, fmt_len + 1); // include '\0'
-    SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
+    SDL_LogMessageV(SDL_LOG_CATEGORY_CUSTOM, priority, local_fmt, vl);
     free(local_fmt);
 }
 
