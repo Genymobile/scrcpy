@@ -75,6 +75,8 @@ main_scrcpy(int argc, char *argv[]) {
         return SCRCPY_EXIT_FAILURE;
     }
 
+    sc_log_configure();
+
 #ifdef HAVE_USB
     enum scrcpy_exit_code ret = args.opts.otg ? scrcpy_otg(&args.opts)
                                               : scrcpy(&args.opts);
