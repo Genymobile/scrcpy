@@ -54,6 +54,9 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  struct sc_size declared_frame_size,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
+bool
+sc_recorder_start(struct sc_recorder *recorder);
+
 void
 sc_recorder_stop(struct sc_recorder *recorder);
 
