@@ -295,6 +295,10 @@ public final class Server {
                     boolean listEncoders = Boolean.parseBoolean(value);
                     options.setListEncoders(listEncoders);
                     break;
+                case "list_displays":
+                    boolean listDisplays = Boolean.parseBoolean(value);
+                    options.setListDisplays(listDisplays);
+                    break;
                 case "send_device_meta":
                     boolean sendDeviceMeta = Boolean.parseBoolean(value);
                     options.setSendDeviceMeta(sendDeviceMeta);
@@ -354,14 +358,19 @@ public final class Server {
 
         Ln.initLogLevel(options.getLogLevel());
 
-        if (options.getListEncoders()) {
+        if (options.getListEncoders() || options.getListDisplays()) {
             if (options.getCleanup()) {
                 CleanUp.unlinkSelf();
             }
 
-            Ln.i(LogUtils.buildVideoEncoderListMessage());
-            Ln.i(LogUtils.buildAudioEncoderListMessage());
-            // Just print the available encoders, do not mirror
+            if (options.getListEncoders()) {
+                Ln.i(LogUtils.buildVideoEncoderListMessage());
+                Ln.i(LogUtils.buildAudioEncoderListMessage());
+            }
+            if (options.getListDisplays()) {
+                Ln.i(LogUtils.buildDisplayListMessage());
+            }
+            // Just print the requested data, do not mirror
             return;
         }
 
