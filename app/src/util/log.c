@@ -4,6 +4,7 @@
 # include <windows.h>
 #endif
 #include <assert.h>
+#include <libavformat/avformat.h>
 
 static SDL_LogPriority
 log_level_sc_to_sdl(enum sc_log_level level) {
@@ -85,3 +86,46 @@ sc_log_windows_error(const char *prefix, int error) {
     return true;
 }
 #endif
+
+static SDL_LogPriority
+sdl_priority_from_av_level(int level) {
+    switch (level) {
+        case AV_LOG_PANIC:
+        case AV_LOG_FATAL:
+            return SDL_LOG_PRIORITY_CRITICAL;
+        case AV_LOG_ERROR:
+            return SDL_LOG_PRIORITY_ERROR;
+        case AV_LOG_WARNING:
+            return SDL_LOG_PRIORITY_WARN;
+        case AV_LOG_INFO:
+            return SDL_LOG_PRIORITY_INFO;
+    }
+    // do not forward others, which are too verbose
+    return 0;
+}
+
+static void
+sc_av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
+    (void) avcl;
+    SDL_LogPriority priority = sdl_priority_from_av_level(level);
+    if (priority == 0) {
+        return;
+    }
+
+    size_t fmt_len = strlen(fmt);
+    char *local_fmt = malloc(fmt_len + 10);
+    if (!local_fmt) {
+        LOG_OOM();
+        return;
+    }
+    memcpy(local_fmt, "[FFmpeg] ", 9); // do not write the final '\0'
+    memcpy(local_fmt + 9, fmt, fmt_len + 1); // include '\0'
+    SDL_LogMessageV(SDL_LOG_CATEGORY_VIDEO, priority, local_fmt, vl);
+    free(local_fmt);
+}
+
+void
+sc_log_configure() {
+    // Redirect FFmpeg logs to SDL logs
+    av_log_set_callback(sc_av_log_callback);
+}
