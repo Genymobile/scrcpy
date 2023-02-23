@@ -40,10 +40,15 @@ public final class Streamer {
         }
     }
 
-    public void writeDisableStream() throws IOException {
-        // Writing 0 (32-bit) as codec-id means that the device disables the stream (because it could not capture)
-        byte[] zeros = new byte[4];
-        IO.writeFully(fd, zeros, 0, zeros.length);
+    public void writeDisableStream(boolean error) throws IOException {
+        // Writing a specific code as codec-id means that the device disables the stream
+        //   code 0: it explicitly disables the stream (because it could not capture audio), scrcpy should continue mirroring video only
+        //   code 1: a configuration error occurred, scrcpy must be stopped
+        byte[] code = new byte[4];
+        if (error) {
+            code[3] = 1;
+        }
+        IO.writeFully(fd, code, 0, code.length);
     }
 
     public void writePacket(ByteBuffer buffer, long pts, boolean config, boolean keyFrame) throws IOException {
