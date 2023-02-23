@@ -56,6 +56,7 @@ struct sc_server_params {
     bool cleanup;
     bool power_on;
     bool list_encoders;
+    bool list_displays;
 };
 
 struct sc_server {

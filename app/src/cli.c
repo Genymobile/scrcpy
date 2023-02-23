@@ -69,6 +69,7 @@ enum {
     OPT_AUDIO_CODEC_OPTIONS,
     OPT_AUDIO_ENCODER,
     OPT_LIST_ENCODERS,
+    OPT_LIST_DISPLAYS,
 };
 
 struct sc_option {
@@ -198,10 +199,9 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_DISPLAY_ID,
         .longopt = "display",
         .argdesc = "id",
-        .text = "Specify the display id to mirror.\n"
-                "The list of possible display ids can be listed by:\n"
-                "    adb shell dumpsys display\n"
-                "(search \"mDisplayId=\" in the output)\n"
+        .text = "Specify the device display id to mirror.\n"
+                "The available display ids can be listed by:\n"
+                "    scrcpy --list-displays\n"
                 "Default is 0.",
     },
     {
@@ -271,6 +271,11 @@ static const struct sc_option options[] = {
                 "on Ctrl+v (like MOD+Shift+v).\n"
                 "This is a workaround for some devices not behaving as "
                 "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt_id = OPT_LIST_DISPLAYS,
+        .longopt = "list-displays",
+        .text = "List device displays.",
     },
     {
         .longopt_id = OPT_LIST_ENCODERS,
@@ -1802,6 +1807,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 #endif
             case OPT_LIST_ENCODERS:
                 opts->list_encoders = true;
+                break;
+            case OPT_LIST_DISPLAYS:
+                opts->list_displays = true;
                 break;
             default:
                 // getopt prints the error message on stderr

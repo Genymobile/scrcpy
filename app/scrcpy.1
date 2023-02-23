@@ -73,10 +73,9 @@ Disable screensaver while scrcpy is running.
 
 .TP
 .BI "\-\-display " id
-Specify the display id to mirror.
+Specify the device display id to mirror.
 
-The list of possible display ids can be listed by "adb shell dumpsys display"
-(search "mDisplayId=" in the output).
+The available display ids can be listed by \-\-list\-displays.
 
 Default is 0.
 
@@ -133,6 +132,10 @@ This is a workaround for some devices not behaving as expected when setting the 
 .TP
 .B \-\-list\-encoders
 List video and audio encoders available on the device.
+
+.TP
+.B \-\-list\-displays
+List displays available on the device.
 
 .TP
 \fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]

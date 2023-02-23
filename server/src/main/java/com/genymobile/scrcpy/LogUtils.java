@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
+
 import java.util.List;
 
 public final class LogUtils {
@@ -31,6 +33,19 @@ public final class LogUtils {
             for (CodecUtils.DeviceEncoder encoder : audioEncoders) {
                 builder.append("\n    --audio-codec=").append(encoder.getCodec().getName());
                 builder.append(" --audio-encoder='").append(encoder.getInfo().getName()).append("'");
+            }
+        }
+        return builder.toString();
+    }
+
+    public static String buildDisplayListMessage() {
+        StringBuilder builder = new StringBuilder("List of displays:");
+        int[] displayIds = ServiceManager.getDisplayManager().getDisplayIds();
+        if (displayIds == null || displayIds.length == 0) {
+            builder.append("\n    (none)");
+        } else {
+            for (int id : displayIds) {
+                builder.append("\n    --display=").append(id);
             }
         }
         return builder.toString();
