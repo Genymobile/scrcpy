@@ -277,6 +277,7 @@ scrcpy(struct scrcpy_options *options) {
     bool server_started = false;
     bool file_pusher_initialized = false;
     bool recorder_initialized = false;
+    bool recorder_started = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -401,8 +402,14 @@ scrcpy(struct scrcpy_options *options) {
                               &recorder_cbs, NULL)) {
             goto end;
         }
-        rec = &s->recorder;
         recorder_initialized = true;
+
+        if (!sc_recorder_start(&s->recorder)) {
+            goto end;
+        }
+        recorder_started = true;
+
+        rec = &s->recorder;
     }
 
     static const struct sc_demuxer_callbacks demuxer_cbs = {
@@ -708,8 +715,10 @@ end:
         sc_controller_destroy(&s->controller);
     }
 
-    if (recorder_initialized) {
+    if (recorder_started) {
         sc_recorder_join(&s->recorder);
+    }
+    if (recorder_initialized) {
         sc_recorder_destroy(&s->recorder);
     }
 
