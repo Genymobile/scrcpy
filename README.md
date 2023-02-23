@@ -718,7 +718,7 @@ scrcpy --display=1
 The list of display ids can be retrieved by:
 
 ```bash
-adb shell dumpsys display   # search "mDisplayId=" in the output
+scrcpy --list-displays
 ```
 
 The secondary display may only be controlled if the device runs at least Android
