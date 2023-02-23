@@ -444,17 +444,8 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     recorder->packet_sink.ops = &ops;
 
-    ok = sc_thread_create(&recorder->thread, run_recorder, "scrcpy-recorder",
-                          recorder);
-    if (!ok) {
-        LOGE("Could not start recorder thread");
-        goto error_stream_cond_destroy;
-    }
-
     return true;
 
-error_stream_cond_destroy:
-    sc_cond_destroy(&recorder->stream_cond);
 error_queue_cond_destroy:
     sc_cond_destroy(&recorder->queue_cond);
 error_mutex_destroy:
@@ -463,6 +454,18 @@ error_free_filename:
     free(recorder->filename);
 
     return false;
+}
+
+bool
+sc_recorder_start(struct sc_recorder *recorder) {
+    bool ok = sc_thread_create(&recorder->thread, run_recorder,
+                               "scrcpy-recorder", recorder);
+    if (!ok) {
+        LOGE("Could not start recorder thread");
+        return false;
+    }
+
+    return true;
 }
 
 void
