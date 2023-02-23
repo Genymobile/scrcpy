@@ -195,6 +195,12 @@ run_demuxer(void *data) {
         goto end;
     }
 
+    if (raw_codec_id == 1) {
+        LOGE("Demuxer '%s': stream configuration error on the device",
+             demuxer->name);
+        goto end;
+    }
+
     enum AVCodecID codec_id = sc_demuxer_to_avcodec_id(raw_codec_id);
     if (codec_id == AV_CODEC_ID_NONE) {
         LOGE("Demuxer '%s': stream disabled due to unsupported codec",
