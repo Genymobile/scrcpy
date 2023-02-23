@@ -231,10 +231,19 @@ static void
 sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos,
                           void *userdata) {
     (void) demuxer;
-    (void) eos;
     (void) userdata;
 
-    // Contrary to the video demuxer, keep mirroring if only the audio fails
+    // Contrary to the video demuxer, keep mirroring if only the audio fails.
+    // 'eos' is true on end-of-stream, including when audio capture is not
+    // possible on the device (so that scrcpy continue to mirror video without
+    // failing).
+    // However, if an audio configuration failure occurs (for example the user
+    // explicitly selected an unknown audio encoder), 'eos' is false and scrcpy
+    // must exit.
+
+    if (!eos) {
+        PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
+    }
 }
 
 static void
