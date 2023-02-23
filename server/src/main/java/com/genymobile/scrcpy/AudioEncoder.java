@@ -215,7 +215,7 @@ public final class AudioEncoder {
     public void encode() throws IOException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             Ln.w("Audio disabled: it is not supported before Android 11");
-            streamer.writeDisableStream();
+            streamer.writeDisableStream(false);
             return;
         }
 
@@ -224,6 +224,7 @@ public final class AudioEncoder {
 
         boolean mediaCodecStarted = false;
         boolean recorderStarted = false;
+        boolean configurationError = false;
         try {
             Codec codec = streamer.getCodec();
             mediaCodec = createMediaCodec(codec, encoderName);
@@ -274,10 +275,12 @@ public final class AudioEncoder {
             waitEnded();
         } catch (ConfigurationException e) {
             // Do not print stack trace, a user-friendly error-message has already been logged
+            // Notify the error to scrcpy to make it exit
+            configurationError = true;
         } finally {
             if (!recorderStarted) {
                 // Notify the client that the audio could not be captured
-                streamer.writeDisableStream();
+                streamer.writeDisableStream(configurationError);
             }
 
             // Cleanup everything (either at the end or on error at any step of the initialization)
