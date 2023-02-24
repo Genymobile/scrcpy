@@ -43,6 +43,7 @@ struct scrcpy {
     struct sc_demuxer video_demuxer;
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
+    struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -437,12 +438,17 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     bool needs_video_decoder = options->display;
+    bool needs_audio_decoder = options->audio && options->display;
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
 #endif
     if (needs_video_decoder) {
         sc_decoder_init(&s->video_decoder, "video");
         sc_demuxer_add_sink(&s->video_demuxer, &s->video_decoder.packet_sink);
+    }
+    if (needs_audio_decoder) {
+        sc_decoder_init(&s->audio_decoder, "audio");
+        sc_demuxer_add_sink(&s->audio_demuxer, &s->audio_decoder.packet_sink);
     }
 
     if (options->record_filename) {
