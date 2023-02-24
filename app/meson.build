@@ -4,6 +4,7 @@ src = [
     'src/adb/adb_device.c',
     'src/adb/adb_parser.c',
     'src/adb/adb_tunnel.c',
+    'src/audio_player.c',
     'src/cli.c',
     'src/clock.c',
     'src/compat.c',
@@ -30,6 +31,7 @@ src = [
     'src/version.c',
     'src/video_buffer.c',
     'src/util/acksync.c',
+    'src/util/average.c',
     'src/util/bytebuf.c',
     'src/util/file.c',
     'src/util/intmap.c',
@@ -100,6 +102,7 @@ if not crossbuild_windows
         dependency('libavformat', version: '>= 57.33'),
         dependency('libavcodec', version: '>= 57.37'),
         dependency('libavutil'),
+        dependency('libswresample'),
         dependency('sdl2', version: '>= 2.0.5'),
     ]
 
