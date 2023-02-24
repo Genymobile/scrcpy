@@ -441,7 +441,7 @@ scrcpy(struct scrcpy_options *options) {
     needs_video_decoder |= !!options->v4l2_device;
 #endif
     if (needs_video_decoder) {
-        sc_decoder_init(&s->video_decoder);
+        sc_decoder_init(&s->video_decoder, "video");
         sc_demuxer_add_sink(&s->video_demuxer, &s->video_decoder.packet_sink);
     }
 
