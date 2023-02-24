@@ -48,7 +48,7 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
     decoder->codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
     if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
-        LOGE("Could not open codec");
+        LOGE("Decoder '%s': could not open codec", decoder->name);
         avcodec_free_context(&decoder->codec_ctx);
         return false;
     }
@@ -101,7 +101,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
 
     int ret = avcodec_send_packet(decoder->codec_ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
-        LOGE("Could not send video packet: %d", ret);
+        LOGE("Decoder '%s': could not send video packet: %d",
+             decoder->name, ret);
         return false;
     }
     ret = avcodec_receive_frame(decoder->codec_ctx, decoder->frame);
@@ -114,7 +115,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
 
         av_frame_unref(decoder->frame);
     } else if (ret != AVERROR(EAGAIN)) {
-        LOGE("Could not receive video frame: %d", ret);
+        LOGE("Decoder '%s', could not receive video frame: %d",
+             decoder->name, ret);
         return false;
     }
     return true;
@@ -140,7 +142,8 @@ sc_decoder_packet_sink_push(struct sc_packet_sink *sink,
 }
 
 void
-sc_decoder_init(struct sc_decoder *decoder) {
+sc_decoder_init(struct sc_decoder *decoder, const char *name) {
+    decoder->name = name; // statically allocated
     decoder->sink_count = 0;
 
     static const struct sc_packet_sink_ops ops = {
