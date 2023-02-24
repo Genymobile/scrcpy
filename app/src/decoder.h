@@ -14,6 +14,8 @@
 struct sc_decoder {
     struct sc_packet_sink packet_sink; // packet sink trait
 
+    const char *name; // must be statically allocated (e.g. a string literal)
+
     struct sc_frame_sink *sinks[SC_DECODER_MAX_SINKS];
     unsigned sink_count;
 
@@ -21,8 +23,9 @@ struct sc_decoder {
     AVFrame *frame;
 };
 
+// The name must be statically allocated (e.g. a string literal)
 void
-sc_decoder_init(struct sc_decoder *decoder);
+sc_decoder_init(struct sc_decoder *decoder, const char *name);
 
 void
 sc_decoder_add_sink(struct sc_decoder *decoder, struct sc_frame_sink *sink);
