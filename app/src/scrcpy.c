@@ -42,7 +42,7 @@ struct scrcpy {
     struct sc_screen screen;
     struct sc_demuxer video_demuxer;
     struct sc_demuxer audio_demuxer;
-    struct sc_decoder decoder;
+    struct sc_decoder video_decoder;
     struct sc_recorder recorder;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -436,13 +436,13 @@ scrcpy(struct scrcpy_options *options) {
                         &audio_demuxer_cbs, NULL);
     }
 
-    bool needs_decoder = options->display;
+    bool needs_video_decoder = options->display;
 #ifdef HAVE_V4L2
-    needs_decoder |= !!options->v4l2_device;
+    needs_video_decoder |= !!options->v4l2_device;
 #endif
-    if (needs_decoder) {
-        sc_decoder_init(&s->decoder);
-        sc_demuxer_add_sink(&s->video_demuxer, &s->decoder.packet_sink);
+    if (needs_video_decoder) {
+        sc_decoder_init(&s->video_decoder);
+        sc_demuxer_add_sink(&s->video_demuxer, &s->video_decoder.packet_sink);
     }
 
     if (options->record_filename) {
@@ -656,7 +656,7 @@ aoa_hid_end:
         }
         screen_initialized = true;
 
-        sc_decoder_add_sink(&s->decoder, &s->screen.frame_sink);
+        sc_decoder_add_sink(&s->video_decoder, &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
@@ -666,7 +666,7 @@ aoa_hid_end:
             goto end;
         }
 
-        sc_decoder_add_sink(&s->decoder, &s->v4l2_sink.frame_sink);
+        sc_decoder_add_sink(&s->video_decoder, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }
