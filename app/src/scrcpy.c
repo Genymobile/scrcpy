@@ -13,6 +13,7 @@
 # include <windows.h>
 #endif
 
+#include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
 #include "demuxer.h"
@@ -40,6 +41,7 @@
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
+    struct sc_audio_player audio_player;
     struct sc_demuxer video_demuxer;
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
@@ -216,6 +218,17 @@ sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
 }
 
 static void
+sc_audio_player_on_ended(struct sc_audio_player *ap, bool success,
+                         void *userdata) {
+    (void) ap;
+    (void) userdata;
+
+    if (!success) {
+        // TODO
+    }
+}
+
+static void
 sc_video_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos,
                           void *userdata) {
     (void) demuxer;
@@ -301,6 +314,7 @@ scrcpy(struct scrcpy_options *options) {
     bool file_pusher_initialized = false;
     bool recorder_initialized = false;
     bool recorder_started = false;
+    bool audio_player_initialized = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -383,9 +397,16 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     // Initialize SDL video in addition if display is enabled
-    if (options->display && SDL_Init(SDL_INIT_VIDEO)) {
-        LOGE("Could not initialize SDL: %s", SDL_GetError());
-        goto end;
+    if (options->display) {
+        if (SDL_Init(SDL_INIT_VIDEO)) {
+            LOGE("Could not initialize SDL video: %s", SDL_GetError());
+            goto end;
+        }
+
+        if (options->audio && SDL_Init(SDL_INIT_AUDIO)) {
+            LOGE("Could not initialize SDL audio: %s", SDL_GetError());
+            goto end;
+        }
     }
 
     sdl_configure(options->display, options->disable_screensaver);
@@ -663,6 +684,19 @@ aoa_hid_end:
         screen_initialized = true;
 
         sc_decoder_add_sink(&s->video_decoder, &s->screen.frame_sink);
+
+        if (options->audio) {
+            static const struct sc_audio_player_callbacks audio_player_cbs = {
+                .on_ended = sc_audio_player_on_ended,
+            };
+            if (!sc_audio_player_init(&s->audio_player,
+                                      &audio_player_cbs, NULL)) {
+                goto end;
+            }
+            audio_player_initialized = true;
+
+            sc_decoder_add_sink(&s->audio_decoder, &s->audio_player.frame_sink);
+        }
     }
 
 #ifdef HAVE_V4L2
@@ -781,6 +815,10 @@ end:
     }
     if (recorder_initialized) {
         sc_recorder_destroy(&s->recorder);
+    }
+
+    if (audio_player_initialized) {
+        sc_audio_player_destroy(&s->audio_player);
     }
 
     if (file_pusher_initialized) {
