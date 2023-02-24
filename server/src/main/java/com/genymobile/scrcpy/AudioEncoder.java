@@ -40,7 +40,7 @@ public final class AudioEncoder {
     }
 
     private static final int SAMPLE_RATE = 48000;
-    private static final int CHANNELS = 2;
+    private static final int CHANNELS = 1;
 
     private static final int BUFFER_MS = 10; // milliseconds
     private static final int BUFFER_SIZE = SAMPLE_RATE * CHANNELS * BUFFER_MS / 1000;
