@@ -156,7 +156,10 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
 }
 
 static bool
-sc_v4l2_sink_open(struct sc_v4l2_sink *vs) {
+sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
+    assert(ctx->pix_fmt == AV_PIX_FMT_YUV420P);
+    (void) ctx;
+
     static const struct sc_video_buffer_callbacks cbs = {
         .on_new_frame = sc_video_buffer_on_new_frame,
     };
@@ -336,9 +339,9 @@ sc_v4l2_sink_push(struct sc_v4l2_sink *vs, const AVFrame *frame) {
 }
 
 static bool
-sc_v4l2_frame_sink_open(struct sc_frame_sink *sink) {
+sc_v4l2_frame_sink_open(struct sc_frame_sink *sink, const AVCodecContext *ctx) {
     struct sc_v4l2_sink *vs = DOWNCAST(sink);
-    return sc_v4l2_sink_open(vs);
+    return sc_v4l2_sink_open(vs, ctx);
 }
 
 static void
