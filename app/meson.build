@@ -30,6 +30,7 @@ src = [
     'src/version.c',
     'src/video_buffer.c',
     'src/util/acksync.c',
+    'src/util/bytebuf.c',
     'src/util/file.c',
     'src/util/intmap.c',
     'src/util/intr.c',
@@ -253,6 +254,10 @@ if get_option('buildtype') == 'debug'
         ]],
         ['test_binary', [
             'tests/test_binary.c',
+        ]],
+        ['test_bytebuf', [
+            'tests/test_bytebuf.c',
+            'src/util/bytebuf.c',
         ]],
         ['test_cbuf', [
             'tests/test_cbuf.c',
