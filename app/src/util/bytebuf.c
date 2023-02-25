@@ -56,11 +56,9 @@ sc_bytebuf_skip(struct sc_bytebuf *buf, size_t len) {
     buf->tail = (buf->tail + len) % buf->alloc_size;
 }
 
-void
-sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len) {
-    assert(len);
-    assert(len <= sc_bytebuf_write_available(buf));
-
+static inline void
+sc_bytebuf_write_step0(struct sc_bytebuf *buf, const uint8_t *from,
+                       size_t len) {
     size_t right_len = buf->alloc_size - buf->head;
     if (len < right_len) {
         right_len = len;
@@ -70,6 +68,37 @@ sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len) {
     if (len > right_len) {
         memcpy(buf->data, from + right_len, len - right_len);
     }
+}
 
+static inline void
+sc_bytebuf_write_step1(struct sc_bytebuf *buf, size_t len) {
     buf->head = (buf->head + len) % buf->alloc_size;
+}
+
+void
+sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len) {
+    assert(len);
+    assert(len <= sc_bytebuf_write_available(buf));
+
+    sc_bytebuf_write_step0(buf, from, len);
+    sc_bytebuf_write_step1(buf, len);
+}
+
+void
+sc_bytebuf_prepare_write(struct sc_bytebuf *buf, const uint8_t *from,
+                         size_t len) {
+    // *This function MUST NOT access buf->tail (even in assert()).*
+    // The purpose of this function is to allow a reader and a writer to access
+    // different parts of the buffer in parallel simultaneously. It is intended
+    // to be called without lock (only sc_bytebuf_commit_write() is intended to
+    // be called with lock held).
+
+    assert(len < buf->alloc_size - 1);
+    sc_bytebuf_write_step0(buf, from, len);
+}
+
+void
+sc_bytebuf_commit_write(struct sc_bytebuf *buf, size_t len) {
+    assert(len <= sc_bytebuf_write_available(buf));
+    sc_bytebuf_write_step1(buf, len);
 }
