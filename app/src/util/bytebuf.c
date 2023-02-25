@@ -86,3 +86,31 @@ sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len) {
     }
     buf->head = (buf->head + len) % buf->alloc_size;
 }
+
+void
+sc_bytebuf_prepare_write(struct sc_bytebuf *buf, const uint8_t *from,
+                         size_t len) {
+    // *This function MUST NOT access buf->tail (even in assert()).*
+    // The purpose of this function is to allow a reader and a writer to access
+    // different parts of the buffer in parallel simultaneously. It is intended
+    // to be called without lock (only sc_bytebuf_commit_write() is intended to
+    // be called with lock held).
+
+    assert(len < buf->alloc_size - 1);
+
+    size_t right_len = buf->alloc_size - buf->head;
+    if (len < right_len) {
+        right_len = len;
+    }
+
+    memcpy(buf->data + buf->head, from, right_len);
+    if (len > right_len) {
+        memcpy(buf->data, from + right_len, len - right_len);
+    }
+}
+
+void
+sc_bytebuf_commit_write(struct sc_bytebuf *buf, size_t len) {
+    assert(len <= sc_bytebuf_write_remaining(buf));
+    buf->head = (buf->head + len) % buf->alloc_size;
+}
