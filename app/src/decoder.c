@@ -25,10 +25,10 @@ sc_decoder_close_sinks(struct sc_decoder *decoder) {
 }
 
 static bool
-sc_decoder_open_sinks(struct sc_decoder *decoder) {
+sc_decoder_open_sinks(struct sc_decoder *decoder, const AVCodecContext *ctx) {
     for (unsigned i = 0; i < decoder->sink_count; ++i) {
         struct sc_frame_sink *sink = decoder->sinks[i];
-        if (!sink->ops->open(sink)) {
+        if (!sink->ops->open(sink, ctx)) {
             sc_decoder_close_first_sinks(decoder, i);
             return false;
         }
@@ -47,6 +47,11 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
 
     decoder->codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
+    if (codec->type == AVMEDIA_TYPE_VIDEO) {
+        // Hardcoded video properties
+        decoder->codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    }
+
     if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
         LOGE("Decoder '%s': could not open codec", decoder->name);
         avcodec_free_context(&decoder->codec_ctx);
@@ -61,7 +66,7 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
         return false;
     }
 
-    if (!sc_decoder_open_sinks(decoder)) {
+    if (!sc_decoder_open_sinks(decoder, decoder->codec_ctx)) {
         av_frame_free(&decoder->frame);
         avcodec_close(decoder->codec_ctx);
         avcodec_free_context(&decoder->codec_ctx);
