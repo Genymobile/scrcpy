@@ -39,6 +39,8 @@ sc_bytebuf_read(struct sc_bytebuf *buf, uint8_t *to, size_t len);
  *
  * This function is guaranteed not to change the head.
  *
+ * This function is guaranteed to not change the head.
+ *
  * It is equivalent to call sc_bytebuf_read() to some array and discard the
  * array (but more efficient since there is no copy).
  */
@@ -55,6 +57,30 @@ sc_bytebuf_skip(struct sc_bytebuf *buf, size_t len);
  */
 void
 sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len);
+
+/**
+ * Copy the user-provided array to the bytebuf, but do not advance the cursor
+ *
+ * The caller must check that len <= sc_bytebuf_write_available() (it is an
+ * error to write more bytes than the remaining available space).
+ *
+ * After this function is called, the write must be committed with
+ * sc_bytebuf_commit_write().
+ *
+ * The purpose of this mechanism is to acquire a lock only to commit the write,
+ * but not to perform the actual copy.
+ *
+ * This function is guaranteed not to access buf->tail.
+ */
+void
+sc_bytebuf_prepare_write(struct sc_bytebuf *buf, const uint8_t *from,
+                         size_t len);
+
+/**
+ * Commit a prepared write
+ */
+void
+sc_bytebuf_commit_write(struct sc_bytebuf *buf, size_t len);
 
 /**
  * Return the number of bytes which can be read
