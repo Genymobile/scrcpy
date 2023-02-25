@@ -9,6 +9,7 @@
 #include <util/thread.h>
 
 #include <libavformat/avformat.h>
+#include <libswresample/swresample.h>
 #include <SDL2/SDL.h>
 
 struct sc_audio_player {
@@ -20,6 +21,19 @@ struct sc_audio_player {
     struct sc_bytebuf buf;
     // Number of bytes which could be written without locking
     size_t safe_empty_buffer;
+
+    struct SwrContext *swr_ctx;
+
+    // The sample rate is the same for input and output
+    unsigned sample_rate;
+    // The number of channels is the same for input and output
+    unsigned nb_channels;
+
+    unsigned out_bytes_per_sample;
+
+    // Target buffer for resampling
+    uint8_t *swr_buf;
+    size_t swr_buf_alloc_size;
 
     const struct sc_audio_player_callbacks *cbs;
     void *cbs_userdata;

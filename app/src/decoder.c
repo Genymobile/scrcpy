@@ -54,7 +54,7 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
     } else {
         // Hardcoded audio properties
         decoder->codec_ctx->ch_layout =
-            (AVChannelLayout) AV_CHANNEL_LAYOUT_MONO;
+            (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
         decoder->codec_ctx->sample_rate = 48000;
     }
 

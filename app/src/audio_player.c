@@ -1,9 +1,14 @@
 #include "audio_player.h"
 
+#include <libavutil/opt.h>
+
 #include "util/log.h"
 
 /** Downcast frame_sink to sc_v4l2_sink */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_audio_player, frame_sink)
+
+#define SC_AV_SAMPLE_FMT AV_SAMPLE_FMT_S16
+#define SC_SDL_SAMPLE_FMT AUDIO_S16
 
 void
 sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
@@ -28,20 +33,29 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     }
 }
 
-static SDL_AudioFormat
-sc_audio_player_ffmpeg_to_sdl_format(enum AVSampleFormat format) {
-    switch (format) {
-        case AV_SAMPLE_FMT_S16:
-            return AUDIO_S16;
-        case AV_SAMPLE_FMT_S32:
-            return AUDIO_S32;
-        case AV_SAMPLE_FMT_FLT:
-            return AUDIO_F32;
-        default:
-            LOGE("Unsupported FFmpeg sample format: %s",
-                 av_get_sample_fmt_name(format));
-            return 0;
+static size_t
+sc_audio_player_get_swr_buf_size(struct sc_audio_player *ap, size_t samples) {
+    assert(ap->nb_channels);
+    assert(ap->out_bytes_per_sample);
+    return samples * ap->nb_channels * ap->out_bytes_per_sample;
+}
+
+static uint8_t *
+sc_audio_player_get_swr_buf(struct sc_audio_player *ap, size_t min_samples) {
+    size_t min_buf_size = sc_audio_player_get_swr_buf_size(ap, min_samples);
+    if (min_buf_size < ap->swr_buf_alloc_size) {
+        size_t new_size = min_buf_size + 4096;
+        uint8_t *buf = realloc(ap->swr_buf, new_size);
+        if (!buf) {
+            LOG_OOM();
+            // Could not realloc to the requested size
+            return NULL;
+        }
+        ap->swr_buf = buf;
+        ap->swr_buf_alloc_size = new_size;
     }
+
+    return ap->swr_buf;
 }
 
 static bool
@@ -49,20 +63,45 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
                                 const AVCodecContext *ctx) {
     struct sc_audio_player *ap = DOWNCAST(sink);
 
-    SDL_AudioFormat format =
-        sc_audio_player_ffmpeg_to_sdl_format(ctx->sample_fmt);
-    if (!format) {
-        // error already logged
-        //return false;
-        format = AUDIO_F32; // it's planar, but for now there is only 1 channel
+    SwrContext *swr_ctx = ap->swr_ctx;
+    assert(swr_ctx);
+
+    assert(ctx->sample_rate > 0);
+    assert(ctx->ch_layout.nb_channels > 0);
+    assert(!av_sample_fmt_is_planar(SC_AV_SAMPLE_FMT));
+    int out_bytes_per_sample = av_get_bytes_per_sample(SC_AV_SAMPLE_FMT);
+    assert(out_bytes_per_sample > 0);
+
+    av_opt_set_chlayout(swr_ctx, "in_chlayout", &ctx->ch_layout, 0);
+    av_opt_set_int(swr_ctx, "in_sample_rate", ctx->sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "in_sample_fmt", ctx->sample_fmt, 0);
+
+    av_opt_set_chlayout(swr_ctx, "out_chlayout", &ctx->ch_layout, 0);
+    av_opt_set_int(swr_ctx, "out_sample_rate", ctx->sample_rate, 0);
+    av_opt_set_sample_fmt(swr_ctx, "out_sample_fmt", SC_AV_SAMPLE_FMT, 0);
+
+    int ret = swr_init(swr_ctx);
+    if (ret) {
+        LOGE("Failed to initialize the resampling context");
+        return false;
     }
-    LOGI("%d\n", ctx->sample_rate);
+
+    ap->sample_rate = ctx->sample_rate;
+    ap->nb_channels = ctx->ch_layout.nb_channels;
+    ap->out_bytes_per_sample = out_bytes_per_sample;
+
+    size_t initial_swr_buf_size = sc_audio_player_get_swr_buf_size(ap, 4096);
+    ap->swr_buf = malloc(initial_swr_buf_size);
+    if (!ap->swr_buf) {
+        LOG_OOM();
+        return false;
+    }
 
     SDL_AudioSpec desired = {
         .freq = ctx->sample_rate,
-        .format = format,
+        .format = SC_SDL_SAMPLE_FMT,
         .channels = ctx->ch_layout.nb_channels,
-        .samples = 2048,
+        .samples = 512, // ~10ms at 48000Hz
         .callback = sc_audio_player_sdl_callback,
         .userdata = ap,
     };
@@ -92,24 +131,41 @@ static bool
 sc_audio_player_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_audio_player *ap = DOWNCAST(sink);
 
-    const uint8_t *data = frame->data[0];
-    size_t size = frame->linesize[0];
+    SwrContext *swr_ctx = ap->swr_ctx;
 
-    // TODO convert to non planar format
-    // TODO then re-enable stereo
+    int64_t delay = swr_get_delay(swr_ctx, ap->sample_rate);
+    // No need to av_rescale_rnd(), input and output sample rates are the same
+    int dst_nb_samples = delay + frame->nb_samples;
+
+    uint8_t *swr_buf = sc_audio_player_get_swr_buf(ap, frame->nb_samples);
+    if (!swr_buf) {
+        return false;
+    }
+
+    int ret = swr_convert(swr_ctx, &swr_buf, dst_nb_samples,
+                          (const uint8_t **) frame->data, frame->nb_samples);
+    if (ret < 0) {
+        LOGE("Resampling failed: %d", ret);
+        return false;
+    }
+    LOGI("ret=%d dst_nb_samples=%d\n", ret, dst_nb_samples);
+
+    size_t swr_buf_size = sc_audio_player_get_swr_buf_size(ap, ret);
+    LOGI("== swr_buf_size %lu", swr_buf_size);
+
     // TODO clock drift compensation
 
     // It should almost always be possible to write without lock
-    bool can_write_without_lock = size <= ap->safe_empty_buffer;
+    bool can_write_without_lock = swr_buf_size <= ap->safe_empty_buffer;
     if (can_write_without_lock) {
-        sc_bytebuf_prepare_write(&ap->buf, data, size);
+        sc_bytebuf_prepare_write(&ap->buf, swr_buf, swr_buf_size);
     }
 
     SDL_LockAudioDevice(ap->device);
     if (can_write_without_lock) {
-        sc_bytebuf_commit_write(&ap->buf, size);
+        sc_bytebuf_commit_write(&ap->buf, swr_buf_size);
     } else {
-        sc_bytebuf_write(&ap->buf, data, size);
+        sc_bytebuf_write(&ap->buf, swr_buf, swr_buf_size);
     }
 
     // The next time, it will remain at least the current empty space
@@ -128,7 +184,17 @@ sc_audio_player_init(struct sc_audio_player *ap,
         return false;
     }
 
+    ap->swr_ctx = swr_alloc();
+    if (!ap->swr_ctx) {
+        sc_bytebuf_destroy(&ap->buf);
+        LOG_OOM();
+        return false;
+    }
+
     ap->safe_empty_buffer = sc_bytebuf_write_remaining(&ap->buf);
+
+    ap->swr_buf = NULL;
+    ap->swr_buf_alloc_size = 0;
 
     assert(cbs && cbs->on_ended);
     ap->cbs = cbs;
@@ -147,4 +213,6 @@ sc_audio_player_init(struct sc_audio_player *ap,
 void
 sc_audio_player_destroy(struct sc_audio_player *ap) {
     sc_bytebuf_destroy(&ap->buf);
+    swr_free(&ap->swr_ctx);
+    free(ap->swr_buf);
 }

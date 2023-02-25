@@ -101,6 +101,7 @@ if not crossbuild_windows
         dependency('libavformat', version: '>= 57.33'),
         dependency('libavcodec', version: '>= 57.37'),
         dependency('libavutil'),
+        dependency('libswresample'),
         dependency('sdl2', version: '>= 2.0.5'),
     ]
 
