@@ -330,7 +330,11 @@ event_watcher(void *data, SDL_Event *event) {
 #endif
 
 static bool
-sc_screen_frame_sink_open(struct sc_frame_sink *sink) {
+sc_screen_frame_sink_open(struct sc_frame_sink *sink,
+                          const AVCodecContext *ctx) {
+    assert(ctx->pix_fmt == AV_PIX_FMT_YUV420P);
+    (void) ctx;
+
     struct sc_screen *screen = DOWNCAST(sink);
     (void) screen;
 #ifndef NDEBUG
