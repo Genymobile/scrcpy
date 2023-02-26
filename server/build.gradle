@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'com.genymobile.scrcpy'
     compileSdkVersion 33
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
