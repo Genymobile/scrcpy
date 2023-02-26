@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Ln;
 
 import android.os.Binder;
@@ -48,10 +49,10 @@ public class ActivityManager {
             Object[] args;
             if (getContentProviderExternalMethodNewVersion) {
                 // new version
-                args = new Object[]{name, ServiceManager.USER_ID, token, null};
+                args = new Object[]{name, FakeContext.ROOT_UID, token, null};
             } else {
                 // old version
-                args = new Object[]{name, ServiceManager.USER_ID, token};
+                args = new Object[]{name, FakeContext.ROOT_UID, token};
             }
             // ContentProviderHolder providerHolder = getContentProviderExternal(...);
             Object providerHolder = method.invoke(manager, args);
