@@ -62,9 +62,9 @@ public class ClipboardManager {
             return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME);
         }
         if (alternativeMethod) {
-            return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID);
         }
-        return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
+        return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, FakeContext.ROOT_UID);
     }
 
     private static void setPrimaryClip(Method method, boolean alternativeMethod, IInterface manager, ClipData clipData)
@@ -72,9 +72,9 @@ public class ClipboardManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, FakeContext.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID);
         } else {
-            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, FakeContext.ROOT_UID);
         }
     }
 
@@ -109,9 +109,9 @@ public class ClipboardManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
         } else if (alternativeMethod) {
-            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, null, ServiceManager.USER_ID);
+            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID);
         } else {
-            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, ServiceManager.USER_ID);
+            method.invoke(manager, listener, FakeContext.PACKAGE_NAME, FakeContext.ROOT_UID);
         }
     }
 
