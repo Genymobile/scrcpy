@@ -9,6 +9,7 @@ import android.os.Process;
 public final class FakeContext extends ContextWrapper {
 
     public static final String PACKAGE_NAME = "com.android.shell";
+    public static final int ROOT_UID = 0; // Like android.os.Process.ROOT_UID, but before API 29
 
     private static final FakeContext INSTANCE = new FakeContext();
 
