@@ -10,8 +10,6 @@ import java.lang.reflect.Method;
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ServiceManager {
 
-    public static final int USER_ID = 0;
-
     private static final Method GET_SERVICE_METHOD;
     static {
         try {
