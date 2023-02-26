@@ -138,7 +138,7 @@ public class ContentProvider implements Closeable {
     public String getValue(String table, String key) throws SettingsException {
         String method = getGetMethod(table);
         Bundle arg = new Bundle();
-        arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
+        arg.putInt(CALL_METHOD_USER_KEY, FakeContext.ROOT_UID);
         try {
             Bundle bundle = call(method, key, arg);
             if (bundle == null) {
@@ -154,7 +154,7 @@ public class ContentProvider implements Closeable {
     public void putValue(String table, String key, String value) throws SettingsException {
         String method = getPutMethod(table);
         Bundle arg = new Bundle();
-        arg.putInt(CALL_METHOD_USER_KEY, ServiceManager.USER_ID);
+        arg.putInt(CALL_METHOD_USER_KEY, FakeContext.ROOT_UID);
         arg.putString(NAME_VALUE_TABLE_VALUE, value);
         try {
             call(method, key, arg);
