@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.view.InputDevice;
 import android.view.InputEvent;
 
 import java.lang.reflect.InvocationTargetException;
@@ -55,5 +56,17 @@ public final class InputManager {
             Ln.e("Cannot associate a display id to the input event", e);
             return false;
         }
+    }
+
+    public static int getInputDeviceId(int inputSource) {
+        final int DEFAULT_DEVICE_ID = 0;
+        int[] devIds = InputDevice.getDeviceIds();
+        for (int devId : devIds) {
+            InputDevice inputDev = InputDevice.getDevice(devId);
+            if (inputDev.supportsSource(inputSource)) {
+                return devId;
+            }
+        }
+        return DEFAULT_DEVICE_ID;
     }
 }
