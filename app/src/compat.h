@@ -37,6 +37,13 @@
 # define SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
 #endif
 
+// Not documented in ffmpeg/doc/APIchanges, but the channel_layout API
+// has been replaced by chlayout in FFmpeg commit
+// f423497b455da06c1337846902c770028760e094.
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 23, 100)
+# define SCRCPY_LAVU_HAS_CHLAYOUT
+#endif
+
 #if SDL_VERSION_ATLEAST(2, 0, 6)
 // <https://github.com/libsdl-org/SDL/commit/d7a318de563125e5bb465b1000d6bc9576fbc6fc>
 # define SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
