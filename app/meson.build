@@ -144,9 +144,8 @@ else
     )
 
     prebuilt_libusb = meson.get_cross_property('prebuilt_libusb')
-    prebuilt_libusb_root = meson.get_cross_property('prebuilt_libusb_root')
-    libusb_bin_dir = meson.current_source_dir() + '/prebuilt-deps/data/' + prebuilt_libusb
-    libusb_include_dir = 'prebuilt-deps/data/' + prebuilt_libusb_root + '/include'
+    libusb_bin_dir = meson.current_source_dir() + '/prebuilt-deps/data/' + prebuilt_libusb + '/bin'
+    libusb_include_dir = 'prebuilt-deps/data/' + prebuilt_libusb + '/include'
 
     libusb = declare_dependency(
         dependencies: [

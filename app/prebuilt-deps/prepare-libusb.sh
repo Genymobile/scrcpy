@@ -22,13 +22,12 @@ get_file "https://github.com/libusb/libusb/releases/download/v1.0.26/$FILENAME" 
 mkdir "$DEP_DIR"
 cd "$DEP_DIR"
 
-# include/ is the same in all folders of the archive
 7z x "../$FILENAME" \
     libusb-1.0.26-binaries/libusb-MinGW-Win32/bin/msys-usb-1.0.dll \
+    libusb-1.0.26-binaries/libusb-MinGW-Win32/include/ \
     libusb-1.0.26-binaries/libusb-MinGW-x64/bin/msys-usb-1.0.dll \
     libusb-1.0.26-binaries/libusb-MinGW-x64/include/
 
-mv libusb-1.0.26-binaries/libusb-MinGW-Win32/bin MinGW-Win32
-mv libusb-1.0.26-binaries/libusb-MinGW-x64/bin MinGW-x64
-mv libusb-1.0.26-binaries/libusb-MinGW-x64/include .
+mv libusb-1.0.26-binaries/libusb-MinGW-Win32 .
+mv libusb-1.0.26-binaries/libusb-MinGW-x64 .
 rm -rf libusb-1.0.26-binaries
