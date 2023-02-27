@@ -286,11 +286,19 @@ static bool
 sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
                                 const AVCodecContext *ctx) {
     struct sc_audio_player *ap = DOWNCAST(sink);
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
+    assert(ctx->ch_layout.nb_channels > 0);
+    unsigned nb_channels = ctx->ch_layout.nb_channels;
+#else
+    int tmp = av_get_channel_layout_nb_channels(ctx->channel_layout);
+    assert(tmp > 0);
+    unsigned nb_channels = tmp;
+#endif
 
     SDL_AudioSpec desired = {
         .freq = ctx->sample_rate,
         .format = SC_SDL_SAMPLE_FMT,
-        .channels = ctx->ch_layout.nb_channels,
+        .channels = nb_channels,
         .samples = SC_AUDIO_OUTPUT_BUFFER_SAMPLES,
         .callback = sc_audio_player_sdl_callback,
         .userdata = ap,
@@ -311,13 +319,19 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     ap->swr_ctx = swr_ctx;
 
     assert(ctx->sample_rate > 0);
-    assert(ctx->ch_layout.nb_channels > 0);
     assert(!av_sample_fmt_is_planar(SC_AV_SAMPLE_FMT));
     int out_bytes_per_sample = av_get_bytes_per_sample(SC_AV_SAMPLE_FMT);
     assert(out_bytes_per_sample > 0);
 
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
     av_opt_set_chlayout(swr_ctx, "in_chlayout", &ctx->ch_layout, 0);
     av_opt_set_chlayout(swr_ctx, "out_chlayout", &ctx->ch_layout, 0);
+#else
+    av_opt_set_channel_layout(swr_ctx, "in_channel_layout",
+                              ctx->channel_layout, 0);
+    av_opt_set_channel_layout(swr_ctx, "out_channel_layout",
+                              ctx->channel_layout, 0);
+#endif
 
     av_opt_set_int(swr_ctx, "in_sample_rate", ctx->sample_rate, 0);
     av_opt_set_int(swr_ctx, "out_sample_rate", ctx->sample_rate, 0);
@@ -332,7 +346,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     }
 
     ap->sample_rate = ctx->sample_rate;
-    ap->nb_channels = ctx->ch_layout.nb_channels;
+    ap->nb_channels = nb_channels;
     ap->out_bytes_per_sample = out_bytes_per_sample;
 
     ap->target_buffering = ap->target_buffering_delay * ap->sample_rate

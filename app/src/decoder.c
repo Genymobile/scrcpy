@@ -26,8 +26,13 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
         decoder->codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     } else {
         // Hardcoded audio properties
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
         decoder->codec_ctx->ch_layout =
             (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
+#else
+        decoder->codec_ctx->channel_layout = AV_CH_LAYOUT_STEREO;
+        decoder->codec_ctx->channels = 2;
+#endif
         decoder->codec_ctx->sample_rate = 48000;
     }
 

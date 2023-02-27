@@ -202,7 +202,12 @@ sc_recorder_wait_audio_stream(struct sc_recorder *recorder) {
 
         stream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
         stream->codecpar->codec_id = codec->id;
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
         stream->codecpar->ch_layout.nb_channels = 2;
+#else
+        stream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+        stream->codecpar->channels = 2;
+#endif
         stream->codecpar->sample_rate = 48000;
 
         recorder->audio_stream_index = stream->index;
