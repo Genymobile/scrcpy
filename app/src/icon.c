@@ -69,7 +69,7 @@ decode_image(const char *path) {
     }
 
     if (avformat_open_input(&ctx, path, NULL, NULL) < 0) {
-        LOGE("Could not open image codec: %s", path);
+        LOGE("Could not open icon image: %s", path);
         goto free_ctx;
     }
 
