@@ -30,8 +30,8 @@ bool
 net_init(void) {
 #ifdef _WIN32
     WSADATA wsa;
-    int res = WSAStartup(MAKEWORD(2, 2), &wsa) < 0;
-    if (res < 0) {
+    int res = WSAStartup(MAKEWORD(2, 2), &wsa);
+    if (res) {
         LOGE("WSAStartup failed with error %d", res);
         return false;
     }
