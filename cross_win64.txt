@@ -16,9 +16,6 @@ cpu = 'x86_64'
 endian = 'little'
 
 [properties]
-ffmpeg_avcodec = 'avcodec-59'
-ffmpeg_avformat = 'avformat-59'
-ffmpeg_avutil = 'avutil-57'
-prebuilt_ffmpeg = 'ffmpeg-win64-5.1.2'
+prebuilt_ffmpeg = 'ffmpeg-5.1.2-scrcpy/win64'
 prebuilt_sdl2 = 'SDL2-2.26.1/x86_64-w64-mingw32'
 prebuilt_libusb = 'libusb-1.0.26/libusb-MinGW-x64'
