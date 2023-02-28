@@ -45,6 +45,7 @@ _scrcpy() {
         -r --record=
         --record-format=
         --render-driver=
+        --require-audio
         --rotation=
         -s --serial=
         --shortcut-mod=
