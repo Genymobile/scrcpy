@@ -35,6 +35,7 @@ src = [
     'src/util/intmap.c',
     'src/util/intr.c',
     'src/util/log.c',
+    'src/util/memory.c',
     'src/util/net.c',
     'src/util/net_intr.c',
     'src/util/process.c',
