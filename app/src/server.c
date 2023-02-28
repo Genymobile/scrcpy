@@ -689,6 +689,11 @@ sc_server_configure_tcpip_unknown_address(struct sc_server *server,
     if (is_already_tcpip) {
         // Nothing to do
         LOGI("Device already connected via TCP/IP: %s", serial);
+        server->serial = strdup(serial);
+        if (!server->serial) {
+            LOG_OOM();
+            return false;
+        }
         return true;
     }
 
