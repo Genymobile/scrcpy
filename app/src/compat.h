@@ -67,4 +67,8 @@ long nrand48(unsigned short xsubi[3]);
 long jrand48(unsigned short xsubi[3]);
 #endif
 
+#ifndef HAVE_REALLOCARRAY
+void *reallocarray(void *ptr, size_t nmemb, size_t size);
+#endif
+
 #endif
