@@ -180,6 +180,7 @@ check_functions = [
     'vasprintf',
     'nrand48',
     'jrand48',
+    'reallocarray',
 ]
 
 foreach f : check_functions
