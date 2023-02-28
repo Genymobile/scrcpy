@@ -176,14 +176,13 @@ run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
 
     // Flag to report end-of-stream (i.e. device disconnected)
-    bool eos = false;
+    enum sc_demuxer_status status = SC_DEMUXER_STATUS_ERROR;
 
     uint32_t raw_codec_id;
     bool ok = sc_demuxer_recv_codec_id(demuxer, &raw_codec_id);
     if (!ok) {
         LOGE("Demuxer '%s': stream disabled due to connection error",
              demuxer->name);
-        eos = true;
         goto end;
     }
 
@@ -191,7 +190,7 @@ run_demuxer(void *data) {
         LOGW("Demuxer '%s': stream explicitly disabled by the device",
              demuxer->name);
         sc_demuxer_disable_sinks(demuxer);
-        eos = true;
+        status = SC_DEMUXER_STATUS_DISABLED;
         goto end;
     }
 
@@ -241,7 +240,7 @@ run_demuxer(void *data) {
         bool ok = sc_demuxer_recv_packet(demuxer, packet);
         if (!ok) {
             // end of stream
-            eos = true;
+            status = SC_DEMUXER_STATUS_EOS;
             break;
         }
 
@@ -272,7 +271,7 @@ run_demuxer(void *data) {
 finally_close_sinks:
     sc_demuxer_close_sinks(demuxer);
 end:
-    demuxer->cbs->on_ended(demuxer, eos, demuxer->cbs_userdata);
+    demuxer->cbs->on_ended(demuxer, status, demuxer->cbs_userdata);
 
     return 0;
 }
