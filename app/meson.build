@@ -300,6 +300,10 @@ if get_option('buildtype') == 'debug'
             'src/util/str.c',
             'src/util/strbuf.c',
         ]],
+        ['test_vecdeque', [
+            'tests/test_vecdeque.c',
+            'src/util/memory.c',
+        ]],
         ['test_vector', [
             'tests/test_vector.c',
         ]],
