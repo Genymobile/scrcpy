@@ -118,7 +118,7 @@ static inline void *
 sc_vector_reallocdata_(void *ptr, size_t count, size_t size,
                         size_t *restrict pcap, size_t *restrict psize)
 {
-    void *p = realloc(ptr, count * size);
+    void *p = reallocarray(ptr, count, size);
     if (!p) {
         return NULL;
     }
