@@ -273,6 +273,10 @@ Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "me
 .UE
 
 .TP
+.B \-\-require\-audio
+By default, scrcpy mirrors only the video if audio capture fails on the device. This option makes scrcpy fail if audio is enabled but does not work.
+
+.TP
 .BI "\-\-rotation " value
 Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
 

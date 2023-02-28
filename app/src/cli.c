@@ -70,6 +70,7 @@ enum {
     OPT_AUDIO_ENCODER,
     OPT_LIST_ENCODERS,
     OPT_LIST_DISPLAYS,
+    OPT_REQUIRE_AUDIO,
 };
 
 struct sc_option {
@@ -464,6 +465,13 @@ static const struct sc_option options[] = {
         // deprecated
         .longopt_id = OPT_RENDER_EXPIRED_FRAMES,
         .longopt = "render-expired-frames",
+    },
+    {
+        .longopt_id = OPT_REQUIRE_AUDIO,
+        .longopt = "require-audio",
+        .text = "By default, scrcpy mirrors only the video when audio capture "
+                "fails on the device. This option makes scrcpy fail if audio "
+                "is enabled but does not work."
     },
     {
         .longopt_id = OPT_ROTATION,
@@ -1810,6 +1818,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_LIST_DISPLAYS:
                 opts->list_displays = true;
+                break;
+            case OPT_REQUIRE_AUDIO:
+                opts->require_audio = true;
                 break;
             default:
                 // getopt prints the error message on stderr
