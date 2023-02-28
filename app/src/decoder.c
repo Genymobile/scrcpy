@@ -110,8 +110,19 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
              decoder->name, ret);
         return false;
     }
-    ret = avcodec_receive_frame(decoder->codec_ctx, decoder->frame);
-    if (!ret) {
+
+    for (;;) {
+        ret = avcodec_receive_frame(decoder->codec_ctx, decoder->frame);
+        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+            break;
+        }
+
+        if (ret) {
+            LOGE("Decoder '%s', could not receive video frame: %d",
+                 decoder->name, ret);
+            return false;
+        }
+
         // a frame was received
         bool ok = push_frame_to_sinks(decoder, decoder->frame);
         // A frame lost should not make the whole pipeline fail. The error, if
@@ -119,11 +130,8 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         (void) ok;
 
         av_frame_unref(decoder->frame);
-    } else if (ret != AVERROR(EAGAIN)) {
-        LOGE("Decoder '%s', could not receive video frame: %d",
-             decoder->name, ret);
-        return false;
     }
+
     return true;
 }
 
