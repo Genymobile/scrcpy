@@ -216,12 +216,15 @@ sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
 }
 
 static void
-sc_video_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos,
-                          void *userdata) {
+sc_video_demuxer_on_ended(struct sc_demuxer *demuxer,
+                          enum sc_demuxer_status status, void *userdata) {
     (void) demuxer;
     (void) userdata;
 
-    if (eos) {
+    // The device may not decide to disable the video
+    assert(status != SC_DEMUXER_STATUS_DISABLED);
+
+    if (status == SC_DEMUXER_STATUS_EOS) {
         PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
     } else {
         PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
@@ -229,20 +232,17 @@ sc_video_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos,
 }
 
 static void
-sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer, bool eos,
-                          void *userdata) {
+sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
+                          enum sc_demuxer_status status, void *userdata) {
     (void) demuxer;
-    (void) userdata;
 
-    // Contrary to the video demuxer, keep mirroring if only the audio fails.
-    // 'eos' is true on end-of-stream, including when audio capture is not
-    // possible on the device (so that scrcpy continue to mirror video without
-    // failing).
-    // However, if an audio configuration failure occurs (for example the user
-    // explicitly selected an unknown audio encoder), 'eos' is false and scrcpy
-    // must exit.
+    const struct scrcpy_options *options = userdata;
 
-    if (!eos) {
+    // Contrary to the video demuxer, keep mirroring if only the audio fails
+    // (unless --require-audio is set).
+    if (status == SC_DEMUXER_STATUS_ERROR
+            || (status == SC_DEMUXER_STATUS_DISABLED
+                && options->require_audio)) {
         PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
     }
 }
@@ -434,7 +434,7 @@ scrcpy(struct scrcpy_options *options) {
             .on_ended = sc_audio_demuxer_on_ended,
         };
         sc_demuxer_init(&s->audio_demuxer, "audio", s->server.audio_socket,
-                        &audio_demuxer_cbs, NULL);
+                        &audio_demuxer_cbs, options);
     }
 
     bool needs_video_decoder = options->display;

@@ -27,8 +27,15 @@ struct sc_demuxer {
     void *cbs_userdata;
 };
 
+enum sc_demuxer_status {
+    SC_DEMUXER_STATUS_EOS,
+    SC_DEMUXER_STATUS_DISABLED,
+    SC_DEMUXER_STATUS_ERROR,
+};
+
 struct sc_demuxer_callbacks {
-    void (*on_ended)(struct sc_demuxer *demuxer, bool eos, void *userdata);
+    void (*on_ended)(struct sc_demuxer *demuxer, enum sc_demuxer_status,
+                     void *userdata);
 };
 
 // The name must be statically allocated (e.g. a string literal)
