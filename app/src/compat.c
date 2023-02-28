@@ -3,6 +3,9 @@
 #include "config.h"
 
 #include <assert.h>
+#ifndef HAVE_REALLOCARRAY
+# include <errno.h>
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
@@ -93,5 +96,15 @@ long jrand48(unsigned short xsubi[3]) {
     return v.i;
 }
 #endif
+#endif
 
+#ifndef HAVE_REALLOCARRAY
+void *reallocarray(void *ptr, size_t nmemb, size_t size) {
+    size_t bytes;
+    if (__builtin_mul_overflow(nmemb, size, &bytes)) {
+      errno = ENOMEM;
+      return NULL;
+    }
+    return realloc(ptr, bytes);
+}
 #endif
