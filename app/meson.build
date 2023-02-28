@@ -131,9 +131,9 @@ else
 
     ffmpeg = declare_dependency(
         dependencies: [
-            cc.find_library('avcodec-59', dirs: ffmpeg_bin_dir),
-            cc.find_library('avformat-59', dirs: ffmpeg_bin_dir),
-            cc.find_library('avutil-57', dirs: ffmpeg_bin_dir),
+            cc.find_library('avcodec-60', dirs: ffmpeg_bin_dir),
+            cc.find_library('avformat-60', dirs: ffmpeg_bin_dir),
+            cc.find_library('avutil-58', dirs: ffmpeg_bin_dir),
         ],
         include_directories: include_directories(ffmpeg_include_dir)
     )
