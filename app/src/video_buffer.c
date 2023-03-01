@@ -99,6 +99,8 @@ run_buffering(void *data) {
     }
 
 stopped:
+    assert(vb->b.stopped);
+
     // Flush queue
     while (!sc_vecdeque_is_empty(&vb->b.queue)) {
         struct sc_video_buffer_frame *p = sc_vecdeque_popref(&vb->b.queue);
@@ -205,6 +207,11 @@ sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
     }
 
     sc_mutex_lock(&vb->b.mutex);
+
+    if (vb->b.stopped) {
+        sc_mutex_unlock(&vb->b.mutex);
+        return false;
+    }
 
     sc_tick pts = SC_TICK_FROM_US(frame->pts);
     sc_clock_update(&vb->b.clock, sc_tick_now(), pts);
