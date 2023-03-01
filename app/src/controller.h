@@ -8,11 +8,11 @@
 #include "control_msg.h"
 #include "receiver.h"
 #include "util/acksync.h"
-#include "util/cbuf.h"
 #include "util/net.h"
 #include "util/thread.h"
+#include "util/vecdeque.h"
 
-struct sc_control_msg_queue CBUF(struct sc_control_msg, 64);
+struct sc_control_msg_queue SC_VECDEQUE(struct sc_control_msg);
 
 struct sc_controller {
     sc_socket control_socket;
