@@ -5,9 +5,9 @@
 
 #include <stdbool.h>
 
-#include "util/cbuf.h"
-#include "util/thread.h"
 #include "util/intr.h"
+#include "util/thread.h"
+#include "util/vecdeque.h"
 
 enum sc_file_pusher_action {
     SC_FILE_PUSHER_ACTION_INSTALL_APK,
@@ -19,7 +19,7 @@ struct sc_file_pusher_request {
     char *file;
 };
 
-struct sc_file_pusher_request_queue CBUF(struct sc_file_pusher_request, 16);
+struct sc_file_pusher_request_queue SC_VECDEQUE(struct sc_file_pusher_request);
 
 struct sc_file_pusher {
     char *serial;
