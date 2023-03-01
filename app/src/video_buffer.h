@@ -5,40 +5,12 @@
 
 #include <stdbool.h>
 
-#include "clock.h"
+#include "delay_buffer.h"
 #include "frame_buffer.h"
-#include "util/thread.h"
-#include "util/tick.h"
-#include "util/vecdeque.h"
-
-// forward declarations
-typedef struct AVFrame AVFrame;
-
-struct sc_video_buffer_frame {
-    AVFrame *frame;
-#ifndef NDEBUG
-    sc_tick push_date;
-#endif
-};
-
-struct sc_video_buffer_frame_queue SC_VECDEQUE(struct sc_video_buffer_frame);
 
 struct sc_video_buffer {
+    struct sc_delay_buffer db;
     struct sc_frame_buffer fb;
-
-    sc_tick buffering_time;
-
-    // only if buffering_time > 0
-    struct {
-        sc_thread thread;
-        sc_mutex mutex;
-        sc_cond queue_cond;
-        sc_cond wait_cond;
-
-        struct sc_clock clock;
-        struct sc_video_buffer_frame_queue queue;
-        bool stopped;
-    } b; // buffering
 
     const struct sc_video_buffer_callbacks *cbs;
     void *cbs_userdata;
@@ -50,7 +22,7 @@ struct sc_video_buffer_callbacks {
 };
 
 bool
-sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
+sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick delay,
                      const struct sc_video_buffer_callbacks *cbs,
                      void *cbs_userdata);
 
