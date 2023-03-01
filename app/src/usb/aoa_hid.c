@@ -14,6 +14,8 @@
 
 #define DEFAULT_TIMEOUT 1000
 
+#define SC_HID_EVENT_QUEUE_MAX 64
+
 static void
 sc_hid_event_log(const struct sc_hid_event *event) {
     // HID Event: [00] FF FF FF FF...
@@ -48,14 +50,20 @@ sc_hid_event_destroy(struct sc_hid_event *hid_event) {
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
-    cbuf_init(&aoa->queue);
+    sc_vecdeque_init(&aoa->queue);
+
+    if (!sc_vecdeque_reserve(&aoa->queue, SC_HID_EVENT_QUEUE_MAX)) {
+        return false;
+    }
 
     if (!sc_mutex_init(&aoa->mutex)) {
+        sc_vecdeque_destroy(&aoa->queue);
         return false;
     }
 
     if (!sc_cond_init(&aoa->event_cond)) {
         sc_mutex_destroy(&aoa->mutex);
+        sc_vecdeque_destroy(&aoa->queue);
         return false;
     }
 
@@ -69,9 +77,10 @@ sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
 void
 sc_aoa_destroy(struct sc_aoa *aoa) {
     // Destroy remaining events
-    struct sc_hid_event event;
-    while (cbuf_take(&aoa->queue, &event)) {
-        sc_hid_event_destroy(&event);
+    while (!sc_vecdeque_is_empty(&aoa->queue)) {
+        struct sc_hid_event *event = sc_vecdeque_popref(&aoa->queue);
+        assert(event);
+        sc_hid_event_destroy(event);
     }
 
     sc_cond_destroy(&aoa->event_cond);
@@ -212,13 +221,19 @@ sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     }
 
     sc_mutex_lock(&aoa->mutex);
-    bool was_empty = cbuf_is_empty(&aoa->queue);
-    bool res = cbuf_push(&aoa->queue, *event);
-    if (was_empty) {
-        sc_cond_signal(&aoa->event_cond);
+    bool full = sc_vecdeque_is_full(&aoa->queue);
+    if (!full) {
+        bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
+        sc_vecdeque_push_noresize(&aoa->queue, *event);
+        if (was_empty) {
+            sc_cond_signal(&aoa->event_cond);
+        }
     }
+    // Otherwise (if the queue is full), the event is discarded
+
     sc_mutex_unlock(&aoa->mutex);
-    return res;
+
+    return !full;
 }
 
 static int
@@ -227,7 +242,7 @@ run_aoa_thread(void *data) {
 
     for (;;) {
         sc_mutex_lock(&aoa->mutex);
-        while (!aoa->stopped && cbuf_is_empty(&aoa->queue)) {
+        while (!aoa->stopped && sc_vecdeque_is_empty(&aoa->queue)) {
             sc_cond_wait(&aoa->event_cond, &aoa->mutex);
         }
         if (aoa->stopped) {
@@ -235,11 +250,9 @@ run_aoa_thread(void *data) {
             sc_mutex_unlock(&aoa->mutex);
             break;
         }
-        struct sc_hid_event event;
-        bool non_empty = cbuf_take(&aoa->queue, &event);
-        assert(non_empty);
-        (void) non_empty;
 
+        assert(!sc_vecdeque_is_empty(&aoa->queue));
+        struct sc_hid_event event = sc_vecdeque_pop(&aoa->queue);
         uint64_t ack_to_wait = event.ack_to_wait;
         sc_mutex_unlock(&aoa->mutex);
 
