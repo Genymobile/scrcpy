@@ -10,35 +10,26 @@
 
 #define SC_BUFFERING_NDEBUG // comment to debug
 
-static struct sc_video_buffer_frame *
-sc_video_buffer_frame_new(const AVFrame *frame) {
-    struct sc_video_buffer_frame *vb_frame = malloc(sizeof(*vb_frame));
-    if (!vb_frame) {
-        LOG_OOM();
-        return NULL;
-    }
-
+static bool
+sc_video_buffer_frame_init(struct sc_video_buffer_frame *vb_frame,
+                           const AVFrame *frame) {
     vb_frame->frame = av_frame_alloc();
     if (!vb_frame->frame) {
-        LOG_OOM();
-        free(vb_frame);
-        return NULL;
+        return false;
     }
 
     if (av_frame_ref(vb_frame->frame, frame)) {
         av_frame_free(&vb_frame->frame);
-        free(vb_frame);
-        return NULL;
+        return false;
     }
 
-    return vb_frame;
+    return true;
 }
 
 static void
-sc_video_buffer_frame_delete(struct sc_video_buffer_frame *vb_frame) {
+sc_video_buffer_frame_destroy(struct sc_video_buffer_frame *vb_frame) {
     av_frame_unref(vb_frame->frame);
     av_frame_free(&vb_frame->frame);
-    free(vb_frame);
 }
 
 static bool
@@ -62,7 +53,7 @@ run_buffering(void *data) {
     for (;;) {
         sc_mutex_lock(&vb->b.mutex);
 
-        while (!vb->b.stopped && sc_queue_is_empty(&vb->b.queue)) {
+        while (!vb->b.stopped && sc_vecdeque_is_empty(&vb->b.queue)) {
             sc_cond_wait(&vb->b.queue_cond, &vb->b.mutex);
         }
 
@@ -71,12 +62,11 @@ run_buffering(void *data) {
             goto stopped;
         }
 
-        struct sc_video_buffer_frame *vb_frame;
-        sc_queue_take(&vb->b.queue, next, &vb_frame);
+        struct sc_video_buffer_frame vb_frame = sc_vecdeque_pop(&vb->b.queue);
 
         sc_tick max_deadline = sc_tick_now() + vb->buffering_time;
         // PTS (written by the server) are expressed in microseconds
-        sc_tick pts = SC_TICK_TO_US(vb_frame->frame->pts);
+        sc_tick pts = SC_TICK_TO_US(vb_frame.frame->pts);
 
         bool timed_out = false;
         while (!vb->b.stopped && !timed_out) {
@@ -91,7 +81,7 @@ run_buffering(void *data) {
         }
 
         if (vb->b.stopped) {
-            sc_video_buffer_frame_delete(vb_frame);
+            sc_video_buffer_frame_destroy(&vb_frame);
             sc_mutex_unlock(&vb->b.mutex);
             goto stopped;
         }
@@ -100,20 +90,19 @@ run_buffering(void *data) {
 
 #ifndef SC_BUFFERING_NDEBUG
         LOGD("Buffering: %" PRItick ";%" PRItick ";%" PRItick,
-             pts, vb_frame->push_date, sc_tick_now());
+             pts, vb_frame.push_date, sc_tick_now());
 #endif
 
-        sc_video_buffer_offer(vb, vb_frame->frame);
+        sc_video_buffer_offer(vb, vb_frame.frame);
 
-        sc_video_buffer_frame_delete(vb_frame);
+        sc_video_buffer_frame_destroy(&vb_frame);
     }
 
 stopped:
     // Flush queue
-    while (!sc_queue_is_empty(&vb->b.queue)) {
-        struct sc_video_buffer_frame *vb_frame;
-        sc_queue_take(&vb->b.queue, next, &vb_frame);
-        sc_video_buffer_frame_delete(vb_frame);
+    while (!sc_vecdeque_is_empty(&vb->b.queue)) {
+        struct sc_video_buffer_frame *p = sc_vecdeque_popref(&vb->b.queue);
+        sc_video_buffer_frame_destroy(p);
     }
 
     LOGD("Buffering thread ended");
@@ -154,7 +143,7 @@ sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
         }
 
         sc_clock_init(&vb->b.clock);
-        sc_queue_init(&vb->b.queue);
+        sc_vecdeque_init(&vb->b.queue);
     }
 
     assert(cbs);
@@ -230,17 +219,25 @@ sc_video_buffer_push(struct sc_video_buffer *vb, const AVFrame *frame) {
         return sc_video_buffer_offer(vb, frame);
     }
 
-    struct sc_video_buffer_frame *vb_frame = sc_video_buffer_frame_new(frame);
-    if (!vb_frame) {
+    struct sc_video_buffer_frame vb_frame;
+    bool ok = sc_video_buffer_frame_init(&vb_frame, frame);
+    if (!ok) {
         sc_mutex_unlock(&vb->b.mutex);
         LOG_OOM();
         return false;
     }
 
 #ifndef SC_BUFFERING_NDEBUG
-    vb_frame->push_date = sc_tick_now();
+    vb_frame.push_date = sc_tick_now();
 #endif
-    sc_queue_push(&vb->b.queue, next, vb_frame);
+
+    ok = sc_vecdeque_push(&vb->b.queue, vb_frame);
+    if (!ok) {
+        sc_mutex_unlock(&vb->b.mutex);
+        LOG_OOM();
+        return false;
+    }
+
     sc_cond_signal(&vb->b.queue_cond);
 
     sc_mutex_unlock(&vb->b.mutex);
