@@ -141,7 +141,7 @@ run_v4l2_sink(void *data) {
     return 0;
 }
 
-static void
+static bool
 sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
                              void *userdata) {
     (void) vb;
@@ -153,6 +153,8 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
         sc_cond_signal(&vs->cond);
         sc_mutex_unlock(&vs->mutex);
     }
+
+    return true;
 }
 
 static bool

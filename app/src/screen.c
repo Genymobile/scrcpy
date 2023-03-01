@@ -362,27 +362,17 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     return sc_video_buffer_push(&screen->vb, frame);
 }
 
-static void
+static bool
 sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
                              void *userdata) {
     (void) vb;
     struct sc_screen *screen = userdata;
 
-    // event_failed implies previous_skipped (the previous frame may not have
-    // been consumed if the event was not sent)
-    assert(!screen->event_failed || previous_skipped);
-
-    bool need_new_event;
     if (previous_skipped) {
         sc_fps_counter_add_skipped_frame(&screen->fps_counter);
         // The SC_EVENT_NEW_FRAME triggered for the previous frame will consume
-        // this new frame instead, unless the previous event failed
-        need_new_event = screen->event_failed;
+        // this new frame instead
     } else {
-        need_new_event = true;
-    }
-
-    if (need_new_event) {
         static SDL_Event new_frame_event = {
             .type = SC_EVENT_NEW_FRAME,
         };
@@ -391,11 +381,11 @@ sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
         int ret = SDL_PushEvent(&new_frame_event);
         if (ret < 0) {
             LOGW("Could not post new frame event: %s", SDL_GetError());
-            screen->event_failed = true;
-        } else {
-            screen->event_failed = false;
+            return false;
         }
     }
+
+    return true;
 }
 
 bool
@@ -405,7 +395,6 @@ sc_screen_init(struct sc_screen *screen,
     screen->has_frame = false;
     screen->fullscreen = false;
     screen->maximized = false;
-    screen->event_failed = false;
     screen->mouse_capture_key_pressed = 0;
 
     screen->req.x = params->window_x;
