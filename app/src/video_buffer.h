@@ -45,7 +45,7 @@ struct sc_video_buffer {
 };
 
 struct sc_video_buffer_callbacks {
-    void (*on_new_frame)(struct sc_video_buffer *vb, bool previous_skipped,
+    bool (*on_new_frame)(struct sc_video_buffer *vb, bool previous_skipped,
                          void *userdata);
 };
 
