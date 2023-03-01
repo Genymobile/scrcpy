@@ -285,9 +285,6 @@ if get_option('buildtype') == 'debug'
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
-        ['test_queue', [
-            'tests/test_queue.c',
-        ]],
         ['test_strbuf', [
             'tests/test_strbuf.c',
             'src/util/strbuf.c',
