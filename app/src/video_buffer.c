@@ -40,8 +40,7 @@ sc_video_buffer_offer(struct sc_video_buffer *vb, const AVFrame *frame) {
         return false;
     }
 
-    vb->cbs->on_new_frame(vb, previous_skipped, vb->cbs_userdata);
-    return true;
+    return vb->cbs->on_new_frame(vb, previous_skipped, vb->cbs_userdata);
 }
 
 static int
