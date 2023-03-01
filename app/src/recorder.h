@@ -9,15 +9,10 @@
 #include "coords.h"
 #include "options.h"
 #include "trait/packet_sink.h"
-#include "util/queue.h"
 #include "util/thread.h"
+#include "util/vecdeque.h"
 
-struct sc_record_packet {
-    AVPacket *packet;
-    struct sc_record_packet *next;
-};
-
-struct sc_recorder_queue SC_QUEUE(struct sc_record_packet);
+struct sc_recorder_queue SC_VECDEQUE(AVPacket *);
 
 struct sc_recorder {
     struct sc_packet_sink video_packet_sink;
