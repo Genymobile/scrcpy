@@ -7,22 +7,21 @@
 
 #include "clock.h"
 #include "frame_buffer.h"
-#include "util/queue.h"
 #include "util/thread.h"
 #include "util/tick.h"
+#include "util/vecdeque.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
 
 struct sc_video_buffer_frame {
     AVFrame *frame;
-    struct sc_video_buffer_frame *next;
 #ifndef NDEBUG
     sc_tick push_date;
 #endif
 };
 
-struct sc_video_buffer_frame_queue SC_QUEUE(struct sc_video_buffer_frame);
+struct sc_video_buffer_frame_queue SC_VECDEQUE(struct sc_video_buffer_frame);
 
 struct sc_video_buffer {
     struct sc_frame_buffer fb;
