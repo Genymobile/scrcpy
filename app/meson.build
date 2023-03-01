@@ -261,9 +261,6 @@ if get_option('buildtype') == 'debug'
             'tests/test_bytebuf.c',
             'src/util/bytebuf.c',
         ]],
-        ['test_cbuf', [
-            'tests/test_cbuf.c',
-        ]],
         ['test_cli', [
             'tests/test_cli.c',
             'src/cli.c',
