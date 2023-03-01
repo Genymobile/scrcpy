@@ -8,9 +8,9 @@
 
 #include "usb.h"
 #include "util/acksync.h"
-#include "util/cbuf.h"
 #include "util/thread.h"
 #include "util/tick.h"
+#include "util/vecdeque.h"
 
 struct sc_hid_event {
     uint16_t accessory_id;
@@ -27,7 +27,7 @@ sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
 void
 sc_hid_event_destroy(struct sc_hid_event *hid_event);
 
-struct sc_hid_event_queue CBUF(struct sc_hid_event, 64);
+struct sc_hid_event_queue SC_VECDEQUE(struct sc_hid_event);
 
 struct sc_aoa {
     struct sc_usb *usb;
