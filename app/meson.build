@@ -10,6 +10,7 @@ src = [
     'src/control_msg.c',
     'src/controller.c',
     'src/decoder.c',
+    'src/delay_buffer.c',
     'src/demuxer.c',
     'src/device_msg.c',
     'src/icon.c',
