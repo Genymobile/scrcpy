@@ -4,19 +4,28 @@
 
 #include "util/log.h"
 
+#define SC_CONTROL_MSG_QUEUE_MAX 64
+
 bool
 sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
                    struct sc_acksync *acksync) {
-    cbuf_init(&controller->queue);
+    sc_vecdeque_init(&controller->queue);
 
-    bool ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
+    bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
     if (!ok) {
+        return false;
+    }
+
+    ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
+    if (!ok) {
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
     ok = sc_mutex_init(&controller->mutex);
     if (!ok) {
         sc_receiver_destroy(&controller->receiver);
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
@@ -24,6 +33,7 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
     if (!ok) {
         sc_receiver_destroy(&controller->receiver);
         sc_mutex_destroy(&controller->mutex);
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
@@ -38,10 +48,12 @@ sc_controller_destroy(struct sc_controller *controller) {
     sc_cond_destroy(&controller->msg_cond);
     sc_mutex_destroy(&controller->mutex);
 
-    struct sc_control_msg msg;
-    while (cbuf_take(&controller->queue, &msg)) {
-        sc_control_msg_destroy(&msg);
+    while (!sc_vecdeque_is_empty(&controller->queue)) {
+        struct sc_control_msg *msg = sc_vecdeque_popref(&controller->queue);
+        assert(msg);
+        sc_control_msg_destroy(msg);
     }
+    sc_vecdeque_destroy(&controller->queue);
 
     sc_receiver_destroy(&controller->receiver);
 }
@@ -54,13 +66,19 @@ sc_controller_push_msg(struct sc_controller *controller,
     }
 
     sc_mutex_lock(&controller->mutex);
-    bool was_empty = cbuf_is_empty(&controller->queue);
-    bool res = cbuf_push(&controller->queue, *msg);
-    if (was_empty) {
-        sc_cond_signal(&controller->msg_cond);
+    bool full = sc_vecdeque_is_full(&controller->queue);
+    if (!full) {
+        bool was_empty = sc_vecdeque_is_empty(&controller->queue);
+        sc_vecdeque_push_noresize(&controller->queue, *msg);
+        if (was_empty) {
+            sc_cond_signal(&controller->msg_cond);
+        }
     }
+    // Otherwise (if the queue is full), the msg is discarded
+
     sc_mutex_unlock(&controller->mutex);
-    return res;
+
+    return !full;
 }
 
 static bool
@@ -82,7 +100,8 @@ run_controller(void *data) {
 
     for (;;) {
         sc_mutex_lock(&controller->mutex);
-        while (!controller->stopped && cbuf_is_empty(&controller->queue)) {
+        while (!controller->stopped
+                && sc_vecdeque_is_empty(&controller->queue)) {
             sc_cond_wait(&controller->msg_cond, &controller->mutex);
         }
         if (controller->stopped) {
@@ -90,10 +109,9 @@ run_controller(void *data) {
             sc_mutex_unlock(&controller->mutex);
             break;
         }
-        struct sc_control_msg msg;
-        bool non_empty = cbuf_take(&controller->queue, &msg);
-        assert(non_empty);
-        (void) non_empty;
+
+        assert(!sc_vecdeque_is_empty(&controller->queue));
+        struct sc_control_msg msg = sc_vecdeque_pop(&controller->queue);
         sc_mutex_unlock(&controller->mutex);
 
         bool ok = process_msg(controller, &msg);
