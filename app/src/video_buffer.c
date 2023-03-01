@@ -93,9 +93,16 @@ run_buffering(void *data) {
              pts, vb_frame.push_date, sc_tick_now());
 #endif
 
-        sc_video_buffer_offer(vb, vb_frame.frame);
-
+        bool ok = sc_video_buffer_offer(vb, vb_frame.frame);
         sc_video_buffer_frame_destroy(&vb_frame);
+        if (!ok) {
+            LOGE("Delayed frame could not be pushed, stopping");
+            sc_mutex_lock(&vb->b.mutex);
+            // Prevent to push any new packet
+            vb->b.stopped = true;
+            sc_mutex_unlock(&vb->b.mutex);
+            goto stopped;
+        }
     }
 
 stopped:
