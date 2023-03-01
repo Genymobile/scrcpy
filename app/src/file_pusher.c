@@ -19,7 +19,7 @@ sc_file_pusher_init(struct sc_file_pusher *fp, const char *serial,
                     const char *push_target) {
     assert(serial);
 
-    cbuf_init(&fp->queue);
+    sc_vecdeque_init(&fp->queue);
 
     bool ok = sc_mutex_init(&fp->mutex);
     if (!ok) {
@@ -65,9 +65,10 @@ sc_file_pusher_destroy(struct sc_file_pusher *fp) {
     sc_intr_destroy(&fp->intr);
     free(fp->serial);
 
-    struct sc_file_pusher_request req;
-    while (cbuf_take(&fp->queue, &req)) {
-        sc_file_pusher_request_destroy(&req);
+    while (!sc_vecdeque_is_empty(&fp->queue)) {
+        struct sc_file_pusher_request *req = sc_vecdeque_popref(&fp->queue);
+        assert(req);
+        sc_file_pusher_request_destroy(req);
     }
 }
 
@@ -91,13 +92,20 @@ sc_file_pusher_request(struct sc_file_pusher *fp,
     };
 
     sc_mutex_lock(&fp->mutex);
-    bool was_empty = cbuf_is_empty(&fp->queue);
-    bool res = cbuf_push(&fp->queue, req);
+    bool was_empty = sc_vecdeque_is_empty(&fp->queue);
+    bool res = sc_vecdeque_push(&fp->queue, req);
+    if (!res) {
+        LOG_OOM();
+        sc_mutex_unlock(&fp->mutex);
+        return false;
+    }
+
     if (was_empty) {
         sc_cond_signal(&fp->event_cond);
     }
     sc_mutex_unlock(&fp->mutex);
-    return res;
+
+    return true;
 }
 
 static int
@@ -113,7 +121,7 @@ run_file_pusher(void *data) {
 
     for (;;) {
         sc_mutex_lock(&fp->mutex);
-        while (!fp->stopped && cbuf_is_empty(&fp->queue)) {
+        while (!fp->stopped && sc_vecdeque_is_empty(&fp->queue)) {
             sc_cond_wait(&fp->event_cond, &fp->mutex);
         }
         if (fp->stopped) {
@@ -121,10 +129,9 @@ run_file_pusher(void *data) {
             sc_mutex_unlock(&fp->mutex);
             break;
         }
-        struct sc_file_pusher_request req;
-        bool non_empty = cbuf_take(&fp->queue, &req);
-        assert(non_empty);
-        (void) non_empty;
+
+        assert(!sc_vecdeque_is_empty(&fp->queue));
+        struct sc_file_pusher_request req = sc_vecdeque_pop(&fp->queue);
         sc_mutex_unlock(&fp->mutex);
 
         if (req.action == SC_FILE_PUSHER_ACTION_INSTALL_APK) {
