@@ -681,11 +681,13 @@ aoa_hid_end:
         }
         screen_initialized = true;
 
-        sc_decoder_add_sink(&s->video_decoder, &s->screen.frame_sink);
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                 &s->screen.frame_sink);
 
         if (options->audio) {
             sc_audio_player_init(&s->audio_player);
-            sc_decoder_add_sink(&s->audio_decoder, &s->audio_player.frame_sink);
+            sc_frame_source_add_sink(&s->audio_decoder.frame_source,
+                                     &s->audio_player.frame_sink);
         }
     }
 
@@ -696,7 +698,8 @@ aoa_hid_end:
             goto end;
         }
 
-        sc_decoder_add_sink(&s->video_decoder, &s->v4l2_sink.frame_sink);
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                 &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }
