@@ -18,7 +18,15 @@ sc_clock_init(struct sc_clock *clock) {
 static void
 sc_clock_estimate(struct sc_clock *clock,
                   double *out_slope, sc_tick *out_offset) {
-    assert(clock->count > 1); // two points are necessary
+    assert(clock->count);
+
+    if (clock->count == 1) {
+        // If there is only 1 point, we can't compute a slope. Assume it is 1.
+        struct sc_clock_point *single_point = &clock->right_sum;
+        *out_slope = 1;
+        *out_offset = single_point->system - single_point->stream;
+        return;
+    }
 
     struct sc_clock_point left_avg = {
         .system = clock->left_sum.system / (clock->count / 2),
@@ -93,19 +101,16 @@ sc_clock_update(struct sc_clock *clock, sc_tick system, sc_tick stream) {
 
     clock->head = (clock->head + 1) % SC_CLOCK_RANGE;
 
-    if (clock->count > 1) {
-        // Update estimation
-        sc_clock_estimate(clock, &clock->slope, &clock->offset);
+    // Update estimation
+    sc_clock_estimate(clock, &clock->slope, &clock->offset);
 
 #ifndef SC_CLOCK_NDEBUG
-        LOGD("Clock estimation: %f * pts + %" PRItick,
-             clock->slope, clock->offset);
+    LOGD("Clock estimation: %f * pts + %" PRItick, clock->slope, clock->offset);
 #endif
-    }
 }
 
 sc_tick
 sc_clock_to_system_time(struct sc_clock *clock, sc_tick stream) {
-    assert(clock->count > 1); // sc_clock_update() must have been called
+    assert(clock->count); // sc_clock_update() must have been called
     return (sc_tick) (stream * clock->slope) + clock->offset;
 }
