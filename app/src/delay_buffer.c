@@ -196,10 +196,8 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
 
     if (db->clock.count == 1) {
         sc_mutex_unlock(&db->mutex);
-        // First frame, push it immediately, for two reasons:
-        //  - not to delay the opening of the scrcpy window
-        //  - the buffering estimation needs at least two clock points, so it
-        //  could not handle the first frame
+        // First frame, push it immediately, not to delay the opening of the
+        // scrcpy window
         return sc_frame_source_sinks_push(&db->frame_source, frame);
     }
 
