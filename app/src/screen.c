@@ -7,7 +7,6 @@
 #include "events.h"
 #include "icon.h"
 #include "options.h"
-#include "video_buffer.h"
 #include "util/log.h"
 
 #define DISPLAY_MARGINS 96
@@ -359,14 +358,12 @@ sc_screen_frame_sink_close(struct sc_frame_sink *sink) {
 static bool
 sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_screen *screen = DOWNCAST(sink);
-    return sc_video_buffer_push(&screen->vb, frame);
-}
 
-static bool
-sc_video_buffer_on_new_frame(struct sc_video_buffer *vb, bool previous_skipped,
-                             void *userdata) {
-    (void) vb;
-    struct sc_screen *screen = userdata;
+    bool previous_skipped;
+    bool ok = sc_frame_buffer_push(&screen->fb, frame, &previous_skipped);
+    if (!ok) {
+        return false;
+    }
 
     if (previous_skipped) {
         sc_fps_counter_add_skipped_frame(&screen->fps_counter);
@@ -404,23 +401,13 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
-    static const struct sc_video_buffer_callbacks cbs = {
-        .on_new_frame = sc_video_buffer_on_new_frame,
-    };
-
-    bool ok = sc_video_buffer_init(&screen->vb, params->buffering_time, &cbs,
-                                   screen);
+    bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
         return false;
     }
 
-    ok = sc_video_buffer_start(&screen->vb);
-    if (!ok) {
-        goto error_destroy_video_buffer;
-    }
-
     if (!sc_fps_counter_init(&screen->fps_counter)) {
-        goto error_stop_and_join_video_buffer;
+        goto error_destroy_frame_buffer;
     }
 
     screen->frame_size = params->frame_size;
@@ -552,11 +539,8 @@ error_destroy_window:
     SDL_DestroyWindow(screen->window);
 error_destroy_fps_counter:
     sc_fps_counter_destroy(&screen->fps_counter);
-error_stop_and_join_video_buffer:
-    sc_video_buffer_stop(&screen->vb);
-    sc_video_buffer_join(&screen->vb);
-error_destroy_video_buffer:
-    sc_video_buffer_destroy(&screen->vb);
+error_destroy_frame_buffer:
+    sc_frame_buffer_destroy(&screen->fb);
 
     return false;
 }
@@ -593,13 +577,11 @@ sc_screen_hide_window(struct sc_screen *screen) {
 
 void
 sc_screen_interrupt(struct sc_screen *screen) {
-    sc_video_buffer_stop(&screen->vb);
     sc_fps_counter_interrupt(&screen->fps_counter);
 }
 
 void
 sc_screen_join(struct sc_screen *screen) {
-    sc_video_buffer_join(&screen->vb);
     sc_fps_counter_join(&screen->fps_counter);
 }
 
@@ -613,7 +595,7 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
-    sc_video_buffer_destroy(&screen->vb);
+    sc_frame_buffer_destroy(&screen->fb);
 }
 
 static void
@@ -719,7 +701,7 @@ update_texture(struct sc_screen *screen, const AVFrame *frame) {
 static bool
 sc_screen_update_frame(struct sc_screen *screen) {
     av_frame_unref(screen->frame);
-    sc_video_buffer_consume(&screen->vb, screen->frame);
+    sc_frame_buffer_consume(&screen->fb, screen->frame);
     AVFrame *frame = screen->frame;
 
     sc_fps_counter_add_rendered_frame(&screen->fps_counter);
