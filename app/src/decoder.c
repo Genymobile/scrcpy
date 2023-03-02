@@ -99,11 +99,11 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         // a frame was received
         bool ok = sc_frame_source_sinks_push(&decoder->frame_source,
                                              decoder->frame);
-        // A frame lost should not make the whole pipeline fail. The error, if
-        // any, is already logged.
-        (void) ok;
-
         av_frame_unref(decoder->frame);
+        if (!ok) {
+            // Error already logged
+            return false;
+        }
     }
 
     return true;
