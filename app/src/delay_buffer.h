@@ -30,16 +30,14 @@ struct sc_delay_buffer {
 
     sc_tick delay;
 
-    struct {
-        sc_thread thread;
-        sc_mutex mutex;
-        sc_cond queue_cond;
-        sc_cond wait_cond;
+    sc_thread thread;
+    sc_mutex mutex;
+    sc_cond queue_cond;
+    sc_cond wait_cond;
 
-        struct sc_clock clock;
-        struct sc_delayed_frame_queue queue;
-        bool stopped;
-    } b; // buffering
+    struct sc_clock clock;
+    struct sc_delayed_frame_queue queue;
+    bool stopped;
 };
 
 struct sc_delay_buffer_callbacks {
