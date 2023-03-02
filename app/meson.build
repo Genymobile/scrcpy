@@ -30,6 +30,7 @@ src = [
     'src/server.c',
     'src/version.c',
     'src/video_buffer.c',
+    'src/trait/packet_source.c',
     'src/util/acksync.c',
     'src/util/bytebuf.c',
     'src/util/file.c',
