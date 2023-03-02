@@ -29,6 +29,7 @@ struct sc_delay_buffer {
     struct sc_frame_sink frame_sink; // frame sink trait
 
     sc_tick delay;
+    bool first_frame_asap;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -49,8 +50,11 @@ struct sc_delay_buffer_callbacks {
  * Initialize a delay buffer.
  *
  * \param delay a (strictly) positive delay
+ * \param first_frame_asap if true, do not delay the first frame (useful for
+                           a video stream).
  */
 void
-sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay);
+sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay,
+                     bool first_frame_asap);
 
 #endif

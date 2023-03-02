@@ -669,7 +669,8 @@ aoa_hid_end:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->display_buffer) {
-            sc_delay_buffer_init(&s->display_buffer, options->display_buffer);
+            sc_delay_buffer_init(&s->display_buffer, options->display_buffer,
+                                 true);
             sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
             src = &s->display_buffer.frame_source;
         }
@@ -686,7 +687,7 @@ aoa_hid_end:
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         if (options->v4l2_buffer) {
-            sc_delay_buffer_init(&s->v4l2_buffer, options->v4l2_buffer);
+            sc_delay_buffer_init(&s->v4l2_buffer, options->v4l2_buffer, true);
             sc_frame_source_add_sink(src, &s->v4l2_buffer.frame_sink);
             src = &s->v4l2_buffer.frame_source;
         }
