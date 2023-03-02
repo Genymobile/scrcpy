@@ -665,7 +665,8 @@ aoa_hid_end:
         }
         screen_initialized = true;
 
-        sc_decoder_add_sink(&s->video_decoder, &s->screen.frame_sink);
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                 &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
@@ -675,7 +676,8 @@ aoa_hid_end:
             goto end;
         }
 
-        sc_decoder_add_sink(&s->video_decoder, &s->v4l2_sink.frame_sink);
+        sc_frame_source_add_sink(&s->video_decoder.frame_source,
+                                 &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }
