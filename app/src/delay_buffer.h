@@ -6,6 +6,8 @@
 #include <stdbool.h>
 
 #include "clock.h"
+#include "trait/frame_source.h"
+#include "trait/frame_sink.h"
 #include "util/thread.h"
 #include "util/tick.h"
 #include "util/vecdeque.h"
@@ -23,9 +25,11 @@ struct sc_delayed_frame {
 struct sc_delayed_frame_queue SC_VECDEQUE(struct sc_delayed_frame);
 
 struct sc_delay_buffer {
+    struct sc_frame_source frame_source; // frame source trait
+    struct sc_frame_sink frame_sink; // frame sink trait
+
     sc_tick delay;
 
-    // only if delay > 0
     struct {
         sc_thread thread;
         sc_mutex mutex;
@@ -36,9 +40,6 @@ struct sc_delay_buffer {
         struct sc_delayed_frame_queue queue;
         bool stopped;
     } b; // buffering
-
-    const struct sc_delay_buffer_callbacks *cbs;
-    void *cbs_userdata;
 };
 
 struct sc_delay_buffer_callbacks {
@@ -46,24 +47,12 @@ struct sc_delay_buffer_callbacks {
                          void *userdata);
 };
 
-bool
-sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay,
-                     const struct sc_delay_buffer_callbacks *cbs,
-                     void *cbs_userdata);
-
-bool
-sc_delay_buffer_start(struct sc_delay_buffer *db);
-
+/**
+ * Initialize a delay buffer.
+ *
+ * \param delay a (strictly) positive delay
+ */
 void
-sc_delay_buffer_stop(struct sc_delay_buffer *db);
-
-void
-sc_delay_buffer_join(struct sc_delay_buffer *db);
-
-void
-sc_delay_buffer_destroy(struct sc_delay_buffer *db);
-
-bool
-sc_delay_buffer_push(struct sc_delay_buffer *db, const AVFrame *frame);
+sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay);
 
 #endif
