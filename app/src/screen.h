@@ -10,12 +10,12 @@
 #include "controller.h"
 #include "coords.h"
 #include "fps_counter.h"
+#include "frame_buffer.h"
 #include "input_manager.h"
 #include "opengl.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
-#include "video_buffer.h"
 
 struct sc_screen {
     struct sc_frame_sink frame_sink; // frame sink trait
@@ -25,7 +25,7 @@ struct sc_screen {
 #endif
 
     struct sc_input_manager im;
-    struct sc_video_buffer vb;
+    struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
 
     // The initial requested window properties
@@ -93,8 +93,6 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
-
-    sc_tick buffering_time;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)
