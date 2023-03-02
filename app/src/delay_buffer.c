@@ -10,6 +10,9 @@
 
 #define SC_BUFFERING_NDEBUG // comment to debug
 
+/** Downcast frame_sink to sc_delay_buffer */
+#define DOWNCAST(SINK) container_of(SINK, struct sc_delay_buffer, frame_sink)
+
 static bool
 sc_delayed_frame_init(struct sc_delayed_frame *dframe, const AVFrame *frame) {
     dframe->frame = av_frame_alloc();
@@ -31,11 +34,6 @@ static void
 sc_delayed_frame_destroy(struct sc_delayed_frame *dframe) {
     av_frame_unref(dframe->frame);
     av_frame_free(&dframe->frame);
-}
-
-static bool
-sc_delay_buffer_offer(struct sc_delay_buffer *db, const AVFrame *frame) {
-    return db->cbs->on_new_frame(db, frame, db->cbs_userdata);
 }
 
 static int
@@ -87,12 +85,12 @@ run_buffering(void *data) {
              pts, dframe.push_date, sc_tick_now());
 #endif
 
-        bool ok = sc_delay_buffer_offer(db, dframe.frame);
+        bool ok = sc_frame_source_sinks_push(&db->frame_source, dframe.frame);
         sc_delayed_frame_destroy(&dframe);
         if (!ok) {
             LOGE("Delayed frame could not be pushed, stopping");
             sc_mutex_lock(&db->b.mutex);
-            // Prevent to push any new packet
+            // Prevent to push any new frame
             db->b.stopped = true;
             sc_mutex_unlock(&db->b.mutex);
             goto stopped;
@@ -113,92 +111,77 @@ stopped:
     return 0;
 }
 
-bool
-sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay,
-                     const struct sc_delay_buffer_callbacks *cbs,
-                     void *cbs_userdata) {
-    assert(delay >= 0);
+static bool
+sc_delay_buffer_frame_sink_open(struct sc_frame_sink *sink,
+                                const AVCodecContext *ctx) {
+    struct sc_delay_buffer *db = DOWNCAST(sink);
+    (void) ctx;
 
-    if (delay) {
-        bool ok = sc_mutex_init(&db->b.mutex);
-        if (!ok) {
-            return false;
-        }
-
-        ok = sc_cond_init(&db->b.queue_cond);
-        if (!ok) {
-            sc_mutex_destroy(&db->b.mutex);
-            return false;
-        }
-
-        ok = sc_cond_init(&db->b.wait_cond);
-        if (!ok) {
-            sc_cond_destroy(&db->b.queue_cond);
-            sc_mutex_destroy(&db->b.mutex);
-            return false;
-        }
-
-        sc_clock_init(&db->b.clock);
-        sc_vecdeque_init(&db->b.queue);
+    bool ok = sc_mutex_init(&db->b.mutex);
+    if (!ok) {
+        return false;
     }
 
-    assert(cbs);
-    assert(cbs->on_new_frame);
+    ok = sc_cond_init(&db->b.queue_cond);
+    if (!ok) {
+        goto error_destroy_mutex;
+    }
 
-    db->delay = delay;
-    db->cbs = cbs;
-    db->cbs_userdata = cbs_userdata;
+    ok = sc_cond_init(&db->b.wait_cond);
+    if (!ok) {
+        goto error_destroy_queue_cond;
+    }
 
-    return true;
-}
+    sc_clock_init(&db->b.clock);
+    sc_vecdeque_init(&db->b.queue);
 
-bool
-sc_delay_buffer_start(struct sc_delay_buffer *db) {
-    if (db->delay) {
-        bool ok =
-            sc_thread_create(&db->b.thread, run_buffering, "scrcpy-dbuf", db);
-        if (!ok) {
-            LOGE("Could not start buffering thread");
-            return false;
-        }
+    if (!sc_frame_source_sinks_open(&db->frame_source, ctx)) {
+        goto error_destroy_wait_cond;
+    }
+
+    ok = sc_thread_create(&db->b.thread, run_buffering, "scrcpy-dbuf", db);
+    if (!ok) {
+        LOGE("Could not start buffering thread");
+        goto error_close_sinks;
     }
 
     return true;
+
+error_close_sinks:
+    sc_frame_source_sinks_close(&db->frame_source);
+error_destroy_wait_cond:
+    sc_cond_destroy(&db->b.wait_cond);
+error_destroy_queue_cond:
+    sc_cond_destroy(&db->b.queue_cond);
+error_destroy_mutex:
+    sc_mutex_destroy(&db->b.mutex);
+
+    return false;
 }
 
-void
-sc_delay_buffer_stop(struct sc_delay_buffer *db) {
-    if (db->delay) {
-        sc_mutex_lock(&db->b.mutex);
-        db->b.stopped = true;
-        sc_cond_signal(&db->b.queue_cond);
-        sc_cond_signal(&db->b.wait_cond);
-        sc_mutex_unlock(&db->b.mutex);
-    }
+static void
+sc_delay_buffer_frame_sink_close(struct sc_frame_sink *sink) {
+    struct sc_delay_buffer *db = DOWNCAST(sink);
+
+    sc_mutex_lock(&db->b.mutex);
+    db->b.stopped = true;
+    sc_cond_signal(&db->b.queue_cond);
+    sc_cond_signal(&db->b.wait_cond);
+    sc_mutex_unlock(&db->b.mutex);
+
+    sc_thread_join(&db->b.thread, NULL);
+
+    sc_frame_source_sinks_close(&db->frame_source);
+
+    sc_cond_destroy(&db->b.wait_cond);
+    sc_cond_destroy(&db->b.queue_cond);
+    sc_mutex_destroy(&db->b.mutex);
 }
 
-void
-sc_delay_buffer_join(struct sc_delay_buffer *db) {
-    if (db->delay) {
-        sc_thread_join(&db->b.thread, NULL);
-    }
-}
-
-void
-sc_delay_buffer_destroy(struct sc_delay_buffer *db) {
-    if (db->delay) {
-        sc_cond_destroy(&db->b.wait_cond);
-        sc_cond_destroy(&db->b.queue_cond);
-        sc_mutex_destroy(&db->b.mutex);
-    }
-}
-
-bool
-sc_delay_buffer_push(struct sc_delay_buffer *db, const AVFrame *frame) {
-    if (!db->delay) {
-        // No buffering
-        return sc_delay_buffer_offer(db, frame);
-    }
+static bool
+sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
+                                const AVFrame *frame) {
+    struct sc_delay_buffer *db = DOWNCAST(sink);
 
     sc_mutex_lock(&db->b.mutex);
 
@@ -213,11 +196,11 @@ sc_delay_buffer_push(struct sc_delay_buffer *db, const AVFrame *frame) {
 
     if (db->b.clock.count == 1) {
         sc_mutex_unlock(&db->b.mutex);
-        // First frame, offer it immediately, for two reasons:
+        // First frame, push it immediately, for two reasons:
         //  - not to delay the opening of the scrcpy window
         //  - the buffering estimation needs at least two clock points, so it
         //  could not handle the first frame
-        return sc_delay_buffer_offer(db, frame);
+        return sc_frame_source_sinks_push(&db->frame_source, frame);
     }
 
     struct sc_delayed_frame dframe;
@@ -243,4 +226,21 @@ sc_delay_buffer_push(struct sc_delay_buffer *db, const AVFrame *frame) {
     sc_mutex_unlock(&db->b.mutex);
 
     return true;
+}
+
+void
+sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay) {
+    assert(delay > 0);
+
+    db->delay = delay;
+
+    sc_frame_source_init(&db->frame_source);
+
+    static const struct sc_frame_sink_ops ops = {
+        .open = sc_delay_buffer_frame_sink_open,
+        .close = sc_delay_buffer_frame_sink_close,
+        .push = sc_delay_buffer_frame_sink_push,
+    };
+
+    db->frame_sink.ops = &ops;
 }

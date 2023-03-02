@@ -15,6 +15,7 @@
 
 #include "controller.h"
 #include "decoder.h"
+#include "delay_buffer.h"
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
@@ -45,8 +46,10 @@ struct scrcpy {
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
+    struct sc_delay_buffer display_buffer;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
+    struct sc_delay_buffer v4l2_buffer;
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
@@ -657,7 +660,6 @@ aoa_hid_end:
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
-            .buffering_time = options->display_buffer,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -665,19 +667,31 @@ aoa_hid_end:
         }
         screen_initialized = true;
 
-        sc_frame_source_add_sink(&s->video_decoder.frame_source,
-                                 &s->screen.frame_sink);
+        struct sc_frame_source *src = &s->video_decoder.frame_source;
+        if (options->display_buffer) {
+            sc_delay_buffer_init(&s->display_buffer, options->display_buffer);
+            sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
+            src = &s->display_buffer.frame_source;
+        }
+
+        sc_frame_source_add_sink(src, &s->screen.frame_sink);
     }
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
         if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
-                               info->frame_size, options->v4l2_buffer)) {
+                               info->frame_size)) {
             goto end;
         }
 
-        sc_frame_source_add_sink(&s->video_decoder.frame_source,
-                                 &s->v4l2_sink.frame_sink);
+        struct sc_frame_source *src = &s->video_decoder.frame_source;
+        if (options->v4l2_buffer) {
+            sc_delay_buffer_init(&s->v4l2_buffer, options->v4l2_buffer);
+            sc_frame_source_add_sink(src, &s->v4l2_buffer.frame_sink);
+            src = &s->v4l2_buffer.frame_source;
+        }
+
+        sc_frame_source_add_sink(src, &s->v4l2_sink.frame_sink);
 
         v4l2_sink_initialized = true;
     }

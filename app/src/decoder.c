@@ -4,7 +4,6 @@
 #include <libavformat/avformat.h>
 
 #include "events.h"
-#include "video_buffer.h"
 #include "trait/frame_sink.h"
 #include "util/log.h"
 
