@@ -1740,6 +1740,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
+    if (opts->audio && !opts->display && !opts->record_filename) {
+        LOGI("No display and no recording: audio disabled");
+        opts->audio = false;
+    }
+
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
         LOGI("Tunnel host/port is set, "
              "--force-adb-forward automatically enabled.");
