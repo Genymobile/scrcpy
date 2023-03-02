@@ -43,6 +43,7 @@ struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
     struct sc_audio_player audio_player;
+    struct sc_delay_buffer audio_buffer;
     struct sc_demuxer video_demuxer;
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
@@ -694,9 +695,16 @@ aoa_hid_end:
         sc_frame_source_add_sink(src, &s->screen.frame_sink);
 
         if (options->audio) {
+            struct sc_frame_source *src = &s->audio_decoder.frame_source;
+            if (options->audio_buffer) {
+                sc_delay_buffer_init(&s->audio_buffer, options->audio_buffer,
+                                     false);
+                sc_frame_source_add_sink(src, &s->audio_buffer.frame_sink);
+                src = &s->audio_buffer.frame_source;
+            }
+
             sc_audio_player_init(&s->audio_player);
-            sc_frame_source_add_sink(&s->audio_decoder.frame_source,
-                                     &s->audio_player.frame_sink);
+            sc_frame_source_add_sink(src, &s->audio_player.frame_sink);
         }
     }
 
