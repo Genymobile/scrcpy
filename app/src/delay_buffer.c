@@ -194,10 +194,8 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
     sc_clock_update(&db->clock, sc_tick_now(), pts);
     sc_cond_signal(&db->wait_cond);
 
-    if (db->clock.count == 1) {
+    if (db->first_frame_asap && db->clock.count == 1) {
         sc_mutex_unlock(&db->mutex);
-        // First frame, push it immediately, not to delay the opening of the
-        // scrcpy window
         return sc_frame_source_sinks_push(&db->frame_source, frame);
     }
 
@@ -227,10 +225,12 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
 }
 
 void
-sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay) {
+sc_delay_buffer_init(struct sc_delay_buffer *db, sc_tick delay,
+                     bool first_frame_asap) {
     assert(delay > 0);
 
     db->delay = delay;
+    db->first_frame_asap = first_frame_asap;
 
     sc_frame_source_init(&db->frame_source);
 
