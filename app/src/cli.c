@@ -71,6 +71,7 @@ enum {
     OPT_LIST_ENCODERS,
     OPT_LIST_DISPLAYS,
     OPT_REQUIRE_AUDIO,
+    OPT_AUDIO_BUFFER,
 };
 
 struct sc_option {
@@ -119,6 +120,15 @@ static const struct sc_option options[] = {
         .text = "Encode the audio at the given bit-rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 128K (128000).",
+    },
+    {
+        .longopt_id = OPT_AUDIO_BUFFER,
+        .longopt = "audio-buffer",
+        .argdesc = "ms",
+        .text = "Configure the audio buffering delay (in milliseconds).\n"
+                "Lower values decrease the latency, but increase the "
+                "likelyhood of buffer underrun (causing audio glitches).\n"
+                "Default is 50.",
     },
     {
         .longopt_id = OPT_AUDIO_CODEC,
@@ -1821,6 +1831,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
+                break;
+            case OPT_AUDIO_BUFFER:
+                if (!parse_buffering_time(optarg, &opts->audio_buffer)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr
