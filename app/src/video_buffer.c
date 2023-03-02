@@ -155,6 +155,7 @@ sc_video_buffer_init(struct sc_video_buffer *vb, sc_tick buffering_time,
 
         sc_clock_init(&vb->b.clock);
         sc_queue_init(&vb->b.queue);
+        vb->b.stopped = false;
     }
 
     assert(cbs);

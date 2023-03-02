@@ -96,6 +96,7 @@ run_fps_counter(void *data) {
 bool
 sc_fps_counter_start(struct sc_fps_counter *counter) {
     sc_mutex_lock(&counter->mutex);
+    counter->interrupted = false;
     counter->next_timestamp = sc_tick_now() + SC_FPS_COUNTER_INTERVAL;
     counter->nr_rendered = 0;
     counter->nr_skipped = 0;
