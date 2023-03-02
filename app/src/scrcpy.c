@@ -13,6 +13,7 @@
 # include <windows.h>
 #endif
 
+#include "audio_player.h"
 #include "controller.h"
 #include "decoder.h"
 #include "demuxer.h"
@@ -40,6 +41,7 @@
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
+    struct sc_audio_player audio_player;
     struct sc_demuxer video_demuxer;
     struct sc_demuxer audio_demuxer;
     struct sc_decoder video_decoder;
@@ -383,9 +385,16 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     // Initialize SDL video in addition if display is enabled
-    if (options->display && SDL_Init(SDL_INIT_VIDEO)) {
-        LOGE("Could not initialize SDL: %s", SDL_GetError());
-        goto end;
+    if (options->display) {
+        if (SDL_Init(SDL_INIT_VIDEO)) {
+            LOGE("Could not initialize SDL video: %s", SDL_GetError());
+            goto end;
+        }
+
+        if (options->audio && SDL_Init(SDL_INIT_AUDIO)) {
+            LOGE("Could not initialize SDL audio: %s", SDL_GetError());
+            goto end;
+        }
     }
 
     sdl_configure(options->display, options->disable_screensaver);
@@ -663,6 +672,11 @@ aoa_hid_end:
         screen_initialized = true;
 
         sc_decoder_add_sink(&s->video_decoder, &s->screen.frame_sink);
+
+        if (options->audio) {
+            sc_audio_player_init(&s->audio_player);
+            sc_decoder_add_sink(&s->audio_decoder, &s->audio_player.frame_sink);
+        }
     }
 
 #ifdef HAVE_V4L2
