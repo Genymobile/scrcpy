@@ -112,65 +112,6 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     return true;
 }
 
-static bool
-push_packet_to_sinks(struct sc_demuxer *demuxer, const AVPacket *packet) {
-    for (unsigned i = 0; i < demuxer->sink_count; ++i) {
-        struct sc_packet_sink *sink = demuxer->sinks[i];
-        if (!sink->ops->push(sink, packet)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static bool
-sc_demuxer_push_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
-    bool ok = push_packet_to_sinks(demuxer, packet);
-    if (!ok) {
-        LOGE("Demuxer '%s': could not process packet", demuxer->name);
-        return false;
-    }
-
-    return true;
-}
-
-static void
-sc_demuxer_close_first_sinks(struct sc_demuxer *demuxer, unsigned count) {
-    while (count) {
-        struct sc_packet_sink *sink = demuxer->sinks[--count];
-        sink->ops->close(sink);
-    }
-}
-
-static inline void
-sc_demuxer_close_sinks(struct sc_demuxer *demuxer) {
-    sc_demuxer_close_first_sinks(demuxer, demuxer->sink_count);
-}
-
-static bool
-sc_demuxer_open_sinks(struct sc_demuxer *demuxer, const AVCodec *codec) {
-    for (unsigned i = 0; i < demuxer->sink_count; ++i) {
-        struct sc_packet_sink *sink = demuxer->sinks[i];
-        if (!sink->ops->open(sink, codec)) {
-            sc_demuxer_close_first_sinks(demuxer, i);
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static void
-sc_demuxer_disable_sinks(struct sc_demuxer *demuxer) {
-    for (unsigned i = 0; i < demuxer->sink_count; ++i) {
-        struct sc_packet_sink *sink = demuxer->sinks[i];
-        if (sink->ops->disable) {
-            sink->ops->disable(sink);
-        }
-    }
-}
-
 static int
 run_demuxer(void *data) {
     struct sc_demuxer *demuxer = data;
@@ -189,7 +130,7 @@ run_demuxer(void *data) {
     if (raw_codec_id == 0) {
         LOGW("Demuxer '%s': stream explicitly disabled by the device",
              demuxer->name);
-        sc_demuxer_disable_sinks(demuxer);
+        sc_packet_source_sinks_disable(&demuxer->packet_source);
         status = SC_DEMUXER_STATUS_DISABLED;
         goto end;
     }
@@ -204,7 +145,7 @@ run_demuxer(void *data) {
     if (codec_id == AV_CODEC_ID_NONE) {
         LOGE("Demuxer '%s': stream disabled due to unsupported codec",
              demuxer->name);
-        sc_demuxer_disable_sinks(demuxer);
+        sc_packet_source_sinks_disable(&demuxer->packet_source);
         goto end;
     }
 
@@ -212,11 +153,11 @@ run_demuxer(void *data) {
     if (!codec) {
         LOGE("Demuxer '%s': stream disabled due to missing decoder",
              demuxer->name);
-        sc_demuxer_disable_sinks(demuxer);
+        sc_packet_source_sinks_disable(&demuxer->packet_source);
         goto end;
     }
 
-    if (!sc_demuxer_open_sinks(demuxer, codec)) {
+    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec)) {
         goto end;
     }
 
@@ -253,10 +194,10 @@ run_demuxer(void *data) {
             }
         }
 
-        ok = sc_demuxer_push_packet(demuxer, packet);
+        ok = sc_packet_source_sinks_push(&demuxer->packet_source, packet);
         av_packet_unref(packet);
         if (!ok) {
-            // cannot process packet (error already logged)
+            // The sink already logged its concrete error
             break;
         }
     }
@@ -269,7 +210,7 @@ run_demuxer(void *data) {
 
     av_packet_free(&packet);
 finally_close_sinks:
-    sc_demuxer_close_sinks(demuxer);
+    sc_packet_source_sinks_close(&demuxer->packet_source);
 end:
     demuxer->cbs->on_ended(demuxer, status, demuxer->cbs_userdata);
 
@@ -283,20 +224,12 @@ sc_demuxer_init(struct sc_demuxer *demuxer, const char *name, sc_socket socket,
 
     demuxer->name = name; // statically allocated
     demuxer->socket = socket;
-    demuxer->sink_count = 0;
+    sc_packet_source_init(&demuxer->packet_source);
 
     assert(cbs && cbs->on_ended);
 
     demuxer->cbs = cbs;
     demuxer->cbs_userdata = cbs_userdata;
-}
-
-void
-sc_demuxer_add_sink(struct sc_demuxer *demuxer, struct sc_packet_sink *sink) {
-    assert(demuxer->sink_count < SC_DEMUXER_MAX_SINKS);
-    assert(sink);
-    assert(sink->ops);
-    demuxer->sinks[demuxer->sink_count++] = sink;
 }
 
 bool

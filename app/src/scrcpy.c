@@ -444,11 +444,13 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     if (needs_video_decoder) {
         sc_decoder_init(&s->video_decoder, "video");
-        sc_demuxer_add_sink(&s->video_demuxer, &s->video_decoder.packet_sink);
+        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
+                                  &s->video_decoder.packet_sink);
     }
     if (needs_audio_decoder) {
         sc_decoder_init(&s->audio_decoder, "audio");
-        sc_demuxer_add_sink(&s->audio_demuxer, &s->audio_decoder.packet_sink);
+        sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
+                                  &s->audio_decoder.packet_sink);
     }
 
     if (options->record_filename) {
@@ -467,10 +469,11 @@ scrcpy(struct scrcpy_options *options) {
         }
         recorder_started = true;
 
-        sc_demuxer_add_sink(&s->video_demuxer, &s->recorder.video_packet_sink);
+        sc_packet_source_add_sink(&s->video_demuxer.packet_source,
+                                  &s->recorder.video_packet_sink);
         if (options->audio) {
-            sc_demuxer_add_sink(&s->audio_demuxer,
-                                &s->recorder.audio_packet_sink);
+            sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
+                                      &s->recorder.audio_packet_sink);
         }
     }
 
