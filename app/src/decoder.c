@@ -2,6 +2,7 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/channel_layout.h>
 
 #include "events.h"
 #include "video_buffer.h"
@@ -50,6 +51,11 @@ sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
     if (codec->type == AVMEDIA_TYPE_VIDEO) {
         // Hardcoded video properties
         decoder->codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    } else {
+        // Hardcoded audio properties
+        decoder->codec_ctx->ch_layout =
+            (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
+        decoder->codec_ctx->sample_rate = 48000;
     }
 
     if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
