@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-public class Controller {
+public class Controller implements AsyncProcessor {
 
     private static final int DEFAULT_DEVICE_ID = 0;
 
