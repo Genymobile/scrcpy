@@ -1932,6 +1932,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    if (opts->audio_codec == SC_CODEC_RAW) {
+        if (opts->audio_bit_rate) {
+            LOGW("--audio-bit-rate is ignored for raw audio codec");
+        }
+        if (opts->audio_codec_options) {
+            LOGW("--audio-codec-options is ignored for raw audio codec");
+        }
+        if (opts->audio_encoder) {
+            LOGW("--audio-encoder is ignored for raw audio codec");
+        }
+    }
+
     if (!opts->control) {
         if (opts->turn_screen_off) {
             LOGE("Could not request to turn screen off if control is disabled");
