@@ -206,7 +206,7 @@ execute_server(struct sc_server *server,
 
     unsigned dyn_idx = count; // from there, the strings are allocated
 #define ADD_PARAM(fmt, ...) { \
-        char *p = (char *) &cmd[count]; \
+        char *p; \
         if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
             goto end; \
         } \
