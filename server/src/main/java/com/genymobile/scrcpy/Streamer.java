@@ -38,23 +38,30 @@ public final class Streamer {
         }
     }
 
-    public void writePacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
+    public void writePacket(ByteBuffer buffer, long pts, boolean config, boolean keyFrame) throws IOException {
         if (sendFrameMeta) {
-            writeFrameMeta(fd, bufferInfo, codecBuffer.remaining());
+            writeFrameMeta(fd, buffer.remaining(), pts, config, keyFrame);
         }
 
-        IO.writeFully(fd, codecBuffer);
+        IO.writeFully(fd, buffer);
     }
 
-    private void writeFrameMeta(FileDescriptor fd, MediaCodec.BufferInfo bufferInfo, int packetSize) throws IOException {
+    public void writePacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
+        long pts = bufferInfo.presentationTimeUs;
+        boolean config = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
+        boolean keyFrame = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
+        writePacket(codecBuffer, pts, config, keyFrame);
+    }
+
+    private void writeFrameMeta(FileDescriptor fd, int packetSize, long pts, boolean config, boolean keyFrame) throws IOException {
         headerBuffer.clear();
 
         long ptsAndFlags;
-        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+        if (config) {
             ptsAndFlags = PACKET_FLAG_CONFIG; // non-media data packet
         } else {
-            ptsAndFlags = bufferInfo.presentationTimeUs;
-            if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0) {
+            ptsAndFlags = pts;
+            if (keyFrame) {
                 ptsAndFlags |= PACKET_FLAG_KEY_FRAME;
             }
         }
