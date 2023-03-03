@@ -92,7 +92,7 @@ public final class Server {
         }
 
         Controller controller = null;
-        AudioEncoder audioEncoder = null;
+        AudioRecorder audioRecorder = null;
 
         try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
@@ -111,8 +111,8 @@ public final class Server {
             if (audio) {
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
                         options.getSendFrameMeta());
-                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
-                audioEncoder.start();
+                audioRecorder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
+                audioRecorder.start();
             }
 
             Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
@@ -131,8 +131,8 @@ public final class Server {
         } finally {
             Ln.d("Screen streaming stopped");
             initThread.interrupt();
-            if (audioEncoder != null) {
-                audioEncoder.stop();
+            if (audioRecorder != null) {
+                audioRecorder.stop();
             }
             if (controller != null) {
                 controller.stop();
@@ -140,8 +140,8 @@ public final class Server {
 
             try {
                 initThread.join();
-                if (audioEncoder != null) {
-                    audioEncoder.join();
+                if (audioRecorder != null) {
+                    audioRecorder.join();
                 }
                 if (controller != null) {
                     controller.join();
