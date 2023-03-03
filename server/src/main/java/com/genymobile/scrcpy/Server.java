@@ -5,6 +5,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -91,8 +92,7 @@ public final class Server {
             Workarounds.fillAppInfo();
         }
 
-        Controller controller = null;
-        AudioEncoder audioEncoder = null;
+        List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
         try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
@@ -101,24 +101,27 @@ public final class Server {
             }
 
             if (control) {
-                controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
-                controller.start();
-
-                final Controller controllerRef = controller;
-                device.setClipboardListener(text -> controllerRef.getSender().pushClipboardText(text));
+                Controller controller = new Controller(device, connection, options.getClipboardAutosync(), options.getPowerOn());
+                device.setClipboardListener(text -> controller.getSender().pushClipboardText(text));
+                asyncProcessors.add(controller);
             }
 
             if (audio) {
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
                         options.getSendFrameMeta());
-                audioEncoder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
-                audioEncoder.start();
+                AudioEncoder audioRecorder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
+                asyncProcessors.add(audioRecorder);
             }
 
             Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
                     options.getSendFrameMeta());
             ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                     options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
+
+            for (AsyncProcessor asyncProcessor : asyncProcessors) {
+                asyncProcessor.start();
+            }
+
             try {
                 // synchronous
                 screenEncoder.streamScreen();
@@ -131,20 +134,14 @@ public final class Server {
         } finally {
             Ln.d("Screen streaming stopped");
             initThread.interrupt();
-            if (audioEncoder != null) {
-                audioEncoder.stop();
-            }
-            if (controller != null) {
-                controller.stop();
+            for (AsyncProcessor asyncProcessor : asyncProcessors) {
+                asyncProcessor.stop();
             }
 
             try {
                 initThread.join();
-                if (audioEncoder != null) {
-                    audioEncoder.join();
-                }
-                if (controller != null) {
-                    controller.join();
+                for (AsyncProcessor asyncProcessor : asyncProcessors) {
+                    asyncProcessor.join();
                 }
             } catch (InterruptedException e) {
                 // ignore

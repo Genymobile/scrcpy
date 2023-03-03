@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-public final class AudioEncoder {
+public final class AudioEncoder implements AsyncProcessor {
 
     private static class InputTask {
         private final int index;
