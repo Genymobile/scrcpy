@@ -25,6 +25,7 @@ sc_demuxer_to_avcodec_id(uint32_t codec_id) {
 #define SC_CODEC_ID_AV1 UINT32_C(0x00617631) // "av1" in ASCII
 #define SC_CODEC_ID_OPUS UINT32_C(0x6f707573) // "opus" in ASCII
 #define SC_CODEC_ID_AAC UINT32_C(0x00616163) // "aac in ASCII"
+#define SC_CODEC_ID_RAW UINT32_C(0x00726177) // "raw" in ASCII
     switch (codec_id) {
         case SC_CODEC_ID_H264:
             return AV_CODEC_ID_H264;
@@ -36,6 +37,8 @@ sc_demuxer_to_avcodec_id(uint32_t codec_id) {
             return AV_CODEC_ID_OPUS;
         case SC_CODEC_ID_AAC:
             return AV_CODEC_ID_AAC;
+        case SC_CODEC_ID_RAW:
+            return AV_CODEC_ID_PCM_S16LE;
         default:
             LOGE("Unknown codec id 0x%08" PRIx32, codec_id);
             return AV_CODEC_ID_NONE;
