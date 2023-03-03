@@ -27,6 +27,7 @@ enum sc_codec {
     SC_CODEC_H264,
     SC_CODEC_H265,
     SC_CODEC_AV1,
+    SC_CODEC_RAW,
     SC_CODEC_OPUS,
     SC_CODEC_AAC,
 };
