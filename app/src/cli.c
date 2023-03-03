@@ -133,7 +133,7 @@ static const struct sc_option options[] = {
         .longopt = "audio-codec",
         .argdesc = "name",
         .text = "Select an audio codec (raw, opus or aac).\n"
-                "Default is opus.",
+                "Default is raw.",
     },
     {
         .longopt_id = OPT_AUDIO_CODEC_OPTIONS,

@@ -11,7 +11,7 @@ public class Options {
     private boolean audio = true;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
-    private AudioCodec audioCodec = AudioCodec.OPUS;
+    private AudioCodec audioCodec = AudioCodec.RAW;
     private int videoBitRate = 8000000;
     private int audioBitRate = 196000;
     private int maxFps;

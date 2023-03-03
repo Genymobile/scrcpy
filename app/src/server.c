@@ -238,7 +238,7 @@ execute_server(struct sc_server *server,
         ADD_PARAM("video_codec=%s",
                   sc_server_get_codec_name(params->video_codec));
     }
-    if (params->audio_codec != SC_CODEC_OPUS) {
+    if (params->audio_codec != SC_CODEC_RAW) {
         ADD_PARAM("audio_codec=%s",
             sc_server_get_codec_name(params->audio_codec));
     }
