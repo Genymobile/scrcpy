@@ -107,9 +107,16 @@ public final class Server {
             }
 
             if (audio) {
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), options.getAudioCodec(), options.getSendCodecId(),
+                AudioCodec audioCodec = options.getAudioCodec();
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecId(),
                         options.getSendFrameMeta());
-                AudioEncoder audioRecorder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(), options.getAudioEncoder());
+                AsyncProcessor audioRecorder;
+                if (audioCodec == AudioCodec.RAW) {
+                    audioRecorder = new AudioRawRecorder(audioStreamer);
+                } else {
+                    audioRecorder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(),
+                            options.getAudioEncoder());
+                }
                 asyncProcessors.add(audioRecorder);
             }
 
