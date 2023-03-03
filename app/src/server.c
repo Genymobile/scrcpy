@@ -169,6 +169,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "h265";
         case SC_CODEC_AV1:
             return "av1";
+        case SC_CODEC_RAW:
+            return "raw";
         case SC_CODEC_OPUS:
             return "opus";
         case SC_CODEC_AAC:
