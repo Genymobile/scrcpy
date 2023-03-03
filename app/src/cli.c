@@ -134,7 +134,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_CODEC,
         .longopt = "audio-codec",
         .argdesc = "name",
-        .text = "Select an audio codec (opus or aac).\n"
+        .text = "Select an audio codec (opus, aac or raw).\n"
                 "Default is opus.",
     },
     {
@@ -1522,7 +1522,11 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_AAC;
         return true;
     }
-    LOGE("Unsupported audio codec: %s (expected opus or aac)", optarg);
+    if (!strcmp(optarg, "raw")) {
+        *codec = SC_CODEC_RAW;
+        return true;
+    }
+    LOGE("Unsupported audio codec: %s (expected opus, aac or raw)", optarg);
     return false;
 }
 
@@ -1921,6 +1925,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                  opts->record_filename);
             return false;
         }
+    }
+
+    if (opts->record_filename && opts->audio_codec == SC_CODEC_RAW) {
+        LOGW("Recording does not support RAW audio codec");
+        return false;
     }
 
     if (!opts->control) {

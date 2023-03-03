@@ -29,6 +29,7 @@ enum sc_codec {
     SC_CODEC_AV1,
     SC_CODEC_OPUS,
     SC_CODEC_AAC,
+    SC_CODEC_RAW,
 };
 
 enum sc_lock_video_orientation {
