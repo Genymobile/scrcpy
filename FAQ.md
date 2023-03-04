@@ -164,32 +164,6 @@ keyboard][hid] (HID).
 
 ## Client issues
 
-### The quality is low
-
-If the definition of your client window is smaller than that of your device
-screen, then you might get poor quality, especially visible on text (see [#40]).
-
-[#40]: https://github.com/Genymobile/scrcpy/issues/40
-
-This problem should be fixed in scrcpy v1.22: **update to the latest version**.
-
-On older versions, you must configure the [scaling behavior]:
-
-> `scrcpy.exe` > Properties > Compatibility > Change high DPI settings >
-> Override high DPI scaling behavior > Scaling performed by: _Application_.
-
-[scaling behavior]: https://github.com/Genymobile/scrcpy/issues/40#issuecomment-424466723
-
-Also, to improve downscaling quality, trilinear filtering is enabled
-automatically if the renderer is OpenGL and if it supports mipmapping.
-
-On Windows, you might want to force OpenGL to enable mipmapping:
-
-```
-scrcpy --render-driver=opengl
-```
-
-
 ### Issue with Wayland
 
 By default, SDL uses x11 on Linux. The [video driver] can be changed via the
@@ -224,102 +198,15 @@ As a workaround, [disable "Block compositing"][kwin].
 
 ### Exception
 
-There may be many reasons. One common cause is that the hardware encoder of your
-device is not able to encode at the given definition:
-
-> ```
-> ERROR: Exception on thread Thread[main,5,main]
-> android.media.MediaCodec$CodecException: Error 0xfffffc0e
-> ...
-> Exit due to uncaughtException in main thread:
-> ERROR: Could not open video stream
-> INFO: Initial texture: 1080x2336
-> ```
-
-or
-
-> ```
-> ERROR: Exception on thread Thread[main,5,main]
-> java.lang.IllegalStateException
->         at android.media.MediaCodec.native_dequeueOutputBuffer(Native Method)
-> ```
-
-Just try with a lower definition:
+If you get any exception related to `MediaCodec`:
 
 ```
-scrcpy -m 1920
-scrcpy -m 1024
-scrcpy -m 800
+ERROR: Exception on thread Thread[main,5,main]
+java.lang.IllegalStateException
+        at android.media.MediaCodec.native_dequeueOutputBuffer(Native Method)
 ```
 
-Since scrcpy v1.22, scrcpy automatically tries again with a lower definition
-before failing. This behavior can be disabled with `--no-downsize-on-error`.
-
-You could also try another [encoder](README.md#encoder).
-
-
-If you encounter this exception on Android 12, then just upgrade to scrcpy >=
-1.18 (see [#2129]):
-
-```
-> ERROR: Exception on thread Thread[main,5,main]
-java.lang.AssertionError: java.lang.reflect.InvocationTargetException
-    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:75)
-    ...
-Caused by: java.lang.reflect.InvocationTargetException
-    at java.lang.reflect.Method.invoke(Native Method)
-    at com.genymobile.scrcpy.wrappers.SurfaceControl.setDisplaySurface(SurfaceControl.java:73)
-    ... 7 more
-Caused by: java.lang.IllegalArgumentException: displayToken must not be null
-    at android.view.SurfaceControl$Transaction.setDisplaySurface(SurfaceControl.java:3067)
-    at android.view.SurfaceControl.setDisplaySurface(SurfaceControl.java:2147)
-    ... 9 more
-```
-
-[#2129]: https://github.com/Genymobile/scrcpy/issues/2129
-
-
-## Command line on Windows
-
-Since v1.22, a "shortcut" has been added to directly open a terminal in the
-scrcpy directory. Double-click on `open_a_terminal_here.bat`, then type your
-command. For example:
-
-```
-scrcpy --record file.mkv
-```
-
-You could also open a terminal and go to the scrcpy folder manually:
-
- 1. Press <kbd>Windows</kbd>+<kbd>r</kbd>, this opens a dialog box.
- 2. Type `cmd` and press <kbd>Enter</kbd>, this opens a terminal.
- 3. Go to your _scrcpy_ directory, by typing (adapt the path):
-
-    ```bat
-    cd C:\Users\user\Downloads\scrcpy-win64-xxx
-    ```
-
-    and press <kbd>Enter</kbd>
- 4. Type your command. For example:
-
-    ```bat
-    scrcpy --record file.mkv
-    ```
-
-If you plan to always use the same arguments, create a file `myscrcpy.bat`
-(enable [show file extensions] to avoid confusion) in the `scrcpy` directory,
-containing your command. For example:
-
-```bat
-scrcpy --prefer-text --turn-screen-off --stay-awake
-```
-
-Then just double-click on that file.
-
-You could also edit (a copy of) `scrcpy-console.bat` or `scrcpy-noconsole.vbs`
-to add some arguments.
-
-[show file extensions]: https://www.howtogeek.com/205086/beginner-how-to-make-windows-show-file-extensions/
+then try with another [encoder](doc/video.md#codec).
 
 
 ## Translations

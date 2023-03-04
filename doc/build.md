@@ -2,57 +2,16 @@
 
 Here are the instructions to build _scrcpy_ (client and server).
 
-
-## Simple
-
-If you just want to install the latest release from `master`, follow this
-simplified process.
-
-First, you need to install the required packages:
-
-```bash
-# for Debian/Ubuntu
-sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
-                 gcc git pkg-config meson ninja-build libsdl2-dev \
-                 libavcodec-dev libavdevice-dev libavformat-dev libavutil-dev \
-                 libswresample-dev libusb-1.0-0 libusb-1.0-0-dev
-```
-
-Then clone the repo and execute the installation script
-([source](install_release.sh)):
-
-```bash
-git clone https://github.com/Genymobile/scrcpy
-cd scrcpy
-./install_release.sh
-```
-
-When a new release is out, update the repo and reinstall:
-
-```bash
-git pull
-./install_release.sh
-```
-
-To uninstall:
-
-```bash
-sudo ninja -Cbuild-auto uninstall
-```
-
+If you just want to build and install the latest release, follow the simplified
+process described in [doc/linux.md](linux.md).
 
 ## Branches
 
-### `master`
-
-The `master` branch concerns the latest release, and is the home page of the
-project on GitHub.
-
-
-### `dev`
-
-`dev` is the current development branch. Every commit present in `dev` will be
-in the next release.
+There are two main branches:
+ - `master`: contains the latest release. It is the home page of the project on
+   GitHub.
+ - `dev`: the current development branch. Every commit present in `dev` will be
+   in the next release.
 
 If you want to contribute code, please base your commits on the latest `dev`
 branch.
@@ -68,6 +27,8 @@ the following files to a directory accessible from your `PATH`:
  - `adb.exe`
  - `AdbWinApi.dll`
  - `AdbWinUsbApi.dll`
+
+It is also available in scrcpy releases.
 
 The client requires [FFmpeg] and [LibSDL2]. Just follow the instructions.
 
@@ -314,7 +275,8 @@ This installs several files:
  - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
  - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
 
-You can then [run](README.md#run) `scrcpy`.
+You can then run `scrcpy`.
+
 
 ### Uninstall
 
