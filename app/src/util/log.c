@@ -125,8 +125,30 @@ sc_av_log_callback(void *avcl, int level, const char *fmt, va_list vl) {
     free(local_fmt);
 }
 
+static const char *const sc_sdl_log_priority_names[SDL_NUM_LOG_PRIORITIES] = {
+    [SDL_LOG_PRIORITY_VERBOSE] = "VERBOSE",
+    [SDL_LOG_PRIORITY_DEBUG] = "DEBUG",
+    [SDL_LOG_PRIORITY_INFO] = "INFO",
+    [SDL_LOG_PRIORITY_WARN] = "WARN",
+    [SDL_LOG_PRIORITY_ERROR] = "ERROR",
+    [SDL_LOG_PRIORITY_CRITICAL] = "CRITICAL",
+};
+
+static void SDLCALL
+sc_sdl_log_print(void *userdata, int category, SDL_LogPriority priority,
+                 const char *message) {
+    (void) userdata;
+    (void) category;
+
+    FILE *out = priority < SDL_LOG_PRIORITY_WARN ? stdout : stderr;
+    assert(priority < SDL_NUM_LOG_PRIORITIES);
+    const char *prio_name = sc_sdl_log_priority_names[priority];
+    fprintf(out, "%s: %s\n", prio_name, message);
+}
+
 void
 sc_log_configure() {
+    SDL_LogSetOutputFunction(sc_sdl_log_print, NULL);
     // Redirect FFmpeg logs to SDL logs
     av_log_set_callback(sc_av_log_callback);
 }

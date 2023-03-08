@@ -60,7 +60,7 @@ public final class Ln {
     public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
             Log.w(TAG, message, throwable);
-            System.out.print(PREFIX + "WARN: " + message + '\n');
+            System.err.print(PREFIX + "WARN: " + message + '\n');
             if (throwable != null) {
                 throwable.printStackTrace();
             }
@@ -74,7 +74,7 @@ public final class Ln {
     public static void e(String message, Throwable throwable) {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
-            System.out.print(PREFIX + "ERROR: " + message + "\n");
+            System.err.print(PREFIX + "ERROR: " + message + "\n");
             if (throwable != null) {
                 throwable.printStackTrace();
             }
