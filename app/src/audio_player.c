@@ -382,6 +382,14 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     ap->received = false;
     ap->played = false;
 
+    // The thread calling open() is the thread calling push(), which fills the
+    // audio buffer consumed by the SDL audio thread.
+    ok = sc_thread_set_priority(SC_THREAD_PRIORITY_TIME_CRITICAL);
+    if (!ok) {
+        ok = sc_thread_set_priority(SC_THREAD_PRIORITY_HIGH);
+        (void) ok; // We don't care if it worked, at least we tried
+    }
+
     SDL_PauseAudioDevice(ap->device, 0);
 
     return true;
