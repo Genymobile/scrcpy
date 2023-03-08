@@ -505,6 +505,10 @@ static int
 run_recorder(void *data) {
     struct sc_recorder *recorder = data;
 
+    // Recording is a background task
+    bool ok = sc_thread_set_priority(SC_THREAD_PRIORITY_LOW);
+    (void) ok; // We don't care if it worked
+
     bool success = sc_recorder_record(recorder);
 
     sc_mutex_lock(&recorder->mutex);
