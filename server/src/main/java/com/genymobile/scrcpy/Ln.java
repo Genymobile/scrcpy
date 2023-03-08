@@ -39,28 +39,28 @@ public final class Ln {
     public static void v(String message) {
         if (isEnabled(Level.VERBOSE)) {
             Log.v(TAG, message);
-            System.out.println(PREFIX + "VERBOSE: " + message);
+            System.out.print(PREFIX + "VERBOSE: " + message + '\n');
         }
     }
 
     public static void d(String message) {
         if (isEnabled(Level.DEBUG)) {
             Log.d(TAG, message);
-            System.out.println(PREFIX + "DEBUG: " + message);
+            System.out.print(PREFIX + "DEBUG: " + message + '\n');
         }
     }
 
     public static void i(String message) {
         if (isEnabled(Level.INFO)) {
             Log.i(TAG, message);
-            System.out.println(PREFIX + "INFO: " + message);
+            System.out.print(PREFIX + "INFO: " + message + '\n');
         }
     }
 
     public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
             Log.w(TAG, message, throwable);
-            System.out.println(PREFIX + "WARN: " + message);
+            System.out.print(PREFIX + "WARN: " + message + '\n');
             if (throwable != null) {
                 throwable.printStackTrace();
             }
@@ -74,7 +74,7 @@ public final class Ln {
     public static void e(String message, Throwable throwable) {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
-            System.out.println(PREFIX + "ERROR: " + message);
+            System.out.print(PREFIX + "ERROR: " + message + "\n");
             if (throwable != null) {
                 throwable.printStackTrace();
             }
