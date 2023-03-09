@@ -65,7 +65,7 @@ run_buffering(void *data) {
 
         sc_tick max_deadline = sc_tick_now() + vb->buffering_time;
         // PTS (written by the server) are expressed in microseconds
-        sc_tick pts = SC_TICK_TO_US(vb_frame.frame->pts);
+        sc_tick pts = SC_TICK_FROM_US(vb_frame.frame->pts);
 
         bool timed_out = false;
         while (!vb->b.stopped && !timed_out) {
