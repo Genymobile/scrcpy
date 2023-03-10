@@ -150,24 +150,6 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
     avformat_free_context(recorder->ctx);
 }
 
-static void
-sc_recorder_wait_video_stream(struct sc_recorder *recorder) {
-    sc_mutex_lock(&recorder->mutex);
-    while (!recorder->video_init && !recorder->stopped) {
-        sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
-    }
-    sc_mutex_unlock(&recorder->mutex);
-}
-
-static void
-sc_recorder_wait_audio_stream(struct sc_recorder *recorder) {
-    sc_mutex_lock(&recorder->mutex);
-    while (!recorder->audio_init && !recorder->stopped) {
-        sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
-    }
-    sc_mutex_unlock(&recorder->mutex);
-}
-
 static inline bool
 sc_recorder_has_empty_queues(struct sc_recorder *recorder) {
     if (sc_vecdeque_is_empty(&recorder->video_queue)) {
@@ -188,8 +170,10 @@ static bool
 sc_recorder_process_header(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
 
-    while (!recorder->stopped && sc_recorder_has_empty_queues(recorder)) {
-        sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
+    while (!recorder->stopped && (!recorder->video_init
+                               || !recorder->audio_init
+                               || sc_recorder_has_empty_queues(recorder))) {
+        sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
     }
 
     if (sc_vecdeque_is_empty(&recorder->video_queue)) {
@@ -431,14 +415,6 @@ sc_recorder_record(struct sc_recorder *recorder) {
     if (!ok) {
         return false;
     }
-
-    sc_recorder_wait_video_stream(recorder);
-
-    if (recorder->audio) {
-        sc_recorder_wait_audio_stream(recorder);
-    }
-
-    // If recorder->stopped, process any queued packet anyway
 
     ok = sc_recorder_process_packets(recorder);
     sc_recorder_close_output_file(recorder);
