@@ -172,14 +172,18 @@ sc_file_pusher_start(struct sc_file_pusher *fp) {
 
 void
 sc_file_pusher_stop(struct sc_file_pusher *fp) {
-    sc_mutex_lock(&fp->mutex);
-    fp->stopped = true;
-    sc_cond_signal(&fp->event_cond);
-    sc_intr_interrupt(&fp->intr);
-    sc_mutex_unlock(&fp->mutex);
+    if (fp->initialized) {
+        sc_mutex_lock(&fp->mutex);
+        fp->stopped = true;
+        sc_cond_signal(&fp->event_cond);
+        sc_intr_interrupt(&fp->intr);
+        sc_mutex_unlock(&fp->mutex);
+    }
 }
 
 void
 sc_file_pusher_join(struct sc_file_pusher *fp) {
-    sc_thread_join(&fp->thread, NULL);
+    if (fp->initialized) {
+        sc_thread_join(&fp->thread, NULL);
+    }
 }
