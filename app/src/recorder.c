@@ -473,9 +473,12 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    stream->codecpar->codec_id = ctx->codec->id;
-    stream->codecpar->format = AV_PIX_FMT_YUV420P;
+    int r = avcodec_parameters_from_context(stream->codecpar, ctx);
+    if (r < 0) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
+
     stream->codecpar->width = recorder->declared_frame_size.width;
     stream->codecpar->height = recorder->declared_frame_size.height;
 
@@ -554,15 +557,11 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    stream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    stream->codecpar->codec_id = ctx->codec->id;
-#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
-    stream->codecpar->ch_layout.nb_channels = 2;
-#else
-    stream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-    stream->codecpar->channels = 2;
-#endif
-    stream->codecpar->sample_rate = 48000;
+    int r = avcodec_parameters_from_context(stream->codecpar, ctx);
+    if (r < 0) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
 
     recorder->audio_stream_index = stream->index;
 

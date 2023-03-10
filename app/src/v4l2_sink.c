@@ -205,9 +205,11 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
         goto error_avformat_free_context;
     }
 
-    ostream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    ostream->codecpar->codec_id = encoder->id;
-    ostream->codecpar->format = AV_PIX_FMT_YUV420P;
+    int r = avcodec_parameters_from_context(ostream->codecpar, ctx);
+    if (r < 0) {
+        goto error_avformat_free_context;
+    }
+
     ostream->codecpar->width = vs->frame_size.width;
     ostream->codecpar->height = vs->frame_size.height;
 
