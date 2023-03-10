@@ -67,7 +67,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
 
         if (ap->received) {
             // Inserting additional samples immediately increases buffering
-            ap->avg_buffering.avg += silence;
+            ap->underflow += silence;
         }
     }
 
@@ -194,9 +194,12 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         // Number of samples added (or removed, if negative) for compensation
         int32_t instant_compensation =
             (int32_t) samples_written - frame->nb_samples;
+        int32_t inserted_silence = (int32_t) ap->underflow;
 
         // The compensation must apply instantly, it must not be smoothed
-        ap->avg_buffering.avg += instant_compensation;
+        ap->avg_buffering.avg += instant_compensation + inserted_silence;
+
+        ap->underflow = 0; // reset
 
         // However, the buffering level must be smoothed
         sc_average_push(&ap->avg_buffering, buffered_samples);
@@ -358,6 +361,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
 
     ap->received = false;
     ap->played = false;
+    ap->underflow = 0;
 
     // The thread calling open() is the thread calling push(), which fills the
     // audio buffer consumed by the SDL audio thread.

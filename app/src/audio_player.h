@@ -56,6 +56,10 @@ struct sc_audio_player {
     // (only used by the receiver thread)
     uint32_t samples_since_resync;
 
+    // Number of silence samples inserted since the last received packet
+    // (protected by SDL_AudioDeviceLock())
+    uint32_t underflow;
+
     // Set to true the first time a sample is received (protected by
     // SDL_AudioDeviceLock())
     bool received;
