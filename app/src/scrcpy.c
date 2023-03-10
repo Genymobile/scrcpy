@@ -175,7 +175,9 @@ event_loop(struct scrcpy *s) {
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
             default:
-                sc_screen_handle_event(&s->screen, &event);
+                if (!sc_screen_handle_event(&s->screen, &event)) {
+                    return SCRCPY_EXIT_FAILURE;
+                }
                 break;
         }
     }

@@ -790,7 +790,7 @@ sc_screen_is_mouse_capture_key(SDL_Keycode key) {
     return key == SDLK_LALT || key == SDLK_LGUI || key == SDLK_RGUI;
 }
 
-void
+bool
 sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
     bool relative_mode = sc_screen_is_relative_mode(screen);
 
@@ -798,14 +798,15 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
-                LOGW("Frame update failed\n");
+                LOGE("Frame update failed\n");
+                return false;
             }
-            return;
+            return true;
         }
         case SDL_WINDOWEVENT:
             if (!screen->has_frame) {
                 // Do nothing
-                return;
+                return true;
             }
             switch (event->window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
@@ -836,7 +837,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                     }
                     break;
             }
-            return;
+            return true;
         case SDL_KEYDOWN:
             if (relative_mode) {
                 SDL_Keycode key = event->key.keysym.sym;
@@ -849,7 +850,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                         screen->mouse_capture_key_pressed = 0;
                     }
                     // Mouse capture keys are never forwarded to the device
-                    return;
+                    return true;
                 }
             }
             break;
@@ -865,7 +866,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                         sc_screen_toggle_mouse_capture(screen);
                     }
                     // Mouse capture keys are never forwarded to the device
-                    return;
+                    return true;
                 }
             }
             break;
@@ -875,7 +876,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
             if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
                 // Do not forward to input manager, the mouse will be captured
                 // on SDL_MOUSEBUTTONUP
-                return;
+                return true;
             }
             break;
         case SDL_FINGERMOTION:
@@ -884,18 +885,19 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
             if (relative_mode) {
                 // Touch events are not compatible with relative mode
                 // (coordinates are not relative)
-                return;
+                return true;
             }
             break;
         case SDL_MOUSEBUTTONUP:
             if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
                 sc_screen_set_mouse_capture(screen, true);
-                return;
+                return true;
             }
             break;
     }
 
     sc_input_manager_handle_event(&screen->im, event);
+    return true;
 }
 
 struct sc_point
