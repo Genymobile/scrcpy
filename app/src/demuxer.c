@@ -160,8 +160,35 @@ run_demuxer(void *data) {
         goto end;
     }
 
-    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec)) {
+    AVCodecContext *codec_ctx = avcodec_alloc_context3(codec);
+    if (!codec_ctx) {
+        LOG_OOM();
         goto end;
+    }
+
+    codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
+
+    if (codec->type == AVMEDIA_TYPE_VIDEO) {
+        // Hardcoded video properties
+        codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    } else {
+        // Hardcoded audio properties
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
+        codec_ctx->ch_layout = (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
+#else
+        codec_ctx->channel_layout = AV_CH_LAYOUT_STEREO;
+        codec_ctx->channels = 2;
+#endif
+        codec_ctx->sample_rate = 48000;
+    }
+
+    if (avcodec_open2(codec_ctx, codec, NULL) < 0) {
+        LOGE("Demuxer '%s': could not open codec", demuxer->name);
+        goto finally_free_context;
+    }
+
+    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec_ctx)) {
+        goto finally_free_context;
     }
 
     // Config packets must be merged with the next non-config packet only for
@@ -214,6 +241,9 @@ run_demuxer(void *data) {
     av_packet_free(&packet);
 finally_close_sinks:
     sc_packet_source_sinks_close(&demuxer->packet_source);
+finally_free_context:
+    // This also calls avcodec_close() internally
+    avcodec_free_context(&codec_ctx);
 end:
     demuxer->cbs->on_ended(demuxer, status, demuxer->cbs_userdata);
 

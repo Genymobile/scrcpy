@@ -12,51 +12,19 @@
 #define DOWNCAST(SINK) container_of(SINK, struct sc_decoder, packet_sink)
 
 static bool
-sc_decoder_open(struct sc_decoder *decoder, const AVCodec *codec) {
-    decoder->codec_ctx = avcodec_alloc_context3(codec);
-    if (!decoder->codec_ctx) {
-        LOG_OOM();
-        return false;
-    }
-
-    decoder->codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
-
-    if (codec->type == AVMEDIA_TYPE_VIDEO) {
-        // Hardcoded video properties
-        decoder->codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
-    } else {
-        // Hardcoded audio properties
-#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
-        decoder->codec_ctx->ch_layout =
-            (AVChannelLayout) AV_CHANNEL_LAYOUT_STEREO;
-#else
-        decoder->codec_ctx->channel_layout = AV_CH_LAYOUT_STEREO;
-        decoder->codec_ctx->channels = 2;
-#endif
-        decoder->codec_ctx->sample_rate = 48000;
-    }
-
-    if (avcodec_open2(decoder->codec_ctx, codec, NULL) < 0) {
-        LOGE("Decoder '%s': could not open codec", decoder->name);
-        avcodec_free_context(&decoder->codec_ctx);
-        return false;
-    }
-
+sc_decoder_open(struct sc_decoder *decoder, AVCodecContext *ctx) {
     decoder->frame = av_frame_alloc();
     if (!decoder->frame) {
         LOG_OOM();
-        avcodec_close(decoder->codec_ctx);
-        avcodec_free_context(&decoder->codec_ctx);
         return false;
     }
 
-    if (!sc_frame_source_sinks_open(&decoder->frame_source,
-                                    decoder->codec_ctx)) {
+    if (!sc_frame_source_sinks_open(&decoder->frame_source, ctx)) {
         av_frame_free(&decoder->frame);
-        avcodec_close(decoder->codec_ctx);
-        avcodec_free_context(&decoder->codec_ctx);
         return false;
     }
+
+    decoder->ctx = ctx;
 
     return true;
 }
@@ -65,8 +33,6 @@ static void
 sc_decoder_close(struct sc_decoder *decoder) {
     sc_frame_source_sinks_close(&decoder->frame_source);
     av_frame_free(&decoder->frame);
-    avcodec_close(decoder->codec_ctx);
-    avcodec_free_context(&decoder->codec_ctx);
 }
 
 static bool
@@ -77,7 +43,7 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         return true;
     }
 
-    int ret = avcodec_send_packet(decoder->codec_ctx, packet);
+    int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
         LOGE("Decoder '%s': could not send video packet: %d",
              decoder->name, ret);
@@ -85,7 +51,7 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
     }
 
     for (;;) {
-        ret = avcodec_receive_frame(decoder->codec_ctx, decoder->frame);
+        ret = avcodec_receive_frame(decoder->ctx, decoder->frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
             break;
         }
@@ -110,9 +76,9 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
 }
 
 static bool
-sc_decoder_packet_sink_open(struct sc_packet_sink *sink, const AVCodec *codec) {
+sc_decoder_packet_sink_open(struct sc_packet_sink *sink, AVCodecContext *ctx) {
     struct sc_decoder *decoder = DOWNCAST(sink);
-    return sc_decoder_open(decoder, codec);
+    return sc_decoder_open(decoder, ctx);
 }
 
 static void

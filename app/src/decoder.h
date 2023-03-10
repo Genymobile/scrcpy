@@ -16,7 +16,7 @@ struct sc_decoder {
 
     const char *name; // must be statically allocated (e.g. a string literal)
 
-    AVCodecContext *codec_ctx;
+    AVCodecContext *ctx;
     AVFrame *frame;
 };
 

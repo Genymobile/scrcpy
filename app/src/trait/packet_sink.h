@@ -5,9 +5,7 @@
 
 #include <assert.h>
 #include <stdbool.h>
-
-typedef struct AVCodec AVCodec;
-typedef struct AVPacket AVPacket;
+#include <libavcodec/avcodec.h>
 
 /**
  * Packet sink trait.
@@ -19,8 +17,8 @@ struct sc_packet_sink {
 };
 
 struct sc_packet_sink_ops {
-    /* The codec instance is static, it is valid until the end of the program */
-    bool (*open)(struct sc_packet_sink *sink, const AVCodec *codec);
+    /* The codec context is valid until the sink is closed */
+    bool (*open)(struct sc_packet_sink *sink, AVCodecContext *ctx);
     void (*close)(struct sc_packet_sink *sink);
     bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
 

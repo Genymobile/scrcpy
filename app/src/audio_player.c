@@ -1,5 +1,6 @@
 #include "audio_player.h"
 
+#include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
 
 #include "util/log.h"

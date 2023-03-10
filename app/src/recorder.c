@@ -536,9 +536,8 @@ run_recorder(void *data) {
 
 static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
-                                   const AVCodec *codec) {
+                                   AVCodecContext *ctx) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
-    assert(codec);
 
     sc_mutex_lock(&recorder->mutex);
     if (recorder->stopped) {
@@ -546,7 +545,7 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    recorder->video_codec = codec;
+    recorder->video_codec = ctx->codec;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 
@@ -601,15 +600,14 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
 
 static bool
 sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
-                                   const AVCodec *codec) {
+                                   AVCodecContext *ctx) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
     assert(!recorder->audio_disabled);
-    assert(codec);
 
     sc_mutex_lock(&recorder->mutex);
-    recorder->audio_codec = codec;
+    recorder->audio_codec = ctx->codec;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 
