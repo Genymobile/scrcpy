@@ -180,6 +180,8 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
     // Read with lock held, to be used after unlocking
     bool played = ap->played;
+    uint32_t underflow = ap->underflow;
+
     if (played) {
         uint32_t max_buffered_samples = ap->target_buffering
                 + 12 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000
@@ -191,23 +193,8 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                  " samples", skip_samples);
         }
 
-        // Number of samples added (or removed, if negative) for compensation
-        int32_t instant_compensation =
-            (int32_t) samples_written - frame->nb_samples;
-        int32_t inserted_silence = (int32_t) ap->underflow;
-
-        // The compensation must apply instantly, it must not be smoothed
-        ap->avg_buffering.avg += instant_compensation + inserted_silence;
-
-        ap->underflow = 0; // reset
-
-        // However, the buffering level must be smoothed
-        sc_average_push(&ap->avg_buffering, buffered_samples);
-
-#ifndef SC_AUDIO_PLAYER_NDEBUG
-        LOGD("[Audio] buffered_samples=%" PRIu32 " avg_buffering=%f",
-             buffered_samples, sc_average_get(&ap->avg_buffering));
-#endif
+        // reset (the current value was copied to a local variable)
+        ap->underflow = 0;
     } else {
         // SDL playback not started yet, do not accumulate more than
         // max_initial_buffering samples, this would cause unnecessary delay
@@ -230,6 +217,23 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     SDL_UnlockAudioDevice(ap->device);
 
     if (played) {
+        // Number of samples added (or removed, if negative) for compensation
+        int32_t instant_compensation =
+            (int32_t) samples_written - frame->nb_samples;
+        int32_t inserted_silence = (int32_t) underflow;
+
+        // The compensation must apply instantly, it must not be smoothed
+        ap->avg_buffering.avg += instant_compensation + inserted_silence;
+
+
+        // However, the buffering level must be smoothed
+        sc_average_push(&ap->avg_buffering, buffered_samples);
+
+#ifndef SC_AUDIO_PLAYER_NDEBUG
+        LOGD("[Audio] buffered_samples=%" PRIu32 " avg_buffering=%f",
+             buffered_samples, sc_average_get(&ap->avg_buffering));
+#endif
+
         ap->samples_since_resync += samples_written;
         if (ap->samples_since_resync >= ap->sample_rate) {
             // Recompute compensation every second
