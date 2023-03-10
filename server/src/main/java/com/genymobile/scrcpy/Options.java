@@ -40,7 +40,7 @@ public class Options {
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
-    private boolean sendCodecId = true; // write the codec ID (4 bytes) before the stream
+    private boolean sendCodecMeta = true; // write the codec metadata before the stream
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -282,11 +282,11 @@ public class Options {
         this.sendDummyByte = sendDummyByte;
     }
 
-    public boolean getSendCodecId() {
-        return sendCodecId;
+    public boolean getSendCodecMeta() {
+        return sendCodecMeta;
     }
 
-    public void setSendCodecId(boolean sendCodecId) {
-        this.sendCodecId = sendCodecId;
+    public void setSendCodecMeta(boolean sendCodecMeta) {
+        this.sendCodecMeta = sendCodecMeta;
     }
 }

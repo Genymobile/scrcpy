@@ -15,15 +15,15 @@ public final class Streamer {
 
     private final FileDescriptor fd;
     private final Codec codec;
-    private final boolean sendCodecId;
+    private final boolean sendCodecMeta;
     private final boolean sendFrameMeta;
 
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
 
-    public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecId, boolean sendFrameMeta) {
+    public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
         this.fd = fd;
         this.codec = codec;
-        this.sendCodecId = sendCodecId;
+        this.sendCodecMeta = sendCodecMeta;
         this.sendFrameMeta = sendFrameMeta;
     }
 
@@ -32,7 +32,7 @@ public final class Streamer {
     }
 
     public void writeHeader() throws IOException {
-        if (sendCodecId) {
+        if (sendCodecMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
             buffer.flip();

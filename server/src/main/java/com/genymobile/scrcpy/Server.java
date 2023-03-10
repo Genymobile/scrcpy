@@ -108,7 +108,7 @@ public final class Server {
 
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecId(),
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(),
                         options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
@@ -120,7 +120,7 @@ public final class Server {
                 asyncProcessors.add(audioRecorder);
             }
 
-            Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecId(),
+            Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
                     options.getSendFrameMeta());
             ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                     options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
@@ -315,9 +315,9 @@ public final class Server {
                     boolean sendDummyByte = Boolean.parseBoolean(value);
                     options.setSendDummyByte(sendDummyByte);
                     break;
-                case "send_codec_id":
-                    boolean sendCodecId = Boolean.parseBoolean(value);
-                    options.setSendCodecId(sendCodecId);
+                case "send_codec_meta":
+                    boolean sendCodecMeta = Boolean.parseBoolean(value);
+                    options.setSendCodecMeta(sendCodecMeta);
                     break;
                 case "raw_video_stream":
                     boolean rawVideoStream = Boolean.parseBoolean(value);
@@ -325,7 +325,7 @@ public final class Server {
                         options.setSendDeviceMeta(false);
                         options.setSendFrameMeta(false);
                         options.setSendDummyByte(false);
-                        options.setSendCodecId(false);
+                        options.setSendCodecMeta(false);
                     }
                     break;
                 default:
