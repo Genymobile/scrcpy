@@ -150,70 +150,22 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
     avformat_free_context(recorder->ctx);
 }
 
-static bool
+static void
 sc_recorder_wait_video_stream(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
-    while (!recorder->video_codec && !recorder->stopped) {
+    while (!recorder->video_init && !recorder->stopped) {
         sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
     }
-    const AVCodec *codec = recorder->video_codec;
     sc_mutex_unlock(&recorder->mutex);
-
-    if (codec) {
-        AVStream *stream = avformat_new_stream(recorder->ctx, codec);
-        if (!stream) {
-            return false;
-        }
-
-        stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-        stream->codecpar->codec_id = codec->id;
-        stream->codecpar->format = AV_PIX_FMT_YUV420P;
-        stream->codecpar->width = recorder->declared_frame_size.width;
-        stream->codecpar->height = recorder->declared_frame_size.height;
-
-        recorder->video_stream_index = stream->index;
-    }
-
-    return true;
 }
 
-static bool
+static void
 sc_recorder_wait_audio_stream(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
-    while (!recorder->audio_codec && !recorder->audio_disabled
-            && !recorder->stopped) {
+    while (!recorder->audio_init && !recorder->stopped) {
         sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
     }
-
-    if (recorder->audio_disabled) {
-        // Reset audio flag. From there, the recorder thread may access this
-        // flag without any mutex.
-        recorder->audio = false;
-    }
-
-    const AVCodec *codec = recorder->audio_codec;
     sc_mutex_unlock(&recorder->mutex);
-
-    if (codec) {
-        AVStream *stream = avformat_new_stream(recorder->ctx, codec);
-        if (!stream) {
-            return false;
-        }
-
-        stream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-        stream->codecpar->codec_id = codec->id;
-#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
-        stream->codecpar->ch_layout.nb_channels = 2;
-#else
-        stream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-        stream->codecpar->channels = 2;
-#endif
-        stream->codecpar->sample_rate = 48000;
-
-        recorder->audio_stream_index = stream->index;
-    }
-
-    return true;
 }
 
 static inline bool
@@ -480,18 +432,10 @@ sc_recorder_record(struct sc_recorder *recorder) {
         return false;
     }
 
-    ok = sc_recorder_wait_video_stream(recorder);
-    if (!ok) {
-        sc_recorder_close_output_file(recorder);
-        return false;
-    }
+    sc_recorder_wait_video_stream(recorder);
 
     if (recorder->audio) {
-        ok = sc_recorder_wait_audio_stream(recorder);
-        if (!ok) {
-            sc_recorder_close_output_file(recorder);
-            return false;
-        }
+        sc_recorder_wait_audio_stream(recorder);
     }
 
     // If recorder->stopped, process any queued packet anyway
@@ -538,6 +482,8 @@ static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
                                    AVCodecContext *ctx) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
+    // only written from this thread, no need to lock
+    assert(!recorder->video_init);
 
     sc_mutex_lock(&recorder->mutex);
     if (recorder->stopped) {
@@ -545,7 +491,21 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    recorder->video_codec = ctx->codec;
+    AVStream *stream = avformat_new_stream(recorder->ctx, ctx->codec);
+    if (!stream) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
+
+    stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    stream->codecpar->codec_id = ctx->codec->id;
+    stream->codecpar->format = AV_PIX_FMT_YUV420P;
+    stream->codecpar->width = recorder->declared_frame_size.width;
+    stream->codecpar->height = recorder->declared_frame_size.height;
+
+    recorder->video_stream_index = stream->index;
+
+    recorder->video_init = true;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 
@@ -555,6 +515,8 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
 static void
 sc_recorder_video_packet_sink_close(struct sc_packet_sink *sink) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
+    // only written from this thread, no need to lock
+    assert(recorder->video_init);
 
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
@@ -567,6 +529,8 @@ static bool
 sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
                                    const AVPacket *packet) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
+    // only written from this thread, no need to lock
+    assert(recorder->video_init);
 
     sc_mutex_lock(&recorder->mutex);
 
@@ -604,10 +568,29 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
-    assert(!recorder->audio_disabled);
+    assert(!recorder->audio_init);
 
     sc_mutex_lock(&recorder->mutex);
-    recorder->audio_codec = ctx->codec;
+
+    AVStream *stream = avformat_new_stream(recorder->ctx, ctx->codec);
+    if (!stream) {
+        sc_mutex_unlock(&recorder->mutex);
+        return false;
+    }
+
+    stream->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+    stream->codecpar->codec_id = ctx->codec->id;
+#ifdef SCRCPY_LAVU_HAS_CHLAYOUT
+    stream->codecpar->ch_layout.nb_channels = 2;
+#else
+    stream->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    stream->codecpar->channels = 2;
+#endif
+    stream->codecpar->sample_rate = 48000;
+
+    recorder->audio_stream_index = stream->index;
+
+    recorder->audio_init = true;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 
@@ -619,7 +602,7 @@ sc_recorder_audio_packet_sink_close(struct sc_packet_sink *sink) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
-    assert(!recorder->audio_disabled);
+    assert(recorder->audio_init);
 
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
@@ -634,7 +617,7 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
-    assert(!recorder->audio_disabled);
+    assert(recorder->audio_init);
 
     sc_mutex_lock(&recorder->mutex);
 
@@ -671,13 +654,13 @@ sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
-    assert(!recorder->audio_disabled);
-    assert(!recorder->audio_codec);
+    assert(!recorder->audio_init);
 
     LOGW("Audio stream recording disabled");
 
     sc_mutex_lock(&recorder->mutex);
-    recorder->audio_disabled = true;
+    recorder->audio = false;
+    recorder->audio_init = true;
     sc_cond_signal(&recorder->stream_cond);
     sc_mutex_unlock(&recorder->mutex);
 }
@@ -714,9 +697,8 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     sc_vecdeque_init(&recorder->audio_queue);
     recorder->stopped = false;
 
-    recorder->video_codec = NULL;
-    recorder->audio_codec = NULL;
-    recorder->audio_disabled = false;
+    recorder->video_init = false;
+    recorder->audio_init = false;
 
     recorder->video_stream_index = -1;
     recorder->audio_stream_index = -1;

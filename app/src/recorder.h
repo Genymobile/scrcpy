@@ -43,11 +43,8 @@ struct sc_recorder {
 
     // wake up the recorder thread once the video or audio codec is known
     sc_cond stream_cond;
-    const AVCodec *video_codec;
-    const AVCodec *audio_codec;
-    // Instead of providing an audio_codec, the demuxer may notify that the
-    // stream is disabled if the device could not capture audio
-    bool audio_disabled;
+    bool video_init;
+    bool audio_init;
 
     int video_stream_index;
     int audio_stream_index;
