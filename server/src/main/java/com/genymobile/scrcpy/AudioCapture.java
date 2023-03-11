@@ -14,7 +14,6 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.SystemClock;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public final class AudioCapture {
@@ -110,7 +109,7 @@ public final class AudioCapture {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) throws IOException {
+    public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
         int r = recorder.read(directBuffer, size);
         if (r < 0) {
             return r;
