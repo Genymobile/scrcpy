@@ -241,7 +241,10 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
             float avg = sc_average_get(&ap->avg_buffering);
             int diff = ap->target_buffering - avg;
-            if (diff < 0 && buffered_samples < ap->target_buffering) {
+            if (abs(diff) < ap->sample_rate / 1000) {
+                // Do not compensate for less than 1ms, the error is just noise
+                diff = 0;
+            } else if (diff < 0 && buffered_samples < ap->target_buffering) {
                 // Do not accelerate if the instant buffering level is below
                 // the average, this would increase underflow
                 diff = 0;
