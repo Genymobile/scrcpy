@@ -207,10 +207,8 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             uint32_t skip_samples = buffered_samples - max_buffered_samples;
             size_t skip_bytes = samples_to_bytes(ap, skip_samples);
             sc_bytebuf_skip(&ap->buf, skip_bytes);
-#ifndef SC_AUDIO_PLAYER_NDEBUG
             LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
                  " samples", skip_samples);
-#endif
         }
 
         // Number of samples added (or removed, if negative) for compensation
