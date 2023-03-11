@@ -30,11 +30,21 @@ public final class Streamer {
     public Codec getCodec() {
         return codec;
     }
-
-    public void writeHeader() throws IOException {
+    public void writeAudioHeader() throws IOException {
         if (sendCodecMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
+            buffer.flip();
+            IO.writeFully(fd, buffer);
+        }
+    }
+
+    public void writeVideoHeader(Size videoSize) throws IOException {
+        if (sendCodecMeta) {
+            ByteBuffer buffer = ByteBuffer.allocate(12);
+            buffer.putInt(codec.getId());
+            buffer.putInt(videoSize.getWidth());
+            buffer.putInt(videoSize.getHeight());
             buffer.flip();
             IO.writeFully(fd, buffer);
         }

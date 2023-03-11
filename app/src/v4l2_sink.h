@@ -19,7 +19,6 @@ struct sc_v4l2_sink {
     AVCodecContext *encoder_ctx;
 
     char *device_name;
-    struct sc_size frame_size;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -33,8 +32,7 @@ struct sc_v4l2_sink {
 };
 
 bool
-sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name,
-                  struct sc_size frame_size);
+sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name);
 
 void
 sc_v4l2_sink_destroy(struct sc_v4l2_sink *vs);

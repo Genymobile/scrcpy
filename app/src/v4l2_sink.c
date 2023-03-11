@@ -210,9 +210,6 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
         goto error_avformat_free_context;
     }
 
-    ostream->codecpar->width = vs->frame_size.width;
-    ostream->codecpar->height = vs->frame_size.height;
-
     int ret = avio_open(&vs->format_ctx->pb, vs->device_name, AVIO_FLAG_WRITE);
     if (ret < 0) {
         LOGE("Failed to open output device: %s", vs->device_name);
@@ -226,8 +223,8 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
         goto error_avio_close;
     }
 
-    vs->encoder_ctx->width = vs->frame_size.width;
-    vs->encoder_ctx->height = vs->frame_size.height;
+    vs->encoder_ctx->width = ctx->width;
+    vs->encoder_ctx->height = ctx->height;
     vs->encoder_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     vs->encoder_ctx->time_base.num = 1;
     vs->encoder_ctx->time_base.den = 1;
@@ -343,15 +340,12 @@ sc_v4l2_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
 }
 
 bool
-sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name,
-                  struct sc_size frame_size) {
+sc_v4l2_sink_init(struct sc_v4l2_sink *vs, const char *device_name) {
     vs->device_name = strdup(device_name);
     if (!vs->device_name) {
         LOGE("Could not strdup v4l2 device name");
         return false;
     }
-
-    vs->frame_size = frame_size;
 
     static const struct sc_frame_sink_ops ops = {
         .open = sc_v4l2_frame_sink_open,

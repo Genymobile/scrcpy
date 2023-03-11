@@ -96,8 +96,7 @@ public final class Server {
 
         try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
             if (options.getSendDeviceMeta()) {
-                Size videoSize = device.getScreenInfo().getVideoSize();
-                connection.sendDeviceMeta(Device.getDeviceName(), videoSize.getWidth(), videoSize.getHeight());
+                connection.sendDeviceMeta(Device.getDeviceName());
             }
 
             if (control) {

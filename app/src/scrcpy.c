@@ -473,7 +473,7 @@ scrcpy(struct scrcpy_options *options) {
         };
         if (!sc_recorder_init(&s->recorder, options->record_filename,
                               options->record_format, options->audio,
-                              info->frame_size, &recorder_cbs, NULL)) {
+                              &recorder_cbs, NULL)) {
             goto end;
         }
         recorder_initialized = true;
@@ -660,7 +660,6 @@ aoa_hid_end:
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = &options->shortcut_mods,
             .window_title = window_title,
-            .frame_size = info->frame_size,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
@@ -697,8 +696,7 @@ aoa_hid_end:
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
-        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device,
-                               info->frame_size)) {
+        if (!sc_v4l2_sink_init(&s->v4l2_sink, options->v4l2_device)) {
             goto end;
         }
 

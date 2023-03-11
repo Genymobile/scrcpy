@@ -479,9 +479,6 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    stream->codecpar->width = recorder->declared_frame_size.width;
-    stream->codecpar->height = recorder->declared_frame_size.height;
-
     recorder->video_stream_index = stream->index;
 
     recorder->video_init = true;
@@ -643,7 +640,6 @@ sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format, bool audio,
-                 struct sc_size declared_frame_size,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata) {
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
@@ -679,7 +675,6 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->audio_stream_index = -1;
 
     recorder->format = format;
-    recorder->declared_frame_size = declared_frame_size;
 
     assert(cbs && cbs->on_ended);
     recorder->cbs = cbs;

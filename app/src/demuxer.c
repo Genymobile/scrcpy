@@ -58,6 +58,20 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer, uint32_t *codec_id) {
 }
 
 static bool
+sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
+                           uint32_t *height) {
+    uint8_t data[8];
+    ssize_t r = net_recv_all(demuxer->socket, data, 8);
+    if (r < 8) {
+        return false;
+    }
+
+    *width = sc_read32be(data);
+    *height = sc_read32be(data + 4);
+    return true;
+}
+
+static bool
 sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // The video stream contains raw packets, without time information. When we
     // record, we retrieve the timestamps separately, from a "meta" header
@@ -169,7 +183,15 @@ run_demuxer(void *data) {
     codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
     if (codec->type == AVMEDIA_TYPE_VIDEO) {
-        // Hardcoded video properties
+        uint32_t width;
+        uint32_t height;
+        ok = sc_demuxer_recv_video_size(demuxer, &width, &height);
+        if (!ok) {
+            goto finally_free_context;
+        }
+
+        codec_ctx->width = width;
+        codec_ctx->height = height;
         codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
     } else {
         // Hardcoded audio properties

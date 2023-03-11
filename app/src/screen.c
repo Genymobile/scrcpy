@@ -239,7 +239,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     }
 }
 
-static inline SDL_Texture *
+static bool
 create_texture(struct sc_screen *screen) {
     SDL_Renderer *renderer = screen->renderer;
     struct sc_size size = screen->frame_size;
@@ -247,7 +247,8 @@ create_texture(struct sc_screen *screen) {
                                              SDL_TEXTUREACCESS_STREAMING,
                                              size.width, size.height);
     if (!texture) {
-        return NULL;
+        LOGE("Could not create texture: %s", SDL_GetError());
+        return false;
     }
 
     if (screen->mipmaps) {
@@ -263,7 +264,8 @@ create_texture(struct sc_screen *screen) {
         SDL_GL_UnbindTexture(texture);
     }
 
-    return texture;
+    screen->texture = texture;
+    return true;
 }
 
 // render the texture to the renderer
@@ -335,7 +337,25 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
     (void) ctx;
 
     struct sc_screen *screen = DOWNCAST(sink);
-    (void) screen;
+
+    assert(ctx->width > 0 && ctx->width <= 0xFFFF);
+    assert(ctx->height > 0 && ctx->height <= 0xFFFF);
+    // screen->frame_size is never used before the event is pushed, and the
+    // event acts as a memory barrier so it is safe without mutex
+    screen->frame_size.width = ctx->width;
+    screen->frame_size.height = ctx->height;
+
+    static SDL_Event event = {
+        .type = SC_EVENT_SCREEN_INIT_SIZE,
+    };
+
+    // Post the event on the UI thread (the texture must be created from there)
+    int ret = SDL_PushEvent(&event);
+    if (ret < 0) {
+        LOGW("Could not post init size event: %s", SDL_GetError());
+        return false;
+    }
+
 #ifndef NDEBUG
     screen->open = true;
 #endif
@@ -410,14 +430,10 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_frame_buffer;
     }
 
-    screen->frame_size = params->frame_size;
     screen->rotation = params->rotation;
     if (screen->rotation) {
         LOGI("Initial display rotation set to %u", screen->rotation);
     }
-    struct sc_size content_size =
-        get_rotated_size(screen->frame_size, screen->rotation);
-    screen->content_size = content_size;
 
     uint32_t window_flags = SDL_WINDOW_HIDDEN
                           | SDL_WINDOW_RESIZABLE
@@ -485,18 +501,10 @@ sc_screen_init(struct sc_screen *screen,
         LOGW("Could not load icon");
     }
 
-    LOGI("Initial texture: %" PRIu16 "x%" PRIu16, params->frame_size.width,
-                                                  params->frame_size.height);
-    screen->texture = create_texture(screen);
-    if (!screen->texture) {
-        LOGE("Could not create texture: %s", SDL_GetError());
-        goto error_destroy_renderer;
-    }
-
     screen->frame = av_frame_alloc();
     if (!screen->frame) {
         LOG_OOM();
-        goto error_destroy_texture;
+        goto error_destroy_renderer;
     }
 
     struct sc_input_manager_params im_params = {
@@ -531,8 +539,6 @@ sc_screen_init(struct sc_screen *screen,
 
     return true;
 
-error_destroy_texture:
-    SDL_DestroyTexture(screen->texture);
 error_destroy_renderer:
     SDL_DestroyRenderer(screen->renderer);
 error_destroy_window:
@@ -591,7 +597,9 @@ sc_screen_destroy(struct sc_screen *screen) {
     assert(!screen->open);
 #endif
     av_frame_free(&screen->frame);
-    SDL_DestroyTexture(screen->texture);
+    if (screen->texture) {
+        SDL_DestroyTexture(screen->texture);
+    }
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
@@ -655,6 +663,23 @@ sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation) {
     sc_screen_render(screen, true);
 }
 
+static bool
+sc_screen_init_size(struct sc_screen *screen) {
+    // Before first frame
+    assert(!screen->has_frame);
+    assert(!screen->texture);
+
+    // The requested size is passed via screen->frame_size
+
+    struct sc_size content_size =
+        get_rotated_size(screen->frame_size, screen->rotation);
+    screen->content_size = content_size;
+
+    LOGI("Initial texture: %" PRIu16 "x%" PRIu16,
+                 screen->frame_size.width, screen->frame_size.height);
+    return create_texture(screen);
+}
+
 // recreate the texture and resize the window if the frame size has changed
 static bool
 prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
@@ -673,11 +698,7 @@ prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
 
         LOGI("New texture: %" PRIu16 "x%" PRIu16,
                      screen->frame_size.width, screen->frame_size.height);
-        screen->texture = create_texture(screen);
-        if (!screen->texture) {
-            LOGE("Could not create texture: %s", SDL_GetError());
-            return false;
-        }
+        return create_texture(screen);
     }
 
     return true;
@@ -795,6 +816,14 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
     bool relative_mode = sc_screen_is_relative_mode(screen);
 
     switch (event->type) {
+        case SC_EVENT_SCREEN_INIT_SIZE:
+            // The initial size is passed via screen->frame_size
+            bool ok = sc_screen_init_size(screen);
+            if (!ok) {
+                LOGE("Could not initialize screen size");
+                return false;
+            }
+            return true;
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {

@@ -122,18 +122,14 @@ public final class DesktopConnection implements Closeable {
         }
     }
 
-    public void sendDeviceMeta(String deviceName, int width, int height) throws IOException {
-        byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
+    public void sendDeviceMeta(String deviceName) throws IOException {
+        byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH];
 
         byte[] deviceNameBytes = deviceName.getBytes(StandardCharsets.UTF_8);
         int len = StringUtils.getUtf8TruncationIndex(deviceNameBytes, DEVICE_NAME_FIELD_LENGTH - 1);
         System.arraycopy(deviceNameBytes, 0, buffer, 0, len);
         // byte[] are always 0-initialized in java, no need to set '\0' explicitly
 
-        buffer[DEVICE_NAME_FIELD_LENGTH] = (byte) (width >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
-        buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
         IO.writeFully(videoFd, buffer, 0, buffer.length);
     }
 

@@ -78,7 +78,6 @@ struct sc_screen_params {
     const struct sc_shortcut_mods *shortcut_mods;
 
     const char *window_title;
-    struct sc_size frame_size;
     bool always_on_top;
 
     int16_t window_x; // accepts SC_WINDOW_POSITION_UNDEFINED

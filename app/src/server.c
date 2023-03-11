@@ -441,9 +441,9 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
 static bool
 device_read_info(struct sc_intr *intr, sc_socket device_socket,
                  struct sc_server_info *info) {
-    unsigned char buf[SC_DEVICE_NAME_FIELD_LENGTH + 4];
+    unsigned char buf[SC_DEVICE_NAME_FIELD_LENGTH];
     ssize_t r = net_recv_all_intr(intr, device_socket, buf, sizeof(buf));
-    if (r < SC_DEVICE_NAME_FIELD_LENGTH + 4) {
+    if (r < SC_DEVICE_NAME_FIELD_LENGTH) {
         LOGE("Could not retrieve device information");
         return false;
     }
@@ -451,9 +451,6 @@ device_read_info(struct sc_intr *intr, sc_socket device_socket,
     buf[SC_DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
     memcpy(info->device_name, (char *) buf, sizeof(info->device_name));
 
-    unsigned char *fields = &buf[SC_DEVICE_NAME_FIELD_LENGTH];
-    info->frame_size.width = sc_read16be(fields);
-    info->frame_size.height = sc_read16be(&fields[2]);
     return true;
 }
 

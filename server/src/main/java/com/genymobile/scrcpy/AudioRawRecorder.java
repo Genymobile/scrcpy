@@ -26,7 +26,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
         try {
             capture.start();
 
-            streamer.writeHeader();
+            streamer.writeAudioHeader();
             while (!Thread.currentThread().isInterrupted()) {
                 buffer.position(0);
                 int r = capture.read(buffer, READ_SIZE, bufferInfo);

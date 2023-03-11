@@ -31,7 +31,6 @@ struct sc_recorder {
     char *filename;
     enum sc_record_format format;
     AVFormatContext *ctx;
-    struct sc_size declared_frame_size;
 
     sc_thread thread;
     sc_mutex mutex;
@@ -61,7 +60,6 @@ struct sc_recorder_callbacks {
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format, bool audio,
-                 struct sc_size declared_frame_size,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
 bool

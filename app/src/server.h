@@ -18,7 +18,6 @@
 #define SC_DEVICE_NAME_FIELD_LENGTH 64
 struct sc_server_info {
     char device_name[SC_DEVICE_NAME_FIELD_LENGTH];
-    struct sc_size frame_size;
 };
 
 struct sc_server_params {
