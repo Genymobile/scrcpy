@@ -13,7 +13,7 @@
 #define SC_AV_SAMPLE_FMT AV_SAMPLE_FMT_FLT
 #define SC_SDL_SAMPLE_FMT AUDIO_F32
 
-#define SC_AUDIO_OUTPUT_BUFFER_SAMPLES 240 // 5ms at 48000Hz
+#define SC_AUDIO_OUTPUT_BUFFER_MS 5
 
 static inline uint32_t
 bytes_to_samples(struct sc_audio_player *ap, size_t bytes) {
@@ -202,8 +202,8 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     bool played = ap->played;
     if (played) {
         uint32_t max_buffered_samples = ap->target_buffering
-                                      + 12 * SC_AUDIO_OUTPUT_BUFFER_SAMPLES
-                                      + ap->target_buffering / 10;
+                + 12 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000
+                + ap->target_buffering / 10;
         if (buffered_samples > max_buffered_samples) {
             uint32_t skip_samples = buffered_samples - max_buffered_samples;
             size_t skip_bytes = samples_to_bytes(ap, skip_samples);
@@ -231,7 +231,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         // max_initial_buffering samples, this would cause unnecessary delay
         // (and glitches to compensate) on start.
         uint32_t max_initial_buffering = ap->target_buffering
-                                       + 2 * SC_AUDIO_OUTPUT_BUFFER_SAMPLES;
+                + 2 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000;
         if (buffered_samples > max_initial_buffering) {
             uint32_t skip_samples = buffered_samples - max_initial_buffering;
             size_t skip_bytes = samples_to_bytes(ap, skip_samples);
@@ -298,7 +298,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
         .freq = ctx->sample_rate,
         .format = SC_SDL_SAMPLE_FMT,
         .channels = nb_channels,
-        .samples = SC_AUDIO_OUTPUT_BUFFER_SAMPLES,
+        .samples = SC_AUDIO_OUTPUT_BUFFER_MS * ctx->sample_rate / 1000,
         .callback = sc_audio_player_sdl_callback,
         .userdata = ap,
     };
