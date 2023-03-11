@@ -1564,9 +1564,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'f':
                 opts->fullscreen = true;
                 break;
-            case 'F':
-                LOGW("Deprecated option -F. Use --record-format instead.");
-                // fall through
             case OPT_RECORD_FORMAT:
                 if (!parse_record_format(optarg, &opts->record_format)) {
                     return false;
