@@ -60,6 +60,9 @@ struct sc_audio_player {
     // (protected by SDL_AudioDeviceLock())
     uint32_t underflow;
 
+    // Current applied compensation value (only used by the receiver thread)
+    int compensation;
+
     // Set to true the first time a sample is received (protected by
     // SDL_AudioDeviceLock())
     bool received;

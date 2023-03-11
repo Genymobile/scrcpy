@@ -258,10 +258,15 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
                  " compensation=%d", ap->target_buffering, avg,
                  buffered_samples, diff);
-            int ret = swr_set_compensation(swr_ctx, diff, distance);
-            if (ret < 0) {
-                LOGW("Resampling compensation failed: %d", ret);
-                // not fatal
+
+            if (diff != ap->compensation) {
+                int ret = swr_set_compensation(swr_ctx, diff, distance);
+                if (ret < 0) {
+                    LOGW("Resampling compensation failed: %d", ret);
+                    // not fatal
+                } else {
+                    ap->compensation = diff;
+                }
             }
         }
     }
@@ -369,6 +374,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     ap->received = false;
     ap->played = false;
     ap->underflow = 0;
+    ap->compensation = 0;
 
     // The thread calling open() is the thread calling push(), which fills the
     // audio buffer consumed by the SDL audio thread.
