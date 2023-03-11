@@ -1535,8 +1535,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     while ((c = getopt_long(argc, argv, optstring, longopts, NULL)) != -1) {
         switch (c) {
             case OPT_BIT_RATE:
-                LOGW("--bit-rate is deprecated, use --video-bit-rate instead.");
-                // fall through
+                LOGE("--bit-rate has been removed, "
+                     "use --video-bit-rate or --audio-bit-rate.");
+                return false;
             case 'b':
                 if (!parse_bit_rate(optarg, &opts->video_bit_rate)) {
                     return false;
@@ -1709,9 +1710,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->forward_key_repeat = false;
                 break;
             case OPT_CODEC_OPTIONS:
-                LOGW("--codec-options is deprecated, use --video-codec-options "
-                     "instead.");
-                // fall through
+                LOGE("--codec-options has been removed, "
+                     "use --video-codec-options or --audio-codec-options.");
+                return false;
             case OPT_VIDEO_CODEC_OPTIONS:
                 opts->video_codec_options = optarg;
                 break;
@@ -1719,8 +1720,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->audio_codec_options = optarg;
                 break;
             case OPT_ENCODER:
-                LOGW("--encoder is deprecated, use --video-encoder instead.");
-                // fall through
+                LOGE("--encoder has been removed, "
+                     "use --video-encoder or --audio-encoder.");
+                return false;
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
                 break;
@@ -1775,8 +1777,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->start_fps_counter = true;
                 break;
             case OPT_CODEC:
-                LOGW("--codec is deprecated, use --video-codec instead.");
-                // fall through
+                LOGE("--codec has been removed, "
+                     "use --video-codec or --audio-codec.");
+                return false;
             case OPT_VIDEO_CODEC:
                 if (!parse_video_codec(optarg, &opts->video_codec)) {
                     return false;
