@@ -7,6 +7,52 @@
 
 #define SC_AUDIO_PLAYER_NDEBUG // comment to debug
 
+/**
+ * Real-time audio player with configurable latency
+ *
+ * As input, the player regularly receives AVFrames of decoded audio samples.
+ * As output, an SDL callback regularly requests audio samples to be played.
+ * In the middle, an audio buffer stores the samples produced but not consumed
+ * yet.
+ *
+ * The goal of the player is to feed the audio output with a latency as low as
+ * possible while avoiding buffer underrun (i.e. not being able to provide
+ * samples when requested).
+ *
+ * The player aims to feed the audio output with as little latency as possible
+ * while avoiding buffer underrun. To achieve this, it attempts to maintain the
+ * average buffering (the number of samples present in the buffer) around a
+ * target value. If this target buffering is too low, then buffer underrun will
+ * occur frequently. If it is too high, then latency will become unacceptable.
+ * This target value is configured using the scrcpy option --audio-buffer.
+ *
+ * The player cannot adjust the sample input rate (it receives samples produced
+ * in real-time) or the sample output rate (it must provide samples as
+ * requested by the audio output callback). Therefore, it may only apply
+ * compensation by resampling (converting _m_ input samples to _n_ output
+ * samples).
+ *
+ * The compensation itself is applied by libswresample (FFmpeg). It is
+ * configured using swr_set_compensation(). An important work for the player
+ * is to estimate the compensation value regularly and apply it.
+ *
+ * The estimated buffering level is the result of averaging the "natural"
+ * buffering (samples are produced and consumed by blocks, so it must be
+ * smoothed), and making instant adjustments resulting of its own actions
+ * (explicit compensation and silence insertion on underflow), which are not
+ * smoothed.
+ *
+ * Buffer underflow events can occur when packets arrive too late. In that case,
+ * the player inserts silence. Once the packets finally arrive (late), one
+ * strategy could be to drop the samples that were replaced by silence, in
+ * order to keep a minimal latency. However, dropping samples in case of buffer
+ * underflow is inadvisable, as it would temporarily increase the underflow
+ * even more and cause very noticeable audio glitches.
+ *
+ * Therefore, the player doesn't drop any sample on underflow. The compensation
+ * mechanism will absorb the delay introduced by the inserted silence.
+ */
+
 /** Downcast frame_sink to sc_audio_player */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_audio_player, frame_sink)
 
