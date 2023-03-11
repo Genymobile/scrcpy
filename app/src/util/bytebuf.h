@@ -86,7 +86,7 @@ sc_bytebuf_commit_write(struct sc_bytebuf *buf, size_t len);
  * It is an error to read more bytes than available.
  */
 static inline size_t
-sc_bytebuf_read_available(struct sc_bytebuf *buf) {
+sc_bytebuf_can_read(struct sc_bytebuf *buf) {
     return (buf->alloc_size + buf->head - buf->tail) % buf->alloc_size;
 }
 
@@ -96,12 +96,12 @@ sc_bytebuf_read_available(struct sc_bytebuf *buf) {
  * It is an error to write more bytes than available.
  */
 static inline size_t
-sc_bytebuf_write_available(struct sc_bytebuf *buf) {
+sc_bytebuf_can_write(struct sc_bytebuf *buf) {
     return (buf->alloc_size + buf->tail - buf->head - 1) % buf->alloc_size;
 }
 
 /**
- * Return the actual capacity of the buffer (read available + write available)
+ * Return the actual capacity of the buffer (can_read() + can_write())
  */
 static inline size_t
 sc_bytebuf_capacity(struct sc_bytebuf *buf) {

@@ -69,14 +69,14 @@ sc_audiobuf_commit_write(struct sc_audiobuf *buf, uint32_t samples) {
 }
 
 static inline uint32_t
-sc_audiobuf_read_available(struct sc_audiobuf *buf) {
-    size_t bytes = sc_bytebuf_read_available(&buf->buf);
+sc_audiobuf_can_read(struct sc_audiobuf *buf) {
+    size_t bytes = sc_bytebuf_can_read(&buf->buf);
     return sc_audiobuf_to_samples(buf, bytes);
 }
 
 static inline uint32_t
-sc_audiobuf_write_available(struct sc_audiobuf *buf) {
-    size_t bytes = sc_bytebuf_write_available(&buf->buf);
+sc_audiobuf_can_write(struct sc_audiobuf *buf) {
+    size_t bytes = sc_bytebuf_can_write(&buf->buf);
     return sc_audiobuf_to_samples(buf, bytes);
 }
 

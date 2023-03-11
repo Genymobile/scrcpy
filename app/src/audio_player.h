@@ -33,7 +33,7 @@ struct sc_audio_player {
 
     // The previous empty space in the buffer (only used by the receiver
     // thread)
-    uint32_t previous_write_avail;
+    uint32_t previous_can_write;
 
     // Resampler (only used from the receiver thread)
     struct SwrContext *swr_ctx;

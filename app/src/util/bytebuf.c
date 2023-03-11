@@ -30,7 +30,7 @@ sc_bytebuf_destroy(struct sc_bytebuf *buf) {
 void
 sc_bytebuf_read(struct sc_bytebuf *buf, uint8_t *to, size_t len) {
     assert(len);
-    assert(len <= sc_bytebuf_read_available(buf));
+    assert(len <= sc_bytebuf_can_read(buf));
     assert(buf->tail != buf->head); // the buffer could not be empty
 
     size_t right_limit = buf->tail < buf->head ? buf->head : buf->alloc_size;
@@ -50,7 +50,7 @@ sc_bytebuf_read(struct sc_bytebuf *buf, uint8_t *to, size_t len) {
 void
 sc_bytebuf_skip(struct sc_bytebuf *buf, size_t len) {
     assert(len);
-    assert(len <= sc_bytebuf_read_available(buf));
+    assert(len <= sc_bytebuf_can_read(buf));
     assert(buf->tail != buf->head); // the buffer could not be empty
 
     buf->tail = (buf->tail + len) % buf->alloc_size;
@@ -78,7 +78,7 @@ sc_bytebuf_write_step1(struct sc_bytebuf *buf, size_t len) {
 void
 sc_bytebuf_write(struct sc_bytebuf *buf, const uint8_t *from, size_t len) {
     assert(len);
-    assert(len <= sc_bytebuf_write_available(buf));
+    assert(len <= sc_bytebuf_can_write(buf));
 
     sc_bytebuf_write_step0(buf, from, len);
     sc_bytebuf_write_step1(buf, len);
@@ -99,6 +99,6 @@ sc_bytebuf_prepare_write(struct sc_bytebuf *buf, const uint8_t *from,
 
 void
 sc_bytebuf_commit_write(struct sc_bytebuf *buf, size_t len) {
-    assert(len <= sc_bytebuf_write_available(buf));
+    assert(len <= sc_bytebuf_can_write(buf));
     sc_bytebuf_write_step1(buf, len);
 }

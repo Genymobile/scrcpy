@@ -33,7 +33,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     LOGD("[Audio] SDL callback requests %" PRIu32 " samples", count);
 #endif
 
-    uint32_t buffered_samples = sc_audiobuf_read_available(&ap->buf);
+    uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
     if (!ap->played) {
         // Part of the buffering is handled by inserting initial silence. The
         // remaining (margin) last samples will be handled by compensation.
@@ -126,20 +126,20 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     // Since this function is the only writer, the current available space is
     // at least the previous available space. In practice, it should almost
     // always be possible to write without lock.
-    bool lockless_write = samples_written <= ap->previous_write_avail;
+    bool lockless_write = samples_written <= ap->previous_can_write;
     if (lockless_write) {
         sc_audiobuf_prepare_write(&ap->buf, swr_buf, samples_written);
     }
 
     SDL_LockAudioDevice(ap->device);
 
-    uint32_t buffered_samples = sc_audiobuf_read_available(&ap->buf);
+    uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
 
     if (lockless_write) {
         sc_audiobuf_commit_write(&ap->buf, samples_written);
     } else {
-        uint32_t write_avail = sc_audiobuf_write_available(&ap->buf);
-        if (samples_written > write_avail) {
+        uint32_t can_write = sc_audiobuf_can_write(&ap->buf);
+        if (samples_written > can_write) {
             // Entering this branch is very unlikely, the audio buffer is
             // allocated with a size sufficient to store 1 second more than the
             // target buffering. If this happens, though, we have to skip old
@@ -155,9 +155,9 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                 samples_written = cap;
             }
 
-            assert(samples_written >= write_avail);
-            if (samples_written > write_avail) {
-                uint32_t skip_samples = samples_written - write_avail;
+            assert(samples_written >= can_write);
+            if (samples_written > can_write) {
+                uint32_t skip_samples = samples_written - can_write;
                 assert(buffered_samples >= skip_samples);
                 sc_audiobuf_skip(&ap->buf, skip_samples);
                 buffered_samples -= skip_samples;
@@ -169,14 +169,14 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
             // It should remain exactly the expected size to write the new
             // samples.
-            assert(sc_audiobuf_write_available(&ap->buf) == samples_written);
+            assert(sc_audiobuf_can_write(&ap->buf) == samples_written);
         }
 
         sc_audiobuf_write(&ap->buf, swr_buf, samples_written);
     }
 
     buffered_samples += samples_written;
-    assert(buffered_samples == sc_audiobuf_read_available(&ap->buf));
+    assert(buffered_samples == sc_audiobuf_can_read(&ap->buf));
 
     // Read with lock held, to be used after unlocking
     bool played = ap->played;
@@ -221,7 +221,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         }
     }
 
-    ap->previous_write_avail = sc_audiobuf_write_available(&ap->buf);
+    ap->previous_can_write = sc_audiobuf_can_write(&ap->buf);
     ap->received = true;
 
     SDL_UnlockAudioDevice(ap->device);
@@ -349,7 +349,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     }
     ap->swr_buf_alloc_size = initial_swr_buf_size;
 
-    ap->previous_write_avail = sc_audiobuf_write_available(&ap->buf);
+    ap->previous_can_write = sc_audiobuf_can_write(&ap->buf);
 
     // Samples are produced and consumed by blocks, so the buffering must be
     // smoothed to get a relatively stable value.
