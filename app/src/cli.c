@@ -18,8 +18,7 @@
 #define STR(x) STR_IMPL_(x)
 
 enum {
-    OPT_RENDER_EXPIRED_FRAMES = 1000,
-    OPT_BIT_RATE,
+    OPT_BIT_RATE = 1000,
     OPT_WINDOW_TITLE,
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
@@ -470,11 +469,6 @@ static const struct sc_option options[] = {
                 "Supported names are currently \"direct3d\", \"opengl\", "
                 "\"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
                 "<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>",
-    },
-    {
-        // deprecated
-        .longopt_id = OPT_RENDER_EXPIRED_FRAMES,
-        .longopt = "render-expired-frames",
     },
     {
         .longopt_id = OPT_REQUIRE_AUDIO,
@@ -1659,10 +1653,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case 'w':
                 opts->stay_awake = true;
-                break;
-            case OPT_RENDER_EXPIRED_FRAMES:
-                LOGW("Option --render-expired-frames has been removed. This "
-                     "flag has been ignored.");
                 break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
