@@ -15,42 +15,32 @@
 
 #define SC_AUDIO_OUTPUT_BUFFER_MS 5
 
-static inline uint32_t
-bytes_to_samples(struct sc_audio_player *ap, size_t bytes) {
-    assert(bytes % (ap->nb_channels * ap->out_bytes_per_sample) == 0);
-    return bytes / (ap->nb_channels * ap->out_bytes_per_sample);
-}
-
-static inline size_t
-samples_to_bytes(struct sc_audio_player *ap, uint32_t samples) {
-    return samples * ap->nb_channels * ap->out_bytes_per_sample;
-}
+#define TO_BYTES(SAMPLES) sc_audiobuf_to_bytes(&ap->buf, (SAMPLES))
+#define TO_SAMPLES(BYTES) sc_audiobuf_to_samples(&ap->buf, (BYTES))
 
 static void SDLCALL
 sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     struct sc_audio_player *ap = userdata;
 
     // This callback is called with the lock used by SDL_AudioDeviceLock(), so
-    // the bytebuf is protected
+    // the audiobuf is protected
 
     assert(len_int > 0);
     size_t len = len_int;
+    uint32_t count = TO_SAMPLES(len);
 
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-    LOGD("[Audio] SDL callback requests %" PRIu32 " samples",
-         bytes_to_samples(ap, len));
+    LOGD("[Audio] SDL callback requests %" PRIu32 " samples", count);
 #endif
 
-    size_t read_avail = sc_bytebuf_read_available(&ap->buf);
+    uint32_t buffered_samples = sc_audiobuf_read_available(&ap->buf);
     if (!ap->played) {
-        uint32_t buffered_samples = bytes_to_samples(ap, read_avail);
-
         // Part of the buffering is handled by inserting initial silence. The
         // remaining (margin) last samples will be handled by compensation.
         uint32_t margin = 30 * ap->sample_rate / 1000; // 30ms
         if (buffered_samples + margin < ap->target_buffering) {
             LOGV("[Audio] Inserting initial buffering silence: %" PRIu32
-                 " samples", bytes_to_samples(ap, len));
+                 " samples", count);
             // Delay playback starting to reach the target buffering. Fill the
             // whole buffer with silence (len is small compared to the
             // arbitrary margin value).
@@ -59,26 +49,25 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
         }
     }
 
-    size_t read = MIN(read_avail, len);
+    uint32_t read = MIN(buffered_samples, count);
     if (read) {
-        sc_bytebuf_read(&ap->buf, stream, read);
+        sc_audiobuf_read(&ap->buf, stream, read);
     }
 
-    if (read < len) {
-        size_t silence_bytes = len - read;
-        uint32_t silence_samples = bytes_to_samples(ap, silence_bytes);
+    if (read < count) {
+        uint32_t silence = count - read;
         // Insert silence. In theory, the inserted silent samples replace the
         // missing real samples, which will arrive later, so they should be
         // dropped to keep the latency minimal. However, this would cause very
         // audible glitches, so let the clock compensation restore the target
         // latency.
         LOGD("[Audio] Buffer underflow, inserting silence: %" PRIu32 " samples",
-             silence_samples);
-        memset(stream + read, 0, silence_bytes);
+             silence);
+        memset(stream + read, 0, TO_BYTES(silence));
 
         if (ap->received) {
             // Inserting additional samples immediately increases buffering
-            ap->avg_buffering.avg += silence_samples;
+            ap->avg_buffering.avg += silence;
         }
     }
 
@@ -87,7 +76,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
 
 static uint8_t *
 sc_audio_player_get_swr_buf(struct sc_audio_player *ap, uint32_t min_samples) {
-    size_t min_buf_size = samples_to_bytes(ap, min_samples);
+    size_t min_buf_size = TO_BYTES(min_samples);
     if (min_buf_size > ap->swr_buf_alloc_size) {
         size_t new_size = min_buf_size + 4096;
         uint8_t *buf = realloc(ap->swr_buf, new_size);
@@ -130,7 +119,6 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     // swr_convert() returns the number of samples which would have been
     // written if the buffer was big enough.
     uint32_t samples_written = MIN(ret, dst_nb_samples);
-    size_t swr_buf_size = samples_to_bytes(ap, samples_written);
 #ifndef SC_AUDIO_PLAYER_NDEBUG
     LOGD("[Audio] %" PRIu32 " samples written to buffer", samples_written);
 #endif
@@ -138,46 +126,40 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     // Since this function is the only writer, the current available space is
     // at least the previous available space. In practice, it should almost
     // always be possible to write without lock.
-    bool lockless_write = swr_buf_size <= ap->previous_write_avail;
+    bool lockless_write = samples_written <= ap->previous_write_avail;
     if (lockless_write) {
-        sc_bytebuf_prepare_write(&ap->buf, swr_buf, swr_buf_size);
+        sc_audiobuf_prepare_write(&ap->buf, swr_buf, samples_written);
     }
 
     SDL_LockAudioDevice(ap->device);
 
-    size_t read_avail = sc_bytebuf_read_available(&ap->buf);
-    uint32_t buffered_samples = bytes_to_samples(ap, read_avail);
+    uint32_t buffered_samples = sc_audiobuf_read_available(&ap->buf);
 
     if (lockless_write) {
-        sc_bytebuf_commit_write(&ap->buf, swr_buf_size);
+        sc_audiobuf_commit_write(&ap->buf, samples_written);
     } else {
-        // Take care to keep full samples
-        size_t align = ap->nb_channels * ap->out_bytes_per_sample;
-        size_t write_avail =
-            sc_bytebuf_write_available(&ap->buf) / align * align;
-        if (swr_buf_size > write_avail) {
-            // Entering this branch is very unlikely, the ring-buffer (bytebuf)
-            // is allocated with a size sufficient to store 1 second more than
-            // the target buffering. If this happens, though, we have to skip
-            // old samples.
-            size_t cap = sc_bytebuf_capacity(&ap->buf) / align * align;
-            if (swr_buf_size > cap) {
+        uint32_t write_avail = sc_audiobuf_write_available(&ap->buf);
+        if (samples_written > write_avail) {
+            // Entering this branch is very unlikely, the audio buffer is
+            // allocated with a size sufficient to store 1 second more than the
+            // target buffering. If this happens, though, we have to skip old
+            // samples.
+            uint32_t cap = sc_audiobuf_capacity(&ap->buf);
+            if (samples_written > cap) {
                 // Very very unlikely: a single resampled frame should never
-                // exceed the ring-buffer size (or something is very wrong).
+                // exceed the audio buffer size (or something is very wrong).
                 // Ignore the first bytes in swr_buf
-                swr_buf += swr_buf_size - cap;
-                swr_buf_size = cap;
+                swr_buf += TO_BYTES(samples_written - cap);
                 // This change in samples_written will impact the
                 // instant_compensation below
-                samples_written -= bytes_to_samples(ap, swr_buf_size - cap);
+                samples_written = cap;
             }
 
-            assert(swr_buf_size >= write_avail);
-            if (swr_buf_size > write_avail) {
-                sc_bytebuf_skip(&ap->buf, swr_buf_size - write_avail);
-                uint32_t skip_samples =
-                    bytes_to_samples(ap, swr_buf_size - write_avail);
+            assert(samples_written >= write_avail);
+            if (samples_written > write_avail) {
+                uint32_t skip_samples = samples_written - write_avail;
                 assert(buffered_samples >= skip_samples);
+                sc_audiobuf_skip(&ap->buf, skip_samples);
                 buffered_samples -= skip_samples;
                 if (ap->played) {
                     // Dropping input samples instantly decreases buffering
@@ -187,16 +169,14 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
             // It should remain exactly the expected size to write the new
             // samples.
-            assert((sc_bytebuf_write_available(&ap->buf) / align * align)
-                    == swr_buf_size);
+            assert(sc_audiobuf_write_available(&ap->buf) == samples_written);
         }
 
-        sc_bytebuf_write(&ap->buf, swr_buf, swr_buf_size);
+        sc_audiobuf_write(&ap->buf, swr_buf, samples_written);
     }
 
     buffered_samples += samples_written;
-    assert(samples_to_bytes(ap, buffered_samples)
-            == sc_bytebuf_read_available(&ap->buf));
+    assert(buffered_samples == sc_audiobuf_read_available(&ap->buf));
 
     // Read with lock held, to be used after unlocking
     bool played = ap->played;
@@ -206,8 +186,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                 + ap->target_buffering / 10;
         if (buffered_samples > max_buffered_samples) {
             uint32_t skip_samples = buffered_samples - max_buffered_samples;
-            size_t skip_bytes = samples_to_bytes(ap, skip_samples);
-            sc_bytebuf_skip(&ap->buf, skip_bytes);
+            sc_audiobuf_skip(&ap->buf, skip_samples);
             LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
                  " samples", skip_samples);
         }
@@ -234,8 +213,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                 + 2 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000;
         if (buffered_samples > max_initial_buffering) {
             uint32_t skip_samples = buffered_samples - max_initial_buffering;
-            size_t skip_bytes = samples_to_bytes(ap, skip_samples);
-            sc_bytebuf_skip(&ap->buf, skip_bytes);
+            sc_audiobuf_skip(&ap->buf, skip_samples);
 #ifndef SC_AUDIO_PLAYER_NDEBUG
             LOGD("[Audio] Playback not started, skipping %" PRIu32 " samples",
                  skip_samples);
@@ -243,7 +221,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         }
     }
 
-    ap->previous_write_avail = sc_bytebuf_write_available(&ap->buf);
+    ap->previous_write_avail = sc_audiobuf_write_available(&ap->buf);
     ap->received = true;
 
     SDL_UnlockAudioDevice(ap->device);
@@ -355,23 +333,23 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // producer and the consumer. It's too big on purpose, to guarantee that
     // the producer and the consumer will be able to access it in parallel
     // without locking.
-    size_t bytebuf_samples = ap->target_buffering + ap->sample_rate;
-    size_t bytebuf_size = samples_to_bytes(ap, bytebuf_samples);
+    size_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
 
-    bool ok = sc_bytebuf_init(&ap->buf, bytebuf_size);
+    size_t sample_size = ap->nb_channels * ap->out_bytes_per_sample;
+    bool ok = sc_audiobuf_init(&ap->buf, sample_size, audiobuf_samples);
     if (!ok) {
         goto error_free_swr_ctx;
     }
 
-    size_t initial_swr_buf_size = samples_to_bytes(ap, 4096);
+    size_t initial_swr_buf_size = TO_BYTES(4096);
     ap->swr_buf = malloc(initial_swr_buf_size);
     if (!ap->swr_buf) {
         LOG_OOM();
-        goto error_destroy_bytebuf;
+        goto error_destroy_audiobuf;
     }
     ap->swr_buf_alloc_size = initial_swr_buf_size;
 
-    ap->previous_write_avail = sc_bytebuf_write_available(&ap->buf);
+    ap->previous_write_avail = sc_audiobuf_write_available(&ap->buf);
 
     // Samples are produced and consumed by blocks, so the buffering must be
     // smoothed to get a relatively stable value.
@@ -393,8 +371,8 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
 
     return true;
 
-error_destroy_bytebuf:
-    sc_bytebuf_destroy(&ap->buf);
+error_destroy_audiobuf:
+    sc_audiobuf_destroy(&ap->buf);
 error_free_swr_ctx:
     swr_free(&ap->swr_ctx);
 error_close_audio_device:
@@ -412,7 +390,7 @@ sc_audio_player_frame_sink_close(struct sc_frame_sink *sink) {
     SDL_CloseAudioDevice(ap->device);
 
     free(ap->swr_buf);
-    sc_bytebuf_destroy(&ap->buf);
+    sc_audiobuf_destroy(&ap->buf);
     swr_free(&ap->swr_ctx);
 }
 

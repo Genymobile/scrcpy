@@ -5,8 +5,8 @@
 
 #include <stdbool.h>
 #include "trait/frame_sink.h"
+#include <util/audiobuf.h>
 #include <util/average.h>
-#include <util/bytebuf.h>
 #include <util/thread.h>
 #include <util/tick.h>
 
@@ -29,11 +29,11 @@ struct sc_audio_player {
 
     // Audio buffer to communicate between the receiver and the SDL audio
     // callback (protected by SDL_AudioDeviceLock())
-    struct sc_bytebuf buf;
+    struct sc_audiobuf buf;
 
-    // The previous number of bytes available in the buffer (only used by the
-    // receiver thread)
-    size_t previous_write_avail;
+    // The previous empty space in the buffer (only used by the receiver
+    // thread)
+    uint32_t previous_write_avail;
 
     // Resampler (only used from the receiver thread)
     struct SwrContext *swr_ctx;
