@@ -2,8 +2,8 @@
 set -e
 
 BUILDDIR=build-auto
-PREBUILT_SERVER_URL=https://github.com/Genymobile/scrcpy/releases/download/v1.25/scrcpy-server-v1.25
-PREBUILT_SERVER_SHA256=ce0306c7bbd06ae72f6d06f7ec0ee33774995a65de71e0a83813ecb67aec9bdb
+PREBUILT_SERVER_URL=https://github.com/Genymobile/scrcpy/releases/download/v2.0/scrcpy-server-v2.0
+PREBUILT_SERVER_SHA256=9e241615f578cd690bb43311000debdecf6a9c50a7082b001952f18f6f21ddc2
 
 echo "[scrcpy] Downloading prebuilt server..."
 wget "$PREBUILT_SERVER_URL" -O scrcpy-server
