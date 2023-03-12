@@ -1,6 +1,7 @@
 #include "demuxer.h"
 
 #include <assert.h>
+#include <libavutil/channel_layout.h>
 #include <libavutil/time.h>
 #include <unistd.h>
 
