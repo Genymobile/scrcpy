@@ -210,6 +210,9 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
         goto error_avformat_free_context;
     }
 
+    // The codec is from the v4l2 encoder, not from the decoder
+    ostream->codecpar->codec_id = encoder->id;
+
     int ret = avio_open(&vs->format_ctx->pb, vs->device_name, AVIO_FLAG_WRITE);
     if (ret < 0) {
         LOGE("Failed to open output device: %s", vs->device_name);
