@@ -9,7 +9,7 @@ Download the [latest release]:
  - [`scrcpy-win32-v2.0.zip`][direct-win32] (32-bit)  
    <sub>SHA-256: `15d98c02cb0e0bbd84f8b5d54991e0f6925569b1286a86a40743944fcb1c2d8c`</sub>
 
-[release]: https://github.com/Genymobile/scrcpy/releases/latest
+[latest release]: https://github.com/Genymobile/scrcpy/releases/latest
 [direct-win64]: https://github.com/Genymobile/scrcpy/releases/download/v2.0/scrcpy-win64-v2.0.zip
 [direct-win32]: https://github.com/Genymobile/scrcpy/releases/download/v2.0/scrcpy-win32-v2.0.zip
 
