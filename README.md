@@ -90,10 +90,11 @@ documented in the following pages:
 
 - [Introducing scrcpy][article-intro]
 - [Scrcpy now works wirelessly][article-tcpip]
+- [Scrcpy 2.0, with audio][article-scrcpy2]
 
 [article-intro]: https://blog.rom1v.com/2018/03/introducing-scrcpy/
 [article-tcpip]: https://www.genymotion.com/blog/open-source-project-scrcpy-now-works-wirelessly/
-
+[article-scrcpy2]: https://blog.rom1v.com/2023/03/scrcpy-2-0-with-audio/
 
 ## Contact
 
