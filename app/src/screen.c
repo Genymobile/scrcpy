@@ -816,7 +816,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
     bool relative_mode = sc_screen_is_relative_mode(screen);
 
     switch (event->type) {
-        case SC_EVENT_SCREEN_INIT_SIZE:
+        case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size
             bool ok = sc_screen_init_size(screen);
             if (!ok) {
@@ -824,6 +824,7 @@ sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
                 return false;
             }
             return true;
+        }
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
