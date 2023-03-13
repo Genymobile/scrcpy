@@ -88,3 +88,14 @@ avoid glitches and smooth the playback:
 ```
 scrcpy --display-buffer=200 --audio-buffer=200
 ```
+
+It is also possible to configure another audio buffer (the audio output buffer),
+by default set to 5ms. Don't change it, unless you get some [robotic and glitchy
+sound][#3793]:
+
+```bash
+# Only if absolutely necessary
+scrcpy --audio-output-buffer=10
+```
+
+[#3793]: https://github.com/Genymobile/scrcpy/issues/3793

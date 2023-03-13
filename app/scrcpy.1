@@ -34,6 +34,14 @@ Lower values decrease the latency, but increase the likelyhood of buffer underru
 Default is 50.
 
 .TP
+.BI "\-\-audio\-output\-buffer ms
+Configure the size of the SDL audio output buffer (in milliseconds).
+
+If you get "robotic" audio playback, you should test with a higher value (10). Do not change this setting otherwise.
+
+Default is 5.
+
+.TP
 .BI "\-\-audio\-codec " name
 Select an audio codec (opus, aac or raw).
 

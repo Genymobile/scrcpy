@@ -688,7 +688,8 @@ aoa_hid_end:
         sc_frame_source_add_sink(src, &s->screen.frame_sink);
 
         if (options->audio) {
-            sc_audio_player_init(&s->audio_player, options->audio_buffer);
+            sc_audio_player_init(&s->audio_player, options->audio_buffer,
+                                 options->audio_output_buffer);
             sc_frame_source_add_sink(&s->audio_decoder.frame_source,
                                      &s->audio_player.frame_sink);
         }

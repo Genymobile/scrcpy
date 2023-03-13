@@ -59,8 +59,6 @@
 #define SC_AV_SAMPLE_FMT AV_SAMPLE_FMT_FLT
 #define SC_SDL_SAMPLE_FMT AUDIO_F32
 
-#define SC_AUDIO_OUTPUT_BUFFER_MS 5
-
 #define TO_BYTES(SAMPLES) sc_audiobuf_to_bytes(&ap->buf, (SAMPLES))
 #define TO_SAMPLES(BYTES) sc_audiobuf_to_samples(&ap->buf, (BYTES))
 
@@ -230,8 +228,8 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
     if (played) {
         uint32_t max_buffered_samples = ap->target_buffering
-                + 12 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000
-                + ap->target_buffering / 10;
+                                      + 12 * ap->output_buffer
+                                      + ap->target_buffering / 10;
         if (buffered_samples > max_buffered_samples) {
             uint32_t skip_samples = buffered_samples - max_buffered_samples;
             sc_audiobuf_skip(&ap->buf, skip_samples);
@@ -246,7 +244,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         // max_initial_buffering samples, this would cause unnecessary delay
         // (and glitches to compensate) on start.
         uint32_t max_initial_buffering = ap->target_buffering
-                + 2 * SC_AUDIO_OUTPUT_BUFFER_MS * ap->sample_rate / 1000;
+                                       + 2 * ap->output_buffer;
         if (buffered_samples > max_initial_buffering) {
             uint32_t skip_samples = buffered_samples - max_initial_buffering;
             sc_audiobuf_skip(&ap->buf, skip_samples);
@@ -333,11 +331,28 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     unsigned nb_channels = tmp;
 #endif
 
+    assert(ctx->sample_rate > 0);
+    assert(!av_sample_fmt_is_planar(SC_AV_SAMPLE_FMT));
+    int out_bytes_per_sample = av_get_bytes_per_sample(SC_AV_SAMPLE_FMT);
+    assert(out_bytes_per_sample > 0);
+
+    ap->sample_rate = ctx->sample_rate;
+    ap->nb_channels = nb_channels;
+    ap->out_bytes_per_sample = out_bytes_per_sample;
+
+    ap->target_buffering = ap->target_buffering_delay * ap->sample_rate
+                                                      / SC_TICK_FREQ;
+
+    uint64_t aout_samples = ap->output_buffer_duration * ap->sample_rate
+                                                       / SC_TICK_FREQ;
+    assert(aout_samples <= 0xFFFF);
+    ap->output_buffer = (uint16_t) aout_samples;
+
     SDL_AudioSpec desired = {
         .freq = ctx->sample_rate,
         .format = SC_SDL_SAMPLE_FMT,
         .channels = nb_channels,
-        .samples = SC_AUDIO_OUTPUT_BUFFER_MS * ctx->sample_rate / 1000,
+        .samples = aout_samples,
         .callback = sc_audio_player_sdl_callback,
         .userdata = ap,
     };
@@ -355,11 +370,6 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
         goto error_close_audio_device;
     }
     ap->swr_ctx = swr_ctx;
-
-    assert(ctx->sample_rate > 0);
-    assert(!av_sample_fmt_is_planar(SC_AV_SAMPLE_FMT));
-    int out_bytes_per_sample = av_get_bytes_per_sample(SC_AV_SAMPLE_FMT);
-    assert(out_bytes_per_sample > 0);
 
 #ifdef SCRCPY_LAVU_HAS_CHLAYOUT
     av_opt_set_chlayout(swr_ctx, "in_chlayout", &ctx->ch_layout, 0);
@@ -382,13 +392,6 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
         LOGE("Failed to initialize the resampling context");
         goto error_free_swr_ctx;
     }
-
-    ap->sample_rate = ctx->sample_rate;
-    ap->nb_channels = nb_channels;
-    ap->out_bytes_per_sample = out_bytes_per_sample;
-
-    ap->target_buffering = ap->target_buffering_delay * ap->sample_rate
-                                                      / SC_TICK_FREQ;
 
     // Use a ring-buffer of the target buffering size plus 1 second between the
     // producer and the consumer. It's too big on purpose, to guarantee that
@@ -458,8 +461,10 @@ sc_audio_player_frame_sink_close(struct sc_frame_sink *sink) {
 }
 
 void
-sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering) {
+sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering,
+                     sc_tick output_buffer_duration) {
     ap->target_buffering_delay = target_buffering;
+    ap->output_buffer_duration = output_buffer_duration;
 
     static const struct sc_frame_sink_ops ops = {
         .open = sc_audio_player_frame_sink_open,

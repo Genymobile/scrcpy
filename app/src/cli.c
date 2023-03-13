@@ -71,6 +71,7 @@ enum {
     OPT_LIST_DISPLAYS,
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
+    OPT_AUDIO_OUTPUT_BUFFER,
 };
 
 struct sc_option {
@@ -128,6 +129,16 @@ static const struct sc_option options[] = {
                 "Lower values decrease the latency, but increase the "
                 "likelyhood of buffer underrun (causing audio glitches).\n"
                 "Default is 50.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_OUTPUT_BUFFER,
+        .longopt = "audio-output-buffer",
+        .argdesc = "ms",
+        .text = "Configure the size of the SDL audio output buffer (in "
+                "milliseconds).\n"
+                "If you get \"robotic\" audio playback, you should test with "
+                "a higher value (10). Do not change this setting otherwise.\n"
+                "Default is 5.",
     },
     {
         .longopt_id = OPT_AUDIO_CODEC,
@@ -1205,6 +1216,19 @@ parse_buffering_time(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_audio_output_buffer(const char *s, sc_tick *tick) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 1000,
+                                "audio output buffer");
+    if (!ok) {
+        return false;
+    }
+
+    *tick = SC_TICK_FROM_MS(value);
+    return true;
+}
+
+static bool
 parse_lock_video_orientation(const char *s,
                              enum sc_lock_video_orientation *lock_mode) {
     if (!s || !strcmp(s, "initial")) {
@@ -1828,6 +1852,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_AUDIO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->audio_buffer)) {
+                    return false;
+                }
+                break;
+            case OPT_AUDIO_OUTPUT_BUFFER:
+                if (!parse_audio_output_buffer(optarg,
+                                               &opts->audio_output_buffer)) {
                     return false;
                 }
                 break;

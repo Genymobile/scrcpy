@@ -27,6 +27,10 @@ struct sc_audio_player {
     sc_tick target_buffering_delay;
     uint32_t target_buffering; // in samples
 
+    // SDL audio output buffer size.
+    sc_tick output_buffer_duration;
+    uint16_t output_buffer;
+
     // Audio buffer to communicate between the receiver and the SDL audio
     // callback (protected by SDL_AudioDeviceLock())
     struct sc_audiobuf buf;
@@ -80,6 +84,7 @@ struct sc_audio_player_callbacks {
 };
 
 void
-sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering);
+sc_audio_player_init(struct sc_audio_player *ap, sc_tick target_buffering,
+                     sc_tick audio_output_buffer);
 
 #endif
