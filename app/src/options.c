@@ -44,6 +44,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .display_buffer = 0,
     .v4l2_buffer = 0,
     .audio_buffer = SC_TICK_FROM_MS(50),
+    .audio_output_buffer = SC_TICK_FROM_MS(5),
 #ifdef HAVE_USB
     .otg = false,
 #endif

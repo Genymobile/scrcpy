@@ -14,6 +14,7 @@ arguments=(
     '--audio-codec=[Select the audio codec]:codec:(opus aac raw)'
     '--audio-codec-options=[Set a list of comma-separated key\:type=value options for the device audio encoder]'
     '--audio-encoder=[Use a specific MediaCodec audio encoder]'
+    '--audio-output-buffer=[Configure the size of the SDL audio output buffer (in milliseconds)]'
     {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'

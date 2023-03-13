@@ -7,6 +7,7 @@ _scrcpy() {
         --audio-codec=
         --audio-codec-options=
         --audio-encoder=
+        --audio-output-buffer=
         -b --video-bit-rate=
         --crop=
         -d --select-usb
@@ -121,6 +122,7 @@ _scrcpy() {
         |-b|--video-bit-rate \
         |--audio-codec-options \
         |--audio-encoder \
+        |--audio-output-buffer \
         |--crop \
         |--display \
         |--display-buffer \
