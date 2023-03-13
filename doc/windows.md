@@ -38,6 +38,8 @@ _See [build.md](build.md) to build and install the app manually._
 
 ## Run
 
+_Make sure that your device meets the [prerequisites](/README.md#prerequisites)._
+
 Scrcpy is a command line application: it is mainly intended to be executed from
 a terminal with command line arguments.
 

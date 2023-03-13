@@ -29,6 +29,8 @@ _See [build.md](build.md) to build and install the app manually._
 
 ## Run
 
+_Make sure that your device meets the [prerequisites](/README.md#prerequisites)._
+
 Once installed, run from a terminal:
 
 ```bash

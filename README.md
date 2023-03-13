@@ -35,7 +35,7 @@ Its features include:
  - [OTG mode](doc/hid-otg.md#otg)
  - and more…
 
-## Requirements
+## Prerequisites
 
 The Android device requires at least API 21 (Android 5.0).
 
