@@ -41,9 +41,9 @@ The Android device requires at least API 21 (Android 5.0).
 
 [Audio forwarding](doc/audio.md) is supported from API 30 (Android 11).
 
-Make sure you [enabled adb debugging][enable-adb] on your device(s).
+Make sure you [enabled USB debugging][enable-adb] on your device(s).
 
-[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
+[enable-adb]: https://developer.android.com/studio/debug/dev-options#enable
 
 On some devices, you also need to enable [an additional option][control] `USB
 debugging (Security Settings)` (this is an item different from `USB debugging`)
