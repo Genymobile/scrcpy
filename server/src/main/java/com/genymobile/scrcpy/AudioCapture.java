@@ -111,7 +111,7 @@ public final class AudioCapture {
     @TargetApi(Build.VERSION_CODES.N)
     public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
         int r = recorder.read(directBuffer, size);
-        if (r < 0) {
+        if (r <= 0) {
             return r;
         }
 

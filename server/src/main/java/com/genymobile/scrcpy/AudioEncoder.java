@@ -92,7 +92,7 @@ public final class AudioEncoder implements AsyncProcessor {
             InputTask task = inputTasks.take();
             ByteBuffer buffer = mediaCodec.getInputBuffer(task.index);
             int r = capture.read(buffer, READ_SIZE, bufferInfo);
-            if (r < 0) {
+            if (r <= 0) {
                 throw new IOException("Could not read audio: " + r);
             }
 
