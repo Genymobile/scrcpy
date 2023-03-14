@@ -81,15 +81,15 @@ public final class Server {
         // But only apply when strictly necessary, since workarounds can cause other issues:
         //  - <https://github.com/Genymobile/scrcpy/issues/940>
         //  - <https://github.com/Genymobile/scrcpy/issues/994>
-        boolean mustFillAppInfo = Build.BRAND.equalsIgnoreCase("meizu");
+        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            Workarounds.fillAppInfo();
+        }
 
         // Before Android 11, audio is not supported.
         // Since Android 12, we can properly set a context on the AudioRecord.
-        // Only on Android 11 we must fill app info for the AudioRecord to work.
-        mustFillAppInfo |= audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R;
-
-        if (mustFillAppInfo) {
-            Workarounds.fillAppInfo();
+        // Only on Android 11 we must fill the application context for the AudioRecord to work.
+        if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            Workarounds.fillAppContext();
         }
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
