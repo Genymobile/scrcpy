@@ -3,6 +3,7 @@ _scrcpy() {
     local opts="
         --always-on-top
         --audio-bit-rate=
+        --audio-buffer=
         --audio-codec=
         --audio-codec-options=
         --audio-encoder=
