@@ -107,10 +107,10 @@ with the device IP address you found)_.
 7. Run `scrcpy` as usual.
 8. Run `adb disconnect` once you're done.
 
-Since Android 11, a [Wireless debugging option][adb-wireless] allows to bypass
+Since Android 11, a [wireless debugging option][adb-wireless] allows to bypass
 having to physically connect your device directly to your computer.
 
-[adb-wireless]: https://developer.android.com/studio/command-line/adb#connect-to-a-device-over-wi-fi-android-11+
+[adb-wireless]: https://developer.android.com/studio/command-line/adb#wireless-android11-command-line
 
 
 ## Autostart
