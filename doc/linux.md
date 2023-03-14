@@ -9,11 +9,9 @@ Scrcpy is packaged in several distributions and package managers:
  - Debian/Ubuntu: `apt install scrcpy`
  - Arch Linux: `pacman -S scrcpy`
  - Fedora: `dnf copr enable zeno/scrcpy && dnf install scrcpy`
- - Gentoo: [ebuild][ebuild-link] file
+ - Gentoo: `emerge scrcpy`
  - Snap: `snap install scrcpy`
  - … (see [repology](https://repology.org/project/scrcpy/versions))
-
-[ebuild-link]: https://github.com/maggu2810/maggu2810-overlay/tree/master/app-mobilephone/scrcpy
 
 ### Latest version
 
