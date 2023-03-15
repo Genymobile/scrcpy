@@ -30,7 +30,7 @@ Its features include:
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
- - Android device [as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - Android device screen [as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
  - [physical keyboard/mouse simulation (HID)](doc/hid-otg.md)
  - [OTG mode](doc/hid-otg.md#otg)
  - and more…
