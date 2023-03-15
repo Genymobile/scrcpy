@@ -288,10 +288,7 @@ public final class Device {
             boolean allOk = true;
             for (long physicalDisplayId : physicalDisplayIds) {
                 IBinder binder = SurfaceControl.getPhysicalDisplayToken(physicalDisplayId);
-                boolean ok = SurfaceControl.setDisplayPowerMode(binder, mode);
-                if (!ok) {
-                    allOk = false;
-                }
+                allOk &= SurfaceControl.setDisplayPowerMode(binder, mode);
             }
             return allOk;
         }
