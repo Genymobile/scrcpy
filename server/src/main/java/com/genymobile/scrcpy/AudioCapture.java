@@ -72,8 +72,6 @@ public final class AudioCapture {
                 intent.addCategory(Intent.CATEGORY_LAUNCHER);
                 intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
                 ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
-                // Wait for activity to start
-                SystemClock.sleep(150);
             }
         }
     }
@@ -84,18 +82,35 @@ public final class AudioCapture {
         }
     }
 
+    private void tryStartRecording(int attempts, int delayMs) throws AudioCaptureForegroundException {
+        while (attempts-- > 0) {
+            // Wait for activity to start
+            SystemClock.sleep(delayMs);
+            try {
+                recorder = createAudioRecord();
+                recorder.startRecording();
+                return; // it worked
+            } catch (UnsupportedOperationException e) {
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+                    if (attempts == 0) {
+                        Ln.e("Failed to start audio capture");
+                        Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
+                                + "scrcpy.");
+                        throw new AudioCaptureForegroundException();
+                    } else {
+                        Ln.d("Failed to start audio capture, retrying...");
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
+    }
+
     public void start() throws AudioCaptureForegroundException {
         startWorkaroundAndroid11();
         try {
-            recorder = createAudioRecord();
-            recorder.startRecording();
-        } catch (UnsupportedOperationException e) {
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-                Ln.e("Failed to start audio capture");
-                Ln.e("On Android 11, it is only possible to capture in foreground, make sure that the device is unlocked when starting scrcpy.");
-                throw new AudioCaptureForegroundException();
-            }
-            throw e;
+            tryStartRecording(3, 100);
         } finally {
             stopWorkaroundAndroid11();
         }
