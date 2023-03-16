@@ -271,13 +271,22 @@ public final class AudioEncoder implements AsyncProcessor {
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                Ln.e("Encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + LogUtils.buildAudioEncoderListMessage());
+                Ln.e("Audio encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + LogUtils.buildAudioEncoderListMessage());
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
+            } catch (IOException e) {
+                Ln.e("Could not create audio encoder '" + encoderName + "' for " + codec.getName() + "\n" + LogUtils.buildAudioEncoderListMessage());
+                throw e;
             }
         }
-        MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
-        Ln.d("Using audio encoder: '" + mediaCodec.getName() + "'");
-        return mediaCodec;
+
+        try {
+            MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
+            Ln.d("Using audio encoder: '" + mediaCodec.getName() + "'");
+            return mediaCodec;
+        } catch (IOException | IllegalArgumentException e) {
+            Ln.e("Could not create default audio encoder for " + codec.getName() + "\n" + LogUtils.buildAudioEncoderListMessage());
+            throw e;
+        }
     }
 
     private class EncoderCallback extends MediaCodec.Callback {
