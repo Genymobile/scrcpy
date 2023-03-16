@@ -202,13 +202,22 @@ public class ScreenEncoder implements Device.RotationListener {
             try {
                 return MediaCodec.createByCodecName(encoderName);
             } catch (IllegalArgumentException e) {
-                Ln.e("Encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + LogUtils.buildVideoEncoderListMessage());
+                Ln.e("Video encoder '" + encoderName + "' for " + codec.getName() + " not found\n" + LogUtils.buildVideoEncoderListMessage());
                 throw new ConfigurationException("Unknown encoder: " + encoderName);
+            } catch (IOException e) {
+                Ln.e("Could not create video encoder '" + encoderName + "' for " + codec.getName() + "\n" + LogUtils.buildVideoEncoderListMessage());
+                throw e;
             }
         }
-        MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
-        Ln.d("Using encoder: '" + mediaCodec.getName() + "'");
-        return mediaCodec;
+
+        try {
+            MediaCodec mediaCodec = MediaCodec.createEncoderByType(codec.getMimeType());
+            Ln.d("Using video encoder: '" + mediaCodec.getName() + "'");
+            return mediaCodec;
+        } catch (IOException | IllegalArgumentException e) {
+            Ln.e("Could not create default video encoder for " + codec.getName() + "\n" + LogUtils.buildVideoEncoderListMessage());
+            throw e;
+        }
     }
 
     private static MediaFormat createFormat(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions) {
