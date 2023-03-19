@@ -19,7 +19,9 @@ public final class KeyComposition {
     private static final String KEY_DEAD_ACUTE = "\u0301";
     private static final String KEY_DEAD_CIRCUMFLEX = "\u0302";
     private static final String KEY_DEAD_TILDE = "\u0303";
+    private static final String KEY_DEAD_DOTABOVE = "\u0307";
     private static final String KEY_DEAD_UMLAUT = "\u0308";
+    private static final String KEY_DEAD_OGONEK = "\u0328";
 
     private static final Map<Character, String> COMPOSITION_MAP = createDecompositionMap();
 
@@ -49,6 +51,14 @@ public final class KeyComposition {
 
     private static String umlaut(char c) {
         return KEY_DEAD_UMLAUT + c;
+    }
+
+    private static String dotabove(char c) {
+        return KEY_DEAD_DOTABOVE + c;
+    }
+
+    private static String ogonek(char c) {
+        return KEY_DEAD_OGONEK + c;
     }
 
     private static Map<Character, String> createDecompositionMap() {
@@ -168,6 +178,57 @@ public final class KeyComposition {
         map.put('Ẍ', umlaut('X'));
         map.put('ẍ', umlaut('x'));
         map.put('ẗ', umlaut('t'));
+
+        map.put('Ȧ', dotabove('A'));
+        map.put('Ḃ', dotabove('B'));
+        map.put('Ċ', dotabove('C'));
+        map.put('Ḋ', dotabove('D'));
+        map.put('Ė', dotabove('E'));
+        map.put('Ḟ', dotabove('F'));
+        map.put('Ġ', dotabove('G'));
+        map.put('Ḣ', dotabove('H'));
+        map.put('İ', dotabove('I'));
+        map.put('Ṁ', dotabove('M'));
+        map.put('Ṅ', dotabove('N'));
+        map.put('Ȯ', dotabove('O'));
+        map.put('Ṗ', dotabove('P'));
+        map.put('Ṙ', dotabove('R'));
+        map.put('Ṡ', dotabove('S'));
+        map.put('Ṫ', dotabove('T'));
+        map.put('Ẇ', dotabove('W'));
+        map.put('Ẋ', dotabove('X'));
+        map.put('Ẏ', dotabove('Y'));
+        map.put('Ż', dotabove('Z'));
+        map.put('ȧ', dotabove('a'));
+        map.put('ḃ', dotabove('b'));
+        map.put('ċ', dotabove('c'));
+        map.put('ḋ', dotabove('d'));
+        map.put('ė', dotabove('e'));
+        map.put('ḟ', dotabove('f'));
+        map.put('ġ', dotabove('g'));
+        map.put('ḣ', dotabove('h'));
+        map.put('ṁ', dotabove('m'));
+        map.put('ṅ', dotabove('n'));
+        map.put('ȯ', dotabove('o'));
+        map.put('ṗ', dotabove('p'));
+        map.put('ṙ', dotabove('r'));
+        map.put('ṡ', dotabove('s'));
+        map.put('ṫ', dotabove('t'));
+        map.put('ẇ', dotabove('w'));
+        map.put('ẋ', dotabove('x'));
+        map.put('ẏ', dotabove('y'));
+        map.put('ż', dotabove('z'));
+
+        map.put('Ą', ogonek('A'));
+        map.put('Ę', ogonek('E'));
+        map.put('Į', ogonek('I'));
+        map.put('Ǫ', ogonek('O'));
+        map.put('Ų', ogonek('U'));
+        map.put('ą', ogonek('a'));
+        map.put('ę', ogonek('e'));
+        map.put('į', ogonek('i'));
+        map.put('ǫ', ogonek('o'));
+        map.put('ų', ogonek('u'));
 
         return map;
     }
