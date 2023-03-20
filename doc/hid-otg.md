@@ -106,3 +106,7 @@ scrcpy --otg                             # keyboard and mouse
 
 Like `--hid-keyboard` and `--hid-mouse`, it only works if the device is
 connected over USB.
+
+## HID/OTG issues on Windows
+
+See [FAQ](/FAQ.md#hidotg-issues-on-windows).
