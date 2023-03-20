@@ -62,7 +62,7 @@ check `--audio-codec-options` in the manpage or in `scrcpy --help`.
 
 ## Bit rate
 
-The default audio bit-rate is 128Kbps. To change it:
+The default audio bit rate is 128Kbps. To change it:
 
 ```bash
 scrcpy --audio-bit-rate=64K

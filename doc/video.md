@@ -21,7 +21,7 @@ If encoding fails, scrcpy automatically tries again with a lower definition
 
 ## Bit rate
 
-The default video bit-rate is 8 Mbps. To change it:
+The default video bit rate is 8 Mbps. To change it:
 
 ```bash
 scrcpy --video-bit-rate=2M
