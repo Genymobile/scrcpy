@@ -159,6 +159,8 @@ In developer options, enable:
 > **USB debugging (Security settings)**  
 > _Allow granting permissions and simulating input via USB debugging_
 
+Rebooting the device is necessary once this option is set.
+
 [simulating input]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
 
