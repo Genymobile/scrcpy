@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 7.4.0" type="baseline" client="gradle" dependencies="false" name="AGP (7.4.0)" variant="fatal" version="7.4.0">
+
+    <issue
+        id="BlockedPrivateApi"
+        message="Reflective access to withPackageName is forbidden when targeting API 33 and above"
+        errorLine1="                    Method withPackageNameMethod = AttributionSource.class.getDeclaredMethod(&quot;withPackageName&quot;,"
+        errorLine2="                                                   ^">
+        <location
+            file="src/main/java/com/genymobile/scrcpy/wrappers/AudioRecordWrapper.java"
+            line="231"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="BlockedPrivateApi"
+        message="Reflective access to asScopedParcelState is forbidden when targeting API 33 and above"
+        errorLine1="                Method asScopedParcelStateMethod = AttributionSource.class.getDeclaredMethod(&quot;asScopedParcelState&quot;);"
+        errorLine2="                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/genymobile/scrcpy/wrappers/AudioRecordWrapper.java"
+            line="240"
+            column="52"/>
+    </issue>
+
+    <issue
+        id="BlockedPrivateApi"
+        message="Reflective access to mPrivacySensitive is forbidden when targeting API 33 and above"
+        errorLine1="            Field mPrivacySensitiveField = AudioRecord.Builder.class.getDeclaredField(&quot;mPrivacySensitive&quot;);"
+        errorLine2="                                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/genymobile/scrcpy/wrappers/AudioRecordWrapper.java"
+            line="326"
+            column="44"/>
+    </issue>
+
+    <issue
+        id="BlockedPrivateApi"
+        message="Reflective access to mContext is forbidden when targeting API 33 and above"
+        errorLine1="                Field mContextField = AudioRecord.Builder.class.getDeclaredField(&quot;mContext&quot;);"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/com/genymobile/scrcpy/wrappers/AudioRecordWrapper.java"
+            line="364"
+            column="39"/>
+    </issue>
+
+</issues>

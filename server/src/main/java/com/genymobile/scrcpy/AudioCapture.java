@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.AudioRecordWrapper;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
@@ -55,7 +56,12 @@ public final class AudioCapture {
         int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, FORMAT);
         // This buffer size does not impact latency
         builder.setBufferSizeInBytes(8 * minBufferSize);
-        return builder.build();
+
+        try {
+            return builder.build();
+        } catch (Exception e) {
+            return AudioRecordWrapper.build(builder);
+        }
     }
 
     private static void startWorkaroundAndroid11() {
