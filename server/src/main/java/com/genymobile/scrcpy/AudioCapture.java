@@ -22,6 +22,7 @@ public final class AudioCapture {
     public static final int SAMPLE_RATE = 48000;
     public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     public static final int CHANNELS = 2;
+    public static final int CHANNEL_MASK = AudioFormat.CHANNEL_IN_LEFT | AudioFormat.CHANNEL_IN_RIGHT;
     public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int BYTES_PER_SAMPLE = 2;
 
@@ -98,7 +99,14 @@ public final class AudioCapture {
     }
 
     private void startRecording() {
-        recorder = createAudioRecord();
+        try {
+            recorder = createAudioRecord();
+        } catch (NullPointerException e) {
+            // Creating an AudioRecord using an AudioRecord.Builder does not work on Vivo phones:
+            // - <https://github.com/Genymobile/scrcpy/issues/3805>
+            // - <https://github.com/Genymobile/scrcpy/pull/3862>
+            recorder = Workarounds.createAudioRecord(SOURCE, SAMPLE_RATE, CHANNEL_CONFIG, CHANNELS, CHANNEL_MASK, ENCODING);
+        }
         recorder.startRecording();
     }
 
