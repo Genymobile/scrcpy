@@ -277,10 +277,6 @@ if get_option('buildtype') == 'debug'
             'src/util/strbuf.c',
             'src/util/term.c',
         ]],
-        ['test_clock', [
-            'tests/test_clock.c',
-            'src/clock.c',
-        ]],
         ['test_control_msg_serialize', [
             'tests/test_control_msg_serialize.c',
             'src/control_msg.c',
