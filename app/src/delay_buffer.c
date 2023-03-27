@@ -194,7 +194,7 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
     sc_clock_update(&db->clock, sc_tick_now(), pts);
     sc_cond_signal(&db->wait_cond);
 
-    if (db->first_frame_asap && db->clock.count == 1) {
+    if (db->first_frame_asap && db->clock.range == 1) {
         sc_mutex_unlock(&db->mutex);
         return sc_frame_source_sinks_push(&db->frame_source, frame);
     }
