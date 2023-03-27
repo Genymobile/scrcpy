@@ -310,7 +310,8 @@ if get_option('buildtype') == 'debug'
     ]
 
     foreach t : tests
-        exe = executable(t[0], t[1],
+        sources = t[1] + ['src/compat.c']
+        exe = executable(t[0], sources,
                          include_directories: src_dir,
                          dependencies: dependencies,
                          c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
