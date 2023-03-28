@@ -170,12 +170,12 @@ The default text injection method is [limited to ASCII characters][text-input].
 A trick allows to also inject some [accented characters][accented-characters],
 but that's all. See [#37].
 
-Since scrcpy v1.20, it is possible to simulate a [physical keyboard][hid] (HID).
+It is also possible to simulate a [physical keyboard][hid] (HID).
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
-[hid]: README.md#physical-keyboard-simulation-hid
+[hid]: doc/hid-otg.md
 
 
 ## Client issues
