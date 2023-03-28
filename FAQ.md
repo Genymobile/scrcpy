@@ -231,4 +231,4 @@ Translations of this FAQ in other languages are available in the [wiki].
 
 [wiki]: https://github.com/Genymobile/scrcpy/wiki
 
-Only this README file is guaranteed to be up-to-date.
+Only this FAQ file is guaranteed to be up-to-date.
