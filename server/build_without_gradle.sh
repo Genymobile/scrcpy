@@ -14,8 +14,8 @@ set -e
 SCRCPY_DEBUG=false
 SCRCPY_VERSION_NAME=2.0
 
-PLATFORM=${ANDROID_PLATFORM:-33}
-BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-33.0.0}
+PLATFORM=${ANDROID_PLATFORM:-23}
+BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-23.0.3}
 BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
@@ -43,6 +43,17 @@ public final class BuildConfig {
 }
 EOF
 
+STUBS_DIR="$BUILD_DIR/stubs"
+rm -rf "$STUBS_DIR"
+mkdir -p "$STUBS_DIR"
+echo "Generating SDK stubs..."
+cd "$SERVER_DIR/src/main/stubs"
+javac -bootclasspath "$ANDROID_JAR" \
+    -d "$STUBS_DIR" \
+    -source 1.8 -target 1.8 \
+    android/content/*
+cd -
+
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" android/view/IRotationWatcher.aidl
@@ -52,7 +63,7 @@ cd "$SERVER_DIR/src/main/aidl"
 echo "Compiling java sources..."
 cd ../java
 javac -bootclasspath "$ANDROID_JAR" \
-    -cp "$LAMBDA_JAR:$GEN_DIR" \
+    -cp "$LAMBDA_JAR:$GEN_DIR:$STUBS_DIR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
     com/genymobile/scrcpy/*.java \
