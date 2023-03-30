@@ -14,6 +14,7 @@ import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.SystemClock;
 
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
 public final class AudioCapture {
@@ -121,6 +122,20 @@ public final class AudioCapture {
         }
     }
 
+    private static Method getTimestampMethod;
+
+    private static int getRecorderTimestamp(AudioRecord recorder, AudioTimestamp timestamp) {
+        try {
+            if (getTimestampMethod == null) {
+                getTimestampMethod = AudioRecord.class.getMethod("getTimestamp", AudioTimestamp.class, int.class);
+            }
+            return (int) getTimestampMethod.invoke(recorder, timestamp, 0);
+        } catch (Exception e) {
+            Ln.e("Could not call AudioRecord.getTimestamp() method");
+            return AudioRecord.ERROR;
+        }
+    }
+
     @TargetApi(24)
     public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
         int r = recorder.read(directBuffer, size);
@@ -130,7 +145,7 @@ public final class AudioCapture {
 
         long pts;
 
-        int ret = recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
+        int ret = getRecorderTimestamp(recorder, timestamp);
         if (ret == AudioRecord.SUCCESS) {
             pts = timestamp.nanoTime / 1000;
         } else {
