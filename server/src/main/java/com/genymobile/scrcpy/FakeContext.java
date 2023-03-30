@@ -26,15 +26,13 @@ public final class FakeContext extends ContextWrapper {
         return PACKAGE_NAME;
     }
 
-    @Override
     public String getOpPackageName() {
         return PACKAGE_NAME;
     }
 
     @TargetApi(31)
-    @Override
     public AttributionSource getAttributionSource() {
-        AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
+        AttributionSource.Builder builder = new AttributionSource.Builder(0);
         builder.setPackageName(PACKAGE_NAME);
         return builder.build();
     }
