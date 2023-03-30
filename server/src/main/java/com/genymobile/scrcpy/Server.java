@@ -88,7 +88,7 @@ public final class Server {
         // Before Android 11, audio is not supported.
         // Since Android 12, we can properly set a context on the AudioRecord.
         // Only on Android 11 we must fill the application context for the AudioRecord to work.
-        if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+        if (audio && Build.VERSION.SDK_INT == 30) {
             Workarounds.fillAppContext();
         }
 

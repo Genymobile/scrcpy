@@ -54,7 +54,7 @@ public class ContentProvider implements Closeable {
     @SuppressLint("PrivateApi")
     private Method getCallMethod() throws NoSuchMethodException {
         if (callMethod == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= 31) {
                 callMethod = provider.getClass().getMethod("call", AttributionSource.class, String.class, String.class, String.class, Bundle.class);
                 callMethodVersion = 0;
             } else {
@@ -83,7 +83,7 @@ public class ContentProvider implements Closeable {
             Method method = getCallMethod();
             Object[] args;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callMethodVersion == 0) {
+            if (Build.VERSION.SDK_INT >= 31 && callMethodVersion == 0) {
                 args = new Object[]{FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras};
             } else {
                 switch (callMethodVersion) {

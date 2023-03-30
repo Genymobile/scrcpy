@@ -46,7 +46,7 @@ public final class AudioCapture {
     @SuppressLint({"WrongConstant", "MissingPermission"})
     private static AudioRecord createAudioRecord() {
         AudioRecord.Builder builder = new AudioRecord.Builder();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= 31) {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
             builder.setContext(FakeContext.get());
         }
@@ -102,7 +102,7 @@ public final class AudioCapture {
     }
 
     public void start() throws AudioCaptureForegroundException {
-        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT == 30) {
             startWorkaroundAndroid11();
             try {
                 tryStartRecording(3, 100);
@@ -121,7 +121,7 @@ public final class AudioCapture {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
+    @TargetApi(24)
     public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
         int r = recorder.read(directBuffer, size);
         if (r <= 0) {

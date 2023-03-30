@@ -26,7 +26,7 @@ public class ClipboardManager {
 
     private Method getGetPrimaryClipMethod() throws NoSuchMethodException {
         if (getPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < 29) {
                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
             } else {
                 try {
@@ -48,7 +48,7 @@ public class ClipboardManager {
 
     private Method getSetPrimaryClipMethod() throws NoSuchMethodException {
         if (setPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < 29) {
                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
             } else {
                 try {
@@ -71,7 +71,7 @@ public class ClipboardManager {
 
     private static ClipData getPrimaryClip(Method method, int methodVersion, IInterface manager)
             throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < 29) {
             return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME);
         }
 
@@ -87,7 +87,7 @@ public class ClipboardManager {
 
     private static void setPrimaryClip(Method method, int methodVersion, IInterface manager, ClipData clipData)
             throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < 29) {
             method.invoke(manager, clipData, FakeContext.PACKAGE_NAME);
             return;
         }
@@ -133,7 +133,7 @@ public class ClipboardManager {
 
     private static void addPrimaryClipChangedListener(Method method, int methodVersion, IInterface manager,
             IOnPrimaryClipChangedListener listener) throws InvocationTargetException, IllegalAccessException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < 29) {
             method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
             return;
         }
@@ -153,7 +153,7 @@ public class ClipboardManager {
 
     private Method getAddPrimaryClipChangedListener() throws NoSuchMethodException {
         if (addPrimaryClipChangedListener == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < 29) {
                 addPrimaryClipChangedListener = manager.getClass()
                         .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
             } else {

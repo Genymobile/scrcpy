@@ -84,7 +84,7 @@ public final class AudioEncoder implements AsyncProcessor {
         return format;
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
+    @TargetApi(24)
     private void inputThread(MediaCodec mediaCodec, AudioCapture capture) throws IOException, InterruptedException {
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
@@ -159,7 +159,7 @@ public final class AudioEncoder implements AsyncProcessor {
 
     @TargetApi(Build.VERSION_CODES.M)
     public void encode() throws IOException, ConfigurationException, AudioCaptureForegroundException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT < 30) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
             return;
@@ -290,7 +290,7 @@ public final class AudioEncoder implements AsyncProcessor {
     }
 
     private class EncoderCallback extends MediaCodec.Callback {
-        @TargetApi(Build.VERSION_CODES.N)
+        @TargetApi(24)
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {
             try {

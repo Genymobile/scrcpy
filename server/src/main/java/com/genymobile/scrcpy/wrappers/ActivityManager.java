@@ -51,7 +51,7 @@ public class ActivityManager {
         return removeContentProviderExternalMethod;
     }
 
-    @TargetApi(Build.VERSION_CODES.Q)
+    @TargetApi(29)
     private ContentProvider getContentProviderExternal(String name, IBinder token) {
         try {
             Method method = getGetContentProviderExternalMethod();

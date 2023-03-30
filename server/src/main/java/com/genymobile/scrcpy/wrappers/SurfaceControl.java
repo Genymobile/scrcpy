@@ -90,7 +90,7 @@ public final class SurfaceControl {
         if (getBuiltInDisplayMethod == null) {
             // the method signature has changed in Android Q
             // <https://github.com/Genymobile/scrcpy/issues/586>
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < 29) {
                 getBuiltInDisplayMethod = CLASS.getMethod("getBuiltInDisplay", int.class);
             } else {
                 getBuiltInDisplayMethod = CLASS.getMethod("getInternalDisplayToken");
@@ -102,7 +102,7 @@ public final class SurfaceControl {
     public static IBinder getBuiltInDisplay() {
         try {
             Method method = getGetBuiltInDisplayMethod();
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < 29) {
                 // call getBuiltInDisplay(0)
                 return (IBinder) method.invoke(null, 0);
             }

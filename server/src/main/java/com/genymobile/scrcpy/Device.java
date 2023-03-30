@@ -124,7 +124,7 @@ public final class Device {
         }
 
         // main display or any display on Android >= Q
-        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= 29;
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
@@ -173,7 +173,7 @@ public final class Device {
     }
 
     public static boolean supportsInputEvents(int displayId) {
-        return displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        return displayId == 0 || Build.VERSION.SDK_INT >= 29;
     }
 
     public boolean supportsInputEvents() {
@@ -277,7 +277,7 @@ public final class Device {
      * @param mode one of the {@code POWER_MODE_*} constants
      */
     public static boolean setScreenPowerMode(int mode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= 29) {
             // Change the power mode for all physical displays
             long[] physicalDisplayIds = SurfaceControl.getPhysicalDisplayIds();
             if (physicalDisplayIds == null) {

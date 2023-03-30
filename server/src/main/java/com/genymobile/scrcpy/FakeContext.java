@@ -31,7 +31,7 @@ public final class FakeContext extends ContextWrapper {
         return PACKAGE_NAME;
     }
 
-    @TargetApi(Build.VERSION_CODES.S)
+    @TargetApi(31)
     @Override
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
