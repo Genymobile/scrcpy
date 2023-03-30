@@ -68,7 +68,8 @@ public final class DesktopConnection implements Closeable {
         LocalSocket controlSocket = null;
         try {
             if (tunnelForward) {
-                try (LocalServerSocket localServerSocket = new LocalServerSocket(socketName)) {
+                LocalServerSocket localServerSocket = new LocalServerSocket(socketName);
+                try {
                     videoSocket = localServerSocket.accept();
                     if (sendDummyByte) {
                         // send one byte so the client may read() to detect a connection error
@@ -80,6 +81,8 @@ public final class DesktopConnection implements Closeable {
                     if (control) {
                         controlSocket = localServerSocket.accept();
                     }
+                } finally {
+                    localServerSocket.close();
                 }
             } else {
                 videoSocket = connect(socketName);
