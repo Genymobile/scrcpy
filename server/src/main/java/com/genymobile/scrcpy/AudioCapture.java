@@ -5,6 +5,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -43,13 +44,28 @@ public final class AudioCapture {
         return builder.build();
     }
 
+    private static Method setBuilderContext;
+
+    @TargetApi(23)
+    private static void setBuilderContext(AudioRecord.Builder builder, Context context) {
+        try {
+            if (setBuilderContext == null) {
+                setBuilderContext = AudioRecord.Builder.class.getMethod("setContext", Context.class);
+            }
+            setBuilderContext.invoke(builder, context);
+        } catch (Exception e) {
+            Ln.e("Could not call AudioRecord.Builder.setContext() method");
+            //throw new RuntimeException(e);
+        }
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
     @SuppressLint({"WrongConstant", "MissingPermission"})
     private static AudioRecord createAudioRecord() {
         AudioRecord.Builder builder = new AudioRecord.Builder();
         if (Build.VERSION.SDK_INT >= 31) {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
-            builder.setContext(FakeContext.get());
+            setBuilderContext(builder, FakeContext.get());
         }
         builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
         builder.setAudioFormat(createAudioFormat());
