@@ -9,6 +9,7 @@
 
 #include "controller.h"
 #include "coords.h"
+#include "display.h"
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
@@ -24,6 +25,7 @@ struct sc_screen {
     bool open; // track the open/close state to assert correct behavior
 #endif
 
+    struct sc_display display;
     struct sc_input_manager im;
     struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
@@ -39,9 +41,6 @@ struct sc_screen {
     } req;
 
     SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Texture *texture;
-    struct sc_opengl gl;
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 
@@ -57,7 +56,6 @@ struct sc_screen {
     bool has_frame;
     bool fullscreen;
     bool maximized;
-    bool mipmaps;
 
     // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
     // RGUI) must be pressed. This variable tracks the pressed capture key.
