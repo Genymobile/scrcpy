@@ -52,6 +52,9 @@ this option is set.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
+Note that USB debugging is not required to run scrcpy in [OTG
+mode](doc/hid-otg.md#otg).
+
 
 ## Get the app
 
