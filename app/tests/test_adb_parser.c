@@ -217,6 +217,18 @@ static void test_get_ip_multiline_second_ok(void) {
     free(ip);
 }
 
+static void test_get_ip_multiline_second_ok_without_cr(void) {
+    char ip_route[] = "10.0.0.0/24 dev rmnet  proto kernel  scope link  src "
+                      "10.0.0.3\n"
+                      "192.168.1.0/24 dev wlan0  proto kernel  scope link  src "
+                      "192.168.1.3\n";
+
+    char *ip = sc_adb_parse_device_ip(ip_route);
+    assert(ip);
+    assert(!strcmp(ip, "192.168.1.3"));
+    free(ip);
+}
+
 static void test_get_ip_no_wlan(void) {
     char ip_route[] = "192.168.1.0/24 dev rmnet  proto kernel  scope link  src "
                       "192.168.12.34\r\r\n";
@@ -259,6 +271,7 @@ int main(int argc, char *argv[]) {
     test_get_ip_single_line_with_trailing_space();
     test_get_ip_multiline_first_ok();
     test_get_ip_multiline_second_ok();
+    test_get_ip_multiline_second_ok_without_cr();
     test_get_ip_no_wlan();
     test_get_ip_no_wlan_without_eol();
     test_get_ip_truncated();

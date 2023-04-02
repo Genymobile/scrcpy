@@ -204,6 +204,7 @@ sc_adb_parse_device_ip(char *str) {
     while (str[idx_line] != '\0') {
         char *line = &str[idx_line];
         size_t len = strcspn(line, "\n");
+        bool is_last_line = line[len] == '\0';
 
         // The same, but without any trailing '\r'
         size_t line_len = sc_str_remove_trailing_cr(line, len);
@@ -215,12 +216,12 @@ sc_adb_parse_device_ip(char *str) {
             return ip;
         }
 
-        idx_line += len;
-
-        if (str[idx_line] != '\0') {
-            // The next line starts after the '\n'
-            ++idx_line;
+        if (is_last_line) {
+            break;
         }
+
+        // The next line starts after the '\n'
+        idx_line += len + 1;
     }
 
     return NULL;
