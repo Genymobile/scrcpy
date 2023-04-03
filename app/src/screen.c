@@ -812,7 +812,7 @@ sc_screen_is_mouse_capture_key(SDL_Keycode key) {
 }
 
 bool
-sc_screen_handle_event(struct sc_screen *screen, SDL_Event *event) {
+sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     bool relative_mode = sc_screen_is_relative_mode(screen);
 
     switch (event->type) {
