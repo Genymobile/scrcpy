@@ -797,7 +797,8 @@ sc_input_manager_process_file(struct sc_input_manager *im,
 }
 
 void
-sc_input_manager_handle_event(struct sc_input_manager *im, SDL_Event *event) {
+sc_input_manager_handle_event(struct sc_input_manager *im,
+                              const SDL_Event *event) {
     bool control = im->controller;
     switch (event->type) {
         case SDL_TEXTINPUT:
