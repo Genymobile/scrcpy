@@ -24,9 +24,3 @@ dependencies {
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"
-
-android {
-    lintOptions {
-        baseline file("lint-baseline.xml")
-    }
-}

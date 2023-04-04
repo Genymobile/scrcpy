@@ -70,7 +70,7 @@ public class AudioRecordWrapper {
     }
 
     @TargetApi(Build.VERSION_CODES.R)
-    @SuppressLint({ "WrongConstant", "MissingPermission" })
+    @SuppressLint({ "WrongConstant", "MissingPermission", "BlockedPrivateApi" })
     public static AudioRecord newInstance(AudioAttributes attributes, AudioFormat format,
             int bufferSizeInBytes, int sessionId, Context context, int maxSharedAudioHistoryMs)
             throws Exception {
@@ -289,6 +289,7 @@ public class AudioRecordWrapper {
     public static final int PRIVACY_SENSITIVE_DISABLED = 0;
     public static final int PRIVACY_SENSITIVE_ENABLED = 1;
 
+    @SuppressLint({ "BlockedPrivateApi" })
     public static AudioRecord build(AudioRecord.Builder builder) {
         try {
             Field mFormatField = AudioRecord.Builder.class.getDeclaredField("mFormat");
