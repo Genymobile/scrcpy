@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import android.media.MediaCodec;
+import android.os.Build;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -19,6 +20,12 @@ public final class AudioRawRecorder implements AsyncProcessor {
     }
 
     private void record() throws IOException, AudioCaptureForegroundException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            Ln.w("Audio disabled: it is not supported before Android 11");
+            streamer.writeDisableStream(false);
+            return;
+        }
+
         final ByteBuffer buffer = ByteBuffer.allocateDirect(READ_SIZE);
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
