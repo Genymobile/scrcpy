@@ -470,6 +470,21 @@ sc_screen_init(struct sc_screen *screen,
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (use_opengl) {
+
+#ifdef __APPLE__
+        // Persuade macOS to give us something better than OpenGL 2.1
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+        LOGD("Creating GL Context");
+        SDL_GLContext *gl_context;
+        gl_context = SDL_GL_CreateContext(screen->window);
+        if (!gl_context) {
+            LOGE("Could not create OpenGL context. Error: %s", SDL_GetError());
+            goto error_destroy_renderer;
+        }
+#endif
+
         struct sc_opengl *gl = &screen->gl;
         sc_opengl_init(gl);
 
