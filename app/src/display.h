@@ -10,11 +10,19 @@
 #include "coords.h"
 #include "opengl.h"
 
+#ifdef __APPLE__
+# define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+#endif
+
 struct sc_display {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
 
     struct sc_opengl gl;
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    SDL_GLContext *gl_context;
+#endif
+
     bool mipmaps;
 };
 
