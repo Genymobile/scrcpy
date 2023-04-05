@@ -40,6 +40,7 @@ struct sc_screen {
 
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_GLContext *gl_context;
     SDL_Texture *texture;
     struct sc_opengl gl;
     struct sc_size frame_size;

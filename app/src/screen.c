@@ -421,6 +421,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
+    screen->gl_context = NULL;
+
     bool ok = sc_frame_buffer_init(&screen->fb);
     if (!ok) {
         return false;
@@ -473,15 +475,16 @@ sc_screen_init(struct sc_screen *screen,
 
 #ifdef __APPLE__
         // Persuade macOS to give us something better than OpenGL 2.1
+        // Since macOS 10.7.5 we can use OpenGL 3.2, according to page 24 of
+        // https://developer.apple.com/opengl/OpenGL-Capabilities-Tables.pdf
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-        LOGD("Creating GL Context");
-        SDL_GLContext *gl_context;
-        gl_context = SDL_GL_CreateContext(screen->window);
-        if (!gl_context) {
-            LOGE("Could not create OpenGL context. Error: %s", SDL_GetError());
-            goto error_destroy_renderer;
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        LOGD("Creating OpenGL 3.2 Context");
+        screen->gl_context = SDL_GL_CreateContext(screen->window);
+        if (!screen->gl_context) {
+            LOGW("Could not create OpenGL 3.2 context. Error: %s", SDL_GetError());
+            goto error_delete_gl_context;
         }
 #endif
 
@@ -554,6 +557,10 @@ sc_screen_init(struct sc_screen *screen,
 
     return true;
 
+error_delete_gl_context:
+    if (screen->gl_context) {
+        SDL_GL_DeleteContext(screen->gl_context);
+    }
 error_destroy_renderer:
     SDL_DestroyRenderer(screen->renderer);
 error_destroy_window:
@@ -614,6 +621,9 @@ sc_screen_destroy(struct sc_screen *screen) {
     av_frame_free(&screen->frame);
     if (screen->texture) {
         SDL_DestroyTexture(screen->texture);
+    }
+    if (screen->gl_context) {
+        SDL_GL_DeleteContext(screen->gl_context);
     }
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
