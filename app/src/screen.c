@@ -475,15 +475,13 @@ sc_screen_init(struct sc_screen *screen,
 
 #ifdef __APPLE__
         // Persuade macOS to give us something better than OpenGL 2.1
-        // Since macOS 10.7.5 we can use OpenGL 3.2, according to page 24 of
-        // https://developer.apple.com/opengl/OpenGL-Capabilities-Tables.pdf
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-        LOGD("Creating OpenGL 3.2 Context");
+        // If we create a Core Profile context, we get the best OpenGL version.
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                            SDL_GL_CONTEXT_PROFILE_CORE);
+        LOGD("Creating OpenGL Core Profile Context");
         screen->gl_context = SDL_GL_CreateContext(screen->window);
         if (!screen->gl_context) {
-            LOGW("Could not create OpenGL 3.2 context. Error: %s", SDL_GetError());
+            LOGE("Could not create OpenGL context. Error: %s", SDL_GetError());
             goto error_delete_gl_context;
         }
 #endif
