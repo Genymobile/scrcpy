@@ -639,17 +639,6 @@ aoa_hid_end:
         }
         controller_started = true;
         controller = &s->controller;
-
-        if (options->turn_screen_off) {
-            struct sc_control_msg msg;
-            msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-            msg.set_screen_power_mode.mode = SC_SCREEN_POWER_MODE_OFF;
-
-            if (!sc_controller_push_msg(&s->controller, &msg)) {
-                LOGW("Could not request 'set screen power mode'");
-            }
-        }
-
     }
 
     // There is a controller if and only if control is enabled
@@ -738,6 +727,18 @@ aoa_hid_end:
             goto end;
         }
         audio_demuxer_started = true;
+    }
+
+    // If the device screen is to be turned off, send the control message after
+    // everything is set up
+    if (options->control && options->turn_screen_off) {
+        struct sc_control_msg msg;
+        msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
+        msg.set_screen_power_mode.mode = SC_SCREEN_POWER_MODE_OFF;
+
+        if (!sc_controller_push_msg(&s->controller, &msg)) {
+            LOGW("Could not request 'set screen power mode'");
+        }
     }
 
     ret = event_loop(s);
