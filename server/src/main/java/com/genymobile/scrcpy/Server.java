@@ -92,7 +92,8 @@ public final class Server {
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        try (DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte)) {
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte);
+        try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
             }
@@ -150,6 +151,8 @@ public final class Server {
             } catch (InterruptedException e) {
                 // ignore
             }
+
+            connection.close();
         }
     }
 
