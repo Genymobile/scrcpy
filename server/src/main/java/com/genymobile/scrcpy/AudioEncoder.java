@@ -115,16 +115,22 @@ public final class AudioEncoder implements AsyncProcessor {
     }
 
     @Override
-    public void start() {
+    public void start(TerminationListener listener) {
         thread = new Thread(() -> {
+            boolean fatalError = false;
             try {
                 encode();
-            } catch (ConfigurationException | AudioCaptureForegroundException e) {
+            } catch (ConfigurationException e) {
+                // Do not print stack trace, a user-friendly error-message has already been logged
+                fatalError = true;
+            } catch (AudioCaptureForegroundException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (IOException e) {
                 Ln.e("Audio encoding error", e);
+                fatalError = true;
             } finally {
                 Ln.d("Audio encoder stopped");
+                listener.onTerminated(fatalError);
             }
         });
         thread.start();

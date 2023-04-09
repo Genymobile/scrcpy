@@ -85,7 +85,7 @@ public class Controller implements AsyncProcessor {
     }
 
     @Override
-    public void start() {
+    public void start(TerminationListener listener) {
         thread = new Thread(() -> {
             try {
                 control();
@@ -93,6 +93,7 @@ public class Controller implements AsyncProcessor {
                 // this is expected on close
             } finally {
                 Ln.d("Controller stopped");
+                listener.onTerminated(true);
             }
         });
         thread.start();

@@ -9,6 +9,35 @@ import java.util.List;
 
 public final class Server {
 
+    private static class Completion {
+        private int running;
+        private boolean fatalError;
+
+        Completion(int running) {
+            this.running = running;
+        }
+
+        synchronized void addCompleted(boolean fatalError) {
+            --running;
+            if (fatalError) {
+                this.fatalError = true;
+            }
+            if (running == 0 || this.fatalError) {
+                notify();
+            }
+        }
+
+        synchronized void await() {
+            try {
+                while (running > 0 && !fatalError) {
+                    wait();
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+    }
+
     private Server() {
         // not instantiable
     }
@@ -122,22 +151,17 @@ public final class Server {
                     options.getSendFrameMeta());
             ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                     options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
+            asyncProcessors.add(screenEncoder);
 
+            Completion completion = new Completion(asyncProcessors.size());
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                asyncProcessor.start();
+                asyncProcessor.start((fatalError) -> {
+                    completion.addCompleted(fatalError);
+                });
             }
 
-            try {
-                // synchronous
-                screenEncoder.streamScreen();
-            } catch (IOException e) {
-                // Broken pipe is expected on close, because the socket is closed by the client
-                if (!IO.isBrokenPipe(e)) {
-                    Ln.e("Video encoding error", e);
-                }
-            }
+            completion.await();
         } finally {
-            Ln.d("Screen streaming stopped");
             initThread.interrupt();
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
                 asyncProcessor.stop();
