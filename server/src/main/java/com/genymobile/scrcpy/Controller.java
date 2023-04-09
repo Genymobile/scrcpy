@@ -84,6 +84,7 @@ public class Controller implements AsyncProcessor {
         }
     }
 
+    @Override
     public void start() {
         thread = new Thread(() -> {
             try {
@@ -98,6 +99,7 @@ public class Controller implements AsyncProcessor {
         sender.start();
     }
 
+    @Override
     public void stop() {
         if (thread != null) {
             thread.interrupt();
@@ -105,6 +107,7 @@ public class Controller implements AsyncProcessor {
         sender.stop();
     }
 
+    @Override
     public void join() throws InterruptedException {
         if (thread != null) {
             thread.join();

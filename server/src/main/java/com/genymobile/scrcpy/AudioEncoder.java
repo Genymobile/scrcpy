@@ -114,6 +114,7 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
+    @Override
     public void start() {
         thread = new Thread(() -> {
             try {
@@ -129,6 +130,7 @@ public final class AudioEncoder implements AsyncProcessor {
         thread.start();
     }
 
+    @Override
     public void stop() {
         if (thread != null) {
             // Just wake up the blocking wait from the thread, so that it properly releases all its resources and terminates
@@ -136,6 +138,7 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
+    @Override
     public void join() throws InterruptedException {
         if (thread != null) {
             thread.join();

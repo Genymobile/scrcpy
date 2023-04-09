@@ -53,6 +53,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
         }
     }
 
+    @Override
     public void start() {
         thread = new Thread(() -> {
             try {
@@ -68,12 +69,14 @@ public final class AudioRawRecorder implements AsyncProcessor {
         thread.start();
     }
 
+    @Override
     public void stop() {
         if (thread != null) {
             thread.interrupt();
         }
     }
 
+    @Override
     public void join() throws InterruptedException {
         if (thread != null) {
             thread.join();
