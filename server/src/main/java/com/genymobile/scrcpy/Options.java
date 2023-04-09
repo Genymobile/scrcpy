@@ -47,164 +47,80 @@ public class Options {
         return logLevel;
     }
 
-    public void setLogLevel(Ln.Level logLevel) {
-        this.logLevel = logLevel;
-    }
-
     public int getScid() {
         return scid;
-    }
-
-    public void setScid(int scid) {
-        this.scid = scid;
     }
 
     public boolean getAudio() {
         return audio;
     }
 
-    public void setAudio(boolean audio) {
-        this.audio = audio;
-    }
-
     public int getMaxSize() {
         return maxSize;
-    }
-
-    public void setMaxSize(int maxSize) {
-        this.maxSize = maxSize;
     }
 
     public VideoCodec getVideoCodec() {
         return videoCodec;
     }
 
-    public void setVideoCodec(VideoCodec videoCodec) {
-        this.videoCodec = videoCodec;
-    }
-
     public AudioCodec getAudioCodec() {
         return audioCodec;
-    }
-
-    public void setAudioCodec(AudioCodec audioCodec) {
-        this.audioCodec = audioCodec;
     }
 
     public int getVideoBitRate() {
         return videoBitRate;
     }
 
-    public void setVideoBitRate(int videoBitRate) {
-        this.videoBitRate = videoBitRate;
-    }
-
     public int getAudioBitRate() {
         return audioBitRate;
-    }
-
-    public void setAudioBitRate(int audioBitRate) {
-        this.audioBitRate = audioBitRate;
     }
 
     public int getMaxFps() {
         return maxFps;
     }
 
-    public void setMaxFps(int maxFps) {
-        this.maxFps = maxFps;
-    }
-
     public int getLockVideoOrientation() {
         return lockVideoOrientation;
-    }
-
-    public void setLockVideoOrientation(int lockVideoOrientation) {
-        this.lockVideoOrientation = lockVideoOrientation;
     }
 
     public boolean isTunnelForward() {
         return tunnelForward;
     }
 
-    public void setTunnelForward(boolean tunnelForward) {
-        this.tunnelForward = tunnelForward;
-    }
-
     public Rect getCrop() {
         return crop;
-    }
-
-    public void setCrop(Rect crop) {
-        this.crop = crop;
     }
 
     public boolean getControl() {
         return control;
     }
 
-    public void setControl(boolean control) {
-        this.control = control;
-    }
-
     public int getDisplayId() {
         return displayId;
-    }
-
-    public void setDisplayId(int displayId) {
-        this.displayId = displayId;
     }
 
     public boolean getShowTouches() {
         return showTouches;
     }
 
-    public void setShowTouches(boolean showTouches) {
-        this.showTouches = showTouches;
-    }
-
     public boolean getStayAwake() {
         return stayAwake;
-    }
-
-    public void setStayAwake(boolean stayAwake) {
-        this.stayAwake = stayAwake;
     }
 
     public List<CodecOption> getVideoCodecOptions() {
         return videoCodecOptions;
     }
 
-    public void setVideoCodecOptions(List<CodecOption> videoCodecOptions) {
-        this.videoCodecOptions = videoCodecOptions;
-    }
-
     public List<CodecOption> getAudioCodecOptions() {
         return audioCodecOptions;
-    }
-
-    public void setAudioCodecOptions(List<CodecOption> audioCodecOptions) {
-        this.audioCodecOptions = audioCodecOptions;
     }
 
     public String getVideoEncoder() {
         return videoEncoder;
     }
 
-    public void setVideoEncoder(String videoEncoder) {
-        this.videoEncoder = videoEncoder;
-    }
-
     public String getAudioEncoder() {
         return audioEncoder;
-    }
-
-    public void setAudioEncoder(String audioEncoder) {
-        this.audioEncoder = audioEncoder;
-    }
-
-    public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {
-        this.powerOffScreenOnClose = powerOffScreenOnClose;
     }
 
     public boolean getPowerOffScreenOnClose() {
@@ -215,80 +131,40 @@ public class Options {
         return clipboardAutosync;
     }
 
-    public void setClipboardAutosync(boolean clipboardAutosync) {
-        this.clipboardAutosync = clipboardAutosync;
-    }
-
     public boolean getDownsizeOnError() {
         return downsizeOnError;
-    }
-
-    public void setDownsizeOnError(boolean downsizeOnError) {
-        this.downsizeOnError = downsizeOnError;
     }
 
     public boolean getCleanup() {
         return cleanup;
     }
 
-    public void setCleanup(boolean cleanup) {
-        this.cleanup = cleanup;
-    }
-
     public boolean getPowerOn() {
         return powerOn;
-    }
-
-    public void setPowerOn(boolean powerOn) {
-        this.powerOn = powerOn;
     }
 
     public boolean getListEncoders() {
         return listEncoders;
     }
 
-    public void setListEncoders(boolean listEncoders) {
-        this.listEncoders = listEncoders;
-    }
-
     public boolean getListDisplays() {
         return listDisplays;
-    }
-
-    public void setListDisplays(boolean listDisplays) {
-        this.listDisplays = listDisplays;
     }
 
     public boolean getSendDeviceMeta() {
         return sendDeviceMeta;
     }
 
-    public void setSendDeviceMeta(boolean sendDeviceMeta) {
-        this.sendDeviceMeta = sendDeviceMeta;
-    }
-
     public boolean getSendFrameMeta() {
         return sendFrameMeta;
-    }
-
-    public void setSendFrameMeta(boolean sendFrameMeta) {
-        this.sendFrameMeta = sendFrameMeta;
     }
 
     public boolean getSendDummyByte() {
         return sendDummyByte;
     }
 
-    public void setSendDummyByte(boolean sendDummyByte) {
-        this.sendDummyByte = sendDummyByte;
-    }
-
     public boolean getSendCodecMeta() {
         return sendCodecMeta;
-    }
-
-    public void setSendCodecMeta(boolean sendCodecMeta) {
-        this.sendCodecMeta = sendCodecMeta;
     }
 
     @SuppressWarnings("MethodLength")
@@ -319,142 +195,116 @@ public class Options {
                     if (scid < -1) {
                         throw new IllegalArgumentException("scid may not be negative (except -1 for 'none'): " + scid);
                     }
-                    options.setScid(scid);
+                    options.scid = scid;
                     break;
                 case "log_level":
-                    Ln.Level level = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
-                    options.setLogLevel(level);
+                    options.logLevel = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
                     break;
                 case "audio":
-                    boolean audio = Boolean.parseBoolean(value);
-                    options.setAudio(audio);
+                    options.audio = Boolean.parseBoolean(value);
                     break;
                 case "video_codec":
                     VideoCodec videoCodec = VideoCodec.findByName(value);
                     if (videoCodec == null) {
                         throw new IllegalArgumentException("Video codec " + value + " not supported");
                     }
-                    options.setVideoCodec(videoCodec);
+                    options.videoCodec = videoCodec;
                     break;
                 case "audio_codec":
                     AudioCodec audioCodec = AudioCodec.findByName(value);
                     if (audioCodec == null) {
                         throw new IllegalArgumentException("Audio codec " + value + " not supported");
                     }
-                    options.setAudioCodec(audioCodec);
+                    options.audioCodec = audioCodec;
                     break;
                 case "max_size":
-                    int maxSize = Integer.parseInt(value) & ~7; // multiple of 8
-                    options.setMaxSize(maxSize);
+                    options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
                     break;
                 case "video_bit_rate":
-                    int videoBitRate = Integer.parseInt(value);
-                    options.setVideoBitRate(videoBitRate);
+                    options.videoBitRate = Integer.parseInt(value);
                     break;
                 case "audio_bit_rate":
-                    int audioBitRate = Integer.parseInt(value);
-                    options.setAudioBitRate(audioBitRate);
+                    options.audioBitRate = Integer.parseInt(value);
                     break;
                 case "max_fps":
-                    int maxFps = Integer.parseInt(value);
-                    options.setMaxFps(maxFps);
+                    options.maxFps = Integer.parseInt(value);
                     break;
                 case "lock_video_orientation":
-                    int lockVideoOrientation = Integer.parseInt(value);
-                    options.setLockVideoOrientation(lockVideoOrientation);
+                    options.lockVideoOrientation = Integer.parseInt(value);
                     break;
                 case "tunnel_forward":
-                    boolean tunnelForward = Boolean.parseBoolean(value);
-                    options.setTunnelForward(tunnelForward);
+                    options.tunnelForward = Boolean.parseBoolean(value);
                     break;
                 case "crop":
-                    Rect crop = parseCrop(value);
-                    options.setCrop(crop);
+                    options.crop = parseCrop(value);
                     break;
                 case "control":
-                    boolean control = Boolean.parseBoolean(value);
-                    options.setControl(control);
+                    options.control = Boolean.parseBoolean(value);
                     break;
                 case "display_id":
-                    int displayId = Integer.parseInt(value);
-                    options.setDisplayId(displayId);
+                    options.displayId = Integer.parseInt(value);
                     break;
                 case "show_touches":
-                    boolean showTouches = Boolean.parseBoolean(value);
-                    options.setShowTouches(showTouches);
+                    options.showTouches = Boolean.parseBoolean(value);
                     break;
                 case "stay_awake":
-                    boolean stayAwake = Boolean.parseBoolean(value);
-                    options.setStayAwake(stayAwake);
+                    options.stayAwake = Boolean.parseBoolean(value);
                     break;
                 case "video_codec_options":
-                    List<CodecOption> videoCodecOptions = CodecOption.parse(value);
-                    options.setVideoCodecOptions(videoCodecOptions);
+                    options.videoCodecOptions = CodecOption.parse(value);
                     break;
                 case "audio_codec_options":
-                    List<CodecOption> audioCodecOptions = CodecOption.parse(value);
-                    options.setAudioCodecOptions(audioCodecOptions);
+                    options.audioCodecOptions = CodecOption.parse(value);
                     break;
                 case "video_encoder":
                     if (!value.isEmpty()) {
-                        options.setVideoEncoder(value);
+                        options.videoEncoder = value;
                     }
                     break;
                 case "audio_encoder":
                     if (!value.isEmpty()) {
-                        options.setAudioEncoder(value);
+                        options.audioEncoder = value;
                     }
                 case "power_off_on_close":
-                    boolean powerOffScreenOnClose = Boolean.parseBoolean(value);
-                    options.setPowerOffScreenOnClose(powerOffScreenOnClose);
+                    options.powerOffScreenOnClose = Boolean.parseBoolean(value);
                     break;
                 case "clipboard_autosync":
-                    boolean clipboardAutosync = Boolean.parseBoolean(value);
-                    options.setClipboardAutosync(clipboardAutosync);
+                    options.clipboardAutosync = Boolean.parseBoolean(value);
                     break;
                 case "downsize_on_error":
-                    boolean downsizeOnError = Boolean.parseBoolean(value);
-                    options.setDownsizeOnError(downsizeOnError);
+                    options.downsizeOnError = Boolean.parseBoolean(value);
                     break;
                 case "cleanup":
-                    boolean cleanup = Boolean.parseBoolean(value);
-                    options.setCleanup(cleanup);
+                    options.cleanup = Boolean.parseBoolean(value);
                     break;
                 case "power_on":
-                    boolean powerOn = Boolean.parseBoolean(value);
-                    options.setPowerOn(powerOn);
+                    options.powerOn = Boolean.parseBoolean(value);
                     break;
                 case "list_encoders":
-                    boolean listEncoders = Boolean.parseBoolean(value);
-                    options.setListEncoders(listEncoders);
+                    options.listEncoders = Boolean.parseBoolean(value);
                     break;
                 case "list_displays":
-                    boolean listDisplays = Boolean.parseBoolean(value);
-                    options.setListDisplays(listDisplays);
+                    options.listDisplays = Boolean.parseBoolean(value);
                     break;
                 case "send_device_meta":
-                    boolean sendDeviceMeta = Boolean.parseBoolean(value);
-                    options.setSendDeviceMeta(sendDeviceMeta);
+                    options.sendDeviceMeta = Boolean.parseBoolean(value);
                     break;
                 case "send_frame_meta":
-                    boolean sendFrameMeta = Boolean.parseBoolean(value);
-                    options.setSendFrameMeta(sendFrameMeta);
+                    options.sendFrameMeta = Boolean.parseBoolean(value);
                     break;
                 case "send_dummy_byte":
-                    boolean sendDummyByte = Boolean.parseBoolean(value);
-                    options.setSendDummyByte(sendDummyByte);
+                    options.sendDummyByte = Boolean.parseBoolean(value);
                     break;
                 case "send_codec_meta":
-                    boolean sendCodecMeta = Boolean.parseBoolean(value);
-                    options.setSendCodecMeta(sendCodecMeta);
+                    options.sendCodecMeta = Boolean.parseBoolean(value);
                     break;
                 case "raw_video_stream":
                     boolean rawVideoStream = Boolean.parseBoolean(value);
                     if (rawVideoStream) {
-                        options.setSendDeviceMeta(false);
-                        options.setSendFrameMeta(false);
-                        options.setSendDummyByte(false);
-                        options.setSendCodecMeta(false);
+                        options.sendDeviceMeta = false;
+                        options.sendFrameMeta = false;
+                        options.sendDummyByte = false;
+                        options.sendCodecMeta = false;
                     }
                     break;
                 default:
