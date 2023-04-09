@@ -86,8 +86,8 @@ public final class AudioCapture {
             } catch (UnsupportedOperationException e) {
                 if (attempts == 0) {
                     Ln.e("Failed to start audio capture");
-                    Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting " +
-                            "scrcpy.");
+                    Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
+                            + "scrcpy.");
                     throw new AudioCaptureForegroundException();
                 } else {
                     Ln.d("Failed to start audio capture, retrying...");
