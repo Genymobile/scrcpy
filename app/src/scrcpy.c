@@ -362,6 +362,7 @@ scrcpy(struct scrcpy_options *options) {
         .power_on = options->power_on,
         .list_encoders = options->list_encoders,
         .list_displays = options->list_displays,
+        .show_clipboard = options->show_clipboard,
     };
 
     static const struct sc_server_callbacks cbs = {
@@ -625,7 +626,7 @@ aoa_hid_end:
         }
         controller_initialized = true;
 
-        if (!sc_controller_start(&s->controller)) {
+        if (!sc_controller_start(&s->controller, options->show_clipboard)) {
             goto end;
         }
         controller_started = true;

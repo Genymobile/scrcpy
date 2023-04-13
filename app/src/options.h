@@ -160,6 +160,7 @@ struct scrcpy_options {
     bool require_audio;
     bool list_encoders;
     bool list_displays;
+    bool show_clipboard;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

@@ -125,7 +125,7 @@ run_controller(void *data) {
 }
 
 bool
-sc_controller_start(struct sc_controller *controller) {
+sc_controller_start(struct sc_controller *controller, const bool show_clipboard_value) {
     LOGD("Starting controller thread");
 
     bool ok = sc_thread_create(&controller->thread, run_controller,
@@ -135,7 +135,7 @@ sc_controller_start(struct sc_controller *controller) {
         return false;
     }
 
-    if (!sc_receiver_start(&controller->receiver)) {
+    if (!sc_receiver_start(&controller->receiver, show_clipboard_value)) {
         sc_controller_stop(controller);
         sc_thread_join(&controller->thread, NULL);
         return false;

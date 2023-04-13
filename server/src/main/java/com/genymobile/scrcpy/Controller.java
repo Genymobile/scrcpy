@@ -31,6 +31,7 @@ public class Controller implements AsyncProcessor {
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
+    private final boolean showClipboard;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -41,11 +42,12 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn, boolean showClipboard) {
         this.device = device;
         this.connection = connection;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
+        this.showClipboard = showClipboard;
         initPointers();
         sender = new DeviceMessageSender(connection);
     }
@@ -393,7 +395,11 @@ public class Controller implements AsyncProcessor {
     private boolean setClipboard(String text, boolean paste, long sequence) {
         boolean ok = device.setClipboardText(text);
         if (ok) {
-            Ln.i("Device clipboard set");
+            String deviceInfo = "Device clipboard set";
+            if (showClipboard) {
+                deviceInfo += ": " + text;
+            }
+            Ln.i(deviceInfo);
         }
 
         // On Android >= 7, also press the PASTE key if requested

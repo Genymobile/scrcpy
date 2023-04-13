@@ -6,6 +6,8 @@
 #include "device_msg.h"
 #include "util/log.h"
 
+bool show_clipboard;
+
 bool
 sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
               struct sc_acksync *acksync) {
@@ -37,8 +39,14 @@ process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
                 return;
             }
 
-            LOGI("Device clipboard copied");
             SDL_SetClipboardText(msg->clipboard.text);
+            if (show_clipboard) {
+                LOGI("Device clipboard copied: %s", msg->clipboard.text);
+                LOGD("Computer clipboard set: %s", SDL_GetClipboardText());
+            } else {
+                LOGI("Device clipboard copied");
+                LOGD("Computer clipboard set");
+            }
             break;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
@@ -108,9 +116,10 @@ run_receiver(void *data) {
 }
 
 bool
-sc_receiver_start(struct sc_receiver *receiver) {
+sc_receiver_start(struct sc_receiver *receiver, const bool show_clipboard_value) {
     LOGD("Starting receiver thread");
 
+    show_clipboard = show_clipboard_value;
     bool ok = sc_thread_create(&receiver->thread, run_receiver,
                                "scrcpy-receiver", receiver);
     if (!ok) {

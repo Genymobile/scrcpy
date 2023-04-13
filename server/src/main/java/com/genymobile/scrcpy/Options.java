@@ -33,6 +33,7 @@ public class Options {
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
     private boolean powerOn = true;
+    private boolean showClipboard = false;
 
     private boolean listEncoders;
     private boolean listDisplays;
@@ -141,6 +142,10 @@ public class Options {
 
     public boolean getPowerOn() {
         return powerOn;
+    }
+
+    public boolean getShowClipboard() {
+        return showClipboard;
     }
 
     public boolean getListEncoders() {
@@ -279,6 +284,9 @@ public class Options {
                     break;
                 case "power_on":
                     options.powerOn = Boolean.parseBoolean(value);
+                    break;
+                case "show_clipboard":
+                    options.showClipboard = Boolean.parseBoolean(value);
                     break;
                 case "list_encoders":
                     options.listEncoders = Boolean.parseBoolean(value);

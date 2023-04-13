@@ -72,6 +72,7 @@ enum {
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
     OPT_AUDIO_OUTPUT_BUFFER,
+    OPT_SHOW_CLIPBOARD,
 };
 
 struct sc_option {
@@ -515,6 +516,12 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl+LAlt or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl+lalt,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .longopt_id = OPT_SHOW_CLIPBOARD,
+        .longopt = "show-clipboard",
+        .text = "Print the content of a clipboard when it is changed if the "
+                "log level is high enough."
     },
     {
         .shortopt = 'S',
@@ -1860,6 +1867,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                                &opts->audio_output_buffer)) {
                     return false;
                 }
+                break;
+            case OPT_SHOW_CLIPBOARD:
+                opts->show_clipboard = true;
                 break;
             default:
                 // getopt prints the error message on stderr

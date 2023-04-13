@@ -32,7 +32,7 @@ void
 sc_controller_destroy(struct sc_controller *controller);
 
 bool
-sc_controller_start(struct sc_controller *controller);
+sc_controller_start(struct sc_controller *controller, const bool show_clipboard_value);
 
 void
 sc_controller_stop(struct sc_controller *controller);
