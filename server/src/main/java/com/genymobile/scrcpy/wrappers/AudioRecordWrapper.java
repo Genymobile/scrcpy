@@ -15,7 +15,9 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
+import android.media.AudioManager;
 import android.media.AudioRecord;
+import android.media.MediaCodec;
 import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Build;
@@ -23,11 +25,10 @@ import android.os.Looper;
 import android.os.Parcel;
 
 public class AudioRecordWrapper {
-    public final static String SUBMIX_FIXED_VOLUME = "fixedVolume";
-
     private static Method getChannelMaskFromLegacyConfigMethod;
     private static Method getCurrentOpPackageNameMethod;
 
+    @SuppressLint({ "SoonBlockedPrivateApi" })
     private static Method getGetChannelMaskFromLegacyConfigMethod() throws NoSuchMethodException {
         if (getChannelMaskFromLegacyConfigMethod == null) {
             getChannelMaskFromLegacyConfigMethod = AudioRecord.class.getDeclaredMethod("getChannelMaskFromLegacyConfig",
@@ -38,8 +39,7 @@ public class AudioRecordWrapper {
     }
 
     public static int getChannelMaskFromLegacyConfig(int inChannelConfig, boolean allowLegacyConfig)
-            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-            NoSuchMethodException {
+            throws IllegalArgumentException {
         try {
             return (int) getGetChannelMaskFromLegacyConfigMethod().invoke(null, inChannelConfig, allowLegacyConfig);
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -58,8 +58,7 @@ public class AudioRecordWrapper {
     }
 
     public static String getCurrentOpPackageName(AudioRecord audioRecord)
-            throws IllegalAccessException, IllegalArgumentException,
-            InvocationTargetException, NoSuchMethodException {
+            throws IllegalArgumentException {
         try {
             return (String) getGetCurrentOpPackageNameMethod().invoke(audioRecord);
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException
@@ -70,10 +69,10 @@ public class AudioRecordWrapper {
     }
 
     @TargetApi(Build.VERSION_CODES.R)
-    @SuppressLint({ "WrongConstant", "MissingPermission", "BlockedPrivateApi" })
-    public static AudioRecord newInstance(AudioAttributes attributes, AudioFormat format,
-            int bufferSizeInBytes, int sessionId, Context context, int maxSharedAudioHistoryMs)
-            throws Exception {
+    @SuppressLint({ "WrongConstant", "MissingPermission", "BlockedPrivateApi", "SoonBlockedPrivateApi" })
+    public static AudioRecord newInstance(AudioFormat format, int bufferSizeInBytes,
+            Context context)
+            throws UnsupportedOperationException {
         // Vivo (and maybe some other third-party ROMs) modified `AudioRecord`'s
         // constructor, requiring `Context`s from real App environment.
         //
@@ -104,9 +103,6 @@ public class AudioRecordWrapper {
             mRecordingStateField.setAccessible(true);
             mRecordingStateField.set(audioRecord, AudioRecord.RECORDSTATE_STOPPED);
 
-            if (attributes == null) {
-                throw new IllegalArgumentException("Illegal null AudioAttributes");
-            }
             if (format == null) {
                 throw new IllegalArgumentException("Illegal null AudioFormat");
             }
@@ -121,49 +117,30 @@ public class AudioRecordWrapper {
             mInitializationLooperField.setAccessible(true);
             mInitializationLooperField.set(audioRecord, looper);
 
-            if (AudioAttributesWrapper.getCapturePreset(attributes) == MediaRecorder.AudioSource.REMOTE_SUBMIX) {
-                AudioAttributes.Builder audioAttributeBuilder = new AudioAttributes.Builder(attributes);
-
-                final Iterator<String> tagsIter = AudioAttributesWrapper.getTags(attributes).iterator();
-                while (tagsIter.hasNext()) {
-                    String tag = tagsIter.next();
-                    if (tag.equalsIgnoreCase(SUBMIX_FIXED_VOLUME)) {
-                        // audioRecord.mIsSubmixFullVolume = true;
-                        Field mIsSubmixFullVolumeField = AudioRecord.class.getDeclaredField("mIsSubmixFullVolume");
-                        mIsSubmixFullVolumeField.setAccessible(true);
-                        mIsSubmixFullVolumeField.set(audioRecord, true);
-                    } else {
-                        AudioAttributesWrapper.Builder.addTag(audioAttributeBuilder, tag);
-                    }
-                }
-
-                AudioAttributesWrapper.Builder.setInternalCapturePreset(audioAttributeBuilder,
-                        AudioAttributesWrapper.getCapturePreset(attributes));
-                attributes = audioAttributeBuilder.build();
-            }
+            // Create `AudioAttributes` with fixed capture preset
+            int audioCapturePreset = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+            AudioAttributes.Builder audioAttributesBuilder = new AudioAttributes.Builder();
+            Method setInternalCapturePresetMethod = AudioAttributes.Builder.class.getMethod(
+                    "setInternalCapturePreset", int.class);
+            setInternalCapturePresetMethod.invoke(audioAttributesBuilder, audioCapturePreset);
+            AudioAttributes attributes = audioAttributesBuilder.build();
 
             // audioRecord.mAudioAttributes = attributes;
             Field mAudioAttributesField = AudioRecord.class.getDeclaredField("mAudioAttributes");
             mAudioAttributesField.setAccessible(true);
             mAudioAttributesField.set(audioRecord, attributes);
 
+            // Assume `format.getSampleRate()` is always set.
             int rate = format.getSampleRate();
-            if (rate == AudioFormat.SAMPLE_RATE_UNSPECIFIED) {
-                rate = 0;
-            }
 
-            int encoding = AudioFormat.ENCODING_DEFAULT;
-            if ((AudioFormatWrapper.getPropertySetMask(format)
-                    & AudioFormatWrapper.AUDIO_FORMAT_HAS_PROPERTY_ENCODING) != 0) {
-                encoding = format.getEncoding();
-            }
+            // Assume `format.getEncoding()` is always set.
+            int encoding = format.getEncoding();
 
             // audioRecord.audioParamCheck(capturePreset, rate, encoding);
             Method audioParamCheckMethod = AudioRecord.class.getDeclaredMethod("audioParamCheck", int.class, int.class,
                     int.class);
             audioParamCheckMethod.setAccessible(true);
-            audioParamCheckMethod.invoke(audioRecord, AudioAttributesWrapper.getCapturePreset(attributes), rate,
-                    encoding);
+            audioParamCheckMethod.invoke(audioRecord, audioCapturePreset, rate, encoding);
 
             int mChannelIndexMask = 0;
             int mChannelMask = 0;
@@ -178,9 +155,12 @@ public class AudioRecordWrapper {
                     & AudioFormatWrapper.AUDIO_FORMAT_HAS_PROPERTY_CHANNEL_MASK) != 0) {
                 mChannelMask = getChannelMaskFromLegacyConfig(format.getChannelMask(), false);
                 mChannelCount = format.getChannelCount();
-            } else {
+            } else if (mChannelIndexMask == 0) {
                 mChannelMask = getChannelMaskFromLegacyConfig(AudioFormat.CHANNEL_IN_DEFAULT, false);
-                mChannelCount = AudioFormatWrapper.channelCountFromInChannelMask(mChannelMask);
+
+                Method channelCountFromInChannelMaskMethod = AudioFormat.class.getMethod(
+                        "channelCountFromInChannelMask", int.class);
+                mChannelCount = (int) channelCountFromInChannelMaskMethod.invoke(null, mChannelMask);
             }
 
             Field mChannelIndexMaskField = AudioRecord.class.getDeclaredField("mChannelIndexMask");
@@ -201,7 +181,7 @@ public class AudioRecordWrapper {
             audioBuffSizeCheckMethod.invoke(audioRecord, bufferSizeInBytes);
 
             int[] sampleRate = new int[] { 0 };
-            int[] session = new int[] { sessionId };
+            int[] session = new int[] { AudioManager.AUDIO_SESSION_ID_GENERATE };
 
             int initResult;
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
@@ -218,22 +198,12 @@ public class AudioRecordWrapper {
                         attributes, sampleRate, mChannelMask, mChannelIndexMask, audioRecord.getAudioFormat(),
                         bufferSizeInBytes, session, getCurrentOpPackageName(audioRecord), 0L);
             } else {
-                AttributionSource attributionSource = context != null ? context.getAttributionSource()
-                        : AttributionSource.myAttributionSource();
+                // Assume `context` is never `null`
+                AttributionSource attributionSource = context.getAttributionSource();
 
-                if (attributionSource.getPackageName() == null) {
-                    // Command line utility
-                    // attributionSource = attributionSource.withPackageName("uid:" +
-                    // Binder.getCallingUid());
-                    Method withPackageNameMethod = AttributionSource.class.getDeclaredMethod("withPackageName",
-                            String.class);
-                    withPackageNameMethod.setAccessible(true);
-                    attributionSource = (AttributionSource) withPackageNameMethod.invoke(attributionSource,
-                            "uid:" + Binder.getCallingUid());
-                }
+                // Assume `attributionSource.getPackageName()` is never null
 
-                // ScopedParcelState attributionSourceState =
-                // attributionSource.asScopedParcelState()
+                // ScopedParcelState attributionSourceState = attributionSource.asScopedParcelState()
                 Method asScopedParcelStateMethod = AttributionSource.class.getDeclaredMethod("asScopedParcelState");
                 asScopedParcelStateMethod.setAccessible(true);
 
@@ -254,13 +224,13 @@ public class AudioRecordWrapper {
                     initResult = (int) nativeSetupMethod.invoke(audioRecord,
                             new WeakReference<AudioRecord>(audioRecord), attributes, sampleRate, mChannelMask,
                             mChannelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session,
-                            attributionSourceParcel, 0L, maxSharedAudioHistoryMs);
+                            attributionSourceParcel, 0L, 0);
                 }
             }
 
             if (initResult != AudioRecord.SUCCESS) {
                 Ln.e("Error code " + initResult + " when initializing native AudioRecord object.");
-                return audioRecord;
+                throw new UnsupportedOperationException("Cannot create AudioRecord");
             }
 
             // mSampleRate = sampleRate[0]
@@ -281,104 +251,7 @@ public class AudioRecordWrapper {
             return audioRecord;
         } catch (Exception e) {
             Ln.e("Failed to invoke AudioRecord.<init>.", e);
-            throw e;
-        }
-    }
-
-    public static final int PRIVACY_SENSITIVE_DEFAULT = -1;
-    public static final int PRIVACY_SENSITIVE_DISABLED = 0;
-    public static final int PRIVACY_SENSITIVE_ENABLED = 1;
-
-    @SuppressLint({ "BlockedPrivateApi" })
-    public static AudioRecord build(AudioRecord.Builder builder) {
-        try {
-            Field mFormatField = AudioRecord.Builder.class.getDeclaredField("mFormat");
-            mFormatField.setAccessible(true);
-            AudioFormat mFormat = (AudioFormat) mFormatField.get(builder);
-
-            if (mFormat == null) {
-                mFormat = new AudioFormat.Builder()
-                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                        .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                        .build();
-            } else {
-                if (mFormat.getEncoding() == AudioFormat.ENCODING_INVALID) {
-                    mFormat = new AudioFormat.Builder(mFormat)
-                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                            .build();
-                }
-                if (mFormat.getChannelMask() == AudioFormat.CHANNEL_INVALID
-                        && mFormat.getChannelIndexMask() == AudioFormat.CHANNEL_INVALID) {
-                    mFormat = new AudioFormat.Builder(mFormat)
-                            .setChannelMask(AudioFormat.CHANNEL_IN_MONO)
-                            .build();
-                }
-            }
-
-            Field mAttributesField = AudioRecord.Builder.class.getDeclaredField("mAttributes");
-            mAttributesField.setAccessible(true);
-            AudioAttributes mAttributes = (AudioAttributes) mAttributesField.get(builder);
-            if (mAttributes == null) {
-                AudioAttributes.Builder audioAttributesBuilder = new AudioAttributes.Builder();
-                AudioAttributesWrapper.Builder.setInternalCapturePreset(audioAttributesBuilder,
-                        MediaRecorder.AudioSource.DEFAULT);
-                mAttributes = audioAttributesBuilder.build();
-            }
-
-            Field mPrivacySensitiveField = AudioRecord.Builder.class.getDeclaredField("mPrivacySensitive");
-            mPrivacySensitiveField.setAccessible(true);
-            int mPrivacySensitive = (int) mPrivacySensitiveField.get(builder);
-            if (mPrivacySensitive != PRIVACY_SENSITIVE_DEFAULT) {
-                int source = AudioAttributesWrapper.getCapturePreset(mAttributes);
-                if (source == MediaRecorder.AudioSource.REMOTE_SUBMIX
-                        || source == MediaRecorder.AudioSource.VOICE_DOWNLINK
-                        || source == MediaRecorder.AudioSource.VOICE_UPLINK
-                        || source == MediaRecorder.AudioSource.VOICE_CALL) {
-                    throw new UnsupportedOperationException(
-                            "Cannot request private capture with source: " + source);
-                }
-
-                AudioAttributes.Builder audioAttributesBuilder = new AudioAttributes.Builder();
-                AudioAttributesWrapper.Builder.setInternalCapturePreset(audioAttributesBuilder, source);
-                AudioAttributesWrapper.Builder.setPrivacySensitive(audioAttributesBuilder,
-                        mPrivacySensitive == PRIVACY_SENSITIVE_ENABLED);
-                mAttributes = audioAttributesBuilder.build();
-            }
-
-            Field mBufferSizeInBytesField = AudioRecord.Builder.class.getDeclaredField("mBufferSizeInBytes");
-            mBufferSizeInBytesField.setAccessible(true);
-            int mBufferSizeInBytes = (int) mBufferSizeInBytesField.get(builder);
-
-            // If the buffer size is not specified,
-            // use a single frame for the buffer size and let the
-            // native code figure out the minimum buffer size.
-            if (mBufferSizeInBytes == 0) {
-                mBufferSizeInBytes = mFormat.getChannelCount()
-                        * AudioFormatWrapper.getBytesPerSample(mFormat, mFormat.getEncoding());
-            }
-
-            Field mSessionIdField = AudioRecord.Builder.class.getDeclaredField("mSessionId");
-            mSessionIdField.setAccessible(true);
-            int mSessionId = (int) mSessionIdField.get(builder);
-
-            Context mContext;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Field mContextField = AudioRecord.Builder.class.getDeclaredField("mContext");
-                mContextField.setAccessible(true);
-                mContext = (Context) mContextField.get(builder);
-            } else {
-                mContext = null;
-            }
-
-            final AudioRecord record = newInstance(
-                    mAttributes, mFormat, mBufferSizeInBytes, mSessionId, mContext, 0);
-            if (record.getState() == AudioRecord.STATE_UNINITIALIZED) {
-                // release is not necessary
-                throw new UnsupportedOperationException("Cannot create AudioRecord");
-            }
-            return record;
-        } catch (Exception e) {
-            throw new UnsupportedOperationException("Cannot create AudioRecord", e);
+            throw new UnsupportedOperationException("Cannot create AudioRecord");
         }
     }
 }

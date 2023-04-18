@@ -51,16 +51,17 @@ public final class AudioCapture {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
             builder.setContext(FakeContext.get());
         }
+        AudioFormat format = createAudioFormat();
+        int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, FORMAT) * 8;
         builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
-        builder.setAudioFormat(createAudioFormat());
-        int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, FORMAT);
+        builder.setAudioFormat(format);
         // This buffer size does not impact latency
-        builder.setBufferSizeInBytes(8 * minBufferSize);
+        builder.setBufferSizeInBytes(minBufferSize);
 
         try {
             return builder.build();
         } catch (Exception e) {
-            return AudioRecordWrapper.build(builder);
+            return AudioRecordWrapper.newInstance(format, minBufferSize, FakeContext.get());
         }
     }
 
