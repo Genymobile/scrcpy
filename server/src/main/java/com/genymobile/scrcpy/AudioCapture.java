@@ -73,7 +73,7 @@ public final class AudioCapture {
                 intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
                 ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
                 // Wait for activity to start
-                SystemClock.sleep(150);
+                SystemClock.sleep(300);
             }
         }
     }
