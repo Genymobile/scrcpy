@@ -25,6 +25,12 @@
 # define SCRCPY_LAVF_REQUIRES_REGISTER_ALL
 #endif
 
+// Not documented in ffmpeg/doc/APIchanges, but AV_CODEC_ID_AV1 has been added
+// by FFmpeg commit d42809f9835a4e9e5c7c63210abb09ad0ef19cfb (included in tag
+// n3.3).
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 89, 100)
+# define SCRCPY_LAVC_HAS_AV1
+#endif
 
 // In ffmpeg/doc/APIchanges:
 // 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
