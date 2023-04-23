@@ -56,6 +56,7 @@ struct sc_server_params {
     bool power_on;
     bool list_encoders;
     bool list_displays;
+    bool show_clipboard;
 };
 
 struct sc_server {

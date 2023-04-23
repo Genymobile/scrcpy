@@ -308,6 +308,9 @@ execute_server(struct sc_server *server,
     if (params->list_displays) {
         ADD_PARAM("list_displays=true");
     }
+    if (params->show_clipboard) {
+        ADD_PARAM("show_clipboard=true");
+    }
 
 #undef ADD_PARAM
 

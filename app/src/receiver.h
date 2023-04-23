@@ -27,7 +27,7 @@ void
 sc_receiver_destroy(struct sc_receiver *receiver);
 
 bool
-sc_receiver_start(struct sc_receiver *receiver);
+sc_receiver_start(struct sc_receiver *receiver, const bool show_clipboard_value);
 
 // no sc_receiver_stop(), it will automatically stop on control_socket shutdown
 
