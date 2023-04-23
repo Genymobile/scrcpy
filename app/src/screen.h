@@ -51,7 +51,7 @@ struct sc_screen {
     struct sc_size windowed_content_size;
 
     // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
-    unsigned rotation;
+    uint8_t rotation;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
     bool has_frame;
@@ -132,7 +132,7 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
 
 // set the display rotation (0, 1, 2 or 3, x90 degrees counterclockwise)
 void
-sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation);
+sc_screen_set_rotation(struct sc_screen *screen, uint8_t rotation);
 
 // react to SDL events
 // If this function returns false, scrcpy must exit with an error.
