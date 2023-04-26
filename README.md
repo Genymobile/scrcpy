@@ -39,7 +39,7 @@ Its features include:
 
 The Android device requires at least API 21 (Android 5.0).
 
-[Audio forwarding](doc/audio.md) is supported from API 30 (Android 11).
+[Audio forwarding](doc/audio.md) is supported for API >= 30 (Android 11+).
 
 Make sure you [enabled USB debugging][enable-adb] on your device(s).
 
