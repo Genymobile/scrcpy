@@ -109,7 +109,6 @@ if not crossbuild_windows
         dependency('libavutil'),
         dependency('libswresample'),
         dependency('sdl2', version: '>= 2.0.5'),
-        #cc.find_library('swscale-5', dirs: ffmpeg_bin_dir),
         dependency('libswscale'),
         dependency('libvncserver'),
     ]
