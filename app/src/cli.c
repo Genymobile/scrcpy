@@ -72,6 +72,7 @@ enum {
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
     OPT_AUDIO_OUTPUT_BUFFER,
+    OPT_VNC_SERVER,
 };
 
 struct sc_option {
@@ -668,6 +669,11 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_VNC_SERVER,
+        .longopt = "vnc-server",
+        .text = "Enable VNC server.",
     },
 };
 
@@ -1861,6 +1867,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_VNC_SERVER:
+                opts->vnc_server = true;
+				break;
             default:
                 // getopt prints the error message on stderr
                 return false;

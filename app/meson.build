@@ -31,6 +31,7 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
+    'src/vnc_sink.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/util/acksync.c',
@@ -108,6 +109,9 @@ if not crossbuild_windows
         dependency('libavutil'),
         dependency('libswresample'),
         dependency('sdl2', version: '>= 2.0.5'),
+        #cc.find_library('swscale-5', dirs: ffmpeg_bin_dir),
+        dependency('libswscale'),
+        dependency('libvncserver'),
     ]
 
     if v4l2_support
