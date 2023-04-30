@@ -699,7 +699,7 @@ aoa_hid_end:
         }
     }
 	if (options->vnc_server) {
-		if (!sc_vnc_sink_init(&s->vnc_sink, "my vnc server")) {
+		if (!sc_vnc_sink_init(&s->vnc_sink, "my vnc server", controller)) {
 			printf("bad vnc init \n");
 			goto end;
 		}
@@ -799,6 +799,9 @@ end:
         sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
 #endif
+	if (vnc_sink_initialized) {
+		sc_vnc_sink_destroy(&s->vnc_sink);
+	}
 
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {
