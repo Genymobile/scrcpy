@@ -1869,7 +1869,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_VNC_SERVER:
                 opts->vnc_server = true;
-				break;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -1902,7 +1902,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (!opts->display && !opts->record_filename && !opts->v4l2_device && !opts->vnc_server) {
         LOGE("-N/--no-display requires either screen recording (-r/--record)"
              " or sink to v4l2loopback device (--v4l2-sink) or setting up a VNC server"
-			 " (--vnc-server)");
+             " (--vnc-server)");
         return false;
     }
 

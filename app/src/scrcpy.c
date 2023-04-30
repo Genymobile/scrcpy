@@ -50,7 +50,6 @@ struct scrcpy {
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
     struct sc_vnc_sink vnc_sink;
-    struct sc_delay_buffer vnc_buffer;
     struct sc_delay_buffer display_buffer;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -698,15 +697,15 @@ aoa_hid_end:
                                      &s->audio_player.frame_sink);
         }
     }
-	if (options->vnc_server) {
-		if (!sc_vnc_sink_init(&s->vnc_sink, "my vnc server", controller)) {
-			printf("bad vnc init \n");
-			goto end;
-		}
-		vnc_sink_initialized = true;
+    if (options->vnc_server) {
+        if (!sc_vnc_sink_init(&s->vnc_sink, "my vnc server", controller)) {
+            printf("bad vnc init \n");
+            goto end;
+        }
+        vnc_sink_initialized = true;
         struct sc_frame_source *src = &s->video_decoder.frame_source;
         sc_frame_source_add_sink(src, &s->vnc_sink.frame_sink);
-	}
+    }
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
@@ -799,9 +798,9 @@ end:
         sc_v4l2_sink_destroy(&s->v4l2_sink);
     }
 #endif
-	if (vnc_sink_initialized) {
-		sc_vnc_sink_destroy(&s->vnc_sink);
-	}
+    if (vnc_sink_initialized) {
+        sc_vnc_sink_destroy(&s->vnc_sink);
+    }
 
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {

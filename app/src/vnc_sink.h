@@ -17,15 +17,15 @@
 
 struct sc_vnc_sink {
     struct sc_frame_sink frame_sink; // frame sink trait
-	struct sc_controller *controller;
+    struct sc_controller *controller;
 
-	struct SwsContext * ctx;
-	rfbScreenInfoPtr screen;
-	uint16_t scrWidth;
-	uint16_t scrHeight;
-	uint8_t bpp;
+    struct SwsContext * ctx;
+    rfbScreenInfoPtr screen;
+    uint16_t scrWidth;
+    uint16_t scrHeight;
+    uint8_t bpp;
 
-	bool was_down;
+    bool was_down;
     char *device_name;
 };
 
