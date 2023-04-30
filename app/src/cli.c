@@ -1899,9 +1899,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 #ifdef HAVE_V4L2
-    if (!opts->display && !opts->record_filename && !opts->v4l2_device) {
+    if (!opts->display && !opts->record_filename && !opts->v4l2_device && !opts->vnc_server) {
         LOGE("-N/--no-display requires either screen recording (-r/--record)"
-             " or sink to v4l2loopback device (--v4l2-sink)");
+             " or sink to v4l2loopback device (--v4l2-sink) or setting up a VNC server"
+			 " (--vnc-server)");
         return false;
     }
 
