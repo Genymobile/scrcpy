@@ -38,6 +38,9 @@
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
+#ifdef HAVE_VNC
+#include "vnc_sink.h"
+#endif
 
 struct scrcpy {
     struct sc_server server;
@@ -49,6 +52,9 @@ struct scrcpy {
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
     struct sc_delay_buffer display_buffer;
+#ifdef HAVE_VNC
+    struct sc_vnc_sink vnc_sink;
+#endif
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
     struct sc_delay_buffer v4l2_buffer;
@@ -311,6 +317,9 @@ scrcpy(struct scrcpy_options *options) {
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
+#ifdef HAVE_VNC
+    bool vnc_sink_initialized = false;
+#endif
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
 #ifdef HAVE_USB
@@ -451,7 +460,7 @@ scrcpy(struct scrcpy_options *options) {
                         &audio_demuxer_cbs, options);
     }
 
-    bool needs_video_decoder = options->display;
+    bool needs_video_decoder = options->display || options->vnc_server;
     bool needs_audio_decoder = options->audio && options->display;
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
@@ -694,6 +703,17 @@ aoa_hid_end:
                                      &s->audio_player.frame_sink);
         }
     }
+#ifdef HAVE_VNC
+    if (options->vnc_server) {
+        if (!sc_vnc_sink_init(&s->vnc_sink, "my vnc server", controller)) {
+            printf("bad vnc init \n");
+            goto end;
+        }
+        vnc_sink_initialized = true;
+        struct sc_frame_source *src = &s->video_decoder.frame_source;
+        sc_frame_source_add_sink(src, &s->vnc_sink.frame_sink);
+    }
+#endif
 
 #ifdef HAVE_V4L2
     if (options->v4l2_device) {
@@ -784,6 +804,11 @@ end:
 #ifdef HAVE_V4L2
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
+    }
+#endif
+#ifdef HAVE_VNC
+    if (vnc_sink_initialized) {
+        sc_vnc_sink_destroy(&s->vnc_sink);
     }
 #endif
 

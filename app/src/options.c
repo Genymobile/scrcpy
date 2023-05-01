@@ -53,6 +53,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .always_on_top = false,
     .control = true,
     .display = true,
+    .vnc_server = false,
     .turn_screen_off = false,
     .key_inject_mode = SC_KEY_INJECT_MODE_MIXED,
     .window_borderless = false,

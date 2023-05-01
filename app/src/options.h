@@ -136,6 +136,7 @@ struct scrcpy_options {
     bool always_on_top;
     bool control;
     bool display;
+    bool vnc_server;
     bool turn_screen_off;
     enum sc_key_inject_mode key_inject_mode;
     bool window_borderless;
