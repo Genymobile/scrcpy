@@ -22,7 +22,9 @@ sc_vnc_frame_sink_close(struct sc_frame_sink *sink) {
     (void) sink;
 }
 
-void consume_frame(struct sc_vnc_sink* vnc, const AVFrame *frame) {
+static bool
+sc_vnc_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
+    struct sc_vnc_sink *vnc = DOWNCAST(sink);
     // XXX: ideally this would get "damage" regions from the decoder
     // to prevent marking the entire screen as modified if only a small
     // part changed
@@ -39,9 +41,9 @@ void consume_frame(struct sc_vnc_sink* vnc, const AVFrame *frame) {
                                   frame->width, frame->height, AV_PIX_FMT_RGBA,
                                   0, 0, 0, 0);
         if(vnc->ctx == NULL) {
-            printf("could not make context\n");
+            LOGE("could not make context");
+            return false;
         }
-        printf("good ctx\n");
         char *currentFrameBuffer = vnc->screen->frameBuffer;
         char *newFrameBuffer = (char *)malloc(vnc->scrWidth*vnc->scrHeight*vnc->bpp);
         rfbNewFramebuffer(vnc->screen, newFrameBuffer, vnc->scrWidth, vnc->scrHeight, 8, 3, vnc->bpp);
@@ -54,12 +56,6 @@ void consume_frame(struct sc_vnc_sink* vnc, const AVFrame *frame) {
     sws_scale(vnc->ctx, (const uint8_t * const *)frame->data, frame->linesize, 0, frame->height, data, linesize);
 
     rfbMarkRectAsModified(vnc->screen, 0, 0, frame->width, frame->height);
-}
-
-static bool
-sc_vnc_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
-    struct sc_vnc_sink *vnc = DOWNCAST(sink);
-    consume_frame(vnc, frame);
     return true;
 }
 
@@ -77,20 +73,21 @@ sc_vnc_sink_init(struct sc_vnc_sink *vs, const char *device_name, struct sc_cont
     vs->bpp = 4;
     vs->screen = rfbGetScreen(0, NULL, placeholder_width, placeholder_height, 8, 3, vs->bpp);
     vs->screen->desktopName = device_name;
-    vs->screen->alwaysShared = TRUE;
+    vs->screen->alwaysShared = true;
     vs->screen->frameBuffer = (char *)malloc(placeholder_width * placeholder_height * vs->bpp);
     vs->screen->ptrAddEvent = ptr_add_event;
-    vs->screen->screenData = vs; // XXX: any other way to pass a reference back?
-    vs->was_down = FALSE;
+    vs->screen->screenData = vs;
+    vs->was_down = false;
     vs->controller = controller;
     rfbInitServer(vs->screen);
-    rfbRunEventLoop(vs->screen, -1, TRUE); // TODO: integrate into proper lifecycle
+    rfbRunEventLoop(vs->screen, -1, true); // TODO: integrate into proper lifecycle
     return true;
 }
 
 void
 sc_vnc_sink_destroy(struct sc_vnc_sink *vs) {
     if(vs->screen) {
+        rfbShutdownServer(vs->screen, true);
         free(vs->screen->frameBuffer);
         rfbScreenCleanup(vs->screen);
     }
@@ -107,12 +104,6 @@ ptr_add_event(int buttonMask, int x, int y, rfbClientPtr cl) {
 
     // TODO: only doing left click
     bool up = (buttonMask & 0x1) == 0;
-    /* TODO: this needs a screen
-    struct sc_point mouse = sc_screen_convert_window_to_frame_coords(im->screen, x, y);
-    printf("transformed to! x %d y %d \n", sc_point.x, sc_point.y);
-    */
-
-
     struct sc_control_msg msg;
     struct sc_size screen_size = {vnc->scrWidth, vnc->scrHeight};
     struct sc_point point = {x, y};
