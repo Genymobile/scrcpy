@@ -31,7 +31,6 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
-    'src/vnc_sink.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/util/acksync.c',
@@ -84,6 +83,11 @@ if v4l2_support
     src += [ 'src/v4l2_sink.c' ]
 endif
 
+vnc_support = get_option('vnc') and host_machine.system() == 'linux'
+if vnc_support
+    src += [ 'src/vnc_sink.c' ]
+endif
+
 usb_support = get_option('usb')
 if usb_support
     src += [
@@ -109,12 +113,14 @@ if not crossbuild_windows
         dependency('libavutil'),
         dependency('libswresample'),
         dependency('sdl2', version: '>= 2.0.5'),
-        dependency('libswscale'),
-        dependency('libvncserver'),
     ]
 
     if v4l2_support
         dependencies += dependency('libavdevice')
+    endif
+    if vnc_support
+        dependencies += dependency('libswscale')
+        dependencies += dependency('libvncserver')
     endif
 
     if usb_support
@@ -216,6 +222,9 @@ conf.set('SERVER_DEBUGGER_METHOD_NEW', get_option('server_debugger_method') == '
 
 # enable V4L2 support (linux only)
 conf.set('HAVE_V4L2', v4l2_support)
+
+# enable libvnc support
+conf.set('HAVE_VNC', vnc_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)

@@ -1868,7 +1868,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_VNC_SERVER:
+#ifdef HAVE_VNC
                 opts->vnc_server = true;
+#else
+                LOGE("VNC (--vnc-server) is disabled.");
+                return false;
+#endif
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -1898,11 +1903,22 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    bool has_sink = opts->record_filename;
 #ifdef HAVE_V4L2
-    if (!opts->display && !opts->record_filename && !opts->v4l2_device && !opts->vnc_server) {
-        LOGE("-N/--no-display requires either screen recording (-r/--record)"
-             " or sink to v4l2loopback device (--v4l2-sink) or setting up a VNC server"
-             " (--vnc-server)");
+    has_sink |= (opts->v4l2_device != NULL);
+#endif
+#ifdef HAVE_VNC
+    has_sink |= opts->vnc_server;
+#endif
+    if (!opts->display && !has_sink) {
+        LOGE("-N/--no-display requires at least one of the following to be set: ");
+        LOGE("* screen recording (-r/--record)");
+#ifdef HAVE_V4L2
+        LOGE("* sink to v4l2loopback device (--v4l2-sink)");
+#endif
+#ifdef HAVE_VNC
+        LOGE("* setting up a VNC server (--vnc-server)");
+#endif
         return false;
     }
 
@@ -1924,12 +1940,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         LOGE("V4L2 buffer value without V4L2 sink\n");
         return false;
     }
-#else
-    if (!opts->display && !opts->record_filename) {
-        LOGE("-N/--no-display requires screen recording (-r/--record)");
-        return false;
-    }
-#endif
 
     if (opts->audio && !opts->display && !opts->record_filename) {
         LOGI("No display and no recording: audio disabled");
