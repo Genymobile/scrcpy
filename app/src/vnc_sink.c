@@ -27,7 +27,6 @@ void consume_frame(struct sc_vnc_sink* vnc, const AVFrame *frame) {
     // to prevent marking the entire screen as modified if only a small
     // part changed
     if(frame->width != vnc->scrWidth || frame->height != vnc->scrHeight) {
-        printf("RESIZE EVENT\n");
         if(vnc->ctx) {
             sws_freeContext(vnc->ctx);
             vnc->ctx = NULL;
