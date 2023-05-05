@@ -18,7 +18,7 @@ _It is currently not possible to record only the audio._
 To disable mirroring while recording:
 
 ```bash
-scrcpy --no-display --record=file.mp4
+scrcpy --no-mirror --record=file.mp4
 scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
 ```

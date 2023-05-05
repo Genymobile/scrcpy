@@ -159,15 +159,15 @@ scrcpy --display-buffer=50 --v4l2-buffer=300
 ```
 
 
-## No display
+## No mirror
 
 It is possible to capture an Android device without displaying a mirroring
 window. This option is available if either [recording](recording.md) or
 [v4l2](#video4linux) is enabled:
 
 ```bash
-scrcpy --v4l2-sink=/dev/video2 --no-display
-scrcpy --record=file.mkv --no-display
+scrcpy --v4l2-sink=/dev/video2 --no-mirror
+scrcpy --record=file.mkv --no-mirror
 ```
 
 ## Video4Linux

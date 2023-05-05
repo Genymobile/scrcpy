@@ -137,7 +137,7 @@ sdl_set_hints(const char *render_driver) {
 }
 
 static void
-sdl_configure(bool display, bool disable_screensaver) {
+sdl_configure(bool mirror, bool disable_screensaver) {
 #ifdef _WIN32
     // Clean up properly on Ctrl+C on Windows
     bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
@@ -146,7 +146,7 @@ sdl_configure(bool display, bool disable_screensaver) {
     }
 #endif // _WIN32
 
-    if (!display) {
+    if (!mirror) {
         return;
     }
 
@@ -385,12 +385,10 @@ scrcpy(struct scrcpy_options *options) {
         goto end;
     }
 
-    if (options->display) {
+    if (options->mirror) {
         sdl_set_hints(options->render_driver);
-    }
 
-    // Initialize SDL video in addition if display is enabled
-    if (options->display) {
+        // Initialize SDL video and audio in addition if mirroring is enabled
         if (SDL_Init(SDL_INIT_VIDEO)) {
             LOGE("Could not initialize SDL video: %s", SDL_GetError());
             goto end;
@@ -402,7 +400,7 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
-    sdl_configure(options->display, options->disable_screensaver);
+    sdl_configure(options->mirror, options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
     bool connected;
@@ -428,7 +426,7 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_file_pusher *fp = NULL;
 
-    if (options->display && options->control) {
+    if (options->mirror && options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
                                  options->push_target)) {
             goto end;
@@ -451,8 +449,8 @@ scrcpy(struct scrcpy_options *options) {
                         &audio_demuxer_cbs, options);
     }
 
-    bool needs_video_decoder = options->display;
-    bool needs_audio_decoder = options->audio && options->display;
+    bool needs_video_decoder = options->mirror;
+    bool needs_audio_decoder = options->mirror && options->audio;
 #ifdef HAVE_V4L2
     needs_video_decoder |= !!options->v4l2_device;
 #endif
@@ -646,7 +644,7 @@ aoa_hid_end:
     // There is a controller if and only if control is enabled
     assert(options->control == !!controller);
 
-    if (options->display) {
+    if (options->mirror) {
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
 

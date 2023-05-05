@@ -72,6 +72,7 @@ enum {
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
     OPT_AUDIO_OUTPUT_BUFFER,
+    OPT_NO_DISPLAY,
 };
 
 struct sc_option {
@@ -380,9 +381,14 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'N',
+        .longopt = "no-mirror",
+        .text = "Do not mirror device video or audio on the computer (only "
+                "when recording or V4L2 sink is enabled).",
+    },
+    {
+        // deprecated
+        .longopt_id = OPT_NO_DISPLAY,
         .longopt = "no-display",
-        .text = "Do not display device (only when screen recording or V4L2 "
-                "sink is enabled).",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -1642,8 +1648,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'n':
                 opts->control = false;
                 break;
+            case OPT_NO_DISPLAY:
+                LOGW("--no-display is deprecated, use --no-mirror instead.");
+                // fall through
             case 'N':
-                opts->display = false;
+                opts->mirror = false;
                 break;
             case 'p':
                 if (!parse_port_range(optarg, &opts->port_range)) {
@@ -1890,8 +1899,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 #ifdef HAVE_V4L2
-    if (!opts->display && !opts->record_filename && !opts->v4l2_device) {
-        LOGE("-N/--no-display requires either screen recording (-r/--record)"
+    if (!opts->mirror && !opts->record_filename && !opts->v4l2_device) {
+        LOGE("-N/--no-mirror requires either screen recording (-r/--record)"
              " or sink to v4l2loopback device (--v4l2-sink)");
         return false;
     }
@@ -1915,14 +1924,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 #else
-    if (!opts->display && !opts->record_filename) {
-        LOGE("-N/--no-display requires screen recording (-r/--record)");
+    if (!opts->mirror && !opts->record_filename) {
+        LOGE("-N/--no-mirror requires screen recording (-r/--record)");
         return false;
     }
 #endif
 
-    if (opts->audio && !opts->display && !opts->record_filename) {
-        LOGI("No display and no recording: audio disabled");
+    if (opts->audio && !opts->mirror && !opts->record_filename) {
+        LOGI("No mirror and no recording: audio disabled");
         opts->audio = false;
     }
 
