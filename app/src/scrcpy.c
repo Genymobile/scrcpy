@@ -426,7 +426,8 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_file_pusher *fp = NULL;
 
-    if (options->mirror && options->control) {
+    assert(!options->control || options->mirror); // control implies mirror
+    if (options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
                                  options->push_target)) {
             goto end;

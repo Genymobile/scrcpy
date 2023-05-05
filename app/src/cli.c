@@ -2041,6 +2041,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
+#ifdef HAVE_USB
+    if (!opts->mirror && opts->control && !opts->otg) {
+#else
+    if (!opts->mirror && opts->control) {
+#endif
+        LOGD("Mirroring is disabled, force --no-control");
+        opts->control = false;
+    }
+
     return true;
 }
 
