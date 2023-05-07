@@ -60,9 +60,14 @@ sc_recorder_queue_clear(struct sc_recorder_queue *queue) {
 static const char *
 sc_recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
-        case SC_RECORD_FORMAT_MP4: return "mp4";
-        case SC_RECORD_FORMAT_MKV: return "matroska";
-        default: return NULL;
+        case SC_RECORD_FORMAT_MP4:
+        case SC_RECORD_FORMAT_M4A:
+            return "mp4";
+        case SC_RECORD_FORMAT_MKV:
+        case SC_RECORD_FORMAT_MKA:
+            return "matroska";
+        default:
+            return NULL;
     }
 }
 

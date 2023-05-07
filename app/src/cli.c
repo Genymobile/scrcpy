@@ -1487,6 +1487,12 @@ get_record_format(const char *name) {
     if (!strcmp(name, "mkv")) {
         return SC_RECORD_FORMAT_MKV;
     }
+    if (!strcmp(name, "m4a")) {
+        return SC_RECORD_FORMAT_M4A;
+    }
+    if (!strcmp(name, "mka")) {
+        return SC_RECORD_FORMAT_MKA;
+    }
     return 0;
 }
 
@@ -1972,6 +1978,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (opts->audio_codec == SC_CODEC_RAW) {
             LOGW("Recording does not support RAW audio codec");
+            return false;
+        }
+
+        if (opts->video
+                && sc_record_format_is_audio_only(opts->record_format)) {
+            LOGE("Audio container does not support video stream");
             return false;
         }
     }
