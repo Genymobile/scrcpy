@@ -231,7 +231,8 @@ execute_server(struct sc_server *server,
     }
     if (!params->audio) {
         ADD_PARAM("audio=false");
-    } else if (params->audio_bit_rate) {
+    }
+    if (params->audio_bit_rate) {
         ADD_PARAM("audio_bit_rate=%" PRIu32, params->audio_bit_rate);
     }
     if (params->video_codec != SC_CODEC_H264) {
