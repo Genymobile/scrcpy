@@ -112,7 +112,7 @@ public final class Device {
                     screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(), options.getMaxSize(), options.getLockVideoOrientation());
                     // notify
                     if (foldListener != null) {
-                        foldListener.onFoldChanged(displayId); // what to do here?
+                        foldListener.onFoldChanged(displayId);
                     }
                 }
             }
