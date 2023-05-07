@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScreenEncoder implements Device.RotationListener {
+public class ScreenEncoder implements Device.RotationListener, Device.FoldListener {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
@@ -51,6 +51,12 @@ public class ScreenEncoder implements Device.RotationListener {
     }
 
     @Override
+    public void onFoldChanged(int displayId) {
+        // TODO: rename rotationChanged to something like displayChanged? To discuss with @rom1v
+        rotationChanged.set(true);
+    }
+
+    @Override
     public void onRotationChanged(int rotation) {
         rotationChanged.set(true);
     }
@@ -65,6 +71,7 @@ public class ScreenEncoder implements Device.RotationListener {
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
+        device.setFoldListener(this);
 
         streamer.writeVideoHeader(device.getScreenInfo().getVideoSize());
 
@@ -112,6 +119,7 @@ public class ScreenEncoder implements Device.RotationListener {
         } finally {
             mediaCodec.release();
             device.setRotationListener(null);
+            device.setFoldListener(null);
             SurfaceControl.destroyDisplay(display);
         }
     }
