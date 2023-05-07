@@ -1493,6 +1493,9 @@ get_record_format(const char *name) {
     if (!strcmp(name, "mka")) {
         return SC_RECORD_FORMAT_MKA;
     }
+    if (!strcmp(name, "opus")) {
+        return SC_RECORD_FORMAT_OPUS;
+    }
     return 0;
 }
 
@@ -1984,6 +1987,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->video
                 && sc_record_format_is_audio_only(opts->record_format)) {
             LOGE("Audio container does not support video stream");
+            return false;
+        }
+
+        if (opts->record_format == SC_RECORD_FORMAT_OPUS
+                && opts->audio_codec != SC_CODEC_OPUS) {
+            LOGE("Recording to OPUS file requires an OPUS audio stream "
+                 "(try with --audio-codec=opus)");
             return false;
         }
     }

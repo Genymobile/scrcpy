@@ -66,6 +66,8 @@ sc_recorder_get_format_name(enum sc_record_format format) {
         case SC_RECORD_FORMAT_MKV:
         case SC_RECORD_FORMAT_MKA:
             return "matroska";
+        case SC_RECORD_FORMAT_OPUS:
+            return "opus";
         default:
             return NULL;
     }

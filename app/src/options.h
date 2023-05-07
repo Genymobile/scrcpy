@@ -23,12 +23,14 @@ enum sc_record_format {
     SC_RECORD_FORMAT_MKV,
     SC_RECORD_FORMAT_M4A,
     SC_RECORD_FORMAT_MKA,
+    SC_RECORD_FORMAT_OPUS,
 };
 
 static inline bool
 sc_record_format_is_audio_only(enum sc_record_format fmt) {
     return fmt == SC_RECORD_FORMAT_M4A
-        || fmt == SC_RECORD_FORMAT_MKA;
+        || fmt == SC_RECORD_FORMAT_MKA
+        || fmt == SC_RECORD_FORMAT_OPUS;
 }
 
 enum sc_codec {
