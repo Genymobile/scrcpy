@@ -62,6 +62,7 @@ sc_recorder_get_format_name(enum sc_record_format format) {
     switch (format) {
         case SC_RECORD_FORMAT_MP4:
         case SC_RECORD_FORMAT_M4A:
+        case SC_RECORD_FORMAT_AAC:
             return "mp4";
         case SC_RECORD_FORMAT_MKV:
         case SC_RECORD_FORMAT_MKA:

@@ -1496,6 +1496,9 @@ get_record_format(const char *name) {
     if (!strcmp(name, "opus")) {
         return SC_RECORD_FORMAT_OPUS;
     }
+    if (!strcmp(name, "aac")) {
+        return SC_RECORD_FORMAT_AAC;
+    }
     return 0;
 }
 
@@ -1994,6 +1997,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 && opts->audio_codec != SC_CODEC_OPUS) {
             LOGE("Recording to OPUS file requires an OPUS audio stream "
                  "(try with --audio-codec=opus)");
+            return false;
+        }
+
+        if (opts->record_format == SC_RECORD_FORMAT_AAC
+                && opts->audio_codec != SC_CODEC_AAC) {
+            LOGE("Recording to AAC file requires an AAC audio stream "
+                 "(try with --audio-codec=aac)");
             return false;
         }
     }
