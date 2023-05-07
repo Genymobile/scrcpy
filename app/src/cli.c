@@ -1479,18 +1479,27 @@ sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
 }
 #endif
 
+static enum sc_record_format
+get_record_format(const char *name) {
+    if (!strcmp(name, "mp4")) {
+        return SC_RECORD_FORMAT_MP4;
+    }
+    if (!strcmp(name, "mkv")) {
+        return SC_RECORD_FORMAT_MKV;
+    }
+    return 0;
+}
+
 static bool
 parse_record_format(const char *optarg, enum sc_record_format *format) {
-    if (!strcmp(optarg, "mp4")) {
-        *format = SC_RECORD_FORMAT_MP4;
-        return true;
+    enum sc_record_format fmt = get_record_format(optarg);
+    if (!fmt) {
+        LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
+        return false;
     }
-    if (!strcmp(optarg, "mkv")) {
-        *format = SC_RECORD_FORMAT_MKV;
-        return true;
-    }
-    LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
-    return false;
+
+    *format = fmt;
+    return true;
 }
 
 static bool
@@ -1510,18 +1519,13 @@ parse_port(const char *optarg, uint16_t *port) {
 
 static enum sc_record_format
 guess_record_format(const char *filename) {
-    size_t len = strlen(filename);
-    if (len < 4) {
+    const char *dot = strrchr(filename, '.');
+    if (!dot) {
         return 0;
     }
-    const char *ext = &filename[len - 4];
-    if (!strcmp(ext, ".mp4")) {
-        return SC_RECORD_FORMAT_MP4;
-    }
-    if (!strcmp(ext, ".mkv")) {
-        return SC_RECORD_FORMAT_MKV;
-    }
-    return 0;
+
+    const char *ext = dot + 1;
+    return get_record_format(ext);
 }
 
 static bool
