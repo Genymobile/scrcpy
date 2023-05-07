@@ -16,7 +16,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
+public class ScreenEncoder implements Device.RotationListener, Device.FoldListener, AsyncProcessor {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
@@ -54,6 +54,11 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
     }
 
     @Override
+    public void onFoldChanged(int displayId, boolean folded) {
+        resetCapture.set(true);
+    }
+
+    @Override
     public void onRotationChanged(int rotation) {
         resetCapture.set(true);
     }
@@ -68,6 +73,7 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
         IBinder display = createDisplay();
         device.setRotationListener(this);
+        device.setFoldListener(this);
 
         streamer.writeVideoHeader(device.getScreenInfo().getVideoSize());
 
@@ -115,6 +121,7 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
         } finally {
             mediaCodec.release();
             device.setRotationListener(null);
+            device.setFoldListener(null);
             SurfaceControl.destroyDisplay(display);
         }
     }

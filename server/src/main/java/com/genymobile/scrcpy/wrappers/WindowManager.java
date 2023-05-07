@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.Ln;
 
 import android.os.IInterface;
 import android.view.IRotationWatcher;
+import android.view.IDisplayFoldListener;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -104,6 +105,15 @@ public final class WindowManager {
                 // old version
                 cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);
             }
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public void registerDisplayFoldListener(IDisplayFoldListener foldListener) {
+        try {
+            Class<?> cls = manager.getClass();
+            cls.getMethod("registerDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
         } catch (Exception e) {
             throw new AssertionError(e);
         }

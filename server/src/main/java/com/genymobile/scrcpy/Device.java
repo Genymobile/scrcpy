@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.view.IRotationWatcher;
+import android.view.IDisplayFoldListener;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
@@ -35,6 +36,10 @@ public final class Device {
         void onRotationChanged(int rotation);
     }
 
+    public interface FoldListener {
+        void onFoldChanged(int displayId, boolean folded);
+    }
+
     public interface ClipboardListener {
         void onClipboardTextChanged(String text);
     }
@@ -46,6 +51,7 @@ public final class Device {
 
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
+    private FoldListener foldListener;
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
@@ -92,6 +98,26 @@ public final class Device {
                 }
             }
         }, displayId);
+
+        ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
+            @Override
+            public void onDisplayFoldChanged(int displayId, boolean folded) {
+                synchronized (Device.this) {
+                    DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                    if (displayInfo == null) {
+                        Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+                        return;
+                    }
+
+                    screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(),
+                            options.getMaxSize(), options.getLockVideoOrientation());
+                    // notify
+                    if (foldListener != null) {
+                        foldListener.onFoldChanged(displayId, folded);
+                    }
+                }
+            }
+        });
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
@@ -222,6 +248,10 @@ public final class Device {
 
     public synchronized void setRotationListener(RotationListener rotationListener) {
         this.rotationListener = rotationListener;
+    }
+
+    public synchronized void setFoldListener(FoldListener foldlistener) {
+        this.foldListener = foldlistener;
     }
 
     public synchronized void setClipboardListener(ClipboardListener clipboardListener) {
