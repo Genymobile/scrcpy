@@ -13,7 +13,11 @@ To record only the video:
 scrcpy --no-audio --record=file.mp4
 ```
 
-_It is currently not possible to record only the audio._
+To record only the audio:
+
+```bash
+scrcpy --no-video --record=file.mp4
+```
 
 To disable mirroring while recording:
 

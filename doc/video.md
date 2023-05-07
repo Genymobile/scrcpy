@@ -170,6 +170,16 @@ scrcpy --v4l2-sink=/dev/video2 --no-mirror
 scrcpy --record=file.mkv --no-mirror
 ```
 
+
+## No video
+
+To disable video forwarding completely, so that only audio is forwarded:
+
+```
+scrcpy --no-video
+```
+
+
 ## Video4Linux
 
 See the dedicated [Video4Linux](v4l2.md) page.

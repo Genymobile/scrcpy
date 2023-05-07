@@ -95,6 +95,7 @@ public final class Server {
         int scid = options.getScid();
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
+        boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
@@ -121,7 +122,7 @@ public final class Server {
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, audio, control, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -147,11 +148,13 @@ public final class Server {
                 asyncProcessors.add(audioRecorder);
             }
 
-            Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
-                    options.getSendFrameMeta());
-            ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
-                    options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
-            asyncProcessors.add(screenEncoder);
+            if (video) {
+                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
+                        options.getSendFrameMeta());
+                ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                        options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
+                asyncProcessors.add(screenEncoder);
+            }
 
             Completion completion = new Completion(asyncProcessors.size());
             for (AsyncProcessor asyncProcessor : asyncProcessors) {

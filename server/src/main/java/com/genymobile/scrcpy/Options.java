@@ -9,6 +9,7 @@ public class Options {
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int scid = -1; // 31-bit non-negative value, or -1
+    private boolean video = true;
     private boolean audio = true;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
@@ -49,6 +50,10 @@ public class Options {
 
     public int getScid() {
         return scid;
+    }
+
+    public boolean getVideo() {
+        return video;
     }
 
     public boolean getAudio() {
@@ -199,6 +204,9 @@ public class Options {
                     break;
                 case "log_level":
                     options.logLevel = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
+                    break;
+                case "video":
+                    options.video = Boolean.parseBoolean(value);
                     break;
                 case "audio":
                     options.audio = Boolean.parseBoolean(value);

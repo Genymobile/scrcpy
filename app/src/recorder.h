@@ -27,6 +27,7 @@ struct sc_recorder {
      * may access it without data races.
      */
     bool audio;
+    bool video;
 
     char *filename;
     enum sc_record_format format;
@@ -59,7 +60,7 @@ struct sc_recorder_callbacks {
 
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
-                 enum sc_record_format format, bool audio,
+                 enum sc_record_format format, bool video, bool audio,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
 bool

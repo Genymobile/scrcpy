@@ -156,6 +156,7 @@ struct scrcpy_options {
     bool cleanup;
     bool start_fps_counter;
     bool power_on;
+    bool video;
     bool audio;
     bool require_audio;
     bool list_encoders;

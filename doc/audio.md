@@ -24,6 +24,21 @@ To disable audio:
 scrcpy --no-audio
 ```
 
+## Audio only
+
+To play audio only, disable the video:
+
+```
+scrcpy --no-video
+```
+
+Without video, the audio latency is typically not criticial, so it might be
+interesting to add [buffering](#buffering) to minimize glitches:
+
+```
+scrcpy --no-video --audio-buffer=200
+```
+
 ## Codec
 
 The audio codec can be selected. The possible values are `opus` (default), `aac`

@@ -73,6 +73,7 @@ enum {
     OPT_AUDIO_BUFFER,
     OPT_AUDIO_OUTPUT_BUFFER,
     OPT_NO_DISPLAY,
+    OPT_NO_VIDEO,
 };
 
 struct sc_option {
@@ -406,6 +407,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_VIDEO,
+        .longopt = "no-video",
+        .text = "Disable video forwarding.",
     },
     {
         .longopt_id = OPT_OTG,
@@ -1797,6 +1803,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_DOWNSIZE_ON_ERROR:
                 opts->downsize_on_error = false;
                 break;
+            case OPT_NO_VIDEO:
+                opts->video = false;
+                break;
             case OPT_NO_AUDIO:
                 opts->audio = false;
                 break;
@@ -2042,12 +2051,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 #endif
 
 #ifdef HAVE_USB
-    if (!opts->mirror && opts->control && !opts->otg) {
+    if (!(opts->mirror && opts->video) && !opts->otg) {
 #else
-    if (!opts->mirror && opts->control) {
+    if (!(opts->mirror && opts->video)) {
 #endif
-        LOGD("Mirroring is disabled, force --no-control");
+        // If video mirroring is disabled and OTG are disabled, then there is
+        // no way to control the device.
         opts->control = false;
+    }
+
+    if (!opts->video) {
+        // If video is disabled, then scrcpy must exit on audio failure.
+        opts->require_audio = true;
     }
 
     return true;
