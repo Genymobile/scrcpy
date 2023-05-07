@@ -1959,19 +1959,21 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
-    if (opts->record_filename && !opts->record_format) {
-        opts->record_format = guess_record_format(opts->record_filename);
+    if (opts->record_filename) {
         if (!opts->record_format) {
-            LOGE("No format specified for \"%s\" "
-                 "(try with --record-format=mkv)",
-                 opts->record_filename);
+            opts->record_format = guess_record_format(opts->record_filename);
+            if (!opts->record_format) {
+                LOGE("No format specified for \"%s\" "
+                     "(try with --record-format=mkv)",
+                     opts->record_filename);
+                return false;
+            }
+        }
+
+        if (opts->audio_codec == SC_CODEC_RAW) {
+            LOGW("Recording does not support RAW audio codec");
             return false;
         }
-    }
-
-    if (opts->record_filename && opts->audio_codec == SC_CODEC_RAW) {
-        LOGW("Recording does not support RAW audio codec");
-        return false;
     }
 
     if (opts->audio_codec == SC_CODEC_RAW) {
