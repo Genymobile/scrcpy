@@ -51,7 +51,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     }
 
     @Override
-    public void onFoldChanged(int displayId) {
+    public void onFoldChanged(int displayId, boolean folded) {
         // TODO: rename rotationChanged to something like displayChanged? To discuss with @rom1v
         rotationChanged.set(true);
     }

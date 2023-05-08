@@ -37,7 +37,7 @@ public final class Device {
     }
 
     public interface FoldListener {
-        void onFoldChanged(int displayId);
+        void onFoldChanged(int displayId, boolean folded);
     }
 
     public interface ClipboardListener {
@@ -112,7 +112,7 @@ public final class Device {
                     screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(), options.getMaxSize(), options.getLockVideoOrientation());
                     // notify
                     if (foldListener != null) {
-                        foldListener.onFoldChanged(displayId);
+                        foldListener.onFoldChanged(displayId, folded);
                     }
                 }
             }
