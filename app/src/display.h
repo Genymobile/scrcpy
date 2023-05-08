@@ -24,6 +24,20 @@ struct sc_display {
 #endif
 
     bool mipmaps;
+
+    struct {
+#define SC_DISPLAY_PENDING_FLAG_SIZE 1
+#define SC_DISPLAY_PENDING_FLAG_FRAME 2
+        int8_t flags;
+        struct sc_size size;
+        AVFrame *frame;
+    } pending;
+};
+
+enum sc_display_result {
+    SC_DISPLAY_RESULT_OK,
+    SC_DISPLAY_RESULT_PENDING,
+    SC_DISPLAY_RESULT_ERROR,
 };
 
 bool
@@ -32,13 +46,13 @@ sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps);
 void
 sc_display_destroy(struct sc_display *display);
 
-bool
+enum sc_display_result
 sc_display_set_texture_size(struct sc_display *display, struct sc_size size);
 
-bool
+enum sc_display_result
 sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 
-bool
+enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   unsigned rotation);
 

@@ -249,9 +249,9 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
         sc_screen_update_content_rect(screen);
     }
 
-    bool ok = sc_display_render(&screen->display, &screen->rect,
-                                screen->rotation);
-    (void) ok; // error already logged
+    enum sc_display_result res =
+        sc_display_render(&screen->display, &screen->rect, screen->rotation);
+    (void) res; // any error already logged
 }
 
 #if defined(__APPLE__) || defined(__WINDOWS__)
@@ -583,15 +583,17 @@ sc_screen_init_size(struct sc_screen *screen) {
         get_rotated_size(screen->frame_size, screen->rotation);
     screen->content_size = content_size;
 
-    return sc_display_set_texture_size(&screen->display, screen->frame_size);
+    enum sc_display_result res =
+        sc_display_set_texture_size(&screen->display, screen->frame_size);
+    return res != SC_DISPLAY_RESULT_ERROR;
 }
 
 // recreate the texture and resize the window if the frame size has changed
-static bool
+static enum sc_display_result
 prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
     if (screen->frame_size.width == new_frame_size.width
             && screen->frame_size.height == new_frame_size.height) {
-        return true;
+        return SC_DISPLAY_RESULT_OK;
     }
 
     // frame dimension changed
@@ -615,12 +617,22 @@ sc_screen_update_frame(struct sc_screen *screen) {
     sc_fps_counter_add_rendered_frame(&screen->fps_counter);
 
     struct sc_size new_frame_size = {frame->width, frame->height};
-    if (!prepare_for_frame(screen, new_frame_size)) {
+    enum sc_display_result res = prepare_for_frame(screen, new_frame_size);
+    if (res == SC_DISPLAY_RESULT_ERROR) {
         return false;
     }
+    if (res == SC_DISPLAY_RESULT_PENDING) {
+        // Not an error, but do not continue
+        return true;
+    }
 
-    if (!sc_display_update_texture(&screen->display, frame)) {
+    res = sc_display_update_texture(&screen->display, frame);
+    if (res == SC_DISPLAY_RESULT_ERROR) {
         return false;
+    }
+    if (res == SC_DISPLAY_RESULT_PENDING) {
+        // Not an error, but do not continue
+        return true;
     }
 
     if (!screen->has_frame) {
