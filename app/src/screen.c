@@ -56,6 +56,7 @@ static void
 set_window_size(struct sc_screen *screen, struct sc_size new_size) {
     assert(!screen->fullscreen);
     assert(!screen->maximized);
+    assert(!screen->minimized);
     SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
 }
 
@@ -359,6 +360,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->has_frame = false;
     screen->fullscreen = false;
     screen->maximized = false;
+    screen->minimized = false;
     screen->mouse_capture_key_pressed = 0;
 
     screen->req.x = params->window_x;
@@ -531,11 +533,11 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
 
 static void
 set_content_size(struct sc_screen *screen, struct sc_size new_content_size) {
-    if (!screen->fullscreen && !screen->maximized) {
+    if (!screen->fullscreen && !screen->maximized && !screen->minimized) {
         resize_for_content(screen, screen->content_size, new_content_size);
     } else if (!screen->resize_pending) {
         // Store the windowed size to be able to compute the optimal size once
-        // fullscreen and maximized are disabled
+        // fullscreen/maximized/minimized are disabled
         screen->windowed_content_size = screen->content_size;
         screen->resize_pending = true;
     }
@@ -547,6 +549,7 @@ static void
 apply_pending_resize(struct sc_screen *screen) {
     assert(!screen->fullscreen);
     assert(!screen->maximized);
+    assert(!screen->minimized);
     if (screen->resize_pending) {
         resize_for_content(screen, screen->windowed_content_size,
                                    screen->content_size);
@@ -659,7 +662,7 @@ sc_screen_switch_fullscreen(struct sc_screen *screen) {
     }
 
     screen->fullscreen = !screen->fullscreen;
-    if (!screen->fullscreen && !screen->maximized) {
+    if (!screen->fullscreen && !screen->maximized && !screen->minimized) {
         apply_pending_resize(screen);
     }
 
@@ -669,7 +672,7 @@ sc_screen_switch_fullscreen(struct sc_screen *screen) {
 
 void
 sc_screen_resize_to_fit(struct sc_screen *screen) {
-    if (screen->fullscreen || screen->maximized) {
+    if (screen->fullscreen || screen->maximized || screen->minimized) {
         return;
     }
 
@@ -693,7 +696,7 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
 
 void
 sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
-    if (screen->fullscreen) {
+    if (screen->fullscreen || screen->minimized) {
         return;
     }
 
@@ -750,6 +753,9 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 case SDL_WINDOWEVENT_MAXIMIZED:
                     screen->maximized = true;
                     break;
+                case SDL_WINDOWEVENT_MINIMIZED:
+                    screen->minimized = true;
+                    break;
                 case SDL_WINDOWEVENT_RESTORED:
                     if (screen->fullscreen) {
                         // On Windows, in maximized+fullscreen, disabling
@@ -760,6 +766,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                         break;
                     }
                     screen->maximized = false;
+                    screen->minimized = false;
                     apply_pending_resize(screen);
                     sc_screen_render(screen, true);
                     break;
