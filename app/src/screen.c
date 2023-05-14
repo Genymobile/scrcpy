@@ -453,7 +453,7 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_fps_counter;
     }
 
-    screen->renderer = SDL_CreateRenderer(screen->window, -1,
+    screen->renderer = SDL_CreateRenderer(screen->window, 2,
                                           SDL_RENDERER_ACCELERATED);
     if (!screen->renderer) {
         LOGE("Could not create renderer: %s", SDL_GetError());
