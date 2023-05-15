@@ -16,6 +16,6 @@ cpu = 'i686'
 endian = 'little'
 
 [properties]
-prebuilt_ffmpeg = 'ffmpeg-6.0-scrcpy-3/win32'
+prebuilt_ffmpeg = 'ffmpeg-6.0-scrcpy-4/win32'
 prebuilt_sdl2 = 'SDL2-2.26.4/i686-w64-mingw32'
 prebuilt_libusb = 'libusb-1.0.26/libusb-MinGW-Win32'
