@@ -1923,11 +1923,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    bool otg = false;
+    bool v4l2 = false;
 #ifdef HAVE_USB
-    if (!(opts->playback && opts->video) && !opts->otg) {
-#else
-    if (!(opts->playback && opts->video)) {
+    otg = opts->otg;
 #endif
+#ifdef HAVE_V4L2
+    v4l2 = !!opts->v4l2_device;
+#endif
+
+    if (!(opts->playback && opts->video) && !otg) {
         // If video playback is disabled and OTG are disabled, then there is
         // no way to control the device.
         opts->control = false;
@@ -1938,14 +1943,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->require_audio = true;
     }
 
-#ifdef HAVE_V4L2
-    if (!opts->playback && !opts->record_filename && !opts->v4l2_device) {
+    if (!opts->playback && !opts->record_filename && !v4l2) {
         LOGE("-N/--no-playback requires either screen recording (-r/--record)"
              " or sink to v4l2loopback device (--v4l2-sink)");
         return false;
     }
 
-    if (opts->v4l2_device) {
+#ifdef HAVE_V4L2
+    if (v4l2) {
         if (opts->lock_video_orientation ==
                 SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
             LOGI("Video orientation is locked for v4l2 sink. "
@@ -1961,11 +1966,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->v4l2_buffer && !opts->v4l2_device) {
         LOGE("V4L2 buffer value without V4L2 sink\n");
-        return false;
-    }
-#else
-    if (!opts->playback && !opts->record_filename) {
-        LOGE("-N/--no-playback requires screen recording (-r/--record)");
         return false;
     }
 #endif
@@ -2054,11 +2054,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
-#ifdef HAVE_USB
-
 # ifdef _WIN32
-    if (!opts->otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID
-                    || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID)) {
+    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID
+                || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID)) {
         LOGE("On Windows, it is not possible to open a USB device already open "
              "by another process (like adb).");
         LOGE("Therefore, -K/--hid-keyboard and -M/--hid-mouse may only work in "
@@ -2067,7 +2065,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 # endif
 
-    if (opts->otg) {
+    if (otg) {
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
         if (opts->record_filename) {
@@ -2094,14 +2092,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("OTG mode: could not select display");
             return false;
         }
-# ifdef HAVE_V4L2
-        if (opts->v4l2_device) {
+        if (v4l2) {
             LOGE("OTG mode: could not sink to V4L2 device");
             return false;
         }
-# endif
     }
-#endif
 
     return true;
 }
