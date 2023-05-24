@@ -112,9 +112,6 @@ struct scrcpy_options {
     const char *audio_codec_options;
     const char *video_encoder;
     const char *audio_encoder;
-#ifdef HAVE_V4L2
-    const char *v4l2_device;
-#endif
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
@@ -137,9 +134,12 @@ struct scrcpy_options {
     uint16_t window_height;
     uint32_t display_id;
     sc_tick display_buffer;
-    sc_tick v4l2_buffer;
     sc_tick audio_buffer;
     sc_tick audio_output_buffer;
+#ifdef HAVE_V4L2
+    const char *v4l2_device;
+    sc_tick v4l2_buffer;
+#endif
 #ifdef HAVE_USB
     bool otg;
 #endif

@@ -11,9 +11,6 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_codec_options = NULL,
     .video_encoder = NULL,
     .audio_encoder = NULL,
-#ifdef HAVE_V4L2
-    .v4l2_device = NULL,
-#endif
     .log_level = SC_LOG_LEVEL_INFO,
     .video_codec = SC_CODEC_H264,
     .audio_codec = SC_CODEC_OPUS,
@@ -42,9 +39,12 @@ const struct scrcpy_options scrcpy_options_default = {
     .window_height = 0,
     .display_id = 0,
     .display_buffer = 0,
-    .v4l2_buffer = 0,
     .audio_buffer = SC_TICK_FROM_MS(50),
     .audio_output_buffer = SC_TICK_FROM_MS(5),
+#ifdef HAVE_V4L2
+    .v4l2_device = NULL,
+    .v4l2_buffer = 0,
+#endif
 #ifdef HAVE_USB
     .otg = false,
 #endif
