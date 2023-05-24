@@ -117,7 +117,8 @@ static void test_options2(void) {
 
     const struct scrcpy_options *opts = &args.opts;
     assert(!opts->control);
-    assert(!opts->playback);
+    assert(!opts->video_playback);
+    assert(!opts->audio_playback);
     assert(!strcmp(opts->record_filename, "file.mp4"));
     assert(opts->record_format == SC_RECORD_FORMAT_MP4);
 }

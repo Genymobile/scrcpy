@@ -74,6 +74,8 @@ enum {
     OPT_AUDIO_OUTPUT_BUFFER,
     OPT_NO_DISPLAY,
     OPT_NO_VIDEO,
+    OPT_NO_AUDIO_PLAYBACK,
+    OPT_NO_VIDEO_PLAYBACK,
 };
 
 struct sc_option {
@@ -352,6 +354,11 @@ static const struct sc_option options[] = {
         .text = "Disable audio forwarding.",
     },
     {
+        .longopt_id = OPT_NO_AUDIO_PLAYBACK,
+        .longopt = "no-audio-playback",
+        .text = "Disable audio playback on the computer.",
+    },
+    {
         .longopt_id = OPT_NO_CLEANUP,
         .longopt = "no-cleanup",
         .text = "By default, scrcpy removes the server binary from the device "
@@ -383,7 +390,8 @@ static const struct sc_option options[] = {
     {
         .shortopt = 'N',
         .longopt = "no-playback",
-        .text = "Disable video and audio playback on the computer.",
+        .text = "Disable video and audio playback on the computer (equivalent "
+                "to --no-video-playback --no-audio-playback).",
     },
     {
         // deprecated
@@ -411,6 +419,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_VIDEO,
         .longopt = "no-video",
         .text = "Disable video forwarding.",
+    },
+    {
+        .longopt_id = OPT_NO_VIDEO_PLAYBACK,
+        .longopt = "no-video-playback",
+        .text = "Disable video playback on the computer.",
     },
     {
         .longopt_id = OPT_OTG,
@@ -1673,7 +1686,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGW("--no-display is deprecated, use --no-playback instead.");
                 // fall through
             case 'N':
-                opts->playback = false;
+                opts->video_playback = false;
+                opts->audio_playback = false;
+                break;
+            case OPT_NO_VIDEO_PLAYBACK:
+                opts->video_playback = false;
+                break;
+            case OPT_NO_AUDIO_PLAYBACK:
+                opts->audio_playback = false;
                 break;
             case 'p':
                 if (!parse_port_range(optarg, &opts->port_range)) {
@@ -1932,21 +1952,39 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
-    if (!(opts->playback && opts->video) && !otg) {
+    if (!opts->video) {
+        opts->video_playback = false;
+    }
+
+    if (!opts->audio) {
+        opts->audio_playback = false;
+    }
+
+    if (!opts->video_playback && !otg) {
         // If video playback is disabled and OTG are disabled, then there is
         // no way to control the device.
         opts->control = false;
     }
 
-    if (!opts->video) {
-        // If video is disabled, then scrcpy must exit on audio failure.
-        opts->require_audio = true;
+    if (opts->video && !opts->video_playback && !opts->record_filename
+            && !v4l2) {
+        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+        opts->video = false;
     }
 
-    if (!opts->playback && !opts->record_filename && !v4l2) {
-        LOGE("-N/--no-playback requires either screen recording (-r/--record)"
-             " or sink to v4l2loopback device (--v4l2-sink)");
+    if (opts->audio && !opts->audio_playback && !opts->record_filename) {
+        LOGI("No audio playback, no recording: audio disabled");
+        opts->audio = false;
+    }
+
+    if (!opts->video && !opts->audio && !otg) {
+        LOGE("No video, no audio, no OTG: nothing to do");
         return false;
+    }
+
+    if (!opts->video && !otg) {
+        // If video is disabled, then scrcpy must exit on audio failure.
+        opts->require_audio = true;
     }
 
 #ifdef HAVE_V4L2
@@ -1969,11 +2007,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 #endif
-
-    if (opts->audio && !opts->playback && !opts->record_filename) {
-        LOGI("No playback and no recording: audio disabled");
-        opts->audio = false;
-    }
 
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
         LOGI("Tunnel host/port is set, "

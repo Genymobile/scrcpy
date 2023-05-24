@@ -188,6 +188,10 @@ Also see \fB\-\-hid\-keyboard\fR.
 Disable audio forwarding.
 
 .TP
+.B \-\-no\-audio\-playback
+Disable audio playback on the computer.
+
+.TP
 .B \-\-no\-cleanup
 By default, scrcpy removes the server binary from the device and restores the device state (show touches, stay awake and power mode) on exit.
 
@@ -211,7 +215,7 @@ Disable device control (mirror the device in read\-only).
 
 .TP
 .B \-N, \-\-no\-playback
-Disable video and audio playback on the computer.
+Disable video and audio playback on the computer (equivalent to --no-video-playback --no-audio-playback).
 
 .TP
 .B \-\-no\-key\-repeat
@@ -228,6 +232,10 @@ Do not power on the device on start.
 .TP
 .B \-\-no\-video
 Disable video forwarding.
+
+.TP
+.B \-\-no\-video\-playback
+Disable video playback on the computer.
 
 .TP
 .B \-\-otg

@@ -29,6 +29,7 @@ _scrcpy() {
         -M --hid-mouse
         -m --max-size=
         --no-audio
+        --no-audio-playback
         --no-cleanup
         --no-clipboard-autosync
         --no-downsize-on-error
@@ -38,6 +39,7 @@ _scrcpy() {
         --no-mipmaps
         --no-power-on
         --no-video
+        --no-video-playback
         --otg
         -p --port=
         --power-off-on-close
