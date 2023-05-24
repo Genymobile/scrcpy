@@ -24,6 +24,8 @@ To disable audio:
 scrcpy --no-audio
 ```
 
+To disable only the audio playback, see [no playback](video.md#no-playback).
+
 ## Audio only
 
 To play audio only, disable the video:
