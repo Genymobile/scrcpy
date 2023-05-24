@@ -1922,6 +1922,21 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+#ifdef HAVE_USB
+    if (!(opts->playback && opts->video) && !opts->otg) {
+#else
+    if (!(opts->playback && opts->video)) {
+#endif
+        // If video playback is disabled and OTG are disabled, then there is
+        // no way to control the device.
+        opts->control = false;
+    }
+
+    if (!opts->video) {
+        // If video is disabled, then scrcpy must exit on audio failure.
+        opts->require_audio = true;
+    }
+
 #ifdef HAVE_V4L2
     if (!opts->playback && !opts->record_filename && !opts->v4l2_device) {
         LOGE("-N/--no-playback requires either screen recording (-r/--record)"
@@ -2086,21 +2101,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 # endif
     }
 #endif
-
-#ifdef HAVE_USB
-    if (!(opts->playback && opts->video) && !opts->otg) {
-#else
-    if (!(opts->playback && opts->video)) {
-#endif
-        // If video playback is disabled and OTG are disabled, then there is
-        // no way to control the device.
-        opts->control = false;
-    }
-
-    if (!opts->video) {
-        // If video is disabled, then scrcpy must exit on audio failure.
-        opts->require_audio = true;
-    }
 
     return true;
 }
