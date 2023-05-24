@@ -1871,7 +1871,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
 #else
-                LOGE("V4L2 (--v4l2-buffer) is only available on Linux.");
+                LOGE("V4L2 (--v4l2-buffer) is disabled (or unsupported on this "
+                     "platform).");
                 return false;
 #endif
             case OPT_LIST_ENCODERS:
