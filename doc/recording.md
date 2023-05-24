@@ -21,10 +21,10 @@ scrcpy --no-video --audio-codec=aac --record-file=file.aac
 # .m4a/.mp4 and .mka/.mkv are also supported for both opus and aac
 ```
 
-To disable mirroring while recording:
+To disable playback while recording:
 
 ```bash
-scrcpy --no-mirror --record=file.mp4
+scrcpy --no-playback --record=file.mp4
 scrcpy -Nr file.mkv
 # interrupt recording with Ctrl+C
 ```

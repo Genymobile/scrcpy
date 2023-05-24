@@ -33,7 +33,7 @@ _scrcpy() {
         --no-clipboard-autosync
         --no-downsize-on-error
         -n --no-control
-        -N --no-mirror
+        -N --no-playback
         --no-key-repeat
         --no-mipmaps
         --no-power-on

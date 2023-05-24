@@ -382,9 +382,8 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'N',
-        .longopt = "no-mirror",
-        .text = "Do not mirror device video or audio on the computer (only "
-                "when recording or V4L2 sink is enabled).",
+        .longopt = "no-playback",
+        .text = "Disable video and audio playback on the computer.",
     },
     {
         // deprecated
@@ -1671,10 +1670,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->control = false;
                 break;
             case OPT_NO_DISPLAY:
-                LOGW("--no-display is deprecated, use --no-mirror instead.");
+                LOGW("--no-display is deprecated, use --no-playback instead.");
                 // fall through
             case 'N':
-                opts->mirror = false;
+                opts->playback = false;
                 break;
             case 'p':
                 if (!parse_port_range(optarg, &opts->port_range)) {
@@ -1924,8 +1923,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 #ifdef HAVE_V4L2
-    if (!opts->mirror && !opts->record_filename && !opts->v4l2_device) {
-        LOGE("-N/--no-mirror requires either screen recording (-r/--record)"
+    if (!opts->playback && !opts->record_filename && !opts->v4l2_device) {
+        LOGE("-N/--no-playback requires either screen recording (-r/--record)"
              " or sink to v4l2loopback device (--v4l2-sink)");
         return false;
     }
@@ -1949,14 +1948,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 #else
-    if (!opts->mirror && !opts->record_filename) {
-        LOGE("-N/--no-mirror requires screen recording (-r/--record)");
+    if (!opts->playback && !opts->record_filename) {
+        LOGE("-N/--no-playback requires screen recording (-r/--record)");
         return false;
     }
 #endif
 
-    if (opts->audio && !opts->mirror && !opts->record_filename) {
-        LOGI("No mirror and no recording: audio disabled");
+    if (opts->audio && !opts->playback && !opts->record_filename) {
+        LOGI("No playback and no recording: audio disabled");
         opts->audio = false;
     }
 
@@ -2089,11 +2088,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 #endif
 
 #ifdef HAVE_USB
-    if (!(opts->mirror && opts->video) && !opts->otg) {
+    if (!(opts->playback && opts->video) && !opts->otg) {
 #else
-    if (!(opts->mirror && opts->video)) {
+    if (!(opts->playback && opts->video)) {
 #endif
-        // If video mirroring is disabled and OTG are disabled, then there is
+        // If video playback is disabled and OTG are disabled, then there is
         // no way to control the device.
         opts->control = false;
     }

@@ -147,7 +147,7 @@ struct scrcpy_options {
     bool fullscreen;
     bool always_on_top;
     bool control;
-    bool mirror;
+    bool playback;
     bool turn_screen_off;
     enum sc_key_inject_mode key_inject_mode;
     bool window_borderless;
