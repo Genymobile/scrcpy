@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 
 public final class AudioCapture {
 
+    public static final int SOURCE = MediaRecorder.AudioSource.REMOTE_SUBMIX;
     public static final int SAMPLE_RATE = 48000;
     public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     public static final int CHANNELS = 2;
@@ -50,7 +51,7 @@ public final class AudioCapture {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
             builder.setContext(FakeContext.get());
         }
-        builder.setAudioSource(MediaRecorder.AudioSource.REMOTE_SUBMIX);
+        builder.setAudioSource(SOURCE);
         builder.setAudioFormat(createAudioFormat());
         int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, FORMAT);
         // This buffer size does not impact latency
