@@ -22,7 +22,7 @@ public final class AudioCapture {
     public static final int SAMPLE_RATE = 48000;
     public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     public static final int CHANNELS = 2;
-    public static final int FORMAT = AudioFormat.ENCODING_PCM_16BIT;
+    public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int BYTES_PER_SAMPLE = 2;
 
     private AudioRecord recorder;
@@ -37,7 +37,7 @@ public final class AudioCapture {
 
     private static AudioFormat createAudioFormat() {
         AudioFormat.Builder builder = new AudioFormat.Builder();
-        builder.setEncoding(FORMAT);
+        builder.setEncoding(ENCODING);
         builder.setSampleRate(SAMPLE_RATE);
         builder.setChannelMask(CHANNEL_CONFIG);
         return builder.build();
@@ -53,7 +53,7 @@ public final class AudioCapture {
         }
         builder.setAudioSource(SOURCE);
         builder.setAudioFormat(createAudioFormat());
-        int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, FORMAT);
+        int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
         // This buffer size does not impact latency
         builder.setBufferSizeInBytes(8 * minBufferSize);
         return builder.build();
