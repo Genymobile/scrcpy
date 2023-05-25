@@ -71,6 +71,7 @@ enum {
     OPT_LIST_DISPLAYS,
     OPT_REQUIRE_AUDIO,
     OPT_AUDIO_BUFFER,
+    OPT_NO_KILL_ADB_BEFORE_HID,
 };
 
 struct sc_option {
@@ -657,6 +658,13 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_NO_KILL_ADB_BEFORE_HID,
+        .longopt = "no-kill-adb-before-hid",
+        .text = "By default, scrcpy kills the adb daemon on Windows"
+                "if --otg is specified.\n"
+                "This option keeps the adb daemon open."
     },
 };
 
@@ -1831,6 +1839,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_NO_KILL_ADB_BEFORE_HID:
+                opts->kill_adb_before_hid = false;
             default:
                 // getopt prints the error message on stderr
                 return false;
