@@ -26,7 +26,7 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
     private static final int MAX_CONSECUTIVE_ERRORS = 3;
 
-    private final AtomicBoolean rotationChanged = new AtomicBoolean();
+    private final AtomicBoolean resetCapture = new AtomicBoolean();
 
     private final Device device;
     private final Streamer streamer;
@@ -55,11 +55,11 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
 
     @Override
     public void onRotationChanged(int rotation) {
-        rotationChanged.set(true);
+        resetCapture.set(true);
     }
 
-    private boolean consumeRotationChange() {
-        return rotationChanged.getAndSet(false);
+    private boolean consumeResetCapture() {
+        return resetCapture.getAndSet(false);
     }
 
     private void streamScreen() throws IOException, ConfigurationException {
@@ -169,14 +169,14 @@ public class ScreenEncoder implements Device.RotationListener, AsyncProcessor {
         boolean alive = true;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
-        while (!consumeRotationChange() && !eof) {
+        while (!consumeResetCapture() && !eof) {
             if (stopped.get()) {
                 alive = false;
                 break;
             }
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
-                if (consumeRotationChange()) {
+                if (consumeResetCapture()) {
                     // must restart encoding with new size
                     break;
                 }
