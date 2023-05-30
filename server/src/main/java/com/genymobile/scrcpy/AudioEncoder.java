@@ -40,6 +40,7 @@ public final class AudioEncoder implements AsyncProcessor {
     private static final int READ_MS = 5; // milliseconds
     private static final int READ_SIZE = AudioCapture.millisToBytes(READ_MS);
 
+    private final AudioCapture capture;
     private final Streamer streamer;
     private final int bitRate;
     private final List<CodecOption> codecOptions;
@@ -58,7 +59,8 @@ public final class AudioEncoder implements AsyncProcessor {
 
     private boolean ended;
 
-    public AudioEncoder(Streamer streamer, int bitRate, List<CodecOption> codecOptions, String encoderName) {
+    public AudioEncoder(AudioCapture capture, Streamer streamer, int bitRate, List<CodecOption> codecOptions, String encoderName) {
+        this.capture = capture;
         this.streamer = streamer;
         this.bitRate = bitRate;
         this.codecOptions = codecOptions;
@@ -175,7 +177,6 @@ public final class AudioEncoder implements AsyncProcessor {
         }
 
         MediaCodec mediaCodec = null;
-        AudioCapture capture = new AudioCapture();
 
         boolean mediaCodecStarted = false;
         try {
@@ -192,10 +193,9 @@ public final class AudioEncoder implements AsyncProcessor {
             capture.start();
 
             final MediaCodec mediaCodecRef = mediaCodec;
-            final AudioCapture captureRef = capture;
             inputThread = new Thread(() -> {
                 try {
-                    inputThread(mediaCodecRef, captureRef);
+                    inputThread(mediaCodecRef, capture);
                 } catch (IOException | InterruptedException e) {
                     Ln.e("Audio capture error", e);
                 } finally {

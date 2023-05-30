@@ -136,13 +136,14 @@ public final class Server {
 
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
+                AudioCapture audioCapture = new AudioCapture();
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(),
                         options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
-                    audioRecorder = new AudioRawRecorder(audioStreamer);
+                    audioRecorder = new AudioRawRecorder(audioCapture, audioStreamer);
                 } else {
-                    audioRecorder = new AudioEncoder(audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(),
+                    audioRecorder = new AudioEncoder(audioCapture, audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(),
                             options.getAudioEncoder());
                 }
                 asyncProcessors.add(audioRecorder);

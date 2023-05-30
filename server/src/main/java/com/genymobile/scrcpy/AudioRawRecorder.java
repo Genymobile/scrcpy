@@ -8,6 +8,7 @@ import java.nio.ByteBuffer;
 
 public final class AudioRawRecorder implements AsyncProcessor {
 
+    private final AudioCapture capture;
     private final Streamer streamer;
 
     private Thread thread;
@@ -15,7 +16,8 @@ public final class AudioRawRecorder implements AsyncProcessor {
     private static final int READ_MS = 5; // milliseconds
     private static final int READ_SIZE = AudioCapture.millisToBytes(READ_MS);
 
-    public AudioRawRecorder(Streamer streamer) {
+    public AudioRawRecorder(AudioCapture capture, Streamer streamer) {
+        this.capture = capture;
         this.streamer = streamer;
     }
 
@@ -29,7 +31,6 @@ public final class AudioRawRecorder implements AsyncProcessor {
         final ByteBuffer buffer = ByteBuffer.allocateDirect(READ_SIZE);
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
-        AudioCapture capture = new AudioCapture();
         try {
             capture.start();
 
