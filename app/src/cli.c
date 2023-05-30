@@ -135,16 +135,6 @@ static const struct sc_option options[] = {
                 "Default is 50.",
     },
     {
-        .longopt_id = OPT_AUDIO_OUTPUT_BUFFER,
-        .longopt = "audio-output-buffer",
-        .argdesc = "ms",
-        .text = "Configure the size of the SDL audio output buffer (in "
-                "milliseconds).\n"
-                "If you get \"robotic\" audio playback, you should test with "
-                "a higher value (10). Do not change this setting otherwise.\n"
-                "Default is 5.",
-    },
-    {
         .longopt_id = OPT_AUDIO_CODEC,
         .longopt = "audio-codec",
         .argdesc = "name",
@@ -170,6 +160,16 @@ static const struct sc_option options[] = {
         .text = "Use a specific MediaCodec audio encoder (depending on the "
                 "codec provided by --audio-codec).\n"
                 "The available encoders can be listed by --list-encoders.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_OUTPUT_BUFFER,
+        .longopt = "audio-output-buffer",
+        .argdesc = "ms",
+        .text = "Configure the size of the SDL audio output buffer (in "
+                "milliseconds).\n"
+                "If you get \"robotic\" audio playback, you should test with "
+                "a higher value (10). Do not change this setting otherwise.\n"
+                "Default is 5.",
     },
     {
         .shortopt = 'b',
