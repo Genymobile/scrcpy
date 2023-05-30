@@ -246,6 +246,10 @@ execute_server(struct sc_server *server,
         ADD_PARAM("audio_codec=%s",
             sc_server_get_codec_name(params->audio_codec));
     }
+    if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT) {
+        assert(params->audio_source == SC_AUDIO_SOURCE_MIC);
+        ADD_PARAM("audio_source=mic");
+    }
     if (params->max_size) {
         ADD_PARAM("max_size=%" PRIu16, params->max_size);
     }

@@ -7,6 +7,7 @@ _scrcpy() {
         --audio-codec=
         --audio-codec-options=
         --audio-encoder=
+        --audio-source=
         --audio-output-buffer=
         -b --video-bit-rate=
         --crop=
@@ -84,6 +85,10 @@ _scrcpy() {
             ;;
         --audio-codec)
             COMPREPLY=($(compgen -W 'opus aac raw' -- "$cur"))
+            return
+            ;;
+        --audio-source)
+            COMPREPLY=($(compgen -W 'output mic' -- "$cur"))
             return
             ;;
         --lock-video-orientation)

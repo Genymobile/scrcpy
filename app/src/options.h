@@ -44,6 +44,11 @@ enum sc_codec {
     SC_CODEC_RAW,
 };
 
+enum sc_audio_source {
+    SC_AUDIO_SOURCE_OUTPUT,
+    SC_AUDIO_SOURCE_MIC,
+};
+
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
@@ -115,6 +120,7 @@ struct scrcpy_options {
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
+    enum sc_audio_source audio_source;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;

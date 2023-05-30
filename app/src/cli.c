@@ -76,6 +76,7 @@ enum {
     OPT_NO_VIDEO,
     OPT_NO_AUDIO_PLAYBACK,
     OPT_NO_VIDEO_PLAYBACK,
+    OPT_AUDIO_SOURCE,
 };
 
 struct sc_option {
@@ -160,6 +161,13 @@ static const struct sc_option options[] = {
         .text = "Use a specific MediaCodec audio encoder (depending on the "
                 "codec provided by --audio-codec).\n"
                 "The available encoders can be listed by --list-encoders.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_SOURCE,
+        .longopt = "audio-source",
+        .argdesc = "source",
+        .text = "Select the audio source (output or mic).\n"
+                "Default is output.",
     },
     {
         .longopt_id = OPT_AUDIO_OUTPUT_BUFFER,
@@ -1589,6 +1597,22 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
 }
 
 static bool
+parse_audio_source(const char *optarg, enum sc_audio_source *source) {
+    if (!strcmp(optarg, "mic")) {
+        *source = SC_AUDIO_SOURCE_MIC;
+        return true;
+    }
+
+    if (!strcmp(optarg, "output")) {
+        *source = SC_AUDIO_SOURCE_OUTPUT;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output or mic)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -1912,6 +1936,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_OUTPUT_BUFFER:
                 if (!parse_audio_output_buffer(optarg,
                                                &opts->audio_output_buffer)) {
+                    return false;
+                }
+                break;
+            case OPT_AUDIO_SOURCE:
+                if (!parse_audio_source(optarg, &opts->audio_source)) {
                     return false;
                 }
                 break;

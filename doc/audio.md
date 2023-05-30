@@ -41,6 +41,24 @@ interesting to add [buffering](#buffering) to minimize glitches:
 scrcpy --no-video --audio-buffer=200
 ```
 
+## Source
+
+By default, the device audio output is forwarded.
+
+It is possible to capture the device microphone instead:
+
+```
+scrcpy --audio-source=mic
+```
+
+For example, to use the device as a dictaphone and record a capture directly on
+the computer:
+
+```
+scrcpy --audio-source=mic --no-video --no-audio-playback --record=file.opus
+```
+
+
 ## Codec
 
 The audio codec can be selected. The possible values are `opus` (default), `aac`

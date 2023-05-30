@@ -14,6 +14,7 @@ public class Options {
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
+    private AudioSource audioSource = AudioSource.OUTPUT;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private int maxFps;
@@ -70,6 +71,10 @@ public class Options {
 
     public AudioCodec getAudioCodec() {
         return audioCodec;
+    }
+
+    public AudioSource getAudioSource() {
+        return audioSource;
     }
 
     public int getVideoBitRate() {
@@ -224,6 +229,13 @@ public class Options {
                         throw new IllegalArgumentException("Audio codec " + value + " not supported");
                     }
                     options.audioCodec = audioCodec;
+                    break;
+                case "audio_source":
+                    AudioSource audioSource = AudioSource.findByName(value);
+                    if (audioSource == null) {
+                        throw new IllegalArgumentException("Audio source " + value + " not supported");
+                    }
+                    options.audioSource = audioSource;
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8

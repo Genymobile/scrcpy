@@ -10,7 +10,6 @@ import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
 import android.media.MediaCodec;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -18,7 +17,6 @@ import java.nio.ByteBuffer;
 
 public final class AudioCapture {
 
-    public static final int SOURCE = MediaRecorder.AudioSource.REMOTE_SUBMIX;
     public static final int SAMPLE_RATE = 48000;
     public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
     public static final int CHANNELS = 2;
@@ -26,11 +24,17 @@ public final class AudioCapture {
     public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int BYTES_PER_SAMPLE = 2;
 
+    private final int audioSource;
+
     private AudioRecord recorder;
 
     private final AudioTimestamp timestamp = new AudioTimestamp();
     private long previousPts = 0;
     private long nextPts = 0;
+
+    public AudioCapture(AudioSource audioSource) {
+        this.audioSource = audioSource.value();
+    }
 
     public static int millisToBytes(int millis) {
         return SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE * millis / 1000;
@@ -46,13 +50,13 @@ public final class AudioCapture {
 
     @TargetApi(Build.VERSION_CODES.M)
     @SuppressLint({"WrongConstant", "MissingPermission"})
-    private static AudioRecord createAudioRecord() {
+    private static AudioRecord createAudioRecord(int audioSource) {
         AudioRecord.Builder builder = new AudioRecord.Builder();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // On older APIs, Workarounds.fillAppInfo() must be called beforehand
             builder.setContext(FakeContext.get());
         }
-        builder.setAudioSource(SOURCE);
+        builder.setAudioSource(audioSource);
         builder.setAudioFormat(createAudioFormat());
         int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
         // This buffer size does not impact latency
@@ -100,12 +104,12 @@ public final class AudioCapture {
 
     private void startRecording() {
         try {
-            recorder = createAudioRecord();
+            recorder = createAudioRecord(audioSource);
         } catch (NullPointerException e) {
             // Creating an AudioRecord using an AudioRecord.Builder does not work on Vivo phones:
             // - <https://github.com/Genymobile/scrcpy/issues/3805>
             // - <https://github.com/Genymobile/scrcpy/pull/3862>
-            recorder = Workarounds.createAudioRecord(SOURCE, SAMPLE_RATE, CHANNEL_CONFIG, CHANNELS, CHANNEL_MASK, ENCODING);
+            recorder = Workarounds.createAudioRecord(audioSource, SAMPLE_RATE, CHANNEL_CONFIG, CHANNELS, CHANNEL_MASK, ENCODING);
         }
         recorder.startRecording();
     }
