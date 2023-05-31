@@ -107,7 +107,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
         // latency.
         LOGD("[Audio] Buffer underflow, inserting silence: %" PRIu32 " samples",
              silence);
-        memset(stream + read, 0, TO_BYTES(silence));
+        memset(stream + TO_BYTES(read), 0, TO_BYTES(silence));
 
         if (ap->received) {
             // Inserting additional samples immediately increases buffering
