@@ -21,19 +21,14 @@ scrcpy --no-video --audio-codec=aac --record=file.aac
 # .m4a/.mp4 and .mka/.mkv are also supported for both opus and aac
 ```
 
-To disable playback while recording:
-
-```bash
-scrcpy --no-playback --record=file.mp4
-scrcpy -Nr file.mkv
-# interrupt recording with Ctrl+C
-```
-
 Timestamps are captured on the device, so [packet delay variation] does not
 impact the recorded file, which is always clean (only if you use `--record` of
 course, not if you capture your scrcpy window and audio output on the computer).
 
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
+
+
+## Format
 
 The video and audio streams are encoded on the device, but are muxed on the
 client side. Two formats (containers) are supported:
@@ -47,4 +42,22 @@ needs not end with `.mkv` or `.mp4`):
 
 ```
 scrcpy --record=file --record-format=mkv
+```
+
+
+## No playback
+
+To disable playback while recording:
+
+```bash
+scrcpy --no-playback --record=file.mp4
+scrcpy -Nr file.mkv
+# interrupt recording with Ctrl+C
+```
+
+It is also possible to disable video and audio playback separately:
+
+```bash
+# Record both video and audio, but only play video
+scrcpy --record=file.mkv --no-audio-playback
 ```
