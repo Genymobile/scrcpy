@@ -16,9 +16,9 @@ _scrcpy() {
         --display=
         --display-buffer=
         -e --select-tcpip
+        -f --fullscreen
         --force-adb-forward
         --forward-all-clicks
-        -f --fullscreen
         -K --hid-keyboard
         -h --help
         --legacy-paste
@@ -26,16 +26,16 @@ _scrcpy() {
         --list-encoders
         --lock-video-orientation
         --lock-video-orientation=
-        --max-fps=
-        -M --hid-mouse
         -m --max-size=
+        -M --hid-mouse
+        --max-fps=
+        -n --no-control
+        -N --no-playback
         --no-audio
         --no-audio-playback
         --no-cleanup
         --no-clipboard-autosync
         --no-downsize-on-error
-        -n --no-control
-        -N --no-playback
         --no-key-repeat
         --no-mipmaps
         --no-power-on
@@ -47,15 +47,15 @@ _scrcpy() {
         --prefer-text
         --print-fps
         --push-target=
-        --raw-key-events
         -r --record=
+        --raw-key-events
         --record-format=
         --render-driver=
         --require-audio
         --rotation=
         -s --serial=
-        --shortcut-mod=
         -S --turn-screen-off
+        --shortcut-mod=
         -t --show-touches
         --tcpip
         --tcpip=
@@ -63,8 +63,8 @@ _scrcpy() {
         --tunnel-port=
         --v4l2-buffer=
         --v4l2-sink=
-        -V --verbosity=
         -v --version
+        -V --verbosity=
         --video-codec=
         --video-codec-options=
         --video-encoder=

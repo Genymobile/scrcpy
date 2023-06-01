@@ -258,6 +258,11 @@ static const struct sc_option options[] = {
         .argdesc = "name",
     },
     {
+        .shortopt = 'f',
+        .longopt = "fullscreen",
+        .text = "Start in fullscreen.",
+    },
+    {
         .longopt_id = OPT_FORCE_ADB_FORWARD,
         .longopt = "force-adb-forward",
         .text = "Do not attempt to use \"adb reverse\" to connect to the "
@@ -269,11 +274,6 @@ static const struct sc_option options[] = {
         .text = "By default, right-click triggers BACK (or POWER on) and "
                 "middle-click triggers HOME. This option disables these "
                 "shortcuts and forwards the clicks to the device instead.",
-    },
-    {
-        .shortopt = 'f',
-        .longopt = "fullscreen",
-        .text = "Start in fullscreen.",
     },
     {
         .shortopt = 'K',
@@ -330,11 +330,13 @@ static const struct sc_option options[] = {
                 "\"initial\".",
     },
     {
-        .longopt_id = OPT_MAX_FPS,
-        .longopt = "max-fps",
+        .shortopt = 'm',
+        .longopt = "max-size",
         .argdesc = "value",
-        .text = "Limit the frame rate of screen capture (officially supported "
-                "since Android 10, but may work on earlier versions).",
+        .text = "Limit both the width and height of the video to value. The "
+                "other dimension is computed so that the device aspect-ratio "
+                "is preserved.\n"
+                "Default is 0 (unlimited).",
     },
     {
         .shortopt = 'M',
@@ -348,13 +350,22 @@ static const struct sc_option options[] = {
                 "Also see --hid-keyboard.",
     },
     {
-        .shortopt = 'm',
-        .longopt = "max-size",
+        .longopt_id = OPT_MAX_FPS,
+        .longopt = "max-fps",
         .argdesc = "value",
-        .text = "Limit both the width and height of the video to value. The "
-                "other dimension is computed so that the device aspect-ratio "
-                "is preserved.\n"
-                "Default is 0 (unlimited).",
+        .text = "Limit the frame rate of screen capture (officially supported "
+                "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .shortopt = 'n',
+        .longopt = "no-control",
+        .text = "Disable device control (mirror the device in read-only).",
+    },
+    {
+        .shortopt = 'N',
+        .longopt = "no-playback",
+        .text = "Disable video and audio playback on the computer (equivalent "
+                "to --no-video-playback --no-audio-playback).",
     },
     {
         .longopt_id = OPT_NO_AUDIO,
@@ -389,17 +400,6 @@ static const struct sc_option options[] = {
         .text = "By default, on MediaCodec error, scrcpy automatically tries "
                 "again with a lower definition.\n"
                 "This option disables this behavior.",
-    },
-    {
-        .shortopt = 'n',
-        .longopt = "no-control",
-        .text = "Disable device control (mirror the device in read-only).",
-    },
-    {
-        .shortopt = 'N',
-        .longopt = "no-playback",
-        .text = "Disable video and audio playback on the computer (equivalent "
-                "to --no-video-playback --no-audio-playback).",
     },
     {
         // deprecated
@@ -485,17 +485,17 @@ static const struct sc_option options[] = {
                 "Default is \"/sdcard/Download/\".",
     },
     {
-        .longopt_id = OPT_RAW_KEY_EVENTS,
-        .longopt = "raw-key-events",
-        .text = "Inject key events for all input keys, and ignore text events."
-    },
-    {
         .shortopt = 'r',
         .longopt = "record",
         .argdesc = "file.mp4",
         .text = "Record screen to file.\n"
                 "The format is determined by the --record-format option if "
                 "set, or by the file extension (.mp4 or .mkv).",
+    },
+    {
+        .longopt_id = OPT_RAW_KEY_EVENTS,
+        .longopt = "raw-key-events",
+        .text = "Inject key events for all input keys, and ignore text events."
     },
     {
         .longopt_id = OPT_RECORD_FORMAT,
@@ -536,6 +536,11 @@ static const struct sc_option options[] = {
                 "are connected to adb.",
     },
     {
+        .shortopt = 'S',
+        .longopt = "turn-screen-off",
+        .text = "Turn the device screen off immediately.",
+    },
+    {
         .longopt_id = OPT_SHORTCUT_MOD,
         .longopt = "shortcut-mod",
         .argdesc = "key[+...][,...]",
@@ -547,11 +552,6 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl+LAlt or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl+lalt,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
-    },
-    {
-        .shortopt = 'S',
-        .longopt = "turn-screen-off",
-        .text = "Turn the device screen off immediately.",
     },
     {
         .shortopt = 't',
@@ -594,6 +594,22 @@ static const struct sc_option options[] = {
                 "establishing the tunnel will be used.",
     },
     {
+        .shortopt = 'v',
+        .longopt = "version",
+        .text = "Print the version of scrcpy.",
+    },
+    {
+        .shortopt = 'V',
+        .longopt = "verbosity",
+        .argdesc = "value",
+        .text = "Set the log level (verbose, debug, info, warn or error).\n"
+#ifndef NDEBUG
+                "Default is debug.",
+#else
+                "Default is info.",
+#endif
+    },
+    {
         .longopt_id = OPT_V4L2_SINK,
         .longopt = "v4l2-sink",
         .argdesc = "/dev/videoN",
@@ -612,22 +628,6 @@ static const struct sc_option options[] = {
                 "V4L2 sink.\n"
                 "Default is 0 (no buffering).\n"
                 "This option is only available on Linux.",
-    },
-    {
-        .shortopt = 'V',
-        .longopt = "verbosity",
-        .argdesc = "value",
-        .text = "Set the log level (verbose, debug, info, warn or error).\n"
-#ifndef NDEBUG
-                "Default is debug.",
-#else
-                "Default is info.",
-#endif
-    },
-    {
-        .shortopt = 'v',
-        .longopt = "version",
-        .text = "Print the version of scrcpy.",
     },
     {
         .longopt_id = OPT_VIDEO_CODEC,
