@@ -83,10 +83,12 @@ scrcpy_otg(struct scrcpy_options *options) {
 #ifdef _WIN32
     // On Windows, only one process could open a USB device
     // <https://github.com/Genymobile/scrcpy/issues/2773>
-    LOGI("Killing adb daemon (if any)...");
-    unsigned flags = SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR;
-    // uninterruptible (intr == NULL), but in practice it's very quick
-    sc_adb_kill_server(NULL, flags);
+    if (options->kill_adb_before_otg) {
+        LOGI("Killing adb daemon (if any)...");
+        unsigned flags = SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR;
+        // uninterruptible (intr == NULL), but in practice it's very quick
+        sc_adb_kill_server(NULL, flags);
+    }
 #endif
 
     static const struct sc_usb_callbacks cbs = {

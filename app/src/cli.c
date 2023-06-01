@@ -77,6 +77,7 @@ enum {
     OPT_NO_AUDIO_PLAYBACK,
     OPT_NO_VIDEO_PLAYBACK,
     OPT_AUDIO_SOURCE,
+    OPT_NO_KILL_ADB_BEFORE_OTG,
 };
 
 struct sc_option {
@@ -410,6 +411,16 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_KEY_REPEAT,
         .longopt = "no-key-repeat",
         .text = "Do not forward repeated key events when a key is held down.",
+    },
+    {
+        .longopt_id = OPT_NO_KILL_ADB_BEFORE_OTG,
+        .longopt = "no-kill-adb-before-otg",
+        // with .text, the option is not documented on other platforms
+#ifdef _WIN32
+        .text = "By default, scrcpy kills the adb daemon on Windows if --otg "
+                "is specified.\n"
+                "This option avoids to kill the adb daemon.",
+#endif
     },
     {
         .longopt_id = OPT_NO_MIPMAPS,
@@ -1944,6 +1955,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_NO_KILL_ADB_BEFORE_OTG:
+#ifdef _WIN32
+                opts->kill_adb_before_otg = false;
+                break;
+#else
+                LOGE("--no-kill-adb-before-otg only exists on Windows.");
+                return false;
+#endif
             default:
                 // getopt prints the error message on stderr
                 return false;
