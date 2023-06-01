@@ -355,6 +355,10 @@ If a destination address is provided, then scrcpy connects to this address befor
 If no destination address is provided, then scrcpy attempts to find the IP address and adb port of the current device (typically connected over USB), enables TCP/IP mode if necessary, then connects to this address before starting.
 
 .TP
+.BI "\-\-time\-limit " seconds
+Set the maximum mirroring time, in seconds.
+
+.TP
 .BI "\-\-tunnel\-host " ip
 Set the IP address of the adb tunnel to reach the scrcpy server. This option automatically enables --force-adb-forward.
 

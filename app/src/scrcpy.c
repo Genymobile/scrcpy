@@ -35,6 +35,7 @@
 #include "util/log.h"
 #include "util/net.h"
 #include "util/rand.h"
+#include "util/timeout.h"
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -73,6 +74,7 @@ struct scrcpy {
         struct sc_hid_mouse mouse_hid;
 #endif
     };
+    struct sc_timeout timeout;
 };
 
 static inline void
@@ -171,6 +173,9 @@ event_loop(struct scrcpy *s) {
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_TIME_LIMIT_REACHED:
+                LOGI("Time limit reached");
+                return SCRCPY_EXIT_SUCCESS;
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
@@ -280,6 +285,14 @@ sc_server_on_disconnected(struct sc_server *server, void *userdata) {
     // event
 }
 
+static void
+sc_timeout_on_timeout(struct sc_timeout *timeout, void *userdata) {
+    (void) timeout;
+    (void) userdata;
+
+    PUSH_EVENT(SC_EVENT_TIME_LIMIT_REACHED);
+}
+
 // Generate a scrcpy id to differentiate multiple running scrcpy instances
 static uint32_t
 scrcpy_generate_scid() {
@@ -321,6 +334,8 @@ scrcpy(struct scrcpy_options *options) {
     bool controller_initialized = false;
     bool controller_started = false;
     bool screen_initialized = false;
+    bool timeout_initialized = false;
+    bool timeout_started = false;
 
     struct sc_acksync *acksync = NULL;
 
@@ -743,6 +758,27 @@ aoa_hid_end:
         }
     }
 
+    if (options->time_limit) {
+        bool ok = sc_timeout_init(&s->timeout);
+        if (!ok) {
+            goto end;
+        }
+
+        timeout_initialized = true;
+
+        sc_tick deadline = sc_tick_now() + options->time_limit;
+        static const struct sc_timeout_callbacks cbs = {
+            .on_timeout = sc_timeout_on_timeout,
+        };
+
+        ok = sc_timeout_start(&s->timeout, deadline, &cbs, NULL);
+        if (!ok) {
+            goto end;
+        }
+
+        timeout_started = true;
+    }
+
     ret = event_loop(s);
     LOGD("quit...");
 
@@ -751,6 +787,10 @@ aoa_hid_end:
     sc_screen_hide_window(&s->screen);
 
 end:
+    if (timeout_started) {
+        sc_timeout_stop(&s->timeout);
+    }
+
     // The demuxer is not stopped explicitly, because it will stop by itself on
     // end-of-stream
 #ifdef HAVE_USB
@@ -784,6 +824,13 @@ end:
     if (server_started) {
         // shutdown the sockets and kill the server
         sc_server_stop(&s->server);
+    }
+
+    if (timeout_started) {
+        sc_timeout_join(&s->timeout);
+    }
+    if (timeout_initialized) {
+        sc_timeout_destroy(&s->timeout);
     }
 
     // now that the sockets are shutdown, the demuxer and controller are

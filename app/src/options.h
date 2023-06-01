@@ -142,6 +142,7 @@ struct scrcpy_options {
     sc_tick display_buffer;
     sc_tick audio_buffer;
     sc_tick audio_output_buffer;
+    sc_tick time_limit;
 #ifdef HAVE_V4L2
     const char *v4l2_device;
     sc_tick v4l2_buffer;

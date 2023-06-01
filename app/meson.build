@@ -51,6 +51,7 @@ src = [
     'src/util/term.c',
     'src/util/thread.c',
     'src/util/tick.c',
+    'src/util/timeout.c',
 ]
 
 conf = configuration_data()

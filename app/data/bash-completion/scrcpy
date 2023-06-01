@@ -60,6 +60,7 @@ _scrcpy() {
         -t --show-touches
         --tcpip
         --tcpip=
+        --time-limit=
         --tunnel-host=
         --tunnel-port=
         --v4l2-buffer=

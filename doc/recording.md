@@ -61,3 +61,18 @@ It is also possible to disable video and audio playback separately:
 # Record both video and audio, but only play video
 scrcpy --record=file.mkv --no-audio-playback
 ```
+
+## Time limit
+
+To limit the recording time:
+
+```bash
+scrcpy --record=file.mkv --time-limit=20  # in seconds
+```
+
+The `--time-limit` option is not limited to recording, it also impacts simple
+mirroring:
+
+```
+scrcpy --time-limit=20
+```
