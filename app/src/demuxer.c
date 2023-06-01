@@ -79,9 +79,8 @@ sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
 
 static bool
 sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
-    // The video stream contains raw packets, without time information. When we
-    // record, we retrieve the timestamps separately, from a "meta" header
-    // added by the server before each raw packet.
+    // The video and audio streams contain a sequence of raw packets (as
+    // provided by MediaCodec), each prefixed with a "meta" header.
     //
     // The "meta" header length is 12 bytes:
     // [. . . . . . . .|. . . .]. . . . . . . . . . . . . . . ...
