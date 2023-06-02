@@ -163,7 +163,7 @@ public final class AudioCapture {
             //  - an estimation from the previous PTS and the packet size as a fallback.
             //
             // Therefore, the property that PTS are monotonically increasing is no guaranteed in corner cases, so enforce it.
-            pts = previousPts + 1;
+            pts = previousPts;
         }
         previousPts = pts;
 
