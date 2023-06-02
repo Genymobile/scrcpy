@@ -168,6 +168,7 @@ the computer. This option is useful when [recording](recording.md) or when
 ```bash
 scrcpy --v4l2-sink=/dev/video2 --no-playback
 scrcpy --record=file.mkv --no-playback
+# interrupt with Ctrl+C
 ```
 
 It is also possible to disable video and audio playback separately:

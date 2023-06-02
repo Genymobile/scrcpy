@@ -30,8 +30,9 @@ To disable only the audio playback, see [no playback](video.md#no-playback).
 
 To play audio only, disable the video:
 
-```
+```bash
 scrcpy --no-video
+# interrupt with Ctrl+C
 ```
 
 Without video, the audio latency is typically not criticial, so it might be
