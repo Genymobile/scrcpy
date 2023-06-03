@@ -16,6 +16,7 @@ struct sc_recorder_queue SC_VECDEQUE(AVPacket *);
 
 struct sc_recorder_stream {
     int index;
+    int64_t last_pts;
 };
 
 struct sc_recorder {

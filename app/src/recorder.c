@@ -100,6 +100,15 @@ sc_recorder_write_stream(struct sc_recorder *recorder,
                          struct sc_recorder_stream *st, AVPacket *packet) {
     AVStream *stream = recorder->ctx->streams[st->index];
     sc_recorder_rescale_packet(stream, packet);
+    if (st->last_pts != AV_NOPTS_VALUE && packet->pts <= st->last_pts) {
+        LOGW("Fixing PTS non monotonically increasing in stream %d "
+             "(%" PRIi64 " >= %" PRIi64 ")",
+             st->index, st->last_pts, packet->pts);
+        packet->pts = ++st->last_pts;
+        packet->dts = packet->pts;
+    } else {
+        st->last_pts = packet->pts;
+    }
     return av_interleaved_write_frame(recorder->ctx, packet) >= 0;
 }
 
@@ -664,6 +673,7 @@ sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
 static void
 sc_recorder_stream_init(struct sc_recorder_stream *stream) {
     stream->index = -1;
+    stream->last_pts = AV_NOPTS_VALUE;
 }
 
 bool
