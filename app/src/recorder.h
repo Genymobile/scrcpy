@@ -14,6 +14,10 @@
 
 struct sc_recorder_queue SC_VECDEQUE(AVPacket *);
 
+struct sc_recorder_stream {
+    int index;
+};
+
 struct sc_recorder {
     struct sc_packet_sink video_packet_sink;
     struct sc_packet_sink audio_packet_sink;
@@ -45,8 +49,8 @@ struct sc_recorder {
     bool video_init;
     bool audio_init;
 
-    int video_stream_index;
-    int audio_stream_index;
+    struct sc_recorder_stream video_stream;
+    struct sc_recorder_stream audio_stream;
 
     const struct sc_recorder_callbacks *cbs;
     void *cbs_userdata;
