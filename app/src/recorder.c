@@ -178,9 +178,10 @@ static bool
 sc_recorder_process_header(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
 
-    while (!recorder->stopped && (!recorder->video_init
-                               || !recorder->audio_init
-                               || sc_recorder_has_empty_queues(recorder))) {
+    while (!recorder->stopped &&
+              ((recorder->video && !recorder->video_init)
+            || (recorder->audio && !recorder->audio_init)
+            || sc_recorder_has_empty_queues(recorder))) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
