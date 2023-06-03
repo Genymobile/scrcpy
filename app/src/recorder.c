@@ -96,23 +96,21 @@ sc_recorder_rescale_packet(AVStream *stream, AVPacket *packet) {
 }
 
 static bool
-sc_recorder_write_stream(struct sc_recorder *recorder, int stream_index,
-                         AVPacket *packet) {
-    AVStream *stream = recorder->ctx->streams[stream_index];
+sc_recorder_write_stream(struct sc_recorder *recorder,
+                         struct sc_recorder_stream *st, AVPacket *packet) {
+    AVStream *stream = recorder->ctx->streams[st->index];
     sc_recorder_rescale_packet(stream, packet);
     return av_interleaved_write_frame(recorder->ctx, packet) >= 0;
 }
 
 static inline bool
 sc_recorder_write_video(struct sc_recorder *recorder, AVPacket *packet) {
-    return sc_recorder_write_stream(recorder, recorder->video_stream_index,
-                                    packet);
+    return sc_recorder_write_stream(recorder, &recorder->video_stream, packet);
 }
 
 static inline bool
 sc_recorder_write_audio(struct sc_recorder *recorder, AVPacket *packet) {
-    return sc_recorder_write_stream(recorder, recorder->audio_stream_index,
-                                    packet);
+    return sc_recorder_write_stream(recorder, &recorder->audio_stream, packet);
 }
 
 static bool
@@ -215,9 +213,9 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
             goto end;
         }
 
-        assert(recorder->video_stream_index >= 0);
+        assert(recorder->video_stream.index >= 0);
         AVStream *video_stream =
-            recorder->ctx->streams[recorder->video_stream_index];
+            recorder->ctx->streams[recorder->video_stream.index];
         bool ok = sc_recorder_set_extradata(video_stream, video_pkt);
         if (!ok) {
             goto end;
@@ -230,9 +228,9 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
             goto end;
         }
 
-        assert(recorder->audio_stream_index >= 0);
+        assert(recorder->audio_stream.index >= 0);
         AVStream *audio_stream =
-            recorder->ctx->streams[recorder->audio_stream_index];
+            recorder->ctx->streams[recorder->audio_stream.index];
         bool ok = sc_recorder_set_extradata(audio_stream, audio_pkt);
         if (!ok) {
             goto end;
@@ -505,7 +503,7 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    recorder->video_stream_index = stream->index;
+    recorder->video_stream.index = stream->index;
 
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
@@ -549,7 +547,7 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
         return false;
     }
 
-    rec->stream_index = recorder->video_stream_index;
+    rec->stream_index = recorder->video_stream.index;
 
     bool ok = sc_vecdeque_push(&recorder->video_queue, rec);
     if (!ok) {
@@ -586,7 +584,7 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
         return false;
     }
 
-    recorder->audio_stream_index = stream->index;
+    recorder->audio_stream.index = stream->index;
 
     recorder->audio_init = true;
     sc_cond_signal(&recorder->cond);
@@ -632,7 +630,7 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
         return false;
     }
 
-    rec->stream_index = recorder->audio_stream_index;
+    rec->stream_index = recorder->audio_stream.index;
 
     bool ok = sc_vecdeque_push(&recorder->audio_queue, rec);
     if (!ok) {
@@ -661,6 +659,11 @@ sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
     recorder->audio_init = true;
     sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
+}
+
+static void
+sc_recorder_stream_init(struct sc_recorder_stream *stream) {
+    stream->index = -1;
 }
 
 bool
@@ -694,8 +697,8 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->video_init = false;
     recorder->audio_init = false;
 
-    recorder->video_stream_index = -1;
-    recorder->audio_stream_index = -1;
+    sc_recorder_stream_init(&recorder->video_stream);
+    sc_recorder_stream_init(&recorder->audio_stream);
 
     recorder->format = format;
 
