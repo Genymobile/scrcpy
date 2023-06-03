@@ -181,7 +181,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     while (!recorder->stopped && (!recorder->video_init
                                || !recorder->audio_init
                                || sc_recorder_has_empty_queues(recorder))) {
-        sc_cond_wait(&recorder->stream_cond, &recorder->mutex);
+        sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
     if (recorder->video && sc_vecdeque_is_empty(&recorder->video_queue)) {
@@ -289,7 +289,7 @@ sc_recorder_process_packets(struct sc_recorder *recorder) {
                 // A new packet may be assigned to audio_pkt and be processed
                 break;
             }
-            sc_cond_wait(&recorder->queue_cond, &recorder->mutex);
+            sc_cond_wait(&recorder->cond, &recorder->mutex);
         }
 
         // If stopped is set, continue to process the remaining events (to
@@ -507,7 +507,7 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
     recorder->video_stream_index = stream->index;
 
     recorder->video_init = true;
-    sc_cond_signal(&recorder->stream_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 
     return true;
@@ -522,7 +522,7 @@ sc_recorder_video_packet_sink_close(struct sc_packet_sink *sink) {
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
     recorder->stopped = true;
-    sc_cond_signal(&recorder->queue_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 }
 
@@ -557,7 +557,7 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
         return false;
     }
 
-    sc_cond_signal(&recorder->queue_cond);
+    sc_cond_signal(&recorder->cond);
 
     sc_mutex_unlock(&recorder->mutex);
     return true;
@@ -588,7 +588,7 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
     recorder->audio_stream_index = stream->index;
 
     recorder->audio_init = true;
-    sc_cond_signal(&recorder->stream_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 
     return true;
@@ -604,7 +604,7 @@ sc_recorder_audio_packet_sink_close(struct sc_packet_sink *sink) {
     sc_mutex_lock(&recorder->mutex);
     // EOS also stops the recorder
     recorder->stopped = true;
-    sc_cond_signal(&recorder->queue_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 }
 
@@ -640,7 +640,7 @@ sc_recorder_audio_packet_sink_push(struct sc_packet_sink *sink,
         return false;
     }
 
-    sc_cond_signal(&recorder->queue_cond);
+    sc_cond_signal(&recorder->cond);
 
     sc_mutex_unlock(&recorder->mutex);
     return true;
@@ -658,7 +658,7 @@ sc_recorder_audio_packet_sink_disable(struct sc_packet_sink *sink) {
     sc_mutex_lock(&recorder->mutex);
     recorder->audio = false;
     recorder->audio_init = true;
-    sc_cond_signal(&recorder->stream_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 }
 
@@ -677,14 +677,9 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
         goto error_free_filename;
     }
 
-    ok = sc_cond_init(&recorder->queue_cond);
+    ok = sc_cond_init(&recorder->cond);
     if (!ok) {
         goto error_mutex_destroy;
-    }
-
-    ok = sc_cond_init(&recorder->stream_cond);
-    if (!ok) {
-        goto error_queue_cond_destroy;
     }
 
     assert(video || audio);
@@ -730,8 +725,6 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     return true;
 
-error_queue_cond_destroy:
-    sc_cond_destroy(&recorder->queue_cond);
 error_mutex_destroy:
     sc_mutex_destroy(&recorder->mutex);
 error_free_filename:
@@ -756,8 +749,7 @@ void
 sc_recorder_stop(struct sc_recorder *recorder) {
     sc_mutex_lock(&recorder->mutex);
     recorder->stopped = true;
-    sc_cond_signal(&recorder->queue_cond);
-    sc_cond_signal(&recorder->stream_cond);
+    sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
 }
 
@@ -768,8 +760,7 @@ sc_recorder_join(struct sc_recorder *recorder) {
 
 void
 sc_recorder_destroy(struct sc_recorder *recorder) {
-    sc_cond_destroy(&recorder->stream_cond);
-    sc_cond_destroy(&recorder->queue_cond);
+    sc_cond_destroy(&recorder->cond);
     sc_mutex_destroy(&recorder->mutex);
     free(recorder->filename);
 }

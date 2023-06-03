@@ -35,14 +35,13 @@ struct sc_recorder {
 
     sc_thread thread;
     sc_mutex mutex;
-    sc_cond queue_cond;
+    sc_cond cond;
     // set on sc_recorder_stop(), packet_sink close or recording failure
     bool stopped;
     struct sc_recorder_queue video_queue;
     struct sc_recorder_queue audio_queue;
 
     // wake up the recorder thread once the video or audio codec is known
-    sc_cond stream_cond;
     bool video_init;
     bool audio_init;
 
