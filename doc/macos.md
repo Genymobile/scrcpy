@@ -2,7 +2,7 @@
 
 ## Install
 
-Scrcpy is available in [Homebrew]:
+Scrcpy is available on [Homebrew]:
 
 ```bash
 brew install scrcpy
