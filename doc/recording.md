@@ -17,7 +17,7 @@ To record only the audio:
 
 ```bash
 scrcpy --no-video --record=file.opus
-scrcpy --no-video --audio-codec=aac --record-file=file.aac
+scrcpy --no-video --audio-codec=aac --record=file.aac
 # .m4a/.mp4 and .mka/.mkv are also supported for both opus and aac
 ```
 
