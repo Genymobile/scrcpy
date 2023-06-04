@@ -56,7 +56,7 @@ For example, to use the device as a dictaphone and record a capture directly on
 the computer:
 
 ```
-scrcpy --audio-source=mic --no-video --no-audio-playback --record=file.opus
+scrcpy --audio-source=mic --no-video --no-playback --record=file.opus
 ```
 
 
