@@ -20,6 +20,7 @@ _scrcpy() {
         --force-adb-forward
         --forward-all-clicks
         -h --help
+        --kill-adb-on-close
         -K --hid-keyboard
         --legacy-paste
         --list-displays

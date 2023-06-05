@@ -77,6 +77,7 @@ enum {
     OPT_NO_AUDIO_PLAYBACK,
     OPT_NO_VIDEO_PLAYBACK,
     OPT_AUDIO_SOURCE,
+    OPT_KILL_ADB_ON_CLOSE,
 };
 
 struct sc_option {
@@ -279,6 +280,11 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_KILL_ADB_ON_CLOSE,
+        .longopt = "kill-adb-on-close",
+        .text = "Kill adb when scrcpy terminates.",
     },
     {
         .shortopt = 'K',
@@ -1943,6 +1949,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_audio_source(optarg, &opts->audio_source)) {
                     return false;
                 }
+                break;
+            case OPT_KILL_ADB_ON_CLOSE:
+                opts->kill_adb_on_close = true;
                 break;
             default:
                 // getopt prints the error message on stderr

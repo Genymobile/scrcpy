@@ -794,6 +794,15 @@ sc_server_configure_tcpip_unknown_address(struct sc_server *server,
     return sc_server_connect_to_tcpip(server, ip_port);
 }
 
+static void
+sc_server_kill_adb_if_requested(struct sc_server *server) {
+    if (server->params.kill_adb_on_close) {
+        LOGI("Killing adb server...");
+        unsigned flags = SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR;
+        sc_adb_kill_server(&server->intr, flags);
+    }
+}
+
 static int
 run_server(void *data) {
     struct sc_server *server = data;
@@ -993,9 +1002,12 @@ run_server(void *data) {
 
     sc_process_close(pid);
 
+    sc_server_kill_adb_if_requested(server);
+
     return 0;
 
 error_connection_failed:
+    sc_server_kill_adb_if_requested(server);
     server->cbs->on_connection_failed(server, server->cbs_userdata);
     return -1;
 }

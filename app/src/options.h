@@ -180,6 +180,7 @@ struct scrcpy_options {
     bool require_audio;
     bool list_encoders;
     bool list_displays;
+    bool kill_adb_on_close;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

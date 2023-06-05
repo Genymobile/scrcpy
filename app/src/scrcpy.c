@@ -364,6 +364,7 @@ scrcpy(struct scrcpy_options *options) {
         .power_on = options->power_on,
         .list_encoders = options->list_encoders,
         .list_displays = options->list_displays,
+        .kill_adb_on_close = options->kill_adb_on_close,
     };
 
     static const struct sc_server_callbacks cbs = {
