@@ -805,7 +805,7 @@ run_server(void *data) {
     // is parsed, so it is not output)
     bool ok = sc_adb_start_server(&server->intr, 0);
     if (!ok) {
-        LOGE("Could not start adb daemon");
+        LOGE("Could not start adb server");
         goto error_connection_failed;
     }
 
