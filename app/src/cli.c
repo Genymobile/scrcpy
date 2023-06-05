@@ -276,6 +276,11 @@ static const struct sc_option options[] = {
                 "shortcuts and forwards the clicks to the device instead.",
     },
     {
+        .shortopt = 'h',
+        .longopt = "help",
+        .text = "Print this help.",
+    },
+    {
         .shortopt = 'K',
         .longopt = "hid-keyboard",
         .text = "Simulate a physical keyboard by using HID over AOAv2.\n"
@@ -291,11 +296,6 @@ static const struct sc_option options[] = {
                 "However, the option is only available when the HID keyboard "
                 "is enabled (or a physical keyboard is connected).\n"
                 "Also see --hid-mouse.",
-    },
-    {
-        .shortopt = 'h',
-        .longopt = "help",
-        .text = "Print this help.",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,

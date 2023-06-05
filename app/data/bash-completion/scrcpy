@@ -19,8 +19,8 @@ _scrcpy() {
         -f --fullscreen
         --force-adb-forward
         --forward-all-clicks
-        -K --hid-keyboard
         -h --help
+        -K --hid-keyboard
         --legacy-paste
         --list-displays
         --list-encoders
