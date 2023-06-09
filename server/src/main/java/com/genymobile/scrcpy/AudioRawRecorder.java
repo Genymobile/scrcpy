@@ -69,7 +69,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
                 Ln.d("Audio recorder stopped");
                 listener.onTerminated(fatalError);
             }
-        });
+        }, "audio-raw");
         thread.start();
     }
 

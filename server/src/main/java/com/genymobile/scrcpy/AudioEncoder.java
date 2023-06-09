@@ -134,7 +134,7 @@ public final class AudioEncoder implements AsyncProcessor {
                 Ln.d("Audio encoder stopped");
                 listener.onTerminated(fatalError);
             }
-        });
+        }, "audio-encoder");
         thread.start();
     }
 
@@ -183,7 +183,7 @@ public final class AudioEncoder implements AsyncProcessor {
             Codec codec = streamer.getCodec();
             mediaCodec = createMediaCodec(codec, encoderName);
 
-            mediaCodecThread = new HandlerThread("AudioEncoder");
+            mediaCodecThread = new HandlerThread("media-codec");
             mediaCodecThread.start();
 
             MediaFormat format = createFormat(codec.getMimeType(), bitRate, codecOptions);
@@ -201,7 +201,7 @@ public final class AudioEncoder implements AsyncProcessor {
                 } finally {
                     end();
                 }
-            });
+            }, "audio-in");
 
             outputThread = new Thread(() -> {
                 try {
@@ -216,7 +216,7 @@ public final class AudioEncoder implements AsyncProcessor {
                 } finally {
                     end();
                 }
-            });
+            }, "audio-out");
 
             mediaCodec.start();
             mediaCodecStarted = true;

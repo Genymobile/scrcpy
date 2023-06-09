@@ -95,7 +95,7 @@ public class Controller implements AsyncProcessor {
                 Ln.d("Controller stopped");
                 listener.onTerminated(true);
             }
-        });
+        }, "control-recv");
         thread.start();
         sender.start();
     }

@@ -185,7 +185,7 @@ public final class Server {
     }
 
     private static Thread startInitThread(final Options options) {
-        Thread thread = new Thread(() -> initAndCleanUp(options));
+        Thread thread = new Thread(() -> initAndCleanUp(options), "init-cleanup");
         thread.start();
         return thread;
     }

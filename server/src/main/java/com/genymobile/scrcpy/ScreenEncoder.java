@@ -299,7 +299,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
                 Ln.d("Screen streaming stopped");
                 listener.onTerminated(true);
             }
-        });
+        }, "video");
         thread.start();
     }
 

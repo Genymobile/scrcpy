@@ -60,7 +60,7 @@ public final class DeviceMessageSender {
             } finally {
                 Ln.d("Device message sender stopped");
             }
-        });
+        }, "control-send");
         thread.start();
     }
 
