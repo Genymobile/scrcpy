@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.wrappers;
 import android.annotation.SuppressLint;
 import android.os.IBinder;
 import android.os.IInterface;
+import com.genymobile.scrcpy.Ln;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -65,9 +66,19 @@ public final class ServiceManager {
     public static InputManager getInputManager() {
         if (inputManager == null) {
             try {
-                Method getInstanceMethod = android.hardware.input.InputManager.class.getDeclaredMethod("getInstance");
-                android.hardware.input.InputManager im = (android.hardware.input.InputManager) getInstanceMethod.invoke(null);
-                inputManager = new InputManager(im);
+                try {
+                    Object im = Class.forName("android.hardware.input.InputManagerGlobal")
+                                .getMethod("getInstance").invoke(null);
+                    Ln.i("Using the InputManagerGlobal API");
+                    inputManager = new InputManager(im);
+                } catch (ClassNotFoundException e) {
+                    Method getInstanceMethod = android.hardware.input.InputManager.class
+                                               .getDeclaredMethod("getInstance");
+                    android.hardware.input.InputManager im =
+                        (android.hardware.input.InputManager) getInstanceMethod.invoke(null);
+                    Ln.i("Fallback to the legacy InputManager control API.");
+                    inputManager = new InputManager(im);
+                }
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 throw new AssertionError(e);
             }
