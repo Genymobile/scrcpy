@@ -137,8 +137,7 @@ public final class Server {
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
                 AudioCapture audioCapture = new AudioCapture(options.getAudioSource());
-                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(),
-                        options.getSendFrameMeta());
+                Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
                     audioRecorder = new AudioRawRecorder(audioCapture, audioStreamer);
