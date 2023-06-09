@@ -14,13 +14,13 @@ public final class InputManager {
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT = 1;
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2;
 
-    private final android.hardware.input.InputManager manager;
+    private final Object manager;
     private Method injectInputEventMethod;
 
     private static Method setDisplayIdMethod;
     private static Method setActionButtonMethod;
 
-    public InputManager(android.hardware.input.InputManager manager) {
+    public InputManager(Object manager) {
         this.manager = manager;
     }
 

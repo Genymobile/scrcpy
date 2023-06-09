@@ -62,11 +62,21 @@ public final class ServiceManager {
         return displayManager;
     }
 
+    public static Class<?> getInputManagerClass() {
+        try {
+            // Parts of the InputManager class have been moved to a new InputManagerGlobal class in Android 14 preview
+            return Class.forName("android.hardware.input.InputManagerGlobal");
+        } catch (ClassNotFoundException e) {
+            return android.hardware.input.InputManager.class;
+        }
+    }
+
     public static InputManager getInputManager() {
         if (inputManager == null) {
             try {
-                Method getInstanceMethod = android.hardware.input.InputManager.class.getDeclaredMethod("getInstance");
-                android.hardware.input.InputManager im = (android.hardware.input.InputManager) getInstanceMethod.invoke(null);
+                Class<?> inputManagerClass = getInputManagerClass();
+                Method getInstanceMethod = inputManagerClass.getDeclaredMethod("getInstance");
+                Object im = getInstanceMethod.invoke(null);
                 inputManager = new InputManager(im);
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 throw new AssertionError(e);
