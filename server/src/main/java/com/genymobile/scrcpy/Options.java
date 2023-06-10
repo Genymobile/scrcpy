@@ -318,9 +318,9 @@ public class Options {
                 case "send_codec_meta":
                     options.sendCodecMeta = Boolean.parseBoolean(value);
                     break;
-                case "raw_video_stream":
-                    boolean rawVideoStream = Boolean.parseBoolean(value);
-                    if (rawVideoStream) {
+                case "raw_stream":
+                    boolean rawStream = Boolean.parseBoolean(value);
+                    if (rawStream) {
                         options.sendDeviceMeta = false;
                         options.sendFrameMeta = false;
                         options.sendDummyByte = false;
