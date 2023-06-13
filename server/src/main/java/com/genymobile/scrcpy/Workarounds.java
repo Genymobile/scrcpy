@@ -106,7 +106,7 @@ public final class Workarounds {
     }
 
     @TargetApi(Build.VERSION_CODES.R)
-    @SuppressLint({"WrongConstant", "MissingPermission", "BlockedPrivateApi", "SoonBlockedPrivateApi"})
+    @SuppressLint("WrongConstant,MissingPermission,BlockedPrivateApi,SoonBlockedPrivateApi,DiscouragedPrivateApi")
     public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) {
         // Vivo (and maybe some other third-party ROMs) modified `AudioRecord`'s constructor, requiring `Context`s from real App environment.
         //
