@@ -109,7 +109,7 @@ public final class Server {
         // But only apply when strictly necessary, since workarounds can cause other issues:
         //  - <https://github.com/Genymobile/scrcpy/issues/940>
         //  - <https://github.com/Genymobile/scrcpy/issues/994>
-        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+        if (Build.BRAND.equalsIgnoreCase("meizu") || Build.BRAND.equalsIgnoreCase("honor")) {
             Workarounds.fillAppInfo();
         }
 
