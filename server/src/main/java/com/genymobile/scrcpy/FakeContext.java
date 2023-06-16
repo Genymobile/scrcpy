@@ -2,9 +2,13 @@ package com.genymobile.scrcpy;
 
 import android.annotation.TargetApi;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
 import android.os.Process;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 public final class FakeContext extends ContextWrapper {
 
@@ -13,12 +17,27 @@ public final class FakeContext extends ContextWrapper {
 
     private static final FakeContext INSTANCE = new FakeContext();
 
+    private static Context retrieveSystemContext() {
+        try {
+            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
+            activityThreadConstructor.setAccessible(true);
+            Object activityThread = activityThreadConstructor.newInstance();
+
+            Method getSystemContextMethod = activityThread.getClass().getDeclaredMethod("getSystemContext");
+            return (Context) getSystemContextMethod.invoke(activityThread);
+        } catch (Exception e) {
+            Ln.e("Cannot retrieve system context", e);
+            return null;
+        }
+    }
+
     public static FakeContext get() {
         return INSTANCE;
     }
 
     private FakeContext() {
-        super(null);
+        super(retrieveSystemContext());
     }
 
     @Override
