@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ActivityThread;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
@@ -20,8 +22,7 @@ import java.lang.reflect.Method;
 
 public final class Workarounds {
 
-    private static Class<?> activityThreadClass;
-    private static Object activityThread;
+    private static boolean activityThreadFilled;
 
     private Workarounds() {
         // not instantiable
@@ -42,17 +43,16 @@ public final class Workarounds {
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     private static void fillActivityThread() throws Exception {
-        if (activityThread == null) {
-            // ActivityThread activityThread = new ActivityThread();
-            activityThreadClass = Class.forName("android.app.ActivityThread");
-            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
-            activityThreadConstructor.setAccessible(true);
-            activityThread = activityThreadConstructor.newInstance();
+        if (!activityThreadFilled) {
+            Class<?> activityThreadClass = ActivityThread.getActivityThreadClass();
+            Object activityThread = ActivityThread.getActivityThread();
 
             // ActivityThread.sCurrentActivityThread = activityThread;
             Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
             sCurrentActivityThreadField.setAccessible(true);
             sCurrentActivityThreadField.set(null, activityThread);
+
+            activityThreadFilled = true;
         }
     }
 
@@ -75,6 +75,9 @@ public final class Workarounds {
             appInfoField.setAccessible(true);
             appInfoField.set(appBindData, applicationInfo);
 
+            Class<?> activityThreadClass = ActivityThread.getActivityThreadClass();
+            Object activityThread = ActivityThread.getActivityThread();
+
             // activityThread.mBoundApplication = appBindData;
             Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
             mBoundApplicationField.setAccessible(true);
@@ -94,6 +97,9 @@ public final class Workarounds {
             Field baseField = ContextWrapper.class.getDeclaredField("mBase");
             baseField.setAccessible(true);
             baseField.set(app, FakeContext.get());
+
+            Class<?> activityThreadClass = ActivityThread.getActivityThreadClass();
+            Object activityThread = ActivityThread.getActivityThread();
 
             // activityThread.mInitialApplication = app;
             Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
