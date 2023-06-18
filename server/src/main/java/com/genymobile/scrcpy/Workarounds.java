@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioAttributes;
@@ -22,6 +23,7 @@ public final class Workarounds {
 
     private static Class<?> activityThreadClass;
     private static Object activityThread;
+    private static boolean currentActivityThreadInitialized;
 
     private Workarounds() {
         // not instantiable
@@ -41,18 +43,26 @@ public final class Workarounds {
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    private static void fillActivityThread() throws Exception {
+    private static void initActivityThread() throws Exception {
         if (activityThread == null) {
             // ActivityThread activityThread = new ActivityThread();
             activityThreadClass = Class.forName("android.app.ActivityThread");
             Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
             activityThreadConstructor.setAccessible(true);
             activityThread = activityThreadConstructor.newInstance();
+        }
+    }
 
+    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
+    private static void fillActivityThread() throws Exception {
+        initActivityThread();
+
+        if (!currentActivityThreadInitialized) {
             // ActivityThread.sCurrentActivityThread = activityThread;
             Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
             sCurrentActivityThreadField.setAccessible(true);
             sCurrentActivityThreadField.set(null, activityThread);
+            currentActivityThreadInitialized = true;
         }
     }
 
@@ -102,6 +112,19 @@ public final class Workarounds {
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
+        }
+    }
+
+    public static void fillBaseContext() {
+        try {
+            initActivityThread();
+
+            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
+            Context context = (Context) getSystemContextMethod.invoke(activityThread);
+            FakeContext.get().setBaseContext(context);
+        } catch (Throwable throwable) {
+            // this is a workaround, so failing is not an error
+            Ln.d("Could not fill base context: " + throwable.getMessage());
         }
     }
 

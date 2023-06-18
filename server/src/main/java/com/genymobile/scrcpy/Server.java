@@ -101,15 +101,23 @@ public final class Server {
 
         Workarounds.prepareMainLooper();
 
-        // Workarounds must be applied for Meizu phones:
-        //  - <https://github.com/Genymobile/scrcpy/issues/240>
-        //  - <https://github.com/Genymobile/scrcpy/issues/365>
-        //  - <https://github.com/Genymobile/scrcpy/issues/2656>
-        //
-        // But only apply when strictly necessary, since workarounds can cause other issues:
-        //  - <https://github.com/Genymobile/scrcpy/issues/940>
-        //  - <https://github.com/Genymobile/scrcpy/issues/994>
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            // Workarounds must be applied for Meizu phones:
+            //  - <https://github.com/Genymobile/scrcpy/issues/240>
+            //  - <https://github.com/Genymobile/scrcpy/issues/365>
+            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
+            //
+            // But only apply when strictly necessary, since workarounds can cause other issues:
+            //  - <https://github.com/Genymobile/scrcpy/issues/940>
+            //  - <https://github.com/Genymobile/scrcpy/issues/994>
+            Workarounds.fillAppInfo();
+        } else if (Build.BRAND.equalsIgnoreCase("honor")) {
+            // Honor devices require both a system context (as a base context of FakeContext) and the same workarounds as for Meizu phones:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4015>
+            // The system context must not be set for all devices, it would cause other problems:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
+            //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
+            Workarounds.fillBaseContext();
             Workarounds.fillAppInfo();
         }
 
