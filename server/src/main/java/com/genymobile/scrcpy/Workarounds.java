@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioAttributes;
@@ -102,6 +103,19 @@ public final class Workarounds {
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
+        }
+    }
+
+    public static void fillBaseContext() {
+        try {
+            fillActivityThread();
+
+            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
+            Context context = (Context) getSystemContextMethod.invoke(activityThread);
+            FakeContext.get().setBaseContext(context);
+        } catch (Throwable throwable) {
+            // this is a workaround, so failing is not an error
+            Ln.d("Could not fill base context: " + throwable.getMessage());
         }
     }
 
