@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioAttributes;
@@ -30,22 +31,47 @@ public final class Workarounds {
     public static void apply(boolean audio) {
         Workarounds.prepareMainLooper();
 
-        // Workarounds must be applied for Meizu phones:
-        //  - <https://github.com/Genymobile/scrcpy/issues/240>
-        //  - <https://github.com/Genymobile/scrcpy/issues/365>
-        //  - <https://github.com/Genymobile/scrcpy/issues/2656>
-        //
-        // But only apply when strictly necessary, since workarounds can cause other issues:
-        //  - <https://github.com/Genymobile/scrcpy/issues/940>
-        //  - <https://github.com/Genymobile/scrcpy/issues/994>
+        boolean mustFillAppInfo = false;
+        boolean mustFillBaseContext = false;
+        boolean mustFillAppContext = false;
+
+
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            Workarounds.fillAppInfo();
+            // Workarounds must be applied for Meizu phones:
+            //  - <https://github.com/Genymobile/scrcpy/issues/240>
+            //  - <https://github.com/Genymobile/scrcpy/issues/365>
+            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
+            //
+            // But only apply when strictly necessary, since workarounds can cause other issues:
+            //  - <https://github.com/Genymobile/scrcpy/issues/940>
+            //  - <https://github.com/Genymobile/scrcpy/issues/994>
+            mustFillAppInfo = true;
+        } else if (Build.BRAND.equalsIgnoreCase("honor")) {
+            // More workarounds must be applied for Honor devices:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4015>
+            //
+            // The system context must not be set for all devices, because it would cause other problems:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
+            //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
+            mustFillAppInfo = true;
+            mustFillBaseContext = true;
+            mustFillAppContext = true;
         }
 
-        // Before Android 11, audio is not supported.
-        // Since Android 12, we can properly set a context on the AudioRecord.
-        // Only on Android 11 we must fill the application context for the AudioRecord to work.
         if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            // Before Android 11, audio is not supported.
+            // Since Android 12, we can properly set a context on the AudioRecord.
+            // Only on Android 11 we must fill the application context for the AudioRecord to work.
+            mustFillAppContext = true;
+        }
+
+        if (mustFillAppInfo) {
+            Workarounds.fillAppInfo();
+        }
+        if (mustFillBaseContext) {
+            Workarounds.fillBaseContext();
+        }
+        if (mustFillAppContext) {
             Workarounds.fillAppContext();
         }
     }
@@ -125,6 +151,19 @@ public final class Workarounds {
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
+        }
+    }
+
+    public static void fillBaseContext() {
+        try {
+            fillActivityThread();
+
+            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
+            Context context = (Context) getSystemContextMethod.invoke(activityThread);
+            FakeContext.get().setBaseContext(context);
+        } catch (Throwable throwable) {
+            // this is a workaround, so failing is not an error
+            Ln.d("Could not fill base context: " + throwable.getMessage());
         }
     }
 

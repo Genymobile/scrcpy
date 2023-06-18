@@ -2,11 +2,11 @@ package com.genymobile.scrcpy;
 
 import android.annotation.TargetApi;
 import android.content.AttributionSource;
-import android.content.ContextWrapper;
+import android.content.MutableContextWrapper;
 import android.os.Build;
 import android.os.Process;
 
-public final class FakeContext extends ContextWrapper {
+public final class FakeContext extends MutableContextWrapper {
 
     public static final String PACKAGE_NAME = "com.android.shell";
     public static final int ROOT_UID = 0; // Like android.os.Process.ROOT_UID, but before API 29
