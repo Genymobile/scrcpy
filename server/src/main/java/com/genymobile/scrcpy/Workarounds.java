@@ -27,8 +27,31 @@ public final class Workarounds {
         // not instantiable
     }
 
+    public static void apply(boolean audio) {
+        Workarounds.prepareMainLooper();
+
+        // Workarounds must be applied for Meizu phones:
+        //  - <https://github.com/Genymobile/scrcpy/issues/240>
+        //  - <https://github.com/Genymobile/scrcpy/issues/365>
+        //  - <https://github.com/Genymobile/scrcpy/issues/2656>
+        //
+        // But only apply when strictly necessary, since workarounds can cause other issues:
+        //  - <https://github.com/Genymobile/scrcpy/issues/940>
+        //  - <https://github.com/Genymobile/scrcpy/issues/994>
+        if (Build.BRAND.equalsIgnoreCase("meizu")) {
+            Workarounds.fillAppInfo();
+        }
+
+        // Before Android 11, audio is not supported.
+        // Since Android 12, we can properly set a context on the AudioRecord.
+        // Only on Android 11 we must fill the application context for the AudioRecord to work.
+        if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            Workarounds.fillAppContext();
+        }
+    }
+
     @SuppressWarnings("deprecation")
-    public static void prepareMainLooper() {
+    private static void prepareMainLooper() {
         // Some devices internally create a Handler when creating an input Surface, causing an exception:
         //   "Can't create handler inside thread that has not called Looper.prepare()"
         // <https://github.com/Genymobile/scrcpy/issues/240>
@@ -57,7 +80,7 @@ public final class Workarounds {
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    public static void fillAppInfo() {
+    private static void fillAppInfo() {
         try {
             fillActivityThread();
 
@@ -86,7 +109,7 @@ public final class Workarounds {
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    public static void fillAppContext() {
+    private static void fillAppContext() {
         try {
             fillActivityThread();
 
