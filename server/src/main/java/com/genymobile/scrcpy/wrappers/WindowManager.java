@@ -107,7 +107,7 @@ public final class WindowManager {
                 cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);
             }
         } catch (Exception e) {
-            throw new AssertionError(e);
+            Ln.e("Could not register rotation watcher", e);
         }
     }
 
@@ -117,7 +117,7 @@ public final class WindowManager {
             Class<?> cls = manager.getClass();
             cls.getMethod("registerDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
         } catch (Exception e) {
-            throw new AssertionError(e);
+            Ln.e("Could not register display fold listener", e);
         }
     }
 }
