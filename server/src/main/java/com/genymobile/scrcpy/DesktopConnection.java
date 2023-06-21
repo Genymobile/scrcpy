@@ -64,8 +64,6 @@ public final class DesktopConnection implements Closeable {
             throws IOException {
         String socketName = getSocketName(scid);
 
-        LocalSocket firstSocket = null;
-
         LocalSocket videoSocket = null;
         LocalSocket audioSocket = null;
         LocalSocket controlSocket = null;
@@ -74,23 +72,27 @@ public final class DesktopConnection implements Closeable {
                 try (LocalServerSocket localServerSocket = new LocalServerSocket(socketName)) {
                     if (video) {
                         videoSocket = localServerSocket.accept();
-                        firstSocket = videoSocket;
+                        if (sendDummyByte) {
+                            // send one byte so the client may read() to detect a connection error
+                            videoSocket.getOutputStream().write(0);
+                            sendDummyByte = false;
+                        }
                     }
                     if (audio) {
                         audioSocket = localServerSocket.accept();
-                        if (firstSocket == null) {
-                            firstSocket = audioSocket;
+                        if (sendDummyByte) {
+                            // send one byte so the client may read() to detect a connection error
+                            audioSocket.getOutputStream().write(0);
+                            sendDummyByte = false;
                         }
                     }
                     if (control) {
                         controlSocket = localServerSocket.accept();
-                        if (firstSocket == null) {
-                            firstSocket = controlSocket;
+                        if (sendDummyByte) {
+                            // send one byte so the client may read() to detect a connection error
+                            controlSocket.getOutputStream().write(0);
+                            sendDummyByte = false;
                         }
-                    }
-                    if (sendDummyByte) {
-                        // send one byte so the client may read() to detect a connection error
-                        firstSocket.getOutputStream().write(0);
                     }
                 }
             } else {
