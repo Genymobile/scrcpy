@@ -48,6 +48,7 @@ cd "$SERVER_DIR/src/main/aidl"
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" android/view/IRotationWatcher.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" \
     android/content/IOnPrimaryClipChangedListener.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" android/view/IDisplayFoldListener.aidl
 
 echo "Compiling java sources..."
 cd ../java
