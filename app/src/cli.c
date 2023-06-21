@@ -124,7 +124,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_BIT_RATE,
         .longopt = "audio-bit-rate",
         .argdesc = "value",
-        .text = "Encode the audio at the given bit-rate, expressed in bits/s. "
+        .text = "Encode the audio at the given bit rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 128K (128000).",
     },
@@ -185,7 +185,7 @@ static const struct sc_option options[] = {
         .shortopt = 'b',
         .longopt = "video-bit-rate",
         .argdesc = "value",
-        .text = "Encode the video at the given bit-rate, expressed in bits/s. "
+        .text = "Encode the video at the given bit rate, expressed in bits/s. "
                 "Unit suffixes are supported: 'K' (x1000) and 'M' (x1000000).\n"
                 "Default is 8M (8000000).",
     },

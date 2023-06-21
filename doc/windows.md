@@ -15,7 +15,13 @@ Download the [latest release]:
 
 and extract it.
 
-Alternatively, you could install it from packages manager, like [Chocolatey]:
+Alternatively, you could install it from packages manager, like [Winget]:
+
+```bash
+winget install scrcpy
+```
+
+or [Chocolatey]:
 
 ```bash
 choco install scrcpy
@@ -30,6 +36,7 @@ scoop install scrcpy
 scoop install adb    # if you don't have it yet
 ```
 
+[Winget]: https://github.com/microsoft/winget-cli
 [Chocolatey]: https://chocolatey.org/
 [Scoop]: https://scoop.sh
 

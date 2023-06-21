@@ -30,7 +30,7 @@ Its features include:
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
- - Android device [as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - Android device screen [as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
  - [physical keyboard/mouse simulation (HID)](doc/hid-otg.md)
  - [OTG mode](doc/hid-otg.md#otg)
  - and more…
@@ -39,7 +39,7 @@ Its features include:
 
 The Android device requires at least API 21 (Android 5.0).
 
-[Audio forwarding](doc/audio.md) is supported from API 30 (Android 11).
+[Audio forwarding](doc/audio.md) is supported for API >= 30 (Android 11+).
 
 Make sure you [enabled USB debugging][enable-adb] on your device(s).
 
@@ -47,9 +47,13 @@ Make sure you [enabled USB debugging][enable-adb] on your device(s).
 
 On some devices, you also need to enable [an additional option][control] `USB
 debugging (Security Settings)` (this is an item different from `USB debugging`)
-to control it using a keyboard and mouse.
+to control it using a keyboard and mouse. Rebooting the device is necessary once
+this option is set.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
+
+Note that USB debugging is not required to run scrcpy in [OTG
+mode](doc/hid-otg.md#otg).
 
 
 ## Get the app

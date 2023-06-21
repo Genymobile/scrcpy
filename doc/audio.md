@@ -71,6 +71,13 @@ scrcpy --audio-codec=aac
 scrcpy --audio-codec=raw
 ```
 
+In particular, if you get the following error:
+
+> Failed to initialize audio/opus, error 0xfffffffe
+
+then your device has no Opus encoder: try `scrcpy --audio-codec=aac`.
+
+
 Several encoders may be available on the device. They can be listed by:
 
 ```bash
@@ -91,7 +98,7 @@ check `--audio-codec-options` in the manpage or in `scrcpy --help`.
 
 ## Bit rate
 
-The default video bit-rate is 128Kbps. To change it:
+The default audio bit rate is 128Kbps. To change it:
 
 ```bash
 scrcpy --audio-bit-rate=64K
