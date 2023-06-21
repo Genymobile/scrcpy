@@ -13,7 +13,7 @@ BEGIN
       VALUE "LegalCopyright", "Romain Vimont, Genymobile"
       VALUE "OriginalFilename", "scrcpy.exe"
       VALUE "ProductName", "scrcpy"
-      VALUE "ProductVersion", "2.0"
+      VALUE "ProductVersion", "2.1"
     END
   END
   BLOCK "VarFileInfo"
