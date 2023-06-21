@@ -533,8 +533,8 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
                 if (audio_socket == SC_SOCKET_NONE) {
                     goto fail;
                 }
-                bool ok = net_connect_intr(&server->intr, audio_socket, tunnel_host,
-                                           tunnel_port);
+                bool ok = net_connect_intr(&server->intr, audio_socket,
+                                           tunnel_host, tunnel_port);
                 if (!ok) {
                     goto fail;
                 }
