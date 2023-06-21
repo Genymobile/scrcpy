@@ -99,25 +99,27 @@ public final class Device {
             }
         }, displayId);
 
-        ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
-            @Override
-            public void onDisplayFoldChanged(int displayId, boolean folded) {
-                synchronized (Device.this) {
-                    DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                    if (displayInfo == null) {
-                        Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-                        return;
-                    }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
+                @Override
+                public void onDisplayFoldChanged(int displayId, boolean folded) {
+                    synchronized (Device.this) {
+                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                        if (displayInfo == null) {
+                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+                            return;
+                        }
 
-                    screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(),
-                            options.getMaxSize(), options.getLockVideoOrientation());
-                    // notify
-                    if (foldListener != null) {
-                        foldListener.onFoldChanged(displayId, folded);
+                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(),
+                                options.getMaxSize(), options.getLockVideoOrientation());
+                        // notify
+                        if (foldListener != null) {
+                            foldListener.onFoldChanged(displayId, folded);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically

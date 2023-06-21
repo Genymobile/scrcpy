@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.annotation.TargetApi;
 import android.os.IInterface;
 import android.view.IRotationWatcher;
 import android.view.IDisplayFoldListener;
@@ -110,6 +111,7 @@ public final class WindowManager {
         }
     }
 
+    @TargetApi(29)
     public void registerDisplayFoldListener(IDisplayFoldListener foldListener) {
         try {
             Class<?> cls = manager.getClass();
