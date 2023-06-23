@@ -215,6 +215,11 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
+//# ifdef SERVER_ASROOT // make this conditional at some point, would require condition in the server as well
+    cmd[count++] = "su";
+    cmd[count++] = "1003"; // AID_GRAPHICS, AID_SYSTEM is also supported for FLAG_SECURE
+    cmd[count++] = "-c";
+//# endif
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
     cmd[count++] = "app_process";
 
