@@ -147,7 +147,6 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
         // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
 
         int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
-        Ln.i("newMaxSize = " + newMaxSize);
         if (newMaxSize == 0) {
             // Must definitively fail
             return false;
