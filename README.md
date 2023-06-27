@@ -117,7 +117,10 @@ For general questions or discussions, you can also use:
 I'm [@rom1v](https://github.com/rom1v), the author and maintainer of _scrcpy_.
 
 If you appreciate this application, you can [support my open source
-work][donate].
+work][donate]:
+ - [GitHub Sponsors](https://github.com/sponsors/rom1v)
+ - [Liberapay](https://liberapay.com/rom1v/)
+ - [PayPal](https://paypal.me/rom2v)
 
 [donate]: https://blog.rom1v.com/about/#support-my-open-source-work
 
