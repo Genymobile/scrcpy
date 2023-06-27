@@ -103,6 +103,11 @@ public final class Device {
             ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
                 @Override
                 public void onDisplayFoldChanged(int displayId, boolean folded) {
+                    if (Device.this.displayId != displayId) {
+                        // Ignore events related to other display ids
+                        return;
+                    }
+
                     synchronized (Device.this) {
                         DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
                         if (displayInfo == null) {
