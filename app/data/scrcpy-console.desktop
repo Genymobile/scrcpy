@@ -5,7 +5,7 @@ Comment=Display and control your Android device
 # For some users, the PATH or ADB environment variables are set from the shell
 # startup file, like .bashrc or .zshrc… Run an interactive shell to get
 # environment correctly initialized.
-Exec=/bin/bash --norc --noprofile -i -c "\"\\$SHELL\" -i -c scrcpy || read -p 'Press Enter to quit...'"
+Exec=/bin/sh -c "\"\\$SHELL\" -i -c scrcpy --pause-on-exit=if-error"
 Icon=scrcpy
 Terminal=true
 Type=Application
