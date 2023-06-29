@@ -79,6 +79,7 @@ enum {
     OPT_AUDIO_SOURCE,
     OPT_KILL_ADB_ON_CLOSE,
     OPT_TIME_LIMIT,
+    OPT_PAUSE_ON_EXIT,
 };
 
 struct sc_option {
@@ -462,6 +463,20 @@ static const struct sc_option options[] = {
         .text = "Set the TCP port (range) used by the client to listen.\n"
                 "Default is " STR(DEFAULT_LOCAL_PORT_RANGE_FIRST) ":"
                               STR(DEFAULT_LOCAL_PORT_RANGE_LAST) ".",
+    },
+    {
+        .longopt_id = OPT_PAUSE_ON_EXIT,
+        .longopt = "pause-on-exit",
+        .argdesc = "mode",
+        .optional_arg = true,
+        .text = "Configure pause on exit. Possible values are \"true\" (always "
+                "pause on exit), \"false\" (never pause on exit) and "
+                "\"if-error\" (pause only if an error occured).\n"
+                "This is useful to prevent the terminal window from "
+                "automatically closing, so that error messages can be read.\n"
+                "Default is \"false\".\n"
+                "Passing the option without argument is equivalent to passing "
+                "\"true\".",
     },
     {
         .longopt_id = OPT_POWER_OFF_ON_CLOSE,
@@ -1638,6 +1653,29 @@ parse_time_limit(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
+    if (!s || !strcmp(s, "true")) {
+        *pause_on_exit = SC_PAUSE_ON_EXIT_TRUE;
+        return true;
+    }
+
+    if (!strcmp(s, "false")) {
+        *pause_on_exit = SC_PAUSE_ON_EXIT_FALSE;
+        return true;
+    }
+
+    if (!strcmp(s, "if-error")) {
+        *pause_on_exit = SC_PAUSE_ON_EXIT_IF_ERROR;
+        return true;
+    }
+
+    LOGE("Unsupported pause on exit mode: %s "
+         "(expected true, false or if-error)", optarg);
+    return false;
+
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -1977,6 +2015,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_PAUSE_ON_EXIT:
+                if (!parse_pause_on_exit(optarg, &args->pause_on_exit)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2190,6 +2233,37 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     return true;
 }
 
+static enum sc_pause_on_exit
+sc_get_pause_on_exit(int argc, char *argv[]) {
+    // Read arguments backwards so that the last --pause-on-exit is considered
+    // (same behavior as getopt())
+    for (int i = argc - 1; i >= 1; --i) {
+        const char *arg = argv[i];
+        // Starts with "--pause-on-exit"
+        if (!strncmp("--pause-on-exit", arg, 15)) {
+            if (arg[15] == '\0') {
+                // No argument
+                return SC_PAUSE_ON_EXIT_TRUE;
+            }
+            if (arg[15] != '=') {
+                // Invalid parameter, ignore
+                return SC_PAUSE_ON_EXIT_FALSE;
+            }
+            const char *value = &arg[16];
+            if (!strcmp(value, "true")) {
+                return SC_PAUSE_ON_EXIT_TRUE;
+            }
+            if (!strcmp(value, "if-error")) {
+                return SC_PAUSE_ON_EXIT_IF_ERROR;
+            }
+            // Set to false, inclusing when the value is invalid
+            return SC_PAUSE_ON_EXIT_FALSE;
+        }
+    }
+
+    return false;
+}
+
 bool
 scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
     struct sc_getopt_adapter adapter;
@@ -2202,6 +2276,12 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]) {
                                       adapter.longopts);
 
     sc_getopt_adapter_destroy(&adapter);
+
+    if (!ret && args->pause_on_exit == SC_PAUSE_ON_EXIT_FALSE) {
+        // Check if "--pause-on-exit" is present in the arguments list, because
+        // it must be taken into account even if command line parsing failed
+        args->pause_on_exit = sc_get_pause_on_exit(argc, argv);
+    }
 
     return ret;
 }

@@ -50,6 +50,7 @@ arguments=(
     '--no-video-playback[Disable video playback]'
     '--otg[Run in OTG mode \(simulating physical keyboard and mouse\)]'
     {-p,--port=}'[\[port\[\:port\]\] Set the TCP port \(range\) used by the client to listen]'
+    '--pause-on-exit=[Make scrcpy pause before exiting]:mode:(true false if-error)'
     '--power-off-on-close[Turn the device screen off when closing scrcpy]'
     '--prefer-text[Inject alpha characters and space as text events instead of key events]'
     '--print-fps[Start FPS counter, to print frame logs to the console]'

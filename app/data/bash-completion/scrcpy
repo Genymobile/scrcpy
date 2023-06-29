@@ -44,6 +44,8 @@ _scrcpy() {
         --no-video-playback
         --otg
         -p --port=
+        --pause-on-exit
+        --pause-on-exit=
         --power-off-on-close
         --prefer-text
         --print-fps
@@ -95,6 +97,10 @@ _scrcpy() {
             ;;
         --lock-video-orientation)
             COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
+            return
+            ;;
+        --pause-on-exit)
+            COMPREPLY=($(compgen -W 'true false if-error' -- "$cur"))
             return
             ;;
         -r|--record)
