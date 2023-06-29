@@ -71,6 +71,8 @@ arguments=(
     '--record-orientation=[Set the record orientation]:orientation values:(0 90 180 270)'
     '--render-driver=[Request SDL to use the given render driver]:driver name:(direct3d opengl opengles2 opengles metal software)'
     '--require-audio=[Make scrcpy fail if audio is enabled but does not work]'
+    '--root[Launch the server as root]'
+    '--rotation=[Set the initial display rotation]:rotation values:(0 1 2 3)'
     {-s,--serial=}'[The device serial number \(mandatory for multiple devices only\)]:serial:($("${ADB-adb}" devices | awk '\''$2 == "device" {print $1}'\''))'
     {-S,--turn-screen-off}'[Turn the device screen off immediately]'
     '--shortcut-mod=[\[key1,key2+key3,...\] Specify the modifiers to use for scrcpy shortcuts]:shortcut mod:(lctrl rctrl lalt ralt lsuper rsuper)'
