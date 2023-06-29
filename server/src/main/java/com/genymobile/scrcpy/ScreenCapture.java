@@ -72,9 +72,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
     private static IBinder createDisplay() {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
-        boolean secure = true; //hardcoded for root testing, but should be conditional based on flag
-        //boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
-        //        .equals(Build.VERSION.CODENAME));
+        boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
+                .equals(Build.VERSION.CODENAME));
+        if (Os.getuid() < 2000) {
+            secure = true;
+        }
         return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
