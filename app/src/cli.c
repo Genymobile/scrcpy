@@ -654,8 +654,7 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_ROOT,
         .longopt = "root",
-        .text = "Try to launch the server as root.\n"
-                "Disabled by default.",
+        .text = "Launch the server as root (disabled by default).",
     },
     {
         .shortopt = 's',
