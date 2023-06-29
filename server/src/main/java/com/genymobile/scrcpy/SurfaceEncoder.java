@@ -30,7 +30,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final int videoBitRate;
     private final int maxFps;
     private final boolean downsizeOnError;
-    
+
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
