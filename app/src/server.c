@@ -215,7 +215,7 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
-    
+
     if (params->root) {
         cmd[count++] = "su";
         cmd[count++] = "1000"; // AID_SYSTEM, AID_GRAPHICS is also supported for FLAG_SECURE but lacks other perms
