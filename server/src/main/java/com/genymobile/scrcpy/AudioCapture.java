@@ -78,12 +78,12 @@ public final class AudioCapture {
         Intent intent = new Intent(Intent.ACTION_MAIN);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
-        intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
+        intent.setComponent(new ComponentName(FakeContext.getPackageNameStatic(), "com.android.shell.HeapDumpActivity"));
         ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
     }
 
     private static void stopWorkaroundAndroid11() {
-        ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
+        ServiceManager.getActivityManager().forceStopPackage(FakeContext.getPackageNameStatic());
     }
 
     private void tryStartRecording(int attempts, int delayMs) throws AudioCaptureForegroundException {

@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
 import android.os.Process;
+import android.system.Os;
 
 public final class FakeContext extends ContextWrapper {
 
@@ -24,11 +25,24 @@ public final class FakeContext extends ContextWrapper {
 
     @Override
     public String getPackageName() {
+        if (Os.getuid() == 1000) {
+            return "android";
+        }
         return PACKAGE_NAME;
     }
 
     @Override
     public String getOpPackageName() {
+        if (Os.getuid() == 1000) {
+            return "android";
+        }
+        return PACKAGE_NAME;
+    }
+
+    public static String getPackageNameStatic() {
+        if (Os.getuid() == 1000) {
+            return "android";
+        }
         return PACKAGE_NAME;
     }
 
@@ -37,6 +51,9 @@ public final class FakeContext extends ContextWrapper {
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
         builder.setPackageName(PACKAGE_NAME);
+        if (Os.getuid() == 1000) {
+            builder.setPackageName("android");
+        }
         return builder.build();
     }
 
