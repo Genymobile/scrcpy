@@ -7,6 +7,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
+import android.system.Os;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -167,7 +168,7 @@ public final class AudioEncoder implements AsyncProcessor {
 
     @TargetApi(Build.VERSION_CODES.M)
     public void encode() throws IOException, ConfigurationException, AudioCaptureForegroundException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        if ((Os.getuid() == 2000) && (Build.VERSION.SDK_INT < Build.VERSION_CODES.R)) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
             return;
