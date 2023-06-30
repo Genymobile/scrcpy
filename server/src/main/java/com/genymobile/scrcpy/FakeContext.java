@@ -10,6 +10,7 @@ import android.system.Os;
 
 public final class FakeContext extends ContextWrapper {
 
+    public static final String PACKAGE_NAME = Os.getuid() == 1000 ? "android" : "com.android.shell";
     public static final String PACKAGE_SHELL = "com.android.shell";
     public static final int ROOT_UID = 0; // Like android.os.Process.ROOT_UID, but before API 29
 
@@ -25,29 +26,20 @@ public final class FakeContext extends ContextWrapper {
 
     @Override
     public String getPackageName() {
-        return getPackageNameStatic();
+        return PACKAGE_NAME;
     }
 
     @Override
     public String getOpPackageName() {
-        return getPackageNameStatic();
+        return PACKAGE_NAME;
     }
 
-    public static String getPackageNameStatic() {
-        if (Os.getuid() == 1000) {
-            return "android";
-        }
-        return PACKAGE_SHELL;
-    }
 
     @TargetApi(Build.VERSION_CODES.S)
     @Override
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
-        builder.setPackageName(PACKAGE_SHELL);
-        if (Os.getuid() == 1000) {
-            builder.setPackageName("android");
-        }
+        builder.setPackageName(PACKAGE_NAME);
         return builder.build();
     }
 

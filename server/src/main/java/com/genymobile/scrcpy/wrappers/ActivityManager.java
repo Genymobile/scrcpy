@@ -125,7 +125,7 @@ public final class ActivityManager {
             return (int) method.invoke(
                     /* this */ manager,
                     /* caller */ null,
-                    /* callingPackage */ FakeContext.getPackageNameStatic(),
+                    /* callingPackage */ FakeContext.PACKAGE_NAME,
                     /* callingFeatureId */ null,
                     /* intent */ intent,
                     /* resolvedType */ null,
