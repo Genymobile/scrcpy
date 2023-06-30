@@ -128,7 +128,7 @@ public final class Workarounds {
             Object appBindData = appBindDataConstructor.newInstance();
 
             ApplicationInfo applicationInfo = new ApplicationInfo();
-            applicationInfo.packageName = FakeContext.PACKAGE_NAME;
+            applicationInfo.packageName = FakeContext.getPackageNameStatic();
 
             // appBindData.appInfo = applicationInfo;
             Field appInfoField = appBindDataClass.getDeclaredField("appInfo");

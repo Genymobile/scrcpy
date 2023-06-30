@@ -84,13 +84,13 @@ public final class ContentProvider implements Closeable {
             } else {
                 switch (callMethodVersion) {
                     case 1:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, null, "settings", callMethod, arg, extras};
+                        args = new Object[]{FakeContext.getPackageNameStatic(), null, "settings", callMethod, arg, extras};
                         break;
                     case 2:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, "settings", callMethod, arg, extras};
+                        args = new Object[]{FakeContext.getPackageNameStatic(), "settings", callMethod, arg, extras};
                         break;
                     default:
-                        args = new Object[]{FakeContext.PACKAGE_NAME, callMethod, arg, extras};
+                        args = new Object[]{FakeContext.getPackageNameStatic(), callMethod, arg, extras};
                         break;
                 }
             }
