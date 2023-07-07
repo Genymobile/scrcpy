@@ -118,7 +118,7 @@ public final class AudioCapture {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
             startWorkaroundAndroid11();
             try {
-                tryStartRecording(3, 100);
+                tryStartRecording(5, 100);
             } finally {
                 stopWorkaroundAndroid11();
             }
