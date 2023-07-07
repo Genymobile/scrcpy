@@ -23,6 +23,7 @@ public final class Workarounds {
 
     private static Class<?> activityThreadClass;
     private static Object activityThread;
+    private static Context systemContext;
 
     private Workarounds() {
         // not instantiable
@@ -89,20 +90,23 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    private static void fillActivityThread() throws Exception {
+    @SuppressLint("PrivateApi")
+    private static Object getActivityThread() throws ReflectiveOperationException {
         if (activityThread == null) {
             // ActivityThread activityThread = new ActivityThread();
             activityThreadClass = Class.forName("android.app.ActivityThread");
             Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
             activityThreadConstructor.setAccessible(true);
             activityThread = activityThreadConstructor.newInstance();
-
-            // ActivityThread.sCurrentActivityThread = activityThread;
-            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
-            sCurrentActivityThreadField.setAccessible(true);
-            sCurrentActivityThreadField.set(null, activityThread);
         }
+        return activityThread;
+    }
+
+    private static void fillActivityThread() throws Exception {
+        // ActivityThread.sCurrentActivityThread = activityThread;
+        Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
+        sCurrentActivityThreadField.setAccessible(true);
+        sCurrentActivityThreadField.set(null, getActivityThread());
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -154,13 +158,20 @@ public final class Workarounds {
         }
     }
 
+    public static Context getSystemContext() throws ReflectiveOperationException {
+        if (systemContext == null) {
+            Object activityThread = getActivityThread();
+            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
+            systemContext = (Context) getSystemContextMethod.invoke(activityThread);
+        }
+        return systemContext;
+    }
+
     public static void fillBaseContext() {
         try {
             fillActivityThread();
 
-            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
-            Context context = (Context) getSystemContextMethod.invoke(activityThread);
-            FakeContext.get().setBaseContext(context);
+            FakeContext.get().setBaseContext(getSystemContext());
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill base context: " + throwable.getMessage());

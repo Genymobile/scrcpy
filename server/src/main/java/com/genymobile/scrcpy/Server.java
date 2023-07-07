@@ -132,7 +132,7 @@ public final class Server {
             if (video) {
                 Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
                         options.getSendFrameMeta());
-                ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                CameraEncoder screenEncoder = new CameraEncoder(options.getMaxSize(), videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                         options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
                 asyncProcessors.add(screenEncoder);
             }
