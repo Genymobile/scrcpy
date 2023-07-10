@@ -92,6 +92,7 @@ public class CameraEncoder implements AsyncProcessor {
         return result[0];
     }
 
+    @SuppressWarnings("deprecation")
     private CameraCaptureSession createCaptureSession(CameraDevice camera, Surface surface) throws CameraAccessException, InterruptedException {
         Semaphore semaphore = new Semaphore(0);
         final CameraCaptureSession[] result = new CameraCaptureSession[1];
