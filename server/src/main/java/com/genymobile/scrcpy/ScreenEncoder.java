@@ -8,6 +8,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Surface;
 
@@ -285,6 +286,10 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     @Override
     public void start(TerminationListener listener) {
         thread = new Thread(() -> {
+            // Some devices (Meizu) deadlock if the video encoding thread has no Looper
+            // <https://github.com/Genymobile/scrcpy/issues/4143>
+            Looper.prepare();
+
             try {
                 streamScreen();
             } catch (ConfigurationException e) {
