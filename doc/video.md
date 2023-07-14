@@ -66,6 +66,14 @@ scrcpy --video-codec=av1
 H265 may provide better quality, but H264 should provide lower latency.
 AV1 encoders are not common on current Android devices.
 
+For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
+check `--video-codec-options` in the manpage or in `scrcpy --help`.
+
+[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
+
+
+## Encoder
+
 Several encoders may be available on the device. They can be listed by:
 
 ```bash
@@ -78,11 +86,6 @@ try another one:
 ```bash
 scrcpy --video-codec=h264 --video-encoder='OMX.qcom.video.encoder.avc'
 ```
-
-For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
-check `--video-codec-options` in the manpage or in `scrcpy --help`.
-
-[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
 
 
 ## Rotation
