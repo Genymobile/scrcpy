@@ -68,10 +68,11 @@ mode](doc/hid-otg.md#otg).
 The application provides a lot of features and configuration options. They are
 documented in the following pages:
 
- - [Device](doc/device.md)
+ - [Connection](doc/connection.md)
  - [Video](doc/video.md)
  - [Audio](doc/audio.md)
  - [Control](doc/control.md)
+ - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
  - [Tunnels](doc/tunnels.md)
