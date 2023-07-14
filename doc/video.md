@@ -134,6 +134,25 @@ phone, landscape for a tablet).
 If `--max-size` is also specified, resizing is applied after cropping.
 
 
+## Display
+
+If several displays are available on the Android device, it is possible to
+select the display to mirror:
+
+```bash
+scrcpy --display=1
+```
+
+The list of display ids can be retrieved by:
+
+```bash
+scrcpy --list-displays
+```
+
+A secondary display may only be controlled if the device runs at least Android
+10 (otherwise it is mirrored as read-only).
+
+
 ## Buffering
 
 By default, there is no video buffering, to get the lowest possible latency.

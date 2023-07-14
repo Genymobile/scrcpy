@@ -125,25 +125,6 @@ autoadb scrcpy -s '{}'
 [AutoAdb]: https://github.com/rom1v/autoadb
 
 
-## Display
-
-If several displays are available on the Android device, it is possible to
-select the display to mirror:
-
-```bash
-scrcpy --display=1
-```
-
-The list of display ids can be retrieved by:
-
-```bash
-scrcpy --list-displays
-```
-
-A secondary display may only be controlled if the device runs at least Android
-10 (otherwise it is mirrored as read-only).
-
-
 ## Actions
 
 Some command line arguments perform actions on the device itself while scrcpy is
