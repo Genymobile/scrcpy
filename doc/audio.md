@@ -93,7 +93,7 @@ scrcpy --list-encoders
 
 To select a specific encoder:
 
-```
+```bash
 scrcpy --audio-codec=opus --audio-encoder='c2.android.opus.encoder'
 ```
 
