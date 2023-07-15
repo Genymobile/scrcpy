@@ -66,6 +66,14 @@ scrcpy --video-codec=av1
 H265 may provide better quality, but H264 should provide lower latency.
 AV1 encoders are not common on current Android devices.
 
+For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
+check `--video-codec-options` in the manpage or in `scrcpy --help`.
+
+[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
+
+
+## Encoder
+
 Several encoders may be available on the device. They can be listed by:
 
 ```bash
@@ -78,11 +86,6 @@ try another one:
 ```bash
 scrcpy --video-codec=h264 --video-encoder='OMX.qcom.video.encoder.avc'
 ```
-
-For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
-check `--video-codec-options` in the manpage or in `scrcpy --help`.
-
-[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
 
 
 ## Rotation
@@ -132,6 +135,25 @@ The values are expressed in the device natural orientation (portrait for a
 phone, landscape for a tablet).
 
 If `--max-size` is also specified, resizing is applied after cropping.
+
+
+## Display
+
+If several displays are available on the Android device, it is possible to
+select the display to mirror:
+
+```bash
+scrcpy --display=1
+```
+
+The list of display ids can be retrieved by:
+
+```bash
+scrcpy --list-displays
+```
+
+A secondary display may only be controlled if the device runs at least Android
+10 (otherwise it is mirrored as read-only).
 
 
 ## Buffering

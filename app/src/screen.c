@@ -488,6 +488,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     }
 
     SDL_ShowWindow(screen->window);
+    sc_screen_update_content_rect(screen);
 }
 
 void
@@ -848,6 +849,8 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
 
+    // screen->rect must be initialized to avoid a division by zero
+    assert(screen->rect.w && screen->rect.h);
 
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;

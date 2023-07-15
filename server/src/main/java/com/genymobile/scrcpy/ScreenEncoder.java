@@ -8,6 +8,7 @@ import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.view.Surface;
 
@@ -147,7 +148,6 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
         // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
 
         int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
-        Ln.i("newMaxSize = " + newMaxSize);
         if (newMaxSize == 0) {
             // Must definitively fail
             return false;
@@ -286,6 +286,10 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     @Override
     public void start(TerminationListener listener) {
         thread = new Thread(() -> {
+            // Some devices (Meizu) deadlock if the video encoding thread has no Looper
+            // <https://github.com/Genymobile/scrcpy/issues/4143>
+            Looper.prepare();
+
             try {
                 streamScreen();
             } catch (ConfigurationException e) {

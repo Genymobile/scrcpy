@@ -77,6 +77,13 @@ In particular, if you get the following error:
 
 then your device has no Opus encoder: try `scrcpy --audio-codec=aac`.
 
+For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
+check `--audio-codec-options` in the manpage or in `scrcpy --help`.
+
+[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
+
+
+## Encoder
 
 Several encoders may be available on the device. They can be listed by:
 
@@ -86,14 +93,9 @@ scrcpy --list-encoders
 
 To select a specific encoder:
 
-```
+```bash
 scrcpy --audio-codec=opus --audio-encoder='c2.android.opus.encoder'
 ```
-
-For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
-check `--audio-codec-options` in the manpage or in `scrcpy --help`.
-
-[`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
 
 
 ## Bit rate
