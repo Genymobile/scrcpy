@@ -26,12 +26,15 @@ struct sc_server_params {
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
+    enum sc_video_source video_source;
     enum sc_audio_source audio_source;
     const char *crop;
     const char *video_codec_options;
     const char *audio_codec_options;
     const char *video_encoder;
     const char *audio_encoder;
+    const char *camera_id;
+    const char *camera_size;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;

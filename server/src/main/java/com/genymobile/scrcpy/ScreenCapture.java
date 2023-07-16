@@ -48,8 +48,9 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
     }
 
     @Override
-    public void setMaxSize(int size) {
+    public boolean setMaxSize(int size) {
         device.setMaxSize(size);
+        return true;
     }
 
     @Override
