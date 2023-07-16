@@ -10,6 +10,8 @@ _scrcpy() {
         --audio-source=
         --audio-output-buffer=
         -b --video-bit-rate=
+        --camera-id=
+        --camera-size=
         --crop=
         -d --select-usb
         --disable-screensaver
@@ -74,6 +76,7 @@ _scrcpy() {
         --video-codec=
         --video-codec-options=
         --video-encoder=
+        --video-source=
         -w --stay-awake
         --window-borderless
         --window-title=
@@ -91,6 +94,10 @@ _scrcpy() {
             ;;
         --audio-codec)
             COMPREPLY=($(compgen -W 'opus aac raw' -- "$cur"))
+            return
+            ;;
+        --video-source)
+            COMPREPLY=($(compgen -W 'display camera' -- "$cur"))
             return
             ;;
         --audio-source)
@@ -141,6 +148,8 @@ _scrcpy() {
         |--audio-codec-options \
         |--audio-encoder \
         |--audio-output-buffer \
+        |--camera-id \
+        |--camera-size \
         |--crop \
         |--display-id \
         |--display-buffer \
