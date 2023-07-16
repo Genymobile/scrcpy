@@ -3,6 +3,11 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.graphics.Rect;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+
 import java.util.List;
 
 public final class LogUtils {
@@ -57,6 +62,44 @@ public final class LogUtils {
                 }
                 builder.append(")");
             }
+        }
+        return builder.toString();
+    }
+
+    private static String getCameraFacingName(int facing) {
+        switch (facing) {
+            case CameraCharacteristics.LENS_FACING_FRONT:
+                return "front";
+            case CameraCharacteristics.LENS_FACING_BACK:
+                return "back";
+            case CameraCharacteristics.LENS_FACING_EXTERNAL:
+                return "external";
+            default:
+                return "unknown";
+        }
+    }
+
+    public static String buildCameraListMessage() {
+        StringBuilder builder = new StringBuilder("List of cameras:");
+        CameraManager cameraManager = ServiceManager.getCameraManager();
+        try {
+            String[] cameraIds = cameraManager.getCameraIdList();
+            if (cameraIds == null || cameraIds.length == 0) {
+                builder.append("\n    (none)");
+            } else {
+                for (String id : cameraIds) {
+                    builder.append("\n    --video-source=camera --camera-id=").append(id);
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+
+                    int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    builder.append("    (").append(getCameraFacingName(facing)).append(", ");
+
+                    Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    builder.append(activeSize.width()).append("x").append(activeSize.height()).append(')');
+                }
+            }
+        } catch (CameraAccessException e) {
+            builder.append("\n    (access denied)");
         }
         return builder.toString();
     }
