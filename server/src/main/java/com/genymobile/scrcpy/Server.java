@@ -98,8 +98,9 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
+        boolean camera = false;
 
-        Workarounds.apply(audio);
+        Workarounds.apply(audio, camera);
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
@@ -206,6 +207,10 @@ public final class Server {
             }
             if (options.getListDisplays()) {
                 Ln.i(LogUtils.buildDisplayListMessage());
+            }
+            if (options.getListCameras()) {
+                Workarounds.apply(false, true);
+                Ln.i(LogUtils.buildCameraListMessage());
             }
             // Just print the requested data, do not mirror
             return;
