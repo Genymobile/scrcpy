@@ -44,6 +44,11 @@ enum sc_codec {
     SC_CODEC_RAW,
 };
 
+enum sc_video_source {
+    SC_VIDEO_SOURCE_DISPLAY,
+    SC_VIDEO_SOURCE_CAMERA,
+};
+
 enum sc_audio_source {
     SC_AUDIO_SOURCE_OUTPUT,
     SC_AUDIO_SOURCE_MIC,
@@ -117,9 +122,12 @@ struct scrcpy_options {
     const char *audio_codec_options;
     const char *video_encoder;
     const char *audio_encoder;
+    const char *camera_id;
+    const char *camera_size;
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
+    enum sc_video_source video_source;
     enum sc_audio_source audio_source;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
