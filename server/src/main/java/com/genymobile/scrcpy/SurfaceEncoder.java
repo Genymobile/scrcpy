@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScreenEncoder implements Device.RotationListener, Device.FoldListener, AsyncProcessor {
+public class SurfaceEncoder implements AsyncProcessor {
 
     private static final int DEFAULT_I_FRAME_INTERVAL = 10; // seconds
     private static final int REPEAT_FRAME_DELAY_US = 100_000; // repeat after 100ms
@@ -27,9 +27,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
     private static final int MAX_CONSECUTIVE_ERRORS = 3;
 
-    private final AtomicBoolean resetCapture = new AtomicBoolean();
-
-    private final Device device;
+    private final SurfaceCapture capture;
     private final Streamer streamer;
     private final String encoderName;
     private final List<CodecOption> codecOptions;
@@ -43,9 +41,9 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
-    public ScreenEncoder(Device device, Streamer streamer, int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
+    public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
             boolean downsizeOnError) {
-        this.device = device;
+        this.capture = capture;
         this.streamer = streamer;
         this.videoBitRate = videoBitRate;
         this.maxFps = maxFps;
@@ -54,51 +52,29 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
         this.downsizeOnError = downsizeOnError;
     }
 
-    @Override
-    public void onFoldChanged(int displayId, boolean folded) {
-        resetCapture.set(true);
-    }
-
-    @Override
-    public void onRotationChanged(int rotation) {
-        resetCapture.set(true);
-    }
-
-    private boolean consumeResetCapture() {
-        return resetCapture.getAndSet(false);
-    }
-
     private void streamScreen() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
-        IBinder display = createDisplay();
-        device.setRotationListener(this);
-        device.setFoldListener(this);
 
-        streamer.writeVideoHeader(device.getScreenInfo().getVideoSize());
+        capture.init();
 
-        boolean alive;
         try {
-            do {
-                ScreenInfo screenInfo = device.getScreenInfo();
-                Rect contentRect = screenInfo.getContentRect();
+            streamer.writeVideoHeader(capture.getSize());
 
-                // include the locked video orientation
-                Rect videoRect = screenInfo.getVideoSize().toRect();
-                format.setInteger(MediaFormat.KEY_WIDTH, videoRect.width());
-                format.setInteger(MediaFormat.KEY_HEIGHT, videoRect.height());
+            boolean alive;
+
+            do {
+                Size size = capture.getSize();
+                format.setInteger(MediaFormat.KEY_WIDTH, size.getWidth());
+                format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
 
                 Surface surface = null;
                 try {
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
 
-                    // does not include the locked video orientation
-                    Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
-                    int videoRotation = screenInfo.getVideoRotation();
-                    int layerStack = device.getLayerStack();
-                    setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                    capture.setSurface(surface);
 
                     mediaCodec.start();
 
@@ -107,7 +83,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
                     mediaCodec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
-                    if (!prepareRetry(device, screenInfo)) {
+                    if (!prepareRetry(size)) {
                         throw e;
                     }
                     Ln.i("Retrying...");
@@ -121,13 +97,11 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
             } while (alive);
         } finally {
             mediaCodec.release();
-            device.setRotationListener(null);
-            device.setFoldListener(null);
-            SurfaceControl.destroyDisplay(display);
+            capture.release();
         }
     }
 
-    private boolean prepareRetry(Device device, ScreenInfo screenInfo) {
+    private boolean prepareRetry(Size currentSize) {
         if (firstFrameSent) {
             ++consecutiveErrors;
             if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
@@ -147,7 +121,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
 
         // Downsizing on error is only enabled if an encoding failure occurs before the first frame (downsizing later could be surprising)
 
-        int newMaxSize = chooseMaxSizeFallback(screenInfo.getVideoSize());
+        int newMaxSize = chooseMaxSizeFallback(currentSize);
         if (newMaxSize == 0) {
             // Must definitively fail
             return false;
@@ -155,7 +129,7 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
 
         // Retry with a smaller device size
         Ln.i("Retrying with -m" + newMaxSize + "...");
-        device.setMaxSize(newMaxSize);
+        capture.setMaxSize(newMaxSize);
         return true;
     }
 
@@ -176,14 +150,14 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
         boolean alive = true;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
-        while (!consumeResetCapture() && !eof) {
+        while (!capture.consumeReset() && !eof) {
             if (stopped.get()) {
                 alive = false;
                 break;
             }
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
-                if (consumeResetCapture()) {
+                if (capture.consumeReset()) {
                     // must restart encoding with new size
                     break;
                 }
@@ -267,8 +241,8 @@ public class ScreenEncoder implements Device.RotationListener, Device.FoldListen
     private static IBinder createDisplay() {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
-        boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
-                .equals(Build.VERSION.CODENAME));
+        boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S".equals(
+                Build.VERSION.CODENAME));
         return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
