@@ -76,6 +76,16 @@ Encode the video at the given bit rate, expressed in bits/s. Unit suffixes are s
 Default is 8M (8000000).
 
 .TP
+.BI "\-\-camera\-id " id
+Specify the device camera id to mirror.
+
+The available camera ids can be listed by \-\-list\-cameras.
+
+.TP
+.BI "\-\-camera\-size " width\fRx\fIheight
+Specify an explicit camera capture size.
+
+.TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
@@ -433,6 +443,14 @@ The list of possible codec options is available in the Android documentation
 Use a specific MediaCodec video encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
 
 The available encoders can be listed by \-\-list\-encoders.
+
+.TP
+.BI "\-\-video\-source " source
+Select the video source (display or camera).
+
+Camera mirroring requires Android 12+.
+
+Default is display.
 
 .TP
 .B \-w, \-\-stay-awake

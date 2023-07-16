@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import android.view.Surface;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -31,7 +32,7 @@ public abstract class SurfaceCapture {
     /**
      * Called once before the capture starts.
      */
-    public abstract void init();
+    public abstract void init() throws IOException;
 
     /**
      * Called after the capture ends (if and only if {@link #init()} has been called).
@@ -43,7 +44,7 @@ public abstract class SurfaceCapture {
      *
      * @param surface the surface which will be encoded
      */
-    public abstract void start(Surface surface);
+    public abstract void start(Surface surface) throws IOException;
 
     /**
      * Return the video size
@@ -57,5 +58,5 @@ public abstract class SurfaceCapture {
      *
      * @param maxSize Maximum size
      */
-    public abstract void setMaxSize(int maxSize);
+    public abstract boolean setMaxSize(int maxSize);
 }
