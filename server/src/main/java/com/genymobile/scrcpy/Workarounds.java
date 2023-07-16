@@ -28,13 +28,12 @@ public final class Workarounds {
         // not instantiable
     }
 
-    public static void apply(boolean audio) {
+    public static void apply(boolean audio, boolean camera) {
         Workarounds.prepareMainLooper();
 
         boolean mustFillAppInfo = false;
         boolean mustFillBaseContext = false;
         boolean mustFillAppContext = false;
-
 
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
             // Workarounds must be applied for Meizu phones:
@@ -63,6 +62,11 @@ public final class Workarounds {
             // Since Android 12, we can properly set a context on the AudioRecord.
             // Only on Android 11 we must fill the application context for the AudioRecord to work.
             mustFillAppContext = true;
+        }
+
+        if (camera) {
+            mustFillAppInfo = true;
+            mustFillBaseContext = true;
         }
 
         if (mustFillAppInfo) {
