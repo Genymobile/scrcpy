@@ -3,6 +3,12 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraCharacteristics;
+import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaCodec;
+
 import java.util.List;
 
 public final class LogUtils {
@@ -57,6 +63,50 @@ public final class LogUtils {
                 }
                 builder.append(")");
             }
+        }
+        return builder.toString();
+    }
+
+    private static String getCameraFacingName(int facing) {
+        switch (facing) {
+            case CameraCharacteristics.LENS_FACING_FRONT:
+                return "front";
+            case CameraCharacteristics.LENS_FACING_BACK:
+                return "back";
+            case CameraCharacteristics.LENS_FACING_EXTERNAL:
+                return "external";
+            default:
+                return "unknown";
+        }
+    }
+
+    public static String buildCameraListMessage() {
+        StringBuilder builder = new StringBuilder("List of cameras:");
+        CameraManager cameraManager = ServiceManager.getCameraManager();
+        try {
+            String[] cameraIds = cameraManager.getCameraIdList();
+            if (cameraIds == null || cameraIds.length == 0) {
+                builder.append("\n    (none)");
+            } else {
+                for (String id : cameraIds) {
+                    builder.append("\n    --video-source=camera --camera=").append(id);
+                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    Integer facingInteger = characteristics.get(CameraCharacteristics.LENS_FACING);
+                    if (facingInteger != null) {
+                        int facing = facingInteger;
+                        builder.append("    (").append(getCameraFacingName(facing)).append(')');
+                    }
+
+                    StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                    android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
+                    for (android.util.Size size : sizes) {
+                        // TODO remove (just for testing)
+                        builder.append("\n        - " + size.getWidth() + "x" + size.getHeight());
+                    }
+                }
+            }
+        } catch (CameraAccessException e) {
+            builder.append("\n    (access denied)");
         }
         return builder.toString();
     }

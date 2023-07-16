@@ -316,6 +316,9 @@ execute_server(struct sc_server *server,
     if (params->list_displays) {
         ADD_PARAM("list_displays=true");
     }
+    if (params->list_cameras) {
+        ADD_PARAM("list_cameras=true");
+    }
 
 #undef ADD_PARAM
 
@@ -895,7 +898,8 @@ run_server(void *data) {
 
     // If --list-* is passed, then the server just prints the requested data
     // then exits.
-    if (params->list_encoders || params->list_displays) {
+    if (params->list_encoders || params->list_displays
+            || params->list_cameras) {
         sc_pid pid = execute_server(server, params);
         if (pid == SC_PROCESS_NONE) {
             goto error_connection_failed;

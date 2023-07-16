@@ -58,6 +58,7 @@ struct sc_server_params {
     bool power_on;
     bool list_encoders;
     bool list_displays;
+    bool list_cameras;
     bool kill_adb_on_close;
 };
 
