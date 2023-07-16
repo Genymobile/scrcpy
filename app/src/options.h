@@ -49,6 +49,11 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_MIC,
 };
 
+enum sc_video_source {
+    SC_VIDEO_SOURCE_DISPLAY,
+    SC_VIDEO_SOURCE_CAMERA,
+};
+
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
@@ -121,6 +126,7 @@ struct scrcpy_options {
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
     enum sc_audio_source audio_source;
+    enum sc_video_source video_source;
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
@@ -139,6 +145,7 @@ struct scrcpy_options {
     uint16_t window_width;
     uint16_t window_height;
     uint32_t display_id;
+    const char* camera_id;
     sc_tick display_buffer;
     sc_tick audio_buffer;
     sc_tick audio_output_buffer;
@@ -181,6 +188,7 @@ struct scrcpy_options {
     bool require_audio;
     bool list_encoders;
     bool list_displays;
+    bool list_cameras;
     bool kill_adb_on_close;
 };
 

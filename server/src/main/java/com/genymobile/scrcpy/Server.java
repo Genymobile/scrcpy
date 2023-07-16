@@ -130,11 +130,19 @@ public final class Server {
             }
 
             if (video) {
-                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
-                        options.getSendFrameMeta());
-                CameraEncoder screenEncoder = new CameraEncoder(options.getMaxSize(), videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
-                        options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
-                asyncProcessors.add(screenEncoder);
+                Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(),
+                        options.getSendCodecMeta(), options.getSendFrameMeta());
+                if (options.getVideoSource() == VideoSource.DISPLAY) {
+                    ScreenEncoder screenEncoder = new ScreenEncoder(device, videoStreamer, options.getVideoBitRate(),
+                            options.getMaxFps(), options.getVideoCodecOptions(), options.getVideoEncoder(),
+                            options.getDownsizeOnError());
+                    asyncProcessors.add(screenEncoder);
+                } else {
+                    CameraEncoder cameraEncoder = new CameraEncoder(options.getMaxSize(), options.getCameraId(),
+                            videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                            options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
+                    asyncProcessors.add(cameraEncoder);
+                }
             }
 
             Completion completion = new Completion(asyncProcessors.size());
@@ -179,7 +187,7 @@ public final class Server {
 
         Ln.initLogLevel(options.getLogLevel());
 
-        if (options.getListEncoders() || options.getListDisplays()) {
+        if (options.getListEncoders() || options.getListDisplays() || options.getListCameras()) {
             if (options.getCleanup()) {
                 CleanUp.unlinkSelf();
             }
@@ -190,6 +198,9 @@ public final class Server {
             }
             if (options.getListDisplays()) {
                 Ln.i(LogUtils.buildDisplayListMessage());
+            }
+            if (options.getListCameras()) {
+                Ln.i(LogUtils.buildCameraListMessage());
             }
             // Just print the requested data, do not mirror
             return;

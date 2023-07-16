@@ -246,6 +246,10 @@ execute_server(struct sc_server *server,
         ADD_PARAM("audio_codec=%s",
             sc_server_get_codec_name(params->audio_codec));
     }
+    if (params->video_source != SC_VIDEO_SOURCE_DISPLAY){
+        assert(params->audio_source == SC_VIDEO_SOURCE_CAMERA);
+        ADD_PARAM("video_source=camera");
+    }
     if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT) {
         assert(params->audio_source == SC_AUDIO_SOURCE_MIC);
         ADD_PARAM("audio_source=mic");
@@ -270,8 +274,11 @@ execute_server(struct sc_server *server,
         // By default, control is true
         ADD_PARAM("control=false");
     }
-    if (params->display_id) {
+    if (params->video_source == SC_VIDEO_SOURCE_DISPLAY && params->display_id) {
         ADD_PARAM("display_id=%" PRIu32, params->display_id);
+    }
+    if (params->video_source == SC_VIDEO_SOURCE_CAMERA && params->camera_id) {
+        ADD_PARAM("camera_id=%s", params->camera_id);
     }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
@@ -315,6 +322,9 @@ execute_server(struct sc_server *server,
     }
     if (params->list_displays) {
         ADD_PARAM("list_displays=true");
+    }
+    if (params->list_cameras) {
+        ADD_PARAM("list_cameras=true");
     }
 
 #undef ADD_PARAM
@@ -895,7 +905,7 @@ run_server(void *data) {
 
     // If --list-* is passed, then the server just prints the requested data
     // then exits.
-    if (params->list_encoders || params->list_displays) {
+    if (params->list_encoders || params->list_displays || params->list_cameras) {
         sc_pid pid = execute_server(server, params);
         if (pid == SC_PROCESS_NONE) {
             goto error_connection_failed;

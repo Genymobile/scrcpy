@@ -351,6 +351,7 @@ scrcpy(struct scrcpy_options *options) {
         .log_level = options->log_level,
         .video_codec = options->video_codec,
         .audio_codec = options->audio_codec,
+        .video_source = options->video_source,
         .audio_source = options->audio_source,
         .crop = options->crop,
         .port_range = options->port_range,
@@ -363,6 +364,7 @@ scrcpy(struct scrcpy_options *options) {
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
         .display_id = options->display_id,
+        .camera_id = options->camera_id,
         .video = options->video,
         .audio = options->audio,
         .show_touches = options->show_touches,
@@ -381,6 +383,7 @@ scrcpy(struct scrcpy_options *options) {
         .power_on = options->power_on,
         .list_encoders = options->list_encoders,
         .list_displays = options->list_displays,
+        .list_cameras = options->list_cameras,
         .kill_adb_on_close = options->kill_adb_on_close,
     };
 
@@ -399,7 +402,7 @@ scrcpy(struct scrcpy_options *options) {
 
     server_started = true;
 
-    if (options->list_encoders || options->list_displays) {
+    if (options->list_encoders || options->list_displays || options->list_cameras) {
         bool ok = await_for_server(NULL);
         ret = ok ? SCRCPY_EXIT_SUCCESS : SCRCPY_EXIT_FAILURE;
         goto end;
