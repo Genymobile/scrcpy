@@ -182,6 +182,7 @@ struct scrcpy_options {
     bool kill_adb_on_close;
 #define SC_OPTION_LIST_ENCODERS 0x1
 #define SC_OPTION_LIST_DISPLAYS 0x2
+#define SC_OPTION_LIST_CAMERAS 0x4
     uint8_t list;
 };
 

@@ -1,9 +1,15 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
+import com.genymobile.scrcpy.Workarounds;
+
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.hardware.camera2.CameraManager;
 import android.os.IBinder;
 import android.os.IInterface;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -26,6 +32,7 @@ public final class ServiceManager {
     private static StatusBarManager statusBarManager;
     private static ClipboardManager clipboardManager;
     private static ActivityManager activityManager;
+    private static CameraManager cameraManager;
 
     private ServiceManager() {
         /* not instantiable */
@@ -128,5 +135,17 @@ public final class ServiceManager {
         }
 
         return activityManager;
+    }
+
+    public static CameraManager getCameraManager() {
+        if (cameraManager == null) {
+            try {
+                Constructor<CameraManager> ctor = CameraManager.class.getDeclaredConstructor(Context.class);
+                cameraManager = ctor.newInstance(FakeContext.get());
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+        return cameraManager;
     }
 }

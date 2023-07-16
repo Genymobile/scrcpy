@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Looper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -99,7 +100,8 @@ public final class Server {
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
-        Workarounds.apply(audio);
+        boolean camera = true;
+        Workarounds.apply(audio, camera);
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
@@ -191,6 +193,10 @@ public final class Server {
             }
             if (options.getListDisplays()) {
                 Ln.i(LogUtils.buildDisplayListMessage());
+            }
+            if (options.getListCameras()) {
+                Workarounds.apply(false, true);
+                Ln.i(LogUtils.buildCameraListMessage());
             }
             // Just print the requested data, do not mirror
             return;
