@@ -14,6 +14,7 @@ public class Options {
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
+    private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
@@ -23,6 +24,8 @@ public class Options {
     private Rect crop;
     private boolean control = true;
     private int displayId;
+    private String cameraId;
+    private Size cameraSize;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -75,6 +78,10 @@ public class Options {
         return audioCodec;
     }
 
+    public VideoSource getVideoSource() {
+        return videoSource;
+    }
+
     public AudioSource getAudioSource() {
         return audioSource;
     }
@@ -109,6 +116,14 @@ public class Options {
 
     public int getDisplayId() {
         return displayId;
+    }
+
+    public String getCameraId() {
+        return cameraId;
+    }
+
+    public Size getCameraSize() {
+        return cameraSize;
     }
 
     public boolean getShowTouches() {
@@ -244,6 +259,13 @@ public class Options {
                     }
                     options.audioCodec = audioCodec;
                     break;
+                case "video_source":
+                    VideoSource videoSource = VideoSource.findByName(value);
+                    if (videoSource == null) {
+                        throw new IllegalArgumentException("Video source " + value + " not supported");
+                    }
+                    options.videoSource = videoSource;
+                    break;
                 case "audio_source":
                     AudioSource audioSource = AudioSource.findByName(value);
                     if (audioSource == null) {
@@ -328,6 +350,16 @@ public class Options {
                 case "list_camera_sizes":
                     options.listCameraSizes = Boolean.parseBoolean(value);
                     break;
+                case "camera_id":
+                    if (!value.isEmpty()) {
+                        options.cameraId = value;
+                    }
+                    break;
+                case "camera_size":
+                    if (!value.isEmpty()) {
+                        options.cameraSize = parseSize(value);
+                    }
+                    break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
                     break;
@@ -369,5 +401,16 @@ public class Options {
         int x = Integer.parseInt(tokens[2]);
         int y = Integer.parseInt(tokens[3]);
         return new Rect(x, y, x + width, y + height);
+    }
+
+    private static Size parseSize(String size) {
+        // input format: "<width>x<height>"
+        String[] tokens = size.split("x");
+        if (tokens.length != 2) {
+            throw new IllegalArgumentException("Invalid size format (expected <width>x<height>): \"" + size + "\"");
+        }
+        int width = Integer.parseInt(tokens[0]);
+        int height = Integer.parseInt(tokens[1]);
+        return new Size(width, height);
     }
 }
