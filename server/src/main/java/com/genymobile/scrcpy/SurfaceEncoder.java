@@ -122,9 +122,13 @@ public class SurfaceEncoder implements AsyncProcessor {
             return false;
         }
 
-        // Retry with a smaller device size
+        boolean accepted = capture.setMaxSize(newMaxSize);
+        if (!accepted) {
+            return false;
+        }
+
+        // Retry with a smaller size
         Ln.i("Retrying with -m" + newMaxSize + "...");
-        capture.setMaxSize(newMaxSize);
         return true;
     }
 
