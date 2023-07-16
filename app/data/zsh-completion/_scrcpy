@@ -30,6 +30,7 @@ arguments=(
     '--kill-adb-on-close[Kill adb when scrcpy terminates]'
     {-K,--hid-keyboard}'[Simulate a physical keyboard by using HID over AOAv2]'
     '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
+    '--list-cameras[List cameras available on the device]'
     '--list-displays[List displays available on the device]'
     '--list-encoders[List video and audio encoders available on the device]'
     '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 1 2 3)'
