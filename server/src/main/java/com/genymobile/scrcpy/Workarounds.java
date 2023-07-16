@@ -158,8 +158,17 @@ public final class Workarounds {
         }
     }
 
+    @SuppressLint("PrivateApi")
     public static Context getSystemContext() throws ReflectiveOperationException {
         if (systemContext == null) {
+            try {
+                // Hide warnings on XiaoMi devices
+                Class<?> themeManagerStubClass = Class.forName("android.content.res.ThemeManagerStub");
+                Field sResourceField = themeManagerStubClass.getDeclaredField("sResource");
+                sResourceField.setAccessible(true);
+                sResourceField.set(null, null);
+            } catch (ReflectiveOperationException ignore) { }
+
             Object activityThread = getActivityThread();
             Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
             systemContext = (Context) getSystemContextMethod.invoke(activityThread);
