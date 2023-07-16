@@ -98,7 +98,7 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-        boolean camera = false;
+        boolean camera = options.getVideoSource() == VideoSource.CAMERA;
 
         Workarounds.apply(audio, camera);
 
@@ -133,10 +133,15 @@ public final class Server {
             if (video) {
                 Streamer videoStreamer = new Streamer(connection.getVideoFd(), options.getVideoCodec(), options.getSendCodecMeta(),
                         options.getSendFrameMeta());
-                ScreenCapture screenCapture = new ScreenCapture(device);
-                SurfaceEncoder screenEncoder = new SurfaceEncoder(screenCapture, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                SurfaceCapture surfaceCapture;
+                if (options.getVideoSource() == VideoSource.DISPLAY) {
+                    surfaceCapture = new ScreenCapture(device);
+                } else {
+                    surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraSize());
+                }
+                SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                         options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
-                asyncProcessors.add(screenEncoder);
+                asyncProcessors.add(surfaceEncoder);
             }
 
             Completion completion = new Completion(asyncProcessors.size());
