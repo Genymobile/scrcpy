@@ -81,5 +81,6 @@ const struct scrcpy_options scrcpy_options_default = {
     .require_audio = false,
     .list_encoders = false,
     .list_displays = false,
+    .list_cameras = false,
     .kill_adb_on_close = false,
 };

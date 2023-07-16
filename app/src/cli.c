@@ -79,6 +79,7 @@ enum {
     OPT_AUDIO_SOURCE,
     OPT_KILL_ADB_ON_CLOSE,
     OPT_TIME_LIMIT,
+    OPT_LIST_CAMERAS,
 };
 
 struct sc_option {
@@ -311,6 +312,11 @@ static const struct sc_option options[] = {
                 "on Ctrl+v (like MOD+Shift+v).\n"
                 "This is a workaround for some devices not behaving as "
                 "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt_id = OPT_LIST_CAMERAS,
+        .longopt = "list-cameras",
+        .text = "List device cameras.",
     },
     {
         .longopt_id = OPT_LIST_DISPLAYS,
@@ -1944,6 +1950,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "platform).");
                 return false;
 #endif
+            case OPT_LIST_CAMERAS:
+                opts->list_cameras = true;
+                break;
             case OPT_LIST_ENCODERS:
                 opts->list_encoders = true;
                 break;

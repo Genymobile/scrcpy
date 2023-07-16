@@ -181,6 +181,7 @@ struct scrcpy_options {
     bool require_audio;
     bool list_encoders;
     bool list_displays;
+    bool list_cameras;
     bool kill_adb_on_close;
 };
 

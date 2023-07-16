@@ -381,6 +381,7 @@ scrcpy(struct scrcpy_options *options) {
         .power_on = options->power_on,
         .list_encoders = options->list_encoders,
         .list_displays = options->list_displays,
+        .list_cameras = options->list_cameras,
         .kill_adb_on_close = options->kill_adb_on_close,
     };
 
@@ -399,7 +400,8 @@ scrcpy(struct scrcpy_options *options) {
 
     server_started = true;
 
-    if (options->list_encoders || options->list_displays) {
+    if (options->list_encoders || options->list_displays
+            || options->list_cameras) {
         bool ok = await_for_server(NULL);
         ret = ok ? SCRCPY_EXIT_SUCCESS : SCRCPY_EXIT_FAILURE;
         goto end;
