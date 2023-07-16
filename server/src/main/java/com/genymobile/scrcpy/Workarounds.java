@@ -104,6 +104,7 @@ public final class Workarounds {
 
     private static void fillActivityThread() throws Exception {
         // ActivityThread.sCurrentActivityThread = activityThread;
+        activityThreadClass = Class.forName("android.app.ActivityThread");
         Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
         sCurrentActivityThreadField.setAccessible(true);
         sCurrentActivityThreadField.set(null, getActivityThread());
@@ -129,6 +130,7 @@ public final class Workarounds {
             appInfoField.set(appBindData, applicationInfo);
 
             // activityThread.mBoundApplication = appBindData;
+            activityThreadClass = Class.forName("android.app.ActivityThread");
             Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
             mBoundApplicationField.setAccessible(true);
             mBoundApplicationField.set(activityThread, appBindData);
@@ -149,6 +151,7 @@ public final class Workarounds {
             baseField.set(app, FakeContext.get());
 
             // activityThread.mInitialApplication = app;
+            activityThreadClass = Class.forName("android.app.ActivityThread");
             Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
             mInitialApplicationField.setAccessible(true);
             mInitialApplicationField.set(activityThread, app);
