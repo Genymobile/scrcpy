@@ -76,12 +76,15 @@ enum {
     OPT_NO_VIDEO,
     OPT_NO_AUDIO_PLAYBACK,
     OPT_NO_VIDEO_PLAYBACK,
+    OPT_VIDEO_SOURCE,
     OPT_AUDIO_SOURCE,
     OPT_KILL_ADB_ON_CLOSE,
     OPT_TIME_LIMIT,
     OPT_PAUSE_ON_EXIT,
     OPT_LIST_CAMERAS,
     OPT_LIST_CAMERA_SIZES,
+    OPT_CAMERA_ID,
+    OPT_CAMERA_SIZE,
 };
 
 struct sc_option {
@@ -197,6 +200,22 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_BIT_RATE,
         .longopt = "bit-rate",
         .argdesc = "value",
+    },
+    {
+        .longopt_id = OPT_CAMERA_ID,
+        .longopt = "camera",
+        .argdesc = "id",
+        .text = "Specify the device camera id to mirror when using "
+                "--video-source=camera.\n"
+                "The available camera ids can be listed by:\n"
+                "    scrcpy --list-cameras\n"
+                "Default is \"auto\" (the first one)",
+    },
+    {
+        .longopt_id = OPT_CAMERA_SIZE,
+        .longopt = "camera-size",
+        .argdesc = "<width>x<height>",
+        .text = "Specify an explicit camera capture size.",
     },
     {
         // Not really deprecated (--codec has never been released), but without
@@ -695,6 +714,13 @@ static const struct sc_option options[] = {
         .text = "Use a specific MediaCodec video encoder (depending on the "
                 "codec provided by --video-codec).\n"
                 "The available encoders can be listed by --list-encoders.",
+    },
+    {
+        .longopt_id = OPT_VIDEO_SOURCE,
+        .longopt = "video-source",
+        .argdesc = "source",
+        .text = "Select the video source (display or camera).\n"
+                "Default is display.",
     },
     {
         .shortopt = 'w',
@@ -1637,6 +1663,22 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
 }
 
 static bool
+parse_video_source(const char *optarg, enum sc_video_source *source) {
+    if (!strcmp(optarg, "display")) {
+        *source = SC_VIDEO_SOURCE_DISPLAY;
+        return true;
+    }
+
+    if (!strcmp(optarg, "camera")) {
+        *source = SC_VIDEO_SOURCE_CAMERA;
+        return true;
+    }
+
+    LOGE("Unsupported video source: %s (expected display or camera)", optarg);
+    return false;
+}
+
+static bool
 parse_audio_source(const char *optarg, enum sc_audio_source *source) {
     if (!strcmp(optarg, "mic")) {
         *source = SC_AUDIO_SOURCE_MIC;
@@ -2020,6 +2062,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_VIDEO_SOURCE:
+                if (!parse_video_source(optarg, &opts->video_source)) {
+                    return false;
+                }
+                break;
             case OPT_AUDIO_SOURCE:
                 if (!parse_audio_source(optarg, &opts->audio_source)) {
                     return false;
@@ -2037,6 +2084,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_pause_on_exit(optarg, &args->pause_on_exit)) {
                     return false;
                 }
+                break;
+            case OPT_CAMERA_ID:
+                opts->camera_id = optarg;
+                break;
+            case OPT_CAMERA_SIZE:
+                opts->camera_size = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -2129,6 +2182,30 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         LOGI("Tunnel host/port is set, "
              "--force-adb-forward automatically enabled.");
         opts->force_adb_forward = true;
+    }
+
+    if (opts->video_source == SC_VIDEO_SOURCE_CAMERA) {
+        if (opts->lock_video_orientation !=
+                SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+            LOGE("--lock-video-orientation is not supported for camera");
+            return false;
+        }
+
+        if (!opts->camera_id) {
+            LOGE("Camera id must be specified by --camera=ID "
+                 "(list the available ids with --list-cameras)");
+            return false;
+        }
+
+        if (!opts->camera_size) {
+            LOGE("Camera size must be specified by --camera-size=WIDTHxHEIGHT");
+            return false;
+        }
+
+        if (opts->control) {
+            LOGI("Camera video source: control disabled");
+            opts->control = false;
+        }
     }
 
     if (opts->record_format && !opts->record_filename) {

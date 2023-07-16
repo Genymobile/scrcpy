@@ -76,6 +76,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     free((char *) params->video_encoder);
     free((char *) params->audio_encoder);
     free((char *) params->tcpip_dst);
+    free((char *) params->camera_id);
 }
 
 static bool
@@ -103,6 +104,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(video_encoder);
     COPY(audio_encoder);
     COPY(tcpip_dst);
+    COPY(camera_id);
 #undef COPY
 
     return true;
@@ -247,6 +249,10 @@ execute_server(struct sc_server *server,
         ADD_PARAM("audio_codec=%s",
             sc_server_get_codec_name(params->audio_codec));
     }
+    if (params->video_source != SC_VIDEO_SOURCE_DISPLAY) {
+        assert(params->video_source == SC_VIDEO_SOURCE_CAMERA);
+        ADD_PARAM("video_source=camera");
+    }
     if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT) {
         assert(params->audio_source == SC_AUDIO_SOURCE_MIC);
         ADD_PARAM("audio_source=mic");
@@ -273,6 +279,12 @@ execute_server(struct sc_server *server,
     }
     if (params->display_id) {
         ADD_PARAM("display_id=%" PRIu32, params->display_id);
+    }
+    if (params->camera_id) {
+        ADD_PARAM("camera_id=%s", params->camera_id);
+    }
+    if (params->camera_size) {
+        ADD_PARAM("camera_size=%s", params->camera_size);
     }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
