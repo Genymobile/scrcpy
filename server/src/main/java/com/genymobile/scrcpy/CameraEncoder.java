@@ -93,9 +93,9 @@ public class CameraEncoder extends SurfaceEncoder {
     @Override
     protected void initialize() {
         try {
-            Looper.prepare();
-            cameraManager = (CameraManager) Workarounds.getSystemContext()
-                    .getSystemService(Context.CAMERA_SERVICE);
+            Workarounds.fillBaseContext();
+            cameraManager = CameraManager.class.getDeclaredConstructor(Context.class)
+                    .newInstance(FakeContext.get());
         } catch (Exception e) {
             throw new RuntimeException("Can't access camera", e);
         }
