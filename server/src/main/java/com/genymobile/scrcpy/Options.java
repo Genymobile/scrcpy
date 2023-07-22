@@ -25,6 +25,7 @@ public class Options {
     private boolean control = true;
     private int displayId;
     private String cameraId;
+    private CameraPosition cameraPosition = CameraPosition.ALL;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -118,6 +119,10 @@ public class Options {
 
     public String getCameraId() {
         return cameraId;
+    }
+
+    public CameraPosition getCameraPosition() {
+        return cameraPosition;
     }
 
     public boolean getShowTouches() {
@@ -288,6 +293,13 @@ public class Options {
                     break;
                 case "camera_id":
                     options.cameraId = value;
+                    break;
+                case "camera_position":
+                    CameraPosition cameraPosition = CameraPosition.findByName(value);
+                    if (cameraPosition == null) {
+                        throw new IllegalArgumentException("Camera position " + value + " not supported");
+                    }
+                    options.cameraPosition = cameraPosition;
                     break;
                 case "show_touches":
                     options.showTouches = Boolean.parseBoolean(value);

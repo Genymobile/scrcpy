@@ -365,6 +365,7 @@ scrcpy(struct scrcpy_options *options) {
         .control = options->control,
         .display_id = options->display_id,
         .camera_id = options->camera_id,
+        .camera_position = options->camera_position,
         .video = options->video,
         .audio = options->audio,
         .show_touches = options->show_touches,

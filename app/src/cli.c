@@ -34,6 +34,7 @@ enum {
     OPT_LOCK_VIDEO_ORIENTATION,
     OPT_DISPLAY_ID,
     OPT_CAMERA_ID,
+    OPT_CAMERA_POSITION,
     OPT_ROTATION,
     OPT_RENDER_DRIVER,
     OPT_NO_MIPMAPS,
@@ -253,10 +254,18 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_CAMERA_ID,
         .longopt = "camera",
         .argdesc = "id",
-        .text = "Specify the device camera id to mirror when using --video-source camera.\n"
+        .text = "Specify the device camera id to mirror when using --video-source=camera.\n"
                 "The available camera ids can be listed by:\n"
                 "    scrcpy --list-cameras\n"
                 "Default is the first one.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_POSITION,
+        .longopt = "camera-position",
+        .argdesc = "position",
+        .text = "Select the device camera to mirror by its physical position when using --video-source=camera.\n"
+                "Valid values are: all, front, back, external\n"
+                "Default is all.",
     },
     {
         .longopt_id = OPT_DISPLAY_BUFFER,
@@ -1666,6 +1675,32 @@ parse_video_source(const char *optarg, enum sc_video_source *source) {
 }
 
 static bool
+parse_camera_position(const char *optarg, enum sc_camera_position *position) {
+    if (!strcmp(optarg, "all")) {
+        *position = SC_CAMERA_POSITION_ALL;
+        return true;
+    }
+
+    if (!strcmp(optarg, "front")) {
+        *position = SC_CAMERA_POSITION_FRONT;
+        return true;
+    }
+
+    if (!strcmp(optarg, "back")) {
+        *position = SC_CAMERA_POSITION_BACK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "external")) {
+        *position = SC_CAMERA_POSITION_EXTERNAL;
+        return true;
+    }
+
+    LOGE("Unsupported camera position: %s (expected all, front, back or external)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -1711,6 +1746,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CAMERA_ID:
                 opts->camera_id = optarg;
+                break;
+            case OPT_CAMERA_POSITION:
+                if (!parse_camera_position(optarg, &opts->camera_position)) {
+                    return false;
+                }
                 break;
             case 'd':
                 opts->select_usb = true;

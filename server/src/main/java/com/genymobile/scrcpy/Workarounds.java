@@ -7,6 +7,7 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
+import android.hardware.camera2.CameraManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -24,6 +25,7 @@ public final class Workarounds {
     private static Class<?> activityThreadClass;
     private static Object activityThread;
     private static Context systemContext;
+    private static CameraManager cameraManager;
 
     private Workarounds() {
         // not instantiable
@@ -324,5 +326,18 @@ public final class Workarounds {
             Ln.e("Failed to invoke AudioRecord.<init>.", e);
             throw new RuntimeException("Cannot create AudioRecord");
         }
+    }
+
+    public static CameraManager getCameraManager() {
+        if (cameraManager == null) {
+            try {
+                fillBaseContext();
+                cameraManager = CameraManager.class.getDeclaredConstructor(Context.class)
+                        .newInstance(FakeContext.get());
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException("Cannot create CameraManager", e);
+            }
+        }
+        return cameraManager;
     }
 }

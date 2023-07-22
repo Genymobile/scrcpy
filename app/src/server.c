@@ -280,6 +280,19 @@ execute_server(struct sc_server *server,
     if (params->video_source == SC_VIDEO_SOURCE_CAMERA && params->camera_id) {
         ADD_PARAM("camera_id=%s", params->camera_id);
     }
+    if (params->video_source == SC_VIDEO_SOURCE_CAMERA && params->camera_position != SC_CAMERA_POSITION_ALL) {
+        switch (params->camera_position) {
+            case SC_CAMERA_POSITION_FRONT:
+                ADD_PARAM("camera_position=front");
+                break;
+            case SC_CAMERA_POSITION_BACK:
+                ADD_PARAM("camera_position=back");
+                break;
+            case SC_CAMERA_POSITION_EXTERNAL:
+                ADD_PARAM("camera_position=external");
+                break;
+        }
+    }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
     }

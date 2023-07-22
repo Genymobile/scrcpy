@@ -11,9 +11,9 @@ public enum VideoSource {
     }
 
     static VideoSource findByName(String name) {
-        for (VideoSource audioSource : VideoSource.values()) {
-            if (name.equals(audioSource.name)) {
-                return audioSource;
+        for (VideoSource videoSource : VideoSource.values()) {
+            if (name.equals(videoSource.name)) {
+                return videoSource;
             }
         }
 

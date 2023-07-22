@@ -44,6 +44,7 @@ struct sc_server_params {
     bool control;
     uint32_t display_id;
     const char *camera_id;
+    enum sc_camera_position camera_position;
     bool video;
     bool audio;
     bool show_touches;

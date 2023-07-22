@@ -139,7 +139,7 @@ public final class Server {
                     asyncProcessors.add(screenEncoder);
                 } else {
                     CameraEncoder cameraEncoder = new CameraEncoder(options.getMaxSize(), options.getCameraId(),
-                            videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
+                            options.getCameraPosition(), videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                             options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
                     asyncProcessors.add(cameraEncoder);
                 }

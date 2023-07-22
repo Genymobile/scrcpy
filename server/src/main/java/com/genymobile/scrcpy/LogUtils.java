@@ -74,15 +74,13 @@ public final class LogUtils {
             Looper.prepare();
 
             StringBuilder builder = new StringBuilder("List of cameras:");
-            CameraManager cameraManager = (CameraManager) Workarounds.getSystemContext()
-                    .getSystemService(Context.CAMERA_SERVICE);
-            String[] cameraIds = cameraManager.getCameraIdList();
+            String[] cameraIds = Workarounds.getCameraManager().getCameraIdList();
             if (cameraIds.length == 0) {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
                     builder.append("\n    --video-source=camera --camera=").append(id).append("    (");
-                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+                    CameraCharacteristics characteristics = Workarounds.getCameraManager().getCameraCharacteristics(id);
                     Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                     switch (facing) {
                         case CameraCharacteristics.LENS_FACING_BACK:

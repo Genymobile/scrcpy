@@ -54,6 +54,13 @@ enum sc_video_source {
     SC_VIDEO_SOURCE_CAMERA,
 };
 
+enum sc_camera_position {
+    SC_CAMERA_POSITION_ALL,
+    SC_CAMERA_POSITION_FRONT,
+    SC_CAMERA_POSITION_BACK,
+    SC_CAMERA_POSITION_EXTERNAL,
+};
+
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
@@ -146,6 +153,7 @@ struct scrcpy_options {
     uint16_t window_height;
     uint32_t display_id;
     const char* camera_id;
+    enum sc_camera_position camera_position;
     sc_tick display_buffer;
     sc_tick audio_buffer;
     sc_tick audio_output_buffer;

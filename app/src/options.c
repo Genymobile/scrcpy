@@ -41,6 +41,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .window_height = 0,
     .display_id = 0,
     .camera_id = NULL,
+    .camera_position = SC_CAMERA_POSITION_ALL,
     .display_buffer = 0,
     .audio_buffer = SC_TICK_FROM_MS(50),
     .audio_output_buffer = SC_TICK_FROM_MS(5),

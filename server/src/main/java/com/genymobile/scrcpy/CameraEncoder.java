@@ -1,12 +1,10 @@
 package com.genymobile.scrcpy;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
-import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
@@ -24,19 +22,20 @@ public class CameraEncoder extends SurfaceEncoder {
 
     private int maxSize;
     private String cameraId;
+    private CameraPosition cameraPosition;
 
     private CameraDevice cameraDevice;
 
-    private CameraManager cameraManager;
     private HandlerThread cameraThread;
     private Handler cameraHandler;
 
-    public CameraEncoder(int maxSize, String cameraId, Streamer streamer, int videoBitRate, int maxFps,
-            List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
+    public CameraEncoder(int maxSize, String cameraId, CameraPosition cameraPosition, Streamer streamer,
+            int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
         super(streamer, videoBitRate, maxFps, codecOptions, encoderName, downsizeOnError);
 
         this.maxSize = maxSize;
         this.cameraId = cameraId;
+        this.cameraPosition = cameraPosition;
 
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
@@ -48,7 +47,7 @@ public class CameraEncoder extends SurfaceEncoder {
             throws CameraAccessException, InterruptedException {
         Semaphore semaphore = new Semaphore(0);
         final CameraDevice[] result = new CameraDevice[1];
-        cameraManager.openCamera(id, new CameraDevice.StateCallback() {
+        Workarounds.getCameraManager().openCamera(id, new CameraDevice.StateCallback() {
             @Override
             public void onOpened(CameraDevice camera) {
                 result[0] = camera;
@@ -92,26 +91,34 @@ public class CameraEncoder extends SurfaceEncoder {
 
     @Override
     protected void initialize() {
-        try {
-            Workarounds.fillBaseContext();
-            cameraManager = CameraManager.class.getDeclaredConstructor(Context.class)
-                    .newInstance(FakeContext.get());
-        } catch (Exception e) {
-            throw new RuntimeException("Can't access camera", e);
-        }
     }
 
     @Override
     protected Size getSize() throws ConfigurationException {
         try {
             if (cameraId != null) {
+                if (!cameraPosition.matches(cameraId)) {
+                    Ln.e(String.format("--camera=%s doesn't match --camera-postion=%s", cameraId,
+                            cameraPosition.getName()));
+                    throw new ConfigurationException("--camera doesn't match --camera-position");
+                }
                 cameraDevice = openCamera(cameraId);
             } else {
-                String[] cameraIds = cameraManager.getCameraIdList();
-                cameraDevice = openCamera(cameraIds[0]);
+                String[] cameraIds = Workarounds.getCameraManager().getCameraIdList();
+                for (String id : cameraIds) {
+                    if (cameraPosition.matches(id)) {
+                        cameraDevice = openCamera(id);
+                        break;
+                    }
+                }
+                if (cameraDevice == null) {
+                    Ln.e("--camera-postion doesn't match any camera");
+                    throw new ConfigurationException("--camera-position doesn't match any camera");
+                }
             }
 
-            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraDevice.getId());
+            CameraCharacteristics characteristics = Workarounds.getCameraManager()
+                    .getCameraCharacteristics(cameraDevice.getId());
             StreamConfigurationMap map = characteristics
                     .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             android.util.Size[] sizes = Arrays.stream(map.getOutputSizes(MediaCodec.class))
@@ -137,7 +144,7 @@ public class CameraEncoder extends SurfaceEncoder {
         } catch (IllegalArgumentException e) {
             Ln.e("Camera " + cameraId + " not found\n" + LogUtils.buildCameraListMessage());
             throw new ConfigurationException("Unknown camera id: " + cameraId);
-        } catch (Exception e) {
+        } catch (CameraAccessException | InterruptedException e) {
             throw new RuntimeException("Can't access camera", e);
         }
     }
