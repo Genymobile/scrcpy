@@ -26,6 +26,7 @@ public class Options {
     private int displayId;
     private String cameraId;
     private Size cameraSize;
+    private CameraFacing cameraFacing;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -124,6 +125,10 @@ public class Options {
 
     public Size getCameraSize() {
         return cameraSize;
+    }
+
+    public CameraFacing getCameraFacing() {
+        return cameraFacing;
     }
 
     public boolean getShowTouches() {
@@ -358,6 +363,15 @@ public class Options {
                 case "camera_size":
                     if (!value.isEmpty()) {
                         options.cameraSize = parseSize(value);
+                    }
+                    break;
+                case "camera_facing":
+                    if (!value.isEmpty()) {
+                        CameraFacing facing = CameraFacing.findByName(value);
+                        if (facing == null) {
+                            throw new IllegalArgumentException("Camera facing " + value + " not supported");
+                        }
+                        options.cameraFacing = facing;
                     }
                     break;
                 case "send_device_meta":

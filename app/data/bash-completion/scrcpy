@@ -11,6 +11,7 @@ _scrcpy() {
         --audio-output-buffer=
         -b --video-bit-rate=
         --camera-id=
+        --camera-facing=
         --camera-size=
         --crop=
         -d --select-usb
@@ -102,6 +103,10 @@ _scrcpy() {
             ;;
         --audio-source)
             COMPREPLY=($(compgen -W 'output mic' -- "$cur"))
+            return
+            ;;
+        --camera-facing)
+            COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
             return
             ;;
         --lock-video-orientation)

@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class CameraCapture extends SurfaceCapture {
 
     private final String explicitCameraId;
+    private final CameraFacing cameraFacing;
     private final Size explicitSize;
 
     private HandlerThread cameraThread;
@@ -37,8 +39,9 @@ public class CameraCapture extends SurfaceCapture {
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
-    public CameraCapture(String explicitCameraId, Size explicitSize) {
+    public CameraCapture(String explicitCameraId, CameraFacing cameraFacing, Size explicitSize) {
         this.explicitCameraId = explicitCameraId;
+        this.cameraFacing = cameraFacing;
         this.explicitSize = explicitSize;
     }
 
@@ -50,7 +53,7 @@ public class CameraCapture extends SurfaceCapture {
         cameraExecutor = new HandlerExecutor(cameraHandler);
 
         try {
-            String cameraId = selectCamera(explicitCameraId);
+            String cameraId = selectCamera(explicitCameraId, cameraFacing);
             if (cameraId == null) {
                 throw new IOException("No matching camera found");
             }
@@ -62,7 +65,7 @@ public class CameraCapture extends SurfaceCapture {
         }
     }
 
-    private static String selectCamera(String explicitCameraId) throws CameraAccessException {
+    private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException {
         if (explicitCameraId != null) {
             return explicitCameraId;
         }
@@ -70,8 +73,22 @@ public class CameraCapture extends SurfaceCapture {
         CameraManager cameraManager = ServiceManager.getCameraManager();
 
         String[] cameraIds = cameraManager.getCameraIdList();
-        // Use the first one
-        return cameraIds.length > 0 ? cameraIds[0] : null;
+        if (cameraFacing == null) {
+            // Use the first one
+            return cameraIds.length > 0 ? cameraIds[0] : null;
+        }
+
+        for (String cameraId : cameraIds) {
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+            int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+            if (cameraFacing.value() == facing) {
+                return cameraId;
+            }
+        }
+
+        // Not found
+        return null;
     }
 
     @Override
