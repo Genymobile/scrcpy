@@ -353,6 +353,7 @@ scrcpy(struct scrcpy_options *options) {
         .audio_codec = options->audio_codec,
         .video_source = options->video_source,
         .audio_source = options->audio_source,
+        .camera_facing = options->camera_facing,
         .crop = options->crop,
         .port_range = options->port_range,
         .tunnel_host = options->tunnel_host,
