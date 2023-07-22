@@ -55,6 +55,13 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_MIC,
 };
 
+enum sc_camera_facing {
+    SC_CAMERA_FACING_ANY,
+    SC_CAMERA_FACING_FRONT,
+    SC_CAMERA_FACING_BACK,
+    SC_CAMERA_FACING_EXTERNAL,
+};
+
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
@@ -133,6 +140,7 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
+    enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
