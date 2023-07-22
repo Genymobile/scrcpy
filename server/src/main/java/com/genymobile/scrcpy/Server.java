@@ -137,7 +137,9 @@ public final class Server {
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
                     surfaceCapture = new ScreenCapture(device);
                 } else {
-                    surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraSize());
+                    CameraCapture.CameraSelection cameraSelection = new CameraCapture.CameraSelection(options.getCameraId(),
+                            options.getCameraFacing());
+                    surfaceCapture = new CameraCapture(cameraSelection, options.getCameraSize());
                 }
                 SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                         options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());

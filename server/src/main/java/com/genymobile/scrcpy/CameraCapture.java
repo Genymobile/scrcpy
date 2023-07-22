@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
+import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
@@ -27,7 +28,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CameraCapture extends SurfaceCapture {
 
-    private final String explicitCameraId;
+    public static class CameraSelection {
+        private String explicitCameraId;
+        private CameraFacing cameraFacing;
+
+        public CameraSelection(String explicitCameraId, CameraFacing cameraFacing) {
+            this.explicitCameraId = explicitCameraId;
+            this.cameraFacing = cameraFacing;
+        }
+
+        boolean hasId() {
+            return explicitCameraId != null;
+        }
+
+        boolean hasProperties() {
+            return cameraFacing != null;
+        }
+    }
+
+    private final CameraSelection cameraSelection;
     private final Size explicitSize;
 
     private HandlerThread cameraThread;
@@ -37,8 +56,8 @@ public class CameraCapture extends SurfaceCapture {
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
-    public CameraCapture(String explicitCameraId, Size explicitSize) {
-        this.explicitCameraId = explicitCameraId;
+    public CameraCapture(CameraSelection cameraSelection, Size explicitSize) {
+        this.cameraSelection = cameraSelection;
         this.explicitSize = explicitSize;
     }
 
@@ -50,7 +69,7 @@ public class CameraCapture extends SurfaceCapture {
         cameraExecutor = new HandlerExecutor(cameraHandler);
 
         try {
-            String cameraId = selectCamera(explicitCameraId);
+            String cameraId = selectCamera(cameraSelection);
             if (cameraId == null) {
                 throw new IOException("No matching camera found");
             }
@@ -62,16 +81,35 @@ public class CameraCapture extends SurfaceCapture {
         }
     }
 
-    private String selectCamera(String explicitCameraId) throws CameraAccessException {
-        if (explicitCameraId != null) {
-            return explicitCameraId;
+    private String selectCamera(CameraSelection cameraSelection) throws CameraAccessException {
+        if (cameraSelection.hasId()) {
+            return cameraSelection.explicitCameraId;
         }
 
         CameraManager cameraManager = ServiceManager.getCameraManager();
 
         String[] cameraIds = cameraManager.getCameraIdList();
-        // Use the first one
-        return cameraIds.length > 0 ? cameraIds[0] : null;
+        if (!cameraSelection.hasProperties()) {
+            // Use the first one
+            return cameraIds.length > 0 ? cameraIds[0] : null;
+        }
+
+        for (String cameraId : cameraIds) {
+            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+            if (cameraSelection.cameraFacing != null) {
+                int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                if (cameraSelection.cameraFacing.value() != facing) {
+                    // Does not match
+                    continue;
+                }
+            }
+
+            return cameraId;
+        }
+
+        // Not found
+        return null;
     }
 
     @Override
