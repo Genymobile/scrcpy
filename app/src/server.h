@@ -28,6 +28,7 @@ struct sc_server_params {
     enum sc_codec audio_codec;
     enum sc_video_source video_source;
     enum sc_audio_source audio_source;
+    enum sc_camera_facing camera_facing;
     const char *crop;
     const char *video_codec_options;
     const char *audio_codec_options;
