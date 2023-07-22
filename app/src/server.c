@@ -183,6 +183,20 @@ sc_server_get_codec_name(enum sc_codec codec) {
     }
 }
 
+static const char *
+sc_server_get_camera_facing_name(enum sc_camera_facing camera_facing) {
+    switch (camera_facing) {
+        case SC_CAMERA_FACING_FRONT:
+            return "front";
+        case SC_CAMERA_FACING_BACK:
+            return "back";
+        case SC_CAMERA_FACING_EXTERNAL:
+            return "external";
+        default:
+            return NULL;
+    }
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
@@ -284,6 +298,10 @@ execute_server(struct sc_server *server,
     }
     if (params->camera_size) {
         ADD_PARAM("camera_size=%s", params->camera_size);
+    }
+    if (params->camera_facing != SC_CAMERA_FACING_ANY) {
+        ADD_PARAM("camera_facing=%s",
+            sc_server_get_camera_facing_name(params->camera_facing));
     }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
