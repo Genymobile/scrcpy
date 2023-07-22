@@ -86,6 +86,7 @@ enum {
     OPT_LIST_CAMERA_SIZES,
     OPT_CAMERA_ID,
     OPT_CAMERA_SIZE,
+    OPT_CAMERA_FACING,
 };
 
 struct sc_option {
@@ -209,6 +210,13 @@ static const struct sc_option options[] = {
         .text = "Specify the device camera id to mirror.\n"
                 "The available camera ids can be listed by:\n"
                 "    scrcpy --list-cameras",
+    },
+    {
+        .longopt_id = OPT_CAMERA_FACING,
+        .longopt = "camera-facing",
+        .argdesc = "facing",
+        .text = "Select the device camera by its facing direction.\n"
+                "Possible values are \"front\", \"back\" and \"external\".",
     },
     {
         .longopt_id = OPT_CAMERA_SIZE,
@@ -1701,6 +1709,34 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
 }
 
 static bool
+parse_camera_facing(const char *optarg, enum sc_camera_facing *facing) {
+    if (!strcmp(optarg, "front")) {
+        *facing = SC_CAMERA_FACING_FRONT;
+        return true;
+    }
+
+    if (!strcmp(optarg, "back")) {
+        *facing = SC_CAMERA_FACING_BACK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "external")) {
+        *facing = SC_CAMERA_FACING_EXTERNAL;
+        return true;
+    }
+
+    if (*optarg == '\0') {
+        // Empty string is a valid value (equivalent to not passing the option)
+        *facing = SC_CAMERA_FACING_ANY;
+        return true;
+    }
+
+    LOGE("Unsupported camera facing: %s (expected front, back or external)",
+         optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -2100,6 +2136,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_SIZE:
                 opts->camera_size = optarg;
                 break;
+            case OPT_CAMERA_FACING:
+                if (!parse_camera_facing(optarg, &opts->camera_facing)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2199,6 +2240,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
+            LOGE("Could not specify both --camera-id and --camera-facing");
+            return false;
+        }
+
         if (!opts->camera_size) {
             LOGE("Camera size must be specified by --camera-size");
             return false;
@@ -2208,7 +2254,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGI("Camera video source: control disabled");
             opts->control = false;
         }
-    } else if (opts->camera_id || opts->camera_size) {
+    } else if (opts->camera_id
+            || opts->camera_facing != SC_CAMERA_FACING_ANY
+            || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
         return false;
     }
