@@ -18,6 +18,7 @@ arguments=(
     '--audio-output-buffer=[Configure the size of the SDL audio output buffer (in milliseconds)]'
     {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
     '--camera-id=[Specify the camera id to mirror]'
+    '--camera-facing=[Select the device camera by its facing direction]:facing:(front back external)'
     '--camera-size=[Specify an explicit camera capture size]'
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'

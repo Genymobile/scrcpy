@@ -21,6 +21,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT,
     .mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT,
+    .camera_facing = SC_CAMERA_FACING_ANY,
     .port_range = {
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST,
         .last = DEFAULT_LOCAL_PORT_RANGE_LAST,
