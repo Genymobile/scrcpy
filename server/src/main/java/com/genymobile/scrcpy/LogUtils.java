@@ -3,14 +3,10 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
-import android.content.Context;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.media.MediaCodec;
 import android.os.Looper;
 
-import java.util.Arrays;
 import java.util.List;
 
 public final class LogUtils {
@@ -97,15 +93,9 @@ public final class LogUtils {
                             break;
                     }
                     builder.append(", ");
-                    StreamConfigurationMap map = characteristics
-                            .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-                    android.util.Size[] sizes = Arrays.stream(map.getOutputSizes(MediaCodec.class))
-                            .sorted((a, b) -> b.getWidth() - a.getWidth()).toArray(android.util.Size[]::new);
-                    if (sizes.length == 0) {
-                        builder.append("size unknown");
-                    } else {
-                        builder.append(sizes[0].getWidth()).append("x").append(sizes[0].getHeight());
-                    }
+
+                    Rect size = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                    builder.append(size.width()).append("x").append(size.height());
                     builder.append(")");
                 }
             }
