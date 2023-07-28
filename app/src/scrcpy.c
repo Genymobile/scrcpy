@@ -448,9 +448,7 @@ scrcpy(struct scrcpy_options *options) {
 
     struct sc_file_pusher *fp = NULL;
 
-    // control implies video playback
-    assert(!options->control || options->video_playback);
-    if (options->control) {
+    if (options->video_playback && options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
                                  options->push_target)) {
             goto end;

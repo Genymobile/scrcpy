@@ -2022,12 +2022,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio_playback = false;
     }
 
-    if (!opts->video_playback && !otg) {
-        // If video playback is disabled and OTG are disabled, then there is
-        // no way to control the device.
-        opts->control = false;
-    }
-
     if (opts->video && !opts->video_playback && !opts->record_filename
             && !v4l2) {
         LOGI("No video playback, no recording, no V4L2 sink: video disabled");
