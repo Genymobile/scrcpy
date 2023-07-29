@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import android.annotation.SuppressLint;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -94,7 +95,7 @@ public class CameraEncoder extends SurfaceEncoder {
     }
 
     @Override
-    protected Size getSize() throws ConfigurationException {
+    protected Size getSize() throws CaptureForegroundException, ConfigurationException {
         try {
             if (cameraId != null) {
                 if (!cameraPosition.matches(cameraId)) {
@@ -119,9 +120,13 @@ public class CameraEncoder extends SurfaceEncoder {
 
             CameraCharacteristics characteristics = Workarounds.getCameraManager()
                     .getCameraCharacteristics(cameraDevice.getId());
+            Rect sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            float aspectRatio = (float) sensorSize.width() / sensorSize.height();
+
             StreamConfigurationMap map = characteristics
                     .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
             android.util.Size[] sizes = Arrays.stream(map.getOutputSizes(MediaCodec.class))
+                    .filter(it -> Math.abs((float) it.getWidth() / it.getHeight() - aspectRatio) <= 0.1f)
                     .sorted(Comparator.comparing(android.util.Size::getWidth).reversed())
                     .toArray(android.util.Size[]::new);
 
@@ -144,8 +149,10 @@ public class CameraEncoder extends SurfaceEncoder {
         } catch (IllegalArgumentException e) {
             Ln.e("Camera " + cameraId + " not found\n" + LogUtils.buildCameraListMessage());
             throw new ConfigurationException("Unknown camera id: " + cameraId);
-        } catch (CameraAccessException | InterruptedException e) {
-            throw new RuntimeException("Can't access camera", e);
+        } catch (CameraAccessException e) {
+            throw new CaptureForegroundException("camera");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 

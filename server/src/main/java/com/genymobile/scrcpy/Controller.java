@@ -85,7 +85,7 @@ public class Controller implements AsyncProcessor {
     }
 
     @Override
-    public void start(TerminationListener listener) {
+    public void start(StatusListener listener) {
         thread = new Thread(() -> {
             try {
                 control();

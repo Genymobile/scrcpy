@@ -50,7 +50,7 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
 
     protected abstract void initialize();
 
-    protected abstract Size getSize() throws ConfigurationException;
+    protected abstract Size getSize() throws CaptureForegroundException, ConfigurationException;
 
     protected abstract void setSize(int size);
 
@@ -62,14 +62,34 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
         return resetCapture.getAndSet(false);
     }
 
-    protected void startStream() throws IOException, ConfigurationException {
+    private Size tryGetSize(int attempts, int delayMs) throws CaptureForegroundException, ConfigurationException {
+        while (attempts-- > 0) {
+            try {
+                return getSize();
+            } catch (CaptureForegroundException e) {
+                if (attempts == 0) {
+                    Ln.e(String.format("Failed to start %s capture", e.getCaptureType()));
+                    Ln.e(String.format("On Android 11, %s capture must be started in the foreground, ",
+                            e.getCaptureType())
+                            + "make sure that the device is unlocked when starting scrcpy.");
+                    throw e;
+                }
+                Ln.e("Failed to start video capturing, retrying...");
+                SystemClock.sleep(delayMs);
+            }
+        }
+        throw new AssertionError("unreachable");
+    }
+
+    protected void startStream(StatusListener listener)
+            throws CaptureForegroundException, IOException, ConfigurationException {
         initialize();
 
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
-        streamer.writeVideoHeader(getSize());
+        streamer.writeVideoHeader(tryGetSize(5, 100));
 
         boolean alive;
         try {
@@ -86,6 +106,7 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
                     setSurface(surface);
 
                     mediaCodec.start();
+                    listener.onStarted();
 
                     alive = encode(mediaCodec, streamer);
                     // do not call stop() on exception, it would trigger an IllegalStateException
@@ -251,11 +272,11 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
     }
 
     @Override
-    public void start(TerminationListener listener) {
+    public void start(StatusListener listener) {
         thread = new Thread(() -> {
             try {
-                startStream();
-            } catch (ConfigurationException e) {
+                startStream(listener);
+            } catch (ConfigurationException | CaptureForegroundException e) {
                 // Do not print stack trace, a user-friendly error-message has already been
                 // logged
             } catch (IOException e) {

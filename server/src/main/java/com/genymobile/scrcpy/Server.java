@@ -1,11 +1,15 @@
 package com.genymobile.scrcpy;
 
+import android.content.ComponentName;
+import android.content.Intent;
 import android.os.BatteryManager;
 import android.os.Build;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public final class Server {
 
@@ -86,6 +90,24 @@ public final class Server {
         }
     }
 
+    private static void startWorkaroundAndroid11() {
+        // Android 11 requires Apps to be at foreground to record audio.
+        // Normally, each App has its own user ID, so Android checks whether the requesting App has the user ID that's at the foreground.
+        // But scrcpy server is NOT an App, it's a Java application started from Android shell, so it has the same user ID (2000) with Android
+        // shell ("com.android.shell").
+        // If there is an Activity from Android shell running at foreground, then the permission system will believe scrcpy is also in the
+        // foreground.
+        Intent intent = new Intent(Intent.ACTION_MAIN);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        intent.addCategory(Intent.CATEGORY_LAUNCHER);
+        intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
+        ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
+    }
+
+    private static void stopWorkaroundAndroid11() {
+        ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
+    }
+
     private static void scrcpy(Options options) throws IOException, ConfigurationException {
         Ln.i("Device: [" + Build.MANUFACTURER + "] " + Build.BRAND + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         final Device device = new Device(options);
@@ -104,6 +126,8 @@ public final class Server {
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
         DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
+
+        boolean foregroundWorkaround = false;
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -116,6 +140,8 @@ public final class Server {
             }
 
             if (audio) {
+                foregroundWorkaround |= Build.VERSION.SDK_INT == Build.VERSION_CODES.R;
+
                 AudioCodec audioCodec = options.getAudioCodec();
                 AudioCapture audioCapture = new AudioCapture(options.getAudioSource());
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
@@ -138,6 +164,8 @@ public final class Server {
                             options.getDownsizeOnError());
                     asyncProcessors.add(screenEncoder);
                 } else {
+                    foregroundWorkaround |= Build.VERSION.SDK_INT == Build.VERSION_CODES.R;
+
                     CameraEncoder cameraEncoder = new CameraEncoder(options.getMaxSize(), options.getCameraId(),
                             options.getCameraPosition(), videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                             options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
@@ -145,11 +173,29 @@ public final class Server {
                 }
             }
 
+            if (foregroundWorkaround) {
+                startWorkaroundAndroid11();
+            }
+
+            Completion started = new Completion(asyncProcessors.size());
             Completion completion = new Completion(asyncProcessors.size());
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                asyncProcessor.start((fatalError) -> {
-                    completion.addCompleted(fatalError);
+                asyncProcessor.start(new AsyncProcessor.StatusListener() {
+                    public void onStarted(){
+                        started.addCompleted(false);
+                    }
+
+                    public void onTerminated(boolean fatalError) {
+                        started.addCompleted(fatalError);
+                        completion.addCompleted(fatalError);
+                    }
                 });
+            }
+
+            started.await();
+
+            if (foregroundWorkaround) {
+                stopWorkaroundAndroid11();
             }
 
             completion.await();
