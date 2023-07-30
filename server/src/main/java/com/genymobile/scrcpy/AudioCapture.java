@@ -72,7 +72,7 @@ public final class AudioCapture {
                     Ln.e("Failed to start audio capture");
                     Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
                             + "scrcpy.");
-                    throw new CaptureForegroundException("audio");
+                    throw new CaptureForegroundException();
                 } else {
                     Ln.d("Failed to start audio capture, retrying...");
                 }
@@ -94,8 +94,8 @@ public final class AudioCapture {
 
     public void start() throws CaptureForegroundException {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            Workarounds.startForegroundWorkaround();
             try {
-                Workarounds.startForegroundWorkaround();
                 tryStartRecording(5, 100);
             } finally {
                 Workarounds.stopForegroundWorkaround();

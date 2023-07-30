@@ -98,7 +98,7 @@ public class CameraEncoder extends SurfaceEncoder {
     }
 
     @Override
-    protected Size getSize() throws CaptureForegroundException, ConfigurationException {
+    protected Size getSize() throws ConfigurationException {
         try {
             if (cameraId != null) {
                 if (!cameraPosition.matches(cameraId)) {
@@ -154,8 +154,7 @@ public class CameraEncoder extends SurfaceEncoder {
             Ln.e("Camera " + cameraId + " not found\n" + LogUtils.buildCameraListMessage());
             throw new ConfigurationException("Unknown camera id: " + cameraId);
         } catch (CameraAccessException e) {
-            Ln.e("Failed to access camera " + cameraId, e);
-            throw new CaptureForegroundException("camera");
+            throw new RuntimeException(e);
         }
     }
 
@@ -192,12 +191,12 @@ public class CameraEncoder extends SurfaceEncoder {
                 return; // it worked
             } catch (CameraAccessException e) {
                 if (attempts == 0) {
-                    Ln.e("Failed to start audio capture");
-                    Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
+                    Ln.e("Failed to start camera capture");
+                    Ln.e("On Android 11, camera capture must be started in the foreground, make sure that the device is unlocked when starting "
                             + "scrcpy.");
-                    throw new CaptureForegroundException("camera");
+                    throw new CaptureForegroundException();
                 } else {
-                    Ln.d("Failed to start audio capture, retrying...");
+                    Ln.d("Failed to start camera capture, retrying...");
                 }
             }
         }
@@ -206,8 +205,8 @@ public class CameraEncoder extends SurfaceEncoder {
     @Override
     protected void setSurface(Surface surface) throws CaptureForegroundException {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            Workarounds.startForegroundWorkaround();
             try {
-                Workarounds.startForegroundWorkaround();
                 trySetSurface(5, 100, surface);
             } finally {
                 Workarounds.stopForegroundWorkaround();
