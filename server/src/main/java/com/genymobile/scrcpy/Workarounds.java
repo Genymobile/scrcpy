@@ -4,8 +4,10 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.AttributionSource;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioAttributes;
@@ -19,6 +21,8 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 public final class Workarounds {
 
@@ -339,5 +343,32 @@ public final class Workarounds {
             }
         }
         return cameraManager;
+    }
+
+    private static int foregroundWorkaroundCount = 0;
+
+    public static synchronized void startForegroundWorkaround() {
+        if (foregroundWorkaroundCount++ == 0) {
+            // Android 11 requires Apps to be at foreground to record audio.
+            // Normally, each App has its own user ID, so Android checks whether the
+            // requesting App has the user ID that's at the foreground.
+            // But scrcpy server is NOT an App, it's a Java application started from Android
+            // shell, so it has the same user ID (2000) with Android
+            // shell ("com.android.shell").
+            // If there is an Activity from Android shell running at foreground, then the
+            // permission system will believe scrcpy is also in the
+            // foreground.
+            Intent intent = new Intent(Intent.ACTION_MAIN);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.addCategory(Intent.CATEGORY_LAUNCHER);
+            intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
+            ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
+        }
+    }
+
+    public static synchronized void stopForegroundWorkaround() {
+        if (--foregroundWorkaroundCount == 0) {
+            ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
+        }
     }
 }

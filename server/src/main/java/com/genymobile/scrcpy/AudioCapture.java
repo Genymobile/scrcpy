@@ -94,7 +94,12 @@ public final class AudioCapture {
 
     public void start() throws CaptureForegroundException {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-            tryStartRecording(5, 100);
+            try {
+                Workarounds.startForegroundWorkaround();
+                tryStartRecording(5, 100);
+            } finally {
+                Workarounds.stopForegroundWorkaround();
+            }
         } else {
             startRecording();
         }

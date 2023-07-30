@@ -9,8 +9,10 @@ import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.view.Surface;
 
 import java.util.Arrays;
@@ -25,6 +27,7 @@ public class CameraEncoder extends SurfaceEncoder {
     private String cameraId;
     private CameraPosition cameraPosition;
 
+    private String actualCameraId;
     private CameraDevice cameraDevice;
 
     private HandlerThread cameraThread;
@@ -103,23 +106,24 @@ public class CameraEncoder extends SurfaceEncoder {
                             cameraPosition.getName()));
                     throw new ConfigurationException("--camera doesn't match --camera-position");
                 }
-                cameraDevice = openCamera(cameraId);
+                actualCameraId = cameraId;
             } else {
+                actualCameraId = null;
                 String[] cameraIds = Workarounds.getCameraManager().getCameraIdList();
                 for (String id : cameraIds) {
                     if (cameraPosition.matches(id)) {
-                        cameraDevice = openCamera(id);
+                        actualCameraId = id;
                         break;
                     }
                 }
-                if (cameraDevice == null) {
+                if (actualCameraId == null) {
                     Ln.e("--camera-postion doesn't match any camera");
                     throw new ConfigurationException("--camera-position doesn't match any camera");
                 }
             }
 
             CameraCharacteristics characteristics = Workarounds.getCameraManager()
-                    .getCameraCharacteristics(cameraDevice.getId());
+                    .getCameraCharacteristics(actualCameraId);
             Rect sensorSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
             float aspectRatio = (float) sensorSize.width() / sensorSize.height();
 
@@ -150,9 +154,8 @@ public class CameraEncoder extends SurfaceEncoder {
             Ln.e("Camera " + cameraId + " not found\n" + LogUtils.buildCameraListMessage());
             throw new ConfigurationException("Unknown camera id: " + cameraId);
         } catch (CameraAccessException e) {
+            Ln.e("Failed to access camera " + cameraId, e);
             throw new CaptureForegroundException("camera");
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -161,17 +164,60 @@ public class CameraEncoder extends SurfaceEncoder {
         maxSize = size;
     }
 
-    @Override
-    protected void setSurface(Surface surface) {
+    private void setSurfaceInternal(Surface surface) throws CameraAccessException {
         try {
+            // openCamera, createCaptureSession and setRepeatingRequest all
+            // requires foreground workaround on Android 11.
+            // getCameraIdList and getCameraCharacteristics don't need that.
+            cameraDevice = openCamera(actualCameraId);
             CameraCaptureSession session = createCaptureSession(cameraDevice, surface);
             CaptureRequest.Builder requestBuilder = cameraDevice
                     .createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             requestBuilder.addTarget(surface);
             CaptureRequest request = requestBuilder.build();
             session.setRepeatingRequest(request, null, cameraHandler);
+        } catch (CameraAccessException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Can't access camera", e);
+        }
+    }
+
+    private void trySetSurface(int attempts, int delayMs, Surface surface) throws CaptureForegroundException {
+        while (attempts-- > 0) {
+            // Wait for activity to start
+            SystemClock.sleep(delayMs);
+            try {
+                setSurfaceInternal(surface);
+                return; // it worked
+            } catch (CameraAccessException e) {
+                if (attempts == 0) {
+                    Ln.e("Failed to start audio capture");
+                    Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
+                            + "scrcpy.");
+                    throw new CaptureForegroundException("camera");
+                } else {
+                    Ln.d("Failed to start audio capture, retrying...");
+                }
+            }
+        }
+    }
+
+    @Override
+    protected void setSurface(Surface surface) throws CaptureForegroundException {
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
+            try {
+                Workarounds.startForegroundWorkaround();
+                trySetSurface(5, 100, surface);
+            } finally {
+                Workarounds.stopForegroundWorkaround();
+            }
+        } else {
+            try {
+                setSurfaceInternal(surface);
+            } catch (CameraAccessException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

@@ -1,9 +1,7 @@
 package com.genymobile.scrcpy;
 
 public interface AsyncProcessor {
-    interface StatusListener {
-        void onStarted();
-
+    interface TerminationListener {
         /**
          * Notify processor termination
          *
@@ -12,7 +10,7 @@ public interface AsyncProcessor {
         void onTerminated(boolean fatalError);
     }
 
-    void start(StatusListener listener);
+    void start(TerminationListener listener);
     void stop();
     void join() throws InterruptedException;
 }
