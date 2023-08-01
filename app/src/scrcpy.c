@@ -252,7 +252,9 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
 
     // Contrary to the video demuxer, keep mirroring if only the audio fails
     // (unless --require-audio is set).
-    if (status == SC_DEMUXER_STATUS_ERROR
+    if (status == SC_DEMUXER_STATUS_EOS) {
+        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+    } else if (status == SC_DEMUXER_STATUS_ERROR
             || (status == SC_DEMUXER_STATUS_DISABLED
                 && options->require_audio)) {
         PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
