@@ -2216,7 +2216,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video_source == SC_VIDEO_SOURCE_CAMERA && opts->control) {
-        LOGI("--video-source camera disables control");
+        LOGI("--video-source=camera disables control");
         opts->control = false;
     }
 

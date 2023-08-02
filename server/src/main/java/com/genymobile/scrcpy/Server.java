@@ -104,7 +104,6 @@ public final class Server {
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
         DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
-
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -148,7 +147,9 @@ public final class Server {
 
             Completion completion = new Completion(asyncProcessors.size());
             for (AsyncProcessor asyncProcessor : asyncProcessors) {
-                asyncProcessor.start((fatalError) -> completion.addCompleted(fatalError));
+                asyncProcessor.start((fatalError) -> {
+                    completion.addCompleted(fatalError);
+                });
             }
 
             completion.await();
