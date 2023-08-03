@@ -50,4 +50,4 @@ Documentation for command line arguments is available:
 
 
 Record VR with Screen Crop for Quest/Quest2
-- scrcpy --crop 1730:974:1934:450 --max-fps 30
+- `scrcpy --crop 1730:974:1934:450 --max-fps 30`
