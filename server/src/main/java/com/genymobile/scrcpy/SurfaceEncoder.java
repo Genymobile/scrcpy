@@ -254,6 +254,10 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
     @Override
     public void start(TerminationListener listener) {
         thread = new Thread(() -> {
+            // Some devices (Meizu) deadlock if the video encoding thread has no Looper
+            // <https://github.com/Genymobile/scrcpy/issues/4143>
+            Looper.prepare();
+
             try {
                 startStream();
             } catch (ConfigurationException | CaptureForegroundException e) {
