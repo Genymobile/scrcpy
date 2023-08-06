@@ -6,6 +6,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
@@ -19,7 +20,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class CameraEncoder extends SurfaceEncoder {
 
@@ -49,48 +51,100 @@ public class CameraEncoder extends SurfaceEncoder {
     @SuppressLint("MissingPermission")
     private CameraDevice openCamera(String id)
             throws CameraAccessException, InterruptedException {
-        Semaphore semaphore = new Semaphore(0);
-        final CameraDevice[] result = new CameraDevice[1];
+        Ln.v("Open Camera: " + id);
+
+        CompletableFuture<CameraDevice> future = new CompletableFuture<>();
         Workarounds.getCameraManager().openCamera(id, new CameraDevice.StateCallback() {
             @Override
             public void onOpened(CameraDevice camera) {
-                result[0] = camera;
-                semaphore.release();
+                Ln.v("Open Camera Success");
+                future.complete(camera);
             }
 
             @Override
             public void onDisconnected(CameraDevice camera) {
-
             }
 
             @Override
             public void onError(CameraDevice camera, int error) {
-
+                int cameraAccessExceptionErrorCode;
+                switch (error) {
+                    case CameraDevice.StateCallback.ERROR_CAMERA_IN_USE:
+                        cameraAccessExceptionErrorCode = CameraAccessException.CAMERA_IN_USE;
+                        break;
+                    case CameraDevice.StateCallback.ERROR_MAX_CAMERAS_IN_USE:
+                        cameraAccessExceptionErrorCode = CameraAccessException.MAX_CAMERAS_IN_USE;
+                        break;
+                    case CameraDevice.StateCallback.ERROR_CAMERA_DISABLED:
+                        cameraAccessExceptionErrorCode = CameraAccessException.CAMERA_DISABLED;
+                        break;
+                    case CameraDevice.StateCallback.ERROR_CAMERA_DEVICE:
+                    case CameraDevice.StateCallback.ERROR_CAMERA_SERVICE:
+                    default:
+                        cameraAccessExceptionErrorCode = CameraAccessException.CAMERA_ERROR;
+                        break;
+                }
+                future.completeExceptionally(new CameraAccessException(cameraAccessExceptionErrorCode));
             }
         }, cameraHandler);
-        semaphore.acquire();
-        return result[0];
+
+        try {
+            return future.get();
+        } catch (ExecutionException e) {
+            throw (CameraAccessException) e.getCause();
+        }
     }
 
     @SuppressWarnings("deprecation")
     private CameraCaptureSession createCaptureSession(CameraDevice camera, Surface surface)
             throws CameraAccessException, InterruptedException {
-        Semaphore semaphore = new Semaphore(0);
-        final CameraCaptureSession[] result = new CameraCaptureSession[1];
+        Ln.v("Create Capture Session");
+
+        CompletableFuture<CameraCaptureSession> future = new CompletableFuture<>();
         camera.createCaptureSession(Collections.singletonList(surface), new CameraCaptureSession.StateCallback() {
             @Override
             public void onConfigured(CameraCaptureSession session) {
-                result[0] = session;
-                semaphore.release();
+                Ln.v("Create Capture Session Success");
+                future.complete(session);
             }
 
             @Override
             public void onConfigureFailed(CameraCaptureSession session) {
-
+                future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_ERROR));
             }
         }, cameraHandler);
-        semaphore.acquire();
-        return result[0];
+
+        try {
+            return future.get();
+        } catch (ExecutionException e) {
+            throw (CameraAccessException) e.getCause();
+        }
+    }
+
+    private void setRepeatingRequest(CameraCaptureSession session, CaptureRequest request)
+            throws CameraAccessException, InterruptedException {
+        Ln.v("Set Repeating Request");
+
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        session.setRepeatingRequest(request, new CameraCaptureSession.CaptureCallback() {
+            @Override
+            public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
+                    long timestamp, long frameNumber) {
+                future.complete(null);
+            }
+
+            @Override
+            public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
+                    CaptureFailure failure) {
+                future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_ERROR));
+            }
+        }, cameraHandler);
+
+        try {
+            future.get();
+        } catch (ExecutionException e) {
+            throw (CameraAccessException) e.getCause();
+        }
     }
 
     @Override
@@ -174,7 +228,7 @@ public class CameraEncoder extends SurfaceEncoder {
                     .createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             requestBuilder.addTarget(surface);
             CaptureRequest request = requestBuilder.build();
-            session.setRepeatingRequest(request, null, cameraHandler);
+            setRepeatingRequest(session, request);
         } catch (CameraAccessException e) {
             throw e;
         } catch (Exception e) {
@@ -209,7 +263,7 @@ public class CameraEncoder extends SurfaceEncoder {
             try {
                 trySetSurface(5, 100, surface);
             } finally {
-                Workarounds.stopForegroundWorkaround();
+                // Workarounds.stopForegroundWorkaround();
             }
         } else {
             try {

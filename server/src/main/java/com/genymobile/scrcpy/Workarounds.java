@@ -349,6 +349,8 @@ public final class Workarounds {
 
     public static synchronized void startForegroundWorkaround() {
         if (foregroundWorkaroundCount++ == 0) {
+            Ln.v("Starting Foreground Workaround");
+
             // Android 11 requires Apps to be at foreground to record audio.
             // Normally, each App has its own user ID, so Android checks whether the
             // requesting App has the user ID that's at the foreground.
@@ -368,6 +370,7 @@ public final class Workarounds {
 
     public static synchronized void stopForegroundWorkaround() {
         if (--foregroundWorkaroundCount == 0) {
+            Ln.v("Stopping Foreground Workaround");
             ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
         }
     }
