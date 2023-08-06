@@ -51,12 +51,12 @@
  * Initialize an empty VecDeque
  */
 #define sc_vecdeque_init(pv) \
-({ \
+do { \
     (pv)->cap = 0; \
     (pv)->origin = 0; \
     (pv)->size = 0; \
     (pv)->data = NULL; \
-})
+} while (0)
 
 /**
  * Destroy a VecDeque
@@ -70,10 +70,10 @@
  * Remove all items.
  */
 #define sc_vecdeque_clear(pv) \
-(void) ({ \
+do { \
     sc_vecdeque_destroy(pv); \
     sc_vecdeque_init(pv); \
-})
+} while (0)
 
 /**
  * Returns the content size
@@ -190,10 +190,11 @@ sc_vecdeque_reallocdata_(void *ptr, size_t newcap, size_t item_size,
 
     size_t right_len = MIN(size, oldcap - oldorigin);
     assert(right_len);
-    memcpy(newptr, ptr + (oldorigin * item_size), right_len * item_size);
+    memcpy(newptr, (char *) ptr + (oldorigin * item_size),
+           right_len * item_size);
 
     if (size > right_len) {
-        memcpy(newptr + (right_len * item_size), ptr,
+        memcpy((char *) newptr + (right_len * item_size), ptr,
                (size - right_len) * item_size);
     }
 
@@ -328,11 +329,11 @@ sc_vecdeque_growsize_(size_t value)
  * This function may not fail.
  */
 #define sc_vecdeque_push_noresize(pv, item) \
-(void) ({ \
+do { \
     assert(!sc_vecdeque_is_full(pv)); \
     ++(pv)->size; \
     (pv)->data[((pv)->origin + (pv)->size - 1) % (pv)->cap] = item; \
-})
+} while (0)
 
 /**
  * Push an item

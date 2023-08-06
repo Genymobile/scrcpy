@@ -215,9 +215,9 @@ execute_server(struct sc_server *server,
     cmd[count++] = SCRCPY_VERSION;
 
     unsigned dyn_idx = count; // from there, the strings are allocated
-#define ADD_PARAM(fmt, ...) { \
+#define ADD_PARAM(...) { \
         char *p; \
-        if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
+        if (asprintf(&p, ## __VA_ARGS__) == -1) { \
             goto end; \
         } \
         cmd[count++] = p; \

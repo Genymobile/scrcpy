@@ -160,7 +160,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
 
 void
 sc_control_msg_log(const struct sc_control_msg *msg) {
-#define LOG_CMSG(fmt, ...) LOGV("input: " fmt, ## __VA_ARGS__)
+#define LOG_CMSG(...) LOGV("input: " __VA_ARGS__)
     switch (msg->type) {
         case SC_CONTROL_MSG_TYPE_INJECT_KEYCODE:
             LOG_CMSG("key %-4s code=%d repeat=%" PRIu32 " meta=%06lx",
