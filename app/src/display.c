@@ -53,7 +53,7 @@ sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps) {
                 display->mipmaps = true;
             } else {
                 LOGW("Trilinear filtering disabled "
-                     "(OpenGL 3.0+ or ES 2.0+ required");
+                     "(OpenGL 3.0+ or ES 2.0+ required)");
             }
         } else {
             LOGI("Trilinear filtering disabled");
