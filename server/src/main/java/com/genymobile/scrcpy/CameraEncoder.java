@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
@@ -13,7 +14,6 @@ import android.media.MediaCodec;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.SystemClock;
 import android.view.Surface;
 
 import java.util.Arrays;
@@ -25,30 +25,30 @@ import java.util.concurrent.ExecutionException;
 
 public class CameraEncoder extends SurfaceEncoder {
 
-    private int maxSize;
-    private String cameraId;
-    private CameraPosition cameraPosition;
+    private final String cameraId;
+    private final CameraPosition cameraPosition;
 
+    private int maxSize;
     private String actualCameraId;
     private CameraDevice cameraDevice;
 
-    private HandlerThread cameraThread;
-    private Handler cameraHandler;
+    private final Handler cameraHandler;
 
     public CameraEncoder(int maxSize, String cameraId, CameraPosition cameraPosition, Streamer streamer,
-            int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
+                         int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName, boolean downsizeOnError) {
         super(streamer, videoBitRate, maxFps, codecOptions, encoderName, downsizeOnError);
 
         this.maxSize = maxSize;
         this.cameraId = cameraId;
         this.cameraPosition = cameraPosition;
 
-        cameraThread = new HandlerThread("camera");
+        HandlerThread cameraThread = new HandlerThread("camera");
         cameraThread.start();
         cameraHandler = new Handler(cameraThread.getLooper());
     }
 
     @SuppressLint("MissingPermission")
+    @TargetApi(Build.VERSION_CODES.N)
     private CameraDevice openCamera(String id)
             throws CameraAccessException, InterruptedException {
         Ln.v("Open Camera: " + id);
@@ -95,7 +95,7 @@ public class CameraEncoder extends SurfaceEncoder {
         }
     }
 
-    @SuppressWarnings("deprecation")
+    @TargetApi(Build.VERSION_CODES.N)
     private CameraCaptureSession createCaptureSession(CameraDevice camera, Surface surface)
             throws CameraAccessException, InterruptedException {
         Ln.v("Create Capture Session");
@@ -121,6 +121,7 @@ public class CameraEncoder extends SurfaceEncoder {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.N)
     private void setRepeatingRequest(CameraCaptureSession session, CaptureRequest request)
             throws CameraAccessException, InterruptedException {
         Ln.v("Set Repeating Request");
@@ -129,13 +130,13 @@ public class CameraEncoder extends SurfaceEncoder {
         session.setRepeatingRequest(request, new CameraCaptureSession.CaptureCallback() {
             @Override
             public void onCaptureStarted(CameraCaptureSession session, CaptureRequest request,
-                    long timestamp, long frameNumber) {
+                                         long timestamp, long frameNumber) {
                 future.complete(null);
             }
 
             @Override
             public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request,
-                    CaptureFailure failure) {
+                                        CaptureFailure failure) {
                 future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_ERROR));
             }
         }, cameraHandler);
@@ -148,7 +149,11 @@ public class CameraEncoder extends SurfaceEncoder {
     }
 
     @Override
-    protected void initialize() {
+    protected void initialize() throws ConfigurationException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            Ln.e("Camera mirroring is not support before Android 12");
+            throw new ConfigurationException("Camera mirroring is not supported");
+        }
     }
 
     @Override
@@ -219,9 +224,6 @@ public class CameraEncoder extends SurfaceEncoder {
 
     private void setSurfaceInternal(Surface surface) throws CameraAccessException {
         try {
-            // openCamera, createCaptureSession and setRepeatingRequest all
-            // requires foreground workaround on Android 11.
-            // getCameraIdList and getCameraCharacteristics don't need that.
             cameraDevice = openCamera(actualCameraId);
             CameraCaptureSession session = createCaptureSession(cameraDevice, surface);
             CaptureRequest.Builder requestBuilder = cameraDevice
@@ -236,41 +238,12 @@ public class CameraEncoder extends SurfaceEncoder {
         }
     }
 
-    private void trySetSurface(int attempts, int delayMs, Surface surface) throws CaptureForegroundException {
-        while (attempts-- > 0) {
-            // Wait for activity to start
-            SystemClock.sleep(delayMs);
-            try {
-                setSurfaceInternal(surface);
-                return; // it worked
-            } catch (CameraAccessException e) {
-                if (attempts == 0) {
-                    Ln.e("Failed to start camera capture");
-                    Ln.e("On Android 11, camera capture must be started in the foreground, make sure that the device is unlocked when starting "
-                            + "scrcpy.");
-                    throw new CaptureForegroundException();
-                } else {
-                    Ln.d("Failed to start camera capture, retrying...");
-                }
-            }
-        }
-    }
-
     @Override
-    protected void setSurface(Surface surface) throws CaptureForegroundException {
-        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-            Workarounds.startForegroundWorkaround();
-            try {
-                trySetSurface(5, 100, surface);
-            } finally {
-                // Workarounds.stopForegroundWorkaround();
-            }
-        } else {
-            try {
-                setSurfaceInternal(surface);
-            } catch (CameraAccessException e) {
-                throw new RuntimeException(e);
-            }
+    protected void setSurface(Surface surface) {
+        try {
+            setSurfaceInternal(surface);
+        } catch (CameraAccessException e) {
+            throw new RuntimeException(e);
         }
     }
 

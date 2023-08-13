@@ -189,7 +189,8 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_VIDEO_SOURCE,
         .longopt = "video-source",
         .argdesc = "source",
-        .text = "Select the video source (display or camera).\n"
+        .text = "Select the video source (display or camera) to mirror.\n"
+                "Camera mirroring requires Android 12.\n"
                 "Default is display.",
     },
     {

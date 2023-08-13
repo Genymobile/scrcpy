@@ -48,13 +48,13 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
         this.downsizeOnError = downsizeOnError;
     }
 
-    protected abstract void initialize();
+    protected abstract void initialize() throws ConfigurationException;
 
-    protected abstract Size getSize() throws CaptureForegroundException, ConfigurationException;
+    protected abstract Size getSize() throws AudioCaptureForegroundException, ConfigurationException;
 
     protected abstract void setSize(int size);
 
-    protected abstract void setSurface(Surface surface) throws CaptureForegroundException;
+    protected abstract void setSurface(Surface surface) throws AudioCaptureForegroundException;
 
     protected abstract void dispose();
 
@@ -63,7 +63,7 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
     }
 
     protected void startStream()
-            throws CaptureForegroundException, IOException, ConfigurationException {
+            throws AudioCaptureForegroundException, IOException, ConfigurationException {
         initialize();
 
         Codec codec = streamer.getCodec();
@@ -260,7 +260,7 @@ public abstract class SurfaceEncoder implements AsyncProcessor {
 
             try {
                 startStream();
-            } catch (ConfigurationException | CaptureForegroundException e) {
+            } catch (ConfigurationException | AudioCaptureForegroundException e) {
                 // Do not print stack trace, a user-friendly error-message has already been
                 // logged
             } catch (IOException e) {

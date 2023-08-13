@@ -4,10 +4,8 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.AttributionSource;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.hardware.camera2.CameraManager;
 import android.media.AudioAttributes;
@@ -22,13 +20,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-import com.genymobile.scrcpy.wrappers.ServiceManager;
-
 public final class Workarounds {
 
     private static Class<?> activityThreadClass;
     private static Object activityThread;
-    private static Context systemContext;
     private static CameraManager cameraManager;
 
     private Workarounds() {
@@ -96,24 +91,20 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    @SuppressLint("PrivateApi")
-    private static Object getActivityThread() throws ReflectiveOperationException {
+    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
+    private static void fillActivityThread() throws Exception {
         if (activityThread == null) {
             // ActivityThread activityThread = new ActivityThread();
             activityThreadClass = Class.forName("android.app.ActivityThread");
             Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
             activityThreadConstructor.setAccessible(true);
             activityThread = activityThreadConstructor.newInstance();
-        }
-        return activityThread;
-    }
 
-    private static void fillActivityThread() throws Exception {
-        // ActivityThread.sCurrentActivityThread = activityThread;
-        activityThreadClass = Class.forName("android.app.ActivityThread");
-        Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
-        sCurrentActivityThreadField.setAccessible(true);
-        sCurrentActivityThreadField.set(null, getActivityThread());
+            // ActivityThread.sCurrentActivityThread = activityThread;
+            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
+            sCurrentActivityThreadField.setAccessible(true);
+            sCurrentActivityThreadField.set(null, activityThread);
+        }
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -136,7 +127,6 @@ public final class Workarounds {
             appInfoField.set(appBindData, applicationInfo);
 
             // activityThread.mBoundApplication = appBindData;
-            activityThreadClass = Class.forName("android.app.ActivityThread");
             Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
             mBoundApplicationField.setAccessible(true);
             mBoundApplicationField.set(activityThread, appBindData);
@@ -157,7 +147,6 @@ public final class Workarounds {
             baseField.set(app, FakeContext.get());
 
             // activityThread.mInitialApplication = app;
-            activityThreadClass = Class.forName("android.app.ActivityThread");
             Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
             mInitialApplicationField.setAccessible(true);
             mInitialApplicationField.set(activityThread, app);
@@ -167,29 +156,22 @@ public final class Workarounds {
         }
     }
 
-    @SuppressLint("PrivateApi")
-    public static Context getSystemContext() throws ReflectiveOperationException {
-        if (systemContext == null) {
+    public static void fillBaseContext() {
+        try {
+            fillActivityThread();
+
             try {
                 // Hide warnings on XiaoMi devices
                 Class<?> themeManagerStubClass = Class.forName("android.content.res.ThemeManagerStub");
                 Field sResourceField = themeManagerStubClass.getDeclaredField("sResource");
                 sResourceField.setAccessible(true);
                 sResourceField.set(null, null);
-            } catch (ReflectiveOperationException ignore) { }
+            } catch (ReflectiveOperationException ignore) {
+            }
 
-            Object activityThread = getActivityThread();
             Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
-            systemContext = (Context) getSystemContextMethod.invoke(activityThread);
-        }
-        return systemContext;
-    }
-
-    public static void fillBaseContext() {
-        try {
-            fillActivityThread();
-
-            FakeContext.get().setBaseContext(getSystemContext());
+            Context context = (Context) getSystemContextMethod.invoke(activityThread);
+            FakeContext.get().setBaseContext(context);
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill base context: " + throwable.getMessage());
@@ -345,33 +327,4 @@ public final class Workarounds {
         return cameraManager;
     }
 
-    private static int foregroundWorkaroundCount = 0;
-
-    public static synchronized void startForegroundWorkaround() {
-        if (foregroundWorkaroundCount++ == 0) {
-            Ln.v("Starting Foreground Workaround");
-
-            // Android 11 requires Apps to be at foreground to record audio.
-            // Normally, each App has its own user ID, so Android checks whether the
-            // requesting App has the user ID that's at the foreground.
-            // But scrcpy server is NOT an App, it's a Java application started from Android
-            // shell, so it has the same user ID (2000) with Android
-            // shell ("com.android.shell").
-            // If there is an Activity from Android shell running at foreground, then the
-            // permission system will believe scrcpy is also in the
-            // foreground.
-            Intent intent = new Intent(Intent.ACTION_MAIN);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            intent.addCategory(Intent.CATEGORY_LAUNCHER);
-            intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
-            ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
-        }
-    }
-
-    public static synchronized void stopForegroundWorkaround() {
-        if (--foregroundWorkaroundCount == 0) {
-            Ln.v("Stopping Foreground Workaround");
-            ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
-        }
-    }
 }
