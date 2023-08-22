@@ -154,7 +154,7 @@ public final class Workarounds {
         }
     }
 
-    public static void fillBaseContext() {
+    private static void fillBaseContext() {
         try {
             fillActivityThread();
 
