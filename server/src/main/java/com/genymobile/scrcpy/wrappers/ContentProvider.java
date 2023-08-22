@@ -14,7 +14,7 @@ import java.io.Closeable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class ContentProvider implements Closeable {
+public final class ContentProvider implements Closeable {
 
     public static final String TABLE_SYSTEM = "system";
     public static final String TABLE_SECURE = "secure";

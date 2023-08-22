@@ -7,7 +7,7 @@ import android.os.IInterface;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class StatusBarManager {
+public final class StatusBarManager {
 
     private final IInterface manager;
     private Method expandNotificationsPanelMethod;

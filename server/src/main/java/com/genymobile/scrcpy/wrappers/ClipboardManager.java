@@ -11,7 +11,7 @@ import android.os.IInterface;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public class ClipboardManager {
+public final class ClipboardManager {
     private final IInterface manager;
     private Method getPrimaryClipMethod;
     private Method setPrimaryClipMethod;

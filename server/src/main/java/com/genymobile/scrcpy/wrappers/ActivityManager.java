@@ -17,7 +17,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-public class ActivityManager {
+public final class ActivityManager {
 
     private final IInterface manager;
     private Method getContentProviderExternalMethod;
