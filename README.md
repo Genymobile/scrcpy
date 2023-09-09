@@ -1,6 +1,7 @@
 # scrcpy (v2.1.1)
 
-<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<!--<img src="./app/data/icon.svg?sanitize=true" width="128" height="128" alt="scrcpy" align="right" />-->
+ <img src="https://raw.github.com/Genymobile/scrcpy/master/app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _pronounced "**scr**een **c**o**py**"_
 
@@ -9,7 +10,7 @@ USB or [over TCP/IP](doc/connection.md#tcpip-wireless), and allows to control th
 device with the keyboard and the mouse of the computer. It does not require any
 _root_ access. It works on _Linux_, _Windows_ and _macOS_.
 
-![screenshot](assets/screenshot-debian-600.jpg)
+![screenshot](https://raw.github.com/Genymobile/scrcpy/master/assets/screenshot-debian-600.jpg)
 
 It focuses on:
 
