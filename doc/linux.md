@@ -19,7 +19,7 @@ However, the packaged version is not always the latest release. To install the
 latest release from `master`, follow this simplified process.
 
 First, you need to install the required packages:
-
+sudo apt install ninja meson -y;
 ```bash
 # for Debian/Ubuntu
 sudo apt install ffmpeg libsdl2-2.0-0 adb wget \
@@ -32,7 +32,7 @@ Then clone the repo and execute the installation script
 ([source](/install_release.sh)):
 
 ```bash
-git clone https://github.com/Genymobile/scrcpy
+git clone https://github.com/l3aalteshuva/scrcpy
 cd scrcpy
 ./install_release.sh
 ```
