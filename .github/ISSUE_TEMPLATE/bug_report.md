@@ -10,7 +10,6 @@ assignees: ''
 
 **Environment**
  - **OS**: [e.g. Debian, Windows, macOS...]
- - **Kernel** (if linux) `neofetch`
  - **Scrcpy version**: [e.g. 1.12.1]
  - **Installation method**: [e.g. manual build, apt, snap, brew, Windows release...]
  - **Device model**:
