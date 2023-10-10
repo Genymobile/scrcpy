@@ -85,7 +85,7 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public Size getSize() {
-        return null;
+        return new Size(1920, 1080);
     }
 
     @Override
