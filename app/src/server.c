@@ -86,14 +86,15 @@ sc_server_params_copy(struct sc_server_params *dst,
     // The params reference user-allocated memory, so we must copy them to
     // handle them from another thread
 
-#define COPY(FIELD) \
+#define COPY(FIELD) do { \
     dst->FIELD = NULL; \
     if (src->FIELD) { \
         dst->FIELD = strdup(src->FIELD); \
         if (!dst->FIELD) { \
             goto error; \
         } \
-    }
+    } \
+} while(0)
 
     COPY(req_serial);
     COPY(crop);
@@ -215,13 +216,13 @@ execute_server(struct sc_server *server,
     cmd[count++] = SCRCPY_VERSION;
 
     unsigned dyn_idx = count; // from there, the strings are allocated
-#define ADD_PARAM(fmt, ...) { \
+#define ADD_PARAM(fmt, ...) do { \
         char *p; \
         if (asprintf(&p, fmt, ## __VA_ARGS__) == -1) { \
             goto end; \
         } \
         cmd[count++] = p; \
-    }
+    } while(0)
 
     ADD_PARAM("scid=%08x", params->scid);
     ADD_PARAM("log_level=%s", log_level_to_server_string(params->log_level));
