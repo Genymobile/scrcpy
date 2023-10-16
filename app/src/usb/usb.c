@@ -93,7 +93,7 @@ sc_usb_device_move(struct sc_usb_device *dst, struct sc_usb_device *src) {
     src->product = NULL;
 }
 
-void
+static void
 sc_usb_devices_destroy(struct sc_vec_usb_devices *usb_devices) {
     for (size_t i = 0; i < usb_devices->size; ++i) {
         sc_usb_device_destroy(&usb_devices->data[i]);
