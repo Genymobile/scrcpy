@@ -90,7 +90,7 @@ push_event(uint32_t type, const char *name) {
 #define PUSH_EVENT(TYPE) push_event(TYPE, # TYPE)
 
 #ifdef _WIN32
-BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
+static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
         PUSH_EVENT(SDL_QUIT);
         return TRUE;

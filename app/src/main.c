@@ -23,7 +23,7 @@
 #include "util/str.h"
 #endif
 
-int
+static int
 main_scrcpy(int argc, char *argv[]) {
 #ifdef _WIN32
     // disable buffering, we want logs immediately
