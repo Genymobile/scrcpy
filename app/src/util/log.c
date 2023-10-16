@@ -147,7 +147,7 @@ sc_sdl_log_print(void *userdata, int category, SDL_LogPriority priority,
 }
 
 void
-sc_log_configure() {
+sc_log_configure(void) {
     SDL_LogSetOutputFunction(sc_sdl_log_print, NULL);
     // Redirect FFmpeg logs to SDL logs
     av_log_set_callback(sc_av_log_callback);
