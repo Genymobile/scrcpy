@@ -1085,7 +1085,7 @@ print_shortcut(const struct sc_shortcut *shortcut, unsigned cols) {
     while (shortcut->shortcuts[i]) {
         printf("    %s\n", shortcut->shortcuts[i]);
         ++i;
-    };
+    }
 
     char *text = sc_str_wrap_lines(shortcut->text, cols, 8);
     if (!text) {
