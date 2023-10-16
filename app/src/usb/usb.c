@@ -3,9 +3,6 @@
 #include <assert.h>
 
 #include "util/log.h"
-#include "util/vector.h"
-
-struct sc_vec_usb_devices SC_VECTOR(struct sc_usb_device);
 
 static char *
 read_string(libusb_device_handle *handle, uint8_t desc_index) {

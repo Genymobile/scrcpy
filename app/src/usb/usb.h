@@ -7,6 +7,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include "util/thread.h"
+#include "util/vector.h"
 
 struct sc_usb {
     libusb_context *context;
@@ -39,6 +40,8 @@ struct sc_usb_device {
     bool selected;
 };
 
+struct sc_vec_usb_devices SC_VECTOR(struct sc_usb_device);
+
 void
 sc_usb_device_destroy(struct sc_usb_device *usb_device);
 
@@ -53,6 +56,9 @@ sc_usb_device_destroy(struct sc_usb_device *usb_device);
  */
 void
 sc_usb_device_move(struct sc_usb_device *dst, struct sc_usb_device *src);
+
+void
+sc_usb_devices_destroy(struct sc_vec_usb_devices *usb_devices);
 
 void
 sc_usb_devices_destroy_all(struct sc_usb_device *usb_devices, size_t count);
