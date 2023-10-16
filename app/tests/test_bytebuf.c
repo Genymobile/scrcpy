@@ -5,7 +5,7 @@
 
 #include "util/bytebuf.h"
 
-void test_bytebuf_simple(void) {
+static void test_bytebuf_simple(void) {
     struct sc_bytebuf buf;
     uint8_t data[20];
 
@@ -34,7 +34,7 @@ void test_bytebuf_simple(void) {
     sc_bytebuf_destroy(&buf);
 }
 
-void test_bytebuf_boundaries(void) {
+static void test_bytebuf_boundaries(void) {
     struct sc_bytebuf buf;
     uint8_t data[20];
 
@@ -71,7 +71,7 @@ void test_bytebuf_boundaries(void) {
     sc_bytebuf_destroy(&buf);
 }
 
-void test_bytebuf_two_steps_write(void) {
+static void test_bytebuf_two_steps_write(void) {
     struct sc_bytebuf buf;
     uint8_t data[20];
 
