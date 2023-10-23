@@ -70,7 +70,7 @@ argv_to_string(const char *const *argv, char *buf, size_t bufsize) {
 }
 
 static void
-show_adb_installation_msg() {
+show_adb_installation_msg(void) {
 #ifndef __WINDOWS__
     static const struct {
         const char *binary;

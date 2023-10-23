@@ -358,7 +358,7 @@ static void test_index_of_column(void) {
     assert(sc_str_index_of_column("  a bc  d", 1, " ") == 2);
 }
 
-static void test_remove_trailing_cr() {
+static void test_remove_trailing_cr(void) {
     char s[] = "abc\r";
     sc_str_remove_trailing_cr(s, sizeof(s) - 1);
     assert(!strcmp(s, "abc"));

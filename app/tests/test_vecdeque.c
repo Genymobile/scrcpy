@@ -102,7 +102,7 @@ static void test_vecdeque_reserve(void) {
     sc_vecdeque_destroy(&vdq);
 }
 
-static void test_vecdeque_grow() {
+static void test_vecdeque_grow(void) {
     struct SC_VECDEQUE(int) vdq = SC_VECDEQUE_INITIALIZER;
 
     bool ok = sc_vecdeque_reserve(&vdq, 20);
@@ -142,7 +142,7 @@ static void test_vecdeque_grow() {
     sc_vecdeque_destroy(&vdq);
 }
 
-static void test_vecdeque_push_hole() {
+static void test_vecdeque_push_hole(void) {
     struct SC_VECDEQUE(int) vdq = SC_VECDEQUE_INITIALIZER;
 
     bool ok = sc_vecdeque_reserve(&vdq, 20);

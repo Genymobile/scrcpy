@@ -271,7 +271,7 @@ error:
 }
 
 SDL_Surface *
-scrcpy_icon_load() {
+scrcpy_icon_load(void) {
     char *icon_path = get_icon_path();
     if (!icon_path) {
         return NULL;

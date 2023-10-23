@@ -297,7 +297,7 @@ sc_timeout_on_timeout(struct sc_timeout *timeout, void *userdata) {
 
 // Generate a scrcpy id to differentiate multiple running scrcpy instances
 static uint32_t
-scrcpy_generate_scid() {
+scrcpy_generate_scid(void) {
     struct sc_rand rand;
     sc_rand_init(&rand);
     // Only use 31 bits to avoid issues with signed values on the Java-side

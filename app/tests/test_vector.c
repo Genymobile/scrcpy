@@ -187,7 +187,7 @@ static void test_vector_index_of(void) {
     sc_vector_destroy(&vec);
 }
 
-static void test_vector_grow() {
+static void test_vector_grow(void) {
     struct SC_VECTOR(int) vec = SC_VECTOR_INITIALIZER;
 
     bool ok;
