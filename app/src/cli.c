@@ -1993,10 +1993,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 return false;
 #endif
             case OPT_LIST_ENCODERS:
-                opts->list_encoders = true;
+                opts->list |= SC_OPTION_LIST_ENCODERS;
                 break;
             case OPT_LIST_DISPLAYS:
-                opts->list_displays = true;
+                opts->list |= SC_OPTION_LIST_DISPLAYS;
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;

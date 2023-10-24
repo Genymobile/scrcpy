@@ -153,6 +153,10 @@ public class Options {
         return powerOn;
     }
 
+    public boolean getList() {
+        return listEncoders || listDisplays;
+    }
+
     public boolean getListEncoders() {
         return listEncoders;
     }
