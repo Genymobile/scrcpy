@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class CameraCapture extends SurfaceCapture {
 
@@ -32,6 +33,8 @@ public class CameraCapture extends SurfaceCapture {
     private Handler cameraHandler;
     private CameraDevice cameraDevice;
     private Executor cameraExecutor;
+
+    private final AtomicBoolean disconnected = new AtomicBoolean();
 
     public CameraCapture(String explicitCameraId, Size explicitSize) {
         this.explicitCameraId = explicitCameraId;
@@ -99,7 +102,8 @@ public class CameraCapture extends SurfaceCapture {
             @Override
             public void onDisconnected(CameraDevice camera) {
                 Ln.w("Camera disconnected");
-                // TODO
+                disconnected.set(true);
+                requestReset();
             }
 
             @Override
@@ -179,5 +183,10 @@ public class CameraCapture extends SurfaceCapture {
         } catch (ExecutionException e) {
             throw (CameraAccessException) e.getCause();
         }
+    }
+
+    @Override
+    public boolean isClosed() {
+        return disconnected.get();
     }
 }
