@@ -181,6 +181,11 @@ public class SurfaceEncoder implements AsyncProcessor {
             }
         }
 
+        if (capture.isClosed()) {
+            // The capture might have been closed internally (for example if the camera is disconnected)
+            alive = false;
+        }
+
         return !eof && alive;
     }
 
