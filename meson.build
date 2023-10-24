@@ -7,6 +7,8 @@ project('scrcpy', 'c',
             'b_ndebug=if-release',
         ])
 
+add_project_arguments('-Wmissing-prototypes', language: 'c')
+
 if get_option('compile_app')
     subdir('app')
 endif
