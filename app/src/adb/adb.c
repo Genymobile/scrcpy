@@ -216,30 +216,44 @@ sc_adb_kill_server(struct sc_intr *intr, unsigned flags) {
 bool
 sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
                const char *device_socket_name, unsigned flags) {
-    char local[4 + 5 + 1]; // tcp:PORT
-    char remote[108 + 14 + 1]; // localabstract:NAME
-    sprintf(local, "tcp:%" PRIu16, local_port);
-    snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
+    char *local;
+    if (asprintf(&local, "tcp:%" PRIu16, local_port) == -1) {
+        LOG_OOM();
+        return false;
+    }
+
+    char *remote;
+    if (asprintf(&remote, "localabstract:%s", device_socket_name) == -1) {
+        LOG_OOM();
+        free(local);
+        return false;
+    }
 
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "forward", local, remote);
 
     sc_pid pid = sc_adb_execute(argv, flags);
+    free(remote);
+    free(local);
     return process_check_success_intr(intr, pid, "adb forward", flags);
 }
 
 bool
 sc_adb_forward_remove(struct sc_intr *intr, const char *serial,
                       uint16_t local_port, unsigned flags) {
-    char local[4 + 5 + 1]; // tcp:PORT
-    sprintf(local, "tcp:%" PRIu16, local_port);
+    char *local;
+    if (asprintf(&local, "tcp:%" PRIu16, local_port) == -1) {
+        LOG_OOM();
+        return false;
+    }
 
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "forward", "--remove", local);
 
     sc_pid pid = sc_adb_execute(argv, flags);
+    free(local);
     return process_check_success_intr(intr, pid, "adb forward --remove", flags);
 }
 
@@ -247,29 +261,45 @@ bool
 sc_adb_reverse(struct sc_intr *intr, const char *serial,
                const char *device_socket_name, uint16_t local_port,
                unsigned flags) {
-    char local[4 + 5 + 1]; // tcp:PORT
-    char remote[108 + 14 + 1]; // localabstract:NAME
-    sprintf(local, "tcp:%" PRIu16, local_port);
-    snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     assert(serial);
+
+    char *local;
+    if (asprintf(&local, "tcp:%" PRIu16, local_port) == -1) {
+        LOG_OOM();
+        return false;
+    }
+
+    char *remote;
+    if (asprintf(&remote, "localabstract:%s", device_socket_name) == -1) {
+        LOG_OOM();
+        free(local);
+        return false;
+    }
+
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "reverse", remote, local);
 
     sc_pid pid = sc_adb_execute(argv, flags);
+    free(remote);
+    free(local);
     return process_check_success_intr(intr, pid, "adb reverse", flags);
 }
 
 bool
 sc_adb_reverse_remove(struct sc_intr *intr, const char *serial,
                       const char *device_socket_name, unsigned flags) {
-    char remote[108 + 14 + 1]; // localabstract:NAME
-    snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
+    char *remote;
+    if (asprintf(&remote, "localabstract:%s", device_socket_name) == -1) {
+        LOG_OOM();
+        return false;
+    }
 
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "reverse", "--remove", remote);
 
     sc_pid pid = sc_adb_execute(argv, flags);
+    free(remote);
     return process_check_success_intr(intr, pid, "adb reverse --remove", flags);
 }
 
@@ -332,14 +362,18 @@ sc_adb_install(struct sc_intr *intr, const char *serial, const char *local,
 bool
 sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
              unsigned flags) {
-    char port_string[5 + 1];
-    sprintf(port_string, "%" PRIu16, port);
+    char *port_string;
+    if (asprintf(&port_string, "%" PRIu16, port) == -1) {
+        LOG_OOM();
+        return false;
+    }
 
     assert(serial);
     const char *const argv[] =
         SC_ADB_COMMAND("-s", serial, "tcpip", port_string);
 
     sc_pid pid = sc_adb_execute(argv, flags);
+    free(port_string);
     return process_check_success_intr(intr, pid, "adb tcpip", flags);
 }
 
