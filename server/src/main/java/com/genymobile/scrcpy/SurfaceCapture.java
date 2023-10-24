@@ -59,4 +59,13 @@ public abstract class SurfaceCapture {
      * @param maxSize Maximum size
      */
     public abstract boolean setMaxSize(int maxSize);
+
+    /**
+     * Indicate if the capture has been closed internally.
+     *
+     * @return {@code true} is the capture is closed, {@code false} otherwise.
+     */
+    public boolean isClosed() {
+        return false;
+    }
 }
