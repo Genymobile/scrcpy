@@ -311,10 +311,10 @@ execute_server(struct sc_server *server,
         // By default, power_on is true
         ADD_PARAM("power_on=false");
     }
-    if (params->list_encoders) {
+    if (params->list & SC_OPTION_LIST_ENCODERS) {
         ADD_PARAM("list_encoders=true");
     }
-    if (params->list_displays) {
+    if (params->list & SC_OPTION_LIST_DISPLAYS) {
         ADD_PARAM("list_displays=true");
     }
 
@@ -896,7 +896,7 @@ run_server(void *data) {
 
     // If --list-* is passed, then the server just prints the requested data
     // then exits.
-    if (params->list_encoders || params->list_displays) {
+    if (params->list) {
         sc_pid pid = execute_server(server, params);
         if (pid == SC_PROCESS_NONE) {
             goto error_connection_failed;

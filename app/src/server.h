@@ -56,9 +56,8 @@ struct sc_server_params {
     bool select_tcpip;
     bool cleanup;
     bool power_on;
-    bool list_encoders;
-    bool list_displays;
     bool kill_adb_on_close;
+    uint8_t list;
 };
 
 struct sc_server {
