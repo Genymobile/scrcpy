@@ -2219,6 +2219,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
+    if (opts->audio && opts->audio_source == SC_AUDIO_SOURCE_AUTO) {
+        // Select the audio source according to the video source
+        if (opts->video_source == SC_VIDEO_SOURCE_DISPLAY) {
+            opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
+        } else {
+            opts->audio_source = SC_AUDIO_SOURCE_MIC;
+            LOGI("Camera video source: microphone audio source selected");
+        }
+    }
+
     if (opts->record_format && !opts->record_filename) {
         LOGE("Record format specified without recording");
         return false;
