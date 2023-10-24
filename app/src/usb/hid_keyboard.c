@@ -27,7 +27,7 @@
 // keyboard support, though OS could support more keys via modifying the report
 // desc. 6 should be enough for scrcpy.
 #define HID_KEYBOARD_MAX_KEYS 6
-#define HID_KEYBOARD_EVENT_SIZE (2 + HID_KEYBOARD_MAX_KEYS)
+#define HID_KEYBOARD_EVENT_SIZE (HID_KEYBOARD_INDEX_KEYS + HID_KEYBOARD_MAX_KEYS)
 
 #define HID_RESERVED 0x00
 #define HID_ERROR_ROLL_OVER 0x01
@@ -240,7 +240,7 @@ sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
 
     buffer[HID_KEYBOARD_INDEX_MODIFIER] = HID_MODIFIER_NONE;
     buffer[1] = HID_RESERVED;
-    memset(&buffer[HID_KEYBOARD_INDEX_KEYS], 0, HID_KEYBOARD_MAX_KEYS);
+    memset(buffer + HID_KEYBOARD_INDEX_KEYS, 0, HID_KEYBOARD_MAX_KEYS);
 
     sc_hid_event_init(hid_event, HID_KEYBOARD_ACCESSORY_ID, buffer,
                       HID_KEYBOARD_EVENT_SIZE);
@@ -398,9 +398,6 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
         LOGW("Register HID keyboard failed");
         return false;
     }
-
-    // Reset all states
-    memset(kb->keys, false, SC_HID_KEYBOARD_KEYS);
 
     kb->mod_lock_synchronized = false;
 

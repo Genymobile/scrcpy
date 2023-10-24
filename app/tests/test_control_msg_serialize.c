@@ -68,7 +68,7 @@ static void test_serialize_inject_text_long(void) {
     expected[2] = 0x00;
     expected[3] = 0x01;
     expected[4] = 0x2c; // text length (32 bits)
-    memset(&expected[5], 'a', SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
+    memset(expected + 5, 'a', SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
     assert(!memcmp(buf, expected, sizeof(expected)));
 }

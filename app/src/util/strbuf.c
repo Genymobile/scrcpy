@@ -71,7 +71,7 @@ sc_strbuf_append_n(struct sc_strbuf *buf, const char c, size_t n) {
         return false;
     }
 
-    memset(&buf->s[buf->len], c, n);
+    memset(buf->s + buf->len, c, n);
     buf->len += n;
     buf->s[buf->len] = '\0';
 
