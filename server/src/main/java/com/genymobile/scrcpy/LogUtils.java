@@ -7,6 +7,8 @@ import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaCodec;
 
 import java.util.List;
 
@@ -79,7 +81,7 @@ public final class LogUtils {
         }
     }
 
-    public static String buildCameraListMessage() {
+    public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
         try {
@@ -96,6 +98,14 @@ public final class LogUtils {
 
                     Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
                     builder.append(activeSize.width()).append("x").append(activeSize.height()).append(')');
+
+                    if (includeSizes) {
+                        StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+                        android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
+                        for (android.util.Size size : sizes) {
+                            builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                        }
+                    }
                 }
             }
         } catch (CameraAccessException e) {
