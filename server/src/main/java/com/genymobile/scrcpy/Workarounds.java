@@ -32,7 +32,7 @@ public final class Workarounds {
         Workarounds.prepareMainLooper();
 
         boolean mustFillAppInfo = false;
-        boolean mustFillBaseContext = false;
+        boolean mustFillBaseContext = true;
         boolean mustFillAppContext = false;
 
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
