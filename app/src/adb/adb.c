@@ -218,7 +218,7 @@ sc_adb_forward(struct sc_intr *intr, const char *serial, uint16_t local_port,
                const char *device_socket_name, unsigned flags) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
-    sprintf(local, "tcp:%" PRIu16, local_port);
+    snprintf(local, sizeof(local), "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
 
     assert(serial);
@@ -233,7 +233,7 @@ bool
 sc_adb_forward_remove(struct sc_intr *intr, const char *serial,
                       uint16_t local_port, unsigned flags) {
     char local[4 + 5 + 1]; // tcp:PORT
-    sprintf(local, "tcp:%" PRIu16, local_port);
+    snprintf(local, sizeof(local), "tcp:%" PRIu16, local_port);
 
     assert(serial);
     const char *const argv[] =
@@ -249,7 +249,7 @@ sc_adb_reverse(struct sc_intr *intr, const char *serial,
                unsigned flags) {
     char local[4 + 5 + 1]; // tcp:PORT
     char remote[108 + 14 + 1]; // localabstract:NAME
-    sprintf(local, "tcp:%" PRIu16, local_port);
+    snprintf(local, sizeof(local), "tcp:%" PRIu16, local_port);
     snprintf(remote, sizeof(remote), "localabstract:%s", device_socket_name);
     assert(serial);
     const char *const argv[] =
@@ -333,7 +333,7 @@ bool
 sc_adb_tcpip(struct sc_intr *intr, const char *serial, uint16_t port,
              unsigned flags) {
     char port_string[5 + 1];
-    sprintf(port_string, "%" PRIu16, port);
+    snprintf(port_string, sizeof(port_string), "%" PRIu16, port);
 
     assert(serial);
     const char *const argv[] =
