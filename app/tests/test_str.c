@@ -269,21 +269,25 @@ static void test_parse_integer_with_suffix(void) {
 
     char buf[32];
 
-    sprintf(buf, "%ldk", LONG_MAX / 2000);
+    int r = snprintf(buf, sizeof(buf), "%ldk", LONG_MAX / 2000);
+    assert(r >= 0 && (size_t) r < sizeof(buf));
     ok = sc_str_parse_integer_with_suffix(buf, &value);
     assert(ok);
     assert(value == LONG_MAX / 2000 * 1000);
 
-    sprintf(buf, "%ldm", LONG_MAX / 2000);
+    r = snprintf(buf, sizeof(buf), "%ldm", LONG_MAX / 2000);
+    assert(r >= 0 && (size_t) r < sizeof(buf));
     ok = sc_str_parse_integer_with_suffix(buf, &value);
     assert(!ok);
 
-    sprintf(buf, "%ldk", LONG_MIN / 2000);
+    r = snprintf(buf, sizeof(buf), "%ldk", LONG_MIN / 2000);
+    assert(r >= 0 && (size_t) r < sizeof(buf));
     ok = sc_str_parse_integer_with_suffix(buf, &value);
     assert(ok);
     assert(value == LONG_MIN / 2000 * 1000);
 
-    sprintf(buf, "%ldm", LONG_MIN / 2000);
+    r = snprintf(buf, sizeof(buf), "%ldm", LONG_MIN / 2000);
+    assert(r >= 0 && (size_t) r < sizeof(buf));
     ok = sc_str_parse_integer_with_suffix(buf, &value);
     assert(!ok);
 }
