@@ -195,7 +195,7 @@ public final class Server {
 
         Ln.initLogLevel(options.getLogLevel());
 
-        if (options.getListEncoders() || options.getListDisplays()) {
+        if (options.getList()) {
             if (options.getCleanup()) {
                 CleanUp.unlinkSelf();
             }
