@@ -27,7 +27,8 @@
 // keyboard support, though OS could support more keys via modifying the report
 // desc. 6 should be enough for scrcpy.
 #define HID_KEYBOARD_MAX_KEYS 6
-#define HID_KEYBOARD_EVENT_SIZE (2 + HID_KEYBOARD_MAX_KEYS)
+#define HID_KEYBOARD_EVENT_SIZE \
+    (HID_KEYBOARD_INDEX_KEYS + HID_KEYBOARD_MAX_KEYS)
 
 #define HID_RESERVED 0x00
 #define HID_ERROR_ROLL_OVER 0x01
