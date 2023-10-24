@@ -179,9 +179,10 @@ struct scrcpy_options {
     bool video;
     bool audio;
     bool require_audio;
-    bool list_encoders;
-    bool list_displays;
     bool kill_adb_on_close;
+#define SC_OPTION_LIST_ENCODERS 0x1
+#define SC_OPTION_LIST_DISPLAYS 0x2
+    uint8_t list;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
