@@ -193,9 +193,9 @@ public final class Server {
             if (options.getListDisplays()) {
                 Ln.i(LogUtils.buildDisplayListMessage());
             }
-            if (options.getListCameras()) {
+            if (options.getListCameras() || options.getListCameraSizes()) {
                 Workarounds.apply(false, true);
-                Ln.i(LogUtils.buildCameraListMessage());
+                Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
             }
             // Just print the requested data, do not mirror
             return;

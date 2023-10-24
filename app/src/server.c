@@ -320,6 +320,9 @@ execute_server(struct sc_server *server,
     if (params->list & SC_OPTION_LIST_CAMERAS) {
         ADD_PARAM("list_cameras=true");
     }
+    if (params->list & SC_OPTION_LIST_CAMERA_SIZES) {
+        ADD_PARAM("list_camera_sizes=true");
+    }
 
 #undef ADD_PARAM
 
