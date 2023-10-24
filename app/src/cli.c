@@ -2261,7 +2261,7 @@ sc_get_pause_on_exit(int argc, char *argv[]) {
         }
     }
 
-    return false;
+    return SC_PAUSE_ON_EXIT_FALSE;
 }
 
 bool
