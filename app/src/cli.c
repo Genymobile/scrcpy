@@ -82,6 +82,7 @@ enum {
     OPT_TIME_LIMIT,
     OPT_PAUSE_ON_EXIT,
     OPT_LIST_CAMERAS,
+    OPT_LIST_CAMERA_SIZES,
 };
 
 struct sc_option {
@@ -325,6 +326,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_CAMERAS,
         .longopt = "list-cameras",
         .text = "List device cameras.",
+    },
+    {
+        .longopt_id = OPT_LIST_CAMERA_SIZES,
+        .longopt = "list-camera-sizes",
+        .text = "List the valid camera capture sizes.",
     },
     {
         .longopt_id = OPT_LIST_DISPLAYS,
@@ -2006,6 +2012,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_LIST_CAMERAS:
                 opts->list |= SC_OPTION_LIST_CAMERAS;
+                break;
+            case OPT_LIST_CAMERA_SIZES:
+                opts->list |= SC_OPTION_LIST_CAMERA_SIZES;
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
