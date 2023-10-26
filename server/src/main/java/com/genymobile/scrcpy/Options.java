@@ -27,6 +27,7 @@ public class Options {
     private String cameraId;
     private Size cameraSize;
     private CameraFacing cameraFacing;
+    private CameraAspectRatio cameraAspectRatio;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -129,6 +130,10 @@ public class Options {
 
     public CameraFacing getCameraFacing() {
         return cameraFacing;
+    }
+
+    public CameraAspectRatio getCameraAspectRatio() {
+        return cameraAspectRatio;
     }
 
     public boolean getShowTouches() {
@@ -374,6 +379,11 @@ public class Options {
                         options.cameraFacing = facing;
                     }
                     break;
+                case "camera_ar":
+                    if (!value.isEmpty()) {
+                        options.cameraAspectRatio = parseCameraAspectRatio(value);
+                    }
+                    break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
                     break;
@@ -426,5 +436,21 @@ public class Options {
         int width = Integer.parseInt(tokens[0]);
         int height = Integer.parseInt(tokens[1]);
         return new Size(width, height);
+    }
+
+    private static CameraAspectRatio parseCameraAspectRatio(String ar) {
+        if ("sensor".equals(ar)) {
+            return CameraAspectRatio.sensorAspectRatio();
+        }
+
+        String[] tokens = ar.split(":");
+        if (tokens.length == 2) {
+            int w = Integer.parseInt(tokens[0]);
+            int h = Integer.parseInt(tokens[1]);
+            return CameraAspectRatio.fromFraction(w, h);
+        }
+
+        float floatAr = Float.parseFloat(tokens[0]);
+        return CameraAspectRatio.fromFloat(floatAr);
     }
 }
