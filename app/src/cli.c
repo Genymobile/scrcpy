@@ -87,6 +87,7 @@ enum {
     OPT_CAMERA_ID,
     OPT_CAMERA_SIZE,
     OPT_CAMERA_FACING,
+    OPT_CAMERA_AR,
 };
 
 struct sc_option {
@@ -202,6 +203,15 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_BIT_RATE,
         .longopt = "bit-rate",
         .argdesc = "value",
+    },
+    {
+        .longopt_id = OPT_CAMERA_AR,
+        .longopt = "camera-ar",
+        .argdesc = "ar",
+        .text = "Select the camera size by its aspect ratio (+/- 10%).\n"
+                "Possible values are \"sensor\" (use the camera sensor aspect "
+                "ratio), \"<num>:<den>\" (e.g. \"4:3\") or \"<value>\" (e.g. "
+                "\"1.6\")."
     },
     {
         .longopt_id = OPT_CAMERA_ID,
@@ -2130,6 +2140,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_CAMERA_AR:
+                opts->camera_ar = optarg;
+                break;
             case OPT_CAMERA_ID:
                 opts->camera_id = optarg;
                 break;
@@ -2245,9 +2258,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
-        if (!opts->camera_size) {
-            LOGE("Camera size must be specified by --camera-size");
-            return false;
+        if (opts->camera_size) {
+            if (opts->max_size) {
+                LOGE("Could not specify both --camera-size and -m/--max-size");
+                return false;
+            }
+
+            if (opts->camera_ar) {
+                LOGE("Could not specify both --camera-size and --camera-ar");
+                return false;
+            }
         }
 
         if (opts->control) {
@@ -2255,6 +2275,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             opts->control = false;
         }
     } else if (opts->camera_id
+            || opts->camera_ar
             || opts->camera_facing != SC_CAMERA_FACING_ANY
             || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
