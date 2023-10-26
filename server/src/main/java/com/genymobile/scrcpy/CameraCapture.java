@@ -7,6 +7,7 @@ import android.annotation.TargetApi;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
+import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
@@ -49,10 +50,28 @@ public class CameraCapture extends SurfaceCapture {
         cameraExecutor = new HandlerExecutor(cameraHandler);
 
         try {
-            cameraDevice = openCamera(explicitCameraId);
+            String cameraId = selectCamera(explicitCameraId);
+            if (cameraId == null) {
+                throw new IOException("No matching camera found");
+            }
+
+            Ln.i("Using camera '" + cameraId + "'");
+            cameraDevice = openCamera(cameraId);
         } catch (CameraAccessException | InterruptedException e) {
             throw new IOException(e);
         }
+    }
+
+    private static String selectCamera(String explicitCameraId) throws CameraAccessException {
+        if (explicitCameraId != null) {
+            return explicitCameraId;
+        }
+
+        CameraManager cameraManager = ServiceManager.getCameraManager();
+
+        String[] cameraIds = cameraManager.getCameraIdList();
+        // Use the first one
+        return cameraIds.length > 0 ? cameraIds[0] : null;
     }
 
     @Override
