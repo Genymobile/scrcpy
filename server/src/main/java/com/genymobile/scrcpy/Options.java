@@ -256,7 +256,9 @@ public class Options {
                     options.tunnelForward = Boolean.parseBoolean(value);
                     break;
                 case "crop":
-                    options.crop = parseCrop(value);
+                    if (!value.isEmpty()) {
+                        options.crop = parseCrop(value);
+                    }
                     break;
                 case "control":
                     options.control = Boolean.parseBoolean(value);
@@ -337,9 +339,6 @@ public class Options {
     }
 
     private static Rect parseCrop(String crop) {
-        if (crop.isEmpty()) {
-            return null;
-        }
         // input format: "width:height:x:y"
         String[] tokens = crop.split(":");
         if (tokens.length != 4) {
