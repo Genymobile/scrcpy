@@ -17,6 +17,7 @@ arguments=(
     '--audio-source=[Select the audio source]:source:(output mic)'
     '--audio-output-buffer=[Configure the size of the SDL audio output buffer (in milliseconds)]'
     {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
+    '--camera-ar=[Select the camera size by its aspect ratio]'
     '--camera-id=[Specify the camera id to mirror]'
     '--camera-facing=[Select the device camera by its facing direction]:facing:(front back external)'
     '--camera-size=[Specify an explicit camera capture size]'

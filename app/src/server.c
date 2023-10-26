@@ -77,6 +77,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     free((char *) params->audio_encoder);
     free((char *) params->tcpip_dst);
     free((char *) params->camera_id);
+    free((char *) params->camera_ar);
 }
 
 static bool
@@ -105,6 +106,7 @@ sc_server_params_copy(struct sc_server_params *dst,
     COPY(audio_encoder);
     COPY(tcpip_dst);
     COPY(camera_id);
+    COPY(camera_ar);
 #undef COPY
 
     return true;
@@ -302,6 +304,9 @@ execute_server(struct sc_server *server,
     if (params->camera_facing != SC_CAMERA_FACING_ANY) {
         ADD_PARAM("camera_facing=%s",
             sc_server_get_camera_facing_name(params->camera_facing));
+    }
+    if (params->camera_ar) {
+        ADD_PARAM("camera_ar=%s", params->camera_ar);
     }
     if (params->show_touches) {
         ADD_PARAM("show_touches=true");
