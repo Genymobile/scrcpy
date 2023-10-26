@@ -20,7 +20,7 @@ arguments=(
     '--crop=[\[width\:height\:x\:y\] Crop the device screen on the server]'
     {-d,--select-usb}'[Use USB device]'
     '--disable-screensaver[Disable screensaver while scrcpy is running]'
-    '--display=[Specify the display id to mirror]'
+    '--display-id=[Specify the display id to mirror]'
     '--display-buffer=[Add a buffering delay \(in milliseconds\) before displaying]'
     {-e,--select-tcpip}'[Use TCP/IP device]'
     {-f,--fullscreen}'[Start in fullscreen]'

@@ -13,7 +13,7 @@ _scrcpy() {
         --crop=
         -d --select-usb
         --disable-screensaver
-        --display=
+        --display-id=
         --display-buffer=
         -e --select-tcpip
         -f --fullscreen
@@ -140,7 +140,7 @@ _scrcpy() {
         |--audio-encoder \
         |--audio-output-buffer \
         |--crop \
-        |--display \
+        |--display-id \
         |--display-buffer \
         |--max-fps \
         |-m|--max-size \

@@ -143,7 +143,7 @@ If several displays are available on the Android device, it is possible to
 select the display to mirror:
 
 ```bash
-scrcpy --display=1
+scrcpy --display-id=1
 ```
 
 The list of display ids can be retrieved by:
