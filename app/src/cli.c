@@ -32,6 +32,7 @@ enum {
     OPT_WINDOW_BORDERLESS,
     OPT_MAX_FPS,
     OPT_LOCK_VIDEO_ORIENTATION,
+    OPT_DISPLAY,
     OPT_DISPLAY_ID,
     OPT_ROTATION,
     OPT_RENDER_DRIVER,
@@ -232,8 +233,14 @@ static const struct sc_option options[] = {
         .text = "Disable screensaver while scrcpy is running.",
     },
     {
-        .longopt_id = OPT_DISPLAY_ID,
+        // deprecated
+        .longopt_id = OPT_DISPLAY,
         .longopt = "display",
+        .argdesc = "id",
+    },
+    {
+        .longopt_id = OPT_DISPLAY_ID,
+        .longopt = "display-id",
         .argdesc = "id",
         .text = "Specify the device display id to mirror.\n"
                 "The available display ids can be listed by:\n"
@@ -1702,6 +1709,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CROP:
                 opts->crop = optarg;
                 break;
+            case OPT_DISPLAY:
+                LOGW("--display is deprecated, use --display-id instead.");
+                // fall through
             case OPT_DISPLAY_ID:
                 if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
