@@ -13,6 +13,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_encoder = NULL,
     .camera_id = NULL,
     .camera_size = NULL,
+    .camera_ar = NULL,
     .log_level = SC_LOG_LEVEL_INFO,
     .video_codec = SC_CODEC_H264,
     .audio_codec = SC_CODEC_OPUS,
