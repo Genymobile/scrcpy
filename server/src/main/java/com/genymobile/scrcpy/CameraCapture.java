@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -13,6 +14,8 @@ import android.hardware.camera2.CaptureFailure;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
+import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.MediaCodec;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -20,34 +23,25 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class CameraCapture extends SurfaceCapture {
 
-    public static class CameraSelection {
-        private String explicitCameraId;
-        private CameraFacing cameraFacing;
-
-        public CameraSelection(String explicitCameraId, CameraFacing cameraFacing) {
-            this.explicitCameraId = explicitCameraId;
-            this.cameraFacing = cameraFacing;
-        }
-
-        boolean hasId() {
-            return explicitCameraId != null;
-        }
-
-        boolean hasProperties() {
-            return cameraFacing != null;
-        }
-    }
-
-    private final CameraSelection cameraSelection;
+    private final String explicitCameraId;
+    private final CameraFacing cameraFacing;
     private final Size explicitSize;
+    private int maxSize;
+    private final CameraAspectRatio aspectRatio;
+
+    private String cameraId;
+    private Size size;
 
     private HandlerThread cameraThread;
     private Handler cameraHandler;
@@ -56,9 +50,12 @@ public class CameraCapture extends SurfaceCapture {
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
-    public CameraCapture(CameraSelection cameraSelection, Size explicitSize) {
-        this.cameraSelection = cameraSelection;
+    public CameraCapture(String explicitCameraId, CameraFacing cameraFacing, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio) {
+        this.explicitCameraId = explicitCameraId;
+        this.cameraFacing = cameraFacing;
         this.explicitSize = explicitSize;
+        this.maxSize = maxSize;
+        this.aspectRatio = aspectRatio;
     }
 
     @Override
@@ -69,9 +66,14 @@ public class CameraCapture extends SurfaceCapture {
         cameraExecutor = new HandlerExecutor(cameraHandler);
 
         try {
-            String cameraId = selectCamera(cameraSelection);
+            cameraId = selectCamera(explicitCameraId, cameraFacing);
             if (cameraId == null) {
                 throw new IOException("No matching camera found");
+            }
+
+            size = selectSize(cameraId, explicitSize, maxSize, aspectRatio);
+            if (size == null) {
+                throw new IOException("Could not select camera size");
             }
 
             Ln.i("Using camera '" + cameraId + "'");
@@ -81,15 +83,15 @@ public class CameraCapture extends SurfaceCapture {
         }
     }
 
-    private String selectCamera(CameraSelection cameraSelection) throws CameraAccessException {
-        if (cameraSelection.hasId()) {
-            return cameraSelection.explicitCameraId;
+    private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException {
+        if (explicitCameraId != null) {
+            return explicitCameraId;
         }
 
         CameraManager cameraManager = ServiceManager.getCameraManager();
 
         String[] cameraIds = cameraManager.getCameraIdList();
-        if (!cameraSelection.hasProperties()) {
+        if (cameraFacing == null) {
             // Use the first one
             return cameraIds.length > 0 ? cameraIds[0] : null;
         }
@@ -97,19 +99,87 @@ public class CameraCapture extends SurfaceCapture {
         for (String cameraId : cameraIds) {
             CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
 
-            if (cameraSelection.cameraFacing != null) {
-                int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                if (cameraSelection.cameraFacing.value() != facing) {
-                    // Does not match
-                    continue;
-                }
+            int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+            if (cameraFacing.value() == facing) {
+                return cameraId;
             }
-
-            return cameraId;
         }
 
         // Not found
         return null;
+    }
+
+    @TargetApi(Build.VERSION_CODES.N)
+    private static Size selectSize(String cameraId, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio) throws CameraAccessException {
+        if (explicitSize != null) {
+            return explicitSize;
+        }
+
+        CameraManager cameraManager = ServiceManager.getCameraManager();
+        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+
+        StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+        android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
+        Stream<android.util.Size> stream = Arrays.stream(sizes);
+        if (maxSize > 0) {
+            stream = stream.filter(it -> it.getWidth() <= maxSize && it.getHeight() <= maxSize);
+        }
+
+        Float targetAspectRatio = resolveAspectRatio(aspectRatio, characteristics);
+        if (targetAspectRatio != null) {
+            stream = stream.filter(it -> {
+                float ar = ((float) it.getWidth() / it.getHeight());
+                float arRatio = ar / targetAspectRatio;
+                // Accept if the aspect ratio is the target aspect ratio + or - 10%
+                return arRatio >= 0.9f && arRatio <= 1.1f;
+            });
+        }
+
+        Optional<android.util.Size> selected = stream.max((s1, s2) -> {
+            // Greater width is better
+            int cmp = Integer.compare(s1.getWidth(), s2.getWidth());
+            if (cmp != 0) {
+                return cmp;
+            }
+
+            if (targetAspectRatio != null) {
+                // Closer to the target aspect ratio is better
+                float ar1 = ((float) s1.getWidth() / s1.getHeight());
+                float arRatio1 = ar1 / targetAspectRatio;
+                float distance1 = Math.abs(1 - arRatio1);
+
+                float ar2 = ((float) s2.getWidth() / s2.getHeight());
+                float arRatio2 = ar2 / targetAspectRatio;
+                float distance2 = Math.abs(1 - arRatio2);
+
+                // Reverse the order because lower distance is better
+                return Float.compare(distance2, distance1);
+            }
+
+            // Greater height is better
+            return Integer.compare(s1.getHeight(), s2.getHeight());
+        });
+
+        if (selected.isPresent()) {
+            android.util.Size size = selected.get();
+            return new Size(size.getWidth(), size.getHeight());
+        }
+
+        // Not found
+        return null;
+    }
+
+    private static Float resolveAspectRatio(CameraAspectRatio ratio, CameraCharacteristics characteristics) {
+        if (ratio == null) {
+            return null;
+        }
+
+        if (ratio.isSensor()) {
+            Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+            return (float) activeSize.width() / activeSize.height();
+        }
+
+        return ratio.getAspectRatio();
     }
 
     @Override
@@ -137,12 +207,23 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public Size getSize() {
-        return explicitSize;
+        return size;
     }
 
     @Override
-    public boolean setMaxSize(int size) {
-        return false;
+    public boolean setMaxSize(int maxSize) {
+        if (explicitSize != null) {
+            return false;
+        }
+
+        this.maxSize = maxSize;
+        try {
+            size = selectSize(cameraId, null, maxSize, aspectRatio);
+            return true;
+        } catch (CameraAccessException e) {
+            Ln.w("Could not select camera size", e);
+            return false;
+        }
     }
 
     @SuppressLint("MissingPermission")

@@ -36,6 +36,7 @@ struct sc_server_params {
     const char *audio_encoder;
     const char *camera_id;
     const char *camera_size;
+    const char *camera_ar;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
