@@ -47,7 +47,7 @@ public final class LogUtils {
             builder.append("\n    (none)");
         } else {
             for (int id : displayIds) {
-                builder.append("\n    --display=").append(id).append("    (");
+                builder.append("\n    --display-id=").append(id).append("    (");
                 DisplayInfo displayInfo = displayManager.getDisplayInfo(id);
                 if (displayInfo != null) {
                     Size size = displayInfo.getSize();
