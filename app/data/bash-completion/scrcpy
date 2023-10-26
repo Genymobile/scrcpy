@@ -10,6 +10,7 @@ _scrcpy() {
         --audio-source=
         --audio-output-buffer=
         -b --video-bit-rate=
+        --camera-ar=
         --camera-id=
         --camera-facing=
         --camera-size=
@@ -153,6 +154,7 @@ _scrcpy() {
         |--audio-codec-options \
         |--audio-encoder \
         |--audio-output-buffer \
+        |--camera-ar \
         |--camera-id \
         |--camera-size \
         |--crop \
