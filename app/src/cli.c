@@ -2199,12 +2199,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
-        if (!opts->camera_id) {
-            LOGE("Camera id must be specified by --camera-id "
-                 "(list the available ids with --list-cameras)");
-            return false;
-        }
-
         if (!opts->camera_size) {
             LOGE("Camera size must be specified by --camera-size");
             return false;
