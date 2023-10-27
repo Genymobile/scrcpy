@@ -45,6 +45,8 @@ public class Options {
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
     private boolean sendCodecMeta = true; // write the codec metadata before the stream
 
+    private int serverPort = -1;
+
     public Ln.Level getLogLevel() {
         return logLevel;
     }
@@ -175,6 +177,10 @@ public class Options {
 
     public boolean getSendCodecMeta() {
         return sendCodecMeta;
+    }
+
+    public int getServerPort() {
+        return serverPort;
     }
 
     @SuppressWarnings("MethodLength")
@@ -326,6 +332,9 @@ public class Options {
                         options.sendDummyByte = false;
                         options.sendCodecMeta = false;
                     }
+                    break;
+                case "serverPort":
+                    options.serverPort = Integer.parseInt(value);
                     break;
                 default:
                     Ln.w("Unknown server option: " + key);
