@@ -19,6 +19,7 @@ import android.media.MediaCodec;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Range;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class CameraCapture extends SurfaceCapture {
     private final Size explicitSize;
     private int maxSize;
     private final CameraAspectRatio aspectRatio;
+    private final int fps;
 
     private String cameraId;
     private Size size;
@@ -49,12 +51,13 @@ public class CameraCapture extends SurfaceCapture {
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
-    public CameraCapture(String explicitCameraId, CameraFacing cameraFacing, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio) {
+    public CameraCapture(String explicitCameraId, CameraFacing cameraFacing, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio, int fps) {
         this.explicitCameraId = explicitCameraId;
         this.cameraFacing = cameraFacing;
         this.explicitSize = explicitSize;
         this.maxSize = maxSize;
         this.aspectRatio = aspectRatio;
+        this.fps = fps;
     }
 
     @Override
@@ -304,6 +307,11 @@ public class CameraCapture extends SurfaceCapture {
     private CaptureRequest createCaptureRequest(Surface surface) throws CameraAccessException {
         CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
         requestBuilder.addTarget(surface);
+
+        if (fps > 0) {
+            requestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(fps, fps));
+        }
+
         return requestBuilder.build();
     }
 

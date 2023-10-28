@@ -9,8 +9,10 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
+import android.util.Range;
 
 import java.util.List;
+import java.util.TreeSet;
 
 public final class LogUtils {
 
@@ -97,7 +99,15 @@ public final class LogUtils {
                     builder.append("    (").append(getCameraFacingName(facing)).append(", ");
 
                     Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-                    builder.append(activeSize.width()).append("x").append(activeSize.height()).append(')');
+                    builder.append(activeSize.width()).append("x").append(activeSize.height()).append(", ");
+
+                    // Capture frame rates for low-FPS mode are the same for every resolution
+                    Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                    TreeSet<Integer> uniqueLowFps = new TreeSet<>();
+                    for (Range<Integer> range : lowFpsRanges) {
+                        uniqueLowFps.add(range.getUpper());
+                    }
+                    builder.append("fps=").append(uniqueLowFps).append(')');
 
                     if (includeSizes) {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
