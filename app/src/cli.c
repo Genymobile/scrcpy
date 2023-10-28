@@ -88,6 +88,7 @@ enum {
     OPT_CAMERA_SIZE,
     OPT_CAMERA_FACING,
     OPT_CAMERA_AR,
+    OPT_CAMERA_FPS,
 };
 
 struct sc_option {
@@ -233,6 +234,14 @@ static const struct sc_option options[] = {
         .longopt = "camera-size",
         .argdesc = "<width>x<height>",
         .text = "Specify an explicit camera capture size.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_FPS,
+        .longopt = "camera-fps",
+        .argdesc = "value",
+        .text = "Specify the camera capture frame rate.\n"
+                "If not specified, Android's default frame rate (30 fps) is "
+                "used.",
     },
     {
         // Not really deprecated (--codec has never been released), but without
@@ -1747,6 +1756,18 @@ parse_camera_facing(const char *optarg, enum sc_camera_facing *facing) {
 }
 
 static bool
+parse_camera_fps(const char *s, uint16_t *camera_fps) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "camera fps");
+    if (!ok) {
+        return false;
+    }
+
+    *camera_fps = (uint16_t) value;
+    return true;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -2154,6 +2175,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_CAMERA_FPS:
+                if (!parse_camera_fps(optarg, &opts->camera_fps)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2277,6 +2303,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     } else if (opts->camera_id
             || opts->camera_ar
             || opts->camera_facing != SC_CAMERA_FACING_ANY
+            || opts->camera_fps
             || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
         return false;

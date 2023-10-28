@@ -13,6 +13,7 @@ _scrcpy() {
         --camera-ar=
         --camera-id=
         --camera-facing=
+        --camera-fps=
         --camera-size=
         --crop=
         -d --select-usb
@@ -156,6 +157,7 @@ _scrcpy() {
         |--audio-output-buffer \
         |--camera-ar \
         |--camera-id \
+        |--camera-fps \
         |--camera-size \
         |--crop \
         |--display-id \

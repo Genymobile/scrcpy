@@ -133,6 +133,7 @@ struct scrcpy_options {
     const char *camera_id;
     const char *camera_size;
     const char *camera_ar;
+    uint16_t camera_fps;
     enum sc_log_level log_level;
     enum sc_codec video_codec;
     enum sc_codec audio_codec;
