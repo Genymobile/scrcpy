@@ -17,5 +17,5 @@ endian = 'little'
 
 [properties]
 prebuilt_ffmpeg = 'ffmpeg-6.0-scrcpy-4/win64'
-prebuilt_sdl2 = 'SDL2-2.28.0/x86_64-w64-mingw32'
+prebuilt_sdl2 = 'SDL2-2.28.4/x86_64-w64-mingw32'
 prebuilt_libusb = 'libusb-1.0.26/libusb-MinGW-x64'
