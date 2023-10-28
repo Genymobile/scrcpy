@@ -1315,7 +1315,7 @@ parse_max_size(const char *s, uint16_t *max_size) {
 static bool
 parse_max_fps(const char *s, uint16_t *max_fps) {
     long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 1000, "max fps");
+    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "max fps");
     if (!ok) {
         return false;
     }
