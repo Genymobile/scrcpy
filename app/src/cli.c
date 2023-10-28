@@ -89,6 +89,7 @@ enum {
     OPT_CAMERA_FACING,
     OPT_CAMERA_AR,
     OPT_CAMERA_FPS,
+    OPT_CAMERA_HIGH_SPEED,
 };
 
 struct sc_option {
@@ -228,6 +229,13 @@ static const struct sc_option options[] = {
         .argdesc = "facing",
         .text = "Select the device camera by its facing direction.\n"
                 "Possible values are \"front\", \"back\" and \"external\".",
+    },
+    {
+        .longopt_id = OPT_CAMERA_HIGH_SPEED,
+        .longopt = "camera-high-speed",
+        .text = "Enable high-speed camera capture mode.\n"
+                "This mode is restricted to specific resolutions and frame "
+                "rates, listed by --list-camera-sizes.",
     },
     {
         .longopt_id = OPT_CAMERA_SIZE,
@@ -2180,6 +2188,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_CAMERA_HIGH_SPEED:
+                opts->camera_high_speed = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2296,6 +2307,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             }
         }
 
+        if (opts->camera_high_speed && !opts->camera_fps) {
+            LOGE("--camera-high-speed requires an explicit --camera-fps value");
+            return false;
+        }
+
         if (opts->control) {
             LOGI("Camera video source: control disabled");
             opts->control = false;
@@ -2304,6 +2320,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             || opts->camera_ar
             || opts->camera_facing != SC_CAMERA_FACING_ANY
             || opts->camera_fps
+            || opts->camera_high_speed
             || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
         return false;

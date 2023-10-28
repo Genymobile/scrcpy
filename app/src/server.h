@@ -63,6 +63,7 @@ struct sc_server_params {
     bool cleanup;
     bool power_on;
     bool kill_adb_on_close;
+    bool camera_high_speed;
     uint8_t list;
 };
 
