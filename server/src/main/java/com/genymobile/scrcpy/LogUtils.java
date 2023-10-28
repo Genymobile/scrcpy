@@ -12,6 +12,7 @@ import android.media.MediaCodec;
 import android.util.Range;
 
 import java.util.List;
+import java.util.SortedSet;
 import java.util.TreeSet;
 
 public final class LogUtils {
@@ -103,17 +104,26 @@ public final class LogUtils {
 
                     // Capture frame rates for low-FPS mode are the same for every resolution
                     Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-                    TreeSet<Integer> uniqueLowFps = new TreeSet<>();
-                    for (Range<Integer> range : lowFpsRanges) {
-                        uniqueLowFps.add(range.getUpper());
-                    }
+                    SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
                     builder.append("fps=").append(uniqueLowFps).append(')');
 
                     if (includeSizes) {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
                         android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
                         for (android.util.Size size : sizes) {
                             builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                        }
+
+                        android.util.Size[] highSpeedSizes = configs.getHighSpeedVideoSizes();
+                        if (highSpeedSizes.length > 0) {
+                            builder.append("\n      High speed capture (--camera-high-speed):");
+                            for (android.util.Size size : highSpeedSizes) {
+                                Range<Integer>[] highFpsRanges = configs.getHighSpeedVideoFpsRanges();
+                                SortedSet<Integer> uniqueHighFps = getUniqueSet(highFpsRanges);
+                                builder.append("\n        - ").append(size.getWidth()).append("x").append(size.getHeight());
+                                builder.append(" (fps=").append(uniqueHighFps).append(')');
+                            }
                         }
                     }
                 }
@@ -122,5 +132,13 @@ public final class LogUtils {
             builder.append("\n    (access denied)");
         }
         return builder.toString();
+    }
+
+    private static SortedSet<Integer> getUniqueSet(Range<Integer>[] ranges) {
+        SortedSet<Integer> set = new TreeSet<>();
+        for (Range<Integer> range : ranges) {
+            set.add(range.getUpper());
+        }
+        return set;
     }
 }
