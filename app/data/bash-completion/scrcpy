@@ -14,6 +14,7 @@ _scrcpy() {
         --camera-id=
         --camera-facing=
         --camera-fps=
+        --camera-high-speed
         --camera-size=
         --crop=
         -d --select-usb

@@ -29,6 +29,7 @@ public class Options {
     private CameraFacing cameraFacing;
     private CameraAspectRatio cameraAspectRatio;
     private int cameraFps;
+    private boolean cameraHighSpeed;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -139,6 +140,10 @@ public class Options {
 
     public int getCameraFps() {
         return cameraFps;
+    }
+
+    public boolean getCameraHighSpeed() {
+        return cameraHighSpeed;
     }
 
     public boolean getShowTouches() {
@@ -391,6 +396,9 @@ public class Options {
                     break;
                 case "camera_fps":
                     options.cameraFps = Integer.parseInt(value);
+                    break;
+                case "camera_high_speed":
+                    options.cameraHighSpeed = Boolean.parseBoolean(value);
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
