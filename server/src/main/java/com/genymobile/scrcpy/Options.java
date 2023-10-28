@@ -28,6 +28,7 @@ public class Options {
     private Size cameraSize;
     private CameraFacing cameraFacing;
     private CameraAspectRatio cameraAspectRatio;
+    private int cameraFps;
     private boolean showTouches;
     private boolean stayAwake;
     private List<CodecOption> videoCodecOptions;
@@ -134,6 +135,10 @@ public class Options {
 
     public CameraAspectRatio getCameraAspectRatio() {
         return cameraAspectRatio;
+    }
+
+    public int getCameraFps() {
+        return cameraFps;
     }
 
     public boolean getShowTouches() {
@@ -383,6 +388,9 @@ public class Options {
                     if (!value.isEmpty()) {
                         options.cameraAspectRatio = parseCameraAspectRatio(value);
                     }
+                    break;
+                case "camera_fps":
+                    options.cameraFps = Integer.parseInt(value);
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
