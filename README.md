@@ -25,12 +25,13 @@ It focuses on:
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
 Its features include:
- - [audio forwarding](doc/audio.md) (Android >= 11)
+ - [audio forwarding](doc/audio.md) (Android 11+)
  - [recording](doc/recording.md)
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
- - Android device screen [as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
+ - [camera mirroring](doc/camera.md) (Android 12+)
+ - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
  - [physical keyboard/mouse simulation (HID)](doc/hid-otg.md)
  - [OTG mode](doc/hid-otg.md#otg)
  - and more…
@@ -77,6 +78,7 @@ documented in the following pages:
  - [Recording](doc/recording.md)
  - [Tunnels](doc/tunnels.md)
  - [HID/OTG](doc/hid-otg.md)
+ - [Camera](doc/camera.md)
  - [Video4Linux](doc/v4l2.md)
  - [Shortcuts](doc/shortcuts.md)
 
