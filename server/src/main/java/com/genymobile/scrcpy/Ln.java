@@ -8,6 +8,11 @@ import android.util.Log;
  */
 public final class Ln {
 
+    public interface ConsolePrinter {
+        void printOut(String message);
+        void printErr(String message, Throwable throwable);
+    }
+
     private static final String TAG = "scrcpy";
     private static final String PREFIX = "[server] ";
 
@@ -15,10 +20,15 @@ public final class Ln {
         VERBOSE, DEBUG, INFO, WARN, ERROR
     }
 
+    private static ConsolePrinter consolePrinter = new DefaultConsolePrinter();
     private static Level threshold = Level.INFO;
 
     private Ln() {
         // not instantiable
+    }
+
+    public static void setConsolePrinter(ConsolePrinter consolePrinter) {
+        Ln.consolePrinter = consolePrinter;
     }
 
     /**
@@ -39,31 +49,28 @@ public final class Ln {
     public static void v(String message) {
         if (isEnabled(Level.VERBOSE)) {
             Log.v(TAG, message);
-            System.out.print(PREFIX + "VERBOSE: " + message + '\n');
+            consolePrinter.printOut(PREFIX + "VERBOSE: " + message + '\n');
         }
     }
 
     public static void d(String message) {
         if (isEnabled(Level.DEBUG)) {
             Log.d(TAG, message);
-            System.out.print(PREFIX + "DEBUG: " + message + '\n');
+            consolePrinter.printOut(PREFIX + "DEBUG: " + message + '\n');
         }
     }
 
     public static void i(String message) {
         if (isEnabled(Level.INFO)) {
             Log.i(TAG, message);
-            System.out.print(PREFIX + "INFO: " + message + '\n');
+            consolePrinter.printOut(PREFIX + "INFO: " + message + '\n');
         }
     }
 
     public static void w(String message, Throwable throwable) {
         if (isEnabled(Level.WARN)) {
             Log.w(TAG, message, throwable);
-            System.err.print(PREFIX + "WARN: " + message + '\n');
-            if (throwable != null) {
-                throwable.printStackTrace();
-            }
+            consolePrinter.printErr(PREFIX + "WARN: " + message + '\n', throwable);
         }
     }
 
@@ -74,14 +81,26 @@ public final class Ln {
     public static void e(String message, Throwable throwable) {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
-            System.err.print(PREFIX + "ERROR: " + message + "\n");
-            if (throwable != null) {
-                throwable.printStackTrace();
-            }
+            consolePrinter.printErr(PREFIX + "ERROR: " + message + '\n', throwable);
         }
     }
 
     public static void e(String message) {
         e(message, null);
+    }
+
+    public static class DefaultConsolePrinter implements ConsolePrinter {
+        @Override
+        public void printOut(String message) {
+            System.out.print(message);
+        }
+
+        @Override
+        public void printErr(String message, Throwable throwable) {
+            System.err.print(message);
+            if (throwable != null) {
+                throwable.printStackTrace();
+            }
+        }
     }
 }

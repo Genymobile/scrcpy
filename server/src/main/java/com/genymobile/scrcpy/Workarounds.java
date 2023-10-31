@@ -14,6 +14,12 @@ import android.os.Build;
 import android.os.Looper;
 import android.os.Parcel;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -55,6 +61,12 @@ public final class Workarounds {
             mustFillAppInfo = true;
             mustFillBaseContext = true;
             mustFillAppContext = true;
+        } else if (Build.MANUFACTURER.equalsIgnoreCase("xiaomi")) {
+            // Trash the messages printed to the console by direct calls to System.out and System.err.
+            // Xiaomi device ROMs may print internal errors using e.printStackTrace(), flooding the console with irrelevant errors.
+            ExclusiveConsolePrinter exclusiveConsolePrinter = new ExclusiveConsolePrinter();
+            exclusiveConsolePrinter.installNullSystemStreams();
+            Ln.setConsolePrinter(new ExclusiveConsolePrinter());
         }
 
         if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
@@ -304,6 +316,50 @@ public final class Workarounds {
         } catch (Exception e) {
             Ln.e("Failed to invoke AudioRecord.<init>.", e);
             throw new RuntimeException("Cannot create AudioRecord");
+        }
+    }
+
+    static class ExclusiveConsolePrinter implements Ln.ConsolePrinter {
+
+        static class NullOutputStream extends OutputStream {
+            @Override
+            public void write(byte[] b) {
+                // ignore
+            }
+
+            @Override
+            public void write(byte[] b, int off, int len) {
+                // ignore
+            }
+
+            @Override
+            public void write(int b) {
+                // ignore
+            }
+        }
+
+        private final PrintStream realOut = new PrintStream(new FileOutputStream(FileDescriptor.out));
+        private final PrintStream realErr = new PrintStream(new FileOutputStream(FileDescriptor.err));
+
+        void installNullSystemStreams() {
+            PrintStream nullStream = new PrintStream(new NullOutputStream());
+            System.setOut(nullStream);
+            System.setErr(nullStream);
+        }
+
+        @Override
+        public void printOut(String message) {
+            realOut.print(message);
+        }
+
+        @Override
+        public void printErr(String message, Throwable throwable) {
+            realErr.print(message);
+            if (throwable != null) {
+                StringWriter errors = new StringWriter();
+                throwable.printStackTrace(new PrintWriter(errors));
+                realErr.print(errors);
+            }
         }
     }
 }
