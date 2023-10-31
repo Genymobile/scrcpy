@@ -53,7 +53,7 @@ The list of possible codec options is available in the Android documentation:
 .BI "\-\-audio\-encoder " name
 Use a specific MediaCodec audio encoder (depending on the codec provided by \fB\-\-audio\-codec\fR).
 
-The available encoders can be listed by \-\-list\-encoders.
+The available encoders can be listed by \fB\-\-list\-encoders\fR.
 
 .TP
 .BI "\-\-audio\-source " source
@@ -79,19 +79,19 @@ Default is 8M (8000000).
 .BI "\-\-camera\-ar " ar
 Select the camera size by its aspect ratio (+/- 10%).
 
-Possible values are "sensor" (use the camera sensor aspect ratio), "<num>:<den>" (e.g. "4:3") and "<value>" (e.g. "1.6").
+Possible values are "sensor" (use the camera sensor aspect ratio), "\fInum\fR:\fIden\fR" (e.g. "4:3") and "\fIvalue\fR" (e.g. "1.6").
 
 .TP
 .B \-\-camera\-high\-speed
 Enable high-speed camera capture mode.
 
-This mode is restricted to specific resolutions and frame rates, listed by --list-camera-sizes.
+This mode is restricted to specific resolutions and frame rates, listed by \fB\-\-list\-camera\-sizes\fR.
 
 .TP
 .BI "\-\-camera\-id " id
 Specify the device camera id to mirror.
 
-The available camera ids can be listed by \-\-list\-cameras.
+The available camera ids can be listed by \fB\-\-list\-cameras\fR.
 
 .TP
 .BI "\-\-camera\-facing " facing
@@ -131,7 +131,7 @@ Disable screensaver while scrcpy is running.
 .BI "\-\-display\-id " id
 Specify the device display id to mirror.
 
-The available display ids can be listed by \-\-list\-displays.
+The available display ids can be listed by \fB\-\-list\-displays\fR.
 
 Default is 0.
 
@@ -241,7 +241,7 @@ Disable device control (mirror the device in read\-only).
 
 .TP
 .B \-N, \-\-no\-playback
-Disable video and audio playback on the computer (equivalent to --no-video-playback --no-audio-playback).
+Disable video and audio playback on the computer (equivalent to \fB\-\-no\-video\-playback \-\-no\-audio\-playback\fR).
 
 .TP
 .B \-\-no\-audio
@@ -411,13 +411,13 @@ Set the maximum mirroring time, in seconds.
 
 .TP
 .BI "\-\-tunnel\-host " ip
-Set the IP address of the adb tunnel to reach the scrcpy server. This option automatically enables --force-adb-forward.
+Set the IP address of the adb tunnel to reach the scrcpy server. This option automatically enables \fB\-\-force\-adb\-forward\fR.
 
 Default is localhost.
 
 .TP
 .BI "\-\-tunnel\-port " port
-Set the TCP port of the adb tunnel to reach the scrcpy server. This option automatically enables --force-adb-forward.
+Set the TCP port of the adb tunnel to reach the scrcpy server. This option automatically enables \fB\-\-force\-adb\-forward\fR.
 
 Default is 0 (not forced): the local port used for establishing the tunnel will be used.
 
@@ -465,7 +465,7 @@ The list of possible codec options is available in the Android documentation:
 .BI "\-\-video\-encoder " name
 Use a specific MediaCodec video encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
 
-The available encoders can be listed by \-\-list\-encoders.
+The available encoders can be listed by \fB\-\-list\-encoders\fR.
 
 .TP
 .BI "\-\-video\-source " source
@@ -635,7 +635,7 @@ Path to adb.
 
 .TP
 .B ANDROID_SERIAL
-Device serial to use if no selector (-s, -d, -e or --tcpip=<addr>) is specified.
+Device serial to use if no selector (\fB-s\fR, \fB-d\fR, \fB-e\fR or \fB\-\-tcpip=\fIaddr\fR) is specified.
 
 .TP
 .B SCRCPY_ICON_PATH
