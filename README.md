@@ -1,4 +1,4 @@
-# scrcpy (v2.1.1)
+# scrcpy (v2.2)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
