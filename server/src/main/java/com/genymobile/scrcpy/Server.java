@@ -163,6 +163,8 @@ public final class Server {
                 asyncProcessor.stop();
             }
 
+            connection.shutdown();
+
             try {
                 initThread.join();
                 for (AsyncProcessor asyncProcessor : asyncProcessors) {
