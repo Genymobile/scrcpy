@@ -187,7 +187,7 @@ public final class Server {
         try {
             internalMain(args);
         } catch (Throwable t) {
-            t.printStackTrace();
+            Ln.e(t.getMessage(), t);
             status = 1;
         } finally {
             // By default, the Java process exits when all non-daemon threads are terminated.
@@ -204,6 +204,7 @@ public final class Server {
 
         Options options = Options.parse(args);
 
+        Ln.disableSystemStreams();
         Ln.initLogLevel(options.getLogLevel());
 
         Ln.i("Device: [" + Build.MANUFACTURER + "] " + Build.BRAND + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
