@@ -7,3 +7,4 @@ build/
 .gradle/
 /x/
 local.properties
+/scrcpy-server
