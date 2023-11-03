@@ -21,18 +21,34 @@ import java.lang.reflect.Method;
 
 public final class Workarounds {
 
-    private static Class<?> activityThreadClass;
-    private static Object activityThread;
+    private static final Class<?> ACTIVITY_THREAD_CLASS;
+    private static final Object ACTIVITY_THREAD;
+
+    static {
+        prepareMainLooper();
+
+        try {
+            // ActivityThread activityThread = new ActivityThread();
+            ACTIVITY_THREAD_CLASS = Class.forName("android.app.ActivityThread");
+            Constructor<?> activityThreadConstructor = ACTIVITY_THREAD_CLASS.getDeclaredConstructor();
+            activityThreadConstructor.setAccessible(true);
+            ACTIVITY_THREAD = activityThreadConstructor.newInstance();
+
+            // ActivityThread.sCurrentActivityThread = activityThread;
+            Field sCurrentActivityThreadField = ACTIVITY_THREAD_CLASS.getDeclaredField("sCurrentActivityThread");
+            sCurrentActivityThreadField.setAccessible(true);
+            sCurrentActivityThreadField.set(null, ACTIVITY_THREAD);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
 
     private Workarounds() {
         // not instantiable
     }
 
     public static void apply(boolean audio, boolean camera) {
-        Workarounds.prepareMainLooper();
-
         boolean mustFillAppInfo = false;
-        boolean mustFillBaseContext = false;
         boolean mustFillAppContext = false;
 
         if (Build.BRAND.equalsIgnoreCase("meizu")) {
@@ -53,7 +69,6 @@ public final class Workarounds {
             //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
             //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
             mustFillAppInfo = true;
-            mustFillBaseContext = true;
             mustFillAppContext = true;
         }
 
@@ -66,14 +81,10 @@ public final class Workarounds {
 
         if (camera) {
             mustFillAppInfo = true;
-            mustFillBaseContext = true;
         }
 
         if (mustFillAppInfo) {
             Workarounds.fillAppInfo();
-        }
-        if (mustFillBaseContext) {
-            Workarounds.fillBaseContext();
         }
         if (mustFillAppContext) {
             Workarounds.fillAppContext();
@@ -94,26 +105,8 @@ public final class Workarounds {
     }
 
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
-    private static void fillActivityThread() throws Exception {
-        if (activityThread == null) {
-            // ActivityThread activityThread = new ActivityThread();
-            activityThreadClass = Class.forName("android.app.ActivityThread");
-            Constructor<?> activityThreadConstructor = activityThreadClass.getDeclaredConstructor();
-            activityThreadConstructor.setAccessible(true);
-            activityThread = activityThreadConstructor.newInstance();
-
-            // ActivityThread.sCurrentActivityThread = activityThread;
-            Field sCurrentActivityThreadField = activityThreadClass.getDeclaredField("sCurrentActivityThread");
-            sCurrentActivityThreadField.setAccessible(true);
-            sCurrentActivityThreadField.set(null, activityThread);
-        }
-    }
-
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     private static void fillAppInfo() {
         try {
-            fillActivityThread();
-
             // ActivityThread.AppBindData appBindData = new ActivityThread.AppBindData();
             Class<?> appBindDataClass = Class.forName("android.app.ActivityThread$AppBindData");
             Constructor<?> appBindDataConstructor = appBindDataClass.getDeclaredConstructor();
@@ -129,9 +122,9 @@ public final class Workarounds {
             appInfoField.set(appBindData, applicationInfo);
 
             // activityThread.mBoundApplication = appBindData;
-            Field mBoundApplicationField = activityThreadClass.getDeclaredField("mBoundApplication");
+            Field mBoundApplicationField = ACTIVITY_THREAD_CLASS.getDeclaredField("mBoundApplication");
             mBoundApplicationField.setAccessible(true);
-            mBoundApplicationField.set(activityThread, appBindData);
+            mBoundApplicationField.set(ACTIVITY_THREAD, appBindData);
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app info: " + throwable.getMessage());
@@ -141,33 +134,29 @@ public final class Workarounds {
     @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     private static void fillAppContext() {
         try {
-            fillActivityThread();
-
             Application app = new Application();
             Field baseField = ContextWrapper.class.getDeclaredField("mBase");
             baseField.setAccessible(true);
             baseField.set(app, FakeContext.get());
 
             // activityThread.mInitialApplication = app;
-            Field mInitialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
+            Field mInitialApplicationField = ACTIVITY_THREAD_CLASS.getDeclaredField("mInitialApplication");
             mInitialApplicationField.setAccessible(true);
-            mInitialApplicationField.set(activityThread, app);
+            mInitialApplicationField.set(ACTIVITY_THREAD, app);
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
         }
     }
 
-    private static void fillBaseContext() {
+    static Context getSystemContext() {
         try {
-            fillActivityThread();
-
-            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
-            Context context = (Context) getSystemContextMethod.invoke(activityThread);
-            FakeContext.get().setBaseContext(context);
+            Method getSystemContextMethod = ACTIVITY_THREAD_CLASS.getDeclaredMethod("getSystemContext");
+            return (Context) getSystemContextMethod.invoke(ACTIVITY_THREAD);
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
-            Ln.d("Could not fill base context: " + throwable.getMessage());
+            Ln.d("Could not get system context: " + throwable.getMessage());
+            return null;
         }
     }
 
