@@ -136,6 +136,8 @@ public final class Workarounds {
                     return FakeContext.PACKAGE_NAME;
                 }
             };
+            Method method = ContextWrapper.class.getDeclaredMethod("attachBaseContext", Context.class);
+            method.invoke(application, retrieveSystemContext());
 
             Field initialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
             initialApplicationField.setAccessible(true);
