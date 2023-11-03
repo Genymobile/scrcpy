@@ -33,6 +33,7 @@ public final class Workarounds {
         Workarounds.prepareMainLooper();
         try {
             fillActivityThread();
+            FakeContext.get();
         } catch (Exception e) {
             throw new AssertionError(e);
         }
