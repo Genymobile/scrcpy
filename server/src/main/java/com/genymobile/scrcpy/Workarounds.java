@@ -328,7 +328,9 @@ public final class Workarounds {
     static Context retrieveSystemContext() {
         try {
             Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
-            return (Context) getSystemContextMethod.invoke(activityThread);
+            Context ctx = (Context) getSystemContextMethod.invoke(activityThread);
+            Ln.i("===== " + ctx);
+            return ctx;
         } catch (Exception e) {
             Ln.e("Cannot retrieve system context", e);
             return null;
