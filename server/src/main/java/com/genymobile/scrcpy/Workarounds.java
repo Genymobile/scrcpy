@@ -7,6 +7,7 @@ import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.AudioRecord;
@@ -30,6 +31,11 @@ public final class Workarounds {
 
     public static void apply(boolean audio, boolean camera) {
         Workarounds.prepareMainLooper();
+        try {
+            fillActivityThread();
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
 
         boolean mustFillAppInfo = false;
         boolean mustFillBaseContext = false;
@@ -122,6 +128,17 @@ public final class Workarounds {
 
             ApplicationInfo applicationInfo = new ApplicationInfo();
             applicationInfo.packageName = FakeContext.PACKAGE_NAME;
+
+            Application application = new Application() {
+                @Override
+                public String getOpPackageName() {
+                    return FakeContext.PACKAGE_NAME;
+                }
+            };
+
+            Field initialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
+            initialApplicationField.setAccessible(true);
+            initialApplicationField.set(activityThread, application);
 
             // appBindData.appInfo = applicationInfo;
             Field appInfoField = appBindDataClass.getDeclaredField("appInfo");
@@ -304,6 +321,16 @@ public final class Workarounds {
         } catch (Exception e) {
             Ln.e("Failed to invoke AudioRecord.<init>.", e);
             throw new RuntimeException("Cannot create AudioRecord");
+        }
+    }
+
+    static Context retrieveSystemContext() {
+        try {
+            Method getSystemContextMethod = activityThreadClass.getDeclaredMethod("getSystemContext");
+            return (Context) getSystemContextMethod.invoke(activityThread);
+        } catch (Exception e) {
+            Ln.e("Cannot retrieve system context", e);
+            return null;
         }
     }
 }

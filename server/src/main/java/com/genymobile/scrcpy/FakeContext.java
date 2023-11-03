@@ -18,7 +18,7 @@ public final class FakeContext extends MutableContextWrapper {
     }
 
     private FakeContext() {
-        super(null);
+        super(Workarounds.retrieveSystemContext());
     }
 
     @Override
