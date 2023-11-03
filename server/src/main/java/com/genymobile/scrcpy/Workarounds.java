@@ -143,7 +143,7 @@ public final class Workarounds {
         try {
             fillActivityThread();
 
-            Application app = Application.class.newInstance();
+            Application app = new Application();
             Field baseField = ContextWrapper.class.getDeclaredField("mBase");
             baseField.setAccessible(true);
             baseField.set(app, FakeContext.get());
