@@ -81,6 +81,7 @@ public final class Workarounds {
 
         if (camera) {
             mustFillAppInfo = true;
+            mustFillAppContext = true;
         }
 
         if (mustFillAppInfo) {
