@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import android.annotation.TargetApi;
 import android.content.AttributionSource;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
 import android.os.Process;
@@ -43,5 +44,10 @@ public final class FakeContext extends ContextWrapper {
     @SuppressWarnings("unused")
     public int getDeviceId() {
         return 0;
+    }
+
+    @Override
+    public Context getApplicationContext() {
+        return this;
     }
 }
