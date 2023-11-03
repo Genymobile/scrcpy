@@ -135,6 +135,11 @@ public final class Workarounds {
                 public String getOpPackageName() {
                     return FakeContext.PACKAGE_NAME;
                 }
+
+                @Override
+                public PackageManager getPackageManager() {
+                    return FakeContext.get().getPackageManager();
+                }
             };
 
             Field initialApplicationField = activityThreadClass.getDeclaredField("mInitialApplication");
