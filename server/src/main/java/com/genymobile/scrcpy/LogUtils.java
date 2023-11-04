@@ -3,15 +3,19 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.TargetApi;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
+import android.os.Build;
 import android.util.Range;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -84,6 +88,7 @@ public final class LogUtils {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.P)
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
@@ -106,6 +111,12 @@ public final class LogUtils {
                     Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
                     SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
                     builder.append("fps=").append(uniqueLowFps).append(')');
+
+                    int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                    if (Arrays.asList(capabilities).contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA)) {
+                        Set<String> phy = characteristics.getPhysicalCameraIds();
+                        builder.append("\n    PHYSICAL: ").append(phy);
+                    }
 
                     if (includeSizes) {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
