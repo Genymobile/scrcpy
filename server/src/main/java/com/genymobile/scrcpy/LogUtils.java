@@ -3,14 +3,17 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.TargetApi;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
+import android.os.Build;
 import android.util.Range;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -84,6 +87,7 @@ public final class LogUtils {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.P)
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
@@ -106,6 +110,15 @@ public final class LogUtils {
                     Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
                     SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
                     builder.append("fps=").append(uniqueLowFps).append(')');
+
+                    int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                    if (contains(capabilities, CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA)) {
+                        builder.append("\n        Logical multi-camera, backed by physical cameras:");
+                        for (String phyId : characteristics.getPhysicalCameraIds()) {
+                            CameraCharacteristics phyCharacteristics = cameraManager.getCameraCharacteristics(phyId);
+                            appendPhysicalCamera(builder, phyId, phyCharacteristics);
+                        }
+                    }
 
                     if (includeSizes) {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -132,6 +145,23 @@ public final class LogUtils {
             builder.append("\n    (access denied)");
         }
         return builder.toString();
+    }
+
+    private static boolean contains(int[] array, int value) {
+        for (int i : array) {
+            if (i == value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void appendPhysicalCamera(StringBuilder builder, String id, CameraCharacteristics characteristics) {
+        builder.append("\n            --camera-id=").append(id).append("    (");
+
+        Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+        builder.append(activeSize.width()).append("x").append(activeSize.height()).append(")");
     }
 
     private static SortedSet<Integer> getUniqueSet(Range<Integer>[] ranges) {
