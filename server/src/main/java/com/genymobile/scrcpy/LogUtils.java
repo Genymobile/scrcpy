@@ -93,7 +93,7 @@ public final class LogUtils {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
-                    builder.append("\n    --video-source=camera --camera-id=").append(id);
+                    builder.append("\n    --camera-id=").append(id);
                     CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
 
                     int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
