@@ -178,6 +178,8 @@ sc_server_get_codec_name(enum sc_codec codec) {
             return "opus";
         case SC_CODEC_AAC:
             return "aac";
+        case SC_CODEC_FLAC:
+            return "flac";
         case SC_CODEC_RAW:
             return "raw";
         default:

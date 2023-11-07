@@ -62,12 +62,13 @@ scrcpy --audio-source=mic --no-video --no-playback --record=file.opus
 
 ## Codec
 
-The audio codec can be selected. The possible values are `opus` (default), `aac`
-and `raw` (uncompressed PCM 16-bit LE):
+The audio codec can be selected. The possible values are `opus` (default),
+`aac`, `flac` and `raw` (uncompressed PCM 16-bit LE):
 
 ```bash
 scrcpy --audio-codec=opus  # default
 scrcpy --audio-codec=aac
+scrcpy --audio-codec=flac
 scrcpy --audio-codec=raw
 ```
 
@@ -80,7 +81,14 @@ then your device has no Opus encoder: try `scrcpy --audio-codec=aac`.
 For advanced usage, to pass arbitrary parameters to the [`MediaFormat`],
 check `--audio-codec-options` in the manpage or in `scrcpy --help`.
 
+For example, to change the [FLAC compression level]:
+
+```bash
+scrcpy --audio-codec=flac --audio-codec-options=flac-compression-level=8
+```
+
 [`MediaFormat`]: https://developer.android.com/reference/android/media/MediaFormat
+[FLAC compression level]: https://developer.android.com/reference/android/media/MediaFormat#KEY_FLAC_COMPRESSION_LEVEL
 
 
 ## Encoder

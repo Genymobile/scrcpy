@@ -5,6 +5,7 @@ import android.media.MediaCodec;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public final class Streamer {
@@ -29,6 +30,7 @@ public final class Streamer {
     public Codec getCodec() {
         return codec;
     }
+
     public void writeAudioHeader() throws IOException {
         if (sendCodecMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
@@ -61,8 +63,12 @@ public final class Streamer {
     }
 
     public void writePacket(ByteBuffer buffer, long pts, boolean config, boolean keyFrame) throws IOException {
-        if (config && codec == AudioCodec.OPUS) {
-            fixOpusConfigPacket(buffer);
+        if (config) {
+            if (codec == AudioCodec.OPUS) {
+                fixOpusConfigPacket(buffer);
+            } else if (codec == AudioCodec.FLAC) {
+                fixFlacConfigPacket(buffer);
+            }
         }
 
         if (sendFrameMeta) {
@@ -138,6 +144,43 @@ public final class Streamer {
         }
 
         // Set the buffer to point to the OPUS header slice
+        buffer.limit(buffer.position() + size);
+    }
+
+    private static void fixFlacConfigPacket(ByteBuffer buffer) throws IOException {
+        // 00000000  66 4c 61 43 00 00 00 22                           |fLaC..."        |
+        // -------------- BELOW IS THE PART WE MUST PUT AS EXTRADATA  -------------------
+        // 00000000                           10 00 10 00 00 00 00 00  |        ........|
+        // 00000010  00 00 0b b8 02 f0 00 00  00 00 00 00 00 00 00 00  |................|
+        // 00000020  00 00 00 00 00 00 00 00  00 00                    |..........      |
+        // ------------------------------------------------------------------------------
+        // 00000020                                 84 00 00 28 20 00  |          ...( .|
+        // 00000030  00 00 72 65 66 65 72 65  6e 63 65 20 6c 69 62 46  |..reference libF|
+        // 00000040  4c 41 43 20 31 2e 33 2e  32 20 32 30 32 32 31 30  |LAC 1.3.2 202210|
+        // 00000050  32 32 00 00 00 00                                 |22....|
+        //
+        // <https://developer.android.com/reference/android/media/MediaCodec#CSD>
+
+        if (buffer.remaining() < 8) {
+            throw new IOException("Not enough data in FLAC config packet");
+        }
+
+        final byte[] flacHeaderId = {'f', 'L', 'a', 'C'};
+        byte[] idBuffer = new byte[4];
+        buffer.get(idBuffer);
+        if (!Arrays.equals(idBuffer, flacHeaderId)) {
+            throw new IOException("FLAC header not found");
+        }
+
+        // The size is in big-endian
+        buffer.order(ByteOrder.BIG_ENDIAN);
+
+        int size = buffer.getInt();
+        if (buffer.remaining() < size) {
+            throw new IOException("Not enough data in FLAC header (invalid size: " + size + ")");
+        }
+
+        // Set the buffer to point to the FLAC header slice
         buffer.limit(buffer.position() + size);
     }
 }
