@@ -69,6 +69,8 @@ sc_recorder_get_format_name(enum sc_record_format format) {
             return "matroska";
         case SC_RECORD_FORMAT_OPUS:
             return "opus";
+        case SC_RECORD_FORMAT_FLAC:
+            return "flac";
         default:
             return NULL;
     }
