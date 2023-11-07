@@ -18,7 +18,8 @@ To record only the audio:
 ```bash
 scrcpy --no-video --record=file.opus
 scrcpy --no-video --audio-codec=aac --record=file.aac
-# .m4a/.mp4 and .mka/.mkv are also supported for both opus and aac
+scrcpy --no-video --audio-codec=flac --record=file.flac
+# .m4a/.mp4 and .mka/.mkv are also supported for opus, aac and flac
 ```
 
 Timestamps are captured on the device, so [packet delay variation] does not
@@ -35,6 +36,7 @@ client side. Several formats (containers) are supported:
  - MP4 (`.mp4`, `.m4a`, `.aac`)
  - Matroska (`.mkv`, `.mka`)
  - OPUS (`.opus`)
+ - FLAC (`.flac`)
 
 The container is automatically selected based on the filename.
 
