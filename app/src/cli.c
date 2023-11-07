@@ -152,7 +152,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_CODEC,
         .longopt = "audio-codec",
         .argdesc = "name",
-        .text = "Select an audio codec (opus, aac or raw).\n"
+        .text = "Select an audio codec (opus, aac, flac or raw).\n"
                 "Default is opus.",
     },
     {
@@ -1626,6 +1626,9 @@ get_record_format(const char *name) {
     if (!strcmp(name, "aac")) {
         return SC_RECORD_FORMAT_AAC;
     }
+    if (!strcmp(name, "flac")) {
+        return SC_RECORD_FORMAT_FLAC;
+    }
     return 0;
 }
 
@@ -1695,11 +1698,15 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_AAC;
         return true;
     }
+    if (!strcmp(optarg, "flac")) {
+        *codec = SC_CODEC_FLAC;
+        return true;
+    }
     if (!strcmp(optarg, "raw")) {
         *codec = SC_CODEC_RAW;
         return true;
     }
-    LOGE("Unsupported audio codec: %s (expected opus, aac or raw)", optarg);
+    LOGE("Unsupported audio codec: %s (expected opus, aac, flac or raw)", optarg);
     return false;
 }
 
@@ -2375,6 +2382,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("Recording to AAC file requires an AAC audio stream "
                  "(try with --audio-codec=aac)");
             return false;
+        }
+        if (opts->record_format == SC_RECORD_FORMAT_FLAC
+                && opts->audio_codec != SC_CODEC_FLAC) {
+            LOGE("Recording to FLAC file requires an FLAC audio stream "
+                 "(try with --audio-codec=flac)");
+            return false;
+        }
+    }
+
+    if (opts->audio_codec == SC_CODEC_FLAC) {
+        if (opts->audio_bit_rate) {
+            LOGW("--audio-bit-rate is ignored for flac audio codec");
         }
     }
 
