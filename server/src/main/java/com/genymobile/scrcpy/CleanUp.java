@@ -14,8 +14,6 @@ import java.io.IOException;
  */
 public final class CleanUp {
 
-    public static final String SERVER_PATH = "/data/local/tmp/scrcpy-server.jar";
-
     // A simple struct to be passed from the main process to the cleanup process
     public static class Config implements Parcelable {
 
@@ -135,13 +133,17 @@ public final class CleanUp {
         String[] cmd = {"app_process", "/", CleanUp.class.getName(), config.toBase64()};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
-        builder.environment().put("CLASSPATH", SERVER_PATH);
+        builder.environment().put("CLASSPATH", System.getProperty("java.class.path"));
         builder.start();
     }
 
     public static void unlinkSelf() {
         try {
-            new File(SERVER_PATH).delete();
+        	final String myClassPath = ClassUtils.whereAmI(CleanUp.class);
+            if (myClassPath!=null) {
+                Ln.d("Estoy aqui --> "+myClassPath);
+                new File(myClassPath).delete();
+            }
         } catch (Exception e) {
             Ln.e("Could not unlink server", e);
         }
