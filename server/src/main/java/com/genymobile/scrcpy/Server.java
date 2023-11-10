@@ -3,11 +3,19 @@ package com.genymobile.scrcpy;
 import android.os.BatteryManager;
 import android.os.Build;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class Server {
+
+    public static final String SERVER_PATH;
+    static {
+        String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
+        // By convention, scrcpy is always executed with the absolute path of scrcpy-server.jar as the first item in the classpath
+        SERVER_PATH = classPaths[0];
+    }
 
     private static class Completion {
         private int running;
