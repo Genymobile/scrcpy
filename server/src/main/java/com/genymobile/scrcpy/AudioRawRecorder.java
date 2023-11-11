@@ -51,6 +51,11 @@ public final class AudioRawRecorder implements AsyncProcessor {
 
                 streamer.writePacket(buffer, bufferInfo);
             }
+        } catch (IOException e) {
+            // Broken pipe is expected on close, because the socket is closed by the client
+            if (!IO.isBrokenPipe(e)) {
+                Ln.e("Audio capture error", e);
+            }
         } finally {
             capture.stop();
         }
