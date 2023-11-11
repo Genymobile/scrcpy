@@ -2353,7 +2353,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
 
         if (opts->audio_codec == SC_CODEC_RAW) {
-            LOGW("Recording does not support RAW audio codec");
+            LOGE("Recording does not support RAW audio codec");
             return false;
         }
 
