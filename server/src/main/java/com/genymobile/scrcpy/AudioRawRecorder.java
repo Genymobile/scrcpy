@@ -32,7 +32,13 @@ public final class AudioRawRecorder implements AsyncProcessor {
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         try {
-            capture.start();
+            try {
+                capture.start();
+            } catch (Throwable t) {
+                // Notify the client that the audio could not be captured
+                streamer.writeDisableStream(false);
+                throw t;
+            }
 
             streamer.writeAudioHeader();
             while (!Thread.currentThread().isInterrupted()) {
@@ -45,10 +51,6 @@ public final class AudioRawRecorder implements AsyncProcessor {
 
                 streamer.writePacket(buffer, bufferInfo);
             }
-        } catch (Throwable e) {
-            // Notify the client that the audio could not be captured
-            streamer.writeDisableStream(false);
-            throw e;
         } finally {
             capture.stop();
         }
