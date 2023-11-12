@@ -5,13 +5,12 @@ import android.media.MediaCodec;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public final class Streamer {
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
-
-    private static final long AOPUSHDR = 0x5244485355504F41L; // "AOPUSHDR" in ASCII (little-endian)
 
     private final FileDescriptor fd;
     private final Codec codec;
@@ -120,11 +119,14 @@ public final class Streamer {
             throw new IOException("Not enough data in OPUS config packet");
         }
 
-        long id = buffer.getLong();
-        if (id != AOPUSHDR) {
+        final byte[] opusHeaderId = {'A', 'O', 'P', 'U', 'S', 'H', 'D', 'R'};
+        byte[] idBuffer = new byte[8];
+        buffer.get(idBuffer);
+        if (!Arrays.equals(idBuffer, opusHeaderId)) {
             throw new IOException("OPUS header not found");
         }
 
+        // The size is in native byte-order
         long sizeLong = buffer.getLong();
         if (sizeLong < 0 || sizeLong >= 0x7FFFFFFF) {
             throw new IOException("Invalid block size in OPUS header: " + sizeLong);
