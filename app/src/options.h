@@ -26,6 +26,7 @@ enum sc_record_format {
     SC_RECORD_FORMAT_OPUS,
     SC_RECORD_FORMAT_AAC,
     SC_RECORD_FORMAT_FLAC,
+    SC_RECORD_FORMAT_WAV,
 };
 
 static inline bool
@@ -34,7 +35,8 @@ sc_record_format_is_audio_only(enum sc_record_format fmt) {
         || fmt == SC_RECORD_FORMAT_MKA
         || fmt == SC_RECORD_FORMAT_OPUS
         || fmt == SC_RECORD_FORMAT_AAC
-        || fmt == SC_RECORD_FORMAT_FLAC;
+        || fmt == SC_RECORD_FORMAT_FLAC
+        || fmt == SC_RECORD_FORMAT_WAV;
 }
 
 enum sc_codec {

@@ -71,6 +71,8 @@ sc_recorder_get_format_name(enum sc_record_format format) {
             return "opus";
         case SC_RECORD_FORMAT_FLAC:
             return "flac";
+        case SC_RECORD_FORMAT_WAV:
+            return "wav";
         default:
             return NULL;
     }
@@ -168,13 +170,14 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
 }
 
 static inline bool
-sc_recorder_has_empty_queues(struct sc_recorder *recorder) {
+sc_recorder_must_wait_for_config_packets(struct sc_recorder *recorder) {
     if (recorder->video && sc_vecdeque_is_empty(&recorder->video_queue)) {
         // The video queue is empty
         return true;
     }
 
-    if (recorder->audio && sc_vecdeque_is_empty(&recorder->audio_queue)) {
+    if (recorder->audio && recorder->audio_expects_config_packet
+            && sc_vecdeque_is_empty(&recorder->audio_queue)) {
         // The audio queue is empty (when audio is enabled)
         return true;
     }
@@ -190,7 +193,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     while (!recorder->stopped &&
               ((recorder->video && !recorder->video_init)
             || (recorder->audio && !recorder->audio_init)
-            || sc_recorder_has_empty_queues(recorder))) {
+            || sc_recorder_must_wait_for_config_packets(recorder))) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
@@ -209,7 +212,8 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     }
 
     AVPacket *audio_pkt = NULL;
-    if (!sc_vecdeque_is_empty(&recorder->audio_queue)) {
+    if (recorder->audio_expects_config_packet &&
+            !sc_vecdeque_is_empty(&recorder->audio_queue)) {
         assert(recorder->audio);
         audio_pkt = sc_vecdeque_pop(&recorder->audio_queue);
     }
@@ -597,6 +601,10 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
 
     recorder->audio_stream.index = stream->index;
 
+    // A config packet is provided for all supported formats except raw audio
+    recorder->audio_expects_config_packet =
+        ctx->codec_id != AV_CODEC_ID_PCM_S16LE;
+
     recorder->audio_init = true;
     sc_cond_signal(&recorder->cond);
     sc_mutex_unlock(&recorder->mutex);
@@ -708,6 +716,8 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
 
     recorder->video_init = false;
     recorder->audio_init = false;
+
+    recorder->audio_expects_config_packet = false;
 
     sc_recorder_stream_init(&recorder->video_stream);
     sc_recorder_stream_init(&recorder->audio_stream);

@@ -50,6 +50,8 @@ struct sc_recorder {
     bool video_init;
     bool audio_init;
 
+    bool audio_expects_config_packet;
+
     struct sc_recorder_stream video_stream;
     struct sc_recorder_stream audio_stream;
 

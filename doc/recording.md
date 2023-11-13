@@ -19,6 +19,7 @@ To record only the audio:
 scrcpy --no-video --record=file.opus
 scrcpy --no-video --audio-codec=aac --record=file.aac
 scrcpy --no-video --audio-codec=flac --record=file.flac
+scrcpy --no-video --audio-codec=raw --record=file.wav
 # .m4a/.mp4 and .mka/.mkv are also supported for opus, aac and flac
 ```
 
@@ -37,6 +38,7 @@ client side. Several formats (containers) are supported:
  - Matroska (`.mkv`, `.mka`)
  - OPUS (`.opus`)
  - FLAC (`.flac`)
+ - WAV (`.wav`)
 
 The container is automatically selected based on the filename.
 
