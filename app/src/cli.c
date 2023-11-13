@@ -594,8 +594,8 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_RECORD_FORMAT,
         .longopt = "record-format",
         .argdesc = "format",
-        .text = "Force recording format (mp4, mkv, m4a, mka, opus, aac or "
-                "flac).",
+        .text = "Force recording format (mp4, mkv, m4a, mka, opus, aac, flac "
+                "or wav).",
     },
     {
         .longopt_id = OPT_RENDER_DRIVER,
@@ -1630,6 +1630,9 @@ get_record_format(const char *name) {
     if (!strcmp(name, "flac")) {
         return SC_RECORD_FORMAT_FLAC;
     }
+    if (!strcmp(name, "wav")) {
+        return SC_RECORD_FORMAT_WAV;
+    }
     return 0;
 }
 
@@ -2373,11 +2376,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             }
         }
 
-        if (opts->audio_codec == SC_CODEC_RAW) {
-            LOGE("Recording does not support RAW audio codec");
-            return false;
-        }
-
         if (opts->video
                 && sc_record_format_is_audio_only(opts->record_format)) {
             LOGE("Audio container does not support video stream");
@@ -2401,6 +2399,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 && opts->audio_codec != SC_CODEC_FLAC) {
             LOGE("Recording to FLAC file requires a FLAC audio stream "
                  "(try with --audio-codec=flac)");
+            return false;
+        }
+
+        if (opts->record_format == SC_RECORD_FORMAT_WAV
+                && opts->audio_codec != SC_CODEC_RAW) {
+            LOGE("Recording to WAV file requires a RAW audio stream "
+                 "(try with --audio-codec=raw)");
+            return false;
+        }
+
+        if ((opts->record_format == SC_RECORD_FORMAT_MP4 ||
+             opts->record_format == SC_RECORD_FORMAT_M4A)
+                && opts->audio_codec == SC_CODEC_RAW) {
+            LOGE("Recording to MP4 container does not support RAW audio");
             return false;
         }
     }
