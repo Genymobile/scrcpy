@@ -34,6 +34,7 @@ public final class AudioCapture {
     private AudioRecord recorder;
 
     private final AudioTimestamp timestamp = new AudioTimestamp();
+    private long previousRecorderTimestamp = -1;
     private long previousPts = 0;
     private long nextPts = 0;
 
@@ -145,8 +146,9 @@ public final class AudioCapture {
         long pts;
 
         int ret = recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
-        if (ret == AudioRecord.SUCCESS) {
+        if (ret == AudioRecord.SUCCESS && timestamp.nanoTime != previousRecorderTimestamp) {
             pts = timestamp.nanoTime / 1000;
+            previousRecorderTimestamp = timestamp.nanoTime;
         } else {
             if (nextPts == 0) {
                 Ln.w("Could not get any audio timestamp");
