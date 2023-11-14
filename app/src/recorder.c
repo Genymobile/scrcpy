@@ -105,7 +105,7 @@ sc_recorder_write_stream(struct sc_recorder *recorder,
     AVStream *stream = recorder->ctx->streams[st->index];
     sc_recorder_rescale_packet(stream, packet);
     if (st->last_pts != AV_NOPTS_VALUE && packet->pts <= st->last_pts) {
-        LOGW("Fixing PTS non monotonically increasing in stream %d "
+        LOGD("Fixing PTS non monotonically increasing in stream %d "
              "(%" PRIi64 " >= %" PRIi64 ")",
              st->index, st->last_pts, packet->pts);
         packet->pts = ++st->last_pts;
