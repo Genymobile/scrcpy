@@ -315,6 +315,14 @@ public final class Device {
      */
     public static boolean setScreenPowerMode(int mode) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasPhysicalDisplayIdsMethod()) {
+                // On Android 14+, these internal methods have been moved to system server classes.
+                // Run a separate process with the correct classpath and LD_PRELOAD to change the display power mode.
+                DisplayPowerMode.setRemoteDisplayPowerMode(mode);
+                // The call is asynchronous (we don't want to block)
+                return true;
+            }
+
             // Change the power mode for all physical displays
             long[] physicalDisplayIds = SurfaceControl.getPhysicalDisplayIds();
             if (physicalDisplayIds == null) {

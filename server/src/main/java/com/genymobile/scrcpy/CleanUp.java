@@ -183,6 +183,8 @@ public final class CleanUp {
             } else if (config.restoreNormalPowerMode) {
                 Ln.i("Restoring normal power mode");
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+                // Make sure the request is performed before exiting
+                DisplayPowerMode.stopAndJoin();
             }
         }
 
