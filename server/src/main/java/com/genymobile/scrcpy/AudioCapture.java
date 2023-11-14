@@ -29,6 +29,8 @@ public final class AudioCapture {
     // receive 4 successive blocks without waiting, then we wait for the 4 next ones).
     public static final int MAX_READ_SIZE = 1024 * CHANNELS * BYTES_PER_SAMPLE;
 
+    private static final long ONE_SAMPLE_US = (1000000 + SAMPLE_RATE - 1) / SAMPLE_RATE; // 1 sample in microseconds (used for fixing PTS)
+
     private final int audioSource;
 
     private AudioRecord recorder;
@@ -160,13 +162,13 @@ public final class AudioCapture {
         long durationUs = r * 1000000 / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
         nextPts = pts + durationUs;
 
-        if (previousPts != 0 && pts < previousPts) {
+        if (previousPts != 0 && pts < previousPts + ONE_SAMPLE_US) {
             // Audio PTS may come from two sources:
             //  - recorder.getTimestamp() if the call works;
             //  - an estimation from the previous PTS and the packet size as a fallback.
             //
             // Therefore, the property that PTS are monotonically increasing is no guaranteed in corner cases, so enforce it.
-            pts = previousPts + 1;
+            pts = previousPts + ONE_SAMPLE_US;
         }
         previousPts = pts;
 
