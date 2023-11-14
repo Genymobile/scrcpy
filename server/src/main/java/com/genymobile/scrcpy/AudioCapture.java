@@ -24,6 +24,11 @@ public final class AudioCapture {
     public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int BYTES_PER_SAMPLE = 2;
 
+    // Never read more than 1024 samples, even if the buffer is bigger (that would increase latency).
+    // A lower value is useless, since the system captures audio samples by blocks of 1024 (so for example if we read by blocks of 256 samples, we
+    // receive 4 successive blocks without waiting, then we wait for the 4 next ones).
+    public static final int MAX_READ_SIZE = 1024 * CHANNELS * BYTES_PER_SAMPLE;
+
     private final int audioSource;
 
     private AudioRecord recorder;
@@ -34,10 +39,6 @@ public final class AudioCapture {
 
     public AudioCapture(AudioSource audioSource) {
         this.audioSource = audioSource.value();
-    }
-
-    public static int millisToBytes(int millis) {
-        return SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE * millis / 1000;
     }
 
     private static AudioFormat createAudioFormat() {
@@ -135,8 +136,8 @@ public final class AudioCapture {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
-        int r = recorder.read(directBuffer, size);
+    public int read(ByteBuffer directBuffer, MediaCodec.BufferInfo outBufferInfo) {
+        int r = recorder.read(directBuffer, MAX_READ_SIZE);
         if (r <= 0) {
             return r;
         }
