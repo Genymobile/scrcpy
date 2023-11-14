@@ -31,14 +31,15 @@ course, not if you capture your scrcpy window and audio output on the computer).
 ## Format
 
 The video and audio streams are encoded on the device, but are muxed on the
-client side. Two formats (containers) are supported:
- - Matroska (`.mkv`)
- - MP4 (`.mp4`)
+client side. Several formats (containers) are supported:
+ - MP4 (`.mp4`, `.m4a`, `.aac`)
+ - Matroska (`.mkv`, `.mka`)
+ - OPUS (`.opus`)
 
 The container is automatically selected based on the filename.
 
 It is also possible to explicitly select a container (in that case the filename
-needs not end with `.mkv` or `.mp4`):
+needs not end with a known extension):
 
 ```
 scrcpy --record=file --record-format=mkv

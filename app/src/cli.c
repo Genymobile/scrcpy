@@ -583,7 +583,7 @@ static const struct sc_option options[] = {
         .argdesc = "file.mp4",
         .text = "Record screen to file.\n"
                 "The format is determined by the --record-format option if "
-                "set, or by the file extension (.mp4 or .mkv).",
+                "set, or by the file extension.",
     },
     {
         .longopt_id = OPT_RAW_KEY_EVENTS,
@@ -594,7 +594,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_RECORD_FORMAT,
         .longopt = "record-format",
         .argdesc = "format",
-        .text = "Force recording format (either mp4 or mkv).",
+        .text = "Force recording format (mp4, mkv, m4a, mka, opus or aac).",
     },
     {
         .longopt_id = OPT_RENDER_DRIVER,

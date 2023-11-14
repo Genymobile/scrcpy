@@ -65,7 +65,7 @@ arguments=(
     '--push-target=[Set the target directory for pushing files to the device by drag and drop]'
     {-r,--record=}'[Record screen to file]:record file:_files'
     '--raw-key-events[Inject key events for all input keys, and ignore text events]'
-    '--record-format=[Force recording format]:format:(mp4 mkv)'
+    '--record-format=[Force recording format]:format:(mp4 mkv m4a mka opus aac)'
     '--render-driver=[Request SDL to use the given render driver]:driver name:(direct3d opengl opengles2 opengles metal software)'
     '--require-audio=[Make scrcpy fail if audio is enabled but does not work]'
     '--rotation=[Set the initial display rotation]:rotation values:(0 1 2 3)'

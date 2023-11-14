@@ -125,7 +125,7 @@ _scrcpy() {
             return
             ;;
         --record-format)
-            COMPREPLY=($(compgen -W 'mkv mp4' -- "$cur"))
+            COMPREPLY=($(compgen -W 'mp4 mkv m4a mka opus aac' -- "$cur"))
             return
             ;;
         --render-driver)
