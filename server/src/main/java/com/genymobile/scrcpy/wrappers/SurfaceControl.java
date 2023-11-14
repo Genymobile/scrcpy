@@ -139,6 +139,15 @@ public final class SurfaceControl {
         return getPhysicalDisplayIdsMethod;
     }
 
+    public static boolean hasPhysicalDisplayIdsMethod() {
+        try {
+            getGetPhysicalDisplayIdsMethod();
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
     public static long[] getPhysicalDisplayIds() {
         try {
             Method method = getGetPhysicalDisplayIdsMethod();
