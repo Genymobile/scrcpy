@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     namespace 'com.genymobile.scrcpy'
-    compileSdkVersion 33
+    compileSdk 33
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
         minSdkVersion 21
@@ -16,6 +16,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+    }
+    buildFeatures {
+        buildConfig true
+        aidl true
     }
 }
 

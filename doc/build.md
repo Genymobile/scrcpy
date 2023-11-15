@@ -58,7 +58,7 @@ sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
                  libswresample-dev libusb-1.0-0-dev
 
 # server build dependencies
-sudo apt install openjdk-11-jdk
+sudo apt install openjdk-17-jdk
 ```
 
 On old versions (like Ubuntu 16.04), `meson` is too old. In that case, install
@@ -100,7 +100,7 @@ sudo apt install mingw-w64 mingw-w64-tools
 You also need the JDK to build the server:
 
 ```bash
-sudo apt install openjdk-11-jdk
+sudo apt install openjdk-17-jdk
 ```
 
 Then generate the releases:
@@ -168,13 +168,13 @@ brew install sdl2 ffmpeg libusb
 brew install pkg-config meson
 ```
 
-Additionally, if you want to build the server, install Java 8 from Caskroom, and
+Additionally, if you want to build the server, install Java 17 from Caskroom, and
 make it available from the `PATH`:
 
 ```bash
 brew tap homebrew/cask-versions
-brew install adoptopenjdk/openjdk/adoptopenjdk11
-export JAVA_HOME="$(/usr/libexec/java_home --version 1.11)"
+brew install adoptopenjdk/openjdk/adoptopenjdk17
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.17)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
