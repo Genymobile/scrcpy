@@ -19,6 +19,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+@SuppressLint("PrivateApi,BlockedPrivateApi,SoonBlockedPrivateApi,DiscouragedPrivateApi")
 public final class Workarounds {
 
     private static final Class<?> ACTIVITY_THREAD_CLASS;
@@ -105,7 +106,6 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     private static void fillAppInfo() {
         try {
             // ActivityThread.AppBindData appBindData = new ActivityThread.AppBindData();
@@ -132,7 +132,6 @@ public final class Workarounds {
         }
     }
 
-    @SuppressLint("PrivateApi,DiscouragedPrivateApi")
     private static void fillAppContext() {
         try {
             Application app = new Application();
@@ -162,7 +161,7 @@ public final class Workarounds {
     }
 
     @TargetApi(Build.VERSION_CODES.R)
-    @SuppressLint("WrongConstant,MissingPermission,BlockedPrivateApi,SoonBlockedPrivateApi,DiscouragedPrivateApi")
+    @SuppressLint("WrongConstant,MissingPermission")
     public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) {
         // Vivo (and maybe some other third-party ROMs) modified `AudioRecord`'s constructor, requiring `Context`s from real App environment.
         //
