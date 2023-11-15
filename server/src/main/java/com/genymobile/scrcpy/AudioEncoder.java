@@ -295,7 +295,7 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
-    private class EncoderCallback extends MediaCodec.Callback {
+    private final class EncoderCallback extends MediaCodec.Callback {
         @TargetApi(Build.VERSION_CODES.N)
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {
