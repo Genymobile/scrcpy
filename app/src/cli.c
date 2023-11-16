@@ -1640,7 +1640,8 @@ static bool
 parse_record_format(const char *optarg, enum sc_record_format *format) {
     enum sc_record_format fmt = get_record_format(optarg);
     if (!fmt) {
-        LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
+        LOGE("Unsupported record format: %s (expected mp4, mkv, m4a, mka, "
+             "opus, aac, flac or wav)", optarg);
         return false;
     }
 
@@ -1710,7 +1711,8 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_RAW;
         return true;
     }
-    LOGE("Unsupported audio codec: %s (expected opus, aac, flac or raw)", optarg);
+    LOGE("Unsupported audio codec: %s (expected opus, aac, flac or raw)",
+         optarg);
     return false;
 }
 
