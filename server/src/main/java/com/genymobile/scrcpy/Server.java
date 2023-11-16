@@ -92,8 +92,6 @@ public final class Server {
             throw new ConfigurationException("Camera mirroring is not supported");
         }
 
-        final Device device = new Device(options);
-
         Thread initThread = startInitThread(options);
 
         int scid = options.getScid();
@@ -102,7 +100,9 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-        boolean camera = options.getVideoSource() == VideoSource.CAMERA;
+        boolean camera = video && options.getVideoSource() == VideoSource.CAMERA;
+
+        final Device device = camera ? null : new Device(options);
 
         Workarounds.apply(audio, camera);
 
