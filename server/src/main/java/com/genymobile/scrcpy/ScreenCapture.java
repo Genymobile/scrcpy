@@ -18,7 +18,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void init() {
-        display = createDisplay();
         device.setRotationListener(this);
         device.setFoldListener(this);
     }
@@ -32,6 +31,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
         int videoRotation = screenInfo.getVideoRotation();
         int layerStack = device.getLayerStack();
+
+        if (display != null) {
+            SurfaceControl.destroyDisplay(display);
+        }
+        display = createDisplay();
         setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
     }
 
@@ -39,7 +43,9 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
     public void release() {
         device.setRotationListener(null);
         device.setFoldListener(null);
-        SurfaceControl.destroyDisplay(display);
+        if (display != null) {
+            SurfaceControl.destroyDisplay(display);
+        }
     }
 
     @Override
