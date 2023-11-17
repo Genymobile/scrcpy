@@ -1,24 +1,26 @@
 package com.genymobile.scrcpy;
 
+import dalvik.system.DexClassLoader;
 import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
 
 public class ClassUtils {
-    public static String whereAmI(Class<?> c) { // https://stackoverflow.com/a/6219855/12857692
+    public static String whereAmI(Class<?> c) { // https://stackoverflow.com/a/10833005/12857692
         final String classPaths[] = System.getProperty("java.class.path").split(System.getProperty("path.separator"));
-        final String miNombre = c.getName();
+        final String myName = c.getName();
+        final File cwd = new File(System.getProperty("user.dir"));
+        final ClassLoader cl = ClassLoader.getSystemClassLoader().getParent();
         for (String p: classPaths) {
-            final File fichero = new File(p);
-            try {
-                final URL url = fichero.toURI().toURL();
-                final URL[] urls = new URL[]{url};
-                final ClassLoader cl = new URLClassLoader(urls);
-                cl.loadClass(miNombre);
-            } catch (Exception e) {
-                continue;
+            File file = new File(p);
+            if (!file.isAbsolute()) {
+                file = new File(cwd, file.getPath());
             }
-            return fichero.getAbsolutePath();
+            try {
+                final DexClassLoader dLoader = new DexClassLoader(file.getAbsolutePath(), file.getParentFile().getAbsolutePath(), null, cl);
+                dLoader.loadClass(myName);
+                return file.getAbsolutePath();
+            } catch (Exception e) {
+                Ln.d(e.getMessage());
+            }
         }
         return null;
     }
