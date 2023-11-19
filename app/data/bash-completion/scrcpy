@@ -21,6 +21,7 @@ _scrcpy() {
         --disable-screensaver
         --display-buffer=
         --display-id=
+        --display-orientation=
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward
@@ -112,6 +113,10 @@ _scrcpy() {
             COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
             return
             ;;
+        --display-orientation)
+            COMPREPLY=($(compgen -> '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
         --lock-video-orientation)
             COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
             return
@@ -130,10 +135,6 @@ _scrcpy() {
             ;;
         --render-driver)
             COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
-            return
-            ;;
-        --rotation)
-            COMPREPLY=($(compgen -W '0 1 2 3' -- "$cur"))
             return
             ;;
         --shortcut-mod)

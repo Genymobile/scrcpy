@@ -289,6 +289,10 @@ if get_option('buildtype') == 'debug'
             'tests/test_device_msg_deserialize.c',
             'src/device_msg.c',
         ]],
+        ['test_orientation', [
+            'tests/test_orientation.c',
+            'src/options.c',
+        ]],
         ['test_strbuf', [
             'tests/test_strbuf.c',
             'src/util/strbuf.c',

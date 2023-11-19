@@ -90,6 +90,7 @@ enum {
     OPT_CAMERA_AR,
     OPT_CAMERA_FPS,
     OPT_CAMERA_HIGH_SPEED,
+    OPT_DISPLAY_ORIENTATION,
 };
 
 struct sc_option {
@@ -307,6 +308,17 @@ static const struct sc_option options[] = {
         .text = "Specify the device display id to mirror.\n"
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
+                "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_DISPLAY_ORIENTATION,
+        .longopt = "display-orientation",
+        .argdesc = "value",
+        .text = "Set the initial display orientation.\n"
+                "Possible values are 0, 90, 180, 270, flip0, flip90, flip180 "
+                "and flip270. The number represents the clockwise rotation "
+                "in degrees; the \"flip\" keyword applies a horizontal flip "
+                "before the rotation.\n"
                 "Default is 0.",
     },
     {
@@ -615,12 +627,10 @@ static const struct sc_option options[] = {
                 "is enabled but does not work."
     },
     {
+        // deprecated
         .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
-        .text = "Set the initial display rotation.\n"
-                "Possible values are 0, 1, 2 and 3. Each increment adds a 90 "
-                "degrees rotation counterclockwise.",
     },
     {
         .shortopt = 's',
@@ -823,6 +833,14 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+Right" },
         .text = "Rotate display right",
+    },
+    {
+        .shortcuts = { "MOD+Shift+Left", "MOD+Shift+Right" },
+        .text = "Flip display horizontally",
+    },
+    {
+        .shortcuts = { "MOD+Shift+Up", "MOD+Shift+Down" },
+        .text = "Flip display vertically",
     },
     {
         .shortcuts = { "MOD+g" },
@@ -1403,6 +1421,45 @@ parse_rotation(const char *s, uint8_t *rotation) {
 
     *rotation = (uint8_t) value;
     return true;
+}
+
+static bool
+parse_orientation(const char *s, enum sc_orientation *orientation) {
+    if (!strcmp(s, "0")) {
+        *orientation = SC_ORIENTATION_0;
+        return true;
+    }
+    if (!strcmp(s, "90")) {
+        *orientation = SC_ORIENTATION_90;
+        return true;
+    }
+    if (!strcmp(s, "180")) {
+        *orientation = SC_ORIENTATION_180;
+        return true;
+    }
+    if (!strcmp(s, "270")) {
+        *orientation = SC_ORIENTATION_270;
+        return true;
+    }
+    if (!strcmp(s, "flip0")) {
+        *orientation = SC_ORIENTATION_FLIP_0;
+        return true;
+    }
+    if (!strcmp(s, "flip90")) {
+        *orientation = SC_ORIENTATION_FLIP_90;
+        return true;
+    }
+    if (!strcmp(s, "flip180")) {
+        *orientation = SC_ORIENTATION_FLIP_180;
+        return true;
+    }
+    if (!strcmp(s, "flip270")) {
+        *orientation = SC_ORIENTATION_FLIP_270;
+        return true;
+    }
+    LOGE("Unsupported orientation: %s (expected 0, 90, 180, 270, flip0, "
+         "flip90, flip180 or flip270)", optarg);
+    return false;
 }
 
 static bool
@@ -2008,7 +2065,34 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
                 break;
             case OPT_ROTATION:
-                if (!parse_rotation(optarg, &opts->rotation)) {
+                LOGW("--rotation is deprecated, use --display-orientation "
+                     "instead.");
+                uint8_t rotation;
+                if (!parse_rotation(optarg, &rotation)) {
+                    return false;
+                }
+                assert(rotation <= 3);
+                switch (rotation) {
+                    case 0:
+                        opts->display_orientation = SC_ORIENTATION_0;
+                        break;
+                    case 1:
+                        // rotation 1 was 90° counterclockwise, but orientation
+                        // is expressed clockwise
+                        opts->display_orientation = SC_ORIENTATION_270;
+                        break;
+                    case 2:
+                        opts->display_orientation = SC_ORIENTATION_180;
+                        break;
+                    case 3:
+                        // rotation 3 was 270° counterclockwise, but orientation
+                        // is expressed clockwise
+                        opts->display_orientation = SC_ORIENTATION_90;
+                        break;
+                }
+                break;
+            case OPT_DISPLAY_ORIENTATION:
+                if (!parse_orientation(optarg, &opts->display_orientation)) {
                     return false;
                 }
                 break;

@@ -9,6 +9,7 @@
 
 #include "coords.h"
 #include "opengl.h"
+#include "options.h"
 
 #ifdef __APPLE__
 # define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -54,6 +55,6 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  unsigned rotation);
+                  enum sc_orientation orientation);
 
 #endif

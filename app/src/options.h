@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -66,6 +67,67 @@ enum sc_camera_facing {
     SC_CAMERA_FACING_BACK,
     SC_CAMERA_FACING_EXTERNAL,
 };
+
+                              // ,----- hflip (applied before the rotation)
+                              // | ,--- 180°
+                              // | | ,- 90° clockwise
+                              // | | |
+enum sc_orientation {         // v v v
+    SC_ORIENTATION_0,         // 0 0 0
+    SC_ORIENTATION_90,        // 0 0 1
+    SC_ORIENTATION_180,       // 0 1 0
+    SC_ORIENTATION_270,       // 0 1 1
+    SC_ORIENTATION_FLIP_0,    // 1 0 0
+    SC_ORIENTATION_FLIP_90,   // 1 0 1
+    SC_ORIENTATION_FLIP_180,  // 1 1 0
+    SC_ORIENTATION_FLIP_270,  // 1 1 1
+};
+
+static inline bool
+sc_orientation_is_mirror(enum sc_orientation orientation) {
+    assert(!(orientation & ~7));
+    return orientation & 4;
+}
+
+// Does the orientation swap width and height?
+static inline bool
+sc_orientation_is_swap(enum sc_orientation orientation) {
+    assert(!(orientation & ~7));
+    return orientation & 1;
+}
+
+static inline enum sc_orientation
+sc_orientation_get_rotation(enum sc_orientation orientation) {
+    assert(!(orientation & ~7));
+    return orientation & 3;
+}
+
+enum sc_orientation
+sc_orientation_apply(enum sc_orientation src, enum sc_orientation transform);
+
+static inline const char *
+sc_orientation_get_name(enum sc_orientation orientation) {
+    switch (orientation) {
+        case SC_ORIENTATION_0:
+            return "0";
+        case SC_ORIENTATION_90:
+            return "90";
+        case SC_ORIENTATION_180:
+            return "180";
+        case SC_ORIENTATION_270:
+            return "270";
+        case SC_ORIENTATION_FLIP_0:
+            return "flip0";
+        case SC_ORIENTATION_FLIP_90:
+            return "flip90";
+        case SC_ORIENTATION_FLIP_180:
+            return "flip180";
+        case SC_ORIENTATION_FLIP_270:
+            return "flip270";
+        default:
+            return "(unknown)";
+    }
+}
 
 enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
@@ -157,7 +219,7 @@ struct scrcpy_options {
     uint32_t audio_bit_rate;
     uint16_t max_fps;
     enum sc_lock_video_orientation lock_video_orientation;
-    uint8_t rotation;
+    enum sc_orientation display_orientation;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;

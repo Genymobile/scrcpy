@@ -142,6 +142,14 @@ The available display ids can be listed by \fB\-\-list\-displays\fR.
 Default is 0.
 
 .TP
+.BI "\-\-display\-orientation " value
+Set the initial display orientation.
+
+Possible values are 0, 90, 180, 270, flip0, flip90, flip180 and flip270. The number represents the clockwise rotation in degrees; the "flip" keyword applies a horizontal flip before the rotation.
+
+Default is 0.
+
+.TP
 .B \-e, \-\-select\-tcpip
 Use TCP/IP device (if there is exactly one, like adb -e).
 
@@ -370,10 +378,6 @@ Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "me
 By default, scrcpy mirrors only the video if audio capture fails on the device. This option makes scrcpy fail if audio is enabled but does not work.
 
 .TP
-.BI "\-\-rotation " value
-Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
-
-.TP
 .BI "\-s, \-\-serial " number
 The device serial number. Mandatory only if several devices are connected to adb.
 
@@ -533,6 +537,14 @@ Rotate display left
 .TP
 .B MOD+Right
 Rotate display right
+
+.TP
+.B MOD+Shift+Left, MOD+Shift+Right
+Flip display horizontally
+
+.TP
+.B MOD+Shift+Up, MOD+Shift+Down
+Flip display vertically
 
 .TP
 .B MOD+g
