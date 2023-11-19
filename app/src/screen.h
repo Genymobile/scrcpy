@@ -14,6 +14,7 @@
 #include "frame_buffer.h"
 #include "input_manager.h"
 #include "opengl.h"
+#include "options.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
@@ -49,8 +50,8 @@ struct sc_screen {
     // fullscreen (meaningful only when resize_pending is true)
     struct sc_size windowed_content_size;
 
-    // client rotation: 0, 1, 2 or 3 (x90 degrees counterclockwise)
-    unsigned rotation;
+    // client orientation
+    enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
     bool has_frame;
@@ -86,7 +87,7 @@ struct sc_screen_params {
 
     bool window_borderless;
 
-    uint8_t rotation;
+    enum sc_orientation orientation;
     bool mipmaps;
 
     bool fullscreen;
@@ -129,9 +130,10 @@ sc_screen_resize_to_fit(struct sc_screen *screen);
 void
 sc_screen_resize_to_pixel_perfect(struct sc_screen *screen);
 
-// set the display rotation (0, 1, 2 or 3, x90 degrees counterclockwise)
+// set the display orientation
 void
-sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation);
+sc_screen_set_orientation(struct sc_screen *screen,
+                          enum sc_orientation orientation);
 
 // react to SDL events
 // If this function returns false, scrcpy must exit with an error.

@@ -691,7 +691,7 @@ aoa_hid_end:
             .window_width = options->window_width,
             .window_height = options->window_height,
             .window_borderless = options->window_borderless,
-            .rotation = options->rotation,
+            .orientation = options->display_orientation,
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,

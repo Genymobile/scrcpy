@@ -293,15 +293,11 @@ rotate_device(struct sc_controller *controller) {
 }
 
 static void
-rotate_client_left(struct sc_screen *screen) {
-    unsigned new_rotation = (screen->rotation + 1) % 4;
-    sc_screen_set_rotation(screen, new_rotation);
-}
-
-static void
-rotate_client_right(struct sc_screen *screen) {
-    unsigned new_rotation = (screen->rotation + 3) % 4;
-    sc_screen_set_rotation(screen, new_rotation);
+apply_orientation_transform(struct sc_screen *screen,
+                            enum sc_orientation transform) {
+    enum sc_orientation new_orientation =
+        sc_orientation_apply(screen->orientation, transform);
+    sc_screen_set_orientation(screen, new_orientation);
 }
 
 static void
@@ -421,25 +417,47 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_DOWN:
-                if (controller && !shift) {
+                if (shift) {
+                    if (!repeat & down) {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_FLIP_180);
+                    }
+                } else if (controller) {
                     // forward repeated events
                     action_volume_down(controller, action);
                 }
                 return;
             case SDLK_UP:
-                if (controller && !shift) {
+                if (shift) {
+                    if (!repeat & down) {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_FLIP_180);
+                    }
+                } else if (controller) {
                     // forward repeated events
                     action_volume_up(controller, action);
                 }
                 return;
             case SDLK_LEFT:
-                if (!shift && !repeat && down) {
-                    rotate_client_left(im->screen);
+                if (!repeat && down) {
+                    if (shift) {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_FLIP_0);
+                    } else {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_270);
+                    }
                 }
                 return;
             case SDLK_RIGHT:
-                if (!shift && !repeat && down) {
-                    rotate_client_right(im->screen);
+                if (!repeat && down) {
+                    if (shift) {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_FLIP_0);
+                    } else {
+                        apply_orientation_transform(im->screen,
+                                                    SC_ORIENTATION_90);
+                    }
                 }
                 return;
             case SDLK_c:
