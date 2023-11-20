@@ -101,6 +101,16 @@ scrcpy --video-source=camera --camera-size=1920x1080 -m3000  # error
 ```
 
 
+## Rotation
+
+To rotate the captured video, use the [video orientation](video.md#orientation)
+option:
+
+```
+scrcpy --video-source=camera --camera-size=1920x1080 --orientation=90
+```
+
+
 ## Frame rate
 
 By default, camera is captured at Android's default frame rate (30 fps).
