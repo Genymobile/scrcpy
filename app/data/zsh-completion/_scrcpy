@@ -57,6 +57,7 @@ arguments=(
     '--no-power-on[Do not power on the device on start]'
     '--no-video[Disable video forwarding]'
     '--no-video-playback[Disable video playback]'
+    '--orientation=[Set the video orientation]:orientation values:(0 90 180 270 flip0 flip90 flip180 flip270)'
     '--otg[Run in OTG mode \(simulating physical keyboard and mouse\)]'
     {-p,--port=}'[\[port\[\:port\]\] Set the TCP port \(range\) used by the client to listen]'
     '--pause-on-exit=[Make scrcpy pause before exiting]:mode:(true false if-error)'

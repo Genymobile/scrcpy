@@ -92,6 +92,7 @@ enum {
     OPT_CAMERA_HIGH_SPEED,
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
+    OPT_ORIENTATION,
 };
 
 struct sc_option {
@@ -524,6 +525,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_VIDEO_PLAYBACK,
         .longopt = "no-video-playback",
         .text = "Disable video playback on the computer.",
+    },
+    {
+        .longopt_id = OPT_ORIENTATION,
+        .longopt = "orientation",
+        .argdesc = "value",
+        .text = "Same as --display-orientation=value "
+                "--record-orientation=value.",
     },
     {
         .longopt_id = OPT_OTG,
@@ -2145,6 +2153,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_orientation(optarg, &opts->record_orientation)) {
                     return false;
                 }
+                break;
+            case OPT_ORIENTATION:
+                enum sc_orientation orientation;
+                if (!parse_orientation(optarg, &orientation)) {
+                    return false;
+                }
+                opts->display_orientation = orientation;
+                opts->record_orientation = orientation;
                 break;
             case OPT_RENDER_DRIVER:
                 opts->render_driver = optarg;
