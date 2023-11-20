@@ -26,7 +26,7 @@ Encode the audio at the given bit rate, expressed in bits/s. Unit suffixes are s
 Default is 128K (128000).
 
 .TP
-.BI "\-\-audio\-buffer ms
+.BI "\-\-audio\-buffer " ms
 Configure the audio buffering delay (in milliseconds).
 
 Lower values decrease the latency, but increase the likelyhood of buffer underrun (causing audio glitches).
@@ -62,7 +62,7 @@ Select the audio source (output or mic).
 Default is output.
 
 .TP
-.BI "\-\-audio\-output\-buffer ms
+.BI "\-\-audio\-output\-buffer " ms
 Configure the size of the SDL audio output buffer (in milliseconds).
 
 If you get "robotic" audio playback, you should test with a higher value (10). Do not change this setting otherwise.
@@ -128,7 +128,7 @@ Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 Disable screensaver while scrcpy is running.
 
 .TP
-.BI "\-\-display\-buffer ms
+.BI "\-\-display\-buffer " ms
 Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
 
 Default is 0 (no buffering).
