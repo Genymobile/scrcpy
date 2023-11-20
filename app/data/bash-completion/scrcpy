@@ -62,6 +62,7 @@ _scrcpy() {
         -r --record=
         --raw-key-events
         --record-format=
+        --record-orientation=
         --render-driver=
         --require-audio
         --rotation=
@@ -115,6 +116,10 @@ _scrcpy() {
             ;;
         --display-orientation)
             COMPREPLY=($(compgen -> '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
+        --record-orientation)
+            COMPREPLY=($(compgen -> '0 90 180 270' -- "$cur"))
             return
             ;;
         --lock-video-orientation)

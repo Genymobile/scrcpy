@@ -3,7 +3,9 @@
 
 #include "config.h"
 
+#include <libavcodec/version.h>
 #include <libavformat/version.h>
+#include <libavutil/version.h>
 #include <SDL2/SDL_version.h>
 
 #ifndef __WIN32
@@ -48,6 +50,15 @@
 // f423497b455da06c1337846902c770028760e094.
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 23, 100)
 # define SCRCPY_LAVU_HAS_CHLAYOUT
+#endif
+
+// In ffmpeg/doc/APIchanges:
+// 2023-10-06 - 5432d2aacad - lavc 60.15.100 - avformat.h
+//   Deprecate AVFormatContext.{nb_,}side_data, av_stream_add_side_data(),
+//   av_stream_new_side_data(), and av_stream_get_side_data(). Side data fields
+//   from AVFormatContext.codecpar should be used from now on.
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 15, 100)
+# define SCRCPY_LAVC_HAS_CODECPAR_CODEC_SIDEDATA
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 6)

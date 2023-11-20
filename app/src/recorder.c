@@ -4,6 +4,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
+#include <libavutil/display.h>
 
 #include "util/log.h"
 #include "util/str.h"
@@ -494,6 +495,42 @@ run_recorder(void *data) {
 }
 
 static bool
+sc_recorder_set_orientation(AVStream *stream, enum sc_orientation orientation) {
+    assert(!sc_orientation_is_mirror(orientation));
+
+    uint8_t *raw_data;
+#ifdef SCRCPY_LAVC_HAS_CODECPAR_CODEC_SIDEDATA
+    AVPacketSideData *sd =
+        av_packet_side_data_new(&stream->codecpar->coded_side_data,
+                                &stream->codecpar->nb_coded_side_data,
+                                AV_PKT_DATA_DISPLAYMATRIX,
+                                sizeof(int32_t) * 9, 0);
+    if (!sd) {
+        LOG_OOM();
+        return false;
+    }
+
+    raw_data = sd->data;
+#else
+    raw_data = av_stream_new_side_data(stream, AV_PKT_DATA_DISPLAYMATRIX,
+                                      sizeof(int32_t) * 9);
+    if (!raw_data) {
+        LOG_OOM();
+        return false;
+    }
+#endif
+
+    int32_t *matrix = (int32_t *) raw_data;
+
+    unsigned rotation = orientation;
+    unsigned angle = rotation * 90;
+
+    av_display_rotation_set(matrix, angle);
+
+    return true;
+}
+
+static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
                                    AVCodecContext *ctx) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
@@ -519,6 +556,16 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
     }
 
     recorder->video_stream.index = stream->index;
+
+    if (recorder->orientation != SC_ORIENTATION_0) {
+        if (!sc_recorder_set_orientation(stream, recorder->orientation)) {
+            sc_mutex_unlock(&recorder->mutex);
+            return false;
+        }
+
+        LOGI("Record orientation set to %s",
+             sc_orientation_get_name(recorder->orientation));
+    }
 
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
@@ -689,7 +736,10 @@ sc_recorder_stream_init(struct sc_recorder_stream *stream) {
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format, bool video, bool audio,
+                 enum sc_orientation orientation,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata) {
+    assert(!sc_orientation_is_mirror(orientation));
+
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOG_OOM();
@@ -709,6 +759,8 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     assert(video || audio);
     recorder->video = video;
     recorder->audio = audio;
+
+    recorder->orientation = orientation;
 
     sc_vecdeque_init(&recorder->video_queue);
     sc_vecdeque_init(&recorder->audio_queue);

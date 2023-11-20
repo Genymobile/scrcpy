@@ -91,6 +91,7 @@ enum {
     OPT_CAMERA_FPS,
     OPT_CAMERA_HIGH_SPEED,
     OPT_DISPLAY_ORIENTATION,
+    OPT_RECORD_ORIENTATION,
 };
 
 struct sc_option {
@@ -608,6 +609,15 @@ static const struct sc_option options[] = {
         .argdesc = "format",
         .text = "Force recording format (mp4, mkv, m4a, mka, opus, aac, flac "
                 "or wav).",
+    },
+    {
+        .longopt_id = OPT_RECORD_ORIENTATION,
+        .longopt = "record-orientation",
+        .argdesc = "value",
+        .text = "Set the record orientation.\n"
+                "Possible values are 0, 90, 180 and 270. The number represents "
+                "the clockwise rotation in degrees.\n"
+                "Default is 0.",
     },
     {
         .longopt_id = OPT_RENDER_DRIVER,
@@ -2131,6 +2141,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_RECORD_ORIENTATION:
+                if (!parse_orientation(optarg, &opts->record_orientation)) {
+                    return false;
+                }
+                break;
             case OPT_RENDER_DRIVER:
                 opts->render_driver = optarg;
                 break;
@@ -2493,6 +2508,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("No format specified for \"%s\" "
                      "(try with --record-format=mkv)",
                      opts->record_filename);
+                return false;
+            }
+        }
+
+        if (opts->record_orientation != SC_ORIENTATION_0) {
+            if (sc_orientation_is_mirror(opts->record_orientation)) {
+                LOGE("Record orientation only supports rotation, not "
+                     "flipping: %s",
+                     sc_orientation_get_name(opts->record_orientation));
                 return false;
             }
         }

@@ -507,7 +507,8 @@ scrcpy(struct scrcpy_options *options) {
         };
         if (!sc_recorder_init(&s->recorder, options->record_filename,
                               options->record_format, options->video,
-                              options->audio, &recorder_cbs, NULL)) {
+                              options->audio, options->record_orientation,
+                              &recorder_cbs, NULL)) {
             goto end;
         }
         recorder_initialized = true;
