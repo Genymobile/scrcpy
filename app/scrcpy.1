@@ -128,18 +128,18 @@ Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 Disable screensaver while scrcpy is running.
 
 .TP
+.BI "\-\-display\-buffer ms
+Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
+
+Default is 0 (no buffering).
+
+.TP
 .BI "\-\-display\-id " id
 Specify the device display id to mirror.
 
 The available display ids can be listed by \fB\-\-list\-displays\fR.
 
 Default is 0.
-
-.TP
-.BI "\-\-display\-buffer ms
-Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
-
-Default is 0 (no buffering).
 
 .TP
 .B \-e, \-\-select\-tcpip

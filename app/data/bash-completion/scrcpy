@@ -19,8 +19,8 @@ _scrcpy() {
         --crop=
         -d --select-usb
         --disable-screensaver
-        --display-id=
         --display-buffer=
+        --display-id=
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward

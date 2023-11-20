@@ -293,6 +293,14 @@ static const struct sc_option options[] = {
         .argdesc = "id",
     },
     {
+        .longopt_id = OPT_DISPLAY_BUFFER,
+        .longopt = "display-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before displaying. "
+                "This increases latency to compensate for jitter.\n"
+                "Default is 0 (no buffering).",
+    },
+    {
         .longopt_id = OPT_DISPLAY_ID,
         .longopt = "display-id",
         .argdesc = "id",
@@ -300,14 +308,6 @@ static const struct sc_option options[] = {
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
                 "Default is 0.",
-    },
-    {
-        .longopt_id = OPT_DISPLAY_BUFFER,
-        .longopt = "display-buffer",
-        .argdesc = "ms",
-        .text = "Add a buffering delay (in milliseconds) before displaying. "
-                "This increases latency to compensate for jitter.\n"
-                "Default is 0 (no buffering).",
     },
     {
         .shortopt = 'e',
