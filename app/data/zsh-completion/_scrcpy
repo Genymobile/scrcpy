@@ -41,7 +41,7 @@ arguments=(
     '--list-cameras[List cameras available on the device]'
     '--list-displays[List displays available on the device]'
     '--list-encoders[List video and audio encoders available on the device]'
-    '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 1 2 3)'
+    '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 90 180 270)'
     {-m,--max-size=}'[Limit both the width and height of the video to value]'
     {-M,--hid-mouse}'[Simulate a physical mouse by using HID over AOAv2]'
     '--max-fps=[Limit the frame rate of screen capture]'

@@ -411,11 +411,11 @@ static const struct sc_option options[] = {
         .longopt = "lock-video-orientation",
         .argdesc = "value",
         .optional_arg = true,
-        .text = "Lock video orientation to value.\n"
+        .text = "Lock capture video orientation to value.\n"
                 "Possible values are \"unlocked\", \"initial\" (locked to the "
-                "initial orientation), 0, 1, 2 and 3. Natural device "
-                "orientation is 0, and each increment adds a 90 degrees "
-                "rotation counterclockwise.\n"
+                "initial orientation), 0, 90, 180 and 270. The values "
+                "represent the clockwise rotation from the natural device "
+                "orientation, in degrees.\n"
                 "Default is \"unlocked\".\n"
                 "Passing the option without argument is equivalent to passing "
                 "\"initial\".",
@@ -1400,15 +1400,50 @@ parse_lock_video_orientation(const char *s,
         return true;
     }
 
-    long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 3,
-                                "lock video orientation");
-    if (!ok) {
-        return false;
+    if (!strcmp(s, "0")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_0;
+        return true;
     }
 
-    *lock_mode = (enum sc_lock_video_orientation) value;
-    return true;
+    if (!strcmp(s, "90")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
+        return true;
+    }
+
+    if (!strcmp(s, "180")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
+        return true;
+    }
+
+    if (!strcmp(s, "270")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
+        return true;
+    }
+
+    if (!strcmp(s, "1")) {
+        LOGW("--lock-video-orientation=1 is deprecated, use "
+             "--lock-video-orientation=270 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
+        return true;
+    }
+
+    if (!strcmp(s, "2")) {
+        LOGW("--lock-video-orientation=2 is deprecated, use "
+             "--lock-video-orientation=180 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
+        return true;
+    }
+
+    if (!strcmp(s, "3")) {
+        LOGW("--lock-video-orientation=3 is deprecated, use "
+             "--lock-video-orientation=90 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
+        return true;
+    }
+
+    LOGE("Unsupported --lock-video-orientation value: %s (expected initial, "
+         "unlocked, 0, 90, 180 or 270).", s);
+    return false;
 }
 
 static bool
