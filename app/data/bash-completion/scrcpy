@@ -118,7 +118,7 @@ _scrcpy() {
             return
             ;;
         --lock-video-orientation)
-            COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
+            COMPREPLY=($(compgen -W 'unlocked initial 0 90 180 270' -- "$cur"))
             return
             ;;
         --pause-on-exit)

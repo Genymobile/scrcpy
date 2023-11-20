@@ -215,7 +215,9 @@ List displays available on the device.
 
 .TP
 \fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
-Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees rotation counterclockwise.
+Lock capture video orientation to \fIvalue\fR.
+
+Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 90, 180, and 270. The values represent the clockwise rotation from the natural device orientation, in degrees.
 
 Default is "unlocked".
 

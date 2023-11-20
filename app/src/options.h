@@ -134,9 +134,9 @@ enum sc_lock_video_orientation {
     // lock the current orientation when scrcpy starts
     SC_LOCK_VIDEO_ORIENTATION_INITIAL = -2,
     SC_LOCK_VIDEO_ORIENTATION_0 = 0,
-    SC_LOCK_VIDEO_ORIENTATION_1,
-    SC_LOCK_VIDEO_ORIENTATION_2,
-    SC_LOCK_VIDEO_ORIENTATION_3,
+    SC_LOCK_VIDEO_ORIENTATION_90 = 3,
+    SC_LOCK_VIDEO_ORIENTATION_180 = 2,
+    SC_LOCK_VIDEO_ORIENTATION_270 = 1,
 };
 
 enum sc_keyboard_input_mode {
