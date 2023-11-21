@@ -146,8 +146,6 @@ public final class CleanUp {
     }
 
     public static void main(String... args) {
-        unlinkSelf();
-
         try {
             // Wait for the server to die
             System.in.read();
@@ -187,5 +185,7 @@ public final class CleanUp {
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }
+
+        unlinkSelf();
     }
 }
