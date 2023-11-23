@@ -4,8 +4,8 @@ import com.genymobile.scrcpy.Ln;
 
 import android.annotation.TargetApi;
 import android.os.IInterface;
-import android.view.IRotationWatcher;
 import android.view.IDisplayFoldListener;
+import android.view.IRotationWatcher;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

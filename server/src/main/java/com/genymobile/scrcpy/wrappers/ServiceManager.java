@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 public final class ServiceManager {
 
     private static final Method GET_SERVICE_METHOD;
+
     static {
         try {
             GET_SERVICE_METHOD = Class.forName("android.os.ServiceManager").getDeclaredMethod("getService", String.class);

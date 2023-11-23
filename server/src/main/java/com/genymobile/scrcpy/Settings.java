@@ -75,7 +75,7 @@ public final class Settings {
 
         String oldValue = getValue(table, key);
         if (!value.equals(oldValue)) {
-             putValue(table, key, value);
+            putValue(table, key, value);
         }
         return oldValue;
     }

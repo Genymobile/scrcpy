@@ -11,6 +11,8 @@ public interface AsyncProcessor {
     }
 
     void start(TerminationListener listener);
+
     void stop();
+
     void join() throws InterruptedException;
 }

@@ -20,7 +20,7 @@ public final class PowerManager {
     private Method getIsScreenOnMethod() throws NoSuchMethodException {
         if (isScreenOnMethod == null) {
             @SuppressLint("ObsoleteSdkInt") // we may lower minSdkVersion in the future
-                    String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
+            String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
             isScreenOnMethod = manager.getClass().getMethod(methodName);
         }
         return isScreenOnMethod;
