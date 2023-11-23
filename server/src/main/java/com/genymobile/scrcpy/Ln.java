@@ -16,8 +16,8 @@ public final class Ln {
     private static final String TAG = "scrcpy";
     private static final String PREFIX = "[server] ";
 
-    private static final PrintStream CONSOLE_OUT = new PrintStream(new FileOutputStream(FileDescriptor.out));
-    private static final PrintStream CONSOLE_ERR = new PrintStream(new FileOutputStream(FileDescriptor.err));
+    public static final PrintStream CONSOLE_OUT = new PrintStream(new FileOutputStream(FileDescriptor.out));
+    public static final PrintStream CONSOLE_ERR = new PrintStream(new FileOutputStream(FileDescriptor.err));
 
     enum Level {
         VERBOSE, DEBUG, INFO, WARN, ERROR

@@ -4,13 +4,20 @@ import android.annotation.SuppressLint;
 import android.os.IBinder;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 
 /**
  * On Android 14, the methods used to turn the device screen off have been moved from SurfaceControl (in framework.jar) to DisplayControl (a system
  * server class). As a consequence, they could not be called directly. See {@url https://github.com/Genymobile/scrcpy/issues/3927}.
  * <p>
- * Instead, run a separate process with a different classpath and LD_PRELOAD just to set the display power mode.
+ * Instead, run a separate process with a different classpath and LD_PRELOAD just to set the display power mode. The scrcpy server can request to
+ * this process to set the display mode by writing the mode (a single byte, the value of one of the SurfaceControl.POWER_MODE_* constants,
+ * typically 0=off, 2=on) to the process stdin. In return, it receives the status of the request (0=ok, 1=error) on the process stdout.
+ * <p>
+ * This separate process is started on the first display mode request.
  * <p>
  * Since the client must not block, and calling/joining a process is blocking (this specific one takes a few hundred milliseconds to complete),
  * this class uses an internal thread to execute the requests asynchronously, and serialize them (so that two successive requests are guaranteed to
@@ -23,18 +30,26 @@ public final class DisplayPowerMode {
 
     private static final class Proxy implements Runnable {
 
+        private Process process;
         private Thread thread;
         private int requestedMode = -1;
         private boolean stopped;
 
-        synchronized void requestMode(int mode) {
-            if (thread == null) {
-                thread = new Thread(this, "DisplayPowerModeProxy");
-                thread.setDaemon(true);
-                thread.start();
+        synchronized boolean requestMode(int mode) {
+            try {
+                if (process == null) {
+                    process = executeDisplayPowerModeDaemon();
+                    thread = new Thread(this, "DisplayPowerModeProxy");
+                    thread.setDaemon(true);
+                    thread.start();
+                }
+                requestedMode = mode;
+                notify();
+                return true;
+            } catch (IOException e) {
+                Ln.e("Could not start display power mode daemon", e);
+                return false;
             }
-            requestedMode = mode;
-            notify();
         }
 
         void stopAndJoin() {
@@ -60,8 +75,10 @@ public final class DisplayPowerMode {
         @Override
         public void run() {
             try {
-                int mode;
+                OutputStream out = process.getOutputStream();
+                InputStream in = process.getInputStream();
                 while (true) {
+                    int mode;
                     synchronized (this) {
                         while (!stopped && requestedMode == -1) {
                             wait();
@@ -76,13 +93,14 @@ public final class DisplayPowerMode {
                     }
 
                     try {
-                        Process process = executeSystemServerSetDisplayPowerMode(mode);
-                        int status = process.waitFor();
+                        out.write(mode);
+                        out.flush();
+                        int status = in.read();
                         if (status != 0) {
                             Ln.e("Set display power mode failed remotely: status=" + status);
                         }
-                    } catch (Exception e) {
-                        Ln.e("Failed to execute process", e);
+                    } catch (IOException e) {
+                        Ln.e("Could not request display power mode", e);
                     }
                 }
             } catch (InterruptedException e) {
@@ -96,8 +114,8 @@ public final class DisplayPowerMode {
     }
 
     // Called from the scrcpy process
-    public static void setRemoteDisplayPowerMode(int mode) {
-        PROXY.requestMode(mode);
+    public static boolean setRemoteDisplayPowerMode(int mode) {
+        return PROXY.requestMode(mode);
     }
 
     public static void stopAndJoin() {
@@ -105,9 +123,9 @@ public final class DisplayPowerMode {
     }
 
     // Called from the proxy thread in the scrcpy process
-    private static Process executeSystemServerSetDisplayPowerMode(int mode) throws IOException {
+    private static Process executeDisplayPowerModeDaemon() throws IOException {
         String[] ldPreloadLibs = {"/system/lib64/libandroid_servers.so"};
-        String[] cmd = {"app_process", "/", DisplayPowerMode.class.getName(), String.valueOf(mode)};
+        String[] cmd = {"app_process", "/", DisplayPowerMode.class.getName()};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("LD_PRELOAD", String.join(" ", ldPreloadLibs));
@@ -136,26 +154,31 @@ public final class DisplayPowerMode {
     }
 
     public static void main(String... args) {
-        Ln.disableSystemStreams();
-        Ln.initLogLevel(Ln.Level.DEBUG);
-
-        int status = run(args) ? 0 : 1;
-        System.exit(status);
-    }
-
-    private static boolean run(String... args) {
-        if (args.length != 1) {
-            Ln.e("Exactly one argument expected: the value of one of the SurfaceControl.POWER_MODE_* constants (typically 0 or 2)");
-            return false;
-        }
+        // This process uses stdin/stdout to communicate with the caller, make sure nothing else writes to stdout
+        // (and never use Ln methods other than Ln.w() and Ln.e()).
+        PrintStream nullStream = new PrintStream(new Ln.NullOutputStream());
+        System.setOut(nullStream);
+        PrintStream stdout = Ln.CONSOLE_OUT;
 
         try {
-            int mode = Integer.parseInt(args[0]);
-            setDisplayPowerModeUsingDisplayControl(mode);
-            return true;
-        } catch (Throwable e) {
-            Ln.e("Could not set display power mode", e);
-            return false;
+            while (true) {
+                // Wait for requests
+                int request = System.in.read();
+                if (request == -1) {
+                    // EOF
+                    return;
+                }
+                try {
+                    setDisplayPowerModeUsingDisplayControl(request);
+                    stdout.write(0); // ok
+                } catch (Throwable e) {
+                    Ln.e("Could not set display power mode", e);
+                    stdout.write(1); // error
+                }
+                stdout.flush();
+            }
+        } catch (IOException e) {
+            // Expected when the server is dead
         }
     }
 }
