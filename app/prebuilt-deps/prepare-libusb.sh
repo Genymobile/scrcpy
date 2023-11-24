@@ -23,11 +23,15 @@ mkdir "$DEP_DIR"
 cd "$DEP_DIR"
 
 7z x "../$FILENAME" \
-    libusb-1.0.26-binaries/libusb-MinGW-Win32/bin/msys-usb-1.0.dll \
-    libusb-1.0.26-binaries/libusb-MinGW-Win32/include/ \
-    libusb-1.0.26-binaries/libusb-MinGW-x64/bin/msys-usb-1.0.dll \
-    libusb-1.0.26-binaries/libusb-MinGW-x64/include/
+    libusb-1.0.26-binaries/libusb-MinGW-Win32/ \
+    libusb-1.0.26-binaries/libusb-MinGW-Win32/ \
+    libusb-1.0.26-binaries/libusb-MinGW-x64/ \
+    libusb-1.0.26-binaries/libusb-MinGW-x64/
 
 mv libusb-1.0.26-binaries/libusb-MinGW-Win32 .
 mv libusb-1.0.26-binaries/libusb-MinGW-x64 .
 rm -rf libusb-1.0.26-binaries
+
+# Rename the dll to get the same library name on all platforms
+mv libusb-MinGW-Win32/bin/msys-usb-1.0.dll libusb-MinGW-Win32/bin/libusb-1.0.dll
+mv libusb-MinGW-x64/bin/msys-usb-1.0.dll libusb-MinGW-x64/bin/libusb-1.0.dll
