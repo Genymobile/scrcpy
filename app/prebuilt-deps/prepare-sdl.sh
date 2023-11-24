@@ -17,7 +17,7 @@ then
     exit 0
 fi
 
-get_file "https://libsdl.org/release/$FILENAME" "$FILENAME" "$SHA256SUM"
+get_file "https://github.com/libsdl-org/SDL/releases/download/release-2.28.4/$FILENAME" "$FILENAME" "$SHA256SUM"
 
 mkdir "$DEP_DIR"
 cd "$DEP_DIR"
