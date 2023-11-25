@@ -18,6 +18,17 @@ scrcpy --video-source=display --audio-source=mic    # force display AND micropho
 scrcpy --video-source=camera --audio-source=output  # force camera AND device audio output
 ```
 
+Audio can be disabled:
+
+```bash
+# audio not captured at all
+scrcpy --video-source=camera --no-audio
+scrcpy --video-source=camera --no-audio --record=file.mp4
+
+# audio captured and recorded, but not played
+scrcpy --video-source=camera --no-audio-playback --record=file.mp4
+```
+
 
 ## List
 
