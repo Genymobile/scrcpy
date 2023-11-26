@@ -49,6 +49,7 @@ public final class Workarounds {
     }
 
     public static void apply(boolean audio, boolean camera) {
+        boolean mustFillConfigurationController = false;
         boolean mustFillAppInfo = false;
         boolean mustFillAppContext = false;
 
@@ -85,11 +86,23 @@ public final class Workarounds {
             mustFillAppContext = true;
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // On some Samsung devices, DisplayManagerGlobal.getDisplayInfoLocked() calls ActivityThread.currentActivityThread().getConfiguration(),
+            // which requires a non-null ConfigurationController.
+            // ConfigurationController was introduced in Android 12, so do not attempt to set it on lower versions.
+            // <https://github.com/Genymobile/scrcpy/issues/4467>
+            mustFillConfigurationController = true;
+        }
+
+        if (mustFillConfigurationController) {
+            // Must be call before fillAppContext() because it is necessary to get a valid system context
+            fillConfigurationController();
+        }
         if (mustFillAppInfo) {
-            Workarounds.fillAppInfo();
+            fillAppInfo();
         }
         if (mustFillAppContext) {
-            Workarounds.fillAppContext();
+            fillAppContext();
         }
     }
 
@@ -146,6 +159,22 @@ public final class Workarounds {
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
+        }
+    }
+
+    private static void fillConfigurationController() {
+        try {
+            Class<?> configurationControllerClass = Class.forName("android.app.ConfigurationController");
+            Class<?> activityThreadInternalClass = Class.forName("android.app.ActivityThreadInternal");
+            Constructor<?> configurationControllerConstructor = configurationControllerClass.getDeclaredConstructor(activityThreadInternalClass);
+            configurationControllerConstructor.setAccessible(true);
+            Object configurationController = configurationControllerConstructor.newInstance(ACTIVITY_THREAD);
+
+            Field configurationControllerField = ACTIVITY_THREAD_CLASS.getDeclaredField("mConfigurationController");
+            configurationControllerField.setAccessible(true);
+            configurationControllerField.set(ACTIVITY_THREAD, configurationController);
+        } catch (Throwable throwable) {
+            Ln.d("Could not fill configuration: " + throwable.getMessage());
         }
     }
 
