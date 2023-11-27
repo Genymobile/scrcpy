@@ -7,7 +7,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
-public class ScreenCapture extends SurfaceCapture implements Device.DisplayChangeListener, Device.FoldListener {
+public class ScreenCapture extends SurfaceCapture implements Device.DisplayChangeListener {
 
     private final Device device;
     private IBinder display;
@@ -19,7 +19,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
     @Override
     public void init() {
         device.setDisplayChangeListener(this);
-        device.setFoldListener(this);
     }
 
     @Override
@@ -42,7 +41,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
     @Override
     public void release() {
         device.setDisplayChangeListener(null);
-        device.setFoldListener(null);
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
         }
@@ -57,11 +55,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
     public boolean setMaxSize(int maxSize) {
         device.setMaxSize(maxSize);
         return true;
-    }
-
-    @Override
-    public void onFoldChanged(int displayId, boolean folded) {
-        requestReset();
     }
 
     @Override

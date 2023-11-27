@@ -15,7 +15,6 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.view.IDisplayFoldListener;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
@@ -39,10 +38,6 @@ public final class Device {
         void onDisplayChanged();
     }
 
-    public interface FoldListener {
-        void onFoldChanged(int displayId, boolean folded);
-    }
-
     public interface ClipboardListener {
         void onClipboardTextChanged(String text);
     }
@@ -54,7 +49,6 @@ public final class Device {
     private Size deviceSize;
     private ScreenInfo screenInfo;
     private DisplayChangeListener displayChangeListener;
-    private FoldListener foldListener;
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
@@ -108,32 +102,6 @@ public final class Device {
                 }
             }
         }, displayListenerHandler);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
-                @Override
-                public void onDisplayFoldChanged(int displayId, boolean folded) {
-                    if (Device.this.displayId != displayId) {
-                        // Ignore events related to other display ids
-                        return;
-                    }
-
-                    synchronized (Device.this) {
-                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                        if (displayInfo == null) {
-                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-                            return;
-                        }
-
-                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-                        // notify
-                        if (foldListener != null) {
-                            foldListener.onFoldChanged(displayId, folded);
-                        }
-                    }
-                }
-            });
-        }
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
@@ -264,10 +232,6 @@ public final class Device {
 
     public synchronized void setDisplayChangeListener(DisplayChangeListener displayChangeListener) {
         this.displayChangeListener = displayChangeListener;
-    }
-
-    public synchronized void setFoldListener(FoldListener foldlistener) {
-        this.foldListener = foldlistener;
     }
 
     public synchronized void setClipboardListener(ClipboardListener clipboardListener) {
