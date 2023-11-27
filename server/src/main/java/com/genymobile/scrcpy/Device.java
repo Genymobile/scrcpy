@@ -16,7 +16,6 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.view.IDisplayFoldListener;
-import android.view.IRotationWatcher;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
@@ -40,10 +39,6 @@ public final class Device {
         void onDisplayChanged();
     }
 
-    public interface RotationListener {
-        void onRotationChanged(int rotation);
-    }
-
     public interface FoldListener {
         void onFoldChanged(int displayId, boolean folded);
     }
@@ -59,7 +54,6 @@ public final class Device {
     private Size deviceSize;
     private ScreenInfo screenInfo;
     private DisplayChangeListener displayChangeListener;
-    private RotationListener rotationListener;
     private FoldListener foldListener;
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
@@ -114,20 +108,6 @@ public final class Device {
                 }
             }
         }, displayListenerHandler);
-
-        ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                synchronized (Device.this) {
-                    screenInfo = screenInfo.withDeviceRotation(rotation);
-
-                    // notify
-                    if (rotationListener != null) {
-                        rotationListener.onRotationChanged(rotation);
-                    }
-                }
-            }
-        }, displayId);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
@@ -284,10 +264,6 @@ public final class Device {
 
     public synchronized void setDisplayChangeListener(DisplayChangeListener displayChangeListener) {
         this.displayChangeListener = displayChangeListener;
-    }
-
-    public synchronized void setRotationListener(RotationListener rotationListener) {
-        this.rotationListener = rotationListener;
     }
 
     public synchronized void setFoldListener(FoldListener foldlistener) {

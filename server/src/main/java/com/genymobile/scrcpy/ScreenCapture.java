@@ -7,7 +7,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
-public class ScreenCapture extends SurfaceCapture implements Device.DisplayChangeListener, Device.RotationListener, Device.FoldListener {
+public class ScreenCapture extends SurfaceCapture implements Device.DisplayChangeListener, Device.FoldListener {
 
     private final Device device;
     private IBinder display;
@@ -19,7 +19,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
     @Override
     public void init() {
         device.setDisplayChangeListener(this);
-        device.setRotationListener(this);
         device.setFoldListener(this);
     }
 
@@ -43,7 +42,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
     @Override
     public void release() {
         device.setDisplayChangeListener(null);
-        device.setRotationListener(null);
         device.setFoldListener(null);
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
@@ -63,11 +61,6 @@ public class ScreenCapture extends SurfaceCapture implements Device.DisplayChang
 
     @Override
     public void onFoldChanged(int displayId, boolean folded) {
-        requestReset();
-    }
-
-    @Override
-    public void onRotationChanged(int rotation) {
         requestReset();
     }
 

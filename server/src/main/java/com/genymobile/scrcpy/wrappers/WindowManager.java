@@ -5,7 +5,6 @@ import com.genymobile.scrcpy.Ln;
 import android.annotation.TargetApi;
 import android.os.IInterface;
 import android.view.IDisplayFoldListener;
-import android.view.IRotationWatcher;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -92,22 +91,6 @@ public final class WindowManager {
             method.invoke(manager);
         } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             Ln.e("Could not invoke method", e);
-        }
-    }
-
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
-        try {
-            Class<?> cls = manager.getClass();
-            try {
-                // display parameter added since this commit:
-                // https://android.googlesource.com/platform/frameworks/base/+/35fa3c26adcb5f6577849fd0df5228b1f67cf2c6%5E%21/#F1
-                cls.getMethod("watchRotation", IRotationWatcher.class, int.class).invoke(manager, rotationWatcher, displayId);
-            } catch (NoSuchMethodException e) {
-                // old version
-                cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);
-            }
-        } catch (Exception e) {
-            Ln.e("Could not register rotation watcher", e);
         }
     }
 
