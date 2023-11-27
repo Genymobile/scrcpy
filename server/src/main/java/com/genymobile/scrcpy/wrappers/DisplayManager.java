@@ -5,13 +5,20 @@ import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
+import android.os.Build;
+import android.os.Handler;
 import android.view.Display;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class DisplayManager {
+
+    // Constant copied from AOSP framework_base: core/java/android/hardware/display/DisplayManager.java
+    private static final long EVENT_FLAG_DISPLAY_CHANGED = 1L << 2;
+
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
 
     public DisplayManager(Object manager) {
@@ -93,5 +100,48 @@ public final class DisplayManager {
         } catch (Exception e) {
             throw new AssertionError(e);
         }
+    }
+
+    public void registerDisplayListener(DisplayListener listener, Handler handler) {
+        try {
+            Class<?> displayListenerClass = Class.forName("android.hardware.display.DisplayManager$DisplayListener");
+            Object displayListenerProxy = Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(),
+                    new Class[]{displayListenerClass},
+                    (proxy, method, args) -> {
+                        if ("onDisplayChanged".equals(method.getName())) {
+                            listener.onDisplayChanged((int) args[0]);
+                        }
+                        return null;
+                    });
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                try {
+                    manager.getClass()
+                            .getMethod("registerDisplayListener", displayListenerClass, Handler.class, long.class)
+                            .invoke(manager, displayListenerProxy, handler, EVENT_FLAG_DISPLAY_CHANGED);
+                    return;
+                } catch (NoSuchMethodException e) {
+                    // fall-through
+                }
+            }
+
+            manager.getClass()
+                    .getMethod("registerDisplayListener", displayListenerClass, Handler.class)
+                    .invoke(manager, displayListenerProxy, handler);
+        } catch (Exception e) {
+            // Screen size won't be updated, not a fatal error
+            Ln.e("Could not register display listener", e);
+        }
+    }
+
+    // Partially copied from AOSP framework_base: core/java/android/hardware/display/DisplayManager.java
+    public interface DisplayListener {
+        /**
+         * Called whenever the properties of a logical {@link android.view.Display},
+         * such as size and density, have changed.
+         *
+         * @param displayId The id of the logical display that changed.
+         */
+        void onDisplayChanged(int displayId);
     }
 }

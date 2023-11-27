@@ -7,7 +7,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
-public class ScreenCapture extends SurfaceCapture implements Device.RotationListener, Device.FoldListener {
+public class ScreenCapture extends SurfaceCapture implements Device.DisplayChangeListener, Device.RotationListener, Device.FoldListener {
 
     private final Device device;
     private IBinder display;
@@ -18,6 +18,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void init() {
+        device.setDisplayChangeListener(this);
         device.setRotationListener(this);
         device.setFoldListener(this);
     }
@@ -41,6 +42,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void release() {
+        device.setDisplayChangeListener(null);
         device.setRotationListener(null);
         device.setFoldListener(null);
         if (display != null) {
@@ -66,6 +68,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void onRotationChanged(int rotation) {
+        requestReset();
+    }
+
+    @Override
+    public void onDisplayChanged() {
         requestReset();
     }
 
