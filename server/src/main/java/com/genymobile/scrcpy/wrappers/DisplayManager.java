@@ -5,9 +5,11 @@ import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
+import android.os.Handler;
 import android.view.Display;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Proxy;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -93,5 +95,62 @@ public final class DisplayManager {
         } catch (Exception e) {
             throw new AssertionError(e);
         }
+    }
+
+    public void registerDisplayListener(DisplayListener listener, Handler handler) {
+        try {
+            Class<?> displayListenerClass = Class.forName("android.hardware.display.DisplayManager$DisplayListener");
+            Object displayListenerProxy = Proxy.newProxyInstance(
+                ClassLoader.getSystemClassLoader(),
+                new Class[]{ displayListenerClass },
+                (proxy, method, args) -> {
+                    switch (method.getName()) {
+                        case "onDisplayAdded":
+                            listener.onDisplayAdded((int) args[0]);
+                            break;
+                        case "onDisplayRemoved":
+                            listener.onDisplayRemoved((int) args[0]);
+                            break;
+                        case "onDisplayChanged":
+                            listener.onDisplayChanged((int) args[0]);
+                            break;
+                        default:
+                            throw new AssertionError("Unexpected method: " + method.getName());
+                    }
+                    return null;
+                });
+            manager
+                .getClass()
+                .getMethod("registerDisplayListener", displayListenerClass, Handler.class)
+                .invoke(manager, displayListenerProxy, handler);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    public interface DisplayListener {
+        /**
+         * Called whenever a logical display has been added to the system.
+         * Use {@link DisplayManager#getDisplay} to get more information about
+         * the display.
+         *
+         * @param displayId The id of the logical display that was added.
+         */
+        void onDisplayAdded(int displayId);
+
+        /**
+         * Called whenever a logical display has been removed from the system.
+         *
+         * @param displayId The id of the logical display that was removed.
+         */
+        void onDisplayRemoved(int displayId);
+
+        /**
+         * Called whenever the properties of a logical {@link android.view.Display},
+         * such as size and density, have changed.
+         *
+         * @param displayId The id of the logical display that changed.
+         */
+        void onDisplayChanged(int displayId);
     }
 }
