@@ -93,6 +93,7 @@ enum {
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
+    OPT_KEYBOARD_INPUT_MODE,
 };
 
 struct sc_option {
@@ -366,11 +367,18 @@ static const struct sc_option options[] = {
     {
         .shortopt = 'K',
         .longopt = "hid-keyboard",
-        .text = "Simulate a physical keyboard by using HID over AOAv2.\n"
-                "It provides a better experience for IME users, and allows to "
-                "generate non-ASCII characters, contrary to the default "
-                "injection method.\n"
-                "It may only work over USB.\n"
+    },
+    {
+        .longopt_id = OPT_KEYBOARD_INPUT_MODE,
+        .longopt = "keyboard-input-mode",
+        .argdesc = "value",
+        .text = "Select how to send keyboard inputs to the device.\n"
+                "Possible values are \"disable\", \"inject\", \"aoa\" and \"uhid\".\n"
+                "\"disable\" doesn't send keyboard inputs to device.\n"
+                "\"inject\" uses Android system API to deliver keyboard events to applications.\n"
+                "\"aoa\" simulates a physical HID keyboard using AoAv2 protocol. It only works over USB, but doesn't need USB debugging to be on.\n"
+                "\"uhid\" simulates a physical HID keyboard using Linux's UHID kernel module. It works over both USB and TCP/IP but requires USB debugging.\n"
+                "Simulating physical keyboards (via \"aoa\" or \"uhid\") works on a lower level, thus provides better compatibilities with IMEs, allowing to producing non-ASCII characters.\n"
                 "The keyboard layout must be configured (once and for all) on "
                 "the device, via Settings -> System -> Languages and input -> "
                 "Physical keyboard. This settings page can be started "
@@ -378,7 +386,8 @@ static const struct sc_option options[] = {
                 "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
                 "However, the option is only available when the HID keyboard "
                 "is enabled (or a physical keyboard is connected).\n"
-                "Also see --hid-mouse.",
+                "Default is \"inject\"."
+                "Also see --otg, --mouse-input-mode and --gamepad-input-mode.",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,
@@ -440,7 +449,7 @@ static const struct sc_option options[] = {
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
                 "It may only work over USB.\n"
-                "Also see --hid-keyboard.",
+                "Also see --keyboard-input-mode.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -543,10 +552,9 @@ static const struct sc_option options[] = {
                 "mirroring is disabled.\n"
                 "LAlt, LSuper or RSuper toggle the mouse capture mode, to give "
                 "control of the mouse back to the computer.\n"
-                "If any of --hid-keyboard or --hid-mouse is set, only enable "
-                "keyboard or mouse respectively, otherwise enable both.\n"
+                "--keyboard-input-mode=disable can be used to disable keyboard separately.\n"
                 "It may only work over USB.\n"
-                "See --hid-keyboard and --hid-mouse.",
+                "See --keyboard-input-mode and --hid-mouse.",
     },
     {
         .shortopt = 'p',
@@ -1899,6 +1907,37 @@ parse_camera_fps(const char *s, uint16_t *camera_fps) {
 }
 
 static bool
+parse_keyboard_input_mode(const char *optarg, enum sc_keyboard_input_mode *mode) {
+    if (!strcmp(optarg, "disable")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_DISABLED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "inject")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+        return true;
+    }
+
+    if (!strcmp(optarg, "aoa")) {
+#ifdef HAVE_USB
+        *mode = SC_KEYBOARD_INPUT_MODE_AOA;
+        return true;
+#else
+        LOGE("--keyboard-input-mode=aoa is disabled.");
+        return false;
+#endif
+    }
+
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_UHID;
+        return true;
+    }
+
+    LOGE("Unsupported keyboard input mode: %s (expected inject, aoa or uhid)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -1987,12 +2026,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case 'K':
 #ifdef HAVE_USB
-                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
+                LOGW("-K/--hid-keyboard is deprecated, use --keyboard-input-mode=aoa instead");
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_AOA;
                 break;
 #else
                 LOGE("HID over AOA (-K/--hid-keyboard) is disabled.");
                 return false;
 #endif
+            case OPT_KEYBOARD_INPUT_MODE:
+                if (!parse_keyboard_input_mode(optarg, &opts->keyboard_input_mode)){
+                    return false;
+                }
+                break;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
                     return false;
@@ -2615,11 +2660,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 # ifdef _WIN32
-    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID
+    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
                 || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID)) {
         LOGE("On Windows, it is not possible to open a USB device already open "
              "by another process (like adb).");
-        LOGE("Therefore, -K/--hid-keyboard and -M/--hid-mouse may only work in "
+        LOGE("Therefore, --keyboard-input-mode=aoa and -M/--hid-mouse may only work in "
              "OTG mode (--otg).");
         return false;
     }

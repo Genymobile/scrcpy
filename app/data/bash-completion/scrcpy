@@ -28,7 +28,7 @@ _scrcpy() {
         --forward-all-clicks
         -h --help
         --kill-adb-on-close
-        -K --hid-keyboard
+        --keyboard-input-mode=
         --legacy-paste
         --list-camera-sizes
         --list-cameras
@@ -156,6 +156,10 @@ _scrcpy() {
         -s|--serial)
             # Use 'adb devices' to list serial numbers
             COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
+            return
+            ;;
+        --keyboard-input-mode)
+            COMPREPLY=($(compgen -W "disable inject aoa uhid" -- ${cur}))
             return
             ;;
         --audio-bit-rate \

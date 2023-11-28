@@ -140,8 +140,11 @@ enum sc_lock_video_orientation {
 };
 
 enum sc_keyboard_input_mode {
+    SC_KEYBOARD_INPUT_MODE_AUTO,
+    SC_KEYBOARD_INPUT_MODE_DISABLED,
     SC_KEYBOARD_INPUT_MODE_INJECT,
-    SC_KEYBOARD_INPUT_MODE_HID,
+    SC_KEYBOARD_INPUT_MODE_AOA,
+    SC_KEYBOARD_INPUT_MODE_UHID,
 };
 
 enum sc_mouse_input_mode {

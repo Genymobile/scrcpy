@@ -1,8 +1,11 @@
 #include "hid_keyboard.h"
 
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "input_events.h"
+#include "hid_event.h"
 #include "util/log.h"
 
 /** Downcast key processor to hid_keyboard */
@@ -339,7 +342,7 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
         ++i;
     }
 
-    if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
+    if (!kb->hid_interface->ops->process_input(kb->hid_interface, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
         LOGW("Could not request HID event (mod lock state)");
         return false;
@@ -381,7 +384,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             hid_event.ack_to_wait = ack_to_wait;
         }
 
-        if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
+        if (!kb->hid_interface->ops->process_input(kb->hid_interface, &hid_event)) {
             sc_hid_event_destroy(&hid_event);
             LOGW("Could not request HID event (key)");
         }
@@ -389,12 +392,14 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 }
 
 bool
-sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
-    kb->aoa = aoa;
+sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_hid_interface *hid_interface) {
+    kb->hid_interface = hid_interface;
+    hid_interface->data_opaque = kb;
 
-    bool ok = sc_aoa_setup_hid(aoa, HID_KEYBOARD_ACCESSORY_ID,
-                               keyboard_report_desc,
-                               ARRAY_LEN(keyboard_report_desc));
+    bool ok = hid_interface->ops->create(hid_interface, HID_KEYBOARD_ACCESSORY_ID,
+                                         0x1234, 0x5678,
+                                         keyboard_report_desc,
+                                         ARRAY_LEN(keyboard_report_desc));
     if (!ok) {
         LOGW("Register HID keyboard failed");
         return false;
@@ -415,7 +420,7 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
     // Clipboard synchronization is requested over the control socket, while HID
     // events are sent over AOA, so it must wait for clipboard synchronization
     // to be acknowledged by the device before injecting Ctrl+v.
-    kb->key_processor.async_paste = true;
+    kb->key_processor.async_paste = hid_interface->async_message;
     kb->key_processor.ops = &ops;
 
     return true;
@@ -424,7 +429,7 @@ sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa) {
 void
 sc_hid_keyboard_destroy(struct sc_hid_keyboard *kb) {
     // Unregister HID keyboard so the soft keyboard shows again on Android
-    bool ok = sc_aoa_unregister_hid(kb->aoa, HID_KEYBOARD_ACCESSORY_ID);
+    bool ok = kb->hid_interface->ops->destroy(kb->hid_interface, HID_KEYBOARD_ACCESSORY_ID);
     if (!ok) {
         LOGW("Could not unregister HID keyboard");
     }

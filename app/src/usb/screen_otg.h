@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 
-#include "hid_keyboard.h"
+#include "hid/hid_keyboard.h"
 #include "hid_mouse.h"
 
 struct sc_screen_otg {

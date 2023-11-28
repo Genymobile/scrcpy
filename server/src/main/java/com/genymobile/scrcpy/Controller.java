@@ -29,6 +29,7 @@ public class Controller implements AsyncProcessor {
     private final Device device;
     private final DesktopConnection connection;
     private final DeviceMessageSender sender;
+    private final UHidManager uHidManager;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
 
@@ -48,6 +49,7 @@ public class Controller implements AsyncProcessor {
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(connection);
+        uHidManager = new UHidManager(sender);
     }
 
     private void initPointers() {
@@ -106,6 +108,7 @@ public class Controller implements AsyncProcessor {
             thread.interrupt();
         }
         sender.stop();
+        uHidManager.stop();
     }
 
     @Override
@@ -114,6 +117,7 @@ public class Controller implements AsyncProcessor {
             thread.join();
         }
         sender.join();
+        uHidManager.join();
     }
 
     public DeviceMessageSender getSender() {
@@ -175,6 +179,16 @@ public class Controller implements AsyncProcessor {
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 Device.rotateDevice();
+                break;
+            case ControlMessage.TYPE_UHID_OPEN:
+                uHidManager.open(msg.getId());
+                uHidManager.write(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_UHID_WRITE:
+                uHidManager.write(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_UHID_CLOSE:
+                uHidManager.close(msg.getId());
                 break;
             default:
                 // do nothing

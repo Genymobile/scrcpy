@@ -86,6 +86,15 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 msg = ControlMessage.createEmpty(type);
                 break;
+            case ControlMessage.TYPE_UHID_OPEN:
+                msg = parseUHidOpen();
+                break;
+            case ControlMessage.TYPE_UHID_WRITE:
+                msg = parseUHidWrite();
+                break;
+            case ControlMessage.TYPE_UHID_CLOSE:
+                msg = parseUHidClose();
+                break;
             default:
                 Ln.w("Unknown event type: " + type);
                 msg = null;
@@ -110,18 +119,36 @@ public class ControlMessageReader {
         return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
-    private String parseString() {
+    private int parseBufferLength(){
         if (buffer.remaining() < 4) {
-            return null;
+            return -1;
         }
         int len = buffer.getInt();
         if (buffer.remaining() < len) {
+            return -1;
+        }
+        return len;
+    }
+
+    private String parseString() {
+        int len = parseBufferLength();
+        if (len == -1) {
             return null;
         }
         int position = buffer.position();
         // Move the buffer position to consume the text
         buffer.position(position + len);
         return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
+    }
+
+    private byte[] parseByteArray() {
+        int len = parseBufferLength();
+        if (len == -1) {
+            return null;
+        }
+        byte[] data = new byte[len];
+        buffer.get(data);
+        return data;
     }
 
     private ControlMessage parseInjectText() {
@@ -199,5 +226,28 @@ public class ControlMessageReader {
         int screenWidth = Binary.toUnsigned(buffer.getShort());
         int screenHeight = Binary.toUnsigned(buffer.getShort());
         return new Position(x, y, screenWidth, screenHeight);
+    }
+
+    private ControlMessage parseUHidOpen() {
+        int id = buffer.getInt();
+        byte[] data = parseByteArray();
+        if (data == null) {
+            return null;
+        }
+        return ControlMessage.createUHidOpen(id, data);
+    }
+
+    private ControlMessage parseUHidWrite() {
+        int id = buffer.getInt();
+        byte[] data = parseByteArray();
+        if (data == null) {
+            return null;
+        }
+        return ControlMessage.createUHidWrite(id, data);
+    }
+
+    private ControlMessage parseUHidClose() {
+        int id = buffer.getInt();
+        return ControlMessage.createUHidClose(id);
     }
 }

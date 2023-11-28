@@ -25,9 +25,10 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "hid/hid_keyboard.h"
+#include "hid/uhid_hid.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
-# include "usb/hid_keyboard.h"
 # include "usb/hid_mouse.h"
 # include "usb/usb.h"
 #endif
@@ -62,11 +63,10 @@ struct scrcpy {
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
 #endif
+    struct sc_uhid uhid;
     union {
         struct sc_keyboard_inject keyboard_inject;
-#ifdef HAVE_USB
         struct sc_hid_keyboard keyboard_hid;
-#endif
     };
     union {
         struct sc_mouse_inject mouse_inject;
@@ -328,10 +328,10 @@ scrcpy(struct scrcpy_options *options) {
 #endif
     bool video_demuxer_started = false;
     bool audio_demuxer_started = false;
-#ifdef HAVE_USB
-    bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
     bool hid_mouse_initialized = false;
+#ifdef HAVE_USB
+    bool aoa_hid_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -535,7 +535,7 @@ scrcpy(struct scrcpy_options *options) {
     if (options->control) {
 #ifdef HAVE_USB
         bool use_hid_keyboard =
-            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
+            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
         bool use_hid_mouse =
             options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
         if (use_hid_keyboard || use_hid_mouse) {
@@ -582,7 +582,7 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             if (use_hid_keyboard) {
-                if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
+                if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa.hid_interface)) {
                     hid_keyboard_initialized = true;
                     kp = &s->keyboard_hid.key_processor;
                 } else {
@@ -591,7 +591,7 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             if (use_hid_mouse) {
-                if (sc_hid_mouse_init(&s->mouse_hid, &s->aoa)) {
+                if (sc_hid_mouse_init(&s->mouse_hid, &s->aoa.hid_interface)) {
                     hid_mouse_initialized = true;
                     mp = &s->mouse_hid.mouse_processor;
                 } else {
@@ -627,7 +627,7 @@ aoa_hid_end:
 
             if (use_hid_keyboard && !hid_keyboard_initialized) {
                 LOGE("Fallback to default keyboard injection method "
-                     "(-K/--hid-keyboard ignored)");
+                     "(--keyboard-input-mode=aoa ignored)");
                 options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
             }
 
@@ -638,17 +638,9 @@ aoa_hid_end:
             }
         }
 #else
-        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID);
+        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AOA);
         assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_HID);
 #endif
-
-        // keyboard_input_mode may have been reset if HID mode failed
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
-            sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
-                                    options->key_inject_mode,
-                                    options->forward_key_repeat);
-            kp = &s->keyboard_inject.key_processor;
-        }
 
         // mouse_input_mode may have been reset if HID mode failed
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_INJECT) {
@@ -667,6 +659,30 @@ aoa_hid_end:
         }
         controller_started = true;
         controller = &s->controller;
+
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_UHID) {
+            sc_uhid_init(&s->uhid, &s->controller);
+        }
+
+        switch (options->keyboard_input_mode) {
+            case SC_KEYBOARD_INPUT_MODE_AUTO:
+            case SC_KEYBOARD_INPUT_MODE_INJECT:
+                sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
+                                        options->key_inject_mode,
+                                        options->forward_key_repeat);
+                kp = &s->keyboard_inject.key_processor;
+                break;
+            case SC_KEYBOARD_INPUT_MODE_UHID:
+                sc_hid_keyboard_init(&s->keyboard_hid, &s->uhid.hid_interface);
+                hid_keyboard_initialized = true;
+                kp = &s->keyboard_hid.key_processor;
+                break;
+            case SC_KEYBOARD_INPUT_MODE_AOA:
+                // already handled above
+            case SC_KEYBOARD_INPUT_MODE_DISABLED:
+                // nothing to do
+                break;
+        }
     }
 
     // There is a controller if and only if control is enabled
@@ -804,14 +820,14 @@ end:
 
     // The demuxer is not stopped explicitly, because it will stop by itself on
     // end-of-stream
+    if (hid_keyboard_initialized) {
+        sc_hid_keyboard_destroy(&s->keyboard_hid);
+    }
+    if (hid_mouse_initialized) {
+        sc_hid_mouse_destroy(&s->mouse_hid);
+    }
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {
-        if (hid_keyboard_initialized) {
-            sc_hid_keyboard_destroy(&s->keyboard_hid);
-        }
-        if (hid_mouse_initialized) {
-            sc_hid_mouse_destroy(&s->mouse_hid);
-        }
         sc_aoa_stop(&s->aoa);
         sc_usb_stop(&s->usb);
     }

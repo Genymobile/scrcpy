@@ -37,6 +37,9 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
     SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
     SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    SC_CONTROL_MSG_TYPE_UHID_OPEN,
+    SC_CONTROL_MSG_TYPE_UHID_WRITE,
+    SC_CONTROL_MSG_TYPE_UHID_CLOSE,
 };
 
 enum sc_screen_power_mode {
@@ -92,6 +95,19 @@ struct sc_control_msg {
         struct {
             enum sc_screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            int32_t id;
+            uint8_t *data;
+            uint16_t size;
+        } uhid_open;
+        struct {
+            int32_t id;
+            uint8_t *data;
+            uint16_t size;
+        } uhid_write;
+        struct {
+            int32_t id;
+        } uhid_close;
     };
 };
 

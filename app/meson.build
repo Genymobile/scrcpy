@@ -19,6 +19,9 @@ src = [
     'src/file_pusher.c',
     'src/fps_counter.c',
     'src/frame_buffer.c',
+    'src/hid/hid_event.c',
+    'src/hid/hid_keyboard.c',
+    'src/hid/uhid_hid.c',
     'src/input_manager.c',
     'src/keyboard_inject.c',
     'src/mouse_inject.c',
@@ -88,7 +91,6 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
-        'src/usb/hid_keyboard.c',
         'src/usb/hid_mouse.c',
         'src/usb/scrcpy_otg.c',
         'src/usb/screen_otg.c',

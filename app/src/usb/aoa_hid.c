@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdio.h>
 
+#include "hid/hid_event.h"
 #include "aoa_hid.h"
 #include "util/log.h"
 
@@ -15,6 +16,9 @@
 #define DEFAULT_TIMEOUT 1000
 
 #define SC_HID_EVENT_QUEUE_MAX 64
+
+/** Downcast hid interface to sc_aoa */
+#define DOWNCAST(HI) container_of(HI, struct sc_aoa, hid_interface)
 
 static void
 sc_hid_event_log(const struct sc_hid_event *event) {
@@ -31,60 +35,6 @@ sc_hid_event_log(const struct sc_hid_event *event) {
     }
     LOGV("HID Event: [%d]%s", event->accessory_id, buffer);
     free(buffer);
-}
-
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size) {
-    hid_event->accessory_id = accessory_id;
-    hid_event->buffer = buffer;
-    hid_event->size = buffer_size;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
-}
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event) {
-    free(hid_event->buffer);
-}
-
-bool
-sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
-            struct sc_acksync *acksync) {
-    sc_vecdeque_init(&aoa->queue);
-
-    if (!sc_vecdeque_reserve(&aoa->queue, SC_HID_EVENT_QUEUE_MAX)) {
-        return false;
-    }
-
-    if (!sc_mutex_init(&aoa->mutex)) {
-        sc_vecdeque_destroy(&aoa->queue);
-        return false;
-    }
-
-    if (!sc_cond_init(&aoa->event_cond)) {
-        sc_mutex_destroy(&aoa->mutex);
-        sc_vecdeque_destroy(&aoa->queue);
-        return false;
-    }
-
-    aoa->stopped = false;
-    aoa->acksync = acksync;
-    aoa->usb = usb;
-
-    return true;
-}
-
-void
-sc_aoa_destroy(struct sc_aoa *aoa) {
-    // Destroy remaining events
-    while (!sc_vecdeque_is_empty(&aoa->queue)) {
-        struct sc_hid_event *event = sc_vecdeque_popref(&aoa->queue);
-        assert(event);
-        sc_hid_event_destroy(event);
-    }
-
-    sc_cond_destroy(&aoa->event_cond);
-    sc_mutex_destroy(&aoa->mutex);
 }
 
 static bool
@@ -148,9 +98,40 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
     return true;
 }
 
-bool
-sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
-                 const unsigned char *report_desc, uint16_t report_desc_size) {
+static bool
+sc_aoa_unregister_hid(struct sc_hid_interface *hi, const uint16_t accessory_id) {
+    struct sc_aoa *aoa = DOWNCAST(hi);
+
+    uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
+    uint8_t request = ACCESSORY_UNREGISTER_HID;
+    // <https://source.android.com/devices/accessories/aoa2.html#hid-support>
+    // value (arg0): accessory assigned ID for the HID device
+    // index (arg1): 0
+    uint16_t value = accessory_id;
+    uint16_t index = 0;
+    unsigned char *buffer = NULL;
+    uint16_t length = 0;
+    int result = libusb_control_transfer(aoa->usb->handle, request_type,
+                                         request, value, index, buffer, length,
+                                         DEFAULT_TIMEOUT);
+    if (result < 0) {
+        LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
+        sc_usb_check_disconnected(aoa->usb, result);
+        return false;
+    }
+
+    return true;
+}
+
+static bool
+sc_aoa_setup_hid(struct sc_hid_interface *hi, uint16_t accessory_id,
+                 uint16_t vendor_id, uint16_t product_id,
+                 const uint8_t *report_desc, uint16_t report_desc_size) {
+    (void) vendor_id;
+    (void) product_id;
+
+    struct sc_aoa *aoa = DOWNCAST(hi);
+
     bool ok = sc_aoa_register_hid(aoa, accessory_id, report_desc_size);
     if (!ok) {
         return false;
@@ -159,7 +140,7 @@ sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
     ok = sc_aoa_set_hid_report_desc(aoa, accessory_id, report_desc,
                                     report_desc_size);
     if (!ok) {
-        if (!sc_aoa_unregister_hid(aoa, accessory_id)) {
+        if (!sc_aoa_unregister_hid(hi, accessory_id)) {
             LOGW("Could not unregister HID");
         }
         return false;
@@ -191,31 +172,10 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     return true;
 }
 
-bool
-sc_aoa_unregister_hid(struct sc_aoa *aoa, const uint16_t accessory_id) {
-    uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
-    uint8_t request = ACCESSORY_UNREGISTER_HID;
-    // <https://source.android.com/devices/accessories/aoa2.html#hid-support>
-    // value (arg0): accessory assigned ID for the HID device
-    // index (arg1): 0
-    uint16_t value = accessory_id;
-    uint16_t index = 0;
-    unsigned char *buffer = NULL;
-    uint16_t length = 0;
-    int result = libusb_control_transfer(aoa->usb->handle, request_type,
-                                         request, value, index, buffer, length,
-                                         DEFAULT_TIMEOUT);
-    if (result < 0) {
-        LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
-        sc_usb_check_disconnected(aoa->usb, result);
-        return false;
-    }
+static bool
+sc_aoa_push_hid_event(struct sc_hid_interface *hi, const struct sc_hid_event *event) {
+    struct sc_aoa *aoa = DOWNCAST(hi);
 
-    return true;
-}
-
-bool
-sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
         sc_hid_event_log(event);
     }
@@ -287,6 +247,55 @@ run_aoa_thread(void *data) {
         }
     }
     return 0;
+}
+
+bool
+sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
+            struct sc_acksync *acksync) {
+    static const struct sc_hid_interface_ops ops = {
+        .create = sc_aoa_setup_hid,
+        .process_input = sc_aoa_push_hid_event,
+        .destroy = sc_aoa_unregister_hid,
+    };
+
+    aoa->hid_interface.async_message = true;
+    aoa->hid_interface.ops = &ops;
+
+    sc_vecdeque_init(&aoa->queue);
+
+    if (!sc_vecdeque_reserve(&aoa->queue, SC_HID_EVENT_QUEUE_MAX)) {
+        return false;
+    }
+
+    if (!sc_mutex_init(&aoa->mutex)) {
+        sc_vecdeque_destroy(&aoa->queue);
+        return false;
+    }
+
+    if (!sc_cond_init(&aoa->event_cond)) {
+        sc_mutex_destroy(&aoa->mutex);
+        sc_vecdeque_destroy(&aoa->queue);
+        return false;
+    }
+
+    aoa->stopped = false;
+    aoa->acksync = acksync;
+    aoa->usb = usb;
+
+    return true;
+}
+
+void
+sc_aoa_destroy(struct sc_aoa *aoa) {
+    // Destroy remaining events
+    while (!sc_vecdeque_is_empty(&aoa->queue)) {
+        struct sc_hid_event *event = sc_vecdeque_popref(&aoa->queue);
+        assert(event);
+        sc_hid_event_destroy(event);
+    }
+
+    sc_cond_destroy(&aoa->event_cond);
+    sc_mutex_destroy(&aoa->mutex);
 }
 
 bool

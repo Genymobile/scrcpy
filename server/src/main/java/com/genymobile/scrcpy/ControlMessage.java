@@ -17,6 +17,9 @@ public final class ControlMessage {
     public static final int TYPE_SET_CLIPBOARD = 9;
     public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
     public static final int TYPE_ROTATE_DEVICE = 11;
+    public static final int TYPE_UHID_OPEN = 12;
+    public static final int TYPE_UHID_WRITE = 13;
+    public static final int TYPE_UHID_CLOSE = 14;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -40,6 +43,8 @@ public final class ControlMessage {
     private boolean paste;
     private int repeat;
     private long sequence;
+    private int id;
+    private byte[] data;
 
     private ControlMessage() {
     }
@@ -123,6 +128,29 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createUHidOpen(int id, byte[] data) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_OPEN;
+        msg.id = id;
+        msg.data = data;
+        return msg;
+    }
+
+    public static ControlMessage createUHidWrite(int id, byte[] data) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_WRITE;
+        msg.id = id;
+        msg.data = data;
+        return msg;
+    }
+
+    public static ControlMessage createUHidClose(int id) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_CLOSE;
+        msg.id = id;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -185,5 +213,13 @@ public final class ControlMessage {
 
     public long getSequence() {
         return sequence;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 }

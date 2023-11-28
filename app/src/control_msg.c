@@ -152,6 +152,15 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;
+        case SC_CONTROL_MSG_TYPE_UHID_OPEN:
+        case SC_CONTROL_MSG_TYPE_UHID_WRITE:
+            sc_write32be(&buf[1], msg->uhid_open.id);
+            sc_write32be(&buf[5], msg->uhid_open.size);
+            memcpy(&buf[9], msg->uhid_open.data, msg->uhid_open.size);
+            return 9 + msg->uhid_open.size;
+        case SC_CONTROL_MSG_TYPE_UHID_CLOSE:
+            sc_write32be(&buf[1], msg->uhid_close.id);
+            return 5;
         default:
             LOGW("Unknown message type: %u", (unsigned) msg->type);
             return 0;
@@ -242,6 +251,15 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");
             break;
+        case SC_CONTROL_MSG_TYPE_UHID_OPEN:
+            LOG_CMSG("uhid open id=%" PRIu32 ", data size=%" PRIu32, msg->uhid_open.id, msg->uhid_open.size);
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_WRITE:
+            LOG_CMSG("uhid write id=%" PRIu32 ", data size=%" PRIu32, msg->uhid_write.id, msg->uhid_write.size);
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_CLOSE:
+            LOG_CMSG("uhid close id=%" PRIu32, msg->uhid_close.id);
+            break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
             break;
@@ -256,6 +274,10 @@ sc_control_msg_destroy(struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             free(msg->set_clipboard.text);
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_OPEN:
+        case SC_CONTROL_MSG_TYPE_UHID_WRITE:
+            free(msg->uhid_open.data);
             break;
         default:
             // do nothing

@@ -35,7 +35,7 @@ arguments=(
     '--forward-all-clicks[Forward clicks to device]'
     {-h,--help}'[Print the help]'
     '--kill-adb-on-close[Kill adb when scrcpy terminates]'
-    {-K,--hid-keyboard}'[Simulate a physical keyboard by using HID over AOAv2]'
+    '--keyboard-input-mode=[Set the keyboard input mode]:mode:(disable inject aoa uhid)'
     '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
     '--list-camera-sizes[List the valid camera capture sizes]'
     '--list-cameras[List cameras available on the device]'

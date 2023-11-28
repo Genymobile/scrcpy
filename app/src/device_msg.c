@@ -40,6 +40,25 @@ device_msg_deserialize(const unsigned char *buf, size_t len,
             msg->ack_clipboard.sequence = sequence;
             return 9;
         }
+        case DEVICE_MSG_TYPE_UHID_DATA: {
+            uint32_t id = sc_read32be(&buf[1]);
+            size_t uhid_data_len = sc_read32be(&buf[5]);
+            if (uhid_data_len > len - 9) {
+                return 0; // not available
+            }
+            uint8_t *uhid_data = malloc(uhid_data_len);
+            if (!uhid_data) {
+                LOG_OOM();
+                return -1;
+            }
+            if (uhid_data_len) {
+                memcpy(uhid_data, &buf[9], uhid_data_len);
+            }
+            msg->uhid_data.id = id;
+            msg->uhid_data.data = uhid_data;
+            msg->uhid_data.len = uhid_data_len;
+            return 9 + uhid_data_len;
+        }
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
             return -1; // error, we cannot recover
@@ -48,7 +67,15 @@ device_msg_deserialize(const unsigned char *buf, size_t len,
 
 void
 device_msg_destroy(struct device_msg *msg) {
-    if (msg->type == DEVICE_MSG_TYPE_CLIPBOARD) {
-        free(msg->clipboard.text);
+    switch (msg->type) {
+        case DEVICE_MSG_TYPE_CLIPBOARD:
+            free(msg->clipboard.text);
+            break;
+        case DEVICE_MSG_TYPE_UHID_DATA:
+            free(msg->uhid_data.data);
+            break;
+        default:
+            // nothing to do
+            break;
     }
 }

@@ -47,6 +47,10 @@ process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
                  msg->ack_clipboard.sequence);
             sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
             break;
+        case DEVICE_MSG_TYPE_UHID_DATA:
+            LOGD("UHID data id=%u len=%u",
+                 msg->uhid_data.id, msg->uhid_data.len);
+            break;
     }
 }
 

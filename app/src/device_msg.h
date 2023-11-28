@@ -14,6 +14,7 @@
 enum device_msg_type {
     DEVICE_MSG_TYPE_CLIPBOARD,
     DEVICE_MSG_TYPE_ACK_CLIPBOARD,
+    DEVICE_MSG_TYPE_UHID_DATA,
 };
 
 struct device_msg {
@@ -25,6 +26,11 @@ struct device_msg {
         struct {
             uint64_t sequence;
         } ack_clipboard;
+        struct {
+            uint32_t id;
+            uint8_t *data; // owned, to be freed by free()
+            uint32_t len;
+        } uhid_data;
     };
 };
 

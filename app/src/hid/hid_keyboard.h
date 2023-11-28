@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include "aoa_hid.h"
+#include "trait/hid_interface.h"
 #include "trait/key_processor.h"
 
 // See "SDL2/SDL_scancode.h".
@@ -29,14 +29,14 @@
 struct sc_hid_keyboard {
     struct sc_key_processor key_processor; // key processor trait
 
-    struct sc_aoa *aoa;
+    struct sc_hid_interface *hid_interface;
     bool keys[SC_HID_KEYBOARD_KEYS];
 
     bool mod_lock_synchronized;
 };
 
 bool
-sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa);
+sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_hid_interface *hid_interface);
 
 void
 sc_hid_keyboard_destroy(struct sc_hid_keyboard *kb);
