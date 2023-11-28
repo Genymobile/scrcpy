@@ -26,6 +26,8 @@ public class Controller implements AsyncProcessor {
 
     private Thread thread;
 
+    private final UhidManager uhidManager;
+
     private final Device device;
     private final ControlChannel controlChannel;
     private final CleanUp cleanUp;
@@ -50,6 +52,7 @@ public class Controller implements AsyncProcessor {
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
+        uhidManager = new UhidManager();
     }
 
     private void initPointers() {
@@ -96,6 +99,7 @@ public class Controller implements AsyncProcessor {
                 Ln.e("Controller error", e);
             } finally {
                 Ln.d("Controller stopped");
+                uhidManager.closeAll();
                 listener.onTerminated(true);
             }
         }, "control-recv");
@@ -189,6 +193,12 @@ public class Controller implements AsyncProcessor {
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
                 Device.rotateDevice();
+                break;
+            case ControlMessage.TYPE_UHID_CREATE:
+                uhidOpen(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_UHID_INPUT:
+                uhidWriteInput(msg.getId(), msg.getData());
                 break;
             default:
                 // do nothing
@@ -425,5 +435,21 @@ public class Controller implements AsyncProcessor {
         }
 
         return ok;
+    }
+
+    private void uhidOpen(int id, byte[] data) {
+        try {
+            uhidManager.open(id, data);
+        } catch (IOException e) {
+            Ln.e("Could not open UHID", e);
+        }
+    }
+
+    private void uhidWriteInput(int id, byte[] data) {
+        try {
+            uhidManager.writeInput(id, data);
+        } catch (IOException e) {
+            Ln.e("Could not write UHID input", e);
+        }
     }
 }
