@@ -27,8 +27,8 @@ _scrcpy() {
         --force-adb-forward
         --forward-all-clicks
         -h --help
+        --keyboard-input-mode=
         --kill-adb-on-close
-        -K --hid-keyboard
         --legacy-paste
         --list-camera-sizes
         --list-cameras
@@ -113,6 +113,10 @@ _scrcpy() {
             ;;
         --camera-facing)
             COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
+            return
+            ;;
+        --keyboard-input-mode)
+            COMPREPLY=($(compgen -W 'inject aoa' -- "$cur"))
             return
             ;;
         --orientation|--display-orientation)

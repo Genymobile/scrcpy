@@ -53,6 +53,25 @@ scrcpy_otg(struct scrcpy_options *options) {
     static struct scrcpy_otg scrcpy_otg;
     struct scrcpy_otg *s = &scrcpy_otg;
 
+    bool enable_keyboard;
+    assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AUTO);
+    switch (options->keyboard_input_mode) {
+        case SC_KEYBOARD_INPUT_MODE_AOA:
+            enable_keyboard = true;
+            break;
+        case SC_KEYBOARD_INPUT_MODE_DISABLED:
+            enable_keyboard = false;
+            break;
+        default:
+            LOGE("In --otg mode, --keyboard-input-mode must be either aoa or "
+                 "disable");
+            goto end;
+    }
+    if (options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AOA
+            && options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_DISABLED) {
+        return SCRCPY_EXIT_FAILURE;
+    }
+
     const char *serial = options->serial;
 
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
@@ -118,9 +137,9 @@ scrcpy_otg(struct scrcpy_options *options) {
     aoa_initialized = true;
 
     bool enable_keyboard =
-        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
+        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
     bool enable_mouse =
-        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
+        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
 
     // If neither --hid-keyboard or --hid-mouse is passed, enable both
     if (!enable_keyboard && !enable_mouse) {
