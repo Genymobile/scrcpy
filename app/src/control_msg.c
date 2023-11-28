@@ -152,6 +152,17 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             // no additional data
             return 1;
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+            sc_write32be(&buf[1], msg->uhid_create.id);
+            sc_write16be(&buf[5], msg->uhid_create.report_desc_size);
+            memcpy(&buf[7], msg->uhid_create.report_desc,
+                            msg->uhid_create.report_desc_size);
+            return 7 + msg->uhid_create.report_desc_size;
+        case SC_CONTROL_MSG_TYPE_UHID_INPUT:
+            sc_write32be(&buf[1], msg->uhid_input.id);
+            buf[5] = msg->uhid_input.size;
+            memcpy(&buf[6], msg->uhid_input.data, msg->uhid_input.size);
+            return 6 + msg->uhid_input.size;
         default:
             LOGW("Unknown message type: %u", (unsigned) msg->type);
             return 0;
@@ -241,6 +252,13 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+            LOG_CMSG("UHID create (report_desc size=%" PRIu16 ")",
+                     msg->uhid_create.report_desc_size);
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_INPUT:
+            LOG_CMSG("UHID input (size=%" PRIu8 ")", msg->uhid_input.size);
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
