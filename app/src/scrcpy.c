@@ -543,11 +543,11 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
 #ifdef HAVE_USB
-        bool use_hid_keyboard =
-            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
-        bool use_hid_mouse =
-            options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
-        if (use_hid_keyboard || use_hid_mouse) {
+        bool use_aoa_keyboard =
+            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
+        bool use_aoa_mouse =
+            options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
+        if (use_aoa_keyboard || use_aoa_mouse) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
@@ -590,7 +590,7 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            if (use_hid_keyboard) {
+            if (use_aoa_keyboard) {
                 if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
                     hid_keyboard_initialized = true;
                     kp = &s->keyboard_hid.key_processor;
@@ -599,7 +599,7 @@ scrcpy(struct scrcpy_options *options) {
                 }
             }
 
-            if (use_hid_mouse) {
+            if (use_aoa_mouse) {
                 if (sc_hid_mouse_init(&s->mouse_hid, &s->aoa)) {
                     hid_mouse_initialized = true;
                     mp = &s->mouse_hid.mouse_processor;
@@ -634,25 +634,23 @@ aoa_hid_end:
                 }
             }
 
-            if (use_hid_keyboard && !hid_keyboard_initialized) {
-                LOGE("Fallback to default keyboard injection method "
-                     "(-K/--hid-keyboard ignored)");
-                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
+            if (use_aoa_keyboard && !hid_keyboard_initialized) {
+                LOGE("Fallback to --keyboard=sdk (--keyboard=aoa ignored)");
+                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_SDK;
             }
 
-            if (use_hid_mouse && !hid_mouse_initialized) {
-                LOGE("Fallback to default mouse injection method "
-                     "(-M/--hid-mouse ignored)");
-                options->mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT;
+            if (use_aoa_mouse && !hid_mouse_initialized) {
+                LOGE("Fallback to --keyboard=sdk (--keyboard=aoa ignored)");
+                options->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
             }
         }
 #else
-        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID);
-        assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_HID);
+        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AOA);
+        assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_AOA);
 #endif
 
         // keyboard_input_mode may have been reset if HID mode failed
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
                                     options->key_inject_mode,
                                     options->forward_key_repeat);
@@ -660,7 +658,7 @@ aoa_hid_end:
         }
 
         // mouse_input_mode may have been reset if HID mode failed
-        if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_INJECT) {
+        if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
             sc_mouse_inject_init(&s->mouse_inject, &s->controller);
             mp = &s->mouse_inject.mouse_processor;
         }

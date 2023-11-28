@@ -27,8 +27,8 @@ _scrcpy() {
         --force-adb-forward
         --forward-all-clicks
         -h --help
+        --keyboard=
         --kill-adb-on-close
-        -K --hid-keyboard
         --legacy-paste
         --list-camera-sizes
         --list-cameras
@@ -37,8 +37,8 @@ _scrcpy() {
         --lock-video-orientation
         --lock-video-orientation=
         -m --max-size=
-        -M --hid-mouse
         --max-fps=
+        --mouse=
         -n --no-control
         -N --no-playback
         --no-audio
@@ -113,6 +113,14 @@ _scrcpy() {
             ;;
         --camera-facing)
             COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
+            return
+            ;;
+        --keyboard)
+            COMPREPLY=($(compgen -W 'disabled sdk aoa' -- "$cur"))
+            return
+            ;;
+        --mouse)
+            COMPREPLY=($(compgen -W 'disabled sdk aoa' -- "$cur"))
             return
             ;;
         --orientation|--display-orientation)

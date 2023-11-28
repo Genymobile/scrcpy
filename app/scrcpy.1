@@ -172,24 +172,26 @@ By default, right-click triggers BACK (or POWER on) and middle-click triggers HO
 Print this help.
 
 .TP
-.B \-\-kill\-adb\-on\-close
-Kill adb when scrcpy terminates.
+.BI "\-\-keyboard " mode
+Select how to send keyboard inputs to the device.
 
-.TP
-.B \-K, \-\-hid\-keyboard
-Simulate a physical keyboard by using HID over AOAv2.
+Possible values are "disabled", "sdk" and "aoa":
 
-This provides a better experience for IME users, and allows to generate non-ASCII characters, contrary to the default injection method.
+ - "disabled" does not send keyboard inputs to the device.
+ - "sdk" uses the Android system API to deliver keyboard events to applications.
+ - "aoa" simulates a physical keyboard using the AOAv2 protocol. It may only work over USB.
 
-It may only work over USB.
-
-The keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
+For "aoa", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
 
     adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
 
-However, the option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
+This option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
 
-Also see \fB\-\-hid\-mouse\fR.
+Also see \fB\-\-mouse\fR.
+
+.TP
+.B \-\-kill\-adb\-on\-close
+Kill adb when scrcpy terminates.
 
 .TP
 .B \-\-legacy\-paste
@@ -230,20 +232,25 @@ Limit both the width and height of the video to \fIvalue\fR. The other dimension
 Default is 0 (unlimited).
 
 .TP
-.B \-M, \-\-hid\-mouse
-Simulate a physical mouse by using HID over AOAv2.
+.BI "\-\-max\-fps " value
+Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
-In this mode, the computer mouse is captured to control the device directly (relative mouse mode).
+.TP
+.BI "\-\-mouse " mode
+Select how to send mouse inputs to the device.
+
+Possible values are "disabled", "sdk" and "aoa":
+
+ - "disabled" does not send mouse inputs to the device.
+ - "sdk" uses the Android system API to deliver mouse events to applications.
+ - "aoa" simulates a physical mouse using the AOAv2 protocol. It may only work over USB.
+
+In "aoa" mode, the computer mouse is captured to control the device directly (relative mouse mode).
 
 LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
 
-It may only work over USB.
+Also see \fB\-\-keyboard\fR.
 
-Also see \fB\-\-hid\-keyboard\fR.
-
-.TP
-.BI "\-\-max\-fps " value
-Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
 .TP
 .B \-n, \-\-no\-control
