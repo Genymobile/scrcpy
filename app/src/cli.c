@@ -365,19 +365,22 @@ static const struct sc_option options[] = {
         .longopt = "keyboard",
         .argdesc = "mode",
         .text = "Select how to send keyboard inputs to the device.\n"
-                "Possible values are \"disabled\", \"sdk\" and \"aoa\".\n"
+                "Possible values are \"disabled\", \"sdk\", \"uhid\" and "
+                "\"aoa\".\n"
                 "\"disabled\" does not send keyboard inputs to the device.\n"
                 "\"sdk\" uses the Android system API to deliver keyboard "
                 "events to applications.\n"
+                "\"uhid\" simulates a physical HID keyboard using the Linux "
+                "UHID kernel module on the device.\n"
                 "\"aoa\" simulates a physical keyboard using the AOAv2 "
                 "protocol. It may only work over USB.\n"
-                "For \"aoa\", the keyboard layout must be configured (once and "
-                "for all) on the device, via Settings -> System -> Languages "
-                "and input -> Physical keyboard. This settings page can be "
-                "started directly: `adb shell am start -a "
+                "For \"uhid\" and \"aoa\", the keyboard layout must be "
+                "configured (once and for all) on the device, via Settings -> "
+                "System -> Languages and input -> Physical keyboard. This "
+                "settings page can be started directly: `adb shell am start -a "
                 "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
-                "This option is only available when the HID keyboard is "
-                "enabled (or a physical keyboard is connected).\n"
+                "This option is only available when a HID keyboard is enabled "
+                "(or a physical keyboard is connected).\n"
                 "Also see --mouse.",
     },
     {
@@ -1939,6 +1942,11 @@ parse_keyboard(const char *optarg, enum sc_keyboard_input_mode *mode) {
         return true;
     }
 
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_UHID;
+        return true;
+    }
+
     if (!strcmp(optarg, "aoa")) {
 #ifdef HAVE_USB
         *mode = SC_KEYBOARD_INPUT_MODE_AOA;
@@ -1949,7 +1957,8 @@ parse_keyboard(const char *optarg, enum sc_keyboard_input_mode *mode) {
 #endif
     }
 
-    LOGE("Unsupported keyboard: %s (expected disabled, sdk or aoa)", optarg);
+    LOGE("Unsupported keyboard: %s (expected disabled, sdk, uhid and aoa)",
+         optarg);
     return false;
 }
 

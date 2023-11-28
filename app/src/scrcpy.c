@@ -25,6 +25,7 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "uhid/keyboard_uhid.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
 # include "usb/keyboard_aoa.h"
@@ -64,6 +65,7 @@ struct scrcpy {
 #endif
     union {
         struct sc_keyboard_sdk keyboard_sdk;
+        struct sc_keyboard_uhid keyboard_uhid;
 #ifdef HAVE_USB
         struct sc_keyboard_aoa keyboard_aoa;
 #endif
@@ -656,15 +658,22 @@ aoa_hid_end:
         assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_AOA);
 #endif
 
-        // keyboard_input_mode may have been reset if HID mode failed
+        // keyboard_input_mode may have been reset if AOA mode failed
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
                                  options->key_inject_mode,
                                  options->forward_key_repeat);
             kp = &s->keyboard_sdk.key_processor;
+        } else if (options->keyboard_input_mode
+                == SC_KEYBOARD_INPUT_MODE_UHID) {
+            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller);
+            if (!ok) {
+                goto end;
+            }
+            kp = &s->keyboard_uhid.key_processor;
         }
 
-        // mouse_input_mode may have been reset if HID mode failed
+        // mouse_input_mode may have been reset if AOA mode failed
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
             sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
             mp = &s->mouse_sdk.mouse_processor;
