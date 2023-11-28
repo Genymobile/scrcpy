@@ -146,6 +146,17 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
             return 2;
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+            sc_write16be(&buf[1], msg->uhid_create.id);
+            sc_write16be(&buf[3], msg->uhid_create.report_desc_size);
+            memcpy(&buf[5], msg->uhid_create.report_desc,
+                            msg->uhid_create.report_desc_size);
+            return 5 + msg->uhid_create.report_desc_size;
+        case SC_CONTROL_MSG_TYPE_UHID_INPUT:
+            sc_write16be(&buf[1], msg->uhid_input.id);
+            sc_write16be(&buf[3], msg->uhid_input.size);
+            memcpy(&buf[5], msg->uhid_input.data, msg->uhid_input.size);
+            return 5 + msg->uhid_input.size;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -242,6 +253,23 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");
             break;
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
+            LOG_CMSG("UHID create [%" PRIu16 "] report_desc_size=%" PRIu16,
+                     msg->uhid_create.id, msg->uhid_create.report_desc_size);
+            break;
+        case SC_CONTROL_MSG_TYPE_UHID_INPUT: {
+            char *hex = sc_str_to_hex_string(msg->uhid_input.data,
+                                             msg->uhid_input.size);
+            if (hex) {
+                LOG_CMSG("UHID input [%" PRIu16 "] %s",
+                         msg->uhid_input.id, hex);
+                free(hex);
+            } else {
+                LOG_CMSG("UHID input [%" PRIu16 "] size=%" PRIu16,
+                         msg->uhid_input.id, msg->uhid_input.size);
+            }
+            break;
+        }
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
             break;
