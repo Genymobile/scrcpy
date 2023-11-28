@@ -33,6 +33,7 @@ src = [
     'src/version.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
+    'src/uhid/keyboard_uhid.c',
     'src/util/acksync.c',
     'src/util/audiobuf.c',
     'src/util/average.c',
