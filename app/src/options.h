@@ -140,13 +140,17 @@ enum sc_lock_video_orientation {
 };
 
 enum sc_keyboard_input_mode {
-    SC_KEYBOARD_INPUT_MODE_INJECT,
-    SC_KEYBOARD_INPUT_MODE_HID,
+    SC_KEYBOARD_INPUT_MODE_AUTO,
+    SC_KEYBOARD_INPUT_MODE_DISABLED,
+    SC_KEYBOARD_INPUT_MODE_SDK,
+    SC_KEYBOARD_INPUT_MODE_AOA,
 };
 
 enum sc_mouse_input_mode {
-    SC_MOUSE_INPUT_MODE_INJECT,
-    SC_MOUSE_INPUT_MODE_HID,
+    SC_MOUSE_INPUT_MODE_AUTO,
+    SC_MOUSE_INPUT_MODE_DISABLED,
+    SC_MOUSE_INPUT_MODE_SDK,
+    SC_MOUSE_INPUT_MODE_AOA,
 };
 
 enum sc_key_inject_mode {
