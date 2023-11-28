@@ -323,6 +323,53 @@ static void test_serialize_rotate_device(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_uhid_create(void) {
+    const uint8_t report_desc[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_UHID_CREATE,
+        .uhid_create = {
+            .id = 42,
+            .report_desc_size = sizeof(report_desc),
+            .report_desc = report_desc,
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 16);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_UHID_CREATE,
+        0, 42, // id
+        0, 11, // size
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_uhid_input(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_UHID_INPUT,
+        .uhid_input = {
+            .id = 42,
+            .size = 5,
+            .data = {1, 2, 3, 4, 5},
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 10);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_UHID_INPUT,
+        0, 42, // id
+        0, 5, // size
+        1, 2, 3, 4, 5,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -341,5 +388,7 @@ int main(int argc, char *argv[]) {
     test_serialize_set_clipboard_long();
     test_serialize_set_screen_power_mode();
     test_serialize_rotate_device();
+    test_serialize_uhid_create();
+    test_serialize_uhid_input();
     return 0;
 }

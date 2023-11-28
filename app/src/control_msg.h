@@ -10,6 +10,7 @@
 #include "android/input.h"
 #include "android/keycodes.h"
 #include "coords.h"
+#include "hid/hid_event.h"
 
 #define SC_CONTROL_MSG_MAX_SIZE (1 << 18) // 256k
 
@@ -37,6 +38,8 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
     SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
     SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    SC_CONTROL_MSG_TYPE_UHID_CREATE,
+    SC_CONTROL_MSG_TYPE_UHID_INPUT,
 };
 
 enum sc_screen_power_mode {
@@ -92,6 +95,16 @@ struct sc_control_msg {
         struct {
             enum sc_screen_power_mode mode;
         } set_screen_power_mode;
+        struct {
+            uint16_t id;
+            uint16_t report_desc_size;
+            const uint8_t *report_desc; // pointer to static data
+        } uhid_create;
+        struct {
+            uint16_t id;
+            uint16_t size;
+            uint8_t data[SC_HID_MAX_SIZE];
+        } uhid_input;
     };
 };
 
