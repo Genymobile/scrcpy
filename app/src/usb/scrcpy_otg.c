@@ -117,10 +117,15 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
     aoa_initialized = true;
 
+    assert(options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
+        || options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_DISABLED);
+    assert(options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA
+        || options->mouse_input_mode == SC_MOUSE_INPUT_MODE_DISABLED);
+
     bool enable_keyboard =
-        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
+        options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
     bool enable_mouse =
-        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
+        options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
 
     // If neither --hid-keyboard or --hid-mouse is passed, enable both
     if (!enable_keyboard && !enable_mouse) {
