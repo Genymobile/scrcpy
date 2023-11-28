@@ -175,13 +175,14 @@ Print this help.
 .BI "\-\-keyboard " mode
 Select how to send keyboard inputs to the device.
 
-Possible values are "disabled", "sdk" and "aoa":
+Possible values are "disabled", "sdk", "uhid" and "aoa":
 
  - "disabled" does not send keyboard inputs to the device.
  - "sdk" uses the Android system API to deliver keyboard events to applications.
- - "aoa" simulates a physical keyboard using the AOAv2 protocol. It may only work over USB.
+ - "uhid" simulates a physical HID keyboard using the Linux HID kernel module on the device.
+ - "aoa" simulates a physical HID keyboard using the AOAv2 protocol. It may only work over USB.
 
-For "aoa", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
+For "uhid" and "aoa", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
 
     adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
 
