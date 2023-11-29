@@ -426,8 +426,13 @@ scrcpy(struct scrcpy_options *options) {
         // still works.
         // <https://github.com/Genymobile/scrcpy/issues/4418>
         if (SDL_Init(SDL_INIT_VIDEO)) {
-            LOGE("Could not initialize SDL video: %s", SDL_GetError());
-            goto end;
+            // If it fails, it is an error only if video playback is enabled
+            if (options->video_playback) {
+                LOGE("Could not initialize SDL video: %s", SDL_GetError());
+                goto end;
+            } else {
+                LOGW("Could not initialize SDL video: %s", SDL_GetError());
+            }
         }
     }
 
