@@ -45,11 +45,11 @@ public final class Device {
         void onClipboardTextChanged(String text);
     }
 
-    private final Size deviceSize;
     private final Rect crop;
     private int maxSize;
     private final int lockVideoOrientation;
 
+    private Size deviceSize;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
     private FoldListener foldListener;
@@ -116,8 +116,7 @@ public final class Device {
                             return;
                         }
 
-                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(),
-                                options.getMaxSize(), options.getLockVideoOrientation());
+                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
                         // notify
                         if (foldListener != null) {
                             foldListener.onFoldChanged(displayId, folded);
