@@ -36,8 +36,8 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    public interface RotationListener {
-        void onRotationChanged(int rotation);
+    public interface DisplayChangeListener {
+        void onDisplayChanged();
     }
 
     public interface FoldListener {
@@ -54,7 +54,7 @@ public final class Device {
 
     private Size deviceSize;
     private ScreenInfo screenInfo;
-    private RotationListener rotationListener;
+    private DisplayChangeListener displayChangeListener;
     private FoldListener foldListener;
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
@@ -114,25 +114,11 @@ public final class Device {
                 deviceSize = displayInfo.getSize();
                 screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
 
-                if (foldListener != null) {
-                    foldListener.onFoldChanged(displayId, false);
+                if (displayChangeListener != null) {
+                    displayChangeListener.onDisplayChanged();
                 }
             }
-        }, displayListenerHandler);
-
-        ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                synchronized (Device.this) {
-                    screenInfo = screenInfo.withDeviceRotation(rotation);
-
-                    // notify
-                    if (rotationListener != null) {
-                        rotationListener.onRotationChanged(rotation);
-                    }
-                }
-            }
-        }, displayId);
+        }, displayListenerHandler, DisplayManager.EVENT_FLAG_DISPLAY_CHANGED);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
@@ -288,8 +274,8 @@ public final class Device {
         return ServiceManager.getPowerManager().isScreenOn();
     }
 
-    public synchronized void setRotationListener(RotationListener rotationListener) {
-        this.rotationListener = rotationListener;
+    public synchronized void setDisplayChangeListener(DisplayChangeListener displayChangeListener) {
+        this.displayChangeListener = displayChangeListener;
     }
 
     public synchronized void setFoldListener(FoldListener foldlistener) {

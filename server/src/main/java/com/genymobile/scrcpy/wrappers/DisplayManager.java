@@ -14,6 +14,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class DisplayManager {
+    /**
+     * Event type for when a display is changed.
+     *
+     * @see #registerDisplayListener(DisplayListener, Handler, long)
+     */
+    public static final long EVENT_FLAG_DISPLAY_CHANGED = 1L << 2;
+
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
 
     public DisplayManager(Object manager) {
@@ -97,7 +104,7 @@ public final class DisplayManager {
         }
     }
 
-    public void registerDisplayListener(DisplayListener listener, Handler handler) {
+    public void registerDisplayListener(DisplayListener listener, Handler handler, long eventMask) {
         try {
             Class<?> displayListenerClass = Class.forName("android.hardware.display.DisplayManager$DisplayListener");
             Object displayListenerProxy = Proxy.newProxyInstance(
@@ -119,12 +126,20 @@ public final class DisplayManager {
                     }
                     return null;
                 });
-            manager
-                .getClass()
-                .getMethod("registerDisplayListener", displayListenerClass, Handler.class)
-                .invoke(manager, displayListenerProxy, handler);
+            try {
+                manager
+                    .getClass()
+                    .getMethod("registerDisplayListener", displayListenerClass, Handler.class, long.class)
+                    .invoke(manager, displayListenerProxy, handler, eventMask);
+            } catch (NoSuchMethodException e) {
+                manager
+                    .getClass()
+                    .getMethod("registerDisplayListener", displayListenerClass, Handler.class)
+                    .invoke(manager, displayListenerProxy, handler);
+            }
         } catch (Exception e) {
-            throw new AssertionError(e);
+            // Rotation and screen size won't be updated, not a fatal error
+            Ln.w("Could not register display listener", e);
         }
     }
 
