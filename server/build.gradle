@@ -7,8 +7,8 @@ android {
         applicationId "com.genymobile.scrcpy"
         minSdkVersion 21
         targetSdkVersion 34
-        versionCode 20300
-        versionName "2.3"
+        versionCode 20301
+        versionName "2.3.1"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
