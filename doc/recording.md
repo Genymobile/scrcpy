@@ -18,7 +18,9 @@ To record only the audio:
 ```bash
 scrcpy --no-video --record=file.opus
 scrcpy --no-video --audio-codec=aac --record=file.aac
-# .m4a/.mp4 and .mka/.mkv are also supported for both opus and aac
+scrcpy --no-video --audio-codec=flac --record=file.flac
+scrcpy --no-video --audio-codec=raw --record=file.wav
+# .m4a/.mp4 and .mka/.mkv are also supported for opus, aac and flac
 ```
 
 Timestamps are captured on the device, so [packet delay variation] does not
@@ -31,18 +33,27 @@ course, not if you capture your scrcpy window and audio output on the computer).
 ## Format
 
 The video and audio streams are encoded on the device, but are muxed on the
-client side. Two formats (containers) are supported:
- - Matroska (`.mkv`)
- - MP4 (`.mp4`)
+client side. Several formats (containers) are supported:
+ - MP4 (`.mp4`, `.m4a`, `.aac`)
+ - Matroska (`.mkv`, `.mka`)
+ - OPUS (`.opus`)
+ - FLAC (`.flac`)
+ - WAV (`.wav`)
 
 The container is automatically selected based on the filename.
 
 It is also possible to explicitly select a container (in that case the filename
-needs not end with `.mkv` or `.mp4`):
+needs not end with a known extension):
 
 ```
 scrcpy --record=file --record-format=mkv
 ```
+
+
+## Rotation
+
+The video can be recorded rotated. See [video
+orientation](video.md#orientation).
 
 
 ## No playback

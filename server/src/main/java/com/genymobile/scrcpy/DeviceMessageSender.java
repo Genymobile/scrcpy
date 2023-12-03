@@ -51,6 +51,7 @@ public final class DeviceMessageSender {
             }
         }
     }
+
     public void start() {
         thread = new Thread(() -> {
             try {

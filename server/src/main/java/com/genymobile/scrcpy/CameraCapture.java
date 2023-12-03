@@ -289,18 +289,17 @@ public class CameraCapture extends SurfaceCapture {
         List<OutputConfiguration> outputs = Arrays.asList(outputConfig);
 
         int sessionType = highSpeed ? SessionConfiguration.SESSION_HIGH_SPEED : SessionConfiguration.SESSION_REGULAR;
-        SessionConfiguration sessionConfig = new SessionConfiguration(sessionType, outputs, cameraExecutor,
-                new CameraCaptureSession.StateCallback() {
-                    @Override
-                    public void onConfigured(CameraCaptureSession session) {
-                        future.complete(session);
-                    }
+        SessionConfiguration sessionConfig = new SessionConfiguration(sessionType, outputs, cameraExecutor, new CameraCaptureSession.StateCallback() {
+            @Override
+            public void onConfigured(CameraCaptureSession session) {
+                future.complete(session);
+            }
 
-                    @Override
-                    public void onConfigureFailed(CameraCaptureSession session) {
-                        future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_ERROR));
-                    }
-                });
+            @Override
+            public void onConfigureFailed(CameraCaptureSession session) {
+                future.completeExceptionally(new CameraAccessException(CameraAccessException.CAMERA_ERROR));
+            }
+        });
 
         camera.createCaptureSession(sessionConfig);
 

@@ -19,8 +19,9 @@ _scrcpy() {
         --crop=
         -d --select-usb
         --disable-screensaver
-        --display-id=
         --display-buffer=
+        --display-id=
+        --display-orientation=
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward
@@ -50,6 +51,7 @@ _scrcpy() {
         --no-power-on
         --no-video
         --no-video-playback
+        --orientation=
         --otg
         -p --port=
         --pause-on-exit
@@ -61,6 +63,7 @@ _scrcpy() {
         -r --record=
         --raw-key-events
         --record-format=
+        --record-orientation=
         --render-driver=
         --require-audio
         --rotation=
@@ -97,7 +100,7 @@ _scrcpy() {
             return
             ;;
         --audio-codec)
-            COMPREPLY=($(compgen -W 'opus aac raw' -- "$cur"))
+            COMPREPLY=($(compgen -W 'opus aac flac raw' -- "$cur"))
             return
             ;;
         --video-source)
@@ -112,8 +115,17 @@ _scrcpy() {
             COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
             return
             ;;
+        --orientation
+        --display-orientation)
+            COMPREPLY=($(compgen -> '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
+        --record-orientation)
+            COMPREPLY=($(compgen -> '0 90 180 270' -- "$cur"))
+            return
+            ;;
         --lock-video-orientation)
-            COMPREPLY=($(compgen -W 'unlocked initial 0 1 2 3' -- "$cur"))
+            COMPREPLY=($(compgen -W 'unlocked initial 0 90 180 270' -- "$cur"))
             return
             ;;
         --pause-on-exit)
@@ -125,15 +137,11 @@ _scrcpy() {
             return
             ;;
         --record-format)
-            COMPREPLY=($(compgen -W 'mkv mp4' -- "$cur"))
+            COMPREPLY=($(compgen -W 'mp4 mkv m4a mka opus aac flac wav' -- "$cur"))
             return
             ;;
         --render-driver)
             COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
-            return
-            ;;
-        --rotation)
-            COMPREPLY=($(compgen -W '0 1 2 3' -- "$cur"))
             return
             ;;
         --shortcut-mod)

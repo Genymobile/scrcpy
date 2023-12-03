@@ -69,58 +69,62 @@ prepare-deps:
 	@app/prebuilt-deps/prepare-libusb.sh
 
 build-win32: prepare-deps
-	[ -d "$(WIN32_BUILD_DIR)" ] || ( mkdir "$(WIN32_BUILD_DIR)" && \
-		meson setup "$(WIN32_BUILD_DIR)" \
-			--cross-file cross_win32.txt \
-			--buildtype release --strip -Db_lto=true \
-			-Dcompile_server=false \
-			-Dportable=true )
+	rm -rf "$(WIN32_BUILD_DIR)"
+	mkdir -p "$(WIN32_BUILD_DIR)/local"
+	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win32/. "$(WIN32_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/SDL2-2.28.5/i686-w64-mingw32/. "$(WIN32_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-Win32/. "$(WIN32_BUILD_DIR)/local/"
+	meson setup "$(WIN32_BUILD_DIR)" \
+		--pkg-config-path="$(WIN32_BUILD_DIR)/local/lib/pkgconfig" \
+		-Dc_args="-I$(PWD)/$(WIN32_BUILD_DIR)/local/include" \
+		-Dc_link_args="-L$(PWD)/$(WIN32_BUILD_DIR)/local/lib" \
+		--cross-file=cross_win32.txt \
+		--buildtype=release --strip -Db_lto=true \
+		-Dcompile_server=false \
+		-Dportable=true
 	ninja -C "$(WIN32_BUILD_DIR)"
 
 build-win64: prepare-deps
-	[ -d "$(WIN64_BUILD_DIR)" ] || ( mkdir "$(WIN64_BUILD_DIR)" && \
-		meson setup "$(WIN64_BUILD_DIR)" \
-			--cross-file cross_win64.txt \
-			--buildtype release --strip -Db_lto=true \
-			-Dcompile_server=false \
-			-Dportable=true )
+	rm -rf "$(WIN64_BUILD_DIR)"
+	mkdir -p "$(WIN64_BUILD_DIR)/local"
+	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win64/. "$(WIN64_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/SDL2-2.28.5/x86_64-w64-mingw32/. "$(WIN64_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-x64/. "$(WIN64_BUILD_DIR)/local/"
+	meson setup "$(WIN64_BUILD_DIR)" \
+		--pkg-config-path="$(WIN64_BUILD_DIR)/local/lib/pkgconfig" \
+		-Dc_args="-I$(PWD)/$(WIN64_BUILD_DIR)/local/include" \
+		-Dc_link_args="-L$(PWD)/$(WIN64_BUILD_DIR)/local/lib" \
+		--cross-file=cross_win64.txt \
+		--buildtype=release --strip -Db_lto=true \
+		-Dcompile_server=false \
+		-Dportable=true
 	ninja -C "$(WIN64_BUILD_DIR)"
 
 dist-win32: build-server build-win32
 	mkdir -p "$(DIST)/$(WIN32_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/data/scrcpy-console.bat "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp app/data/icon.png "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN32_TARGET_DIR)"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win32/bin/avutil-58.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win32/bin/avcodec-60.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win32/bin/avformat-60.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win32/bin/swresample-4.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/data/scrcpy-console.bat "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/data/icon.png "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/SDL2-2.28.4/i686-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-Win32/bin/msys-usb-1.0.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp "$(WIN32_BUILD_DIR)"/local/bin/*.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/data/scrcpy-console.bat "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp app/data/icon.png "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN64_TARGET_DIR)"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win64/bin/avutil-58.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win64/bin/avcodec-60.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win64/bin/avformat-60.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/ffmpeg-6.0-scrcpy-4/win64/bin/swresample-4.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/data/scrcpy-console.bat "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/data/icon.png "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/SDL2-2.28.4/x86_64-w64-mingw32/bin/SDL2.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-x64/bin/msys-usb-1.0.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp "$(WIN64_BUILD_DIR)"/local/bin/*.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)"; \

@@ -318,9 +318,8 @@ public class Controller implements AsyncProcessor {
             }
         }
 
-        MotionEvent event = MotionEvent
-                .obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source,
-                        0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
+                DEFAULT_DEVICE_ID, 0, source, 0);
         return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
@@ -341,9 +340,8 @@ public class Controller implements AsyncProcessor {
         coords.setAxisValue(MotionEvent.AXIS_HSCROLL, hScroll);
         coords.setAxisValue(MotionEvent.AXIS_VSCROLL, vScroll);
 
-        MotionEvent event = MotionEvent
-                .obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0,
-                        InputDevice.SOURCE_MOUSE, 0);
+        MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
+                DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
         return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 

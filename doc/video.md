@@ -97,38 +97,49 @@ scrcpy --video-codec=h264 --video-encoder='OMX.qcom.video.encoder.avc'
 ```
 
 
-## Rotation
+## Orientation
 
-The rotation may be applied at 3 different levels:
+The orientation may be applied at 3 different levels:
  - The [shortcut](shortcuts.md) <kbd>MOD</kbd>+<kbd>r</kbd> requests the
    device to switch between portrait and landscape (the current running app may
    refuse, if it does not support the requested orientation).
  - `--lock-video-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
- - `--rotation` rotates only the window content. This only affects the display,
-   not the recording. It may be changed dynamically at any time using the
-   [shortcuts](shortcuts.md) <kbd>MOD</kbd>+<kbd>←</kbd> and
-   <kbd>MOD</kbd>+<kbd>→</kbd>.
+ - `--orientation` is applied on the client side, and affects display and
+   recording. For the display, it can be changed dynamically using
+   [shortcuts](shortcuts.md).
 
-To lock the mirroring orientation:
-
-```bash
-scrcpy --lock-video-orientation     # initial (current) orientation
-scrcpy --lock-video-orientation=0   # natural orientation
-scrcpy --lock-video-orientation=1   # 90° counterclockwise
-scrcpy --lock-video-orientation=2   # 180°
-scrcpy --lock-video-orientation=3   # 90° clockwise
-```
-
-To set an initial window rotation:
+To lock the mirroring orientation (on the capture side):
 
 ```bash
-scrcpy --rotation=0   # no rotation
-scrcpy --rotation=1   # 90 degrees counterclockwise
-scrcpy --rotation=2   # 180 degrees
-scrcpy --rotation=3   # 90 degrees clockwise
+scrcpy --lock-video-orientation      # initial (current) orientation
+scrcpy --lock-video-orientation=0    # natural orientation
+scrcpy --lock-video-orientation=90   # 90° clockwise
+scrcpy --lock-video-orientation=180  # 180°
+scrcpy --lock-video-orientation=270  # 270° clockwise
 ```
+
+To orient the video (on the rendering side):
+
+```bash
+scrcpy --orientation=0
+scrcpy --orientation=90       # 90° clockwise
+scrcpy --orientation=180      # 180°
+scrcpy --orientation=270      # 270° clockwise
+scrcpy --orientation=flip0    # hflip
+scrcpy --orientation=flip90   # hflip + 90° clockwise
+scrcpy --orientation=flip180  # vflip (hflip + 180°)
+scrcpy --orientation=flip270  # hflip + 270° clockwise
+```
+
+The orientation can be set separately for display and record if necessary, via
+`--display-orientation` and `--record-orientation`.
+
+The rotation is applied to a recorded file by writing a display transformation
+to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
+values are allowed when recording.
+
 
 ## Crop
 

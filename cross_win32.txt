@@ -6,7 +6,7 @@ c = 'i686-w64-mingw32-gcc'
 cpp = 'i686-w64-mingw32-g++'
 ar = 'i686-w64-mingw32-ar'
 strip = 'i686-w64-mingw32-strip'
-pkgconfig = 'i686-w64-mingw32-pkg-config'
+pkg-config = 'i686-w64-mingw32-pkg-config'
 windres = 'i686-w64-mingw32-windres'
 
 [host_machine]
@@ -14,8 +14,3 @@ system = 'windows'
 cpu_family = 'x86'
 cpu = 'i686'
 endian = 'little'
-
-[properties]
-prebuilt_ffmpeg = 'ffmpeg-6.0-scrcpy-4/win32'
-prebuilt_sdl2 = 'SDL2-2.28.4/i686-w64-mingw32'
-prebuilt_libusb = 'libusb-1.0.26/libusb-MinGW-Win32'

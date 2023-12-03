@@ -24,20 +24,24 @@ public final class AudioCapture {
     public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int BYTES_PER_SAMPLE = 2;
 
+    // Never read more than 1024 samples, even if the buffer is bigger (that would increase latency).
+    // A lower value is useless, since the system captures audio samples by blocks of 1024 (so for example if we read by blocks of 256 samples, we
+    // receive 4 successive blocks without waiting, then we wait for the 4 next ones).
+    public static final int MAX_READ_SIZE = 1024 * CHANNELS * BYTES_PER_SAMPLE;
+
+    private static final long ONE_SAMPLE_US = (1000000 + SAMPLE_RATE - 1) / SAMPLE_RATE; // 1 sample in microseconds (used for fixing PTS)
+
     private final int audioSource;
 
     private AudioRecord recorder;
 
     private final AudioTimestamp timestamp = new AudioTimestamp();
+    private long previousRecorderTimestamp = -1;
     private long previousPts = 0;
     private long nextPts = 0;
 
     public AudioCapture(AudioSource audioSource) {
         this.audioSource = audioSource.value();
-    }
-
-    public static int millisToBytes(int millis) {
-        return SAMPLE_RATE * CHANNELS * BYTES_PER_SAMPLE * millis / 1000;
     }
 
     private static AudioFormat createAudioFormat() {
@@ -135,8 +139,8 @@ public final class AudioCapture {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    public int read(ByteBuffer directBuffer, int size, MediaCodec.BufferInfo outBufferInfo) {
-        int r = recorder.read(directBuffer, size);
+    public int read(ByteBuffer directBuffer, MediaCodec.BufferInfo outBufferInfo) {
+        int r = recorder.read(directBuffer, MAX_READ_SIZE);
         if (r <= 0) {
             return r;
         }
@@ -144,8 +148,9 @@ public final class AudioCapture {
         long pts;
 
         int ret = recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
-        if (ret == AudioRecord.SUCCESS) {
+        if (ret == AudioRecord.SUCCESS && timestamp.nanoTime != previousRecorderTimestamp) {
             pts = timestamp.nanoTime / 1000;
+            previousRecorderTimestamp = timestamp.nanoTime;
         } else {
             if (nextPts == 0) {
                 Ln.w("Could not get any audio timestamp");
@@ -157,13 +162,13 @@ public final class AudioCapture {
         long durationUs = r * 1000000 / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
         nextPts = pts + durationUs;
 
-        if (previousPts != 0 && pts < previousPts) {
+        if (previousPts != 0 && pts < previousPts + ONE_SAMPLE_US) {
             // Audio PTS may come from two sources:
             //  - recorder.getTimestamp() if the call works;
             //  - an estimation from the previous PTS and the packet size as a fallback.
             //
             // Therefore, the property that PTS are monotonically increasing is no guaranteed in corner cases, so enforce it.
-            pts = previousPts + 1;
+            pts = previousPts + ONE_SAMPLE_US;
         }
         previousPts = pts;
 

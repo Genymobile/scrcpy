@@ -18,6 +18,17 @@ scrcpy --video-source=display --audio-source=mic    # force display AND micropho
 scrcpy --video-source=camera --audio-source=output  # force camera AND device audio output
 ```
 
+Audio can be disabled:
+
+```bash
+# audio not captured at all
+scrcpy --video-source=camera --no-audio
+scrcpy --video-source=camera --no-audio --record=file.mp4
+
+# audio captured and recorded, but not played
+scrcpy --video-source=camera --no-audio-playback --record=file.mp4
+```
+
 
 ## List
 
@@ -98,6 +109,16 @@ forbidden (the size is determined by the value given explicitly):
 
 ```bash
 scrcpy --video-source=camera --camera-size=1920x1080 -m3000  # error
+```
+
+
+## Rotation
+
+To rotate the captured video, use the [video orientation](video.md#orientation)
+option:
+
+```
+scrcpy --video-source=camera --camera-size=1920x1080 --orientation=90
 ```
 
 

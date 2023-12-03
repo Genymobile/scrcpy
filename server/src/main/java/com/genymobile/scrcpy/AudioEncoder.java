@@ -37,9 +37,6 @@ public final class AudioEncoder implements AsyncProcessor {
     private static final int SAMPLE_RATE = AudioCapture.SAMPLE_RATE;
     private static final int CHANNELS = AudioCapture.CHANNELS;
 
-    private static final int READ_MS = 5; // milliseconds
-    private static final int READ_SIZE = AudioCapture.millisToBytes(READ_MS);
-
     private final AudioCapture capture;
     private final Streamer streamer;
     private final int bitRate;
@@ -93,7 +90,7 @@ public final class AudioEncoder implements AsyncProcessor {
         while (!Thread.currentThread().isInterrupted()) {
             InputTask task = inputTasks.take();
             ByteBuffer buffer = mediaCodec.getInputBuffer(task.index);
-            int r = capture.read(buffer, READ_SIZE, bufferInfo);
+            int r = capture.read(buffer, bufferInfo);
             if (r <= 0) {
                 throw new IOException("Could not read audio: " + r);
             }
@@ -298,7 +295,7 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
-    private class EncoderCallback extends MediaCodec.Callback {
+    private final class EncoderCallback extends MediaCodec.Callback {
         @TargetApi(Build.VERSION_CODES.N)
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {

@@ -58,7 +58,7 @@ sudo apt install gcc git pkg-config meson ninja-build libsdl2-dev \
                  libswresample-dev libusb-1.0-0-dev
 
 # server build dependencies
-sudo apt install openjdk-11-jdk
+sudo apt install openjdk-17-jdk
 ```
 
 On old versions (like Ubuntu 16.04), `meson` is too old. In that case, install
@@ -100,7 +100,7 @@ sudo apt install mingw-w64 mingw-w64-tools
 You also need the JDK to build the server:
 
 ```bash
-sudo apt install openjdk-11-jdk
+sudo apt install openjdk-17-jdk
 ```
 
 Then generate the releases:
@@ -168,13 +168,13 @@ brew install sdl2 ffmpeg libusb
 brew install pkg-config meson
 ```
 
-Additionally, if you want to build the server, install Java 8 from Caskroom, and
+Additionally, if you want to build the server, install Java 17 from Caskroom, and
 make it available from the `PATH`:
 
 ```bash
 brew tap homebrew/cask-versions
-brew install adoptopenjdk/openjdk/adoptopenjdk11
-export JAVA_HOME="$(/usr/libexec/java_home --version 1.11)"
+brew install adoptopenjdk/openjdk/adoptopenjdk17
+export JAVA_HOME="$(/usr/libexec/java_home --version 1.17)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
@@ -233,10 +233,10 @@ install` must be run as root)._
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v2.2`][direct-scrcpy-server]  
-   <sub>SHA-256: `c85c4aa84305efb69115cd497a120ebdd10258993b4cf123a8245b3d99d49874`</sub>
+ - [`scrcpy-server-v2.3.1`][direct-scrcpy-server]  
+   <sub>SHA-256: `f6814822fc308a7a532f253485c9038183c6296a6c5df470a9e383b4f8e7605b`</sub>
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v2.2/scrcpy-server-v2.2
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v2.3.1/scrcpy-server-v2.3.1
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:

@@ -90,6 +90,9 @@ enum {
     OPT_CAMERA_AR,
     OPT_CAMERA_FPS,
     OPT_CAMERA_HIGH_SPEED,
+    OPT_DISPLAY_ORIENTATION,
+    OPT_RECORD_ORIENTATION,
+    OPT_ORIENTATION,
 };
 
 struct sc_option {
@@ -152,7 +155,7 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_CODEC,
         .longopt = "audio-codec",
         .argdesc = "name",
-        .text = "Select an audio codec (opus, aac or raw).\n"
+        .text = "Select an audio codec (opus, aac, flac or raw).\n"
                 "Default is opus.",
     },
     {
@@ -293,6 +296,14 @@ static const struct sc_option options[] = {
         .argdesc = "id",
     },
     {
+        .longopt_id = OPT_DISPLAY_BUFFER,
+        .longopt = "display-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before displaying. "
+                "This increases latency to compensate for jitter.\n"
+                "Default is 0 (no buffering).",
+    },
+    {
         .longopt_id = OPT_DISPLAY_ID,
         .longopt = "display-id",
         .argdesc = "id",
@@ -302,12 +313,15 @@ static const struct sc_option options[] = {
                 "Default is 0.",
     },
     {
-        .longopt_id = OPT_DISPLAY_BUFFER,
-        .longopt = "display-buffer",
-        .argdesc = "ms",
-        .text = "Add a buffering delay (in milliseconds) before displaying. "
-                "This increases latency to compensate for jitter.\n"
-                "Default is 0 (no buffering).",
+        .longopt_id = OPT_DISPLAY_ORIENTATION,
+        .longopt = "display-orientation",
+        .argdesc = "value",
+        .text = "Set the initial display orientation.\n"
+                "Possible values are 0, 90, 180, 270, flip0, flip90, flip180 "
+                "and flip270. The number represents the clockwise rotation "
+                "in degrees; the \"flip\" keyword applies a horizontal flip "
+                "before the rotation.\n"
+                "Default is 0.",
     },
     {
         .shortopt = 'e',
@@ -399,11 +413,11 @@ static const struct sc_option options[] = {
         .longopt = "lock-video-orientation",
         .argdesc = "value",
         .optional_arg = true,
-        .text = "Lock video orientation to value.\n"
+        .text = "Lock capture video orientation to value.\n"
                 "Possible values are \"unlocked\", \"initial\" (locked to the "
-                "initial orientation), 0, 1, 2 and 3. Natural device "
-                "orientation is 0, and each increment adds a 90 degrees "
-                "rotation counterclockwise.\n"
+                "initial orientation), 0, 90, 180 and 270. The values "
+                "represent the clockwise rotation from the natural device "
+                "orientation, in degrees.\n"
                 "Default is \"unlocked\".\n"
                 "Passing the option without argument is equivalent to passing "
                 "\"initial\".",
@@ -513,6 +527,13 @@ static const struct sc_option options[] = {
         .text = "Disable video playback on the computer.",
     },
     {
+        .longopt_id = OPT_ORIENTATION,
+        .longopt = "orientation",
+        .argdesc = "value",
+        .text = "Same as --display-orientation=value "
+                "--record-orientation=value.",
+    },
+    {
         .longopt_id = OPT_OTG,
         .longopt = "otg",
         .text = "Run in OTG mode: simulate physical keyboard and mouse, "
@@ -583,7 +604,7 @@ static const struct sc_option options[] = {
         .argdesc = "file.mp4",
         .text = "Record screen to file.\n"
                 "The format is determined by the --record-format option if "
-                "set, or by the file extension (.mp4 or .mkv).",
+                "set, or by the file extension.",
     },
     {
         .longopt_id = OPT_RAW_KEY_EVENTS,
@@ -594,7 +615,17 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_RECORD_FORMAT,
         .longopt = "record-format",
         .argdesc = "format",
-        .text = "Force recording format (either mp4 or mkv).",
+        .text = "Force recording format (mp4, mkv, m4a, mka, opus, aac, flac "
+                "or wav).",
+    },
+    {
+        .longopt_id = OPT_RECORD_ORIENTATION,
+        .longopt = "record-orientation",
+        .argdesc = "value",
+        .text = "Set the record orientation.\n"
+                "Possible values are 0, 90, 180 and 270. The number represents "
+                "the clockwise rotation in degrees.\n"
+                "Default is 0.",
     },
     {
         .longopt_id = OPT_RENDER_DRIVER,
@@ -614,12 +645,10 @@ static const struct sc_option options[] = {
                 "is enabled but does not work."
     },
     {
+        // deprecated
         .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
-        .text = "Set the initial display rotation.\n"
-                "Possible values are 0, 1, 2 and 3. Each increment adds a 90 "
-                "degrees rotation counterclockwise.",
     },
     {
         .shortopt = 's',
@@ -822,6 +851,14 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+Right" },
         .text = "Rotate display right",
+    },
+    {
+        .shortcuts = { "MOD+Shift+Left", "MOD+Shift+Right" },
+        .text = "Flip display horizontally",
+    },
+    {
+        .shortcuts = { "MOD+Shift+Up", "MOD+Shift+Down" },
+        .text = "Flip display vertically",
     },
     {
         .shortcuts = { "MOD+g" },
@@ -1381,15 +1418,50 @@ parse_lock_video_orientation(const char *s,
         return true;
     }
 
-    long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 3,
-                                "lock video orientation");
-    if (!ok) {
-        return false;
+    if (!strcmp(s, "0")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_0;
+        return true;
     }
 
-    *lock_mode = (enum sc_lock_video_orientation) value;
-    return true;
+    if (!strcmp(s, "90")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
+        return true;
+    }
+
+    if (!strcmp(s, "180")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
+        return true;
+    }
+
+    if (!strcmp(s, "270")) {
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
+        return true;
+    }
+
+    if (!strcmp(s, "1")) {
+        LOGW("--lock-video-orientation=1 is deprecated, use "
+             "--lock-video-orientation=270 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
+        return true;
+    }
+
+    if (!strcmp(s, "2")) {
+        LOGW("--lock-video-orientation=2 is deprecated, use "
+             "--lock-video-orientation=180 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
+        return true;
+    }
+
+    if (!strcmp(s, "3")) {
+        LOGW("--lock-video-orientation=3 is deprecated, use "
+             "--lock-video-orientation=90 instead.");
+        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
+        return true;
+    }
+
+    LOGE("Unsupported --lock-video-orientation value: %s (expected initial, "
+         "unlocked, 0, 90, 180 or 270).", s);
+    return false;
 }
 
 static bool
@@ -1402,6 +1474,45 @@ parse_rotation(const char *s, uint8_t *rotation) {
 
     *rotation = (uint8_t) value;
     return true;
+}
+
+static bool
+parse_orientation(const char *s, enum sc_orientation *orientation) {
+    if (!strcmp(s, "0")) {
+        *orientation = SC_ORIENTATION_0;
+        return true;
+    }
+    if (!strcmp(s, "90")) {
+        *orientation = SC_ORIENTATION_90;
+        return true;
+    }
+    if (!strcmp(s, "180")) {
+        *orientation = SC_ORIENTATION_180;
+        return true;
+    }
+    if (!strcmp(s, "270")) {
+        *orientation = SC_ORIENTATION_270;
+        return true;
+    }
+    if (!strcmp(s, "flip0")) {
+        *orientation = SC_ORIENTATION_FLIP_0;
+        return true;
+    }
+    if (!strcmp(s, "flip90")) {
+        *orientation = SC_ORIENTATION_FLIP_90;
+        return true;
+    }
+    if (!strcmp(s, "flip180")) {
+        *orientation = SC_ORIENTATION_FLIP_180;
+        return true;
+    }
+    if (!strcmp(s, "flip270")) {
+        *orientation = SC_ORIENTATION_FLIP_270;
+        return true;
+    }
+    LOGE("Unsupported orientation: %s (expected 0, 90, 180, 270, flip0, "
+         "flip90, flip180 or flip270)", optarg);
+    return false;
 }
 
 static bool
@@ -1626,6 +1737,12 @@ get_record_format(const char *name) {
     if (!strcmp(name, "aac")) {
         return SC_RECORD_FORMAT_AAC;
     }
+    if (!strcmp(name, "flac")) {
+        return SC_RECORD_FORMAT_FLAC;
+    }
+    if (!strcmp(name, "wav")) {
+        return SC_RECORD_FORMAT_WAV;
+    }
     return 0;
 }
 
@@ -1633,7 +1750,8 @@ static bool
 parse_record_format(const char *optarg, enum sc_record_format *format) {
     enum sc_record_format fmt = get_record_format(optarg);
     if (!fmt) {
-        LOGE("Unsupported format: %s (expected mp4 or mkv)", optarg);
+        LOGE("Unsupported record format: %s (expected mp4, mkv, m4a, mka, "
+             "opus, aac, flac or wav)", optarg);
         return false;
     }
 
@@ -1695,11 +1813,16 @@ parse_audio_codec(const char *optarg, enum sc_codec *codec) {
         *codec = SC_CODEC_AAC;
         return true;
     }
+    if (!strcmp(optarg, "flac")) {
+        *codec = SC_CODEC_FLAC;
+        return true;
+    }
     if (!strcmp(optarg, "raw")) {
         *codec = SC_CODEC_RAW;
         return true;
     }
-    LOGE("Unsupported audio codec: %s (expected opus, aac or raw)", optarg);
+    LOGE("Unsupported audio codec: %s (expected opus, aac, flac or raw)",
+         optarg);
     return false;
 }
 
@@ -1995,10 +2118,51 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
                 break;
             case OPT_ROTATION:
-                if (!parse_rotation(optarg, &opts->rotation)) {
+                LOGW("--rotation is deprecated, use --display-orientation "
+                     "instead.");
+                uint8_t rotation;
+                if (!parse_rotation(optarg, &rotation)) {
+                    return false;
+                }
+                assert(rotation <= 3);
+                switch (rotation) {
+                    case 0:
+                        opts->display_orientation = SC_ORIENTATION_0;
+                        break;
+                    case 1:
+                        // rotation 1 was 90° counterclockwise, but orientation
+                        // is expressed clockwise
+                        opts->display_orientation = SC_ORIENTATION_270;
+                        break;
+                    case 2:
+                        opts->display_orientation = SC_ORIENTATION_180;
+                        break;
+                    case 3:
+                        // rotation 3 was 270° counterclockwise, but orientation
+                        // is expressed clockwise
+                        opts->display_orientation = SC_ORIENTATION_90;
+                        break;
+                }
+                break;
+            case OPT_DISPLAY_ORIENTATION:
+                if (!parse_orientation(optarg, &opts->display_orientation)) {
                     return false;
                 }
                 break;
+            case OPT_RECORD_ORIENTATION:
+                if (!parse_orientation(optarg, &opts->record_orientation)) {
+                    return false;
+                }
+                break;
+            case OPT_ORIENTATION: {
+                enum sc_orientation orientation;
+                if (!parse_orientation(optarg, &orientation)) {
+                    return false;
+                }
+                opts->display_orientation = orientation;
+                opts->record_orientation = orientation;
+                break;
+            }
             case OPT_RENDER_DRIVER:
                 opts->render_driver = optarg;
                 break;
@@ -2257,6 +2421,19 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->require_audio = true;
     }
 
+    if (opts->audio_playback && opts->audio_buffer == -1) {
+        if (opts->audio_codec == SC_CODEC_FLAC) {
+            // Use 50 ms audio buffer by default, but use a higher value for FLAC,
+            // which is not low latency (the default encoder produces blocks of
+            // 4096 samples, which represent ~85.333ms).
+            LOGI("FLAC audio: audio buffer increased to 120 ms (use "
+                 "--audio-buffer to set a custom value)");
+            opts->audio_buffer = SC_TICK_FROM_MS(120);
+        } else {
+            opts->audio_buffer = SC_TICK_FROM_MS(50);
+        }
+    }
+
 #ifdef HAVE_V4L2
     if (v4l2) {
         if (opts->lock_video_orientation ==
@@ -2352,9 +2529,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             }
         }
 
-        if (opts->audio_codec == SC_CODEC_RAW) {
-            LOGW("Recording does not support RAW audio codec");
-            return false;
+        if (opts->record_orientation != SC_ORIENTATION_0) {
+            if (sc_orientation_is_mirror(opts->record_orientation)) {
+                LOGE("Record orientation only supports rotation, not "
+                     "flipping: %s",
+                     sc_orientation_get_name(opts->record_orientation));
+                return false;
+            }
         }
 
         if (opts->video
@@ -2376,6 +2557,30 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                  "(try with --audio-codec=aac)");
             return false;
         }
+        if (opts->record_format == SC_RECORD_FORMAT_FLAC
+                && opts->audio_codec != SC_CODEC_FLAC) {
+            LOGE("Recording to FLAC file requires a FLAC audio stream "
+                 "(try with --audio-codec=flac)");
+            return false;
+        }
+
+        if (opts->record_format == SC_RECORD_FORMAT_WAV
+                && opts->audio_codec != SC_CODEC_RAW) {
+            LOGE("Recording to WAV file requires a RAW audio stream "
+                 "(try with --audio-codec=raw)");
+            return false;
+        }
+
+        if ((opts->record_format == SC_RECORD_FORMAT_MP4 ||
+             opts->record_format == SC_RECORD_FORMAT_M4A)
+                && opts->audio_codec == SC_CODEC_RAW) {
+            LOGE("Recording to MP4 container does not support RAW audio");
+            return false;
+        }
+    }
+
+    if (opts->audio_codec == SC_CODEC_FLAC && opts->audio_bit_rate) {
+        LOGW("--audio-bit-rate is ignored for FLAC audio codec");
     }
 
     if (opts->audio_codec == SC_CODEC_RAW) {

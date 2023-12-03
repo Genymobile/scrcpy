@@ -93,19 +93,26 @@ public final class LogUtils {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
-                    builder.append("\n    --video-source=camera --camera-id=").append(id);
+                    builder.append("\n    --camera-id=").append(id);
                     CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
 
                     int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                     builder.append("    (").append(getCameraFacingName(facing)).append(", ");
 
                     Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-                    builder.append(activeSize.width()).append("x").append(activeSize.height()).append(", ");
+                    builder.append(activeSize.width()).append("x").append(activeSize.height());
 
-                    // Capture frame rates for low-FPS mode are the same for every resolution
-                    Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-                    SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
-                    builder.append("fps=").append(uniqueLowFps).append(')');
+                    try {
+                        // Capture frame rates for low-FPS mode are the same for every resolution
+                        Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                        SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
+                        builder.append(", fps=").append(uniqueLowFps);
+                    } catch (Exception e) {
+                        // Some devices may provide invalid ranges, causing an IllegalArgumentException "lower must be less than or equal to upper"
+                        Ln.w("Could not get available frame rates for camera " + id, e);
+                    }
+
+                    builder.append(')');
 
                     if (includeSizes) {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);

@@ -138,8 +138,8 @@ public final class ClipboardManager {
         }
     }
 
-    private static void addPrimaryClipChangedListener(Method method, int methodVersion, IInterface manager,
-            IOnPrimaryClipChangedListener listener) throws InvocationTargetException, IllegalAccessException {
+    private static void addPrimaryClipChangedListener(Method method, int methodVersion, IInterface manager, IOnPrimaryClipChangedListener listener)
+            throws InvocationTargetException, IllegalAccessException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
             return;

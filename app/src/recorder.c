@@ -4,6 +4,7 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
+#include <libavutil/display.h>
 
 #include "util/log.h"
 #include "util/str.h"
@@ -69,6 +70,10 @@ sc_recorder_get_format_name(enum sc_record_format format) {
             return "matroska";
         case SC_RECORD_FORMAT_OPUS:
             return "opus";
+        case SC_RECORD_FORMAT_FLAC:
+            return "flac";
+        case SC_RECORD_FORMAT_WAV:
+            return "wav";
         default:
             return NULL;
     }
@@ -101,7 +106,7 @@ sc_recorder_write_stream(struct sc_recorder *recorder,
     AVStream *stream = recorder->ctx->streams[st->index];
     sc_recorder_rescale_packet(stream, packet);
     if (st->last_pts != AV_NOPTS_VALUE && packet->pts <= st->last_pts) {
-        LOGW("Fixing PTS non monotonically increasing in stream %d "
+        LOGD("Fixing PTS non monotonically increasing in stream %d "
              "(%" PRIi64 " >= %" PRIi64 ")",
              st->index, st->last_pts, packet->pts);
         packet->pts = ++st->last_pts;
@@ -166,13 +171,14 @@ sc_recorder_close_output_file(struct sc_recorder *recorder) {
 }
 
 static inline bool
-sc_recorder_has_empty_queues(struct sc_recorder *recorder) {
+sc_recorder_must_wait_for_config_packets(struct sc_recorder *recorder) {
     if (recorder->video && sc_vecdeque_is_empty(&recorder->video_queue)) {
         // The video queue is empty
         return true;
     }
 
-    if (recorder->audio && sc_vecdeque_is_empty(&recorder->audio_queue)) {
+    if (recorder->audio && recorder->audio_expects_config_packet
+            && sc_vecdeque_is_empty(&recorder->audio_queue)) {
         // The audio queue is empty (when audio is enabled)
         return true;
     }
@@ -188,7 +194,7 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     while (!recorder->stopped &&
               ((recorder->video && !recorder->video_init)
             || (recorder->audio && !recorder->audio_init)
-            || sc_recorder_has_empty_queues(recorder))) {
+            || sc_recorder_must_wait_for_config_packets(recorder))) {
         sc_cond_wait(&recorder->cond, &recorder->mutex);
     }
 
@@ -207,7 +213,8 @@ sc_recorder_process_header(struct sc_recorder *recorder) {
     }
 
     AVPacket *audio_pkt = NULL;
-    if (!sc_vecdeque_is_empty(&recorder->audio_queue)) {
+    if (recorder->audio_expects_config_packet &&
+            !sc_vecdeque_is_empty(&recorder->audio_queue)) {
         assert(recorder->audio);
         audio_pkt = sc_vecdeque_pop(&recorder->audio_queue);
     }
@@ -488,6 +495,42 @@ run_recorder(void *data) {
 }
 
 static bool
+sc_recorder_set_orientation(AVStream *stream, enum sc_orientation orientation) {
+    assert(!sc_orientation_is_mirror(orientation));
+
+    uint8_t *raw_data;
+#ifdef SCRCPY_LAVC_HAS_CODECPAR_CODEC_SIDEDATA
+    AVPacketSideData *sd =
+        av_packet_side_data_new(&stream->codecpar->coded_side_data,
+                                &stream->codecpar->nb_coded_side_data,
+                                AV_PKT_DATA_DISPLAYMATRIX,
+                                sizeof(int32_t) * 9, 0);
+    if (!sd) {
+        LOG_OOM();
+        return false;
+    }
+
+    raw_data = sd->data;
+#else
+    raw_data = av_stream_new_side_data(stream, AV_PKT_DATA_DISPLAYMATRIX,
+                                      sizeof(int32_t) * 9);
+    if (!raw_data) {
+        LOG_OOM();
+        return false;
+    }
+#endif
+
+    int32_t *matrix = (int32_t *) raw_data;
+
+    unsigned rotation = orientation;
+    unsigned angle = rotation * 90;
+
+    av_display_rotation_set(matrix, angle);
+
+    return true;
+}
+
+static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
                                    AVCodecContext *ctx) {
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
@@ -513,6 +556,16 @@ sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
     }
 
     recorder->video_stream.index = stream->index;
+
+    if (recorder->orientation != SC_ORIENTATION_0) {
+        if (!sc_recorder_set_orientation(stream, recorder->orientation)) {
+            sc_mutex_unlock(&recorder->mutex);
+            return false;
+        }
+
+        LOGI("Record orientation set to %s",
+             sc_orientation_get_name(recorder->orientation));
+    }
 
     recorder->video_init = true;
     sc_cond_signal(&recorder->cond);
@@ -594,6 +647,10 @@ sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
     }
 
     recorder->audio_stream.index = stream->index;
+
+    // A config packet is provided for all supported formats except raw audio
+    recorder->audio_expects_config_packet =
+        ctx->codec_id != AV_CODEC_ID_PCM_S16LE;
 
     recorder->audio_init = true;
     sc_cond_signal(&recorder->cond);
@@ -679,7 +736,10 @@ sc_recorder_stream_init(struct sc_recorder_stream *stream) {
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format, bool video, bool audio,
+                 enum sc_orientation orientation,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata) {
+    assert(!sc_orientation_is_mirror(orientation));
+
     recorder->filename = strdup(filename);
     if (!recorder->filename) {
         LOG_OOM();
@@ -700,12 +760,16 @@ sc_recorder_init(struct sc_recorder *recorder, const char *filename,
     recorder->video = video;
     recorder->audio = audio;
 
+    recorder->orientation = orientation;
+
     sc_vecdeque_init(&recorder->video_queue);
     sc_vecdeque_init(&recorder->audio_queue);
     recorder->stopped = false;
 
     recorder->video_init = false;
     recorder->audio_init = false;
+
+    recorder->audio_expects_config_packet = false;
 
     sc_recorder_stream_init(&recorder->video_stream);
     sc_recorder_stream_init(&recorder->audio_stream);

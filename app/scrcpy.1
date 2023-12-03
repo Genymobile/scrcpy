@@ -26,7 +26,7 @@ Encode the audio at the given bit rate, expressed in bits/s. Unit suffixes are s
 Default is 128K (128000).
 
 .TP
-.BI "\-\-audio\-buffer ms
+.BI "\-\-audio\-buffer " ms
 Configure the audio buffering delay (in milliseconds).
 
 Lower values decrease the latency, but increase the likelyhood of buffer underrun (causing audio glitches).
@@ -35,7 +35,7 @@ Default is 50.
 
 .TP
 .BI "\-\-audio\-codec " name
-Select an audio codec (opus, aac or raw).
+Select an audio codec (opus, aac, flac or raw).
 
 Default is opus.
 
@@ -62,7 +62,7 @@ Select the audio source (output or mic).
 Default is output.
 
 .TP
-.BI "\-\-audio\-output\-buffer ms
+.BI "\-\-audio\-output\-buffer " ms
 Configure the size of the SDL audio output buffer (in milliseconds).
 
 If you get "robotic" audio playback, you should test with a higher value (10). Do not change this setting otherwise.
@@ -128,6 +128,12 @@ Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 Disable screensaver while scrcpy is running.
 
 .TP
+.BI "\-\-display\-buffer " ms
+Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
+
+Default is 0 (no buffering).
+
+.TP
 .BI "\-\-display\-id " id
 Specify the device display id to mirror.
 
@@ -136,10 +142,12 @@ The available display ids can be listed by \fB\-\-list\-displays\fR.
 Default is 0.
 
 .TP
-.BI "\-\-display\-buffer ms
-Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
+.BI "\-\-display\-orientation " value
+Set the initial display orientation.
 
-Default is 0 (no buffering).
+Possible values are 0, 90, 180, 270, flip0, flip90, flip180 and flip270. The number represents the clockwise rotation in degrees; the "flip" keyword applies a horizontal flip before the rotation.
+
+Default is 0.
 
 .TP
 .B \-e, \-\-select\-tcpip
@@ -207,7 +215,9 @@ List displays available on the device.
 
 .TP
 \fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
-Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees rotation counterclockwise.
+Lock capture video orientation to \fIvalue\fR.
+
+Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 90, 180, and 270. The values represent the clockwise rotation from the natural device orientation, in degrees.
 
 Default is "unlocked".
 
@@ -290,6 +300,10 @@ Disable video forwarding.
 Disable video playback on the computer.
 
 .TP
+.BI "\-\-orientation " value
+Same as --display-orientation=value --record-orientation=value.
+
+.TP
 .B \-\-otg
 Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable.
 
@@ -347,7 +361,7 @@ Record screen to
 
 The format is determined by the
 .B \-\-record\-format
-option if set, or by the file extension (.mp4 or .mkv).
+option if set, or by the file extension.
 
 .TP
 .B \-\-raw\-key\-events
@@ -355,7 +369,15 @@ Inject key events for all input keys, and ignore text events.
 
 .TP
 .BI "\-\-record\-format " format
-Force recording format (either mp4 or mkv).
+Force recording format (mp4, mkv, m4a, mka, opus, aac, flac or wav).
+
+.TP
+.BI "\-\-record\-orientation " value
+Set the record orientation.
+
+Possible values are 0, 90, 180 and 270. The number represents the clockwise rotation in degrees.
+
+Default is 0.
 
 .TP
 .BI "\-\-render\-driver " name
@@ -368,10 +390,6 @@ Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "me
 .TP
 .B \-\-require\-audio
 By default, scrcpy mirrors only the video if audio capture fails on the device. This option makes scrcpy fail if audio is enabled but does not work.
-
-.TP
-.BI "\-\-rotation " value
-Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
 
 .TP
 .BI "\-s, \-\-serial " number
@@ -533,6 +551,14 @@ Rotate display left
 .TP
 .B MOD+Right
 Rotate display right
+
+.TP
+.B MOD+Shift+Left, MOD+Shift+Right
+Flip display horizontally
+
+.TP
+.B MOD+Shift+Up, MOD+Shift+Down
+Flip display vertically
 
 .TP
 .B MOD+g

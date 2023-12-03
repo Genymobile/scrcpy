@@ -14,16 +14,16 @@
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
 static inline struct sc_size
-get_rotated_size(struct sc_size size, int rotation) {
-    struct sc_size rotated_size;
-    if (rotation & 1) {
-        rotated_size.width = size.height;
-        rotated_size.height = size.width;
+get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
+    struct sc_size oriented_size;
+    if (sc_orientation_is_swap(orientation)) {
+        oriented_size.width = size.height;
+        oriented_size.height = size.width;
     } else {
-        rotated_size.width = size.width;
-        rotated_size.height = size.height;
+        oriented_size.width = size.width;
+        oriented_size.height = size.height;
     }
-    return rotated_size;
+    return oriented_size;
 }
 
 // get the window size in a struct sc_size
@@ -251,7 +251,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     enum sc_display_result res =
-        sc_display_render(&screen->display, &screen->rect, screen->rotation);
+        sc_display_render(&screen->display, &screen->rect, screen->orientation);
     (void) res; // any error already logged
 }
 
@@ -379,9 +379,10 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_frame_buffer;
     }
 
-    screen->rotation = params->rotation;
-    if (screen->rotation) {
-        LOGI("Initial display rotation set to %u", screen->rotation);
+    screen->orientation = params->orientation;
+    if (screen->orientation != SC_ORIENTATION_0) {
+        LOGI("Initial display orientation set to %s",
+             sc_orientation_get_name(screen->orientation));
     }
 
     uint32_t window_flags = SDL_WINDOW_HIDDEN
@@ -559,19 +560,19 @@ apply_pending_resize(struct sc_screen *screen) {
 }
 
 void
-sc_screen_set_rotation(struct sc_screen *screen, unsigned rotation) {
-    assert(rotation < 4);
-    if (rotation == screen->rotation) {
+sc_screen_set_orientation(struct sc_screen *screen,
+                          enum sc_orientation orientation) {
+    if (orientation == screen->orientation) {
         return;
     }
 
     struct sc_size new_content_size =
-        get_rotated_size(screen->frame_size, rotation);
+        get_oriented_size(screen->frame_size, orientation);
 
     set_content_size(screen, new_content_size);
 
-    screen->rotation = rotation;
-    LOGI("Display rotation set to %u", rotation);
+    screen->orientation = orientation;
+    LOGI("Display orientation set to %s", sc_orientation_get_name(orientation));
 
     sc_screen_render(screen, true);
 }
@@ -584,7 +585,7 @@ sc_screen_init_size(struct sc_screen *screen) {
     // The requested size is passed via screen->frame_size
 
     struct sc_size content_size =
-        get_rotated_size(screen->frame_size, screen->rotation);
+        get_oriented_size(screen->frame_size, screen->orientation);
     screen->content_size = content_size;
 
     enum sc_display_result res =
@@ -604,7 +605,7 @@ prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
     screen->frame_size = new_frame_size;
 
     struct sc_size new_content_size =
-        get_rotated_size(new_frame_size, screen->rotation);
+        get_oriented_size(new_frame_size, screen->orientation);
     set_content_size(screen, new_content_size);
 
     sc_screen_update_content_rect(screen);
@@ -843,8 +844,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
 struct sc_point
 sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
                                            int32_t x, int32_t y) {
-    unsigned rotation = screen->rotation;
-    assert(rotation < 4);
+    enum sc_orientation orientation = screen->orientation;
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
@@ -855,27 +855,43 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
     x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
     y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
 
-    // rotate
     struct sc_point result;
-    switch (rotation) {
-        case 0:
+    switch (orientation) {
+        case SC_ORIENTATION_0:
             result.x = x;
             result.y = y;
             break;
-        case 1:
-            result.x = h - y;
-            result.y = x;
-            break;
-        case 2:
-            result.x = w - x;
-            result.y = h - y;
-            break;
-        default:
-            assert(rotation == 3);
+        case SC_ORIENTATION_90:
             result.x = y;
             result.y = w - x;
             break;
+        case SC_ORIENTATION_180:
+            result.x = w - x;
+            result.y = h - y;
+            break;
+        case SC_ORIENTATION_270:
+            result.x = h - y;
+            result.y = x;
+            break;
+        case SC_ORIENTATION_FLIP_0:
+            result.x = w - x;
+            result.y = y;
+            break;
+        case SC_ORIENTATION_FLIP_90:
+            result.x = h - y;
+            result.y = w - x;
+            break;
+        case SC_ORIENTATION_FLIP_180:
+            result.x = x;
+            result.y = h - y;
+            break;
+        default:
+            assert(orientation == SC_ORIENTATION_FLIP_270);
+            result.x = y;
+            result.y = x;
+            break;
     }
+
     return result;
 }
 

@@ -39,14 +39,15 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_bit_rate = 0,
     .max_fps = 0,
     .lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED,
-    .rotation = 0,
+    .display_orientation = SC_ORIENTATION_0,
+    .record_orientation = SC_ORIENTATION_0,
     .window_x = SC_WINDOW_POSITION_UNDEFINED,
     .window_y = SC_WINDOW_POSITION_UNDEFINED,
     .window_width = 0,
     .window_height = 0,
     .display_id = 0,
     .display_buffer = 0,
-    .audio_buffer = SC_TICK_FROM_MS(50),
+    .audio_buffer = -1, // depends on the audio format,
     .audio_output_buffer = SC_TICK_FROM_MS(5),
     .time_limit = 0,
 #ifdef HAVE_V4L2
@@ -89,3 +90,39 @@ const struct scrcpy_options scrcpy_options_default = {
     .camera_high_speed = false,
     .list = 0,
 };
+
+enum sc_orientation
+sc_orientation_apply(enum sc_orientation src, enum sc_orientation transform) {
+    assert(!(src & ~7));
+    assert(!(transform & ~7));
+
+    unsigned transform_hflip = transform & 4;
+    unsigned transform_rotation = transform & 3;
+    unsigned src_hflip = src & 4;
+    unsigned src_rotation = src & 3;
+    unsigned src_swap = src & 1;
+    if (src_swap && transform_hflip) {
+        // If the src is rotated by 90 or 270 degrees, applying a flipped
+        // transformation requires an additional 180 degrees rotation to
+        // compensate for the inversion of the order of multiplication:
+        //
+        //     hflip1 × rotate1 × hflip2 × rotate2
+        //     `--------------'   `--------------'
+        //           src             transform
+        //
+        // In the final result, we want all the hflips then all the rotations,
+        // so we must move hflip2 to the left:
+        //
+        //     hflip1 × hflip2 × rotate1' × rotate2
+        //
+        // with rotate1' = | rotate1           if src is 0° or 180°
+        //                 | rotate1 + 180°    if src is 90° or 270°
+
+        src_rotation += 2;
+    }
+
+    unsigned result_hflip = src_hflip ^ transform_hflip;
+    unsigned result_rotation = (transform_rotation + src_rotation) % 4;
+    enum sc_orientation result = result_hflip | result_rotation;
+    return result;
+}

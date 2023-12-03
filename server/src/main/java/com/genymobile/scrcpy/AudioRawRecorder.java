@@ -13,9 +13,6 @@ public final class AudioRawRecorder implements AsyncProcessor {
 
     private Thread thread;
 
-    private static final int READ_MS = 5; // milliseconds
-    private static final int READ_SIZE = AudioCapture.millisToBytes(READ_MS);
-
     public AudioRawRecorder(AudioCapture capture, Streamer streamer) {
         this.capture = capture;
         this.streamer = streamer;
@@ -28,16 +25,22 @@ public final class AudioRawRecorder implements AsyncProcessor {
             return;
         }
 
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(READ_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(AudioCapture.MAX_READ_SIZE);
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         try {
-            capture.start();
+            try {
+                capture.start();
+            } catch (Throwable t) {
+                // Notify the client that the audio could not be captured
+                streamer.writeDisableStream(false);
+                throw t;
+            }
 
             streamer.writeAudioHeader();
             while (!Thread.currentThread().isInterrupted()) {
                 buffer.position(0);
-                int r = capture.read(buffer, READ_SIZE, bufferInfo);
+                int r = capture.read(buffer, bufferInfo);
                 if (r < 0) {
                     throw new IOException("Could not read audio: " + r);
                 }
@@ -45,10 +48,11 @@ public final class AudioRawRecorder implements AsyncProcessor {
 
                 streamer.writePacket(buffer, bufferInfo);
             }
-        } catch (Throwable e) {
-            // Notify the client that the audio could not be captured
-            streamer.writeDisableStream(false);
-            throw e;
+        } catch (IOException e) {
+            // Broken pipe is expected on close, because the socket is closed by the client
+            if (!IO.isBrokenPipe(e)) {
+                Ln.e("Audio capture error", e);
+            }
         } finally {
             capture.stop();
         }
@@ -62,8 +66,8 @@ public final class AudioRawRecorder implements AsyncProcessor {
                 record();
             } catch (AudioCaptureForegroundException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
-            } catch (IOException e) {
-                Ln.e("Audio recording error", e);
+            } catch (Throwable t) {
+                Ln.e("Audio recording error", t);
                 fatalError = true;
             } finally {
                 Ln.d("Audio recorder stopped");

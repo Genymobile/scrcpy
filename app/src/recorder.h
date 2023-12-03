@@ -34,6 +34,8 @@ struct sc_recorder {
     bool audio;
     bool video;
 
+    enum sc_orientation orientation;
+
     char *filename;
     enum sc_record_format format;
     AVFormatContext *ctx;
@@ -50,6 +52,8 @@ struct sc_recorder {
     bool video_init;
     bool audio_init;
 
+    bool audio_expects_config_packet;
+
     struct sc_recorder_stream video_stream;
     struct sc_recorder_stream audio_stream;
 
@@ -65,6 +69,7 @@ struct sc_recorder_callbacks {
 bool
 sc_recorder_init(struct sc_recorder *recorder, const char *filename,
                  enum sc_record_format format, bool video, bool audio,
+                 enum sc_orientation orientation,
                  const struct sc_recorder_callbacks *cbs, void *cbs_userdata);
 
 bool
