@@ -187,5 +187,7 @@ public final class CleanUp {
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
             }
         }
+
+        System.exit(0);
     }
 }
