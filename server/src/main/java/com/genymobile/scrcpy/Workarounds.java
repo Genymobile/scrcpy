@@ -94,6 +94,11 @@ public final class Workarounds {
             mustFillConfigurationController = true;
         }
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // For Android U, some api like InputManager must use application to initilize
+            mustFillAppContext = true;
+        }
+
         if (mustFillConfigurationController) {
             // Must be call before fillAppContext() because it is necessary to get a valid system context
             fillConfigurationController();
