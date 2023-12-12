@@ -2,7 +2,7 @@ package com.genymobile.scrcpy;
 
 import android.os.BatteryManager;
 import android.os.Build;
-
+import android.system.Os;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

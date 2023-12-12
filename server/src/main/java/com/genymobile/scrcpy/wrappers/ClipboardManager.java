@@ -119,7 +119,7 @@ public final class ClipboardManager {
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, FakeContext.ROOT_UID, null);
             default:
                 // The last boolean parameter is "userOperate"
-                return (ClipData) method.invoke(manager, FakeContext.FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, true);
+                return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, true);
         }
     }
 
