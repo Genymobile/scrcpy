@@ -76,6 +76,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->sdl_shortcut_mods.count = shortcut_mods->count;
 
     im->vfinger_down = false;
+    im->vfinger_invert_x = false;
+    im->vfinger_invert_y = false;
 
     im->last_keycode = SDLK_UNKNOWN;
     im->last_mod = 0;
@@ -347,9 +349,14 @@ simulate_virtual_finger(struct sc_input_manager *im,
 }
 
 static struct sc_point
-inverse_point(struct sc_point point, struct sc_size size) {
-    point.x = size.width - point.x;
-    point.y = size.height - point.y;
+inverse_point(struct sc_point point, struct sc_size size,
+              bool invert_x, bool invert_y) {
+    if (invert_x) {
+        point.x = size.width - point.x;
+    }
+    if (invert_y) {
+        point.y = size.height - point.y;
+    }
     return point;
 }
 
@@ -605,7 +612,9 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         struct sc_point mouse =
            sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                     event->y);
-        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
+                                                im->vfinger_invert_x,
+                                                im->vfinger_invert_y);
         simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
 }
@@ -726,7 +735,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         return;
     }
 
-    // Pinch-to-zoom simulation.
+    // Pinch-to-zoom, rotate and tilt simulation.
     //
     // If Ctrl is hold when the left-click button is pressed, then
     // pinch-to-zoom mode is enabled: on every mouse event until the left-click
@@ -735,14 +744,29 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     //
     // In other words, the center of the rotation/scaling is the center of the
     // screen.
-#define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
+    //
+    // To simulate a tilt gesture (a vertical slide with two fingers), Shift
+    // can be used instead of Ctrl. The "virtual finger" has a position
+    // inverted with respect to the vertical axis of symmetry in the middle of
+    // the screen.
+    const SDL_Keymod keymod = SDL_GetModState();
+    const bool ctrl_pressed = keymod & KMOD_CTRL;
+    const bool shift_pressed = keymod & KMOD_SHIFT;
     if (event->button == SDL_BUTTON_LEFT &&
-            ((down && !im->vfinger_down && CTRL_PRESSED) ||
+            ((down && !im->vfinger_down &&
+              ((ctrl_pressed && !shift_pressed) ||
+               (!ctrl_pressed && shift_pressed))) ||
              (!down && im->vfinger_down))) {
         struct sc_point mouse =
             sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                                  event->y);
-        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
+        if (down) {
+            im->vfinger_invert_x = ctrl_pressed || shift_pressed;
+            im->vfinger_invert_y = ctrl_pressed;
+        }
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
+                                                im->vfinger_invert_x,
+                                                im->vfinger_invert_y);
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
                                                : AMOTION_EVENT_ACTION_UP;

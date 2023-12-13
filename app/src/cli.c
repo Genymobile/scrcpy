@@ -947,7 +947,11 @@ static const struct sc_shortcut shortcuts[] = {
     },
     {
         .shortcuts = { "Ctrl+click-and-move" },
-        .text = "Pinch-to-zoom from the center of the screen",
+        .text = "Pinch-to-zoom and rotate from the center of the screen",
+    },
+    {
+        .shortcuts = { "Shift+click-and-move" },
+        .text = "Tilt (slide vertically with two fingers)",
     },
     {
         .shortcuts = { "Drag & drop APK file" },
