@@ -1,7 +1,6 @@
 #ifndef SC_COMMON_H
 #define SC_COMMON_H
 
-#include "config.h"
 #include "compat.h"
 
 #define ARRAY_LEN(a) (sizeof(a) / sizeof(a[0]))

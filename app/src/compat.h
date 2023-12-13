@@ -1,8 +1,6 @@
 #ifndef SC_COMPAT_H
 #define SC_COMPAT_H
 
-#include "config.h"
-
 #include <libavcodec/version.h>
 #include <libavformat/version.h>
 #include <libavutil/version.h>

@@ -74,7 +74,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
         boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
                 .equals(Build.VERSION.CODENAME));
-        if (Os.getuid() < 2000) {
+        if (Os.getuid() == 1000 || Os.getuid() == 1003) {
             secure = true;
         }
         return SurfaceControl.createDisplay("scrcpy", secure);
