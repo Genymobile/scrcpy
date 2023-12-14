@@ -116,11 +116,11 @@ _scrcpy() {
             return
             ;;
         --orientation|--display-orientation)
-            COMPREPLY=($(compgen -> '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            COMPREPLY=($(compgen -W '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
             return
             ;;
         --record-orientation)
-            COMPREPLY=($(compgen -> '0 90 180 270' -- "$cur"))
+            COMPREPLY=($(compgen -W '0 90 180 270' -- "$cur"))
             return
             ;;
         --lock-video-orientation)
