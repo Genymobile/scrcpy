@@ -115,8 +115,7 @@ _scrcpy() {
             COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
             return
             ;;
-        --orientation
-        --display-orientation)
+        --orientation|--display-orientation)
             COMPREPLY=($(compgen -> '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
             return
             ;;
