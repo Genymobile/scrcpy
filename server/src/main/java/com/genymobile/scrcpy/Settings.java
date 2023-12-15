@@ -2,7 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
-
+import android.system.Os;
 import android.os.Build;
 
 import java.io.IOException;
@@ -17,11 +17,35 @@ public final class Settings {
         /* not instantiable */
     }
 
+    private static void execSettingsPutRoot(String table, String key, String value) throws SettingsException {
+        if (Os.getuid() == 1000) {
+            try {
+                Command.exec("su", "-c", "settings", "put", table, key, value);
+            } catch (IOException | InterruptedException e) {
+                throw new SettingsException("put", table, key, value, e);
+            }
+        } else {
+            execSettingsPut(table, key, value);
+        }
+    }
+
     private static void execSettingsPut(String table, String key, String value) throws SettingsException {
         try {
             Command.exec("settings", "put", table, key, value);
         } catch (IOException | InterruptedException e) {
             throw new SettingsException("put", table, key, value, e);
+        }
+    }
+
+    private static String execSettingsGetRoot(String table, String key) throws SettingsException {
+        if (Os.getuid() == 1000) {
+            try {
+                return Command.execReadLine("su", "-c", "settings", "get", table, key);
+            } catch (IOException | InterruptedException e) {
+                throw new SettingsException("get", table, key, null, e);
+            }
+        } else {
+            return execSettingsGet(table, key);
         }
     }
 
@@ -42,8 +66,7 @@ public final class Settings {
                 Ln.w("Could not get settings value via ContentProvider, fallback to settings process", e);
             }
         }
-
-        return execSettingsGet(table, key);
+        return execSettingsGetRoot(table, key);
     }
 
     public static void putValue(String table, String key, String value) throws SettingsException {
@@ -55,8 +78,7 @@ public final class Settings {
                 Ln.w("Could not put settings value via ContentProvider, fallback to settings process", e);
             }
         }
-
-        execSettingsPut(table, key, value);
+        execSettingsPutRoot(table, key, value);
     }
 
     public static String getAndPutValue(String table, String key, String value) throws SettingsException {

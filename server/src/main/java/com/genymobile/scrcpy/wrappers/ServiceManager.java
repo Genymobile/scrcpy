@@ -133,7 +133,6 @@ public final class ServiceManager {
                 throw new AssertionError(e);
             }
         }
-
         return activityManager;
     }
 
