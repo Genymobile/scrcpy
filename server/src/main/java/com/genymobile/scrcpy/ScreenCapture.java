@@ -8,6 +8,7 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
+import android.system.Os;
 
 public class ScreenCapture extends SurfaceCapture implements Device.RotationListener, Device.FoldListener {
 
