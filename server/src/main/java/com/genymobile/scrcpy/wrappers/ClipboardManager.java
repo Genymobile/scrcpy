@@ -45,7 +45,8 @@ public final class ClipboardManager {
                                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class, String.class);
                                 getMethodVersion = 3;
                             } catch (NoSuchMethodException e4) {
-                                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class, int.class, boolean.class);
+                                getPrimaryClipMethod = manager.getClass()
+                                        .getMethod("getPrimaryClip", String.class, String.class, int.class, int.class, boolean.class);
                                 getMethodVersion = 4;
                             }
                         }
