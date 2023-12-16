@@ -153,7 +153,8 @@ public final class AudioCapture {
             previousRecorderTimestamp = timestamp.nanoTime;
         } else {
             if (nextPts == 0) {
-                Ln.w("Could not get any audio timestamp");
+                Ln.w("Could not get initial audio timestamp");
+                nextPts = System.nanoTime() / 1000;
             }
             // compute from previous timestamp and packet size
             pts = nextPts;
