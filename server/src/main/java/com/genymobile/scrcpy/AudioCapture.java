@@ -159,7 +159,7 @@ public final class AudioCapture {
             pts = nextPts;
         }
 
-        long durationUs = r * 1000000 / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
+        long durationUs = r * 1000000L / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
         nextPts = pts + durationUs;
 
         if (previousPts != 0 && pts < previousPts + ONE_SAMPLE_US) {
