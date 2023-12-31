@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include "aoa_hid.h"
+#include "hid_event.h"
 #include "util/vecdeque.h"
 
 // hid_event_parser: convert from bytes to sc_hid_event

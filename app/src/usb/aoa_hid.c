@@ -33,21 +33,6 @@ sc_hid_event_log(const struct sc_hid_event *event) {
     free(buffer);
 }
 
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size) {
-    hid_event->accessory_id = accessory_id;
-    hid_event->buffer = buffer;
-    hid_event->size = buffer_size;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
-    hid_event->timestamp = 0;
-}
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event) {
-    free(hid_event->buffer);
-}
-
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {

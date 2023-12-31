@@ -6,27 +6,11 @@
 
 #include <libusb-1.0/libusb.h>
 
+#include "hid_event.h"
 #include "usb.h"
 #include "util/acksync.h"
 #include "util/thread.h"
-#include "util/tick.h"
 #include "util/vecdeque.h"
-
-struct sc_hid_event {
-    uint16_t accessory_id;
-    unsigned char *buffer;
-    uint16_t size;
-    uint64_t ack_to_wait;
-    sc_tick timestamp; // Only used by hid_replay.c & hid_event_serializer.c
-};
-
-// Takes ownership of buffer
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size);
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event);
 
 struct sc_hid_event_queue SC_VECDEQUE(struct sc_hid_event);
 
