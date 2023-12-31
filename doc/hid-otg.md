@@ -110,3 +110,35 @@ connected over USB.
 ## HID/OTG issues on Windows
 
 See [FAQ](/FAQ.md#hidotg-issues-on-windows).
+
+
+## Recording
+
+When `--hid-keyboard`, `--hid-mouse` or `--otg` are used, the interactions with
+the physical keyboard and/or mouse can be recorded to a file. These recorded
+events can be replayed later to trigger the same sequence of events.
+
+```bash
+scrcpy --otg --hid-record=recording.log
+scrcpy --otg --hid-replay=recording.log
+```
+
+`scrcpy` can record input while replaying another session. This feature can be
+used to create recordings in multiple takes rather than at once:
+
+```bash
+scrcpy --otg --hid-record=first.log
+scrcpy --otg --hid-replay=first.log --hid-record=second.log
+scrcpy --otg --hid-replay=second.log
+```
+
+
+On Linux, it is possible to control two devices simultaneously, by recording
+the input to a special fifo file. The fifo file serves as a named pipe to
+enable both `scrcpy` instances to communicate with each other.
+
+```bash
+mkfifo my_named_pipe
+scrcpy --otg --hid-replay=my_named_pipe -s id_of_target_device  &
+scrcpy --otg --hid-record=my_named_pipe -s id_of_source_device
+```

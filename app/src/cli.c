@@ -58,6 +58,8 @@ enum {
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
+    OPT_HID_RECORD,
+    OPT_HID_REPLAY,
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
@@ -357,6 +359,29 @@ static const struct sc_option options[] = {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
+    },
+    {
+        .longopt_id = OPT_HID_RECORD,
+        .longopt = "hid-record",
+        .argdesc = "output.log",
+        .text = "Record HID input to a file.\n"
+                "Only HID input is recorded, which requires the --hid-keyboard,"
+                "--hid-mouse and/or --otg options.\n"
+                "When --hid-replay is used simulatenously, any replayed input "
+                "is also recorded to the target specified by --hid-replay.\n"
+                "To mirror input to multiple devices, specify a named pipe as "
+                "the filename (see mkfifo for UNIX) and pass the same filename "
+                "to --hid-replay of a second (parallel) scrcpy instance.",
+    },
+    {
+        .longopt_id = OPT_HID_REPLAY,
+        .longopt = "hid-replay",
+        .argdesc = "input.log",
+        .text = "Replay HID input from a file created by --hid-record.\n"
+                "Events are only replayed when HID is used to simulate input,"
+                "which requires the --hid-keyboard, --hid-mouse and/or --otg "
+                "options.\n"
+                "See --hid-record for more information.",
     },
     {
         .longopt_id = OPT_KILL_ADB_ON_CLOSE,
@@ -2268,6 +2293,22 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
+            case OPT_HID_RECORD:
+#ifdef HAVE_USB
+                opts->hid_record_filename = optarg;
+                break;
+#else
+                LOGE("HID recording (--hid-record) is disabled.");
+                return false;
+#endif
+            case OPT_HID_REPLAY:
+#ifdef HAVE_USB
+                opts->hid_replay_filename = optarg;
+                break;
+#else
+                LOGE("HID replay (--hid-replay) is disabled.");
+                return false;
+#endif
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
@@ -2628,6 +2669,16 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 # endif
+#ifdef HAVE_USB
+    if (opts->hid_replay_filename || opts->hid_record_filename) {
+        if (!otg && opts->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID
+                && opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_HID) {
+            LOGE("--hid-record and --hid-replay only works if --hid-keyboard, "
+                 "--hid-mouse and/or --otg are set.");
+            return false;
+        }
+    }
+#endif
 
     if (otg) {
         // OTG mode is compatible with only very few options.

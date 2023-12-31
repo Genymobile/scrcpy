@@ -172,6 +172,23 @@ By default, right-click triggers BACK (or POWER on) and middle-click triggers HO
 Print this help.
 
 .TP
+.BI "\-\-hid-record " output.log
+Record HID input to a file.
+
+Only HID input is recorded, which requires the \fB\-\-hid\-keyboard\fR, \fB\-\-hid\-mouse\fR and/or \fB\-\-otg\fR options.
+When \fB\-\-hid\-replay\fR is used simulatenously, any replayed input is also recorded to the target specified by \fB\-\-hid\-replay\fR.
+
+To mirror input to multiple devices, specify a named pipe as the filename (see mkfifo for UNIX) and pass the same filename to \fB\-\-hid\-replay\fR of a second (parallel) scrcpy instance.
+
+.TP
+.BI "\-\-hid-replay " input.log
+Replay HID input from a file created by \fB\-\-hid-record\fR.
+
+Events are only replayed when HID is used to simulate input, which requires the \fB\-\-hid\-keyboard\fR, \fB\-\-hid\-mouse\fR and/or \fB\-\-otg\fR options.
+
+See \fB\-\-hid\-record\fR for more information.
+
+.TP
 .B \-\-kill\-adb\-on\-close
 Kill adb when scrcpy terminates.
 

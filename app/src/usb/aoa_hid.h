@@ -17,6 +17,7 @@ struct sc_hid_event {
     unsigned char *buffer;
     uint16_t size;
     uint64_t ack_to_wait;
+    sc_tick timestamp; // Only used by hid_replay.c & hid_event_serializer.c
 };
 
 // Takes ownership of buffer
@@ -29,6 +30,9 @@ sc_hid_event_destroy(struct sc_hid_event *hid_event);
 
 struct sc_hid_event_queue SC_VECDEQUE(struct sc_hid_event);
 
+// Forward declare sc_hidr to avoid circular dependency on hid_replay.h.
+struct sc_hidr;
+
 struct sc_aoa {
     struct sc_usb *usb;
     sc_thread thread;
@@ -38,6 +42,7 @@ struct sc_aoa {
     struct sc_hid_event_queue queue;
 
     struct sc_acksync *acksync;
+    struct sc_hidr *hidr_to_notify;
 };
 
 bool

@@ -88,8 +88,10 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
+        'src/usb/hid_event_serializer.c',
         'src/usb/hid_keyboard.c',
         'src/usb/hid_mouse.c',
+        'src/usb/hid_replay.c',
         'src/usb/scrcpy_otg.c',
         'src/usb/screen_otg.c',
         'src/usb/usb.c',

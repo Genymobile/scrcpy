@@ -236,6 +236,8 @@ struct scrcpy_options {
 #endif
 #ifdef HAVE_USB
     bool otg;
+    const char *hid_record_filename;
+    const char *hid_replay_filename;
 #endif
     bool show_touches;
     bool fullscreen;

@@ -7,6 +7,7 @@
 
 typedef int64_t sc_tick;
 #define PRItick PRIi64
+#define SCNtick SCNi64
 #define SC_TICK_FREQ 1000000 // microsecond
 
 // To be adapted if SC_TICK_FREQ changes
