@@ -34,8 +34,8 @@ src = [
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/util/acksync.c',
+    'src/util/audiobuf.c',
     'src/util/average.c',
-    'src/util/bytebuf.c',
     'src/util/file.c',
     'src/util/intmap.c',
     'src/util/intr.c',
@@ -212,9 +212,10 @@ if get_option('buildtype') == 'debug'
         ['test_binary', [
             'tests/test_binary.c',
         ]],
-        ['test_bytebuf', [
-            'tests/test_bytebuf.c',
-            'src/util/bytebuf.c',
+        ['test_audiobuf', [
+            'tests/test_audiobuf.c',
+            'src/util/audiobuf.c',
+            'src/util/memory.c',
         ]],
         ['test_cli', [
             'tests/test_cli.c',
