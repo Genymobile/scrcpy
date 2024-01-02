@@ -4,15 +4,15 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include "trait/frame_sink.h"
-#include <util/audiobuf.h>
-#include <util/average.h>
-#include <util/thread.h>
-#include <util/tick.h>
-
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 #include <SDL2/SDL.h>
+
+#include "trait/frame_sink.h"
+#include "util/audiobuf.h"
+#include "util/average.h"
+#include "util/thread.h"
+#include "util/tick.h"
 
 struct sc_audio_player {
     struct sc_frame_sink frame_sink;
