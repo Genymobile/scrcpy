@@ -281,8 +281,15 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
             float avg = sc_average_get(&ap->avg_buffering);
             int diff = ap->target_buffering - avg;
-            if (abs(diff) < (int) ap->sample_rate / 1000) {
-                // Do not compensate for less than 1ms, the error is just noise
+
+            // Enable compensation when the difference exceeds +/- 4ms.
+            // Disable compensation when the difference is lower than +/- 1ms.
+            int threshold = ap->compensation != 0
+                          ? ap->sample_rate     / 1000  /* 1ms */
+                          : ap->sample_rate * 4 / 1000; /* 4ms */
+
+            if (abs(diff) < threshold) {
+                // Do not compensate for small values, the error is just noise
                 diff = 0;
             } else if (diff < 0 && can_read < ap->target_buffering) {
                 // Do not accelerate if the instant buffering level is below
