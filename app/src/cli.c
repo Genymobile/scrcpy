@@ -2398,6 +2398,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (!opts->video) {
         opts->video_playback = false;
+        // Do not power on the device on start if video capture is disabled
+        opts->power_on = false;
     }
 
     if (!opts->audio) {
