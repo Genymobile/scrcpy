@@ -417,7 +417,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
 
     // Samples are produced and consumed by blocks, so the buffering must be
     // smoothed to get a relatively stable value.
-    sc_average_init(&ap->avg_buffering, 32);
+    sc_average_init(&ap->avg_buffering, 128);
     ap->samples_since_resync = 0;
 
     ap->received = false;
