@@ -52,6 +52,7 @@ struct sc_screen {
 
     // client orientation
     enum sc_orientation orientation;
+    int16_t rotation_offset;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
     bool has_frame;
@@ -88,6 +89,7 @@ struct sc_screen_params {
     bool window_borderless;
 
     enum sc_orientation orientation;
+    int16_t rotation_offset;
     bool mipmaps;
 
     bool fullscreen;

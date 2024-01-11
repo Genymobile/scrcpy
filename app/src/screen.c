@@ -251,7 +251,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     enum sc_display_result res =
-        sc_display_render(&screen->display, &screen->rect, screen->orientation);
+        sc_display_render(&screen->display, &screen->rect, screen->orientation, screen->rotation_offset);
     (void) res; // any error already logged
 }
 
@@ -380,6 +380,7 @@ sc_screen_init(struct sc_screen *screen,
     }
 
     screen->orientation = params->orientation;
+    screen->rotation_offset = params->rotation_offset;
     if (screen->orientation != SC_ORIENTATION_0) {
         LOGI("Initial display orientation set to %s",
              sc_orientation_get_name(screen->orientation));

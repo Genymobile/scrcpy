@@ -41,6 +41,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED,
     .display_orientation = SC_ORIENTATION_0,
     .record_orientation = SC_ORIENTATION_0,
+    .rotation_offset = 0,
     .window_x = SC_WINDOW_POSITION_UNDEFINED,
     .window_y = SC_WINDOW_POSITION_UNDEFINED,
     .window_width = 0,

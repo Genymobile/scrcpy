@@ -234,7 +234,7 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame) {
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation) {
+                  enum sc_orientation orientation, int16_t rotation_offset) {
     SDL_RenderClear(display->renderer);
 
     if (display->pending.flags) {
@@ -247,37 +247,33 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     SDL_Renderer *renderer = display->renderer;
     SDL_Texture *texture = display->texture;
 
-    if (orientation == SC_ORIENTATION_0) {
-        int ret = SDL_RenderCopy(renderer, texture, NULL, geometry);
-        if (ret) {
-            LOGE("Could not render texture: %s", SDL_GetError());
-            return SC_DISPLAY_RESULT_ERROR;
-        }
-    } else {
-        unsigned cw_rotation = sc_orientation_get_rotation(orientation);
-        double angle = 90 * cw_rotation;
+    if (rotation_offset < 0) {
+        rotation_offset = rotation_offset + 360;
+    }
 
-        const SDL_Rect *dstrect = NULL;
+    unsigned cw_rotation = sc_orientation_get_rotation(orientation);
+    double angle = (90 * cw_rotation) + rotation_offset;
+
+    const SDL_Rect *dstrect = NULL;
         SDL_Rect rect;
-        if (sc_orientation_is_swap(orientation)) {
-            rect.x = geometry->x + (geometry->w - geometry->h) / 2;
-            rect.y = geometry->y + (geometry->h - geometry->w) / 2;
-            rect.w = geometry->h;
-            rect.h = geometry->w;
-            dstrect = &rect;
-        } else {
-            dstrect = geometry;
-        }
+    if (sc_orientation_is_swap(orientation)) {
+        rect.x = geometry->x + (geometry->w - geometry->h) / 2;
+        rect.y = geometry->y + (geometry->h - geometry->w) / 2;
+        rect.w = geometry->h;
+        rect.h = geometry->w;
+        dstrect = &rect;
+    } else {
+        dstrect = geometry;
+    }
+    
+    SDL_RendererFlip flip = sc_orientation_is_mirror(orientation)
+                            ? SDL_FLIP_HORIZONTAL : 0;
 
-        SDL_RendererFlip flip = sc_orientation_is_mirror(orientation)
-                              ? SDL_FLIP_HORIZONTAL : 0;
-
-        int ret = SDL_RenderCopyEx(renderer, texture, NULL, dstrect, angle,
-                                   NULL, flip);
-        if (ret) {
-            LOGE("Could not render texture: %s", SDL_GetError());
-            return SC_DISPLAY_RESULT_ERROR;
-        }
+    int ret = SDL_RenderCopyEx(renderer, texture, NULL, dstrect, angle,
+                                NULL, flip);
+    if (ret) {
+        LOGE("Could not render texture: %s", SDL_GetError());
+        return SC_DISPLAY_RESULT_ERROR;
     }
 
     SDL_RenderPresent(display->renderer);

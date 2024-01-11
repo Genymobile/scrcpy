@@ -141,6 +141,21 @@ to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
 values are allowed when recording.
 
 
+## Rotation Offset
+
+Rotation offset to be applied (positive values will rotate clockwise):
+
+```bash
+scrcpy --rotation-offset=45
+```
+
+This is useful for Meta Quest 3 tilted screen setup:
+
+```bash
+scrcpy --crop=2064:2208:0:0 --rotation-offset=21
+```
+
+
 ## Crop
 
 The device screen may be cropped to mirror only part of the screen.

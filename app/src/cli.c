@@ -93,6 +93,7 @@ enum {
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
+    OPT_ROTATION_OFFSET,
 };
 
 struct sc_option {
@@ -835,6 +836,13 @@ static const struct sc_option options[] = {
         .longopt = "window-height",
         .argdesc = "value",
         .text = "Set the initial window height.\n"
+                "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_ROTATION_OFFSET,
+        .longopt = "rotation-offset",
+        .argdesc = "value",
+        .text = "Set the initial display rotation offset.\n"
                 "Default is 0 (automatic).",
     },
 };
@@ -1938,6 +1946,19 @@ parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
 }
 
 static bool
+parse_rotation_offset(const char *s, int16_t *rotation_offset) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, -360, 360,
+                                "display rotation offset");
+    if (!ok) {
+        return false;
+    }
+
+    *rotation_offset = (int16_t) value;
+    return true;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2358,6 +2379,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
+                break;
+            case OPT_ROTATION_OFFSET:
+                if (!parse_rotation_offset(optarg, &opts->rotation_offset)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr
