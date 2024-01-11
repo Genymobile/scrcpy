@@ -222,6 +222,9 @@ struct scrcpy_options {
     enum sc_orientation display_orientation;
     enum sc_orientation record_orientation;
     int16_t rotation_offset;
+    uint16_t scale;
+    int16_t position_x_offset;
+    int16_t position_y_offset;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;

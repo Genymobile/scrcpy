@@ -21,4 +21,10 @@ struct sc_position {
     struct sc_point point;
 };
 
+struct sc_transform {
+    int16_t rotation;
+    uint16_t scale;
+    struct sc_point position;
+};
+
 #endif

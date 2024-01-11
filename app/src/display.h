@@ -55,6 +55,6 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
-                  enum sc_orientation orientation, int16_t rotation_offset);
+                  enum sc_orientation orientation, struct sc_transform *transform_offsets);
 
 #endif

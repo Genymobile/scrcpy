@@ -52,7 +52,6 @@ struct sc_screen {
 
     // client orientation
     enum sc_orientation orientation;
-    int16_t rotation_offset;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
     bool has_frame;
@@ -65,6 +64,8 @@ struct sc_screen {
     SDL_Keycode mouse_capture_key_pressed;
 
     AVFrame *frame;
+
+    struct sc_transform transform_offsets;
 };
 
 struct sc_screen_params {
@@ -89,11 +90,15 @@ struct sc_screen_params {
     bool window_borderless;
 
     enum sc_orientation orientation;
-    int16_t rotation_offset;
     bool mipmaps;
 
     bool fullscreen;
     bool start_fps_counter;
+
+    int16_t rotation_offset;
+    uint16_t scale;
+    int16_t position_x_offset;
+    int16_t position_y_offset;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)
