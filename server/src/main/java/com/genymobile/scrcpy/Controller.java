@@ -52,7 +52,7 @@ public class Controller implements AsyncProcessor {
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
-        uhidManager = new UhidManager();
+        uhidManager = new UhidManager(sender);
     }
 
     private void initPointers() {
