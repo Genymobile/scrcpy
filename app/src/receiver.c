@@ -6,6 +6,7 @@
 
 #include "device_msg.h"
 #include "util/log.h"
+#include "util/str.h"
 
 bool
 sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
@@ -16,6 +17,7 @@ sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
 
     receiver->control_socket = control_socket;
     receiver->acksync = NULL;
+    receiver->uhid_devices = NULL;
 
     return true;
 }
@@ -46,6 +48,31 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             LOGD("Ack device clipboard sequence=%" PRIu64_,
                  msg->ack_clipboard.sequence);
             sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
+            break;
+        case DEVICE_MSG_TYPE_UHID_OUTPUT:
+            if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
+                char *hex = sc_str_to_hex_string(msg->uhid_output.data,
+                                                 msg->uhid_output.size);
+                if (hex) {
+                    LOGV("UHID output [%" PRIu16 "] %s",
+                         msg->uhid_output.id, hex);
+                    free(hex);
+                } else {
+                    LOGV("UHID output [%" PRIu16 "] size=%" PRIu16,
+                         msg->uhid_output.id, msg->uhid_output.size);
+                }
+            }
+            assert(receiver->uhid_devices);
+            struct sc_uhid_receiver *uhid_receiver =
+                sc_uhid_devices_get_receiver(receiver->uhid_devices,
+                                             msg->uhid_output.id);
+            if (uhid_receiver) {
+                uhid_receiver->ops->process_output(uhid_receiver,
+                                                   msg->uhid_output.data,
+                                                   msg->uhid_output.size);
+            } else {
+                LOGW("No UHID receiver for id %" PRIu16, msg->uhid_output.id);
+            }
             break;
     }
 }
