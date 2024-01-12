@@ -52,7 +52,7 @@ public class Controller implements AsyncProcessor {
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
-        uhidManager = new UhidManager();
+        uhidManager = new UhidManager(sender);
     }
 
     private void initPointers() {
@@ -195,10 +195,10 @@ public class Controller implements AsyncProcessor {
                 device.rotateDevice();
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
-                uhidOpen(msg.getId(), msg.getData());
+                uhidManager.open(msg.getId(), msg.getData());
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
-                uhidWriteInput(msg.getId(), msg.getData());
+                uhidManager.writeInput(msg.getId(), msg.getData());
                 break;
             default:
                 // do nothing
@@ -437,21 +437,5 @@ public class Controller implements AsyncProcessor {
         }
 
         return ok;
-    }
-
-    private void uhidOpen(int id, byte[] data) {
-        try {
-            uhidManager.open(id, data);
-        } catch (IOException e) {
-            Ln.e("Could not open UHID", e);
-        }
-    }
-
-    private void uhidWriteInput(int id, byte[] data) {
-        try {
-            uhidManager.writeInput(id, data);
-        } catch (IOException e) {
-            Ln.e("Could not write UHID input", e);
-        }
     }
 }

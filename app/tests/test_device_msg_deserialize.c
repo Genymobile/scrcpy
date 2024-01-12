@@ -61,6 +61,28 @@ static void test_deserialize_ack_set_clipboard(void) {
     assert(msg.ack_clipboard.sequence == UINT64_C(0x0102030405060708));
 }
 
+static void test_deserialize_uhid_output(void) {
+    const uint8_t input[] = {
+        DEVICE_MSG_TYPE_UHID_OUTPUT,
+        0, 42, // id
+        0, 5, // size
+        0x01, 0x02, 0x03, 0x04, 0x05, // data
+    };
+
+    struct sc_device_msg msg;
+    ssize_t r = sc_device_msg_deserialize(input, sizeof(input), &msg);
+    assert(r == 10);
+
+    assert(msg.type == DEVICE_MSG_TYPE_UHID_OUTPUT);
+    assert(msg.uhid_output.id == 42);
+    assert(msg.uhid_output.size == 5);
+
+    uint8_t expected[] = {1, 2, 3, 4, 5};
+    assert(!memcmp(msg.uhid_output.data, expected, sizeof(expected)));
+
+    sc_device_msg_destroy(&msg);
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -68,5 +90,6 @@ int main(int argc, char *argv[]) {
     test_deserialize_clipboard();
     test_deserialize_clipboard_big();
     test_deserialize_ack_set_clipboard();
+    test_deserialize_uhid_output();
     return 0;
 }

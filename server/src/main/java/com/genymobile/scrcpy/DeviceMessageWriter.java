@@ -29,6 +29,13 @@ public class DeviceMessageWriter {
                 buffer.putLong(msg.getSequence());
                 output.write(rawBuffer, 0, buffer.position());
                 break;
+            case DeviceMessage.TYPE_UHID_OUTPUT:
+                buffer.putShort((short) msg.getId());
+                byte[] data = msg.getData();
+                buffer.putShort((short) data.length);
+                buffer.put(data);
+                output.write(rawBuffer, 0, buffer.position());
+                break;
             default:
                 Ln.w("Unknown device message: " + msg.getType());
                 break;
