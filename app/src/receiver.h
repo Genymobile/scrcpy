@@ -5,6 +5,7 @@
 
 #include <stdbool.h>
 
+#include "uhid/uhid_output.h"
 #include "util/acksync.h"
 #include "util/net.h"
 #include "util/thread.h"
@@ -17,6 +18,7 @@ struct sc_receiver {
     sc_mutex mutex;
 
     struct sc_acksync *acksync;
+    struct sc_uhid_devices *uhid_devices;
 };
 
 bool

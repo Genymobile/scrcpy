@@ -62,6 +62,7 @@ struct scrcpy {
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
+    struct sc_uhid_devices uhid_devices;
 #endif
     union {
         struct sc_keyboard_sdk keyboard_sdk;
@@ -342,6 +343,7 @@ scrcpy(struct scrcpy_options *options) {
     bool timeout_started = false;
 
     struct sc_acksync *acksync = NULL;
+    struct sc_uhid_devices *uhid_devices = NULL;
 
     uint32_t scid = scrcpy_generate_scid();
 
@@ -665,10 +667,12 @@ aoa_hid_end:
                                  options->forward_key_repeat);
             kp = &s->keyboard_sdk.key_processor;
         } else if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_UHID) {
-            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller);
+            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller,
+                                            &s->uhid_devices);
             if (!ok) {
                 goto end;
             }
+            uhid_devices = &s->uhid_devices;
             kp = &s->keyboard_uhid.key_processor;
         }
 
@@ -678,7 +682,7 @@ aoa_hid_end:
             mp = &s->mouse_sdk.mouse_processor;
         }
 
-        sc_controller_set_acksync(&s->controller, acksync);
+        sc_controller_configure(&s->controller, acksync, uhid_devices);
 
         if (!sc_controller_start(&s->controller)) {
             goto end;

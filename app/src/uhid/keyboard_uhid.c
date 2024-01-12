@@ -5,7 +5,43 @@
 /** Downcast key processor to keyboard_uhid */
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_uhid, key_processor)
 
+/** Downcast uhid_receiver to keyboard_uhid */
+#define DOWNCAST_RECEIVER(UR) \
+    container_of(UR, struct sc_keyboard_uhid, uhid_receiver)
+
 #define UHID_KEYBOARD_ID 1
+
+static void
+sc_keyboard_uhid_send_input(struct sc_keyboard_uhid *kb,
+                            const struct sc_hid_event *event) {
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
+    msg.uhid_input.id = UHID_KEYBOARD_ID;
+
+    assert(event->size <= SC_HID_MAX_SIZE);
+    memcpy(msg.uhid_input.data, event->data, event->size);
+    msg.uhid_input.size = event->size;
+
+    if (!sc_controller_push_msg(kb->controller, &msg)) {
+        LOGE("Could not send UHID_INPUT message (key)");
+    }
+}
+
+static void
+sc_keyboard_uhid_synchronize_mod(struct sc_keyboard_uhid *kb) {
+    SDL_Keymod sdl_mod = SDL_GetModState();
+    uint16_t mod = sc_mods_state_from_sdl(sdl_mod);
+    uint16_t diff = mod ^ kb->device_mod;
+
+    if (diff) {
+        struct sc_hid_event hid_event;
+        sc_hid_keyboard_event_from_mods(&hid_event, diff);
+
+        LOGV("HID keyboard state synchronized");
+
+        sc_keyboard_uhid_send_input(kb, &hid_event);
+    }
+}
 
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
@@ -25,26 +61,41 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     // Not all keys are supported, just ignore unsupported keys
     if (sc_hid_keyboard_event_from_key(&kb->hid, &hid_event, event)) {
-        struct sc_control_msg msg;
-        msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-        msg.uhid_input.id = UHID_KEYBOARD_ID;
-
-        assert(hid_event.size <= SC_HID_MAX_SIZE);
-        memcpy(msg.uhid_input.data, hid_event.data, hid_event.size);
-        msg.uhid_input.size = hid_event.size;
-
-        if (!sc_controller_push_msg(kb->controller, &msg)) {
-            LOGE("Could not send UHID_INPUT message (key)");
-        }
+        sc_keyboard_uhid_synchronize_mod(kb);
+        sc_keyboard_uhid_send_input(kb, &hid_event);
     }
+}
+
+static unsigned
+sc_keyboard_uhid_to_sc_mod(uint8_t hid_led) {
+    unsigned mod = 0;
+    if (hid_led & 0x01) {
+        mod |= SC_MOD_NUM;
+    }
+    if (hid_led & 0x02) {
+        mod |= SC_MOD_CAPS;
+    }
+    return mod;
+}
+
+static void
+sc_uhid_receiver_process_output(struct sc_uhid_receiver *receiver,
+                                const uint8_t *data, size_t len) {
+    assert(len);
+    struct sc_keyboard_uhid *kb = DOWNCAST_RECEIVER(receiver);
+
+    uint8_t hid_led = data[0];
+    kb->device_mod = sc_keyboard_uhid_to_sc_mod(hid_led);
 }
 
 bool
 sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
-                      struct sc_controller *controller) {
+                      struct sc_controller *controller,
+                      struct sc_uhid_devices *uhid_devices) {
     sc_hid_keyboard_init(&kb->hid);
 
     kb->controller = controller;
+    kb->device_mod = 0;
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
@@ -57,6 +108,14 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     // there is no need for a specific synchronization mechanism
     kb->key_processor.async_paste = false;
     kb->key_processor.ops = &ops;
+
+    static const struct sc_uhid_receiver_ops uhid_receiver_ops = {
+        .process_output = sc_uhid_receiver_process_output,
+    };
+
+    kb->uhid_receiver.id = UHID_KEYBOARD_ID;
+    kb->uhid_receiver.ops = &uhid_receiver_ops;
+    sc_uhid_devices_add_receiver(uhid_devices, &kb->uhid_receiver);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
