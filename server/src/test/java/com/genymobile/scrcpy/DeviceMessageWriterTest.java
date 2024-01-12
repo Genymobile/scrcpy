@@ -52,4 +52,27 @@ public class DeviceMessageWriterTest {
 
         Assert.assertArrayEquals(expected, actual);
     }
+
+    @Test
+    public void testSerializeUhidOutput() throws IOException {
+        DeviceMessageWriter writer = new DeviceMessageWriter();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(DeviceMessage.TYPE_UHID_OUTPUT);
+        dos.writeShort(42); // id
+        byte[] data = {1, 2, 3, 4, 5};
+        dos.writeShort(data.length);
+        dos.write(data);
+
+        byte[] expected = bos.toByteArray();
+
+        DeviceMessage msg = DeviceMessage.createUhidOutput(42, data);
+        bos = new ByteArrayOutputStream();
+        writer.writeTo(msg, bos);
+
+        byte[] actual = bos.toByteArray();
+
+        Assert.assertArrayEquals(expected, actual);
+    }
 }
