@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include "trait/hid_interface.h"
+#include "hid/hid_interface.h"
 #include "trait/key_processor.h"
 
 // See "SDL2/SDL_scancode.h".
@@ -30,8 +30,12 @@ struct sc_hid_keyboard {
     struct sc_key_processor key_processor; // key processor trait
 
     struct sc_hid_interface *hid_interface;
+    struct sc_hid_device hid_device;
     bool keys[SC_HID_KEYBOARD_KEYS];
 
+    // Device keyboard modifiers. Only available when HID interface supports output reports.
+    enum sc_mod device_mod;
+    // Best-effort modifier synchronization when HID interface doesn't support output reports.
     bool mod_lock_synchronized;
 };
 

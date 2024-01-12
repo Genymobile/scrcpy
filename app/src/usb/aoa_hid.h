@@ -7,7 +7,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include "usb.h"
-#include "trait/hid_interface.h"
+#include "hid/hid_interface.h"
 #include "util/acksync.h"
 #include "util/thread.h"
 #include "util/tick.h"

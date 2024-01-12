@@ -6,13 +6,14 @@
 #include <stdbool.h>
 
 #include "aoa_hid.h"
-#include "trait/hid_interface.h"
+#include "hid/hid_interface.h"
 #include "trait/mouse_processor.h"
 
 struct sc_hid_mouse {
     struct sc_mouse_processor mouse_processor; // mouse processor trait
 
     struct sc_hid_interface *hid_interface;
+    struct sc_hid_device hid_device;
 };
 
 bool

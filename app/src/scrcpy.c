@@ -649,7 +649,7 @@ aoa_hid_end:
         }
 
         if (!sc_controller_init(&s->controller, s->server.control_socket,
-                                acksync)) {
+                                acksync, &s->uhid)) {
             goto end;
         }
         controller_initialized = true;

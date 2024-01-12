@@ -20,6 +20,7 @@ src = [
     'src/fps_counter.c',
     'src/frame_buffer.c',
     'src/hid/hid_event.c',
+    'src/hid/hid_interface.c',
     'src/hid/hid_keyboard.c',
     'src/hid/uhid_hid.c',
     'src/input_manager.c',

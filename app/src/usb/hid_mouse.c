@@ -236,7 +236,10 @@ bool
 sc_hid_mouse_init(struct sc_hid_mouse *mouse, struct sc_hid_interface *hid_interface) {
     mouse->hid_interface = hid_interface;
 
-    bool ok = hid_interface->ops->create(hid_interface, HID_MOUSE_ACCESSORY_ID,
+    mouse->hid_device.id = HID_MOUSE_ACCESSORY_ID;
+    mouse->hid_device.process_output = NULL;
+
+    bool ok = hid_interface->ops->create(hid_interface, &mouse->hid_device,
                                          0x1234, 0x5678,
                                          mouse_report_desc, ARRAY_LEN(mouse_report_desc));
     if (!ok) {

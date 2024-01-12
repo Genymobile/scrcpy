@@ -9,6 +9,8 @@
 #include "util/net.h"
 #include "util/thread.h"
 
+struct sc_uhid;
+
 // receive events from the device
 // managed by the controller
 struct sc_receiver {
@@ -17,11 +19,12 @@ struct sc_receiver {
     sc_mutex mutex;
 
     struct sc_acksync *acksync;
+    struct sc_uhid *uhid;
 };
 
 bool
 sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
-                 struct sc_acksync *acksync);
+                 struct sc_acksync *acksync, struct sc_uhid *uhid);
 
 void
 sc_receiver_destroy(struct sc_receiver *receiver);

@@ -10,7 +10,7 @@
 #define DOWNCAST(HI) container_of(HI, struct sc_uhid, hid_interface)
 
 static bool
-sc_uhid_create(struct sc_hid_interface *hid_interface, uint16_t id,
+sc_uhid_create(struct sc_hid_interface *hid_interface, struct sc_hid_device* device,
                uint16_t vendor_id, uint16_t product_id,
                const uint8_t* report_desc,
                uint16_t report_desc_size) {
@@ -33,7 +33,7 @@ sc_uhid_create(struct sc_hid_interface *hid_interface, uint16_t id,
         },
     };
 
-    if (!snprintf((char *)ev->u.create2.uniq, sizeof(ev->u.create2.uniq), "scrcpy-%d", id)) {
+    if (!snprintf((char *)ev->u.create2.uniq, sizeof(ev->u.create2.uniq), "scrcpy-%d", device->id)) {
         LOGW("Could not set unique name");
         return false;
     }
@@ -42,7 +42,7 @@ sc_uhid_create(struct sc_hid_interface *hid_interface, uint16_t id,
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_UHID_OPEN,
         .uhid_open = {
-            .id = id,
+            .id = device->id,
             .data = (uint8_t *) ev,
             .size = sizeof(*ev),
         },
@@ -52,6 +52,8 @@ sc_uhid_create(struct sc_hid_interface *hid_interface, uint16_t id,
         LOGW("Could not send UHID_OPEN message");
         return false;
     }
+
+    sc_hid_interface_add_device(hid_interface, device);
 
     return true;
 }
@@ -105,18 +107,47 @@ sc_uhid_destroy(struct sc_hid_interface *hid_interface, uint16_t id) {
         return false;
     }
 
+    sc_hid_interface_remove_device(hid_interface, id);
+
     return true;
 }
 
-void sc_uhid_init(struct sc_uhid *uhid, struct sc_controller *controller) {
+void
+sc_uhid_init(struct sc_uhid *uhid, struct sc_controller *controller) {
     static const struct sc_hid_interface_ops ops = {
         .create = sc_uhid_create,
         .process_input = sc_uhid_process_input,
         .destroy = sc_uhid_destroy,
     };
 
+    sc_hid_interface_init(&uhid->hid_interface);
     uhid->hid_interface.async_message = false;
+    uhid->hid_interface.support_output = true;
     uhid->hid_interface.ops = &ops;
 
     uhid->controller = controller;
+}
+
+void
+sc_uhid_process_output(struct sc_uhid *uhid, uint32_t id, const uint8_t *data, uint32_t size) {
+    (void) size;
+
+    struct uhid_event *ev = (struct uhid_event *) data;
+    if (ev->type != UHID_OUTPUT) {
+        // Ignore other events
+        return;
+    }
+
+    struct sc_hid_device *device = sc_hid_interface_get_device(&uhid->hid_interface, id);
+    if (!device) {
+        LOGW("Could not find device with id=%d", id);
+        return;
+    }
+
+    if (!device->process_output) {
+        // Device ignores output reports. It's not an error.
+        return;
+    }
+
+    device->process_output(device, ev->u.output.rtype, ev->u.output.data, ev->u.output.size);
 }

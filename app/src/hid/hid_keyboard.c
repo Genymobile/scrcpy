@@ -4,12 +4,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <SDL2/SDL_keyboard.h>
+
 #include "input_events.h"
 #include "hid_event.h"
 #include "util/log.h"
 
 /** Downcast key processor to hid_keyboard */
 #define DOWNCAST(KP) container_of(KP, struct sc_hid_keyboard, key_processor)
+#define DOWNCAST_HID_DEVICE(HD) container_of(HD, struct sc_hid_keyboard, hid_device)
 
 #define HID_KEYBOARD_ACCESSORY_ID 1
 
@@ -368,7 +371,21 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     struct sc_hid_event hid_event;
     // Not all keys are supported, just ignore unsupported keys
     if (convert_hid_keyboard_event(kb, &hid_event, event)) {
-        if (!kb->mod_lock_synchronized) {
+        if (kb->hid_interface->support_output) {
+            SDL_Keymod mod = SDL_GetModState();
+            enum sc_mod diff = 0;
+            if ((mod & KMOD_NUM) != (kb->device_mod & SC_MOD_NUM)) {
+                diff |= SC_MOD_NUM;
+            }
+            if ((mod & KMOD_CAPS) != (kb->device_mod & SC_MOD_CAPS)) {
+                diff |= SC_MOD_CAPS;
+            }
+            if (diff) {
+                if (push_mod_lock_state(kb, diff)) {
+                    kb->device_mod = mod;
+                }
+            }
+        } else if (!kb->mod_lock_synchronized) {
             // Inject CAPSLOCK and/or NUMLOCK if necessary to synchronize
             // keyboard state
             if (push_mod_lock_state(kb, event->mods_state)) {
@@ -391,12 +408,29 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     }
 }
 
+static void
+sc_hid_keyboard_process_output(struct sc_hid_device* device, int16_t report_id, const uint8_t *data, size_t size) {
+    (void) report_id;
+    (void) size;
+
+    struct sc_hid_keyboard *kb = DOWNCAST_HID_DEVICE(device);
+    kb->device_mod = 0;
+    if (data[0] & 0x01) {
+        kb->device_mod |= SC_MOD_NUM;
+    }
+    if (data[0] & 0x02) {
+        kb->device_mod |= SC_MOD_CAPS;
+    }
+}
+
 bool
 sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_hid_interface *hid_interface) {
     kb->hid_interface = hid_interface;
-    hid_interface->data_opaque = kb;
 
-    bool ok = hid_interface->ops->create(hid_interface, HID_KEYBOARD_ACCESSORY_ID,
+    kb->hid_device.id = HID_KEYBOARD_ACCESSORY_ID;
+    kb->hid_device.process_output = sc_hid_keyboard_process_output;
+
+    bool ok = hid_interface->ops->create(hid_interface, &kb->hid_device,
                                          0x1234, 0x5678,
                                          keyboard_report_desc,
                                          ARRAY_LEN(keyboard_report_desc));

@@ -4,11 +4,12 @@
 #include <SDL2/SDL_clipboard.h>
 
 #include "device_msg.h"
+#include "hid/uhid_hid.h"
 #include "util/log.h"
 
 bool
 sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
-              struct sc_acksync *acksync) {
+                 struct sc_acksync *acksync, struct sc_uhid *uhid) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;
@@ -16,6 +17,7 @@ sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
 
     receiver->control_socket = control_socket;
     receiver->acksync = acksync;
+    receiver->uhid = uhid;
 
     return true;
 }
@@ -50,6 +52,11 @@ process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
         case DEVICE_MSG_TYPE_UHID_DATA:
             LOGD("UHID data id=%u len=%u",
                  msg->uhid_data.id, msg->uhid_data.len);
+            if (receiver->uhid) {
+                sc_uhid_process_output(receiver->uhid, msg->uhid_data.id, msg->uhid_data.data, msg->uhid_data.len);
+            } else {
+                LOGW("UHID_DATA received but UHID is not initialized");
+            }
             break;
     }
 }

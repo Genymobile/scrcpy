@@ -95,7 +95,7 @@ build-win64: prepare-deps
 		-Dc_args="-I$(PWD)/$(WIN64_BUILD_DIR)/local/include" \
 		-Dc_link_args="-L$(PWD)/$(WIN64_BUILD_DIR)/local/lib" \
 		--cross-file=cross_win64.txt \
-		--buildtype=release --strip -Db_lto=true \
+		--buildtype=debug -Db_lto=true \
 		-Dcompile_server=false \
 		-Dportable=true
 	ninja -C "$(WIN64_BUILD_DIR)"
@@ -113,7 +113,7 @@ dist-win32: build-server build-win32
 	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp "$(WIN32_BUILD_DIR)"/local/bin/*.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
 
-dist-win64: build-server build-win64
+dist-win64:
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
 	cp "$(SERVER_BUILD_DIR)"/server/scrcpy-server "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp "$(WIN64_BUILD_DIR)"/app/scrcpy.exe "$(DIST)/$(WIN64_TARGET_DIR)/"

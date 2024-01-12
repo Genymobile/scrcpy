@@ -8,7 +8,7 @@
 
 bool
 sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
-                   struct sc_acksync *acksync) {
+                   struct sc_acksync *acksync, struct sc_uhid *uhid) {
     sc_vecdeque_init(&controller->queue);
 
     bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
@@ -16,7 +16,7 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
         return false;
     }
 
-    ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
+    ok = sc_receiver_init(&controller->receiver, control_socket, acksync, uhid);
     if (!ok) {
         sc_vecdeque_destroy(&controller->queue);
         return false;
