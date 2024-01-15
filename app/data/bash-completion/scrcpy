@@ -66,6 +66,7 @@ _scrcpy() {
         --record-orientation=
         --render-driver=
         --require-audio
+        --root
         --rotation=
         -s --serial=
         -S --turn-screen-off

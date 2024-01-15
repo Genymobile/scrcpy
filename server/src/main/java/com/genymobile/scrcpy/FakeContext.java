@@ -6,10 +6,12 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.os.Build;
 import android.os.Process;
+import android.system.Os;
 
 public final class FakeContext extends ContextWrapper {
 
-    public static final String PACKAGE_NAME = "com.android.shell";
+    public static final String PACKAGE_NAME = Os.getuid() == 1000 ? "android" : "com.android.shell";
+    public static final String PACKAGE_SHELL = "com.android.shell";
     public static final int ROOT_UID = 0; // Like android.os.Process.ROOT_UID, but before API 29
 
     private static final FakeContext INSTANCE = new FakeContext();
@@ -31,6 +33,7 @@ public final class FakeContext extends ContextWrapper {
     public String getOpPackageName() {
         return PACKAGE_NAME;
     }
+
 
     @TargetApi(Build.VERSION_CODES.S)
     @Override

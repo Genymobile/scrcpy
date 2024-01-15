@@ -93,6 +93,7 @@ enum {
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
+    OPT_ROOT,
 };
 
 struct sc_option {
@@ -649,6 +650,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
+    },
+    {
+        .longopt_id = OPT_ROOT,
+        .longopt = "root",
+        .text = "Launch the server as root (disabled by default).",
     },
     {
         .shortopt = 's',
@@ -2358,6 +2364,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
+            case OPT_ROOT:
+                opts->root = true;
                 break;
             default:
                 // getopt prints the error message on stderr
