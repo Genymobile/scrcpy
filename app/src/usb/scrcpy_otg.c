@@ -62,7 +62,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
-        return false;
+        return SCRCPY_EXIT_FAILURE;
     }
 
     atexit(SDL_Quit);
