@@ -52,8 +52,11 @@ is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
-    assert(!params->controller || (params->kp && params->kp->ops));
-    assert(!params->controller || (params->mp && params->mp->ops));
+    // A key/mouse processor may not be present if there is no controller
+    assert((!params->kp && !params->mp) || params->controller);
+    // A processor must have ops initialized
+    assert(!params->kp || params->kp->ops);
+    assert(!params->mp || params->mp->ops);
 
     im->controller = params->controller;
     im->fp = params->fp;
@@ -89,7 +92,7 @@ sc_input_manager_init(struct sc_input_manager *im,
 static void
 send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
              enum sc_action action, const char *name) {
-    assert(im->controller);
+    assert(im->controller && im->kp);
 
     // send DOWN event
     struct sc_control_msg msg;
@@ -146,7 +149,7 @@ action_menu(struct sc_input_manager *im, enum sc_action action) {
 static void
 press_back_or_turn_screen_on(struct sc_input_manager *im,
                              enum sc_action action) {
-    assert(im->controller);
+    assert(im->controller && im->kp);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
@@ -197,7 +200,7 @@ collapse_panels(struct sc_input_manager *im) {
 
 static bool
 get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
-    assert(im->controller);
+    assert(im->controller && im->kp);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_GET_CLIPBOARD;
@@ -214,7 +217,7 @@ get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
 static bool
 set_device_clipboard(struct sc_input_manager *im, bool paste,
                      uint64_t sequence) {
-    assert(im->controller);
+    assert(im->controller && im->kp);
 
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -274,7 +277,7 @@ switch_fps_counter_state(struct sc_input_manager *im) {
 
 static void
 clipboard_paste(struct sc_input_manager *im) {
-    assert(im->controller);
+    assert(im->controller && im->kp);
 
     char *text = SDL_GetClipboardText();
     if (!text) {
@@ -412,28 +415,28 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
-                if (control && !shift && !repeat) {
+                if (im->kp && !shift && !repeat) {
                     action_home(im, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (control && !shift && !repeat) {
+                if (im->kp && !shift && !repeat) {
                     action_back(im, action);
                 }
                 return;
             case SDLK_s:
-                if (control && !shift && !repeat) {
+                if (im->kp && !shift && !repeat) {
                     action_app_switch(im, action);
                 }
                 return;
             case SDLK_m:
-                if (control && !shift && !repeat) {
+                if (im->kp && !shift && !repeat) {
                     action_menu(im, action);
                 }
                 return;
             case SDLK_p:
-                if (control && !shift && !repeat) {
+                if (im->kp && !shift && !repeat) {
                     action_power(im, action);
                 }
                 return;
@@ -451,7 +454,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
-                } else if (control) {
+                } else if (im->kp) {
                     // forward repeated events
                     action_volume_down(im, action);
                 }
@@ -462,7 +465,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
-                } else if (control) {
+                } else if (im->kp) {
                     // forward repeated events
                     action_volume_up(im, action);
                 }
@@ -490,17 +493,17 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_c:
-                if (control && !shift && !repeat && down) {
+                if (im->kp && !shift && !repeat && down) {
                     get_device_clipboard(im, SC_COPY_KEY_COPY);
                 }
                 return;
             case SDLK_x:
-                if (control && !shift && !repeat && down) {
+                if (im->kp && !shift && !repeat && down) {
                     get_device_clipboard(im, SC_COPY_KEY_CUT);
                 }
                 return;
             case SDLK_v:
-                if (control && !repeat && down) {
+                if (im->kp && !repeat && down) {
                     if (shift || im->legacy_paste) {
                         // inject the text as input events
                         clipboard_paste(im);
@@ -552,7 +555,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         return;
     }
 
-    if (!control) {
+    if (!im->kp) {
         return;
     }
 
@@ -685,7 +688,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         if (control) {
             enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
-            if (event->button == SDL_BUTTON_X1) {
+            if (im->kp && event->button == SDL_BUTTON_X1) {
                 action_app_switch(im, action);
                 return;
             }
@@ -697,11 +700,11 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                 }
                 return;
             }
-            if (event->button == SDL_BUTTON_RIGHT) {
+            if (im->kp && event->button == SDL_BUTTON_RIGHT) {
                 press_back_or_turn_screen_on(im, action);
                 return;
             }
-            if (event->button == SDL_BUTTON_MIDDLE) {
+            if (im->kp && event->button == SDL_BUTTON_MIDDLE) {
                 action_home(im, action);
                 return;
             }
@@ -725,7 +728,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         // otherwise, send the click event to the device
     }
 
-    if (!control) {
+    if (!im->mp) {
         return;
     }
 
@@ -865,7 +868,7 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
     bool control = im->controller;
     switch (event->type) {
         case SDL_TEXTINPUT:
-            if (!control) {
+            if (!im->kp) {
                 break;
             }
             sc_input_manager_process_text_input(im, &event->text);
@@ -877,13 +880,13 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
             sc_input_manager_process_key(im, &event->key);
             break;
         case SDL_MOUSEMOTION:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_mouse_motion(im, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_mouse_wheel(im, &event->wheel);
@@ -897,7 +900,7 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_touch(im, &event->tfinger);
