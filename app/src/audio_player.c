@@ -293,7 +293,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
                 diff = 0;
             } else if (diff < 0 && can_read < ap->target_buffering) {
                 // Do not accelerate if the instant buffering level is below
-                // the average, this would increase underflow
+                // the target, this would increase underflow
                 diff = 0;
             }
             // Compensate the diff over 4 seconds (but will be recomputed after
