@@ -131,17 +131,13 @@ static const unsigned char mouse_report_desc[]  = {
  *                  +---------------+
  */
 
-static bool
+static void
 sc_hid_mouse_event_init(struct sc_hid_event *hid_event) {
-    unsigned char *data = calloc(1, HID_MOUSE_EVENT_SIZE);
-    if (!data) {
-        LOG_OOM();
-        return false;
-    }
-
-    sc_hid_event_init(hid_event, HID_MOUSE_ACCESSORY_ID, data,
-                      HID_MOUSE_EVENT_SIZE);
-    return true;
+    hid_event->accessory_id = HID_MOUSE_ACCESSORY_ID;
+    hid_event->size = HID_MOUSE_EVENT_SIZE;
+    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
+    // Leave hid_event->data uninitialized, it will be fully initialized by
+    // callers
 }
 
 static unsigned char
@@ -171,9 +167,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     struct sc_hid_mouse *mouse = DOWNCAST(mp);
 
     struct sc_hid_event hid_event;
-    if (!sc_hid_mouse_event_init(&hid_event)) {
-        return;
-    }
+    sc_hid_mouse_event_init(&hid_event);
 
     unsigned char *data = hid_event.data;
     data[0] = buttons_state_to_hid_buttons(event->buttons_state);
@@ -182,7 +176,6 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     data[3] = 0; // wheel coordinates only used for scrolling
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        sc_hid_event_destroy(&hid_event);
         LOGW("Could not request HID event (mouse motion)");
     }
 }
@@ -193,9 +186,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
     struct sc_hid_mouse *mouse = DOWNCAST(mp);
 
     struct sc_hid_event hid_event;
-    if (!sc_hid_mouse_event_init(&hid_event)) {
-        return;
-    }
+    sc_hid_mouse_event_init(&hid_event);
 
     unsigned char *data = hid_event.data;
     data[0] = buttons_state_to_hid_buttons(event->buttons_state);
@@ -204,7 +195,6 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
     data[3] = 0; // wheel coordinates only used for scrolling
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        sc_hid_event_destroy(&hid_event);
         LOGW("Could not request HID event (mouse click)");
     }
 }
@@ -215,9 +205,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     struct sc_hid_mouse *mouse = DOWNCAST(mp);
 
     struct sc_hid_event hid_event;
-    if (!sc_hid_mouse_event_init(&hid_event)) {
-        return;
-    }
+    sc_hid_mouse_event_init(&hid_event);
 
     unsigned char *data = hid_event.data;
     data[0] = 0; // buttons state irrelevant (and unknown)
@@ -229,7 +217,6 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     // Horizontal scrolling ignored
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        sc_hid_event_destroy(&hid_event);
         LOGW("Could not request HID event (mouse scroll)");
     }
 }
