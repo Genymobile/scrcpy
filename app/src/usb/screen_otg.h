@@ -6,11 +6,11 @@
 #include <stdbool.h>
 #include <SDL2/SDL.h>
 
-#include "hid_keyboard.h"
+#include "keyboard_aoa.h"
 #include "hid_mouse.h"
 
 struct sc_screen_otg {
-    struct sc_hid_keyboard *keyboard;
+    struct sc_keyboard_aoa *keyboard;
     struct sc_hid_mouse *mouse;
 
     SDL_Window *window;
@@ -22,7 +22,7 @@ struct sc_screen_otg {
 };
 
 struct sc_screen_otg_params {
-    struct sc_hid_keyboard *keyboard;
+    struct sc_keyboard_aoa *keyboard;
     struct sc_hid_mouse *mouse;
 
     const char *window_title;
