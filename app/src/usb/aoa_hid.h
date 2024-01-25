@@ -6,6 +6,7 @@
 
 #include <libusb-1.0/libusb.h>
 
+#include "hid/hid_event.h"
 #include "usb.h"
 #include "util/acksync.h"
 #include "util/thread.h"
@@ -14,14 +15,13 @@
 
 #define SC_HID_MAX_SIZE 8
 
-struct sc_hid_event {
+struct sc_aoa_event {
+    struct sc_hid_event hid;
     uint16_t accessory_id;
-    uint8_t data[SC_HID_MAX_SIZE];
-    uint8_t size;
     uint64_t ack_to_wait;
 };
 
-struct sc_hid_event_queue SC_VECDEQUE(struct sc_hid_event);
+struct sc_aoa_event_queue SC_VECDEQUE(struct sc_aoa_event);
 
 struct sc_aoa {
     struct sc_usb *usb;
@@ -29,7 +29,7 @@ struct sc_aoa {
     sc_mutex mutex;
     sc_cond event_cond;
     bool stopped;
-    struct sc_hid_event_queue queue;
+    struct sc_aoa_event_queue queue;
 
     struct sc_acksync *acksync;
 };
@@ -57,6 +57,16 @@ bool
 sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id);
 
 bool
-sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event);
+sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
+                                       uint16_t accessory_id,
+                                       const struct sc_hid_event *event,
+                                       uint64_t ack_to_wait);
+
+static inline bool
+sc_aoa_push_hid_event(struct sc_aoa *aoa, uint16_t accessory_id,
+                      const struct sc_hid_event *event) {
+    return sc_aoa_push_hid_event_with_ack_to_wait(aoa, accessory_id, event,
+                                                  SC_SEQUENCE_INVALID);
+}
 
 #endif
