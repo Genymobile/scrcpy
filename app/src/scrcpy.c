@@ -27,7 +27,7 @@
 #include "server.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
-# include "usb/hid_keyboard.h"
+# include "usb/keyboard_aoa.h"
 # include "usb/hid_mouse.h"
 # include "usb/usb.h"
 #endif
@@ -65,7 +65,7 @@ struct scrcpy {
     union {
         struct sc_keyboard_inject keyboard_inject;
 #ifdef HAVE_USB
-        struct sc_hid_keyboard keyboard_hid;
+        struct sc_keyboard_aoa keyboard_aoa;
 #endif
     };
     union {
@@ -330,7 +330,7 @@ scrcpy(struct scrcpy_options *options) {
     bool audio_demuxer_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
-    bool hid_keyboard_initialized = false;
+    bool keyboard_aoa_initialized = false;
     bool hid_mouse_initialized = false;
 #endif
     bool controller_initialized = false;
@@ -543,11 +543,11 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
 #ifdef HAVE_USB
-        bool use_aoa_keyboard =
+        bool use_keyboard_aoa =
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
         bool use_aoa_mouse =
             options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
-        if (use_aoa_keyboard || use_aoa_mouse) {
+        if (use_keyboard_aoa || use_aoa_mouse) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
@@ -590,10 +590,10 @@ scrcpy(struct scrcpy_options *options) {
                 goto aoa_hid_end;
             }
 
-            if (use_aoa_keyboard) {
-                if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
-                    hid_keyboard_initialized = true;
-                    kp = &s->keyboard_hid.key_processor;
+            if (use_keyboard_aoa) {
+                if (sc_keyboard_aoa_init(&s->keyboard_aoa, &s->aoa)) {
+                    keyboard_aoa_initialized = true;
+                    kp = &s->keyboard_aoa.key_processor;
                 } else {
                     LOGE("Could not initialize HID keyboard");
                 }
@@ -608,7 +608,7 @@ scrcpy(struct scrcpy_options *options) {
                 }
             }
 
-            bool need_aoa = hid_keyboard_initialized || hid_mouse_initialized;
+            bool need_aoa = keyboard_aoa_initialized || hid_mouse_initialized;
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
@@ -624,9 +624,9 @@ scrcpy(struct scrcpy_options *options) {
 
 aoa_hid_end:
             if (!aoa_hid_initialized) {
-                if (hid_keyboard_initialized) {
-                    sc_hid_keyboard_destroy(&s->keyboard_hid);
-                    hid_keyboard_initialized = false;
+                if (keyboard_aoa_initialized) {
+                    sc_keyboard_aoa_destroy(&s->keyboard_aoa);
+                    keyboard_aoa_initialized = false;
                 }
                 if (hid_mouse_initialized) {
                     sc_hid_mouse_destroy(&s->mouse_hid);
@@ -634,7 +634,7 @@ aoa_hid_end:
                 }
             }
 
-            if (use_aoa_keyboard && !hid_keyboard_initialized) {
+            if (use_keyboard_aoa && !keyboard_aoa_initialized) {
                 LOGE("Fallback to --keyboard=sdk (--keyboard=aoa ignored)");
                 options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_SDK;
             }
@@ -813,8 +813,8 @@ end:
     // end-of-stream
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {
-        if (hid_keyboard_initialized) {
-            sc_hid_keyboard_destroy(&s->keyboard_hid);
+        if (keyboard_aoa_initialized) {
+            sc_keyboard_aoa_destroy(&s->keyboard_aoa);
         }
         if (hid_mouse_initialized) {
             sc_hid_mouse_destroy(&s->mouse_hid);
