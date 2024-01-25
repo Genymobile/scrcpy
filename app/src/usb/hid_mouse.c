@@ -10,7 +10,8 @@
 
 #define HID_MOUSE_ACCESSORY_ID 2
 
-// 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position
+// 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position,
+// 1 byte for wheel motion
 #define HID_MOUSE_EVENT_SIZE 4
 
 /**
@@ -90,11 +91,12 @@ static const unsigned char mouse_report_desc[]  = {
 };
 
 /**
- * A mouse HID event is 3 bytes long:
+ * A mouse HID event is 4 bytes long:
  *
  *  - byte 0: buttons state
  *  - byte 1: relative x motion (signed byte from -127 to 127)
  *  - byte 2: relative y motion (signed byte from -127 to 127)
+ *  - byte 3: wheel motion (-1, 0 or 1)
  *
  *                   7 6 5 4 3 2 1 0
  *                  +---------------+
@@ -112,7 +114,7 @@ static const unsigned char mouse_report_desc[]  = {
  *                  +---------------+
  *         byte 2:  |. . . . . . . .| relative y motion
  *                  +---------------+
- *         byte 3:  |. . . . . . . .| wheel motion (-1, 0 or 1)
+ *         byte 3:  |. . . . . . . .| wheel motion
  *                  +---------------+
  *
  * As an example, here is the report for a motion of (x=5, y=-4) with left
