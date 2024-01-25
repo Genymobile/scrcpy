@@ -7,11 +7,11 @@
 #include <SDL2/SDL.h>
 
 #include "keyboard_aoa.h"
-#include "hid_mouse.h"
+#include "mouse_aoa.h"
 
 struct sc_screen_otg {
     struct sc_keyboard_aoa *keyboard;
-    struct sc_hid_mouse *mouse;
+    struct sc_mouse_aoa *mouse;
 
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -23,7 +23,7 @@ struct sc_screen_otg {
 
 struct sc_screen_otg_params {
     struct sc_keyboard_aoa *keyboard;
-    struct sc_hid_mouse *mouse;
+    struct sc_mouse_aoa *mouse;
 
     const char *window_title;
     bool always_on_top;
