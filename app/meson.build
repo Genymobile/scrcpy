@@ -31,6 +31,7 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
+    'src/hid/hid_keyboard.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/util/acksync.c',
@@ -88,7 +89,7 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
-        'src/usb/hid_keyboard.c',
+        'src/usb/keyboard_aoa.c',
         'src/usb/hid_mouse.c',
         'src/usb/scrcpy_otg.c',
         'src/usb/screen_otg.c',
