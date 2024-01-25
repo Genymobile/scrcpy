@@ -20,8 +20,8 @@
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
-#include "keyboard_inject.h"
-#include "mouse_inject.h"
+#include "keyboard_sdk.h"
+#include "mouse_sdk.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
@@ -63,13 +63,13 @@ struct scrcpy {
     struct sc_acksync acksync;
 #endif
     union {
-        struct sc_keyboard_inject keyboard_inject;
+        struct sc_keyboard_sdk keyboard_sdk;
 #ifdef HAVE_USB
         struct sc_keyboard_aoa keyboard_aoa;
 #endif
     };
     union {
-        struct sc_mouse_inject mouse_inject;
+        struct sc_mouse_sdk mouse_sdk;
 #ifdef HAVE_USB
         struct sc_mouse_aoa mouse_aoa;
 #endif
@@ -651,16 +651,16 @@ aoa_hid_end:
 
         // keyboard_input_mode may have been reset if HID mode failed
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
-            sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
-                                    options->key_inject_mode,
-                                    options->forward_key_repeat);
-            kp = &s->keyboard_inject.key_processor;
+            sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
+                                 options->key_inject_mode,
+                                 options->forward_key_repeat);
+            kp = &s->keyboard_sdk.key_processor;
         }
 
         // mouse_input_mode may have been reset if HID mode failed
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
-            sc_mouse_inject_init(&s->mouse_inject, &s->controller);
-            mp = &s->mouse_inject.mouse_processor;
+            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
+            mp = &s->mouse_sdk.mouse_processor;
         }
 
         if (!sc_controller_init(&s->controller, s->server.control_socket,

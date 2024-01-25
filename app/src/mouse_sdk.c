@@ -1,4 +1,4 @@
-#include "mouse_inject.h"
+#include "mouse_sdk.h"
 
 #include <assert.h>
 
@@ -9,8 +9,8 @@
 #include "util/intmap.h"
 #include "util/log.h"
 
-/** Downcast mouse processor to sc_mouse_inject */
-#define DOWNCAST(MP) container_of(MP, struct sc_mouse_inject, mouse_processor)
+/** Downcast mouse processor to sc_mouse_sdk */
+#define DOWNCAST(MP) container_of(MP, struct sc_mouse_sdk, mouse_processor)
 
 static enum android_motionevent_buttons
 convert_mouse_buttons(uint32_t state) {
@@ -63,7 +63,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
         return;
     }
 
-    struct sc_mouse_inject *mi = DOWNCAST(mp);
+    struct sc_mouse_sdk *m = DOWNCAST(mp);
 
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -76,7 +76,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!sc_controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(m->controller, &msg)) {
         LOGW("Could not request 'inject mouse motion event'");
     }
 }
@@ -84,7 +84,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
 static void
 sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_click_event *event) {
-    struct sc_mouse_inject *mi = DOWNCAST(mp);
+    struct sc_mouse_sdk *m = DOWNCAST(mp);
 
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -98,7 +98,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!sc_controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(m->controller, &msg)) {
         LOGW("Could not request 'inject mouse click event'");
     }
 }
@@ -106,7 +106,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
 static void
 sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_scroll_event *event) {
-    struct sc_mouse_inject *mi = DOWNCAST(mp);
+    struct sc_mouse_sdk *m = DOWNCAST(mp);
 
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
@@ -118,7 +118,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!sc_controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(m->controller, &msg)) {
         LOGW("Could not request 'inject mouse scroll event'");
     }
 }
@@ -126,7 +126,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
 static void
 sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
                                  const struct sc_touch_event *event) {
-    struct sc_mouse_inject *mi = DOWNCAST(mp);
+    struct sc_mouse_sdk *m = DOWNCAST(mp);
 
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
@@ -139,15 +139,14 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
         },
     };
 
-    if (!sc_controller_push_msg(mi->controller, &msg)) {
+    if (!sc_controller_push_msg(m->controller, &msg)) {
         LOGW("Could not request 'inject touch event'");
     }
 }
 
 void
-sc_mouse_inject_init(struct sc_mouse_inject *mi,
-                     struct sc_controller *controller) {
-    mi->controller = controller;
+sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller) {
+    m->controller = controller;
 
     static const struct sc_mouse_processor_ops ops = {
         .process_mouse_motion = sc_mouse_processor_process_mouse_motion,
@@ -156,7 +155,7 @@ sc_mouse_inject_init(struct sc_mouse_inject *mi,
         .process_touch = sc_mouse_processor_process_touch,
     };
 
-    mi->mouse_processor.ops = &ops;
+    m->mouse_processor.ops = &ops;
 
-    mi->mouse_processor.relative_mode = false;
+    m->mouse_processor.relative_mode = false;
 }
