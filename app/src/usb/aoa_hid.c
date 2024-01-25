@@ -97,10 +97,10 @@ sc_aoa_register_hid(struct sc_aoa *aoa, uint16_t accessory_id,
     // index (arg1): total length of the HID report descriptor
     uint16_t value = accessory_id;
     uint16_t index = report_desc_size;
-    unsigned char *buffer = NULL;
+    unsigned char *data = NULL;
     uint16_t length = 0;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
-                                         request, value, index, buffer, length,
+                                         request, value, index, data, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("REGISTER_HID: libusb error: %s", libusb_strerror(result));
@@ -130,14 +130,14 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
      * See <https://libusb.sourceforge.io/api-1.0/libusb_packetoverflow.html>
      */
     // value (arg0): accessory assigned ID for the HID device
-    // index (arg1): offset of data (buffer) in descriptor
+    // index (arg1): offset of data in descriptor
     uint16_t value = accessory_id;
     uint16_t index = 0;
     // libusb_control_transfer expects a pointer to non-const
-    unsigned char *buffer = (unsigned char *) report_desc;
+    unsigned char *data = (unsigned char *) report_desc;
     uint16_t length = report_desc_size;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
-                                         request, value, index, buffer, length,
+                                         request, value, index, data, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("SET_HID_REPORT_DESC: libusb error: %s", libusb_strerror(result));
@@ -177,10 +177,10 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     // index (arg1): 0 (unused)
     uint16_t value = event->accessory_id;
     uint16_t index = 0;
-    unsigned char *buffer = event->buffer;
+    unsigned char *data = event->buffer;
     uint16_t length = event->size;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
-                                         request, value, index, buffer, length,
+                                         request, value, index, data, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("SEND_HID_EVENT: libusb error: %s", libusb_strerror(result));
@@ -200,10 +200,10 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, const uint16_t accessory_id) {
     // index (arg1): 0
     uint16_t value = accessory_id;
     uint16_t index = 0;
-    unsigned char *buffer = NULL;
+    unsigned char *data = NULL;
     uint16_t length = 0;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
-                                         request, value, index, buffer, length,
+                                         request, value, index, data, length,
                                          DEFAULT_TIMEOUT);
     if (result < 0) {
         LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
