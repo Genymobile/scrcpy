@@ -11,7 +11,7 @@ struct scrcpy_otg {
     struct sc_usb usb;
     struct sc_aoa aoa;
     struct sc_keyboard_aoa keyboard;
-    struct sc_hid_mouse mouse;
+    struct sc_mouse_aoa mouse;
 
     struct sc_screen_otg screen_otg;
 };
@@ -74,7 +74,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     enum scrcpy_exit_code ret = SCRCPY_EXIT_FAILURE;
 
     struct sc_keyboard_aoa *keyboard = NULL;
-    struct sc_hid_mouse *mouse = NULL;
+    struct sc_mouse_aoa *mouse = NULL;
     bool usb_device_initialized = false;
     bool usb_connected = false;
     bool aoa_started = false;
@@ -136,7 +136,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     }
 
     if (enable_mouse) {
-        ok = sc_hid_mouse_init(&s->mouse, &s->aoa);
+        ok = sc_mouse_aoa_init(&s->mouse, &s->aoa);
         if (!ok) {
             goto end;
         }
@@ -185,7 +185,7 @@ end:
     sc_usb_stop(&s->usb);
 
     if (mouse) {
-        sc_hid_mouse_destroy(&s->mouse);
+        sc_mouse_aoa_destroy(&s->mouse);
     }
     if (keyboard) {
         sc_keyboard_aoa_destroy(&s->keyboard);
