@@ -233,9 +233,7 @@ sdl_keymod_to_hid_modifiers(uint16_t mod) {
 
 static void
 sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
-    hid_event->accessory_id = HID_KEYBOARD_ACCESSORY_ID;
     hid_event->size = HID_KEYBOARD_EVENT_SIZE;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
 
     uint8_t *data = hid_event->data;
 
@@ -329,7 +327,8 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
         ++i;
     }
 
-    if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
+    if (!sc_aoa_push_hid_event(kb->aoa, HID_KEYBOARD_ACCESSORY_ID,
+                               &hid_event)) {
         LOGW("Could not request HID event (mod lock state)");
         return false;
     }
@@ -362,15 +361,15 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             }
         }
 
-        if (ack_to_wait) {
-            // Ctrl+v is pressed, so clipboard synchronization has been
-            // requested. Wait until clipboard synchronization is acknowledged
-            // by the server, otherwise it could paste the old clipboard
-            // content.
-            hid_event.ack_to_wait = ack_to_wait;
-        }
+        // If ack_to_wait is != SC_SEQUENCE_INVALID, then Ctrl+v is pressed, so
+        // clipboard synchronization has been requested. Wait until clipboard
+        // synchronization is acknowledged by the server, otherwise it could
+        // paste the old clipboard content.
 
-        if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
+        if (!sc_aoa_push_hid_event_with_ack_to_wait(kb->aoa,
+                                                    HID_KEYBOARD_ACCESSORY_ID,
+                                                    &hid_event,
+                                                    ack_to_wait)) {
             LOGW("Could not request HID event (key)");
         }
     }
