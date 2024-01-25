@@ -133,13 +133,13 @@ static const unsigned char mouse_report_desc[]  = {
 
 static bool
 sc_hid_mouse_event_init(struct sc_hid_event *hid_event) {
-    unsigned char *buffer = calloc(1, HID_MOUSE_EVENT_SIZE);
-    if (!buffer) {
+    unsigned char *data = calloc(1, HID_MOUSE_EVENT_SIZE);
+    if (!data) {
         LOG_OOM();
         return false;
     }
 
-    sc_hid_event_init(hid_event, HID_MOUSE_ACCESSORY_ID, buffer,
+    sc_hid_event_init(hid_event, HID_MOUSE_ACCESSORY_ID, data,
                       HID_MOUSE_EVENT_SIZE);
     return true;
 }
@@ -175,11 +175,11 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
         return;
     }
 
-    unsigned char *buffer = hid_event.buffer;
-    buffer[0] = buttons_state_to_hid_buttons(event->buttons_state);
-    buffer[1] = CLAMP(event->xrel, -127, 127);
-    buffer[2] = CLAMP(event->yrel, -127, 127);
-    buffer[3] = 0; // wheel coordinates only used for scrolling
+    unsigned char *data = hid_event.data;
+    data[0] = buttons_state_to_hid_buttons(event->buttons_state);
+    data[1] = CLAMP(event->xrel, -127, 127);
+    data[2] = CLAMP(event->yrel, -127, 127);
+    data[3] = 0; // wheel coordinates only used for scrolling
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
@@ -197,11 +197,11 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
         return;
     }
 
-    unsigned char *buffer = hid_event.buffer;
-    buffer[0] = buttons_state_to_hid_buttons(event->buttons_state);
-    buffer[1] = 0; // no x motion
-    buffer[2] = 0; // no y motion
-    buffer[3] = 0; // wheel coordinates only used for scrolling
+    unsigned char *data = hid_event.data;
+    data[0] = buttons_state_to_hid_buttons(event->buttons_state);
+    data[1] = 0; // no x motion
+    data[2] = 0; // no y motion
+    data[3] = 0; // wheel coordinates only used for scrolling
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         sc_hid_event_destroy(&hid_event);
@@ -219,13 +219,13 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
         return;
     }
 
-    unsigned char *buffer = hid_event.buffer;
-    buffer[0] = 0; // buttons state irrelevant (and unknown)
-    buffer[1] = 0; // no x motion
-    buffer[2] = 0; // no y motion
+    unsigned char *data = hid_event.data;
+    data[0] = 0; // buttons state irrelevant (and unknown)
+    data[1] = 0; // no x motion
+    data[2] = 0; // no y motion
     // In practice, vscroll is always -1, 0 or 1, but in theory other values
     // are possible
-    buffer[3] = CLAMP(event->vscroll, -127, 127);
+    data[3] = CLAMP(event->vscroll, -127, 127);
     // Horizontal scrolling ignored
 
     if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
