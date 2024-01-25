@@ -14,7 +14,7 @@
 
 struct sc_hid_event {
     uint16_t accessory_id;
-    unsigned char *buffer;
+    unsigned char *data;
     uint16_t size;
     uint64_t ack_to_wait;
 };
@@ -22,7 +22,7 @@ struct sc_hid_event {
 // Takes ownership of buffer
 void
 sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size);
+                  unsigned char *data, uint16_t size);
 
 void
 sc_hid_event_destroy(struct sc_hid_event *hid_event);
