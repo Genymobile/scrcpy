@@ -231,21 +231,17 @@ sdl_keymod_to_hid_modifiers(uint16_t mod) {
     return modifiers;
 }
 
-static bool
+static void
 sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
-    unsigned char *data = malloc(HID_KEYBOARD_EVENT_SIZE);
-    if (!data) {
-        LOG_OOM();
-        return false;
-    }
+    hid_event->accessory_id = HID_KEYBOARD_ACCESSORY_ID;
+    hid_event->size = HID_KEYBOARD_EVENT_SIZE;
+    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
+
+    uint8_t *data = hid_event->data;
 
     data[HID_KEYBOARD_INDEX_MODIFIER] = HID_MODIFIER_NONE;
     data[1] = HID_RESERVED;
     memset(&data[HID_KEYBOARD_INDEX_KEYS], 0, HID_KEYBOARD_MAX_KEYS);
-
-    sc_hid_event_init(hid_event, HID_KEYBOARD_ACCESSORY_ID, data,
-                      HID_KEYBOARD_EVENT_SIZE);
-    return true;
 }
 
 static inline bool
@@ -268,10 +264,7 @@ convert_hid_keyboard_event(struct sc_hid_keyboard *kb,
         return false;
     }
 
-    if (!sc_hid_keyboard_event_init(hid_event)) {
-        LOGW("Could not initialize HID keyboard event");
-        return false;
-    }
+    sc_hid_keyboard_event_init(hid_event);
 
     unsigned char modifiers = sdl_keymod_to_hid_modifiers(event->mods_state);
 
@@ -324,10 +317,7 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
     }
 
     struct sc_hid_event hid_event;
-    if (!sc_hid_keyboard_event_init(&hid_event)) {
-        LOGW("Could not initialize HID keyboard event");
-        return false;
-    }
+    sc_hid_keyboard_event_init(&hid_event);
 
     unsigned i = 0;
     if (capslock) {
@@ -340,7 +330,6 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
     }
 
     if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
-        sc_hid_event_destroy(&hid_event);
         LOGW("Could not request HID event (mod lock state)");
         return false;
     }
@@ -382,7 +371,6 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
         }
 
         if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
-            sc_hid_event_destroy(&hid_event);
             LOGW("Could not request HID event (key)");
         }
     }
