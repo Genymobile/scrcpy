@@ -27,7 +27,7 @@ sc_hid_event_log(const struct sc_hid_event *event) {
         return;
     }
     for (unsigned i = 0; i < event->size; ++i) {
-        snprintf(buffer + i * 3, 4, " %02x", event->buffer[i]);
+        snprintf(buffer + i * 3, 4, " %02x", event->data[i]);
     }
     LOGV("HID Event: [%d]%s", event->accessory_id, buffer);
     free(buffer);
@@ -35,16 +35,16 @@ sc_hid_event_log(const struct sc_hid_event *event) {
 
 void
 sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size) {
+                  unsigned char *data, uint16_t size) {
     hid_event->accessory_id = accessory_id;
-    hid_event->buffer = buffer;
-    hid_event->size = buffer_size;
+    hid_event->data = data;
+    hid_event->size = size;
     hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
 }
 
 void
 sc_hid_event_destroy(struct sc_hid_event *hid_event) {
-    free(hid_event->buffer);
+    free(hid_event->data);
 }
 
 bool
@@ -177,7 +177,7 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     // index (arg1): 0 (unused)
     uint16_t value = event->accessory_id;
     uint16_t index = 0;
-    unsigned char *data = event->buffer;
+    unsigned char *data = event->data;
     uint16_t length = event->size;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
                                          request, value, index, data, length,
