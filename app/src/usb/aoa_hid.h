@@ -12,20 +12,14 @@
 #include "util/tick.h"
 #include "util/vecdeque.h"
 
+#define SC_HID_MAX_SIZE 8
+
 struct sc_hid_event {
     uint16_t accessory_id;
-    unsigned char *data;
-    uint16_t size;
+    uint8_t data[SC_HID_MAX_SIZE];
+    uint8_t size;
     uint64_t ack_to_wait;
 };
-
-// Takes ownership of buffer
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *data, uint16_t size);
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event);
 
 struct sc_hid_event_queue SC_VECDEQUE(struct sc_hid_event);
 
