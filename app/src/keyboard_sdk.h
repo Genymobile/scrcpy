@@ -1,5 +1,5 @@
-#ifndef SC_KEYBOARD_INJECT_H
-#define SC_KEYBOARD_INJECT_H
+#ifndef SC_KEYBOARD_SDK_H
+#define SC_KEYBOARD_SDK_H
 
 #include "common.h"
 
@@ -9,7 +9,7 @@
 #include "options.h"
 #include "trait/key_processor.h"
 
-struct sc_keyboard_inject {
+struct sc_keyboard_sdk {
     struct sc_key_processor key_processor; // key processor trait
 
     struct sc_controller *controller;
@@ -23,9 +23,9 @@ struct sc_keyboard_inject {
 };
 
 void
-sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
-                        struct sc_controller *controller,
-                        enum sc_key_inject_mode key_inject_mode,
-                        bool forward_key_repeat);
+sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
+                     struct sc_controller *controller,
+                     enum sc_key_inject_mode key_inject_mode,
+                     bool forward_key_repeat);
 
 #endif
