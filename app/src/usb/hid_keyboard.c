@@ -233,17 +233,17 @@ sdl_keymod_to_hid_modifiers(uint16_t mod) {
 
 static bool
 sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
-    unsigned char *buffer = malloc(HID_KEYBOARD_EVENT_SIZE);
-    if (!buffer) {
+    unsigned char *data = malloc(HID_KEYBOARD_EVENT_SIZE);
+    if (!data) {
         LOG_OOM();
         return false;
     }
 
-    buffer[HID_KEYBOARD_INDEX_MODIFIER] = HID_MODIFIER_NONE;
-    buffer[1] = HID_RESERVED;
-    memset(&buffer[HID_KEYBOARD_INDEX_KEYS], 0, HID_KEYBOARD_MAX_KEYS);
+    data[HID_KEYBOARD_INDEX_MODIFIER] = HID_MODIFIER_NONE;
+    data[1] = HID_RESERVED;
+    memset(&data[HID_KEYBOARD_INDEX_KEYS], 0, HID_KEYBOARD_MAX_KEYS);
 
-    sc_hid_event_init(hid_event, HID_KEYBOARD_ACCESSORY_ID, buffer,
+    sc_hid_event_init(hid_event, HID_KEYBOARD_ACCESSORY_ID, data,
                       HID_KEYBOARD_EVENT_SIZE);
     return true;
 }
@@ -282,9 +282,9 @@ convert_hid_keyboard_event(struct sc_hid_keyboard *kb,
              kb->keys[scancode] ? "true" : "false");
     }
 
-    hid_event->buffer[HID_KEYBOARD_INDEX_MODIFIER] = modifiers;
+    hid_event->data[HID_KEYBOARD_INDEX_MODIFIER] = modifiers;
 
-    unsigned char *keys_buffer = &hid_event->buffer[HID_KEYBOARD_INDEX_KEYS];
+    unsigned char *keys_data = &hid_event->data[HID_KEYBOARD_INDEX_KEYS];
     // Re-calculate pressed keys every time
     int keys_pressed_count = 0;
     for (int i = 0; i < SC_HID_KEYBOARD_KEYS; ++i) {
@@ -296,11 +296,11 @@ convert_hid_keyboard_event(struct sc_hid_keyboard *kb,
                 //  - Modifiers
                 //  - Reserved
                 //  - ErrorRollOver * HID_MAX_KEYS
-                memset(keys_buffer, HID_ERROR_ROLL_OVER, HID_KEYBOARD_MAX_KEYS);
+                memset(keys_data, HID_ERROR_ROLL_OVER, HID_KEYBOARD_MAX_KEYS);
                 goto end;
             }
 
-            keys_buffer[keys_pressed_count] = i;
+            keys_data[keys_pressed_count] = i;
             ++keys_pressed_count;
         }
     }
@@ -331,11 +331,11 @@ push_mod_lock_state(struct sc_hid_keyboard *kb, uint16_t mods_state) {
 
     unsigned i = 0;
     if (capslock) {
-        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
+        hid_event.data[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
         ++i;
     }
     if (numlock) {
-        hid_event.buffer[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
+        hid_event.data[HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
         ++i;
     }
 
