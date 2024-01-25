@@ -5,14 +5,17 @@
 
 #include <stdbool.h>
 
-#include "aoa_hid.h"
-#include "trait/key_processor.h"
+#include "hid/hid_event.h"
+#include "input_events.h"
 
 // See "SDL2/SDL_scancode.h".
 // Maybe SDL_Keycode is used by most people, but SDL_Scancode is taken from USB
 // HID protocol.
 // 0x65 is Application, typically AT-101 Keyboard ends here.
 #define SC_HID_KEYBOARD_KEYS 0x66
+
+extern const uint8_t SC_HID_KEYBOARD_REPORT_DESC[];
+extern const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN;
 
 /**
  * HID keyboard events are sequence-based, every time keyboard state changes
@@ -27,18 +30,19 @@
  * phantom state.
  */
 struct sc_hid_keyboard {
-    struct sc_key_processor key_processor; // key processor trait
-
-    struct sc_aoa *aoa;
     bool keys[SC_HID_KEYBOARD_KEYS];
-
-    bool mod_lock_synchronized;
 };
 
-bool
-sc_hid_keyboard_init(struct sc_hid_keyboard *kb, struct sc_aoa *aoa);
-
 void
-sc_hid_keyboard_destroy(struct sc_hid_keyboard *kb);
+sc_hid_keyboard_init(struct sc_hid_keyboard *hid);
+
+bool
+sc_hid_keyboard_event_from_key(struct sc_hid_keyboard *hid,
+                               struct sc_hid_event *hid_event,
+                               const struct sc_key_event *event);
+
+bool
+sc_hid_keyboard_event_from_mods(struct sc_hid_event *event,
+                                uint16_t mods_state);
 
 #endif
