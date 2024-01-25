@@ -133,9 +133,7 @@ static const unsigned char mouse_report_desc[]  = {
 
 static void
 sc_hid_mouse_event_init(struct sc_hid_event *hid_event) {
-    hid_event->accessory_id = HID_MOUSE_ACCESSORY_ID;
     hid_event->size = HID_MOUSE_EVENT_SIZE;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
     // Leave hid_event->data uninitialized, it will be fully initialized by
     // callers
 }
@@ -175,7 +173,8 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     data[2] = CLAMP(event->yrel, -127, 127);
     data[3] = 0; // wheel coordinates only used for scrolling
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
+                               &hid_event)) {
         LOGW("Could not request HID event (mouse motion)");
     }
 }
@@ -194,7 +193,8 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
     data[2] = 0; // no y motion
     data[3] = 0; // wheel coordinates only used for scrolling
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
+                               &hid_event)) {
         LOGW("Could not request HID event (mouse click)");
     }
 }
@@ -216,7 +216,8 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     data[3] = CLAMP(event->vscroll, -127, 127);
     // Horizontal scrolling ignored
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
+                               &hid_event)) {
         LOGW("Could not request HID event (mouse scroll)");
     }
 }
