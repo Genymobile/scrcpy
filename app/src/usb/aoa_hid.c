@@ -33,20 +33,6 @@ sc_hid_event_log(const struct sc_hid_event *event) {
     free(buffer);
 }
 
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *data, uint16_t size) {
-    hid_event->accessory_id = accessory_id;
-    hid_event->data = data;
-    hid_event->size = size;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
-}
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event) {
-    free(hid_event->data);
-}
-
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
@@ -76,12 +62,7 @@ sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
 
 void
 sc_aoa_destroy(struct sc_aoa *aoa) {
-    // Destroy remaining events
-    while (!sc_vecdeque_is_empty(&aoa->queue)) {
-        struct sc_hid_event *event = sc_vecdeque_popref(&aoa->queue);
-        assert(event);
-        sc_hid_event_destroy(event);
-    }
+    sc_vecdeque_destroy(&aoa->queue);
 
     sc_cond_destroy(&aoa->event_cond);
     sc_mutex_destroy(&aoa->mutex);
@@ -177,7 +158,7 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     // index (arg1): 0 (unused)
     uint16_t value = event->accessory_id;
     uint16_t index = 0;
-    unsigned char *data = event->data;
+    unsigned char *data = (uint8_t *) event->data; // discard const
     uint16_t length = event->size;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
                                          request, value, index, data, length,
@@ -271,17 +252,14 @@ run_aoa_thread(void *data) {
 
             if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
                 LOGW("Ack not received after 500ms, discarding HID event");
-                sc_hid_event_destroy(&event);
                 continue;
             } else if (result == SC_ACKSYNC_WAIT_INTR) {
                 // stopped
-                sc_hid_event_destroy(&event);
                 break;
             }
         }
 
         bool ok = sc_aoa_send_hid_event(aoa, &event);
-        sc_hid_event_destroy(&event);
         if (!ok) {
             LOGW("Could not send HID event to USB device");
         }
