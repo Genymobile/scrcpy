@@ -16,5 +16,3 @@ endif
 if get_option('compile_server')
     subdir('server')
 endif
-
-run_target('run', command: ['scripts/run-scrcpy.sh'])
