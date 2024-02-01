@@ -1385,7 +1385,11 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 static bool
 parse_buffering_time(const char *s, sc_tick *tick) {
     long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF,
+    // In practice, buffering time should not exceed a few seconds.
+    // Limit it to some arbitrary value (1 hour) to prevent 32-bit overflow
+    // when multiplied by the audio sample size and the number of samples per
+    // millisecond.
+    bool ok = parse_integer_arg(s, &value, false, 0, 60 * 60 * 1000,
                                 "buffering time");
     if (!ok) {
         return false;
