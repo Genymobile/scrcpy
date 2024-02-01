@@ -458,6 +458,7 @@ sc_adb_list_devices(struct sc_intr *intr, unsigned flags,
         // in the buffer in a single pass
         LOGW("Result of \"adb devices -l\" does not fit in 64Kb. "
              "Please report an issue.");
+        free(buf);
         return false;
     }
 
