@@ -253,66 +253,67 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     }
 
     atomic_store_explicit(&ap->received, true, memory_order_relaxed);
+    if (!played) {
+        // Nothing more to do
+        return true;
+    }
 
-    if (played) {
-        // Number of samples added (or removed, if negative) for compensation
-        int32_t instant_compensation = (int32_t) written - frame->nb_samples;
-        // Inserting silence instantly increases buffering
-        int32_t inserted_silence = (int32_t) underflow;
-        // Dropping input samples instantly decreases buffering
-        int32_t dropped = (int32_t) skipped_samples;
+    // Number of samples added (or removed, if negative) for compensation
+    int32_t instant_compensation = (int32_t) written - frame->nb_samples;
+    // Inserting silence instantly increases buffering
+    int32_t inserted_silence = (int32_t) underflow;
+    // Dropping input samples instantly decreases buffering
+    int32_t dropped = (int32_t) skipped_samples;
 
-        // The compensation must apply instantly, it must not be smoothed
-        ap->avg_buffering.avg +=
-            instant_compensation + inserted_silence - dropped;
+    // The compensation must apply instantly, it must not be smoothed
+    ap->avg_buffering.avg += instant_compensation + inserted_silence - dropped;
 
-        // However, the buffering level must be smoothed
-        sc_average_push(&ap->avg_buffering, can_read);
+    // However, the buffering level must be smoothed
+    sc_average_push(&ap->avg_buffering, can_read);
 
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-        LOGD("[Audio] can_read=%" PRIu32 " avg_buffering=%f",
-             can_read, sc_average_get(&ap->avg_buffering));
+    LOGD("[Audio] can_read=%" PRIu32 " avg_buffering=%f",
+         can_read, sc_average_get(&ap->avg_buffering));
 #endif
 
-        ap->samples_since_resync += written;
-        if (ap->samples_since_resync >= ap->sample_rate) {
-            // Recompute compensation every second
-            ap->samples_since_resync = 0;
+    ap->samples_since_resync += written;
+    if (ap->samples_since_resync >= ap->sample_rate) {
+        // Recompute compensation every second
+        ap->samples_since_resync = 0;
 
-            float avg = sc_average_get(&ap->avg_buffering);
-            int diff = ap->target_buffering - avg;
+        float avg = sc_average_get(&ap->avg_buffering);
+        int diff = ap->target_buffering - avg;
 
-            // Enable compensation when the difference exceeds +/- 4ms.
-            // Disable compensation when the difference is lower than +/- 1ms.
-            int threshold = ap->compensation != 0
-                          ? ap->sample_rate     / 1000  /* 1ms */
-                          : ap->sample_rate * 4 / 1000; /* 4ms */
+        // Enable compensation when the difference exceeds +/- 4ms.
+        // Disable compensation when the difference is lower than +/- 1ms.
+        int threshold = ap->compensation != 0
+                      ? ap->sample_rate     / 1000  /* 1ms */
+                      : ap->sample_rate * 4 / 1000; /* 4ms */
 
-            if (abs(diff) < threshold) {
-                // Do not compensate for small values, the error is just noise
-                diff = 0;
-            } else if (diff < 0 && can_read < ap->target_buffering) {
-                // Do not accelerate if the instant buffering level is below
-                // the target, this would increase underflow
-                diff = 0;
-            }
-            // Compensate the diff over 4 seconds (but will be recomputed after
-            // 1 second)
-            int distance = 4 * ap->sample_rate;
-            // Limit compensation rate to 2%
-            int abs_max_diff = distance / 50;
-            diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
-            LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
-                 " compensation=%d", ap->target_buffering, avg, can_read, diff);
+        if (abs(diff) < threshold) {
+            // Do not compensate for small values, the error is just noise
+            diff = 0;
+        } else if (diff < 0 && can_read < ap->target_buffering) {
+            // Do not accelerate if the instant buffering level is below the
+            // target, this would increase underflow
+            diff = 0;
+        }
+        // Compensate the diff over 4 seconds (but will be recomputed after 1
+        // second)
+        int distance = 4 * ap->sample_rate;
+        // Limit compensation rate to 2%
+        int abs_max_diff = distance / 50;
+        diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
+        LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
+             " compensation=%d", ap->target_buffering, avg, can_read, diff);
 
-            if (diff != ap->compensation) {
-                int ret = swr_set_compensation(swr_ctx, diff, distance);
-                if (ret < 0) {
-                    LOGW("Resampling compensation failed: %d", ret);
-                    // not fatal
-                } else {
-                    ap->compensation = diff;
-                }
+        if (diff != ap->compensation) {
+            int ret = swr_set_compensation(swr_ctx, diff, distance);
+            if (ret < 0) {
+                LOGW("Resampling compensation failed: %d", ret);
+                // not fatal
+            } else {
+                ap->compensation = diff;
             }
         }
     }
