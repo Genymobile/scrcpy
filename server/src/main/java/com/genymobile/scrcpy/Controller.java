@@ -28,6 +28,7 @@ public class Controller implements AsyncProcessor {
 
     private final Device device;
     private final DesktopConnection connection;
+    private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
@@ -41,9 +42,10 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, DesktopConnection connection, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
         this.connection = connection;
+        this.cleanUp = cleanUp;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
         initPointers();
@@ -170,6 +172,10 @@ public class Controller implements AsyncProcessor {
                     if (setPowerModeOk) {
                         keepPowerModeOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+                        if (cleanUp != null) {
+                            boolean mustRestoreOnExit = mode != Device.POWER_MODE_NORMAL;
+                            cleanUp.setRestoreNormalPowerMode(mustRestoreOnExit);
+                        }
                     }
                 }
                 break;
