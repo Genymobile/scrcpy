@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <string.h>
 #include <SDL2/SDL.h>
+#include <math.h>
 
 #include "events.h"
 #include "icon.h"
@@ -845,6 +846,23 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     return true;
 }
 
+static void
+sc_rotate_point(struct sc_point *point,
+                struct sc_point *pivot,
+                int16_t angle_in_degrees) {
+    float32_t angle_in_radians = (float32_t)angle_in_degrees * M_PI / 180.0;
+    float32_t cosine = (float32_t)cos(angle_in_radians);
+    float32_t sine = (float32_t)sin(angle_in_radians);
+
+    int32_t x = point->x;
+    int32_t y = point->y;
+    int32_t pivot_x = pivot->x;
+    int32_t pivot_y = pivot->y;
+
+    point->x = (int32_t)(((x - pivot_x) * cosine) + ((y - pivot_y) * -sine) + pivot_x);
+    point->y = (int32_t)(((x - pivot_x) * sine) + ((y - pivot_y) * cosine) + pivot_y);
+}
+
 struct sc_point
 sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
                                            int32_t x, int32_t y) {
@@ -852,48 +870,76 @@ sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
 
     int32_t w = screen->content_size.width;
     int32_t h = screen->content_size.height;
+    int32_t w_half = (int32_t) w * 0.5;
+    int32_t h_half = (int32_t) h * 0.5;
+    struct sc_point pivot = {
+        .x = w_half,
+        .y = h_half,
+    };
+    int8_t flip_factor = -1;
+    float32_t scale_factor = 100 / (float32_t)screen->transform_offsets.scale;
 
     // screen->rect must be initialized to avoid a division by zero
     assert(screen->rect.w && screen->rect.h);
 
-    x = (int64_t) (x - screen->rect.x) * w / screen->rect.w;
-    y = (int64_t) (y - screen->rect.y) * h / screen->rect.h;
+    float32_t w_factor = (float32_t)w / screen->rect.w;
+    float32_t h_factor = (float32_t)h / screen->rect.h;
+    x = (int64_t) (x - screen->rect.x) * w_factor;
+    y = (int64_t) (y - screen->rect.y) * h_factor;
+    int32_t x_offset = screen->transform_offsets.position.x * w_factor;
+    int32_t y_offset = screen->transform_offsets.position.y * h_factor;
 
     struct sc_point result;
     switch (orientation) {
         case SC_ORIENTATION_0:
-            result.x = x;
-            result.y = y;
+            result.x = (x - x_offset) * scale_factor;
+            result.y = (y - y_offset) * scale_factor;
             break;
         case SC_ORIENTATION_90:
-            result.x = y;
-            result.y = w - x;
+            result.x = (y - y_offset) * scale_factor;
+            result.y = w + ((x_offset - x) * scale_factor);
+            pivot.x = h_half;
+            pivot.y = w_half;
             break;
         case SC_ORIENTATION_180:
-            result.x = w - x;
-            result.y = h - y;
+            result.x = w + ((x_offset - x) * scale_factor);
+            result.y = h + ((y_offset - y) * scale_factor);
             break;
         case SC_ORIENTATION_270:
-            result.x = h - y;
-            result.y = x;
+            result.x = h + ((y_offset - y) * scale_factor);
+            result.y = (x - x_offset) * scale_factor;
+            pivot.x = h_half;
+            pivot.y = w_half;
             break;
         case SC_ORIENTATION_FLIP_0:
-            result.x = w - x;
-            result.y = y;
+            result.x = w + ((x_offset - x) * scale_factor);
+            result.y = (y - y_offset) * scale_factor;
+            flip_factor = 1;
             break;
         case SC_ORIENTATION_FLIP_90:
-            result.x = h - y;
-            result.y = w - x;
+            result.x = h + ((y_offset - y) * scale_factor);
+            result.y = w + ((x_offset - x) * scale_factor);
+            pivot.x = h_half;
+            pivot.y = w_half;
+            flip_factor = 1;
             break;
         case SC_ORIENTATION_FLIP_180:
-            result.x = x;
-            result.y = h - y;
+            result.x = (x - x_offset) * scale_factor;
+            result.y = h + ((y_offset - y) * scale_factor);
+            flip_factor = 1;
             break;
         default:
             assert(orientation == SC_ORIENTATION_FLIP_270);
-            result.x = y;
-            result.y = x;
+            result.x = (y - y_offset) * scale_factor;
+            result.y = (x - x_offset) * scale_factor;
+            pivot.x = h_half;
+            pivot.y = w_half;
+            flip_factor = 1;
             break;
+    }
+
+    if (screen->transform_offsets.rotation != 0) {
+        sc_rotate_point(&result, &pivot, flip_factor * screen->transform_offsets.rotation);
     }
 
     return result;

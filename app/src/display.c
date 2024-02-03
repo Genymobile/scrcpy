@@ -262,8 +262,8 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     rect.y = geometry->y + transform_offsets->position.y;
 
     if (transform_offsets->scale != 100) {
-        rect.w = (int)(geometry->w * (float)transform_offsets->scale / 100);
-        rect.h = (int)(geometry->h * (float)transform_offsets->scale / 100);
+        rect.w = (int)(geometry->w * (float32_t)transform_offsets->scale / 100);
+        rect.h = (int)(geometry->h * (float32_t)transform_offsets->scale / 100);
     } else {
         rect.w = geometry->w;
         rect.h = geometry->h;
