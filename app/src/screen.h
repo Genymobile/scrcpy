@@ -58,6 +58,7 @@ struct sc_screen {
     bool fullscreen;
     bool maximized;
     bool minimized;
+    bool is_kmsdrm;
 
     // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
     // RGUI) must be pressed. This variable tracks the pressed capture key.
