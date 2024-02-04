@@ -661,6 +661,7 @@ void
 sc_screen_switch_fullscreen(struct sc_screen *screen) {
     if (screen->is_kmsdrm && screen->fullscreen) {
         LOGD("Ignored mode switch");
+        return;
     }
 
     uint32_t new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
