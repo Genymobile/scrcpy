@@ -79,10 +79,9 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     bool played = atomic_load_explicit(&ap->played, memory_order_relaxed);
     if (!played) {
         uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
-        // Part of the buffering is handled by inserting initial silence. The
-        // remaining (margin) last samples will be handled by compensation.
-        uint32_t margin = 30 * ap->sample_rate / 1000; // 30ms
-        if (buffered_samples + margin < ap->target_buffering) {
+        // Wait until the buffer is filled up to at least target_buffering
+        // before playing
+        if (buffered_samples < ap->target_buffering) {
             LOGV("[Audio] Inserting initial buffering silence: %" PRIu32
                  " samples", count);
             // Delay playback starting to reach the target buffering. Fill the
