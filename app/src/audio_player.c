@@ -266,6 +266,14 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
     // The compensation must apply instantly, it must not be smoothed
     ap->avg_buffering.avg += instant_compensation + inserted_silence - dropped;
+    if (ap->avg_buffering.avg < 0) {
+        // Negative buffering makes no sense
+        // This may happen when the consumer does not consume at the expected
+        // rate (the SDL calback is not called often enough, which is an audio
+        // output issue), causing many samples to be dropped due to
+        // overbuffering.
+        ap->avg_buffering.avg = 0;
+    }
 
     // However, the buffering level must be smoothed
     sc_average_push(&ap->avg_buffering, can_read);
