@@ -6,7 +6,9 @@ import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
 import android.annotation.SuppressLint;
+import android.hardware.display.VirtualDisplay;
 import android.view.Display;
+import android.view.Surface;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -16,6 +18,7 @@ import java.util.regex.Pattern;
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class DisplayManager {
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
+    private Method createVirtualDisplayMethod;
 
     static DisplayManager create() {
         try {
@@ -107,5 +110,18 @@ public final class DisplayManager {
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    private Method getCreateVirtualDisplayMethod() throws NoSuchMethodException {
+        if (createVirtualDisplayMethod == null) {
+            createVirtualDisplayMethod = android.hardware.display.DisplayManager.class
+                    .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class);
+        }
+        return createVirtualDisplayMethod;
+    }
+
+    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+        Method method = getCreateVirtualDisplayMethod();
+        return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
     }
 }

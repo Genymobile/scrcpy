@@ -1,8 +1,10 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
+import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
@@ -11,6 +13,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     private final Device device;
     private IBinder display;
+    private VirtualDisplay virtualDisplay;
 
     public ScreenCapture(Device device) {
         this.device = device;
@@ -34,9 +37,29 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
+            display = null;
         }
-        display = createDisplay();
-        setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+        if (virtualDisplay != null) {
+            virtualDisplay.release();
+            virtualDisplay = null;
+        }
+
+        try {
+            display = createDisplay();
+            setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+            Ln.d("Display: using SurfaceControl API");
+        } catch (Exception surfaceControlException) {
+            Rect videoRect = screenInfo.getVideoSize().toRect();
+            try {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+                Ln.d("Display: using DisplayManager API");
+            } catch (Exception displayManagerException) {
+                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                Ln.e("Could not create display using DisplayManager", displayManagerException);
+                throw new AssertionError("Could not create display");
+            }
+        }
     }
 
     @Override
@@ -69,7 +92,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         requestReset();
     }
 
-    private static IBinder createDisplay() {
+    private static IBinder createDisplay() throws Exception {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
         boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S".equals(
