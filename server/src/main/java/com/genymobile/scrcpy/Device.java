@@ -164,6 +164,10 @@ public final class Device {
         }
     }
 
+    public int getDisplayId() {
+        return displayId;
+    }
+
     public synchronized void setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
         screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
