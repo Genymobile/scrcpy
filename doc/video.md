@@ -143,7 +143,8 @@ values are allowed when recording.
 
 ## Rotation offset
 
-Rotation offset to be applied (positive values will rotate clockwise):
+Rotation offset in degrees to be applied (positive values rotate clockwise,
+negative values rotate counter-clockwise):
 
 ```bash
 scrcpy --rotation-offset=45
@@ -152,17 +153,22 @@ scrcpy --rotation-offset=45
 This is useful for Meta Quest 3 tilted screen setup:
 
 ```bash
-scrcpy --crop=2064:2208:0:0 --rotation-offset=21
+scrcpy --crop=2064:2208:0:0 --rotation-offset=22
 ```
+
+This is not supported when recording.
 
 
 ## Scale
 
-Scale to be applied (default is 100):
+Scale in integer percentage to be applied (default is 100):
 
 ```bash
 scrcpy --scale=150 # 150% scale
 ```
+
+This is not supported when recording.
+
 
 ## Position offset
 
@@ -173,6 +179,9 @@ Position offset to be applied both horizontally and/or vertically
 scrcpy --position-x-offset=150
 scrcpy --position-y-offset=150
 ```
+
+This is not supported when recording.
+
 
 ## Crop
 

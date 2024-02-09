@@ -845,28 +845,30 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ROTATION_OFFSET,
         .longopt = "rotation-offset",
         .argdesc = "value",
-        .text = "Set the initial display rotation offset.\n"
+        .text = "Set the display rotation offset in degrees.\n"
+                "Positive values rotate clockwise, negative values "
+                "rotate counter-clockwise.\n"
                 "Default is 0 (automatic).",
     },
     {
         .longopt_id = OPT_SCALE,
         .longopt = "scale",
         .argdesc = "value",
-        .text = "Set the initial display scale.\n"
+        .text = "Set the display scale in integer percentage.\n"
                 "Default is 100 (automatic).",
     },
     {
         .longopt_id = OPT_POSITION_X_OFFSET,
         .longopt = "position-x-offset",
         .argdesc = "value",
-        .text = "Set the initial display horizontal position offset.\n"
+        .text = "Set the display horizontal position offset.\n"
                 "Default is 0 (automatic).",
     },
     {
         .longopt_id = OPT_POSITION_Y_OFFSET,
         .longopt = "position-y-offset",
         .argdesc = "value",
-        .text = "Set the initial display vertical position offset.\n"
+        .text = "Set the display vertical position offset.\n"
                 "Default is 0 (automatic).",
     },
 };
