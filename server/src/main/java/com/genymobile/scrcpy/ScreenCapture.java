@@ -1,8 +1,11 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
+import com.genymobile.scrcpy.wrappers.MediaProjectionGlobal;
 
 import android.graphics.Rect;
+import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
@@ -11,6 +14,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     private final Device device;
     private IBinder display;
+		VirtualDisplay virtualDisplay;
 
     public ScreenCapture(Device device) {
         this.device = device;
@@ -31,12 +35,33 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
         int videoRotation = screenInfo.getVideoRotation();
         int layerStack = device.getLayerStack();
+				Rect videoRect = screenInfo.getVideoSize().toRect();
 
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
         }
-        display = createDisplay();
-        setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+				try {
+					virtualDisplay = DisplayManager.createVirtualDisplay(
+                "displayManager VirtualDisplay",
+                videoRect.width(),
+                videoRect.height(),
+                0,
+                surface);
+          Ln.i("Using the DisplayManager system API.");
+				} catch (Exception displayManagerException) {
+					try {
+						virtualDisplay = MediaProjectionGlobal.createVirtualDisplay(
+                  "mediaProjection global",
+                  videoRect.width(),
+                  videoRect.height(),
+                  0,
+                  surface);
+          	Ln.i("Using the MediaProjectionGlobal system API.");
+					} catch (NoSuchMethodException | NullPointerException mediaProjectionGlobalException){
+        		display = createDisplay();
+        		setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+					}
+				} 
     }
 
     @Override
@@ -46,6 +71,9 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
         }
+				if (virtualDisplay != null){
+						virtualDisplay.release();
+				}
     }
 
     @Override

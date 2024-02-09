@@ -1,5 +1,8 @@
 package com.genymobile.scrcpy.wrappers;
 
+import android.hardware.display.VirtualDisplay;
+import android.view.Display;
+import android.view.Surface;
 import com.genymobile.scrcpy.Command;
 import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
@@ -8,6 +11,7 @@ import com.genymobile.scrcpy.Size;
 import android.view.Display;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,6 +89,16 @@ public final class DisplayManager {
         } catch (Exception e) {
             throw new AssertionError(e);
         }
+    }
+
+    public static VirtualDisplay createVirtualDisplay(String name, int width, int height,
+            int displayIdToMirror, Surface surface)
+        throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        java.lang.Class<?> displayManagerClass =
+            java.lang.Class.forName("android.hardware.display.DisplayManager");
+        return (VirtualDisplay) displayManagerClass.getMethod("createVirtualDisplay",
+            String.class, int.class, int.class, int.class, Surface.class)
+            .invoke(null, name, width, height, displayIdToMirror, surface);
     }
 
     public int[] getDisplayIds() {
