@@ -5,16 +5,31 @@ import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
+import android.annotation.SuppressLint;
 import android.view.Display;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class DisplayManager {
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
 
-    public DisplayManager(Object manager) {
+    static DisplayManager create() {
+        try {
+            Class<?> clazz = Class.forName("android.hardware.display.DisplayManagerGlobal");
+            Method getInstanceMethod = clazz.getDeclaredMethod("getInstance");
+            Object dmg = getInstanceMethod.invoke(null);
+            return new DisplayManager(dmg);
+        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private DisplayManager(Object manager) {
         this.manager = manager;
     }
 

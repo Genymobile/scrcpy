@@ -2,12 +2,14 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.Ln;
 
+import android.annotation.SuppressLint;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+@SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class InputManager {
 
     public static final int INJECT_INPUT_EVENT_MODE_ASYNC = 0;
@@ -20,7 +22,27 @@ public final class InputManager {
     private static Method setDisplayIdMethod;
     private static Method setActionButtonMethod;
 
-    public InputManager(Object manager) {
+    static InputManager create() {
+        try {
+            Class<?> inputManagerClass = getInputManagerClass();
+            Method getInstanceMethod = inputManagerClass.getDeclaredMethod("getInstance");
+            Object im = getInstanceMethod.invoke(null);
+            return new InputManager(im);
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static Class<?> getInputManagerClass() {
+        try {
+            // Parts of the InputManager class have been moved to a new InputManagerGlobal class in Android 14 preview
+            return Class.forName("android.hardware.input.InputManagerGlobal");
+        } catch (ClassNotFoundException e) {
+            return android.hardware.input.InputManager.class;
+        }
+    }
+
+    private InputManager(Object manager) {
         this.manager = manager;
     }
 
