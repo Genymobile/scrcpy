@@ -26,7 +26,20 @@ public final class ActivityManager {
     private Method startActivityAsUserWithFeatureMethod;
     private Method forceStopPackageMethod;
 
-    public ActivityManager(IInterface manager) {
+    static ActivityManager create() {
+        try {
+            // On old Android versions, the ActivityManager is not exposed via AIDL,
+            // so use ActivityManagerNative.getDefault()
+            Class<?> cls = Class.forName("android.app.ActivityManagerNative");
+            Method getDefaultMethod = cls.getDeclaredMethod("getDefault");
+            IInterface am = (IInterface) getDefaultMethod.invoke(null);
+            return new ActivityManager(am);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private ActivityManager(IInterface manager) {
         this.manager = manager;
     }
 

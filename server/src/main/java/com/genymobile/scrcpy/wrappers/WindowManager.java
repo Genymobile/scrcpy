@@ -17,7 +17,12 @@ public final class WindowManager {
     private Method isRotationFrozenMethod;
     private Method thawRotationMethod;
 
-    public WindowManager(IInterface manager) {
+    static WindowManager create() {
+        IInterface manager = ServiceManager.getService("window", "android.view.IWindowManager");
+        return new WindowManager(manager);
+    }
+
+    private WindowManager(IInterface manager) {
         this.manager = manager;
     }
 

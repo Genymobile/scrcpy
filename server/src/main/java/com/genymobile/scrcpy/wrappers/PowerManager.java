@@ -13,7 +13,12 @@ public final class PowerManager {
     private final IInterface manager;
     private Method isScreenOnMethod;
 
-    public PowerManager(IInterface manager) {
+    static PowerManager create() {
+        IInterface manager = ServiceManager.getService("power", "android.os.IPowerManager");
+        return new PowerManager(manager);
+    }
+
+    private PowerManager(IInterface manager) {
         this.manager = manager;
     }
 

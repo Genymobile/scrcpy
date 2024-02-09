@@ -16,7 +16,12 @@ public final class StatusBarManager {
     private boolean expandSettingsPanelMethodNewVersion = true;
     private Method collapsePanelsMethod;
 
-    public StatusBarManager(IInterface manager) {
+    static StatusBarManager create() {
+        IInterface manager = ServiceManager.getService("statusbar", "com.android.internal.statusbar.IStatusBarService");
+        return new StatusBarManager(manager);
+    }
+
+    private StatusBarManager(IInterface manager) {
         this.manager = manager;
     }
 
