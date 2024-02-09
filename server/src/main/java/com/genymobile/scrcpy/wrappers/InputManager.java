@@ -6,7 +6,6 @@ import android.annotation.SuppressLint;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -28,7 +27,7 @@ public final class InputManager {
             Method getInstanceMethod = inputManagerClass.getDeclaredMethod("getInstance");
             Object im = getInstanceMethod.invoke(null);
             return new InputManager(im);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
@@ -57,7 +56,7 @@ public final class InputManager {
         try {
             Method method = getInjectInputEventMethod();
             return (boolean) method.invoke(manager, inputEvent, mode);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }
@@ -75,7 +74,7 @@ public final class InputManager {
             Method method = getSetDisplayIdMethod();
             method.invoke(inputEvent, displayId);
             return true;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Cannot associate a display id to the input event", e);
             return false;
         }
@@ -93,7 +92,7 @@ public final class InputManager {
             Method method = getSetActionButtonMethod();
             method.invoke(motionEvent, actionButton);
             return true;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Cannot set action button on MotionEvent", e);
             return false;
         }

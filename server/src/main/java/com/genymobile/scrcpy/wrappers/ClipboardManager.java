@@ -8,7 +8,6 @@ import android.content.IOnPrimaryClipChangedListener;
 import android.os.Build;
 import android.os.IInterface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class ClipboardManager {
@@ -98,8 +97,7 @@ public final class ClipboardManager {
         return setPrimaryClipMethod;
     }
 
-    private static ClipData getPrimaryClip(Method method, int methodVersion, IInterface manager)
-            throws InvocationTargetException, IllegalAccessException {
+    private static ClipData getPrimaryClip(Method method, int methodVersion, IInterface manager) throws ReflectiveOperationException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME);
         }
@@ -121,8 +119,7 @@ public final class ClipboardManager {
         }
     }
 
-    private static void setPrimaryClip(Method method, int methodVersion, IInterface manager, ClipData clipData)
-            throws InvocationTargetException, IllegalAccessException {
+    private static void setPrimaryClip(Method method, int methodVersion, IInterface manager, ClipData clipData) throws ReflectiveOperationException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, clipData, FakeContext.PACKAGE_NAME);
             return;
@@ -149,7 +146,7 @@ public final class ClipboardManager {
                 return null;
             }
             return clipData.getItemAt(0).getText();
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -161,14 +158,14 @@ public final class ClipboardManager {
             ClipData clipData = ClipData.newPlainText(null, text);
             setPrimaryClip(method, setMethodVersion, manager, clipData);
             return true;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }
     }
 
     private static void addPrimaryClipChangedListener(Method method, int methodVersion, IInterface manager, IOnPrimaryClipChangedListener listener)
-            throws InvocationTargetException, IllegalAccessException {
+            throws ReflectiveOperationException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
             return;
@@ -220,7 +217,7 @@ public final class ClipboardManager {
             Method method = getAddPrimaryClipChangedListener();
             addPrimaryClipChangedListener(method, addListenerMethodVersion, manager, listener);
             return true;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }

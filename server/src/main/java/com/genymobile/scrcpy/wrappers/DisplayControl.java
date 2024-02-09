@@ -7,7 +7,6 @@ import android.annotation.TargetApi;
 import android.os.Build;
 import android.os.IBinder;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint({"PrivateApi", "SoonBlockedPrivateApi", "BlockedPrivateApi"})
@@ -55,7 +54,7 @@ public final class DisplayControl {
         try {
             Method method = getGetPhysicalDisplayTokenMethod();
             return (IBinder) method.invoke(null, physicalDisplayId);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -72,7 +71,7 @@ public final class DisplayControl {
         try {
             Method method = getGetPhysicalDisplayIdsMethod();
             return (long[]) method.invoke(null);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }

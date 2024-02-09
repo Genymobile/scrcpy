@@ -7,7 +7,6 @@ import android.os.IInterface;
 import android.view.IDisplayFoldListener;
 import android.view.IRotationWatcher;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class WindowManager {
@@ -66,7 +65,7 @@ public final class WindowManager {
         try {
             Method method = getGetRotationMethod();
             return (int) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return 0;
         }
@@ -76,7 +75,7 @@ public final class WindowManager {
         try {
             Method method = getFreezeRotationMethod();
             method.invoke(manager, rotation);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }
@@ -85,7 +84,7 @@ public final class WindowManager {
         try {
             Method method = getIsRotationFrozenMethod();
             return (boolean) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }
@@ -95,7 +94,7 @@ public final class WindowManager {
         try {
             Method method = getThawRotationMethod();
             method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }

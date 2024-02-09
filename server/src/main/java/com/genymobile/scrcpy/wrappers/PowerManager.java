@@ -6,7 +6,6 @@ import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.IInterface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class PowerManager {
@@ -35,7 +34,7 @@ public final class PowerManager {
         try {
             Method method = getIsScreenOnMethod();
             return (boolean) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }
