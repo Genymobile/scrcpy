@@ -4,7 +4,6 @@ import com.genymobile.scrcpy.Ln;
 
 import android.os.IInterface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class StatusBarManager {
@@ -67,7 +66,7 @@ public final class StatusBarManager {
             } else {
                 method.invoke(manager);
             }
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }
@@ -82,7 +81,7 @@ public final class StatusBarManager {
                 // old version
                 method.invoke(manager);
             }
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }
@@ -91,7 +90,7 @@ public final class StatusBarManager {
         try {
             Method method = getCollapsePanelsMethod();
             method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }

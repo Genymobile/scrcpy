@@ -13,7 +13,6 @@ import android.os.IBinder;
 import android.os.IInterface;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -34,7 +33,7 @@ public final class ActivityManager {
             Method getDefaultMethod = cls.getDeclaredMethod("getDefault");
             IInterface am = (IInterface) getDefaultMethod.invoke(null);
             return new ActivityManager(am);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
@@ -89,7 +88,7 @@ public final class ActivityManager {
                 return null;
             }
             return new ContentProvider(this, provider, name, token);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | NoSuchFieldException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -99,7 +98,7 @@ public final class ActivityManager {
         try {
             Method method = getRemoveContentProviderExternalMethod();
             method.invoke(manager, name, token);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }

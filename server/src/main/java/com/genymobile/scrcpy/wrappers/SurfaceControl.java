@@ -8,7 +8,6 @@ import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi")
@@ -109,7 +108,7 @@ public final class SurfaceControl {
 
             // call getInternalDisplayToken()
             return (IBinder) method.invoke(null);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -126,7 +125,7 @@ public final class SurfaceControl {
         try {
             Method method = getGetPhysicalDisplayTokenMethod();
             return (IBinder) method.invoke(null, physicalDisplayId);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -152,7 +151,7 @@ public final class SurfaceControl {
         try {
             Method method = getGetPhysicalDisplayIdsMethod();
             return (long[]) method.invoke(null);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return null;
         }
@@ -170,7 +169,7 @@ public final class SurfaceControl {
             Method method = getSetDisplayPowerModeMethod();
             method.invoke(null, displayToken, mode);
             return true;
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }

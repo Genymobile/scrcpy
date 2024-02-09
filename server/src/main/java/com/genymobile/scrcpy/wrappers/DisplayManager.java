@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.view.Display;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +23,7 @@ public final class DisplayManager {
             Method getInstanceMethod = clazz.getDeclaredMethod("getInstance");
             Object dmg = getInstanceMethod.invoke(null);
             return new DisplayManager(dmg);
-        } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
@@ -75,7 +74,7 @@ public final class DisplayManager {
             try {
                 Field filed = Display.class.getDeclaredField(flagString);
                 flags |= filed.getInt(null);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
+            } catch (ReflectiveOperationException e) {
                 // Silently ignore, some flags reported by "dumpsys display" are @TestApi
             }
         }
@@ -97,7 +96,7 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
@@ -105,7 +104,7 @@ public final class DisplayManager {
     public int[] getDisplayIds() {
         try {
             return (int[]) manager.getClass().getMethod("getDisplayIds").invoke(manager);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
