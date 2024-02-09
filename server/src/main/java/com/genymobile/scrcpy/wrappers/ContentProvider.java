@@ -42,8 +42,6 @@ public final class ContentProvider implements Closeable {
     private Method callMethod;
     private int callMethodVersion;
 
-    private Object attributionSource;
-
     ContentProvider(ActivityManager manager, Object provider, String name, IBinder token) {
         this.manager = manager;
         this.provider = provider;
