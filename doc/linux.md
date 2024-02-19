@@ -72,8 +72,11 @@ or with arguments (here to disable audio and record to `file.mkv`):
 ```bash
 scrcpy --no-audio --record=file.mkv
 ```
+## wake screen and enter password
+_Code to wake the screen and put pattern or pin password, through laptop...(anyone?)
 
 Documentation for command line arguments is available:
  - `man scrcpy`
  - `scrcpy --help`
  - on [github](/README.md)
+
