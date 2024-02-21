@@ -8,8 +8,7 @@
 #include "util/log.h"
 
 ssize_t
-device_msg_deserialize(const unsigned char *buf, size_t len,
-                       struct device_msg *msg) {
+device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg) {
     if (len < 5) {
         // at least type + empty string length
         return 0; // not available

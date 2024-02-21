@@ -1,6 +1,7 @@
 #include "receiver.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <SDL2/SDL_clipboard.h>
 
 #include "device_msg.h"
@@ -51,7 +52,7 @@ process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
 }
 
 static ssize_t
-process_msgs(struct sc_receiver *receiver, const unsigned char *buf, size_t len) {
+process_msgs(struct sc_receiver *receiver, const uint8_t *buf, size_t len) {
     size_t head = 0;
     for (;;) {
         struct device_msg msg;
@@ -78,7 +79,7 @@ static int
 run_receiver(void *data) {
     struct sc_receiver *receiver = data;
 
-    static unsigned char buf[DEVICE_MSG_MAX_SIZE];
+    static uint8_t buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
     for (;;) {
