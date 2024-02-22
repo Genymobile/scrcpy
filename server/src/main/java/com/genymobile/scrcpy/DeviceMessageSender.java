@@ -4,7 +4,7 @@ import java.io.IOException;
 
 public final class DeviceMessageSender {
 
-    private final DesktopConnection connection;
+    private final ControlChannel controlChannel;
 
     private Thread thread;
 
@@ -12,8 +12,8 @@ public final class DeviceMessageSender {
 
     private long ack;
 
-    public DeviceMessageSender(DesktopConnection connection) {
-        this.connection = connection;
+    public DeviceMessageSender(ControlChannel controlChannel) {
+        this.controlChannel = controlChannel;
     }
 
     public synchronized void pushClipboardText(String text) {
@@ -43,11 +43,11 @@ public final class DeviceMessageSender {
 
             if (sequence != DeviceMessage.SEQUENCE_INVALID) {
                 DeviceMessage event = DeviceMessage.createAckClipboard(sequence);
-                connection.sendDeviceMessage(event);
+                controlChannel.send(event);
             }
             if (text != null) {
                 DeviceMessage event = DeviceMessage.createClipboard(text);
-                connection.sendDeviceMessage(event);
+                controlChannel.send(event);
             }
         }
     }

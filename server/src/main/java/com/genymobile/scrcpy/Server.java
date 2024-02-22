@@ -131,7 +131,8 @@ public final class Server {
             }
 
             if (control) {
-                Controller controller = new Controller(device, connection, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                ControlChannel controlChannel = connection.getControlChannel();
+                Controller controller = new Controller(device, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 device.setClipboardListener(text -> controller.getSender().pushClipboardText(text));
                 asyncProcessors.add(controller);
             }

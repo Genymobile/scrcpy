@@ -27,7 +27,7 @@ public class Controller implements AsyncProcessor {
     private Thread thread;
 
     private final Device device;
-    private final DesktopConnection connection;
+    private final ControlChannel controlChannel;
     private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
@@ -42,14 +42,14 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
-        this.connection = connection;
+        this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
         initPointers();
-        sender = new DeviceMessageSender(connection);
+        sender = new DeviceMessageSender(controlChannel);
     }
 
     private void initPointers() {
@@ -123,7 +123,7 @@ public class Controller implements AsyncProcessor {
     }
 
     private void handleEvent() throws IOException {
-        ControlMessage msg = connection.receiveControlMessage();
+        ControlMessage msg = controlChannel.recv();
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
