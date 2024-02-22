@@ -7,8 +7,6 @@ import android.net.LocalSocketAddress;
 import java.io.Closeable;
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 public final class DesktopConnection implements Closeable {
@@ -24,25 +22,16 @@ public final class DesktopConnection implements Closeable {
     private final FileDescriptor audioFd;
 
     private final LocalSocket controlSocket;
-    private final InputStream controlInputStream;
-    private final OutputStream controlOutputStream;
-
-    private final ControlMessageReader reader = new ControlMessageReader();
-    private final DeviceMessageWriter writer = new DeviceMessageWriter();
+    private final ControlChannel controlChannel;
 
     private DesktopConnection(LocalSocket videoSocket, LocalSocket audioSocket, LocalSocket controlSocket) throws IOException {
         this.videoSocket = videoSocket;
-        this.controlSocket = controlSocket;
         this.audioSocket = audioSocket;
-        if (controlSocket != null) {
-            controlInputStream = controlSocket.getInputStream();
-            controlOutputStream = controlSocket.getOutputStream();
-        } else {
-            controlInputStream = null;
-            controlOutputStream = null;
-        }
+        this.controlSocket = controlSocket;
+
         videoFd = videoSocket != null ? videoSocket.getFileDescriptor() : null;
         audioFd = audioSocket != null ? audioSocket.getFileDescriptor() : null;
+        controlChannel = controlSocket != null ? new ControlChannel(controlSocket) : null;
     }
 
     private static LocalSocket connect(String abstractName) throws IOException {
@@ -179,16 +168,7 @@ public final class DesktopConnection implements Closeable {
         return audioFd;
     }
 
-    public ControlMessage receiveControlMessage() throws IOException {
-        ControlMessage msg = reader.next();
-        while (msg == null) {
-            reader.readFrom(controlInputStream);
-            msg = reader.next();
-        }
-        return msg;
-    }
-
-    public void sendDeviceMessage(DeviceMessage msg) throws IOException {
-        writer.writeTo(msg, controlOutputStream);
+    public ControlChannel getControlChannel() {
+        return controlChannel;
     }
 }
