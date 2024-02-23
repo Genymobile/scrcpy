@@ -98,7 +98,7 @@ struct sc_control_msg {
 // buf size must be at least CONTROL_MSG_MAX_SIZE
 // return the number of bytes written
 size_t
-sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf);
+sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf);
 
 void
 sc_control_msg_log(const struct sc_control_msg *msg);

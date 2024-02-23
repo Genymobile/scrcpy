@@ -113,7 +113,7 @@ sc_aoa_register_hid(struct sc_aoa *aoa, uint16_t accessory_id,
 
 static bool
 sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
-                           const unsigned char *report_desc,
+                           const uint8_t *report_desc,
                            uint16_t report_desc_size) {
     uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
     uint8_t request = ACCESSORY_SET_HID_REPORT_DESC;
@@ -150,7 +150,7 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
 
 bool
 sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
-                 const unsigned char *report_desc, uint16_t report_desc_size) {
+                 const uint8_t *report_desc, uint16_t report_desc_size) {
     bool ok = sc_aoa_register_hid(aoa, accessory_id, report_desc_size);
     if (!ok) {
         return false;

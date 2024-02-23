@@ -505,7 +505,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
 static bool
 device_read_info(struct sc_intr *intr, sc_socket device_socket,
                  struct sc_server_info *info) {
-    unsigned char buf[SC_DEVICE_NAME_FIELD_LENGTH];
+    uint8_t buf[SC_DEVICE_NAME_FIELD_LENGTH];
     ssize_t r = net_recv_all_intr(intr, device_socket, buf, sizeof(buf));
     if (r < SC_DEVICE_NAME_FIELD_LENGTH) {
         LOGE("Could not retrieve device information");

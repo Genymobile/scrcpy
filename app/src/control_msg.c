@@ -87,7 +87,7 @@ write_position(uint8_t *buf, const struct sc_position *position) {
 
 // write length (4 bytes) + string (non null-terminated)
 static size_t
-write_string(const char *utf8, size_t max_len, unsigned char *buf) {
+write_string(const char *utf8, size_t max_len, uint8_t *buf) {
     size_t len = sc_str_utf8_truncation_index(utf8, max_len);
     sc_write32be(buf, len);
     memcpy(&buf[4], utf8, len);
@@ -95,7 +95,7 @@ write_string(const char *utf8, size_t max_len, unsigned char *buf) {
 }
 
 size_t
-sc_control_msg_serialize(const struct sc_control_msg *msg, unsigned char *buf) {
+sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
     buf[0] = msg->type;
     switch (msg->type) {
         case SC_CONTROL_MSG_TYPE_INJECT_KEYCODE:
