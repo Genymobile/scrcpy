@@ -27,7 +27,7 @@ sc_receiver_destroy(struct sc_receiver *receiver) {
 }
 
 static void
-process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
+process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
             char *current = SDL_GetClipboardText();
@@ -55,8 +55,8 @@ static ssize_t
 process_msgs(struct sc_receiver *receiver, const uint8_t *buf, size_t len) {
     size_t head = 0;
     for (;;) {
-        struct device_msg msg;
-        ssize_t r = device_msg_deserialize(&buf[head], len - head, &msg);
+        struct sc_device_msg msg;
+        ssize_t r = sc_device_msg_deserialize(&buf[head], len - head, &msg);
         if (r == -1) {
             return -1;
         }
@@ -65,7 +65,7 @@ process_msgs(struct sc_receiver *receiver, const uint8_t *buf, size_t len) {
         }
 
         process_msg(receiver, &msg);
-        device_msg_destroy(&msg);
+        sc_device_msg_destroy(&msg);
 
         head += r;
         assert(head <= len);
