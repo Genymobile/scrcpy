@@ -9,17 +9,20 @@
 
 ssize_t
 device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg) {
-    if (len < 5) {
-        // at least type + empty string length
-        return 0; // not available
+    if (!len) {
+        return 0; // no message
     }
 
     msg->type = buf[0];
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
+            if (len < 5) {
+                // at least type + empty string length
+                return 0; // no complete message
+            }
             size_t clipboard_len = sc_read32be(&buf[1]);
             if (clipboard_len > len - 5) {
-                return 0; // not available
+                return 0; // no complete message
             }
             char *text = malloc(clipboard_len + 1);
             if (!text) {
@@ -35,6 +38,9 @@ device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg) {
             return 5 + clipboard_len;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD: {
+            if (len < 9) {
+                return 0; // no complete message
+            }
             uint64_t sequence = sc_read64be(&buf[1]);
             msg->ack_clipboard.sequence = sequence;
             return 9;
