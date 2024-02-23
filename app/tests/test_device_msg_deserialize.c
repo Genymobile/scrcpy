@@ -1,14 +1,14 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "device_msg.h"
 
-#include <stdio.h>
-
 static void test_deserialize_clipboard(void) {
-    const unsigned char input[] = {
+    const uint8_t input[] = {
         DEVICE_MSG_TYPE_CLIPBOARD,
         0x00, 0x00, 0x00, 0x03, // text length
         0x41, 0x42, 0x43, // "ABC"
@@ -26,7 +26,7 @@ static void test_deserialize_clipboard(void) {
 }
 
 static void test_deserialize_clipboard_big(void) {
-    unsigned char input[DEVICE_MSG_MAX_SIZE];
+    uint8_t input[DEVICE_MSG_MAX_SIZE];
     input[0] = DEVICE_MSG_TYPE_CLIPBOARD;
     input[1] = (DEVICE_MSG_TEXT_MAX_LENGTH & 0xff000000u) >> 24;
     input[2] = (DEVICE_MSG_TEXT_MAX_LENGTH & 0x00ff0000u) >> 16;
@@ -48,7 +48,7 @@ static void test_deserialize_clipboard_big(void) {
 }
 
 static void test_deserialize_ack_set_clipboard(void) {
-    const unsigned char input[] = {
+    const uint8_t input[] = {
         DEVICE_MSG_TYPE_ACK_CLIPBOARD,
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sequence
     };

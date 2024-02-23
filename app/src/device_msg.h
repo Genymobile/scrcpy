@@ -30,8 +30,7 @@ struct device_msg {
 
 // return the number of bytes consumed (0 for no msg available, -1 on error)
 ssize_t
-device_msg_deserialize(const unsigned char *buf, size_t len,
-                       struct device_msg *msg);
+device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg);
 
 void
 device_msg_destroy(struct device_msg *msg);

@@ -57,7 +57,7 @@ sc_aoa_join(struct sc_aoa *aoa);
 
 bool
 sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
-              const unsigned char *report_desc, uint16_t report_desc_size);
+              const uint8_t *report_desc, uint16_t report_desc_size);
 
 bool
 sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id);
