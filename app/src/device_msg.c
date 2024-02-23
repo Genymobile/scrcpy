@@ -8,7 +8,8 @@
 #include "util/log.h"
 
 ssize_t
-device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg) {
+sc_device_msg_deserialize(const uint8_t *buf, size_t len,
+                          struct sc_device_msg *msg) {
     if (!len) {
         return 0; // no message
     }
@@ -52,7 +53,7 @@ device_msg_deserialize(const uint8_t *buf, size_t len, struct device_msg *msg) {
 }
 
 void
-device_msg_destroy(struct device_msg *msg) {
+sc_device_msg_destroy(struct sc_device_msg *msg) {
     if (msg->type == DEVICE_MSG_TYPE_CLIPBOARD) {
         free(msg->clipboard.text);
     }
