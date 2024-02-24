@@ -8,15 +8,14 @@
 #include "util/log.h"
 
 bool
-sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
-              struct sc_acksync *acksync) {
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;
     }
 
     receiver->control_socket = control_socket;
-    receiver->acksync = acksync;
+    receiver->acksync = NULL;
 
     return true;
 }
