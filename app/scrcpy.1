@@ -182,9 +182,11 @@ Possible values are "disabled", "sdk" and "aoa":
  - "aoa" simulates a physical HID keyboard using the AOAv2 protocol. It may only work over USB.
  - "uhid" simulates a physical HID keyboard using the Linux HID kernel module on the device.
 
-For "aoa" and "uhid", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
+For "aoa" and "uhid", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly using the shortcut MOD+k (except in OTG mode) or by executing:
 
     adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+
+If mirroring is enabled, the shortcot MOD+k opens it.
 
 This option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
 
@@ -643,6 +645,10 @@ Copy computer clipboard to device, then paste (inject PASTE keycode, Android >= 
 .TP
 .B MOD+Shift+v
 Inject computer clipboard text as a sequence of key events
+
+.TP
+.B MOD+k
+Open keyboard settings on the device (for HID keyboard only)
 
 .TP
 .B MOD+i

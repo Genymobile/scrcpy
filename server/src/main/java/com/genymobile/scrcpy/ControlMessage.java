@@ -19,6 +19,7 @@ public final class ControlMessage {
     public static final int TYPE_ROTATE_DEVICE = 11;
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
+    public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
 
     public static final long SEQUENCE_INVALID = 0;
 
