@@ -403,7 +403,8 @@ public class Controller implements AsyncProcessor {
         if (!clipboardAutosync) {
             String clipboardText = Device.getClipboardText();
             if (clipboardText != null) {
-                sender.pushClipboardText(clipboardText);
+                DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
+                sender.send(msg);
             }
         }
     }
@@ -421,7 +422,8 @@ public class Controller implements AsyncProcessor {
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
             // Acknowledgement requested
-            sender.pushAckClipboard(sequence);
+            DeviceMessage msg = DeviceMessage.createAckClipboard(sequence);
+            sender.send(msg);
         }
 
         return ok;
