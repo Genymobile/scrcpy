@@ -340,5 +340,6 @@ sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
 
     // Key injection and clipboard synchronization are serialized
     kb->key_processor.async_paste = false;
+    kb->key_processor.hid = false;
     kb->key_processor.ops = &ops;
 }

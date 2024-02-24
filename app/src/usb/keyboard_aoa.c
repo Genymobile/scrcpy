@@ -94,6 +94,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     // events are sent over AOA, so it must wait for clipboard synchronization
     // to be acknowledged by the device before injecting Ctrl+v.
     kb->key_processor.async_paste = true;
+    kb->key_processor.hid = true;
     kb->key_processor.ops = &ops;
 
     return true;
