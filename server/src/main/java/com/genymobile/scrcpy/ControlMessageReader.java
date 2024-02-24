@@ -86,6 +86,7 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
             case ControlMessage.TYPE_COLLAPSE_PANELS:
             case ControlMessage.TYPE_ROTATE_DEVICE:
+            case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 msg = ControlMessage.createEmpty(type);
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
