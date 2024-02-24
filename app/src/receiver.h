@@ -20,8 +20,7 @@ struct sc_receiver {
 };
 
 bool
-sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
-                 struct sc_acksync *acksync);
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket);
 
 void
 sc_receiver_destroy(struct sc_receiver *receiver);
