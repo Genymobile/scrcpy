@@ -137,6 +137,7 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     // Clipboard synchronization is requested over the same control socket, so
     // there is no need for a specific synchronization mechanism
     kb->key_processor.async_paste = false;
+    kb->key_processor.hid = true;
     kb->key_processor.ops = &ops;
 
     static const struct sc_uhid_receiver_ops uhid_receiver_ops = {

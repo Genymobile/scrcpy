@@ -367,6 +367,22 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseOpenHardKeyboardSettings() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS, event.getType());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 

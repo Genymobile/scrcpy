@@ -377,8 +377,9 @@ static const struct sc_option options[] = {
                 "For \"uhid\" and \"aoa\", the keyboard layout must be "
                 "configured (once and for all) on the device, via Settings -> "
                 "System -> Languages and input -> Physical keyboard. This "
-                "settings page can be started directly: `adb shell am start -a "
-                "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
+                "settings page can be started directly using the shortcut "
+                "MOD+k (except in OTG mode) or by executing: `adb shell am "
+                "start -a android.settings.HARD_KEYBOARD_SETTINGS`.\n"
                 "This option is only available when a HID keyboard is enabled "
                 "(or a physical keyboard is connected).\n"
                 "Also see --mouse.",
@@ -964,6 +965,10 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+Shift+v" },
         .text = "Inject computer clipboard text as a sequence of key events",
+    },
+    {
+        .shortcuts = { "MOD+k" },
+        .text = "Open keyboard settings on the device (for HID keyboard only)",
     },
     {
         .shortcuts = { "MOD+i" },
