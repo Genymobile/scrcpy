@@ -370,6 +370,21 @@ static void test_serialize_uhid_input(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
+static void test_serialize_open_hard_keyboard(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 1);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
 int main(int argc, char *argv[]) {
     (void) argc;
     (void) argv;
@@ -390,5 +405,6 @@ int main(int argc, char *argv[]) {
     test_serialize_rotate_device();
     test_serialize_uhid_create();
     test_serialize_uhid_input();
+    test_serialize_open_hard_keyboard();
     return 0;
 }

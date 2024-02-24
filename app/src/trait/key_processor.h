@@ -23,6 +23,13 @@ struct sc_key_processor {
      */
     bool async_paste;
 
+    /**
+     * Set by the implementation to indicate that the keyboard is HID. In
+     * practice, it is used to react on a shortcut to open the hard keyboard
+     * settings only if the keyboard is HID.
+     */
+    bool hid;
+
     const struct sc_key_processor_ops *ops;
 };
 
