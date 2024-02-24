@@ -1,7 +1,9 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -207,6 +209,9 @@ public class Controller implements AsyncProcessor {
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
                 getUhidManager().writeInput(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
+                openHardKeyboardSettings();
                 break;
             default:
                 // do nothing
@@ -445,5 +450,10 @@ public class Controller implements AsyncProcessor {
         }
 
         return ok;
+    }
+
+    private void openHardKeyboardSettings() {
+        Intent intent = new Intent("android.settings.HARD_KEYBOARD_SETTINGS");
+        ServiceManager.getActivityManager().startActivity(intent);
     }
 }
