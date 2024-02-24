@@ -663,11 +663,12 @@ aoa_hid_end:
             mp = &s->mouse_sdk.mouse_processor;
         }
 
-        if (!sc_controller_init(&s->controller, s->server.control_socket,
-                                acksync)) {
+        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
             goto end;
         }
         controller_initialized = true;
+
+        sc_controller_set_acksync(&s->controller, acksync);
 
         if (!sc_controller_start(&s->controller)) {
             goto end;

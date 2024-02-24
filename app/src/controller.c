@@ -7,8 +7,7 @@
 #define SC_CONTROL_MSG_QUEUE_MAX 64
 
 bool
-sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
-                   struct sc_acksync *acksync) {
+sc_controller_init(struct sc_controller *controller, sc_socket control_socket) {
     sc_vecdeque_init(&controller->queue);
 
     bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
@@ -16,7 +15,7 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
         return false;
     }
 
-    ok = sc_receiver_init(&controller->receiver, control_socket, acksync);
+    ok = sc_receiver_init(&controller->receiver, control_socket);
     if (!ok) {
         sc_vecdeque_destroy(&controller->queue);
         return false;
@@ -41,6 +40,12 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
     controller->stopped = false;
 
     return true;
+}
+
+void
+sc_controller_set_acksync(struct sc_controller *controller,
+                          struct sc_acksync *acksync) {
+    controller->receiver.acksync = acksync;
 }
 
 void
