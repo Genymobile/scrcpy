@@ -319,6 +319,18 @@ rotate_device(struct sc_input_manager *im) {
 }
 
 static void
+open_hard_keyboard_settings(struct sc_input_manager *im) {
+    assert(im->controller);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request opening hard keyboard settings");
+    }
+}
+
+static void
 apply_orientation_transform(struct sc_input_manager *im,
                             enum sc_orientation transform) {
     struct sc_screen *screen = im->screen;
@@ -548,6 +560,13 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             case SDLK_r:
                 if (control && !shift && !repeat && down) {
                     rotate_device(im);
+                }
+                return;
+            case SDLK_k:
+                if (control && !shift && !repeat && down
+                        && im->kp && im->kp->hid) {
+                    // Only if the current keyboard is hid
+                    open_hard_keyboard_settings(im);
                 }
                 return;
         }

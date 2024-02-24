@@ -161,6 +161,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
+        case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
             // no additional data
             return 1;
         default:
@@ -261,6 +262,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_UHID_INPUT:
             LOG_CMSG("UHID input (id=%" PRIu16 ", size=%" PRIu16 ")",
                      msg->uhid_input.id, msg->uhid_input.size);
+            break;
+        case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
+            LOG_CMSG("open hard keyboard settings");
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
