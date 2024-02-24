@@ -542,6 +542,13 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
+        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
+            goto end;
+        }
+        controller_initialized = true;
+
+        controller = &s->controller;
+
 #ifdef HAVE_USB
         bool use_keyboard_aoa =
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
@@ -663,18 +670,12 @@ aoa_hid_end:
             mp = &s->mouse_sdk.mouse_processor;
         }
 
-        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
-            goto end;
-        }
-        controller_initialized = true;
-
         sc_controller_set_acksync(&s->controller, acksync);
 
         if (!sc_controller_start(&s->controller)) {
             goto end;
         }
         controller_started = true;
-        controller = &s->controller;
     }
 
     // There is a controller if and only if control is enabled
