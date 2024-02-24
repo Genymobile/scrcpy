@@ -1,54 +1,30 @@
 package com.genymobile.scrcpy;
 
 import java.io.IOException;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 
 public final class DeviceMessageSender {
 
     private final ControlChannel controlChannel;
 
     private Thread thread;
-
-    private String clipboardText;
-
-    private long ack;
+    private final BlockingQueue<DeviceMessage> queue = new ArrayBlockingQueue<>(16);
 
     public DeviceMessageSender(ControlChannel controlChannel) {
         this.controlChannel = controlChannel;
     }
 
-    public synchronized void pushClipboardText(String text) {
-        clipboardText = text;
-        notify();
-    }
-
-    public synchronized void pushAckClipboard(long sequence) {
-        ack = sequence;
-        notify();
+    public void send(DeviceMessage msg) {
+        if (!queue.offer(msg)) {
+            Ln.w("Device message dropped: " + msg.getType());
+        }
     }
 
     private void loop() throws IOException, InterruptedException {
         while (!Thread.currentThread().isInterrupted()) {
-            String text;
-            long sequence;
-            synchronized (this) {
-                while (ack == DeviceMessage.SEQUENCE_INVALID && clipboardText == null) {
-                    wait();
-                }
-                text = clipboardText;
-                clipboardText = null;
-
-                sequence = ack;
-                ack = DeviceMessage.SEQUENCE_INVALID;
-            }
-
-            if (sequence != DeviceMessage.SEQUENCE_INVALID) {
-                DeviceMessage event = DeviceMessage.createAckClipboard(sequence);
-                controlChannel.send(event);
-            }
-            if (text != null) {
-                DeviceMessage event = DeviceMessage.createClipboard(text);
-                controlChannel.send(event);
-            }
+            DeviceMessage msg = queue.take();
+            controlChannel.send(msg);
         }
     }
 
