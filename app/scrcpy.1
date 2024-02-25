@@ -247,8 +247,9 @@ Possible values are "disabled", "sdk" and "aoa":
  - "disabled" does not send mouse inputs to the device.
  - "sdk" uses the Android system API to deliver mouse events to applications.
  - "aoa" simulates a physical mouse using the AOAv2 protocol. It may only work over USB.
+ - "uhid" simulates a physical HID mouse using the Linux HID kernel module on the device.
 
-In "aoa" mode, the computer mouse is captured to control the device directly (relative mouse mode).
+In "aoa" and "uhid" modes, the computer mouse is captured to control the device directly (relative mouse mode).
 
 LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
 
