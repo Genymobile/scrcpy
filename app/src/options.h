@@ -152,6 +152,7 @@ enum sc_mouse_input_mode {
     SC_MOUSE_INPUT_MODE_DISABLED,
     SC_MOUSE_INPUT_MODE_SDK,
     SC_MOUSE_INPUT_MODE_AOA,
+    SC_MOUSE_INPUT_MODE_UHID,
 };
 
 enum sc_key_inject_mode {
