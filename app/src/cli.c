@@ -468,8 +468,10 @@ static const struct sc_option options[] = {
                 "events to applications.\n"
                 "\"aoa\" simulates a physical mouse using the AOAv2 protocol\n"
                 "It may only work over USB.\n"
-                "In \"aoa\" mode, the computer mouse is captured to control "
-                "the device directly (relative mouse mode).\n"
+                "\"uhid\" simulates a physical HID mouse using the Linux UHID "
+                "kernel module on the device."
+                "In \"aoa\" and \"uhid\" modes, the computer mouse is captured "
+                "to control the device directly (relative mouse mode).\n"
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
                 "Also see --keyboard.",
@@ -1989,7 +1991,12 @@ parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
 #endif
     }
 
-    LOGE("Unsupported mouse: %s (expected disabled, sdk or aoa)", optarg);
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_MOUSE_INPUT_MODE_UHID;
+        return true;
+    }
+
+    LOGE("Unsupported mouse: %s (expected disabled, sdk, aoa or uhid)", optarg);
     return false;
 }
 
