@@ -27,6 +27,7 @@ _scrcpy() {
         --force-adb-forward
         --forward-all-clicks
         -h --help
+        -K
         --keyboard=
         --kill-adb-on-close
         --legacy-paste
@@ -37,6 +38,7 @@ _scrcpy() {
         --lock-video-orientation
         --lock-video-orientation=
         -m --max-size=
+        -M
         --max-fps=
         --mouse=
         -n --no-control
