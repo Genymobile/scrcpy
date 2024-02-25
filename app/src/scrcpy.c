@@ -26,6 +26,7 @@
 #include "screen.h"
 #include "server.h"
 #include "uhid/keyboard_uhid.h"
+#include "uhid/mouse_uhid.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
 # include "usb/keyboard_aoa.h"
@@ -73,6 +74,7 @@ struct scrcpy {
     };
     union {
         struct sc_mouse_sdk mouse_sdk;
+        struct sc_mouse_uhid mouse_uhid;
 #ifdef HAVE_USB
         struct sc_mouse_aoa mouse_aoa;
 #endif
@@ -682,6 +684,12 @@ aoa_hid_end:
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
             sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
             mp = &s->mouse_sdk.mouse_processor;
+        } else if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
+            bool ok = sc_mouse_uhid_init(&s->mouse_uhid, &s->controller);
+            if (!ok) {
+                goto end;
+            }
+            mp = &s->mouse_uhid.mouse_processor;
         }
 
         sc_controller_configure(&s->controller, acksync, uhid_devices);

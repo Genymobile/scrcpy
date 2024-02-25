@@ -462,14 +462,17 @@ static const struct sc_option options[] = {
         .longopt = "mouse",
         .argdesc = "mode",
         .text = "Select how to send mouse inputs to the device.\n"
-                "Possible values are \"disabled\", \"sdk\" and \"aoa\".\n"
+                "Possible values are \"disabled\", \"sdk\", \"uhid\" and "
+                "\"aoa\".\n"
                 "\"disabled\" does not send mouse inputs to the device.\n"
                 "\"sdk\" uses the Android system API to deliver mouse events"
                 "to applications.\n"
+                "\"uhid\" simulates a physical HID mouse using the Linux UHID "
+                "kernel module on the device.\n"
                 "\"aoa\" simulates a physical mouse using the AOAv2 protocol. "
                 "It may only work over USB.\n"
-                "In \"aoa\" mode, the computer mouse is captured to control "
-                "the device directly (relative mouse mode).\n"
+                "In \"uhid\" and \"aoa\" modes, the computer mouse is captured "
+                "to control the device directly (relative mouse mode).\n"
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
                 "Also see --keyboard.",
@@ -1979,6 +1982,11 @@ parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
         return true;
     }
 
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_MOUSE_INPUT_MODE_UHID;
+        return true;
+    }
+
     if (!strcmp(optarg, "aoa")) {
 #ifdef HAVE_USB
         *mode = SC_MOUSE_INPUT_MODE_AOA;
@@ -1989,7 +1997,7 @@ parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
 #endif
     }
 
-    LOGE("Unsupported mouse: %s (expected disabled, sdk or aoa)", optarg);
+    LOGE("Unsupported mouse: %s (expected disabled, sdk, uhid or aoa)", optarg);
     return false;
 }
 
