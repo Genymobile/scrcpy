@@ -120,7 +120,7 @@ _scrcpy() {
             return
             ;;
         --mouse)
-            COMPREPLY=($(compgen -W 'disabled sdk aoa' -- "$cur"))
+            COMPREPLY=($(compgen -W 'disabled sdk uhid aoa' -- "$cur"))
             return
             ;;
         --orientation|--display-orientation)
