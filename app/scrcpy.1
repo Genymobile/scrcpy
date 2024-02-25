@@ -240,13 +240,14 @@ Limit the framerate of screen capture (officially supported since Android 10, bu
 .BI "\-\-mouse " mode
 Select how to send mouse inputs to the device.
 
-Possible values are "disabled", "sdk" and "aoa":
+Possible values are "disabled", "sdk", "uhid" and "aoa":
 
  - "disabled" does not send mouse inputs to the device.
  - "sdk" uses the Android system API to deliver mouse events to applications.
+ - "uhid" simulates a physical HID mouse using the Linux HID kernel module on the device.
  - "aoa" simulates a physical mouse using the AOAv2 protocol. It may only work over USB.
 
-In "aoa" mode, the computer mouse is captured to control the device directly (relative mouse mode).
+In "uhid" and "aoa" modes, the computer mouse is captured to control the device directly (relative mouse mode).
 
 LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
 

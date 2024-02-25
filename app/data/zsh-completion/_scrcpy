@@ -44,7 +44,7 @@ arguments=(
     '--lock-video-orientation=[Lock video orientation]:orientation:(unlocked initial 0 90 180 270)'
     {-m,--max-size=}'[Limit both the width and height of the video to value]'
     '--max-fps=[Limit the frame rate of screen capture]'
-    '--mouse[Set the mouse input mode]:mode:(disabled sdk aoa)'
+    '--mouse[Set the mouse input mode]:mode:(disabled sdk uhid aoa)'
     {-n,--no-control}'[Disable device control \(mirror the device in read only\)]'
     {-N,--no-playback}'[Disable video and audio playback]'
     '--no-audio[Disable audio forwarding]'
