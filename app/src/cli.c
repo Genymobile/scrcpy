@@ -95,6 +95,8 @@ enum {
     OPT_ORIENTATION,
     OPT_KEYBOARD,
     OPT_MOUSE,
+    OPT_HID_KEYBOARD_DEPRECATED,
+    OPT_HID_MOUSE_DEPRECATED,
 };
 
 struct sc_option {
@@ -361,6 +363,10 @@ static const struct sc_option options[] = {
         .text = "Print this help.",
     },
     {
+        .shortopt = 'K',
+        .text = "Same as --keyboard=uhid.",
+    },
+    {
         .longopt_id = OPT_KEYBOARD,
         .longopt = "keyboard",
         .argdesc = "mode",
@@ -391,7 +397,8 @@ static const struct sc_option options[] = {
     },
     {
         // deprecated
-        .shortopt = 'K',
+        //.shortopt = 'K', // old, reassigned
+        .longopt_id = OPT_HID_KEYBOARD_DEPRECATED,
         .longopt = "hid-keyboard",
     },
     {
@@ -447,8 +454,13 @@ static const struct sc_option options[] = {
     },
     {
         // deprecated
-        .shortopt = 'M',
+        //.shortopt = 'M', // old, reassigned
+        .longopt_id = OPT_HID_MOUSE_DEPRECATED,
         .longopt = "hid-mouse",
+    },
+    {
+        .shortopt = 'M',
+        .text = "Same as --mouse=uhid.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -2089,20 +2101,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
-#ifdef HAVE_USB
-                LOGW("-K/--hid-keyboard is deprecated, use --keyboard=aoa "
-                     "instead.");
-                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_AOA;
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID;
                 break;
-#else
-                LOGE("HID over AOA (-K/--hid-keyboard) is disabled.");
-                return false;
-#endif
             case OPT_KEYBOARD:
                 if (!parse_keyboard(optarg, &opts->keyboard_input_mode)) {
                     return false;
                 }
                 break;
+            case OPT_HID_KEYBOARD_DEPRECATED:
+                LOGE("--hid-keyboard has been removed, use --keyboard=aoa or "
+                     "--keyboard=uhid instead.");
+                return false;
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
                     return false;
@@ -2114,19 +2123,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'M':
-#ifdef HAVE_USB
-                LOGW("-M/--hid-mouse is deprecated, use --mouse=aoa instead.");
-                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
                 break;
-#else
-                LOGE("HID over AOA (-M/--hid-mouse) is disabled.");
-                return false;
-#endif
             case OPT_MOUSE:
                 if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
                     return false;
                 }
                 break;
+            case OPT_HID_MOUSE_DEPRECATED:
+                LOGE("--hid-mouse has been removed, use --mouse=aoa or "
+                     "--mouse=uhid instead.");
+                return false;
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
                         &opts->lock_video_orientation)) {
