@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -332,4 +333,23 @@ sc_str_remove_trailing_cr(char *s, size_t len) {
         s[--len] = '\0';
     }
     return len;
+}
+
+char *
+sc_str_to_hex_string(const uint8_t *data, size_t size) {
+    size_t buffer_size = size * 3 + 1;
+    char *buffer = malloc(buffer_size);
+    if (!buffer) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    for (size_t i = 0; i < size; ++i) {
+        snprintf(buffer + i * 3, 4, "%02X ", data[i]);
+    }
+
+    // Remove the final space
+    buffer[size * 3] = '\0';
+
+    return buffer;
 }
