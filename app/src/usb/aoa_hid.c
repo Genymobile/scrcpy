@@ -5,6 +5,7 @@
 
 #include "aoa_hid.h"
 #include "util/log.h"
+#include "util/str.h"
 
 // See <https://source.android.com/devices/accessories/aoa2#hid-support>.
 #define ACCESSORY_REGISTER_HID 54
@@ -20,17 +21,12 @@ static void
 sc_hid_event_log(uint16_t accessory_id, const struct sc_hid_event *event) {
     // HID Event: [00] FF FF FF FF...
     assert(event->size);
-    unsigned buffer_size = event->size * 3 + 1;
-    char *buffer = malloc(buffer_size);
-    if (!buffer) {
-        LOG_OOM();
+    char *hex = sc_str_to_hex_string(event->data, event->size);
+    if (!hex) {
         return;
     }
-    for (unsigned i = 0; i < event->size; ++i) {
-        snprintf(buffer + i * 3, 4, " %02x", event->data[i]);
-    }
-    LOGV("HID Event: [%d]%s", accessory_id, buffer);
-    free(buffer);
+    LOGV("HID Event: [%d] %s", accessory_id, hex);
+    free(hex);
 }
 
 bool
