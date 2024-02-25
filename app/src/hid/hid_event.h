@@ -12,4 +12,7 @@ struct sc_hid_event {
     uint8_t size;
 };
 
+char *
+sc_hid_event_to_string(const struct sc_hid_event *event, size_t max_data_bytes);
+
 #endif

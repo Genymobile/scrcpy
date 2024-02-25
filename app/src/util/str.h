@@ -138,4 +138,10 @@ sc_str_index_of_column(const char *s, unsigned col, const char *seps);
 size_t
 sc_str_remove_trailing_cr(char *s, size_t len);
 
+/**
+ * Convert binary data to hexadecimal string
+ */
+char *
+sc_str_to_hex_string(const uint8_t *data, size_t len);
+
 #endif
