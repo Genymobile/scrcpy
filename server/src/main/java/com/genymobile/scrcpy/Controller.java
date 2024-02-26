@@ -81,8 +81,9 @@ public class Controller implements AsyncProcessor {
             SystemClock.sleep(500);
         }
 
-        while (!Thread.currentThread().isInterrupted()) {
-            handleEvent();
+        boolean alive = true;
+        while (!Thread.currentThread().isInterrupted() && alive) {
+            alive = handleEvent();
         }
     }
 
@@ -92,7 +93,7 @@ public class Controller implements AsyncProcessor {
             try {
                 control();
             } catch (IOException e) {
-                // this is expected on close
+                Ln.e("Controller error", e);
             } finally {
                 Ln.d("Controller stopped");
                 listener.onTerminated(true);
@@ -122,8 +123,15 @@ public class Controller implements AsyncProcessor {
         return sender;
     }
 
-    private void handleEvent() throws IOException {
-        ControlMessage msg = controlChannel.recv();
+    private boolean handleEvent() throws IOException {
+        ControlMessage msg;
+        try {
+            msg = controlChannel.recv();
+        } catch (IOException e) {
+            // this is expected on close
+            return false;
+        }
+
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
@@ -185,6 +193,8 @@ public class Controller implements AsyncProcessor {
             default:
                 // do nothing
         }
+
+        return true;
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
