@@ -79,7 +79,7 @@ public final class AudioCapture {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
-        ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
+        ServiceManager.getActivityManager().startActivity(intent);
     }
 
     private static void stopWorkaroundAndroid11() {
