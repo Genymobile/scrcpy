@@ -22,7 +22,7 @@ public final class ActivityManager {
     private Method getContentProviderExternalMethod;
     private boolean getContentProviderExternalMethodNewVersion = true;
     private Method removeContentProviderExternalMethod;
-    private Method startActivityAsUserWithFeatureMethod;
+    private Method startActivityAsUserMethod;
     private Method forceStopPackageMethod;
 
     static ActivityManager create() {
@@ -107,26 +107,25 @@ public final class ActivityManager {
         return getContentProviderExternal("settings", new Binder());
     }
 
-    private Method getStartActivityAsUserWithFeatureMethod() throws NoSuchMethodException, ClassNotFoundException {
-        if (startActivityAsUserWithFeatureMethod == null) {
+    private Method getStartActivityAsUserMethod() throws NoSuchMethodException, ClassNotFoundException {
+        if (startActivityAsUserMethod == null) {
             Class<?> iApplicationThreadClass = Class.forName("android.app.IApplicationThread");
             Class<?> profilerInfo = Class.forName("android.app.ProfilerInfo");
-            startActivityAsUserWithFeatureMethod = manager.getClass()
-                    .getMethod("startActivityAsUserWithFeature", iApplicationThreadClass, String.class, String.class, Intent.class, String.class,
-                            IBinder.class, String.class, int.class, int.class, profilerInfo, Bundle.class, int.class);
+            startActivityAsUserMethod = manager.getClass()
+                    .getMethod("startActivityAsUser", iApplicationThreadClass, String.class, Intent.class, String.class, IBinder.class, String.class,
+                            int.class, int.class, profilerInfo, Bundle.class, int.class);
         }
-        return startActivityAsUserWithFeatureMethod;
+        return startActivityAsUserMethod;
     }
 
     @SuppressWarnings("ConstantConditions")
-    public int startActivityAsUserWithFeature(Intent intent) {
+    public int startActivity(Intent intent) {
         try {
-            Method method = getStartActivityAsUserWithFeatureMethod();
+            Method method = getStartActivityAsUserMethod();
             return (int) method.invoke(
                     /* this */ manager,
                     /* caller */ null,
                     /* callingPackage */ FakeContext.PACKAGE_NAME,
-                    /* callingFeatureId */ null,
                     /* intent */ intent,
                     /* resolvedType */ null,
                     /* resultTo */ null,
