@@ -43,9 +43,19 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
             break;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
-            assert(receiver->acksync);
             LOGD("Ack device clipboard sequence=%" PRIu64_,
                  msg->ack_clipboard.sequence);
+
+            // This is a programming error to receive this message if there is
+            // no ACK synchronization mechanism
+            assert(receiver->acksync);
+
+            // Also check at runtime (do not trust the server)
+            if (!receiver->acksync) {
+                LOGE("Received unexpected ack");
+                return;
+            }
+
             sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
             break;
     }
