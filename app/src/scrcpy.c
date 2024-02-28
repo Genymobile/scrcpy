@@ -570,7 +570,7 @@ scrcpy(struct scrcpy_options *options) {
             if (!ok) {
                 LOGE("Failed to initialize USB");
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
             assert(serial);
@@ -578,7 +578,7 @@ scrcpy(struct scrcpy_options *options) {
             ok = sc_usb_select_device(&s->usb, serial, &usb_device);
             if (!ok) {
                 sc_usb_destroy(&s->usb);
-                goto aoa_hid_end;
+                goto end;
             }
 
             LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
@@ -591,7 +591,7 @@ scrcpy(struct scrcpy_options *options) {
                 LOGE("Failed to connect to USB device %s", serial);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
             ok = sc_aoa_init(&s->aoa, &s->usb, &s->acksync);
@@ -600,7 +600,7 @@ scrcpy(struct scrcpy_options *options) {
                 sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
             if (use_keyboard_aoa) {
@@ -628,41 +628,18 @@ scrcpy(struct scrcpy_options *options) {
                 sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_aoa_destroy(&s->aoa);
-                goto aoa_hid_end;
+                goto end;
             }
 
             acksync = &s->acksync;
 
             aoa_hid_initialized = true;
-
-aoa_hid_end:
-            if (!aoa_hid_initialized) {
-                if (keyboard_aoa_initialized) {
-                    sc_keyboard_aoa_destroy(&s->keyboard_aoa);
-                    keyboard_aoa_initialized = false;
-                }
-                if (mouse_aoa_initialized) {
-                    sc_mouse_aoa_destroy(&s->mouse_aoa);
-                    mouse_aoa_initialized = false;
-                }
-            }
-
-            if (use_keyboard_aoa && !keyboard_aoa_initialized) {
-                LOGE("Fallback to --keyboard=sdk (--keyboard=aoa ignored)");
-                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_SDK;
-            }
-
-            if (use_mouse_aoa && !mouse_aoa_initialized) {
-                LOGE("Fallback to --keyboard=sdk (--keyboard=aoa ignored)");
-                options->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
-            }
         }
 #else
         assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AOA);
         assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_AOA);
 #endif
 
-        // keyboard_input_mode may have been reset if AOA mode failed
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
                                  options->key_inject_mode,
@@ -680,7 +657,6 @@ aoa_hid_end:
             kp = &s->keyboard_uhid.key_processor;
         }
 
-        // mouse_input_mode may have been reset if AOA mode failed
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
             sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
             mp = &s->mouse_sdk.mouse_processor;
