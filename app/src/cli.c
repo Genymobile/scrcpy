@@ -2603,6 +2603,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("In OTG mode, --mouse only supports aoa or disabled.");
             return false;
         }
+
+        if (kmode == SC_KEYBOARD_INPUT_MODE_DISABLED
+                && mmode == SC_MOUSE_INPUT_MODE_DISABLED) {
+            LOGE("Could not disable both keyboard and mouse in OTG mode.");
+            return false;
+        }
     }
 
     if (opts->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_SDK) {
