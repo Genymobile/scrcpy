@@ -29,6 +29,7 @@
 # include "usb/aoa_hid.h"
 # include "usb/hid_keyboard.h"
 # include "usb/hid_mouse.h"
+# include "usb/hid_replay.h"
 # include "usb/usb.h"
 #endif
 #include "util/acksync.h"
@@ -59,6 +60,7 @@ struct scrcpy {
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
+    struct sc_hidr hidr;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
 #endif
@@ -332,6 +334,11 @@ scrcpy(struct scrcpy_options *options) {
     bool aoa_hid_initialized = false;
     bool hid_keyboard_initialized = false;
     bool hid_mouse_initialized = false;
+    bool hidr_initialized = false;
+    bool hidr_replay_started = false;
+    bool hidr_record_started = false;
+    bool need_hidr = options->hid_record_filename ||
+        options->hid_replay_filename;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -609,6 +616,28 @@ scrcpy(struct scrcpy_options *options) {
             }
 
             bool need_aoa = hid_keyboard_initialized || hid_mouse_initialized;
+            if (need_hidr) {
+                if (!need_aoa) {
+                    goto end;
+                }
+                ok = sc_hidr_init(&s->hidr, &s->aoa,
+                        options->hid_record_filename,
+                        options->hid_replay_filename, hid_keyboard_initialized,
+                        hid_mouse_initialized);
+                if (!ok) {
+                    goto end;
+                }
+                hidr_initialized = true;
+            }
+            if (options->hid_record_filename) {
+                // Set up hidr record BEFORE starting aoa, to ensure that hidr
+                // can listen to events from aoa before the aoa thread starts.
+                ok = sc_hidr_start_record(&s->hidr);
+                if (!ok) {
+                    goto end;
+                }
+                hidr_record_started = true;
+            }
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
@@ -631,6 +660,9 @@ aoa_hid_end:
                 if (hid_mouse_initialized) {
                     sc_hid_mouse_destroy(&s->mouse_hid);
                     hid_mouse_initialized = false;
+                }
+                if (need_hidr) {
+                    goto end;
                 }
             }
 
@@ -680,6 +712,12 @@ aoa_hid_end:
 
     // There is a controller if and only if control is enabled
     assert(options->control == !!controller);
+
+#ifdef HAVE_USB
+    if (need_hidr && !aoa_hid_initialized) {
+        goto end;
+    }
+#endif
 
     if (options->video_playback) {
         const char *window_title =
@@ -799,6 +837,17 @@ aoa_hid_end:
         timeout_started = true;
     }
 
+#ifdef HAVE_USB
+    if (hidr_initialized && options->hid_replay_filename) {
+        assert(aoa_hid_initialized);
+        bool ok = sc_hidr_start_replay(&s->hidr);
+        if (!ok) {
+            goto end;
+        }
+        hidr_replay_started = true;
+    }
+#endif
+
     ret = event_loop(s);
     LOGD("quit...");
 
@@ -814,6 +863,13 @@ end:
     // The demuxer is not stopped explicitly, because it will stop by itself on
     // end-of-stream
 #ifdef HAVE_USB
+    if (need_hidr && !aoa_hid_initialized) {
+        LOGE("HID input unavailable, cannot use --hid-record / --hid-replay!");
+    }
+    if (hidr_replay_started) {
+        sc_hidr_stop_replay(&s->hidr);
+        // hidr will not call aoa at this point.
+    }
     if (aoa_hid_initialized) {
         if (hid_keyboard_initialized) {
             sc_hid_keyboard_destroy(&s->keyboard_hid);
@@ -876,6 +932,15 @@ end:
         sc_usb_join(&s->usb);
         sc_usb_disconnect(&s->usb);
         sc_usb_destroy(&s->usb);
+    }
+    if (hidr_record_started) {
+        // Because aoa has been destroyed, aoa won't call hidr at this point.
+        sc_hidr_stop_record(&s->hidr);
+    }
+    if (hidr_initialized) {
+        // aoa has been destroyed, there are no circular references between
+        // hidr and aoa, so we can finally destroy hidr.
+        sc_hidr_destroy(&s->hidr);
     }
 #endif
 

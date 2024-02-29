@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 #include "aoa_hid.h"
-#include "util/log.h"
+#include "hid_replay.h"
 
 // See <https://source.android.com/devices/accessories/aoa2#hid-support>.
 #define ACCESSORY_REGISTER_HID 54
@@ -33,20 +33,6 @@ sc_hid_event_log(const struct sc_hid_event *event) {
     free(buffer);
 }
 
-void
-sc_hid_event_init(struct sc_hid_event *hid_event, uint16_t accessory_id,
-                  unsigned char *buffer, uint16_t buffer_size) {
-    hid_event->accessory_id = accessory_id;
-    hid_event->buffer = buffer;
-    hid_event->size = buffer_size;
-    hid_event->ack_to_wait = SC_SEQUENCE_INVALID;
-}
-
-void
-sc_hid_event_destroy(struct sc_hid_event *hid_event) {
-    free(hid_event->buffer);
-}
-
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
@@ -70,6 +56,9 @@ sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
     aoa->stopped = false;
     aoa->acksync = acksync;
     aoa->usb = usb;
+    // If needed, will be initialized by sc_hidr_start_record,
+    // before a new thread is created by sc_aoa_start.
+    aoa->hidr_to_notify = NULL;
 
     return true;
 }
@@ -219,6 +208,9 @@ sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
         sc_hid_event_log(event);
     }
+    if (aoa->hidr_to_notify) {
+        sc_hidr_observe_event_for_record(aoa->hidr_to_notify, event);
+    }
 
     sc_mutex_lock(&aoa->mutex);
     bool full = sc_vecdeque_is_full(&aoa->queue);
@@ -232,6 +224,13 @@ sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     // Otherwise (if the queue is full), the event is discarded
 
     sc_mutex_unlock(&aoa->mutex);
+    if (full) {
+        // In the not-full case, a copy is made of the struct, which includes the
+        // heap-allocated event->buffer member. The receiver of that data will
+        // take care of cleaning it up.
+        // We need to clean up similarly when the data is dropped.
+        sc_hid_event_destroy((struct sc_hid_event *)event);
+    }
 
     return !full;
 }

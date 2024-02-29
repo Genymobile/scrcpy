@@ -30,6 +30,12 @@ course, not if you capture your scrcpy window and audio output on the computer).
 [packet delay variation]: https://en.wikipedia.org/wiki/Packet_delay_variation
 
 
+## Keyboard / mouse recording and replay
+
+The keyboard and mouse can also be recorded and replayed, independently of
+video / audio. See [HID/OTG recording](hid-otg.md#recording).
+
+
 ## Format
 
 The video and audio streams are encoded on the device, but are muxed on the

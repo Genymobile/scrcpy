@@ -88,8 +88,11 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
+        'src/usb/hid_event.c',
+        'src/usb/hid_event_serializer.c',
         'src/usb/hid_keyboard.c',
         'src/usb/hid_mouse.c',
+        'src/usb/hid_replay.c',
         'src/usb/scrcpy_otg.c',
         'src/usb/screen_otg.c',
         'src/usb/usb.c',
@@ -258,6 +261,16 @@ if get_option('buildtype') == 'debug'
             'tests/test_vector.c',
         ]],
     ]
+    if usb_support
+        tests += [
+          ['test_hid_event_serializer', [
+              'tests/test_hid_event_serializer.c',
+              'src/usb/hid_event.c',
+              'src/usb/hid_event_serializer.c',
+              'src/util/memory.c',
+          ]],
+        ]
+    endif
 
     foreach t : tests
         sources = t[1] + ['src/compat.c']

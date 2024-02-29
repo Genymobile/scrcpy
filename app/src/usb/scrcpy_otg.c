@@ -4,6 +4,7 @@
 
 #include "adb/adb.h"
 #include "events.h"
+#include "hid_replay.h"
 #include "screen_otg.h"
 #include "util/log.h"
 
@@ -14,6 +15,7 @@ struct scrcpy_otg {
     struct sc_hid_mouse mouse;
 
     struct sc_screen_otg screen_otg;
+    struct sc_hidr hidr;
 };
 
 static void
@@ -79,6 +81,9 @@ scrcpy_otg(struct scrcpy_options *options) {
     bool usb_connected = false;
     bool aoa_started = false;
     bool aoa_initialized = false;
+    bool hidr_initialized = false;
+    bool hidr_replay_started = false;
+    bool hidr_record_started = false;
 
 #ifdef _WIN32
     // On Windows, only one process could open a USB device
@@ -144,6 +149,25 @@ scrcpy_otg(struct scrcpy_options *options) {
         mouse = &s->mouse;
     }
 
+    if (options->hid_replay_filename || options->hid_record_filename) {
+        ok = sc_hidr_init(&s->hidr, &s->aoa, options->hid_record_filename,
+                          options->hid_replay_filename, enable_keyboard,
+                          enable_mouse);
+        if (!ok) {
+            goto end;
+        }
+        hidr_initialized = true;
+    }
+    if (options->hid_record_filename) {
+        // Set up hidr record BEFORE starting aoa, to ensure that hidr can
+        // subscribe to events from aoa before the aoa thread starts.
+        ok = sc_hidr_start_record(&s->hidr);
+        if (!ok) {
+            goto end;
+        }
+        hidr_record_started = true;
+    }
+
     ok = sc_aoa_start(&s->aoa);
     if (!ok) {
         goto end;
@@ -176,10 +200,23 @@ scrcpy_otg(struct scrcpy_options *options) {
     sc_usb_device_destroy(&usb_device);
     usb_device_initialized = false;
 
+    if (options->hid_replay_filename) {
+        ok = sc_hidr_start_replay(&s->hidr);
+        if (!ok) {
+            goto end;
+        }
+        hidr_replay_started = true;
+    }
+
     ret = event_loop(s);
     LOGD("quit...");
 
 end:
+    if (hidr_replay_started) {
+        sc_hidr_stop_replay(&s->hidr);
+        // hidr will not call aoa at this point.
+    }
+
     if (aoa_started) {
         sc_aoa_stop(&s->aoa);
     }
@@ -195,6 +232,15 @@ end:
     if (aoa_initialized) {
         sc_aoa_join(&s->aoa);
         sc_aoa_destroy(&s->aoa);
+    }
+    if (hidr_record_started) {
+        // Because aoa has been destroyed, aoa won't call hidr at this point.
+        sc_hidr_stop_record(&s->hidr);
+    }
+    if (hidr_initialized) {
+        // aoa has been destroyed, there are no circular references between
+        // hidr and aoa, so we can finally destroy hidr.
+        sc_hidr_destroy(&s->hidr);
     }
 
     sc_usb_join(&s->usb);

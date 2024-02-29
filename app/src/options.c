@@ -56,6 +56,8 @@ const struct scrcpy_options scrcpy_options_default = {
 #endif
 #ifdef HAVE_USB
     .otg = false,
+    .hid_record_filename = NULL,
+    .hid_replay_filename = NULL,
 #endif
     .show_touches = false,
     .fullscreen = false,
