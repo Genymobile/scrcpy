@@ -62,6 +62,7 @@ sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps) {
         LOGD("Trilinear filtering disabled (not an OpenGL renderer)");
     }
 
+    display->texture = NULL;
     display->pending.flags = 0;
     display->pending.frame = NULL;
 
