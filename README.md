@@ -32,9 +32,12 @@ Its features include:
  - [configurable quality](doc/video.md)
  - [camera mirroring](doc/camera.md) (Android 12+)
  - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
- - [physical keyboard/mouse simulation (HID)](doc/hid-otg.md)
- - [OTG mode](doc/hid-otg.md#otg)
+ - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
+ - [OTG mode](doc/otg.md)
  - and more…
+
+[hid-keyboard]: doc/keyboard.md#physical-keyboard-simulation
+[hid-mouse]: doc/mouse.md#physical-mouse-simulation
 
 ## Prerequisites
 
@@ -53,8 +56,7 @@ this option is set.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
-Note that USB debugging is not required to run scrcpy in [OTG
-mode](doc/hid-otg.md#otg).
+Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
 
 
 ## Get the app
@@ -73,11 +75,13 @@ documented in the following pages:
  - [Video](doc/video.md)
  - [Audio](doc/audio.md)
  - [Control](doc/control.md)
+ - [Keyboard](doc/keyboard.md)
+ - [Mouse](doc/mouse.md)
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
  - [Tunnels](doc/tunnels.md)
- - [HID/OTG](doc/hid-otg.md)
+ - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
  - [Video4Linux](doc/v4l2.md)
  - [Shortcuts](doc/shortcuts.md)
