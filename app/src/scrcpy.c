@@ -312,6 +312,10 @@ scrcpy_generate_scid(void) {
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
+#ifndef NDEBUG
+    // Detect missing initializations
+    memset(&scrcpy, 42, sizeof(scrcpy));
+#endif
     struct scrcpy *s = &scrcpy;
 
     // Minimal SDL initialization
