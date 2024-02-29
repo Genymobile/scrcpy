@@ -2611,6 +2611,23 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_SDK) {
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_TEXT) {
+            LOGE("--prefer-text is specific to --keyboard=sdk");
+            return false;
+        }
+
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+            LOGE("--raw-key-events is specific to --keyboard=sdk");
+            return false;
+        }
+
+        if (!opts->forward_key_repeat) {
+            LOGE("--no-key-repeat is specific to --keyboard=sdk");
+            return false;
+        }
+    }
+
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
         LOGI("Tunnel host/port is set, "
              "--force-adb-forward automatically enabled.");
