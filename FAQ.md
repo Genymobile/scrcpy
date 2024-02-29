@@ -222,7 +222,7 @@ java.lang.IllegalStateException
         at android.media.MediaCodec.native_dequeueOutputBuffer(Native Method)
 ```
 
-then try with another [encoder](doc/video.md#codec).
+then try with another [encoder](doc/video.md#encoder).
 
 
 ## Translations
