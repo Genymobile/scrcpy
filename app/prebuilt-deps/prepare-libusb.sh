@@ -26,8 +26,6 @@ cd "$DEP_DIR"
 
 7z x "../$FILENAME" \
     "libusb-$VERSION-binaries/libusb-MinGW-Win32/" \
-    "libusb-$VERSION-binaries/libusb-MinGW-Win32/" \
-    "libusb-$VERSION-binaries/libusb-MinGW-x64/" \
     "libusb-$VERSION-binaries/libusb-MinGW-x64/"
 
 mv "libusb-$VERSION-binaries/libusb-MinGW-Win32" .
