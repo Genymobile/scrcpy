@@ -66,6 +66,41 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [macOS](doc/macos.md)
 
 
+## Usage examples
+
+There are a lot of options, [documented](#user-documentation) in separate pages.
+Here are just some common examples.
+
+ - Capture the screen in H.265 (better quality), limit the size to 1920, limit
+   the frame rate to 60fps, disable audio, and control the device by simulating
+   a physical keyboard:
+
+    ```bash
+    scrcpy --video-codec=h265 --max-size=1920 --max-fps=60 --no-audio --keyboard=uhid
+    scrcpy --video-codec=h265 -m1920 --max-fps=60 --no-audio -K  # short version
+    ```
+
+ - Record the device camera in H.265 at 1920x1080 (and microphone) to an MP4
+   file:
+
+    ```bash
+    scrcpy --video-source=camera --video-codec=h265 --camera-size=1920x1080 --record=file.mp4
+    ```
+
+ - Capture the device front camera and expose it as a webcam on the computer (on
+   Linux):
+
+    ```bash
+    scrcpy --video-source=camera --camera-size=1920x1080 --camera-facing=front --v4l2-sink=/dev/video2 --no-playback
+    ```
+
+ - Control the device without mirroring by simulating a physical keyboard and
+   mouse (USB debugging not required):
+
+    ```bash
+    scrcpy --otg
+    ```
+
 ## User documentation
 
 The application provides a lot of features and configuration options. They are
