@@ -234,7 +234,7 @@ The video and audio streams are decoded by [FFmpeg].
 The client parses the command line arguments, then [runs one of two code
 paths][run]:
  - scrcpy in "normal" mode ([`scrcpy.c`])
- - scrcpy in [OTG mode](hid-otg.md) ([`scrcpy_otg.c`])
+ - scrcpy in [OTG mode](otg.md) ([`scrcpy_otg.c`])
 
 [run]: https://github.com/Genymobile/scrcpy/blob/a3cdf1a6b86ea22786e1f7d09b9c202feabc6949/app/src/main.c#L81-L82
 [`scrcpy.c`]: https://github.com/Genymobile/scrcpy/blob/a3cdf1a6b86ea22786e1f7d09b9c202feabc6949/app/src/scrcpy.c#L292-L293
