@@ -106,7 +106,6 @@ static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 
 static void
 sdl_set_hints(const char *render_driver) {
-
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
     }
