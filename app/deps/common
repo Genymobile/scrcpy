@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# This file is intended to be sourced by other scripts, not executed
+
+if [[ $# != 1 ]]
+then
+    # <host>: win32 or win64
+    echo "Syntax: $0 <host>" >&2
+    exit 1
+fi
+
+HOST="$1"
+
+if [[ "$HOST" = win32 ]]
+then
+    HOST_TRIPLET=i686-w64-mingw32
+elif [[ "$HOST" = win64 ]]
+then
+    HOST_TRIPLET=x86_64-w64-mingw32
+else
+    echo "Unsupported host: $HOST" >&2
+    exit 1
+fi
+
+DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
+cd "$DEPS_DIR"
+
+PATCHES_DIR="$PWD/patches"
+
+WORK_DIR="$PWD/work"
+SOURCES_DIR="$WORK_DIR/sources"
+BUILD_DIR="$WORK_DIR/build"
+INSTALL_DIR="$WORK_DIR/install"
+
+mkdir -p "$INSTALL_DIR" "$SOURCES_DIR" "$WORK_DIR"
+
+checksum() {
+    local file="$1"
+    local sum="$2"
+    echo "$file: verifying checksum..."
+    echo "$sum  $file" | sha256sum -c
+}
+
+get_file() {
+    local url="$1"
+    local file="$2"
+    local sum="$3"
+    if [[ -f "$file" ]]
+    then
+        echo "$file: found"
+    else
+        echo "$file: not found, downloading..."
+        wget "$url" -O "$file"
+    fi
+    checksum "$file" "$sum"
+}

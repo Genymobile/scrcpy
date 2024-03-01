@@ -1,0 +1,27 @@
+This directory (app/deps/) contains:
+
+*.sh          : shell scripts to download and build dependencies
+
+patches/      : patches to fix dependencies (used by scripts)
+
+work/sources/ : downloaded tarballs and extracted folders
+                    ffmpeg-6.1.1.tar.xz
+                    ffmpeg-6.1.1/
+                    libusb-1.0.27.tar.gz
+                    libusb-1.0.27/
+                    ...
+work/build/   : build dirs for each dependency/version/architecture
+                    ffmpeg-6.1.1/win32/
+                    ffmpeg-6.1.1/win64/
+                    libusb-1.0.27/win32/
+                    libusb-1.0.27/win64/
+                    ...
+work/install/ : install dirs for each architexture
+                    win32/bin/
+                    win32/include/
+                    win32/lib/
+                    win32/share/
+                    win64/bin/
+                    win64/include/
+                    win64/lib/
+                    win64/share/
