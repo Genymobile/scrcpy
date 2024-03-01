@@ -409,6 +409,12 @@ scrcpy(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
+    if (options->video_playback) {
+        // Set hints before starting the server thread to avoid race conditions
+        // in SDL
+        sdl_set_hints(options->render_driver);
+    }
+
     if (!sc_server_start(&s->server)) {
         goto end;
     }
@@ -424,10 +430,6 @@ scrcpy(struct scrcpy_options *options) {
     // playback implies capture
     assert(!options->video_playback || options->video);
     assert(!options->audio_playback || options->audio);
-
-    if (options->video_playback) {
-        sdl_set_hints(options->render_driver);
-    }
 
     if (options->video_playback ||
             (options->control && options->clipboard_autosync)) {
