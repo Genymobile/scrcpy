@@ -191,6 +191,8 @@ event_loop(struct scrcpy *s) {
                 break;
         }
     }
+
+    LOGE("SDL_WaitEvent() failed: %s", SDL_GetError());
     return SCRCPY_EXIT_FAILURE;
 }
 
