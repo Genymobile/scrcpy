@@ -73,7 +73,7 @@ build-win32: prepare-deps
 	mkdir -p "$(WIN32_BUILD_DIR)/local"
 	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win32/. "$(WIN32_BUILD_DIR)/local/"
 	cp -r app/prebuilt-deps/data/SDL2-2.28.5/i686-w64-mingw32/. "$(WIN32_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-Win32/. "$(WIN32_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/libusb-1.0.27/MinGW32/. "$(WIN32_BUILD_DIR)/local/"
 	meson setup "$(WIN32_BUILD_DIR)" \
 		--pkg-config-path="$(WIN32_BUILD_DIR)/local/lib/pkgconfig" \
 		-Dc_args="-I$(PWD)/$(WIN32_BUILD_DIR)/local/include" \
@@ -89,7 +89,7 @@ build-win64: prepare-deps
 	mkdir -p "$(WIN64_BUILD_DIR)/local"
 	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win64/. "$(WIN64_BUILD_DIR)/local/"
 	cp -r app/prebuilt-deps/data/SDL2-2.28.5/x86_64-w64-mingw32/. "$(WIN64_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-x64/. "$(WIN64_BUILD_DIR)/local/"
+	cp -r app/prebuilt-deps/data/libusb-1.0.27/MinGW64/. "$(WIN64_BUILD_DIR)/local/"
 	meson setup "$(WIN64_BUILD_DIR)" \
 		--pkg-config-path="$(WIN64_BUILD_DIR)/local/lib/pkgconfig" \
 		-Dc_args="-I$(PWD)/$(WIN64_BUILD_DIR)/local/include" \
