@@ -2,6 +2,8 @@
 
 ## Install
 
+### Stable Release
+
 <a href="https://repology.org/project/scrcpy/versions"><img src="https://repology.org/badge/vertical-allrepos/scrcpy.svg" alt="Packaging status" align="right"></a>
 
 Scrcpy is packaged in several distributions and package managers:
@@ -17,6 +19,26 @@ Scrcpy is packaged in several distributions and package managers:
 
 However, the packaged version is not always the latest release. To install the
 latest release from `master`, follow this simplified process.
+
+#### Docker based
+
+Using docker allows you to build the latest state without cluttering you system with any developer packages.
+
+In an empty folder:
+
+```sh
+curl -sL "https://api.github.com/repos/Genymobile/scrcpy/tarball/master" | tar -xz --strip-components 1
+docker build -f "Dockerfile-ubuntu-22.04" -t "scrcpy/scrcpy-build-env" .
+docker run -u $UID:$(id -g ${USER}) --rm -v "$PWD:/src" "scrcpy/scrcpy-build-env"
+```
+
+Output: `./build-auto/app/scrcpy`
+
+Optional install instructions:
+
+    sudo cp build-auto/app/scrcpy /usr/local/bin/
+
+#### Native
 
 First, you need to install the required packages:
 
