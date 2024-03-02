@@ -1,3 +1,7 @@
+**This GitHub repo (<https://github.com/Genymobile/scrcpy>) is the only official
+source for the project. Do not download releases from random websites, even if
+their name contains `scrcpy`.**
+
 # scrcpy (v2.3.1)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
@@ -169,7 +173,7 @@ work][donate]:
 ## Licence
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2023 Romain Vimont
+    Copyright (C) 2018-2024 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
