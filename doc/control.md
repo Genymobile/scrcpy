@@ -71,8 +71,8 @@ To simulate a tilt gesture: <kbd>Shift</kbd>+_click-and-move-up-or-down_.
 
 Technically, _scrcpy_ generates additional touch events from a "virtual finger"
 at a location inverted through the center of the screen. When pressing
-<kbd>Ctrl</kbd> the x and y coordinates are inverted. Using <kbd>Shift</kbd>
-only inverts x.
+<kbd>Ctrl</kbd> the _x_ and _y_ coordinates are inverted. Using <kbd>Shift</kbd>
+only inverts _x_.
 
 This only works for the default mouse mode (`--mouse=sdk`).
 
