@@ -52,10 +52,17 @@ public final class WindowManager {
                 freezeDisplayRotationMethod = manager.getClass().getMethod("freezeRotation", int.class);
                 freezeDisplayRotationMethodVersion = 0;
             } catch (NoSuchMethodException e) {
-                // New method added by this commit:
-                // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
-                freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class);
-                freezeDisplayRotationMethodVersion = 1;
+                try {
+                    // New method added by this commit:
+                    // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
+                    freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class);
+                    freezeDisplayRotationMethodVersion = 1;
+                } catch (NoSuchMethodException e1) {
+                    // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
+                    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
+                    freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class, String.class);
+                    freezeDisplayRotationMethodVersion = 2;
+                }
             }
         }
         return freezeDisplayRotationMethod;
@@ -82,10 +89,17 @@ public final class WindowManager {
                 thawDisplayRotationMethod = manager.getClass().getMethod("thawRotation");
                 thawDisplayRotationMethodVersion = 0;
             } catch (NoSuchMethodException e) {
-                // New method added by this commit:
-                // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
-                thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class);
-                thawDisplayRotationMethodVersion = 1;
+                try {
+                    // New method added by this commit:
+                    // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
+                    thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class);
+                    thawDisplayRotationMethodVersion = 1;
+                } catch (NoSuchMethodException e1) {
+                    // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
+                    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
+                    thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class, String.class);
+                    thawDisplayRotationMethodVersion = 2;
+                }
             }
         }
         return thawDisplayRotationMethod;
@@ -112,8 +126,11 @@ public final class WindowManager {
                     }
                     method.invoke(manager, rotation);
                     break;
-                default:
+                case 1:
                     method.invoke(manager, displayId, rotation);
+                    break;
+                default:
+                    method.invoke(manager, displayId, rotation, "scrcpy#freezeRotation");
                     break;
             }
         } catch (ReflectiveOperationException e) {
@@ -151,8 +168,11 @@ public final class WindowManager {
                     }
                     method.invoke(manager);
                     break;
-                default:
+                case 1:
                     method.invoke(manager, displayId);
+                    break;
+                default:
+                    method.invoke(manager, displayId, "scrcpy#thawRotation");
                     break;
             }
         } catch (ReflectiveOperationException e) {
