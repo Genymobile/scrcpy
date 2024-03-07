@@ -42,6 +42,16 @@ is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
     return sdl_mod & im->sdl_shortcut_mods;
 }
 
+static bool
+is_shortcut_key(struct sc_input_manager *im, SDL_Keycode keycode) {
+    return (im->sdl_shortcut_mods & KMOD_LCTRL && keycode == SDLK_LCTRL)
+        || (im->sdl_shortcut_mods & KMOD_RCTRL && keycode == SDLK_RCTRL)
+        || (im->sdl_shortcut_mods & KMOD_LALT  && keycode == SDLK_LALT)
+        || (im->sdl_shortcut_mods & KMOD_RALT  && keycode == SDLK_RALT)
+        || (im->sdl_shortcut_mods & KMOD_LGUI  && keycode == SDLK_LGUI)
+        || (im->sdl_shortcut_mods & KMOD_RGUI  && keycode == SDLK_RGUI);
+}
+
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
@@ -397,7 +407,12 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool shift = event->keysym.mod & KMOD_SHIFT;
     bool repeat = event->repeat;
 
-    bool smod = is_shortcut_mod(im, mod);
+    // Either the modifier includes a shortcut modifier, or the key
+    // press/release is a modifier key.
+    // The second condition is necessary to ignore the release of the modifier
+    // key (because in this case mod is 0).
+    bool is_shortcut = is_shortcut_mod(im, mod)
+                    || is_shortcut_key(im, keycode);
 
     if (down && !repeat) {
         if (keycode == im->last_keycode && mod == im->last_mod) {
@@ -409,8 +424,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
-    // The shortcut modifier is pressed
-    if (smod) {
+    if (is_shortcut) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
