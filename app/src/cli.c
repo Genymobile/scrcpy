@@ -716,10 +716,10 @@ static const struct sc_option options[] = {
         .text = "Specify the modifiers to use for scrcpy shortcuts.\n"
                 "Possible keys are \"lctrl\", \"rctrl\", \"lalt\", \"ralt\", "
                 "\"lsuper\" and \"rsuper\".\n"
-                "A shortcut can consist in several keys, separated by '+'. "
-                "Several shortcuts can be specified, separated by ','.\n"
-                "For example, to use either LCtrl+LAlt or LSuper for scrcpy "
-                "shortcuts, pass \"lctrl+lalt,lsuper\".\n"
+                "Several shortcut modifiers can be specified, separated by "
+                "','.\n"
+                "For example, to use either LCtrl or LSuper for scrcpy "
+                "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
     },
     {
@@ -1687,82 +1687,62 @@ parse_log_level(const char *s, enum sc_log_level *log_level) {
     return false;
 }
 
-// item is a list of mod keys separated by '+' (e.g. "lctrl+lalt")
-// returns a bitwise-or of SC_SHORTCUT_MOD_* constants (or 0 on error)
-static unsigned
+static enum sc_shortcut_mod
 parse_shortcut_mods_item(const char *item, size_t len) {
-    unsigned mod = 0;
-
-    for (;;) {
-        char *plus = strchr(item, '+');
-        // strchr() does not consider the "len" parameter, to it could find an
-        // occurrence too far in the string (there is no strnchr())
-        bool has_plus = plus && plus < item + len;
-
-        assert(!has_plus || plus > item);
-        size_t key_len = has_plus ? (size_t) (plus - item) : len;
-
 #define STREQ(literal, s, len) \
     ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
 
-        if (STREQ("lctrl", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LCTRL;
-        } else if (STREQ("rctrl", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RCTRL;
-        } else if (STREQ("lalt", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LALT;
-        } else if (STREQ("ralt", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RALT;
-        } else if (STREQ("lsuper", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LSUPER;
-        } else if (STREQ("rsuper", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RSUPER;
-        } else {
-            LOGE("Unknown modifier key: %.*s "
-                 "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
-                 (int) key_len, item);
-            return 0;
-        }
+    if (STREQ("lctrl", item, len)) {
+        return SC_SHORTCUT_MOD_LCTRL;
+    }
+    if (STREQ("rctrl", item, len)) {
+        return SC_SHORTCUT_MOD_RCTRL;
+    }
+    if (STREQ("lalt", item, len)) {
+        return SC_SHORTCUT_MOD_LALT;
+    }
+    if (STREQ("ralt", item, len)) {
+        return SC_SHORTCUT_MOD_RALT;
+    }
+    if (STREQ("lsuper", item, len)) {
+        return SC_SHORTCUT_MOD_LSUPER;
+    }
+    if (STREQ("rsuper", item, len)) {
+        return SC_SHORTCUT_MOD_RSUPER;
+    }
 #undef STREQ
 
-        if (!has_plus) {
-            break;
-        }
-
-        item = plus + 1;
-        assert(len >= key_len + 1);
-        len -= key_len + 1;
+    bool has_plus = strchr(item, '+');
+    if (has_plus) {
+        LOGE("Shortcut mod combination with '+' is not supported anymore: "
+             "'%.*s' (see #4741)", (int) len, item);
+        return 0;
     }
 
-    return mod;
+    LOGE("Unknown modifier key: %.*s "
+         "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
+         (int) len, item);
+
+    return 0;
 }
 
 static bool
-parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
-    unsigned count = 0;
-    unsigned current = 0;
+parse_shortcut_mods(const char *s, uint8_t *shortcut_mods) {
+    uint8_t mods = 0;
 
-    // LCtrl+LAlt or RCtrl or LCtrl+RSuper: "lctrl+lalt,rctrl,lctrl+rsuper"
+    // A list of shortcut modifiers, for example "lctrl,rctrl,rsuper"
 
     for (;;) {
         char *comma = strchr(s, ',');
-        if (comma && count == SC_MAX_SHORTCUT_MODS - 1) {
-            assert(count < SC_MAX_SHORTCUT_MODS);
-            LOGW("Too many shortcut modifiers alternatives");
-            return false;
-        }
-
         assert(!comma || comma > s);
         size_t limit = comma ? (size_t) (comma - s) : strlen(s);
 
-        unsigned mod = parse_shortcut_mods_item(s, limit);
+        enum sc_shortcut_mod mod = parse_shortcut_mods_item(s, limit);
         if (!mod) {
-            LOGE("Invalid modifier keys: %.*s", (int) limit, s);
             return false;
         }
 
-        mods->data[current++] = mod;
-        ++count;
+        mods |= mod;
 
         if (!comma) {
             break;
@@ -1771,7 +1751,7 @@ parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
         s = comma + 1;
     }
 
-    mods->count = count;
+    *shortcut_mods = mods;
 
     return true;
 }
@@ -1779,7 +1759,7 @@ parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
 #ifdef SC_TEST
 // expose the function to unit-tests
 bool
-sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
+sc_parse_shortcut_mods(const char *s, uint8_t *mods) {
     return parse_shortcut_mods(s, mods);
 }
 #endif

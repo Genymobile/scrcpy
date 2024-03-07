@@ -169,8 +169,6 @@ enum sc_key_inject_mode {
     SC_KEY_INJECT_MODE_RAW,
 };
 
-#define SC_MAX_SHORTCUT_MODS 8
-
 enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_LCTRL = 1 << 0,
     SC_SHORTCUT_MOD_RCTRL = 1 << 1,
@@ -178,11 +176,6 @@ enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_RALT = 1 << 3,
     SC_SHORTCUT_MOD_LSUPER = 1 << 4,
     SC_SHORTCUT_MOD_RSUPER = 1 << 5,
-};
-
-struct sc_shortcut_mods {
-    unsigned data[SC_MAX_SHORTCUT_MODS];
-    unsigned count;
 };
 
 struct sc_port_range {
@@ -219,7 +212,7 @@ struct scrcpy_options {
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
-    struct sc_shortcut_mods shortcut_mods;
+    uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
     uint16_t max_size;
     uint32_t video_bit_rate;
     uint32_t audio_bit_rate;

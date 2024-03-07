@@ -715,7 +715,7 @@ scrcpy(struct scrcpy_options *options) {
             .forward_all_clicks = options->forward_all_clicks,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
-            .shortcut_mods = &options->shortcut_mods,
+            .shortcut_mods = options->shortcut_mods,
             .window_title = window_title,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,

@@ -10,7 +10,7 @@
 #define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
 
 static inline uint16_t
-to_sdl_mod(unsigned shortcut_mod) {
+to_sdl_mod(uint8_t shortcut_mod) {
     uint16_t sdl_mod = 0;
     if (shortcut_mod & SC_SHORTCUT_MOD_LCTRL) {
         sdl_mod |= KMOD_LCTRL;
@@ -38,15 +38,8 @@ is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
     // keep only the relevant modifier keys
     sdl_mod &= SC_SDL_SHORTCUT_MODS_MASK;
 
-    assert(im->sdl_shortcut_mods.count);
-    assert(im->sdl_shortcut_mods.count < SC_MAX_SHORTCUT_MODS);
-    for (unsigned i = 0; i < im->sdl_shortcut_mods.count; ++i) {
-        if (im->sdl_shortcut_mods.data[i] == sdl_mod) {
-            return true;
-        }
-    }
-
-    return false;
+    // at least one shortcut mod pressed?
+    return sdl_mod & im->sdl_shortcut_mods;
 }
 
 void
@@ -68,15 +61,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
 
-    const struct sc_shortcut_mods *shortcut_mods = params->shortcut_mods;
-    assert(shortcut_mods->count);
-    assert(shortcut_mods->count < SC_MAX_SHORTCUT_MODS);
-    for (unsigned i = 0; i < shortcut_mods->count; ++i) {
-        uint16_t sdl_mod = to_sdl_mod(shortcut_mods->data[i]);
-        assert(sdl_mod);
-        im->sdl_shortcut_mods.data[i] = sdl_mod;
-    }
-    im->sdl_shortcut_mods.count = shortcut_mods->count;
+    im->sdl_shortcut_mods = to_sdl_mod(params->shortcut_mods);
 
     im->vfinger_down = false;
     im->vfinger_invert_x = false;

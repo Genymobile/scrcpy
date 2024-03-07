@@ -30,10 +30,7 @@ const struct scrcpy_options scrcpy_options_default = {
     },
     .tunnel_host = 0,
     .tunnel_port = 0,
-    .shortcut_mods = {
-        .data = {SC_SHORTCUT_MOD_LALT, SC_SHORTCUT_MOD_LSUPER},
-        .count = 2,
-    },
+    .shortcut_mods = SC_SHORTCUT_MOD_LALT | SC_SHORTCUT_MOD_LSUPER,
     .max_size = 0,
     .video_bit_rate = 0,
     .audio_bit_rate = 0,
