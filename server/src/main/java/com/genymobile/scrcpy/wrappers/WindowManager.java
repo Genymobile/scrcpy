@@ -60,8 +60,8 @@ public final class WindowManager {
     }
 
     // Android 15 preview and 14 QPR3 Beta introduces a new signature for freeze and thaw rotation
-    // methods which includes a String parameters:
-    // public void android.view.IWindowManager$Stub$Proxy.freezeDisplayRotation(int,int,java.lang.String) throws android.os.RemoteException
+    // methods which includes a String caller parameter for debugging:
+    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
     private Method getFreezeDisplayRotationStringMethod() throws NoSuchMethodException {
         if (freezeDisplayRotationMethod == null) {
             freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class, String.class);
@@ -102,8 +102,8 @@ public final class WindowManager {
     }
 
     // Android 15 preview and 14 QPR3 Beta introduces a new signature for freeze and thaw rotation
-    // methods which includes a String parameters:
-    // public void android.view.IWindowManager$Stub$Proxy.thawDisplayRotation(int,java.lang.String) throws android.os.RemoteException
+    // methods which includes a String caller parameter for debugging:
+    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
     private Method getThawDisplayRotationStringMethod() throws NoSuchMethodException {
         if (thawDisplayRotationMethod == null) {
             thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class, String.class);
@@ -126,8 +126,7 @@ public final class WindowManager {
             try {
                 try {
                     Method method = getFreezeDisplayRotationStringMethod();
-                    // TODO: specify the String param once we know what it is for
-                    method.invoke(manager, displayId, rotation, "");
+                    method.invoke(manager, displayId, rotation, "scrcpy#freezeRotation");
                 } catch (ReflectiveOperationException e) {
                     Method method = getFreezeDisplayRotationMethod();
                     method.invoke(manager, displayId, rotation);
@@ -170,8 +169,7 @@ public final class WindowManager {
             try {
                 try {
                     Method method = getThawDisplayRotationStringMethod();
-                    // TODO: specify the String param once we know what it is for
-                    method.invoke(manager, displayId, "");
+                    method.invoke(manager, displayId, "scrcpy#thawRotation");
                 } catch (ReflectiveOperationException e) {
                     Method method = getThawDisplayRotationMethod();
                     method.invoke(manager, displayId);
