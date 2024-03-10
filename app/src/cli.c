@@ -901,6 +901,14 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Flip display vertically",
     },
     {
+        .shortcuts = { "MOD+z" },
+        .text = "Pause or re-pause display",
+    },
+    {
+        .shortcuts = { "MOD+Shift+z" },
+        .text = "Unpause display",
+    },
+    {
         .shortcuts = { "MOD+g" },
         .text = "Resize window to 1:1 (pixel-perfect)",
     },
