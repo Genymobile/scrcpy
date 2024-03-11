@@ -28,7 +28,7 @@ scrcpy_parse_args(struct scrcpy_cli_args *args, int argc, char *argv[]);
 
 #ifdef SC_TEST
 bool
-sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods);
+sc_parse_shortcut_mods(const char *s, uint8_t *shortcut_mods);
 #endif
 
 #endif

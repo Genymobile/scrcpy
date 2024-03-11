@@ -13,8 +13,8 @@ It can be changed using `--shortcut-mod`. Possible keys are `lctrl`, `rctrl`,
 # use RCtrl for shortcuts
 scrcpy --shortcut-mod=rctrl
 
-# use either LCtrl+LAlt or LSuper for shortcuts
-scrcpy --shortcut-mod=lctrl+lalt,lsuper
+# use either LCtrl or LSuper for shortcuts
+scrcpy --shortcut-mod=lctrl,lsuper
 ```
 
 _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
