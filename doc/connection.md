@@ -67,14 +67,6 @@ computer.
 An option `--tcpip` allows to configure the connection automatically. There are
 two variants.
 
-If the device (accessible at 192.168.1.1 in this example) already listens on a
-port (typically 5555) for incoming _adb_ connections, then run:
-
-```bash
-scrcpy --tcpip=192.168.1.1       # default port is 5555
-scrcpy --tcpip=192.168.1.1:5555
-```
-
 If _adb_ TCP/IP mode is disabled on the device (or if you don't know the IP
 address), connect the device over USB, then run:
 
@@ -84,6 +76,14 @@ scrcpy --tcpip   # without arguments
 
 It will automatically find the device IP address and adb port, enable TCP/IP
 mode if necessary, then connect to the device before starting.
+
+If the device (accessible at 192.168.1.1 in this example) already listens on a
+port (typically 5555) for incoming _adb_ connections, then run:
+
+```bash
+scrcpy --tcpip=192.168.1.1       # default port is 5555
+scrcpy --tcpip=192.168.1.1:5555
+```
 
 
 ### Manual
