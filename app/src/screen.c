@@ -362,6 +362,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->maximized = false;
     screen->minimized = false;
     screen->mouse_capture_key_pressed = 0;
+    screen->paused = false;
+    screen->resume_frame = NULL;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
@@ -614,13 +616,10 @@ prepare_for_frame(struct sc_screen *screen, struct sc_size new_frame_size) {
 }
 
 static bool
-sc_screen_update_frame(struct sc_screen *screen) {
-    av_frame_unref(screen->frame);
-    sc_frame_buffer_consume(&screen->fb, screen->frame);
-    AVFrame *frame = screen->frame;
-
+sc_screen_apply_frame(struct sc_screen *screen) {
     sc_fps_counter_add_rendered_frame(&screen->fps_counter);
 
+    AVFrame *frame = screen->frame;
     struct sc_size new_frame_size = {frame->width, frame->height};
     enum sc_display_result res = prepare_for_frame(screen, new_frame_size);
     if (res == SC_DISPLAY_RESULT_ERROR) {
@@ -653,6 +652,54 @@ sc_screen_update_frame(struct sc_screen *screen) {
 
     sc_screen_render(screen, false);
     return true;
+}
+
+static bool
+sc_screen_update_frame(struct sc_screen *screen) {
+    if (screen->paused) {
+        if (!screen->resume_frame) {
+            screen->resume_frame = av_frame_alloc();
+            if (!screen->resume_frame) {
+                LOG_OOM();
+                return false;
+            }
+        } else {
+            av_frame_unref(screen->resume_frame);
+        }
+        sc_frame_buffer_consume(&screen->fb, screen->resume_frame);
+        return true;
+    }
+
+    av_frame_unref(screen->frame);
+    sc_frame_buffer_consume(&screen->fb, screen->frame);
+    return sc_screen_apply_frame(screen);
+}
+
+void
+sc_screen_set_paused(struct sc_screen *screen, bool paused) {
+    if (!paused && !screen->paused) {
+        // nothing to do
+        return;
+    }
+
+    if (screen->paused && screen->resume_frame) {
+        // If display screen was paused, refresh the frame immediately, even if
+        // the new state is also paused.
+        av_frame_free(&screen->frame);
+        screen->frame = screen->resume_frame;
+        screen->resume_frame = NULL;
+        sc_screen_apply_frame(screen);
+    }
+
+    if (!paused) {
+        LOGI("Display screen unpaused");
+    } else if (!screen->paused) {
+        LOGI("Display screen paused");
+    } else {
+        LOGI("Display screen re-paused");
+    }
+
+    screen->paused = paused;
 }
 
 void
