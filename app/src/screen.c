@@ -362,12 +362,14 @@ sc_screen_init(struct sc_screen *screen,
     screen->maximized = false;
     screen->minimized = false;
     screen->mouse_capture_key_pressed = 0;
+    screen->is_kmsdrm = strcmp(SDL_GetCurrentVideoDriver(), "KMSDRM") == 0;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
     screen->req.width = params->window_width;
     screen->req.height = params->window_height;
-    screen->req.fullscreen = params->fullscreen;
+    // The kmsdrm video driver switches to a low resolution on "windowed" mode
+    screen->req.fullscreen = screen->is_kmsdrm ? true : params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
     bool ok = sc_frame_buffer_init(&screen->fb);
@@ -657,6 +659,11 @@ sc_screen_update_frame(struct sc_screen *screen) {
 
 void
 sc_screen_switch_fullscreen(struct sc_screen *screen) {
+    if (screen->is_kmsdrm && screen->fullscreen) {
+        LOGD("Ignored mode switch");
+        return;
+    }
+
     uint32_t new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
     if (SDL_SetWindowFullscreen(screen->window, new_mode)) {
         LOGW("Could not switch fullscreen mode: %s", SDL_GetError());
