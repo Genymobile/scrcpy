@@ -15,6 +15,8 @@ public class ControlMessageReader {
     static final int SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH = 1;
     static final int GET_CLIPBOARD_LENGTH = 1;
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 9;
+    static final int UHID_CREATE_FIXED_PAYLOAD_LENGTH = 4;
+    static final int UHID_INPUT_FIXED_PAYLOAD_LENGTH = 4;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
@@ -84,7 +86,14 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_EXPAND_SETTINGS_PANEL:
             case ControlMessage.TYPE_COLLAPSE_PANELS:
             case ControlMessage.TYPE_ROTATE_DEVICE:
+            case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 msg = ControlMessage.createEmpty(type);
+                break;
+            case ControlMessage.TYPE_UHID_CREATE:
+                msg = parseUhidCreate();
+                break;
+            case ControlMessage.TYPE_UHID_INPUT:
+                msg = parseUhidInput();
                 break;
             default:
                 Ln.w("Unknown event type: " + type);
@@ -110,18 +119,37 @@ public class ControlMessageReader {
         return ControlMessage.createInjectKeycode(action, keycode, repeat, metaState);
     }
 
-    private String parseString() {
-        if (buffer.remaining() < 4) {
-            return null;
+    private int parseBufferLength(int sizeBytes) {
+        assert sizeBytes > 0 && sizeBytes <= 4;
+        if (buffer.remaining() < sizeBytes) {
+            return -1;
         }
-        int len = buffer.getInt();
-        if (buffer.remaining() < len) {
+        int value = 0;
+        for (int i = 0; i < sizeBytes; ++i) {
+            value = (value << 8) | (buffer.get() & 0xFF);
+        }
+        return value;
+    }
+
+    private String parseString() {
+        int len = parseBufferLength(4);
+        if (len == -1 || buffer.remaining() < len) {
             return null;
         }
         int position = buffer.position();
         // Move the buffer position to consume the text
         buffer.position(position + len);
         return new String(rawBuffer, position, len, StandardCharsets.UTF_8);
+    }
+
+    private byte[] parseByteArray(int sizeBytes) {
+        int len = parseBufferLength(sizeBytes);
+        if (len == -1 || buffer.remaining() < len) {
+            return null;
+        }
+        byte[] data = new byte[len];
+        buffer.get(data);
+        return data;
     }
 
     private ControlMessage parseInjectText() {
@@ -191,6 +219,30 @@ public class ControlMessageReader {
         }
         int mode = buffer.get();
         return ControlMessage.createSetScreenPowerMode(mode);
+    }
+
+    private ControlMessage parseUhidCreate() {
+        if (buffer.remaining() < UHID_CREATE_FIXED_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        byte[] data = parseByteArray(2);
+        if (data == null) {
+            return null;
+        }
+        return ControlMessage.createUhidCreate(id, data);
+    }
+
+    private ControlMessage parseUhidInput() {
+        if (buffer.remaining() < UHID_INPUT_FIXED_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        byte[] data = parseByteArray(2);
+        if (data == null) {
+            return null;
+        }
+        return ControlMessage.createUhidInput(id, data);
     }
 
     private static Position readPosition(ByteBuffer buffer) {

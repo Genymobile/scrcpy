@@ -7,17 +7,24 @@ import android.os.IInterface;
 import android.view.IDisplayFoldListener;
 import android.view.IRotationWatcher;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class WindowManager {
     private final IInterface manager;
     private Method getRotationMethod;
     private Method freezeRotationMethod;
+    private Method freezeDisplayRotationMethod;
     private Method isRotationFrozenMethod;
+    private Method isDisplayRotationFrozenMethod;
     private Method thawRotationMethod;
+    private Method thawDisplayRotationMethod;
 
-    public WindowManager(IInterface manager) {
+    static WindowManager create() {
+        IInterface manager = ServiceManager.getService("window", "android.view.IWindowManager");
+        return new WindowManager(manager);
+    }
+
+    private WindowManager(IInterface manager) {
         this.manager = manager;
     }
 
@@ -43,11 +50,29 @@ public final class WindowManager {
         return freezeRotationMethod;
     }
 
+    // New method added by this commit:
+    // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
+    private Method getFreezeDisplayRotationMethod() throws NoSuchMethodException {
+        if (freezeDisplayRotationMethod == null) {
+            freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class);
+        }
+        return freezeDisplayRotationMethod;
+    }
+
     private Method getIsRotationFrozenMethod() throws NoSuchMethodException {
         if (isRotationFrozenMethod == null) {
             isRotationFrozenMethod = manager.getClass().getMethod("isRotationFrozen");
         }
         return isRotationFrozenMethod;
+    }
+
+    // New method added by this commit:
+    // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
+    private Method getIsDisplayRotationFrozenMethod() throws NoSuchMethodException {
+        if (isDisplayRotationFrozenMethod == null) {
+            isDisplayRotationFrozenMethod = manager.getClass().getMethod("isDisplayRotationFrozen", int.class);
+        }
+        return isDisplayRotationFrozenMethod;
     }
 
     private Method getThawRotationMethod() throws NoSuchMethodException {
@@ -57,40 +82,77 @@ public final class WindowManager {
         return thawRotationMethod;
     }
 
+    // New method added by this commit:
+    // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
+    private Method getThawDisplayRotationMethod() throws NoSuchMethodException {
+        if (thawDisplayRotationMethod == null) {
+            thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class);
+        }
+        return thawDisplayRotationMethod;
+    }
+
     public int getRotation() {
         try {
             Method method = getGetRotationMethod();
             return (int) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return 0;
         }
     }
 
-    public void freezeRotation(int rotation) {
+    public void freezeRotation(int displayId, int rotation) {
         try {
-            Method method = getFreezeRotationMethod();
-            method.invoke(manager, rotation);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            try {
+                Method method = getFreezeDisplayRotationMethod();
+                method.invoke(manager, displayId, rotation);
+            } catch (ReflectiveOperationException e) {
+                if (displayId == 0) {
+                    Method method = getFreezeRotationMethod();
+                    method.invoke(manager, rotation);
+                } else {
+                    Ln.e("Could not invoke method", e);
+                }
+            }
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }
 
-    public boolean isRotationFrozen() {
+    public boolean isRotationFrozen(int displayId) {
         try {
-            Method method = getIsRotationFrozenMethod();
-            return (boolean) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            try {
+                Method method = getIsDisplayRotationFrozenMethod();
+                return (boolean) method.invoke(manager, displayId);
+            } catch (ReflectiveOperationException e) {
+                if (displayId == 0) {
+                    Method method = getIsRotationFrozenMethod();
+                    return (boolean) method.invoke(manager);
+                } else {
+                    Ln.e("Could not invoke method", e);
+                    return false;
+                }
+            }
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }
     }
 
-    public void thawRotation() {
+    public void thawRotation(int displayId) {
         try {
-            Method method = getThawRotationMethod();
-            method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+            try {
+                Method method = getThawDisplayRotationMethod();
+                method.invoke(manager, displayId);
+            } catch (ReflectiveOperationException e) {
+                if (displayId == 0) {
+                    Method method = getThawRotationMethod();
+                    method.invoke(manager);
+                } else {
+                    Ln.e("Could not invoke method", e);
+                }
+            }
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
         }
     }

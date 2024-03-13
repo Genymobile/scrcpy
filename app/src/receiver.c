@@ -1,21 +1,24 @@
 #include "receiver.h"
 
 #include <assert.h>
+#include <inttypes.h>
+#include <stdint.h>
 #include <SDL2/SDL_clipboard.h>
 
 #include "device_msg.h"
 #include "util/log.h"
+#include "util/str.h"
 
 bool
-sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
-              struct sc_acksync *acksync) {
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;
     }
 
     receiver->control_socket = control_socket;
-    receiver->acksync = acksync;
+    receiver->acksync = NULL;
+    receiver->uhid_devices = NULL;
 
     return true;
 }
@@ -26,7 +29,7 @@ sc_receiver_destroy(struct sc_receiver *receiver) {
 }
 
 static void
-process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
+process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
             char *current = SDL_GetClipboardText();
@@ -42,20 +45,65 @@ process_msg(struct sc_receiver *receiver, struct device_msg *msg) {
             break;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD:
-            assert(receiver->acksync);
             LOGD("Ack device clipboard sequence=%" PRIu64_,
                  msg->ack_clipboard.sequence);
+
+            // This is a programming error to receive this message if there is
+            // no ACK synchronization mechanism
+            assert(receiver->acksync);
+
+            // Also check at runtime (do not trust the server)
+            if (!receiver->acksync) {
+                LOGE("Received unexpected ack");
+                return;
+            }
+
             sc_acksync_ack(receiver->acksync, msg->ack_clipboard.sequence);
+            break;
+        case DEVICE_MSG_TYPE_UHID_OUTPUT:
+            if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
+                char *hex = sc_str_to_hex_string(msg->uhid_output.data,
+                                                 msg->uhid_output.size);
+                if (hex) {
+                    LOGV("UHID output [%" PRIu16 "] %s",
+                         msg->uhid_output.id, hex);
+                    free(hex);
+                } else {
+                    LOGV("UHID output [%" PRIu16 "] size=%" PRIu16,
+                         msg->uhid_output.id, msg->uhid_output.size);
+                }
+            }
+
+            // This is a programming error to receive this message if there is
+            // no uhid_devices instance
+            assert(receiver->uhid_devices);
+
+            // Also check at runtime (do not trust the server)
+            if (!receiver->uhid_devices) {
+                LOGE("Received unexpected HID output message");
+                return;
+            }
+
+            struct sc_uhid_receiver *uhid_receiver =
+                sc_uhid_devices_get_receiver(receiver->uhid_devices,
+                                             msg->uhid_output.id);
+            if (uhid_receiver) {
+                uhid_receiver->ops->process_output(uhid_receiver,
+                                                   msg->uhid_output.data,
+                                                   msg->uhid_output.size);
+            } else {
+                LOGW("No UHID receiver for id %" PRIu16, msg->uhid_output.id);
+            }
             break;
     }
 }
 
 static ssize_t
-process_msgs(struct sc_receiver *receiver, const unsigned char *buf, size_t len) {
+process_msgs(struct sc_receiver *receiver, const uint8_t *buf, size_t len) {
     size_t head = 0;
     for (;;) {
-        struct device_msg msg;
-        ssize_t r = device_msg_deserialize(&buf[head], len - head, &msg);
+        struct sc_device_msg msg;
+        ssize_t r = sc_device_msg_deserialize(&buf[head], len - head, &msg);
         if (r == -1) {
             return -1;
         }
@@ -64,7 +112,7 @@ process_msgs(struct sc_receiver *receiver, const unsigned char *buf, size_t len)
         }
 
         process_msg(receiver, &msg);
-        device_msg_destroy(&msg);
+        sc_device_msg_destroy(&msg);
 
         head += r;
         assert(head <= len);
@@ -78,7 +126,7 @@ static int
 run_receiver(void *data) {
     struct sc_receiver *receiver = data;
 
-    static unsigned char buf[DEVICE_MSG_MAX_SIZE];
+    static uint8_t buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
     for (;;) {

@@ -10,36 +10,9 @@ scrcpy --no-control
 scrcpy -n   # short version
 ```
 
+## Keyboard and mouse
 
-## Text injection preference
-
-Two kinds of [events][textevents] are generated when typing text:
- - _key events_, signaling that a key is pressed or released;
- - _text events_, signaling that a text has been entered.
-
-By default, letters are injected using key events, so that the keyboard behaves
-as expected in games (typically for WASD keys).
-
-But this may [cause issues][prefertext]. If you encounter such a problem, you
-can avoid it by:
-
-```bash
-scrcpy --prefer-text
-```
-
-(but this will break keyboard behavior in games)
-
-On the contrary, you could force to always inject raw key events:
-
-```bash
-scrcpy --raw-key-events
-```
-
-These options have no effect on HID keyboard (all key events are sent as
-scancodes in this mode).
-
-[textevents]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-text-input
-[prefertext]: https://github.com/Genymobile/scrcpy/issues/650#issuecomment-512945343
+Read [keyboard](keyboard.md) and [mouse](mouse.md).
 
 
 ## Copy-paste
@@ -85,7 +58,8 @@ way as <kbd>MOD</kbd>+<kbd>Shift</kbd>+<kbd>v</kbd>).
 To disable automatic clipboard synchronization, use
 `--no-clipboard-autosync`.
 
-## Pinch-to-zoom
+
+## Pinch-to-zoom, rotate and tilt simulation
 
 To simulate "pinch-to-zoom": <kbd>Ctrl</kbd>+_click-and-move_.
 
@@ -93,23 +67,18 @@ More precisely, hold down <kbd>Ctrl</kbd> while pressing the left-click button.
 Until the left-click button is released, all mouse movements scale and rotate
 the content (if supported by the app) relative to the center of the screen.
 
+https://github.com/Genymobile/scrcpy/assets/543275/26c4a920-9805-43f1-8d4c-608752d04767
+
+To simulate a tilt gesture: <kbd>Shift</kbd>+_click-and-move-up-or-down_.
+
+https://github.com/Genymobile/scrcpy/assets/543275/1e252341-4a90-4b29-9d11-9153b324669f
+
 Technically, _scrcpy_ generates additional touch events from a "virtual finger"
-at a location inverted through the center of the screen.
+at a location inverted through the center of the screen. When pressing
+<kbd>Ctrl</kbd> the _x_ and _y_ coordinates are inverted. Using <kbd>Shift</kbd>
+only inverts _x_.
 
-
-## Key repeat
-
-By default, holding a key down generates repeated key events. This can cause
-performance problems in some games, where these events are useless anyway.
-
-To avoid forwarding repeated key events:
-
-```bash
-scrcpy --no-key-repeat
-```
-
-This option has no effect on HID keyboard (key repeat is handled by Android
-directly in this mode).
+This only works for the default mouse mode (`--mouse=sdk`).
 
 
 ## Right-click and middle-click
@@ -143,7 +112,3 @@ The target directory can be changed on start:
 ```bash
 scrcpy --push-target=/sdcard/Movies/
 ```
-
-## Physical keyboard and mouse simulation
-
-See the dedicated [HID/OTG](hid-otg.md) page.

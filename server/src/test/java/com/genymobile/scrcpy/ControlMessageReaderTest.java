@@ -323,6 +323,66 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseUhidCreate() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_UHID_CREATE);
+        dos.writeShort(42); // id
+        byte[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+        dos.writeShort(data.length); // size
+        dos.write(data);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_UHID_CREATE, event.getType());
+        Assert.assertEquals(42, event.getId());
+        Assert.assertArrayEquals(data, event.getData());
+    }
+
+    @Test
+    public void testParseUhidInput() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_UHID_INPUT);
+        dos.writeShort(42); // id
+        byte[] data = {1, 2, 3, 4, 5};
+        dos.writeShort(data.length); // size
+        dos.write(data);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_UHID_INPUT, event.getType());
+        Assert.assertEquals(42, event.getId());
+        Assert.assertArrayEquals(data, event.getData());
+    }
+
+    @Test
+    public void testParseOpenHardKeyboardSettings() throws IOException {
+        ControlMessageReader reader = new ControlMessageReader();
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS);
+
+        byte[] packet = bos.toByteArray();
+
+        reader.readFrom(new ByteArrayInputStream(packet));
+        ControlMessage event = reader.next();
+
+        Assert.assertEquals(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS, event.getType());
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ControlMessageReader reader = new ControlMessageReader();
 

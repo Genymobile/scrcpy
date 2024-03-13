@@ -9,7 +9,6 @@ import android.os.IBinder;
 import android.os.IInterface;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -38,7 +37,7 @@ public final class ServiceManager {
         /* not instantiable */
     }
 
-    private static IInterface getService(String service, String type) {
+    static IInterface getService(String service, String type) {
         try {
             IBinder binder = (IBinder) GET_SERVICE_METHOD.invoke(null, service);
             Method asInterfaceMethod = Class.forName(type + "$Stub").getMethod("asInterface", IBinder.class);
@@ -50,90 +49,51 @@ public final class ServiceManager {
 
     public static WindowManager getWindowManager() {
         if (windowManager == null) {
-            windowManager = new WindowManager(getService("window", "android.view.IWindowManager"));
+            windowManager = WindowManager.create();
         }
         return windowManager;
     }
 
     public static DisplayManager getDisplayManager() {
         if (displayManager == null) {
-            try {
-                Class<?> clazz = Class.forName("android.hardware.display.DisplayManagerGlobal");
-                Method getInstanceMethod = clazz.getDeclaredMethod("getInstance");
-                Object dmg = getInstanceMethod.invoke(null);
-                displayManager = new DisplayManager(dmg);
-            } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new AssertionError(e);
-            }
+            displayManager = DisplayManager.create();
         }
         return displayManager;
     }
 
-    public static Class<?> getInputManagerClass() {
-        try {
-            // Parts of the InputManager class have been moved to a new InputManagerGlobal class in Android 14 preview
-            return Class.forName("android.hardware.input.InputManagerGlobal");
-        } catch (ClassNotFoundException e) {
-            return android.hardware.input.InputManager.class;
-        }
-    }
-
     public static InputManager getInputManager() {
         if (inputManager == null) {
-            try {
-                Class<?> inputManagerClass = getInputManagerClass();
-                Method getInstanceMethod = inputManagerClass.getDeclaredMethod("getInstance");
-                Object im = getInstanceMethod.invoke(null);
-                inputManager = new InputManager(im);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                throw new AssertionError(e);
-            }
+            inputManager = InputManager.create();
         }
         return inputManager;
     }
 
     public static PowerManager getPowerManager() {
         if (powerManager == null) {
-            powerManager = new PowerManager(getService("power", "android.os.IPowerManager"));
+            powerManager = PowerManager.create();
         }
         return powerManager;
     }
 
     public static StatusBarManager getStatusBarManager() {
         if (statusBarManager == null) {
-            statusBarManager = new StatusBarManager(getService("statusbar", "com.android.internal.statusbar.IStatusBarService"));
+            statusBarManager = StatusBarManager.create();
         }
         return statusBarManager;
     }
 
     public static ClipboardManager getClipboardManager() {
         if (clipboardManager == null) {
-            IInterface clipboard = getService("clipboard", "android.content.IClipboard");
-            if (clipboard == null) {
-                // Some devices have no clipboard manager
-                // <https://github.com/Genymobile/scrcpy/issues/1440>
-                // <https://github.com/Genymobile/scrcpy/issues/1556>
-                return null;
-            }
-            clipboardManager = new ClipboardManager(clipboard);
+            // May be null, some devices have no clipboard manager
+            clipboardManager = ClipboardManager.create();
         }
         return clipboardManager;
     }
 
     public static ActivityManager getActivityManager() {
         if (activityManager == null) {
-            try {
-                // On old Android versions, the ActivityManager is not exposed via AIDL,
-                // so use ActivityManagerNative.getDefault()
-                Class<?> cls = Class.forName("android.app.ActivityManagerNative");
-                Method getDefaultMethod = cls.getDeclaredMethod("getDefault");
-                IInterface am = (IInterface) getDefaultMethod.invoke(null);
-                activityManager = new ActivityManager(am);
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
+            activityManager = ActivityManager.create();
         }
-
         return activityManager;
     }
 

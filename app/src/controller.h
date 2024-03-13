@@ -25,8 +25,12 @@ struct sc_controller {
 };
 
 bool
-sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
-                   struct sc_acksync *acksync);
+sc_controller_init(struct sc_controller *controller, sc_socket control_socket);
+
+void
+sc_controller_configure(struct sc_controller *controller,
+                        struct sc_acksync *acksync,
+                        struct sc_uhid_devices *uhid_devices);
 
 void
 sc_controller_destroy(struct sc_controller *controller);

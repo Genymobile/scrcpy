@@ -20,15 +20,17 @@
 #include "demuxer.h"
 #include "events.h"
 #include "file_pusher.h"
-#include "keyboard_inject.h"
-#include "mouse_inject.h"
+#include "keyboard_sdk.h"
+#include "mouse_sdk.h"
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "uhid/keyboard_uhid.h"
+#include "uhid/mouse_uhid.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
-# include "usb/hid_keyboard.h"
-# include "usb/hid_mouse.h"
+# include "usb/keyboard_aoa.h"
+# include "usb/mouse_aoa.h"
 # include "usb/usb.h"
 #endif
 #include "util/acksync.h"
@@ -61,17 +63,20 @@ struct scrcpy {
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
+    struct sc_uhid_devices uhid_devices;
 #endif
     union {
-        struct sc_keyboard_inject keyboard_inject;
+        struct sc_keyboard_sdk keyboard_sdk;
+        struct sc_keyboard_uhid keyboard_uhid;
 #ifdef HAVE_USB
-        struct sc_hid_keyboard keyboard_hid;
+        struct sc_keyboard_aoa keyboard_aoa;
 #endif
     };
     union {
-        struct sc_mouse_inject mouse_inject;
+        struct sc_mouse_sdk mouse_sdk;
+        struct sc_mouse_uhid mouse_uhid;
 #ifdef HAVE_USB
-        struct sc_hid_mouse mouse_hid;
+        struct sc_mouse_aoa mouse_aoa;
 #endif
     };
     struct sc_timeout timeout;
@@ -101,7 +106,6 @@ static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 
 static void
 sdl_set_hints(const char *render_driver) {
-
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
     }
@@ -307,6 +311,10 @@ scrcpy_generate_scid(void) {
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
+#ifndef NDEBUG
+    // Detect missing initializations
+    memset(&scrcpy, 42, sizeof(scrcpy));
+#endif
     struct scrcpy *s = &scrcpy;
 
     // Minimal SDL initialization
@@ -330,8 +338,8 @@ scrcpy(struct scrcpy_options *options) {
     bool audio_demuxer_started = false;
 #ifdef HAVE_USB
     bool aoa_hid_initialized = false;
-    bool hid_keyboard_initialized = false;
-    bool hid_mouse_initialized = false;
+    bool keyboard_aoa_initialized = false;
+    bool mouse_aoa_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -340,6 +348,7 @@ scrcpy(struct scrcpy_options *options) {
     bool timeout_started = false;
 
     struct sc_acksync *acksync = NULL;
+    struct sc_uhid_devices *uhid_devices = NULL;
 
     uint32_t scid = scrcpy_generate_scid();
 
@@ -399,6 +408,12 @@ scrcpy(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
+    if (options->video_playback) {
+        // Set hints before starting the server thread to avoid race conditions
+        // in SDL
+        sdl_set_hints(options->render_driver);
+    }
+
     if (!sc_server_start(&s->server)) {
         goto end;
     }
@@ -414,10 +429,6 @@ scrcpy(struct scrcpy_options *options) {
     // playback implies capture
     assert(!options->video_playback || options->video);
     assert(!options->audio_playback || options->audio);
-
-    if (options->video_playback) {
-        sdl_set_hints(options->render_driver);
-    }
 
     if (options->video_playback ||
             (options->control && options->clipboard_autosync)) {
@@ -542,12 +553,19 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
+        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
+            goto end;
+        }
+        controller_initialized = true;
+
+        controller = &s->controller;
+
 #ifdef HAVE_USB
-        bool use_hid_keyboard =
-            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID;
-        bool use_hid_mouse =
-            options->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID;
-        if (use_hid_keyboard || use_hid_mouse) {
+        bool use_keyboard_aoa =
+            options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
+        bool use_mouse_aoa =
+            options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
+        if (use_keyboard_aoa || use_mouse_aoa) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
@@ -557,7 +575,7 @@ scrcpy(struct scrcpy_options *options) {
             if (!ok) {
                 LOGE("Failed to initialize USB");
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
             assert(serial);
@@ -565,7 +583,7 @@ scrcpy(struct scrcpy_options *options) {
             ok = sc_usb_select_device(&s->usb, serial, &usb_device);
             if (!ok) {
                 sc_usb_destroy(&s->usb);
-                goto aoa_hid_end;
+                goto end;
             }
 
             LOGI("USB device: %s (%04" PRIx16 ":%04" PRIx16 ") %s %s",
@@ -578,7 +596,7 @@ scrcpy(struct scrcpy_options *options) {
                 LOGE("Failed to connect to USB device %s", serial);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
             ok = sc_aoa_init(&s->aoa, &s->usb, &s->acksync);
@@ -587,95 +605,80 @@ scrcpy(struct scrcpy_options *options) {
                 sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_acksync_destroy(&s->acksync);
-                goto aoa_hid_end;
+                goto end;
             }
 
-            if (use_hid_keyboard) {
-                if (sc_hid_keyboard_init(&s->keyboard_hid, &s->aoa)) {
-                    hid_keyboard_initialized = true;
-                    kp = &s->keyboard_hid.key_processor;
+            if (use_keyboard_aoa) {
+                if (sc_keyboard_aoa_init(&s->keyboard_aoa, &s->aoa)) {
+                    keyboard_aoa_initialized = true;
+                    kp = &s->keyboard_aoa.key_processor;
                 } else {
                     LOGE("Could not initialize HID keyboard");
                 }
             }
 
-            if (use_hid_mouse) {
-                if (sc_hid_mouse_init(&s->mouse_hid, &s->aoa)) {
-                    hid_mouse_initialized = true;
-                    mp = &s->mouse_hid.mouse_processor;
+            if (use_mouse_aoa) {
+                if (sc_mouse_aoa_init(&s->mouse_aoa, &s->aoa)) {
+                    mouse_aoa_initialized = true;
+                    mp = &s->mouse_aoa.mouse_processor;
                 } else {
                     LOGE("Could not initialized HID mouse");
                 }
             }
 
-            bool need_aoa = hid_keyboard_initialized || hid_mouse_initialized;
+            bool need_aoa = keyboard_aoa_initialized || mouse_aoa_initialized;
 
             if (!need_aoa || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
                 sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
                 sc_aoa_destroy(&s->aoa);
-                goto aoa_hid_end;
+                goto end;
             }
 
             acksync = &s->acksync;
 
             aoa_hid_initialized = true;
-
-aoa_hid_end:
-            if (!aoa_hid_initialized) {
-                if (hid_keyboard_initialized) {
-                    sc_hid_keyboard_destroy(&s->keyboard_hid);
-                    hid_keyboard_initialized = false;
-                }
-                if (hid_mouse_initialized) {
-                    sc_hid_mouse_destroy(&s->mouse_hid);
-                    hid_mouse_initialized = false;
-                }
-            }
-
-            if (use_hid_keyboard && !hid_keyboard_initialized) {
-                LOGE("Fallback to default keyboard injection method "
-                     "(-K/--hid-keyboard ignored)");
-                options->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_INJECT;
-            }
-
-            if (use_hid_mouse && !hid_mouse_initialized) {
-                LOGE("Fallback to default mouse injection method "
-                     "(-M/--hid-mouse ignored)");
-                options->mouse_input_mode = SC_MOUSE_INPUT_MODE_INJECT;
-            }
         }
 #else
-        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_HID);
-        assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_HID);
+        assert(options->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_AOA);
+        assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_AOA);
 #endif
 
-        // keyboard_input_mode may have been reset if HID mode failed
-        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_INJECT) {
-            sc_keyboard_inject_init(&s->keyboard_inject, &s->controller,
-                                    options->key_inject_mode,
-                                    options->forward_key_repeat);
-            kp = &s->keyboard_inject.key_processor;
+        if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
+            sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
+                                 options->key_inject_mode,
+                                 options->forward_key_repeat);
+            kp = &s->keyboard_sdk.key_processor;
+        } else if (options->keyboard_input_mode
+                == SC_KEYBOARD_INPUT_MODE_UHID) {
+            sc_uhid_devices_init(&s->uhid_devices);
+            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller,
+                                            &s->uhid_devices);
+            if (!ok) {
+                goto end;
+            }
+            uhid_devices = &s->uhid_devices;
+            kp = &s->keyboard_uhid.key_processor;
         }
 
-        // mouse_input_mode may have been reset if HID mode failed
-        if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_INJECT) {
-            sc_mouse_inject_init(&s->mouse_inject, &s->controller);
-            mp = &s->mouse_inject.mouse_processor;
+        if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
+            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
+            mp = &s->mouse_sdk.mouse_processor;
+        } else if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
+            bool ok = sc_mouse_uhid_init(&s->mouse_uhid, &s->controller);
+            if (!ok) {
+                goto end;
+            }
+            mp = &s->mouse_uhid.mouse_processor;
         }
 
-        if (!sc_controller_init(&s->controller, s->server.control_socket,
-                                acksync)) {
-            goto end;
-        }
-        controller_initialized = true;
+        sc_controller_configure(&s->controller, acksync, uhid_devices);
 
         if (!sc_controller_start(&s->controller)) {
             goto end;
         }
         controller_started = true;
-        controller = &s->controller;
     }
 
     // There is a controller if and only if control is enabled
@@ -815,11 +818,11 @@ end:
     // end-of-stream
 #ifdef HAVE_USB
     if (aoa_hid_initialized) {
-        if (hid_keyboard_initialized) {
-            sc_hid_keyboard_destroy(&s->keyboard_hid);
+        if (keyboard_aoa_initialized) {
+            sc_keyboard_aoa_destroy(&s->keyboard_aoa);
         }
-        if (hid_mouse_initialized) {
-            sc_hid_mouse_destroy(&s->mouse_hid);
+        if (mouse_aoa_initialized) {
+            sc_mouse_aoa_destroy(&s->mouse_aoa);
         }
         sc_aoa_stop(&s->aoa);
         sc_usb_stop(&s->usb);

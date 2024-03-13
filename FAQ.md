@@ -133,9 +133,9 @@ Try with another USB cable or plug it into another USB port. See [#281] and
 [#283]: https://github.com/Genymobile/scrcpy/issues/283
 
 
-## HID/OTG issues on Windows
+## OTG issues on Windows
 
-On Windows, if `scrcpy --otg` (or `--hid-keyboard`/`--hid-mouse`) results in:
+On Windows, if `scrcpy --otg` (or `--keyboard=aoa`/`--mouse=aoa`) results in:
 
 >     ERROR: Could not find any USB device
 
@@ -170,12 +170,13 @@ The default text injection method is [limited to ASCII characters][text-input].
 A trick allows to also inject some [accented characters][accented-characters],
 but that's all. See [#37].
 
-It is also possible to simulate a [physical keyboard][hid] (HID).
+To avoid the problem, [change the keyboard mode to simulate a physical
+keyboard][hid].
 
 [text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
-[hid]: doc/hid-otg.md
+[hid]: doc/keyboard.md#physical-keyboard-simulation
 
 
 ## Client issues
@@ -222,7 +223,7 @@ java.lang.IllegalStateException
         at android.media.MediaCodec.native_dequeueOutputBuffer(Native Method)
 ```
 
-then try with another [encoder](doc/video.md#codec).
+then try with another [encoder](doc/video.md#encoder).
 
 
 ## Translations

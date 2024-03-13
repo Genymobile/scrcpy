@@ -20,8 +20,8 @@ src = [
     'src/fps_counter.c',
     'src/frame_buffer.c',
     'src/input_manager.c',
-    'src/keyboard_inject.c',
-    'src/mouse_inject.c',
+    'src/keyboard_sdk.c',
+    'src/mouse_sdk.c',
     'src/opengl.c',
     'src/options.c',
     'src/packet_merger.c',
@@ -31,11 +31,16 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
+    'src/hid/hid_keyboard.c',
+    'src/hid/hid_mouse.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
+    'src/uhid/keyboard_uhid.c',
+    'src/uhid/mouse_uhid.c',
+    'src/uhid/uhid_output.c',
     'src/util/acksync.c',
+    'src/util/audiobuf.c',
     'src/util/average.c',
-    'src/util/bytebuf.c',
     'src/util/file.c',
     'src/util/intmap.c',
     'src/util/intr.c',
@@ -88,8 +93,8 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
-        'src/usb/hid_keyboard.c',
-        'src/usb/hid_mouse.c',
+        'src/usb/keyboard_aoa.c',
+        'src/usb/mouse_aoa.c',
         'src/usb/scrcpy_otg.c',
         'src/usb/screen_otg.c',
         'src/usb/usb.c',
@@ -212,9 +217,10 @@ if get_option('buildtype') == 'debug'
         ['test_binary', [
             'tests/test_binary.c',
         ]],
-        ['test_bytebuf', [
-            'tests/test_bytebuf.c',
-            'src/util/bytebuf.c',
+        ['test_audiobuf', [
+            'tests/test_audiobuf.c',
+            'src/util/audiobuf.c',
+            'src/util/memory.c',
         ]],
         ['test_cli', [
             'tests/test_cli.c',

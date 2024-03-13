@@ -3,16 +3,17 @@
 
 #include "common.h"
 
+#include <stdatomic.h>
 #include <stdbool.h>
-#include "trait/frame_sink.h"
-#include <util/audiobuf.h>
-#include <util/average.h>
-#include <util/thread.h>
-#include <util/tick.h>
-
 #include <libavformat/avformat.h>
 #include <libswresample/swresample.h>
 #include <SDL2/SDL.h>
+
+#include "trait/frame_sink.h"
+#include "util/audiobuf.h"
+#include "util/average.h"
+#include "util/thread.h"
+#include "util/tick.h"
 
 struct sc_audio_player {
     struct sc_frame_sink frame_sink;
@@ -32,12 +33,8 @@ struct sc_audio_player {
     uint16_t output_buffer;
 
     // Audio buffer to communicate between the receiver and the SDL audio
-    // callback (protected by SDL_AudioDeviceLock())
+    // callback
     struct sc_audiobuf buf;
-
-    // The previous empty space in the buffer (only used by the receiver
-    // thread)
-    uint32_t previous_can_write;
 
     // Resampler (only used from the receiver thread)
     struct SwrContext *swr_ctx;
@@ -47,7 +44,7 @@ struct sc_audio_player {
     // The number of channels is the same for input and output
     unsigned nb_channels;
     // The number of bytes per sample for a single channel
-    unsigned out_bytes_per_sample;
+    size_t out_bytes_per_sample;
 
     // Target buffer for resampling (only used by the receiver thread)
     uint8_t *swr_buf;
@@ -61,19 +58,16 @@ struct sc_audio_player {
     uint32_t samples_since_resync;
 
     // Number of silence samples inserted since the last received packet
-    // (protected by SDL_AudioDeviceLock())
-    uint32_t underflow;
+    atomic_uint_least32_t underflow;
 
     // Current applied compensation value (only used by the receiver thread)
     int compensation;
 
-    // Set to true the first time a sample is received (protected by
-    // SDL_AudioDeviceLock())
-    bool received;
+    // Set to true the first time a sample is received
+    atomic_bool received;
 
-    // Set to true the first time the SDL callback is called (protected by
-    // SDL_AudioDeviceLock())
-    bool played;
+    // Set to true the first time the SDL callback is called
+    atomic_bool played;
 
     const struct sc_audio_player_callbacks *cbs;
     void *cbs_userdata;

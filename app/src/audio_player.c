@@ -66,8 +66,7 @@ static void SDLCALL
 sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     struct sc_audio_player *ap = userdata;
 
-    // This callback is called with the lock used by SDL_AudioDeviceLock(), so
-    // the audiobuf is protected
+    // This callback is called with the lock used by SDL_LockAudioDevice()
 
     assert(len_int > 0);
     size_t len = len_int;
@@ -77,12 +76,12 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     LOGD("[Audio] SDL callback requests %" PRIu32 " samples", count);
 #endif
 
-    uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
-    if (!ap->played) {
-        // Part of the buffering is handled by inserting initial silence. The
-        // remaining (margin) last samples will be handled by compensation.
-        uint32_t margin = 30 * ap->sample_rate / 1000; // 30ms
-        if (buffered_samples + margin < ap->target_buffering) {
+    bool played = atomic_load_explicit(&ap->played, memory_order_relaxed);
+    if (!played) {
+        uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
+        // Wait until the buffer is filled up to at least target_buffering
+        // before playing
+        if (buffered_samples < ap->target_buffering) {
             LOGV("[Audio] Inserting initial buffering silence: %" PRIu32
                  " samples", count);
             // Delay playback starting to reach the target buffering. Fill the
@@ -93,10 +92,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
         }
     }
 
-    uint32_t read = MIN(buffered_samples, count);
-    if (read) {
-        sc_audiobuf_read(&ap->buf, stream, read);
-    }
+    uint32_t read = sc_audiobuf_read(&ap->buf, stream, count);
 
     if (read < count) {
         uint32_t silence = count - read;
@@ -109,13 +105,16 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
              silence);
         memset(stream + TO_BYTES(read), 0, TO_BYTES(silence));
 
-        if (ap->received) {
+        bool received = atomic_load_explicit(&ap->received,
+                                             memory_order_relaxed);
+        if (received) {
             // Inserting additional samples immediately increases buffering
-            ap->underflow += silence;
+            atomic_fetch_add_explicit(&ap->underflow, silence,
+                                      memory_order_relaxed);
         }
     }
 
-    ap->played = true;
+    atomic_store_explicit(&ap->played, true, memory_order_relaxed);
 }
 
 static uint8_t *
@@ -162,155 +161,168 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
     // swr_convert() returns the number of samples which would have been
     // written if the buffer was big enough.
-    uint32_t samples_written = MIN(ret, dst_nb_samples);
+    uint32_t samples = MIN(ret, dst_nb_samples);
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-    LOGD("[Audio] %" PRIu32 " samples written to buffer", samples_written);
+    LOGD("[Audio] %" PRIu32 " samples written to buffer", samples);
 #endif
 
-    // Since this function is the only writer, the current available space is
-    // at least the previous available space. In practice, it should almost
-    // always be possible to write without lock.
-    bool lockless_write = samples_written <= ap->previous_can_write;
-    if (lockless_write) {
-        sc_audiobuf_prepare_write(&ap->buf, swr_buf, samples_written);
+    uint32_t cap = sc_audiobuf_capacity(&ap->buf);
+    if (samples > cap) {
+        // Very very unlikely: a single resampled frame should never
+        // exceed the audio buffer size (or something is very wrong).
+        // Ignore the first bytes in swr_buf to avoid memory corruption anyway.
+        swr_buf += TO_BYTES(samples - cap);
+        samples = cap;
     }
 
-    SDL_LockAudioDevice(ap->device);
+    uint32_t skipped_samples = 0;
 
-    uint32_t buffered_samples = sc_audiobuf_can_read(&ap->buf);
+    uint32_t written = sc_audiobuf_write(&ap->buf, swr_buf, samples);
+    if (written < samples) {
+        uint32_t remaining = samples - written;
 
-    if (lockless_write) {
-        sc_audiobuf_commit_write(&ap->buf, samples_written);
-    } else {
-        uint32_t can_write = sc_audiobuf_can_write(&ap->buf);
-        if (samples_written > can_write) {
-            // Entering this branch is very unlikely, the audio buffer is
-            // allocated with a size sufficient to store 1 second more than the
-            // target buffering. If this happens, though, we have to skip old
-            // samples.
-            uint32_t cap = sc_audiobuf_capacity(&ap->buf);
-            if (samples_written > cap) {
-                // Very very unlikely: a single resampled frame should never
-                // exceed the audio buffer size (or something is very wrong).
-                // Ignore the first bytes in swr_buf
-                swr_buf += TO_BYTES(samples_written - cap);
-                // This change in samples_written will impact the
-                // instant_compensation below
-                samples_written = cap;
-            }
+        // All samples that could be written without locking have been written,
+        // now we need to lock to drop/consume old samples
+        SDL_LockAudioDevice(ap->device);
 
-            assert(samples_written >= can_write);
-            if (samples_written > can_write) {
-                uint32_t skip_samples = samples_written - can_write;
-                assert(buffered_samples >= skip_samples);
-                sc_audiobuf_skip(&ap->buf, skip_samples);
-                buffered_samples -= skip_samples;
-                if (ap->played) {
-                    // Dropping input samples instantly decreases buffering
-                    ap->avg_buffering.avg -= skip_samples;
-                }
-            }
+        // Retry with the lock
+        written += sc_audiobuf_write(&ap->buf,
+                                     swr_buf + TO_BYTES(written),
+                                     remaining);
+        if (written < samples) {
+            remaining = samples - written;
+            // Still insufficient, drop old samples to make space
+            skipped_samples = sc_audiobuf_read(&ap->buf, NULL, remaining);
+            assert(skipped_samples == remaining);
 
-            // It should remain exactly the expected size to write the new
-            // samples.
-            assert(sc_audiobuf_can_write(&ap->buf) == samples_written);
+            // Now there is enough space
+            uint32_t w = sc_audiobuf_write(&ap->buf,
+                                           swr_buf + TO_BYTES(written),
+                                           remaining);
+            assert(w == remaining);
+            (void) w;
         }
 
-        sc_audiobuf_write(&ap->buf, swr_buf, samples_written);
+        SDL_UnlockAudioDevice(ap->device);
     }
 
-    buffered_samples += samples_written;
-    assert(buffered_samples == sc_audiobuf_can_read(&ap->buf));
-
-    // Read with lock held, to be used after unlocking
-    bool played = ap->played;
-    uint32_t underflow = ap->underflow;
-
+    uint32_t underflow = 0;
+    uint32_t max_buffered_samples;
+    bool played = atomic_load_explicit(&ap->played, memory_order_relaxed);
     if (played) {
-        uint32_t max_buffered_samples = ap->target_buffering
-                                      + 12 * ap->output_buffer
-                                      + ap->target_buffering / 10;
-        if (buffered_samples > max_buffered_samples) {
-            uint32_t skip_samples = buffered_samples - max_buffered_samples;
-            sc_audiobuf_skip(&ap->buf, skip_samples);
-            LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
-                 " samples", skip_samples);
-        }
+        underflow = atomic_exchange_explicit(&ap->underflow, 0,
+                                             memory_order_relaxed);
 
-        // reset (the current value was copied to a local variable)
-        ap->underflow = 0;
+        max_buffered_samples = ap->target_buffering
+                               + 12 * ap->output_buffer
+                               + ap->target_buffering / 10;
     } else {
         // SDL playback not started yet, do not accumulate more than
         // max_initial_buffering samples, this would cause unnecessary delay
         // (and glitches to compensate) on start.
-        uint32_t max_initial_buffering = ap->target_buffering
-                                       + 2 * ap->output_buffer;
-        if (buffered_samples > max_initial_buffering) {
-            uint32_t skip_samples = buffered_samples - max_initial_buffering;
-            sc_audiobuf_skip(&ap->buf, skip_samples);
+        max_buffered_samples = ap->target_buffering + 2 * ap->output_buffer;
+    }
+
+    uint32_t can_read = sc_audiobuf_can_read(&ap->buf);
+    if (can_read > max_buffered_samples) {
+        uint32_t skip_samples = 0;
+
+        SDL_LockAudioDevice(ap->device);
+        can_read = sc_audiobuf_can_read(&ap->buf);
+        if (can_read > max_buffered_samples) {
+            skip_samples = can_read - max_buffered_samples;
+            uint32_t r = sc_audiobuf_read(&ap->buf, NULL, skip_samples);
+            assert(r == skip_samples);
+            (void) r;
+            skipped_samples += skip_samples;
+        }
+        SDL_UnlockAudioDevice(ap->device);
+
+        if (skip_samples) {
+            if (played) {
+                LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
+                     " samples", skip_samples);
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-            LOGD("[Audio] Playback not started, skipping %" PRIu32 " samples",
-                 skip_samples);
+            } else {
+                LOGD("[Audio] Playback not started, skipping %" PRIu32
+                     " samples", skip_samples);
 #endif
+            }
         }
     }
 
-    ap->previous_can_write = sc_audiobuf_can_write(&ap->buf);
-    ap->received = true;
+    atomic_store_explicit(&ap->received, true, memory_order_relaxed);
+    if (!played) {
+        // Nothing more to do
+        return true;
+    }
 
-    SDL_UnlockAudioDevice(ap->device);
+    // Number of samples added (or removed, if negative) for compensation
+    int32_t instant_compensation = (int32_t) written - frame->nb_samples;
+    // Inserting silence instantly increases buffering
+    int32_t inserted_silence = (int32_t) underflow;
+    // Dropping input samples instantly decreases buffering
+    int32_t dropped = (int32_t) skipped_samples;
 
-    if (played) {
-        // Number of samples added (or removed, if negative) for compensation
-        int32_t instant_compensation =
-            (int32_t) samples_written - frame->nb_samples;
-        int32_t inserted_silence = (int32_t) underflow;
+    // The compensation must apply instantly, it must not be smoothed
+    ap->avg_buffering.avg += instant_compensation + inserted_silence - dropped;
+    if (ap->avg_buffering.avg < 0) {
+        // Since dropping samples instantly reduces buffering, the difference
+        // is applied immediately to the average value, assuming that the delay
+        // between the producer and the consumer will be caught up.
+        //
+        // However, when this assumption is not valid, the average buffering
+        // may decrease indefinitely. Prevent it to become negative to limit
+        // the consequences.
+        ap->avg_buffering.avg = 0;
+    }
 
-        // The compensation must apply instantly, it must not be smoothed
-        ap->avg_buffering.avg += instant_compensation + inserted_silence;
-
-
-        // However, the buffering level must be smoothed
-        sc_average_push(&ap->avg_buffering, buffered_samples);
+    // However, the buffering level must be smoothed
+    sc_average_push(&ap->avg_buffering, can_read);
 
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-        LOGD("[Audio] buffered_samples=%" PRIu32 " avg_buffering=%f",
-             buffered_samples, sc_average_get(&ap->avg_buffering));
+    LOGD("[Audio] can_read=%" PRIu32 " avg_buffering=%f",
+         can_read, sc_average_get(&ap->avg_buffering));
 #endif
 
-        ap->samples_since_resync += samples_written;
-        if (ap->samples_since_resync >= ap->sample_rate) {
-            // Recompute compensation every second
-            ap->samples_since_resync = 0;
+    ap->samples_since_resync += written;
+    if (ap->samples_since_resync >= ap->sample_rate) {
+        // Recompute compensation every second
+        ap->samples_since_resync = 0;
 
-            float avg = sc_average_get(&ap->avg_buffering);
-            int diff = ap->target_buffering - avg;
-            if (abs(diff) < (int) ap->sample_rate / 1000) {
-                // Do not compensate for less than 1ms, the error is just noise
-                diff = 0;
-            } else if (diff < 0 && buffered_samples < ap->target_buffering) {
-                // Do not accelerate if the instant buffering level is below
-                // the average, this would increase underflow
-                diff = 0;
-            }
-            // Compensate the diff over 4 seconds (but will be recomputed after
-            // 1 second)
-            int distance = 4 * ap->sample_rate;
-            // Limit compensation rate to 2%
-            int abs_max_diff = distance / 50;
-            diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
-            LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
-                 " compensation=%d", ap->target_buffering, avg,
-                 buffered_samples, diff);
+        float avg = sc_average_get(&ap->avg_buffering);
+        int diff = ap->target_buffering - avg;
 
-            if (diff != ap->compensation) {
-                int ret = swr_set_compensation(swr_ctx, diff, distance);
-                if (ret < 0) {
-                    LOGW("Resampling compensation failed: %d", ret);
-                    // not fatal
-                } else {
-                    ap->compensation = diff;
-                }
+        // Enable compensation when the difference exceeds +/- 4ms.
+        // Disable compensation when the difference is lower than +/- 1ms.
+        int threshold = ap->compensation != 0
+                      ? ap->sample_rate     / 1000  /* 1ms */
+                      : ap->sample_rate * 4 / 1000; /* 4ms */
+
+        if (abs(diff) < threshold) {
+            // Do not compensate for small values, the error is just noise
+            diff = 0;
+        } else if (diff < 0 && can_read < ap->target_buffering) {
+            // Do not accelerate if the instant buffering level is below the
+            // target, this would increase underflow
+            diff = 0;
+        }
+        // Compensate the diff over 4 seconds (but will be recomputed after 1
+        // second)
+        int distance = 4 * ap->sample_rate;
+        // Limit compensation rate to 2%
+        int abs_max_diff = distance / 50;
+        diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
+        LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
+             " compensation=%d", ap->target_buffering, avg, can_read, diff);
+
+        if (diff != ap->compensation) {
+            int ret = swr_set_compensation(swr_ctx, diff, distance);
+            if (ret < 0) {
+                LOGW("Resampling compensation failed: %d", ret);
+                // not fatal
+            } else {
+                ap->compensation = diff;
             }
         }
     }
@@ -397,7 +409,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // producer and the consumer. It's too big on purpose, to guarantee that
     // the producer and the consumer will be able to access it in parallel
     // without locking.
-    size_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
+    uint32_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
 
     size_t sample_size = ap->nb_channels * ap->out_bytes_per_sample;
     bool ok = sc_audiobuf_init(&ap->buf, sample_size, audiobuf_samples);
@@ -413,16 +425,15 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     }
     ap->swr_buf_alloc_size = initial_swr_buf_size;
 
-    ap->previous_can_write = sc_audiobuf_can_write(&ap->buf);
-
     // Samples are produced and consumed by blocks, so the buffering must be
     // smoothed to get a relatively stable value.
-    sc_average_init(&ap->avg_buffering, 32);
+    sc_average_init(&ap->avg_buffering, 128);
     ap->samples_since_resync = 0;
 
     ap->received = false;
-    ap->played = false;
-    ap->underflow = 0;
+    atomic_init(&ap->played, false);
+    atomic_init(&ap->received, false);
+    atomic_init(&ap->underflow, 0);
     ap->compensation = 0;
 
     // The thread calling open() is the thread calling push(), which fills the

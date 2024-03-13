@@ -5,16 +5,33 @@ import com.genymobile.scrcpy.DisplayInfo;
 import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
+import android.annotation.SuppressLint;
+import android.hardware.display.VirtualDisplay;
 import android.view.Display;
+import android.view.Surface;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class DisplayManager {
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
+    private Method createVirtualDisplayMethod;
 
-    public DisplayManager(Object manager) {
+    static DisplayManager create() {
+        try {
+            Class<?> clazz = Class.forName("android.hardware.display.DisplayManagerGlobal");
+            Method getInstanceMethod = clazz.getDeclaredMethod("getInstance");
+            Object dmg = getInstanceMethod.invoke(null);
+            return new DisplayManager(dmg);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private DisplayManager(Object manager) {
         this.manager = manager;
     }
 
@@ -60,7 +77,7 @@ public final class DisplayManager {
             try {
                 Field filed = Display.class.getDeclaredField(flagString);
                 flags |= filed.getInt(null);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
+            } catch (ReflectiveOperationException e) {
                 // Silently ignore, some flags reported by "dumpsys display" are @TestApi
             }
         }
@@ -82,7 +99,7 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
     }
@@ -90,8 +107,21 @@ public final class DisplayManager {
     public int[] getDisplayIds() {
         try {
             return (int[]) manager.getClass().getMethod("getDisplayIds").invoke(manager);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
+    }
+
+    private Method getCreateVirtualDisplayMethod() throws NoSuchMethodException {
+        if (createVirtualDisplayMethod == null) {
+            createVirtualDisplayMethod = android.hardware.display.DisplayManager.class
+                    .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class);
+        }
+        return createVirtualDisplayMethod;
+    }
+
+    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+        Method method = getCreateVirtualDisplayMethod();
+        return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
     }
 }

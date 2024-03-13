@@ -62,38 +62,38 @@ build-server:
 		meson setup "$(SERVER_BUILD_DIR)" --buildtype release -Dcompile_app=false )
 	ninja -C "$(SERVER_BUILD_DIR)"
 
-prepare-deps:
-	@app/prebuilt-deps/prepare-adb.sh
-	@app/prebuilt-deps/prepare-sdl.sh
-	@app/prebuilt-deps/prepare-ffmpeg.sh
-	@app/prebuilt-deps/prepare-libusb.sh
+prepare-deps-win32:
+	@app/deps/adb.sh win32
+	@app/deps/sdl.sh win32
+	@app/deps/ffmpeg.sh win32
+	@app/deps/libusb.sh win32
 
-build-win32: prepare-deps
+prepare-deps-win64:
+	@app/deps/adb.sh win64
+	@app/deps/sdl.sh win64
+	@app/deps/ffmpeg.sh win64
+	@app/deps/libusb.sh win64
+
+build-win32: prepare-deps-win32
 	rm -rf "$(WIN32_BUILD_DIR)"
 	mkdir -p "$(WIN32_BUILD_DIR)/local"
-	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win32/. "$(WIN32_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/SDL2-2.28.5/i686-w64-mingw32/. "$(WIN32_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-Win32/. "$(WIN32_BUILD_DIR)/local/"
 	meson setup "$(WIN32_BUILD_DIR)" \
-		--pkg-config-path="$(WIN32_BUILD_DIR)/local/lib/pkgconfig" \
-		-Dc_args="-I$(PWD)/$(WIN32_BUILD_DIR)/local/include" \
-		-Dc_link_args="-L$(PWD)/$(WIN32_BUILD_DIR)/local/lib" \
+		--pkg-config-path="app/deps/work/install/win32/lib/pkgconfig" \
+		-Dc_args="-I$(PWD)/app/deps/work/install/win32/include" \
+		-Dc_link_args="-L$(PWD)/app/deps/work/install/win32/lib" \
 		--cross-file=cross_win32.txt \
 		--buildtype=release --strip -Db_lto=true \
 		-Dcompile_server=false \
 		-Dportable=true
 	ninja -C "$(WIN32_BUILD_DIR)"
 
-build-win64: prepare-deps
+build-win64: prepare-deps-win64
 	rm -rf "$(WIN64_BUILD_DIR)"
 	mkdir -p "$(WIN64_BUILD_DIR)/local"
-	cp -r app/prebuilt-deps/data/ffmpeg-6.1-scrcpy-3/win64/. "$(WIN64_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/SDL2-2.28.5/x86_64-w64-mingw32/. "$(WIN64_BUILD_DIR)/local/"
-	cp -r app/prebuilt-deps/data/libusb-1.0.26/libusb-MinGW-x64/. "$(WIN64_BUILD_DIR)/local/"
 	meson setup "$(WIN64_BUILD_DIR)" \
-		--pkg-config-path="$(WIN64_BUILD_DIR)/local/lib/pkgconfig" \
-		-Dc_args="-I$(PWD)/$(WIN64_BUILD_DIR)/local/include" \
-		-Dc_link_args="-L$(PWD)/$(WIN64_BUILD_DIR)/local/lib" \
+		--pkg-config-path="app/deps/work/install/win64/lib/pkgconfig" \
+		-Dc_args="-I$(PWD)/app/deps/work/install/win64/include" \
+		-Dc_link_args="-L$(PWD)/app/deps/work/install/win64/lib" \
 		--cross-file=cross_win64.txt \
 		--buildtype=release --strip -Db_lto=true \
 		-Dcompile_server=false \
@@ -108,10 +108,8 @@ dist-win32: build-server build-win32
 	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/data/icon.png "$(DIST)/$(WIN32_TARGET_DIR)/"
 	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinUsbApi.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
-	cp "$(WIN32_BUILD_DIR)"/local/bin/*.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/deps/work/install/win32/bin/*.dll "$(DIST)/$(WIN32_TARGET_DIR)/"
+	cp app/deps/work/install/win32/bin/adb.exe "$(DIST)/$(WIN32_TARGET_DIR)/"
 
 dist-win64: build-server build-win64
 	mkdir -p "$(DIST)/$(WIN64_TARGET_DIR)"
@@ -121,10 +119,8 @@ dist-win64: build-server build-win64
 	cp app/data/scrcpy-noconsole.vbs "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/data/icon.png "$(DIST)/$(WIN64_TARGET_DIR)/"
 	cp app/data/open_a_terminal_here.bat "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp app/prebuilt-deps/data/platform-tools-34.0.5/AdbWinUsbApi.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
-	cp "$(WIN64_BUILD_DIR)"/local/bin/*.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/deps/work/install/win64/bin/*.dll "$(DIST)/$(WIN64_TARGET_DIR)/"
+	cp app/deps/work/install/win64/bin/adb.exe "$(DIST)/$(WIN64_TARGET_DIR)/"
 
 zip-win32: dist-win32
 	cd "$(DIST)"; \

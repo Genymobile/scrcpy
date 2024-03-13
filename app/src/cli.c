@@ -93,6 +93,10 @@ enum {
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
+    OPT_KEYBOARD,
+    OPT_MOUSE,
+    OPT_HID_KEYBOARD_DEPRECATED,
+    OPT_HID_MOUSE_DEPRECATED,
 };
 
 struct sc_option {
@@ -359,26 +363,43 @@ static const struct sc_option options[] = {
         .text = "Print this help.",
     },
     {
+        .shortopt = 'K',
+        .text = "Same as --keyboard=uhid.",
+    },
+    {
+        .longopt_id = OPT_KEYBOARD,
+        .longopt = "keyboard",
+        .argdesc = "mode",
+        .text = "Select how to send keyboard inputs to the device.\n"
+                "Possible values are \"disabled\", \"sdk\", \"uhid\" and "
+                "\"aoa\".\n"
+                "\"disabled\" does not send keyboard inputs to the device.\n"
+                "\"sdk\" uses the Android system API to deliver keyboard "
+                "events to applications.\n"
+                "\"uhid\" simulates a physical HID keyboard using the Linux "
+                "UHID kernel module on the device.\n"
+                "\"aoa\" simulates a physical keyboard using the AOAv2 "
+                "protocol. It may only work over USB.\n"
+                "For \"uhid\" and \"aoa\", the keyboard layout must be "
+                "configured (once and for all) on the device, via Settings -> "
+                "System -> Languages and input -> Physical keyboard. This "
+                "settings page can be started directly using the shortcut "
+                "MOD+k (except in OTG mode) or by executing: `adb shell am "
+                "start -a android.settings.HARD_KEYBOARD_SETTINGS`.\n"
+                "This option is only available when a HID keyboard is enabled "
+                "(or a physical keyboard is connected).\n"
+                "Also see --mouse.",
+    },
+    {
         .longopt_id = OPT_KILL_ADB_ON_CLOSE,
         .longopt = "kill-adb-on-close",
         .text = "Kill adb when scrcpy terminates.",
     },
     {
-        .shortopt = 'K',
+        // deprecated
+        //.shortopt = 'K', // old, reassigned
+        .longopt_id = OPT_HID_KEYBOARD_DEPRECATED,
         .longopt = "hid-keyboard",
-        .text = "Simulate a physical keyboard by using HID over AOAv2.\n"
-                "It provides a better experience for IME users, and allows to "
-                "generate non-ASCII characters, contrary to the default "
-                "injection method.\n"
-                "It may only work over USB.\n"
-                "The keyboard layout must be configured (once and for all) on "
-                "the device, via Settings -> System -> Languages and input -> "
-                "Physical keyboard. This settings page can be started "
-                "directly: `adb shell am start -a "
-                "android.settings.HARD_KEYBOARD_SETTINGS`.\n"
-                "However, the option is only available when the HID keyboard "
-                "is enabled (or a physical keyboard is connected).\n"
-                "Also see --hid-mouse.",
     },
     {
         .longopt_id = OPT_LEGACY_PASTE,
@@ -432,15 +453,14 @@ static const struct sc_option options[] = {
                 "Default is 0 (unlimited).",
     },
     {
-        .shortopt = 'M',
+        // deprecated
+        //.shortopt = 'M', // old, reassigned
+        .longopt_id = OPT_HID_MOUSE_DEPRECATED,
         .longopt = "hid-mouse",
-        .text = "Simulate a physical mouse by using HID over AOAv2.\n"
-                "In this mode, the computer mouse is captured to control the "
-                "device directly (relative mouse mode).\n"
-                "LAlt, LSuper or RSuper toggle the capture mode, to give "
-                "control of the mouse back to the computer.\n"
-                "It may only work over USB.\n"
-                "Also see --hid-keyboard.",
+    },
+    {
+        .shortopt = 'M',
+        .text = "Same as --mouse=uhid.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -448,6 +468,26 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
                 "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .longopt_id = OPT_MOUSE,
+        .longopt = "mouse",
+        .argdesc = "mode",
+        .text = "Select how to send mouse inputs to the device.\n"
+                "Possible values are \"disabled\", \"sdk\", \"uhid\" and "
+                "\"aoa\".\n"
+                "\"disabled\" does not send mouse inputs to the device.\n"
+                "\"sdk\" uses the Android system API to deliver mouse events"
+                "to applications.\n"
+                "\"uhid\" simulates a physical HID mouse using the Linux UHID "
+                "kernel module on the device.\n"
+                "\"aoa\" simulates a physical mouse using the AOAv2 protocol. "
+                "It may only work over USB.\n"
+                "In \"uhid\" and \"aoa\" modes, the computer mouse is captured "
+                "to control the device directly (relative mouse mode).\n"
+                "LAlt, LSuper or RSuper toggle the capture mode, to give "
+                "control of the mouse back to the computer.\n"
+                "Also see --keyboard.",
     },
     {
         .shortopt = 'n',
@@ -543,10 +583,10 @@ static const struct sc_option options[] = {
                 "mirroring is disabled.\n"
                 "LAlt, LSuper or RSuper toggle the mouse capture mode, to give "
                 "control of the mouse back to the computer.\n"
-                "If any of --hid-keyboard or --hid-mouse is set, only enable "
-                "keyboard or mouse respectively, otherwise enable both.\n"
+                "Keyboard and mouse may be disabled separately using"
+                "--keyboard=disabled and --mouse=disabled.\n"
                 "It may only work over USB.\n"
-                "See --hid-keyboard and --hid-mouse.",
+                "See --keyboard and --mouse.",
     },
     {
         .shortopt = 'p',
@@ -942,12 +982,20 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Inject computer clipboard text as a sequence of key events",
     },
     {
+        .shortcuts = { "MOD+k" },
+        .text = "Open keyboard settings on the device (for HID keyboard only)",
+    },
+    {
         .shortcuts = { "MOD+i" },
         .text = "Enable/disable FPS counter (print frames/second in logs)",
     },
     {
         .shortcuts = { "Ctrl+click-and-move" },
-        .text = "Pinch-to-zoom from the center of the screen",
+        .text = "Pinch-to-zoom and rotate from the center of the screen",
+    },
+    {
+        .shortcuts = { "Shift+click-and-move" },
+        .text = "Tilt (slide vertically with two fingers)",
     },
     {
         .shortcuts = { "Drag & drop APK file" },
@@ -1381,7 +1429,11 @@ parse_max_fps(const char *s, uint16_t *max_fps) {
 static bool
 parse_buffering_time(const char *s, sc_tick *tick) {
     long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF,
+    // In practice, buffering time should not exceed a few seconds.
+    // Limit it to some arbitrary value (1 hour) to prevent 32-bit overflow
+    // when multiplied by the audio sample size and the number of samples per
+    // millisecond.
+    bool ok = parse_integer_arg(s, &value, false, 0, 60 * 60 * 1000,
                                 "buffering time");
     if (!ok) {
         return false;
@@ -1899,6 +1951,69 @@ parse_camera_fps(const char *s, uint16_t *camera_fps) {
 }
 
 static bool
+parse_keyboard(const char *optarg, enum sc_keyboard_input_mode *mode) {
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_DISABLED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "sdk")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_SDK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_KEYBOARD_INPUT_MODE_UHID;
+        return true;
+    }
+
+    if (!strcmp(optarg, "aoa")) {
+#ifdef HAVE_USB
+        *mode = SC_KEYBOARD_INPUT_MODE_AOA;
+        return true;
+#else
+        LOGE("--keyboard=aoa is disabled.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported keyboard: %s (expected disabled, sdk, uhid and aoa)",
+         optarg);
+    return false;
+}
+
+static bool
+parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_MOUSE_INPUT_MODE_DISABLED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "sdk")) {
+        *mode = SC_MOUSE_INPUT_MODE_SDK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_MOUSE_INPUT_MODE_UHID;
+        return true;
+    }
+
+    if (!strcmp(optarg, "aoa")) {
+#ifdef HAVE_USB
+        *mode = SC_MOUSE_INPUT_MODE_AOA;
+        return true;
+#else
+        LOGE("--mouse=aoa is disabled.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported mouse: %s (expected disabled, sdk, uhid or aoa)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -1986,13 +2101,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
-#ifdef HAVE_USB
-                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_HID;
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID;
                 break;
-#else
-                LOGE("HID over AOA (-K/--hid-keyboard) is disabled.");
+            case OPT_KEYBOARD:
+                if (!parse_keyboard(optarg, &opts->keyboard_input_mode)) {
+                    return false;
+                }
+                break;
+            case OPT_HID_KEYBOARD_DEPRECATED:
+                LOGE("--hid-keyboard has been removed, use --keyboard=aoa or "
+                     "--keyboard=uhid instead.");
                 return false;
-#endif
             case OPT_MAX_FPS:
                 if (!parse_max_fps(optarg, &opts->max_fps)) {
                     return false;
@@ -2004,13 +2123,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'M':
-#ifdef HAVE_USB
-                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_HID;
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
                 break;
-#else
-                LOGE("HID over AOA (-M/--hid-mouse) is disabled.");
+            case OPT_MOUSE:
+                if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
+                    return false;
+                }
+                break;
+            case OPT_HID_MOUSE_DEPRECATED:
+                LOGE("--hid-mouse has been removed, use --mouse=aoa or "
+                     "--mouse=uhid instead.");
                 return false;
-#endif
             case OPT_LOCK_VIDEO_ORIENTATION:
                 if (!parse_lock_video_orientation(optarg,
                         &opts->lock_video_orientation)) {
@@ -2394,6 +2517,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (!opts->video) {
         opts->video_playback = false;
+        // Do not power on the device on start if video capture is disabled
+        opts->power_on = false;
     }
 
     if (!opts->audio) {
@@ -2454,6 +2579,54 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 #endif
+
+    if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
+        opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                        : SC_KEYBOARD_INPUT_MODE_SDK;
+    }
+    if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
+        opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
+                                     : SC_MOUSE_INPUT_MODE_SDK;
+    }
+
+    if (otg) {
+        enum sc_keyboard_input_mode kmode = opts->keyboard_input_mode;
+        if (kmode != SC_KEYBOARD_INPUT_MODE_AOA
+                && kmode != SC_KEYBOARD_INPUT_MODE_DISABLED) {
+            LOGE("In OTG mode, --keyboard only supports aoa or disabled.");
+            return false;
+        }
+
+        enum sc_mouse_input_mode mmode = opts->mouse_input_mode;
+        if (mmode != SC_MOUSE_INPUT_MODE_AOA
+                && mmode != SC_MOUSE_INPUT_MODE_DISABLED) {
+            LOGE("In OTG mode, --mouse only supports aoa or disabled.");
+            return false;
+        }
+
+        if (kmode == SC_KEYBOARD_INPUT_MODE_DISABLED
+                && mmode == SC_MOUSE_INPUT_MODE_DISABLED) {
+            LOGE("Could not disable both keyboard and mouse in OTG mode.");
+            return false;
+        }
+    }
+
+    if (opts->keyboard_input_mode != SC_KEYBOARD_INPUT_MODE_SDK) {
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_TEXT) {
+            LOGE("--prefer-text is specific to --keyboard=sdk");
+            return false;
+        }
+
+        if (opts->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+            LOGE("--raw-key-events is specific to --keyboard=sdk");
+            return false;
+        }
+
+        if (!opts->forward_key_repeat) {
+            LOGE("--no-key-repeat is specific to --keyboard=sdk");
+            return false;
+        }
+    }
 
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
         LOGI("Tunnel host/port is set, "
@@ -2615,12 +2788,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 # ifdef _WIN32
-    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_HID
-                || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_HID)) {
+    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
+                || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA)) {
         LOGE("On Windows, it is not possible to open a USB device already open "
              "by another process (like adb).");
-        LOGE("Therefore, -K/--hid-keyboard and -M/--hid-mouse may only work in "
-             "OTG mode (--otg).");
+        LOGE("Therefore, --keyboard=aoa and --mouse=aoa may only work in OTG"
+             "mode (--otg).");
         return false;
     }
 # endif

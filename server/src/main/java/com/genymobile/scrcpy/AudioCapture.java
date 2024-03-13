@@ -79,7 +79,7 @@ public final class AudioCapture {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.addCategory(Intent.CATEGORY_LAUNCHER);
         intent.setComponent(new ComponentName(FakeContext.PACKAGE_NAME, "com.android.shell.HeapDumpActivity"));
-        ServiceManager.getActivityManager().startActivityAsUserWithFeature(intent);
+        ServiceManager.getActivityManager().startActivity(intent);
     }
 
     private static void stopWorkaroundAndroid11() {
@@ -153,13 +153,14 @@ public final class AudioCapture {
             previousRecorderTimestamp = timestamp.nanoTime;
         } else {
             if (nextPts == 0) {
-                Ln.w("Could not get any audio timestamp");
+                Ln.w("Could not get initial audio timestamp");
+                nextPts = System.nanoTime() / 1000;
             }
             // compute from previous timestamp and packet size
             pts = nextPts;
         }
 
-        long durationUs = r * 1000000 / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
+        long durationUs = r * 1000000L / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
         nextPts = pts + durationUs;
 
         if (previousPts != 0 && pts < previousPts + ONE_SAMPLE_US) {

@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <assert.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "control_msg.h"
@@ -16,11 +17,11 @@ static void test_serialize_inject_keycode(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 14);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_INJECT_KEYCODE,
         0x01, // AKEY_EVENT_ACTION_UP
         0x00, 0x00, 0x00, 0x42, // AKEYCODE_ENTER
@@ -38,11 +39,11 @@ static void test_serialize_inject_text(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 18);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_INJECT_TEXT,
         0x00, 0x00, 0x00, 0x0d, // text length
         'h', 'e', 'l', 'l', 'o', ',', ' ', 'w', 'o', 'r', 'l', 'd', '!', // text
@@ -58,11 +59,11 @@ static void test_serialize_inject_text_long(void) {
     text[SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH] = '\0';
     msg.inject_text.text = text;
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 5 + SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
 
-    unsigned char expected[5 + SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
+    uint8_t expected[5 + SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH];
     expected[0] = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     expected[1] = 0x00;
     expected[2] = 0x00;
@@ -95,11 +96,11 @@ static void test_serialize_inject_touch_event(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 32);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         0x00, // AKEY_EVENT_ACTION_DOWN
         0x12, 0x34, 0x56, 0x78, 0x87, 0x65, 0x43, 0x21, // pointer id
@@ -132,11 +133,11 @@ static void test_serialize_inject_scroll_event(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 21);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
         0x04, 0x38, 0x07, 0x80, // 1080 1920
@@ -155,11 +156,11 @@ static void test_serialize_back_or_screen_on(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON,
         0x01, // AKEY_EVENT_ACTION_UP
     };
@@ -171,11 +172,11 @@ static void test_serialize_expand_notification_panel(void) {
         .type = SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
@@ -186,11 +187,11 @@ static void test_serialize_expand_settings_panel(void) {
         .type = SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
@@ -201,11 +202,11 @@ static void test_serialize_collapse_panels(void) {
         .type = SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
@@ -219,11 +220,11 @@ static void test_serialize_get_clipboard(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_GET_CLIPBOARD,
         SC_COPY_KEY_COPY,
     };
@@ -240,11 +241,11 @@ static void test_serialize_set_clipboard(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 27);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sequence
         1, // paste
@@ -269,11 +270,11 @@ static void test_serialize_set_clipboard_long(void) {
     text[SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH] = '\0';
     msg.set_clipboard.text = text;
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == SC_CONTROL_MSG_MAX_SIZE);
 
-    unsigned char expected[SC_CONTROL_MSG_MAX_SIZE] = {
+    uint8_t expected[SC_CONTROL_MSG_MAX_SIZE] = {
         SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
         0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, // sequence
         1, // paste
@@ -296,11 +297,11 @@ static void test_serialize_set_screen_power_mode(void) {
         },
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 2);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
         0x02, // SC_SCREEN_POWER_MODE_NORMAL
     };
@@ -312,12 +313,74 @@ static void test_serialize_rotate_device(void) {
         .type = SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
     };
 
-    unsigned char buf[SC_CONTROL_MSG_MAX_SIZE];
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
     assert(size == 1);
 
-    const unsigned char expected[] = {
+    const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_uhid_create(void) {
+    const uint8_t report_desc[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_UHID_CREATE,
+        .uhid_create = {
+            .id = 42,
+            .report_desc_size = sizeof(report_desc),
+            .report_desc = report_desc,
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 16);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_UHID_CREATE,
+        0, 42, // id
+        0, 11, // size
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_uhid_input(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_UHID_INPUT,
+        .uhid_input = {
+            .id = 42,
+            .size = 5,
+            .data = {1, 2, 3, 4, 5},
+        },
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 10);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_UHID_INPUT,
+        0, 42, // id
+        0, 5, // size
+        1, 2, 3, 4, 5,
+    };
+    assert(!memcmp(buf, expected, sizeof(expected)));
+}
+
+static void test_serialize_open_hard_keyboard(void) {
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    };
+
+    uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
+    size_t size = sc_control_msg_serialize(&msg, buf);
+    assert(size == 1);
+
+    const uint8_t expected[] = {
+        SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -340,5 +403,8 @@ int main(int argc, char *argv[]) {
     test_serialize_set_clipboard_long();
     test_serialize_set_screen_power_mode();
     test_serialize_rotate_device();
+    test_serialize_uhid_create();
+    test_serialize_uhid_input();
+    test_serialize_open_hard_keyboard();
     return 0;
 }

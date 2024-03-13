@@ -1,4 +1,4 @@
-#include "keyboard_inject.h"
+#include "keyboard_sdk.h"
 
 #include <assert.h>
 
@@ -9,8 +9,8 @@
 #include "util/intmap.h"
 #include "util/log.h"
 
-/** Downcast key processor to sc_keyboard_inject */
-#define DOWNCAST(KP) container_of(KP, struct sc_keyboard_inject, key_processor)
+/** Downcast key processor to sc_keyboard_sdk */
+#define DOWNCAST(KP) container_of(KP, struct sc_keyboard_sdk, key_processor)
 
 static enum android_keyevent_action
 convert_keycode_action(enum sc_action action) {
@@ -271,20 +271,20 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     // is set before injecting Ctrl+v.
     (void) ack_to_wait;
 
-    struct sc_keyboard_inject *ki = DOWNCAST(kp);
+    struct sc_keyboard_sdk *kb = DOWNCAST(kp);
 
     if (event->repeat) {
-        if (!ki->forward_key_repeat) {
+        if (!kb->forward_key_repeat) {
             return;
         }
-        ++ki->repeat;
+        ++kb->repeat;
     } else {
-        ki->repeat = 0;
+        kb->repeat = 0;
     }
 
     struct sc_control_msg msg;
-    if (convert_input_key(event, &msg, ki->key_inject_mode, ki->repeat)) {
-        if (!sc_controller_push_msg(ki->controller, &msg)) {
+    if (convert_input_key(event, &msg, kb->key_inject_mode, kb->repeat)) {
+        if (!sc_controller_push_msg(kb->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }
     }
@@ -293,14 +293,14 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 static void
 sc_key_processor_process_text(struct sc_key_processor *kp,
                               const struct sc_text_event *event) {
-    struct sc_keyboard_inject *ki = DOWNCAST(kp);
+    struct sc_keyboard_sdk *kb = DOWNCAST(kp);
 
-    if (ki->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
+    if (kb->key_inject_mode == SC_KEY_INJECT_MODE_RAW) {
         // Never inject text events
         return;
     }
 
-    if (ki->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
+    if (kb->key_inject_mode == SC_KEY_INJECT_MODE_MIXED) {
         char c = event->text[0];
         if (isalpha(c) || c == ' ') {
             assert(event->text[1] == '\0');
@@ -316,22 +316,22 @@ sc_key_processor_process_text(struct sc_key_processor *kp,
         LOGW("Could not strdup input text");
         return;
     }
-    if (!sc_controller_push_msg(ki->controller, &msg)) {
+    if (!sc_controller_push_msg(kb->controller, &msg)) {
         free(msg.inject_text.text);
         LOGW("Could not request 'inject text'");
     }
 }
 
 void
-sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
-                        struct sc_controller *controller,
-                        enum sc_key_inject_mode key_inject_mode,
-                        bool forward_key_repeat) {
-    ki->controller = controller;
-    ki->key_inject_mode = key_inject_mode;
-    ki->forward_key_repeat = forward_key_repeat;
+sc_keyboard_sdk_init(struct sc_keyboard_sdk *kb,
+                     struct sc_controller *controller,
+                     enum sc_key_inject_mode key_inject_mode,
+                     bool forward_key_repeat) {
+    kb->controller = controller;
+    kb->key_inject_mode = key_inject_mode;
+    kb->forward_key_repeat = forward_key_repeat;
 
-    ki->repeat = 0;
+    kb->repeat = 0;
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
@@ -339,6 +339,7 @@ sc_keyboard_inject_init(struct sc_keyboard_inject *ki,
     };
 
     // Key injection and clipboard synchronization are serialized
-    ki->key_processor.async_paste = false;
-    ki->key_processor.ops = &ops;
+    kb->key_processor.async_paste = false;
+    kb->key_processor.hid = false;
+    kb->key_processor.ops = &ops;
 }

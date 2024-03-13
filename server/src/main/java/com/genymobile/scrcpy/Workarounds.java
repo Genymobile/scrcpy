@@ -285,16 +285,28 @@ public final class Workarounds {
                     Method getParcelMethod = attributionSourceState.getClass().getDeclaredMethod("getParcel");
                     Parcel attributionSourceParcel = (Parcel) getParcelMethod.invoke(attributionSourceState);
 
-                    // private native int native_setup(Object audiorecordThis,
-                    // Object /*AudioAttributes*/ attributes,
-                    // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
-                    // int buffSizeInBytes, int[] sessionId, @NonNull Parcel attributionSource,
-                    // long nativeRecordInJavaObj, int maxSharedAudioHistoryMs);
-                    Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class, int.class,
-                            int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class);
-                    nativeSetupMethod.setAccessible(true);
-                    initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes, sampleRateArray,
-                            channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session, attributionSourceParcel, 0L, 0);
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        // private native int native_setup(Object audiorecordThis,
+                        // Object /*AudioAttributes*/ attributes,
+                        // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
+                        // int buffSizeInBytes, int[] sessionId, @NonNull Parcel attributionSource,
+                        // long nativeRecordInJavaObj, int maxSharedAudioHistoryMs);
+                        Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class,
+                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class);
+                        nativeSetupMethod.setAccessible(true);
+                        initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes,
+                                sampleRateArray, channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session,
+                                attributionSourceParcel, 0L, 0);
+                    } else {
+                        // Android 14 added a new int parameter "halInputFlags"
+                        // <https://github.com/aosp-mirror/platform_frameworks_base/commit/f6135d75db79b1d48fad3a3b3080d37be20a2313>
+                        Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class,
+                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class, int.class);
+                        nativeSetupMethod.setAccessible(true);
+                        initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes,
+                                sampleRateArray, channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session,
+                                attributionSourceParcel, 0L, 0, 0);
+                    }
                 }
             }
 

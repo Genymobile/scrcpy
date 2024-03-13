@@ -1,5 +1,5 @@
 project('scrcpy', 'c',
-        version: '2.3.1',
+        version: '2.4',
         meson_version: '>= 0.48',
         default_options: [
             'c_std=c11',
@@ -16,5 +16,3 @@ endif
 if get_option('compile_server')
     subdir('server')
 endif
-
-run_target('run', command: ['scripts/run-scrcpy.sh'])

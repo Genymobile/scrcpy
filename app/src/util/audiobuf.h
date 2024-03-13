@@ -3,10 +3,10 @@
 
 #include "common.h"
 
+#include <assert.h>
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
-
-#include "util/bytebuf.h"
 
 /**
  * Wrapper around bytebuf to read and write samples
@@ -14,8 +14,14 @@
  * Each sample takes sample_size bytes.
  */
 struct sc_audiobuf {
-    struct sc_bytebuf buf;
+    uint8_t *data;
+    uint32_t alloc_size; // in samples
     size_t sample_size;
+
+    atomic_uint_least32_t head; // writer cursor, in samples
+    atomic_uint_least32_t tail; // reader cursor, in samples
+    // empty: tail == head
+    // full: ((tail + 1) % alloc_size) == head
 };
 
 static inline uint32_t
@@ -29,66 +35,31 @@ sc_audiobuf_to_bytes(struct sc_audiobuf *buf, uint32_t samples) {
     return samples * buf->sample_size;
 }
 
-static inline bool
+bool
 sc_audiobuf_init(struct sc_audiobuf *buf, size_t sample_size,
-                 uint32_t capacity) {
-    buf->sample_size = sample_size;
-    return sc_bytebuf_init(&buf->buf, capacity * sample_size + 1);
-}
+                 uint32_t capacity);
 
-static inline void
-sc_audiobuf_read(struct sc_audiobuf *buf, uint8_t *to, uint32_t samples) {
-    size_t bytes = sc_audiobuf_to_bytes(buf, samples);
-    sc_bytebuf_read(&buf->buf, to, bytes);
-}
+void
+sc_audiobuf_destroy(struct sc_audiobuf *buf);
 
-static inline void
-sc_audiobuf_skip(struct sc_audiobuf *buf, uint32_t samples) {
-    size_t bytes = sc_audiobuf_to_bytes(buf, samples);
-    sc_bytebuf_skip(&buf->buf, bytes);
-}
+uint32_t
+sc_audiobuf_read(struct sc_audiobuf *buf, void *to, uint32_t samples_count);
 
-static inline void
-sc_audiobuf_write(struct sc_audiobuf *buf, const uint8_t *from,
-                  uint32_t samples) {
-    size_t bytes = sc_audiobuf_to_bytes(buf, samples);
-    sc_bytebuf_write(&buf->buf, from, bytes);
-}
+uint32_t
+sc_audiobuf_write(struct sc_audiobuf *buf, const void *from,
+                  uint32_t samples_count);
 
-static inline void
-sc_audiobuf_prepare_write(struct sc_audiobuf *buf, const uint8_t *from,
-                          uint32_t samples) {
-    size_t bytes = sc_audiobuf_to_bytes(buf, samples);
-    sc_bytebuf_prepare_write(&buf->buf, from, bytes);
-}
-
-static inline void
-sc_audiobuf_commit_write(struct sc_audiobuf *buf, uint32_t samples) {
-    size_t bytes = sc_audiobuf_to_bytes(buf, samples);
-    sc_bytebuf_commit_write(&buf->buf, bytes);
+static inline uint32_t
+sc_audiobuf_capacity(struct sc_audiobuf *buf) {
+    assert(buf->alloc_size);
+    return buf->alloc_size - 1;
 }
 
 static inline uint32_t
 sc_audiobuf_can_read(struct sc_audiobuf *buf) {
-    size_t bytes = sc_bytebuf_can_read(&buf->buf);
-    return sc_audiobuf_to_samples(buf, bytes);
-}
-
-static inline uint32_t
-sc_audiobuf_can_write(struct sc_audiobuf *buf) {
-    size_t bytes = sc_bytebuf_can_write(&buf->buf);
-    return sc_audiobuf_to_samples(buf, bytes);
-}
-
-static inline uint32_t
-sc_audiobuf_capacity(struct sc_audiobuf *buf) {
-    size_t bytes = sc_bytebuf_capacity(&buf->buf);
-    return sc_audiobuf_to_samples(buf, bytes);
-}
-
-static inline void
-sc_audiobuf_destroy(struct sc_audiobuf *buf) {
-    sc_bytebuf_destroy(&buf->buf);
+    uint32_t head = atomic_load_explicit(&buf->head, memory_order_acquire);
+    uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
+    return (buf->alloc_size + head - tail) % buf->alloc_size;
 }
 
 #endif

@@ -45,11 +45,11 @@ public final class Device {
         void onClipboardTextChanged(String text);
     }
 
-    private final Size deviceSize;
     private final Rect crop;
     private int maxSize;
     private final int lockVideoOrientation;
 
+    private Size deviceSize;
     private ScreenInfo screenInfo;
     private RotationListener rotationListener;
     private FoldListener foldListener;
@@ -116,8 +116,8 @@ public final class Device {
                             return;
                         }
 
-                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), options.getCrop(),
-                                options.getMaxSize(), options.getLockVideoOrientation());
+                        deviceSize = displayInfo.getSize();
+                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
                         // notify
                         if (foldListener != null) {
                             foldListener.onFoldChanged(displayId, folded);
@@ -162,6 +162,10 @@ public final class Device {
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
+    }
+
+    public int getDisplayId() {
+        return displayId;
     }
 
     public synchronized void setMaxSize(int newMaxSize) {
@@ -355,21 +359,30 @@ public final class Device {
     /**
      * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
      */
-    public static void rotateDevice() {
+    public void rotateDevice() {
         WindowManager wm = ServiceManager.getWindowManager();
 
-        boolean accelerometerRotation = !wm.isRotationFrozen();
+        boolean accelerometerRotation = !wm.isRotationFrozen(displayId);
 
-        int currentRotation = wm.getRotation();
+        int currentRotation = getCurrentRotation(displayId);
         int newRotation = (currentRotation & 1) ^ 1; // 0->1, 1->0, 2->1, 3->0
         String newRotationString = newRotation == 0 ? "portrait" : "landscape";
 
         Ln.i("Device rotation requested: " + newRotationString);
-        wm.freezeRotation(newRotation);
+        wm.freezeRotation(displayId, newRotation);
 
         // restore auto-rotate if necessary
         if (accelerometerRotation) {
-            wm.thawRotation();
+            wm.thawRotation(displayId);
         }
+    }
+
+    private static int getCurrentRotation(int displayId) {
+        if (displayId == 0) {
+            return ServiceManager.getWindowManager().getRotation();
+        }
+
+        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+        return displayInfo.getRotation();
     }
 }

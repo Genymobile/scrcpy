@@ -52,8 +52,11 @@ is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
-    assert(!params->controller || (params->kp && params->kp->ops));
-    assert(!params->controller || (params->mp && params->mp->ops));
+    // A key/mouse processor may not be present if there is no controller
+    assert((!params->kp && !params->mp) || params->controller);
+    // A processor must have ops initialized
+    assert(!params->kp || params->kp->ops);
+    assert(!params->mp || params->mp->ops);
 
     im->controller = params->controller;
     im->fp = params->fp;
@@ -76,6 +79,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->sdl_shortcut_mods.count = shortcut_mods->count;
 
     im->vfinger_down = false;
+    im->vfinger_invert_x = false;
+    im->vfinger_invert_y = false;
 
     im->last_keycode = SDLK_UNKNOWN;
     im->last_mod = 0;
@@ -85,8 +90,10 @@ sc_input_manager_init(struct sc_input_manager *im,
 }
 
 static void
-send_keycode(struct sc_controller *controller, enum android_keycode keycode,
+send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
              enum sc_action action, const char *name) {
+    assert(im->controller && im->kp);
+
     // send DOWN event
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
@@ -97,100 +104,109 @@ send_keycode(struct sc_controller *controller, enum android_keycode keycode,
     msg.inject_keycode.metastate = 0;
     msg.inject_keycode.repeat = 0;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'inject %s'", name);
     }
 }
 
 static inline void
-action_home(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_HOME, action, "HOME");
+action_home(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_HOME, action, "HOME");
 }
 
 static inline void
-action_back(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_BACK, action, "BACK");
+action_back(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_BACK, action, "BACK");
 }
 
 static inline void
-action_app_switch(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
+action_app_switch(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_APP_SWITCH, action, "APP_SWITCH");
 }
 
 static inline void
-action_power(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_POWER, action, "POWER");
+action_power(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_POWER, action, "POWER");
 }
 
 static inline void
-action_volume_up(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_VOLUME_UP, action, "VOLUME_UP");
+action_volume_up(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_VOLUME_UP, action, "VOLUME_UP");
 }
 
 static inline void
-action_volume_down(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_VOLUME_DOWN, action, "VOLUME_DOWN");
+action_volume_down(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_VOLUME_DOWN, action, "VOLUME_DOWN");
 }
 
 static inline void
-action_menu(struct sc_controller *controller, enum sc_action action) {
-    send_keycode(controller, AKEYCODE_MENU, action, "MENU");
+action_menu(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_MENU, action, "MENU");
 }
 
 // turn the screen on if it was off, press BACK otherwise
 // If the screen is off, it is turned on only on ACTION_DOWN
 static void
-press_back_or_turn_screen_on(struct sc_controller *controller,
+press_back_or_turn_screen_on(struct sc_input_manager *im,
                              enum sc_action action) {
+    assert(im->controller && im->kp);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_BACK_OR_SCREEN_ON;
     msg.back_or_screen_on.action = action == SC_ACTION_DOWN
                                  ? AKEY_EVENT_ACTION_DOWN
                                  : AKEY_EVENT_ACTION_UP;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'press back or turn screen on'");
     }
 }
 
 static void
-expand_notification_panel(struct sc_controller *controller) {
+expand_notification_panel(struct sc_input_manager *im) {
+    assert(im->controller);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'expand notification panel'");
     }
 }
 
 static void
-expand_settings_panel(struct sc_controller *controller) {
+expand_settings_panel(struct sc_input_manager *im) {
+    assert(im->controller);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'expand settings panel'");
     }
 }
 
 static void
-collapse_panels(struct sc_controller *controller) {
+collapse_panels(struct sc_input_manager *im) {
+    assert(im->controller);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'collapse notification panel'");
     }
 }
 
 static bool
-get_device_clipboard(struct sc_controller *controller,
-                     enum sc_copy_key copy_key) {
+get_device_clipboard(struct sc_input_manager *im, enum sc_copy_key copy_key) {
+    assert(im->controller && im->kp);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_GET_CLIPBOARD;
     msg.get_clipboard.copy_key = copy_key;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'get device clipboard'");
         return false;
     }
@@ -199,8 +215,10 @@ get_device_clipboard(struct sc_controller *controller,
 }
 
 static bool
-set_device_clipboard(struct sc_controller *controller, bool paste,
+set_device_clipboard(struct sc_input_manager *im, bool paste,
                      uint64_t sequence) {
+    assert(im->controller && im->kp);
+
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -220,7 +238,7 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
     msg.set_clipboard.text = text_dup;
     msg.set_clipboard.paste = paste;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'set device clipboard'");
         return false;
@@ -230,19 +248,23 @@ set_device_clipboard(struct sc_controller *controller, bool paste,
 }
 
 static void
-set_screen_power_mode(struct sc_controller *controller,
+set_screen_power_mode(struct sc_input_manager *im,
                       enum sc_screen_power_mode mode) {
+    assert(im->controller);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
     msg.set_screen_power_mode.mode = mode;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'set screen power mode'");
     }
 }
 
 static void
-switch_fps_counter_state(struct sc_fps_counter *fps_counter) {
+switch_fps_counter_state(struct sc_input_manager *im) {
+    struct sc_fps_counter *fps_counter = &im->screen->fps_counter;
+
     // the started state can only be written from the current thread, so there
     // is no ToCToU issue
     if (sc_fps_counter_is_started(fps_counter)) {
@@ -254,7 +276,9 @@ switch_fps_counter_state(struct sc_fps_counter *fps_counter) {
 }
 
 static void
-clipboard_paste(struct sc_controller *controller) {
+clipboard_paste(struct sc_input_manager *im) {
+    assert(im->controller && im->kp);
+
     char *text = SDL_GetClipboardText();
     if (!text) {
         LOGW("Could not get clipboard text: %s", SDL_GetError());
@@ -276,25 +300,40 @@ clipboard_paste(struct sc_controller *controller) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_TEXT;
     msg.inject_text.text = text_dup;
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         free(text_dup);
         LOGW("Could not request 'paste clipboard'");
     }
 }
 
 static void
-rotate_device(struct sc_controller *controller) {
+rotate_device(struct sc_input_manager *im) {
+    assert(im->controller);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_ROTATE_DEVICE;
 
-    if (!sc_controller_push_msg(controller, &msg)) {
+    if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request device rotation");
     }
 }
 
 static void
-apply_orientation_transform(struct sc_screen *screen,
+open_hard_keyboard_settings(struct sc_input_manager *im) {
+    assert(im->controller);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request opening hard keyboard settings");
+    }
+}
+
+static void
+apply_orientation_transform(struct sc_input_manager *im,
                             enum sc_orientation transform) {
+    struct sc_screen *screen = im->screen;
     enum sc_orientation new_orientation =
         sc_orientation_apply(screen->orientation, transform);
     sc_screen_set_orientation(screen, new_orientation);
@@ -347,9 +386,14 @@ simulate_virtual_finger(struct sc_input_manager *im,
 }
 
 static struct sc_point
-inverse_point(struct sc_point point, struct sc_size size) {
-    point.x = size.width - point.x;
-    point.y = size.height - point.y;
+inverse_point(struct sc_point point, struct sc_size size,
+              bool invert_x, bool invert_y) {
+    if (invert_x) {
+        point.x = size.width - point.x;
+    }
+    if (invert_y) {
+        point.y = size.height - point.y;
+    }
     return point;
 }
 
@@ -357,7 +401,7 @@ static void
 sc_input_manager_process_key(struct sc_input_manager *im,
                              const SDL_KeyboardEvent *event) {
     // controller is NULL if --no-control is requested
-    struct sc_controller *controller = im->controller;
+    bool control = im->controller;
 
     SDL_Keycode keycode = event->keysym.sym;
     uint16_t mod = event->keysym.mod;
@@ -383,68 +427,68 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
         switch (keycode) {
             case SDLK_h:
-                if (controller && !shift && !repeat) {
-                    action_home(controller, action);
+                if (im->kp && !shift && !repeat) {
+                    action_home(im, action);
                 }
                 return;
             case SDLK_b: // fall-through
             case SDLK_BACKSPACE:
-                if (controller && !shift && !repeat) {
-                    action_back(controller, action);
+                if (im->kp && !shift && !repeat) {
+                    action_back(im, action);
                 }
                 return;
             case SDLK_s:
-                if (controller && !shift && !repeat) {
-                    action_app_switch(controller, action);
+                if (im->kp && !shift && !repeat) {
+                    action_app_switch(im, action);
                 }
                 return;
             case SDLK_m:
-                if (controller && !shift && !repeat) {
-                    action_menu(controller, action);
+                if (im->kp && !shift && !repeat) {
+                    action_menu(im, action);
                 }
                 return;
             case SDLK_p:
-                if (controller && !shift && !repeat) {
-                    action_power(controller, action);
+                if (im->kp && !shift && !repeat) {
+                    action_power(im, action);
                 }
                 return;
             case SDLK_o:
-                if (controller && !repeat && down) {
+                if (control && !repeat && down) {
                     enum sc_screen_power_mode mode = shift
                                                    ? SC_SCREEN_POWER_MODE_NORMAL
                                                    : SC_SCREEN_POWER_MODE_OFF;
-                    set_screen_power_mode(controller, mode);
+                    set_screen_power_mode(im, mode);
                 }
                 return;
             case SDLK_DOWN:
                 if (shift) {
                     if (!repeat & down) {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
-                } else if (controller) {
+                } else if (im->kp) {
                     // forward repeated events
-                    action_volume_down(controller, action);
+                    action_volume_down(im, action);
                 }
                 return;
             case SDLK_UP:
                 if (shift) {
                     if (!repeat & down) {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
-                } else if (controller) {
+                } else if (im->kp) {
                     // forward repeated events
-                    action_volume_up(controller, action);
+                    action_volume_up(im, action);
                 }
                 return;
             case SDLK_LEFT:
                 if (!repeat && down) {
                     if (shift) {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
                     } else {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_270);
                     }
                 }
@@ -452,34 +496,33 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             case SDLK_RIGHT:
                 if (!repeat && down) {
                     if (shift) {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
                     } else {
-                        apply_orientation_transform(im->screen,
+                        apply_orientation_transform(im,
                                                     SC_ORIENTATION_90);
                     }
                 }
                 return;
             case SDLK_c:
-                if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller, SC_COPY_KEY_COPY);
+                if (im->kp && !shift && !repeat && down) {
+                    get_device_clipboard(im, SC_COPY_KEY_COPY);
                 }
                 return;
             case SDLK_x:
-                if (controller && !shift && !repeat && down) {
-                    get_device_clipboard(controller, SC_COPY_KEY_CUT);
+                if (im->kp && !shift && !repeat && down) {
+                    get_device_clipboard(im, SC_COPY_KEY_CUT);
                 }
                 return;
             case SDLK_v:
-                if (controller && !repeat && down) {
+                if (im->kp && !repeat && down) {
                     if (shift || im->legacy_paste) {
                         // inject the text as input events
-                        clipboard_paste(controller);
+                        clipboard_paste(im);
                     } else {
                         // store the text in the device clipboard and paste,
                         // without requesting an acknowledgment
-                        set_device_clipboard(controller, true,
-                                             SC_SEQUENCE_INVALID);
+                        set_device_clipboard(im, true, SC_SEQUENCE_INVALID);
                     }
                 }
                 return;
@@ -500,23 +543,30 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_i:
                 if (!shift && !repeat && down) {
-                    switch_fps_counter_state(&im->screen->fps_counter);
+                    switch_fps_counter_state(im);
                 }
                 return;
             case SDLK_n:
-                if (controller && !repeat && down) {
+                if (control && !repeat && down) {
                     if (shift) {
-                        collapse_panels(controller);
+                        collapse_panels(im);
                     } else if (im->key_repeat == 0) {
-                        expand_notification_panel(controller);
+                        expand_notification_panel(im);
                     } else {
-                        expand_settings_panel(controller);
+                        expand_settings_panel(im);
                     }
                 }
                 return;
             case SDLK_r:
-                if (controller && !shift && !repeat && down) {
-                    rotate_device(controller);
+                if (control && !shift && !repeat && down) {
+                    rotate_device(im);
+                }
+                return;
+            case SDLK_k:
+                if (control && !shift && !repeat && down
+                        && im->kp && im->kp->hid) {
+                    // Only if the current keyboard is hid
+                    open_hard_keyboard_settings(im);
                 }
                 return;
         }
@@ -524,7 +574,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         return;
     }
 
-    if (!controller) {
+    if (!im->kp) {
         return;
     }
 
@@ -533,7 +583,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     if (im->clipboard_autosync && is_ctrl_v) {
         if (im->legacy_paste) {
             // inject the text as input events
-            clipboard_paste(controller);
+            clipboard_paste(im);
             return;
         }
 
@@ -543,7 +593,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
         // Synchronize the computer clipboard to the device clipboard before
         // sending Ctrl+v, to allow seamless copy-paste.
-        bool ok = set_device_clipboard(controller, false, sequence);
+        bool ok = set_device_clipboard(im, false, sequence);
         if (!ok) {
             LOGW("Clipboard could not be synchronized, Ctrl+v not injected");
             return;
@@ -605,7 +655,9 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         struct sc_point mouse =
            sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                     event->y);
-        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
+                                                im->vfinger_invert_x,
+                                                im->vfinger_invert_y);
         simulate_virtual_finger(im, AMOTION_EVENT_ACTION_MOVE, vfinger);
     }
 }
@@ -643,7 +695,7 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                                       const SDL_MouseButtonEvent *event) {
-    struct sc_controller *controller = im->controller;
+    bool control = im->controller;
 
     if (event->which == SDL_TOUCH_MOUSEID) {
         // simulated from touch events, so it's a duplicate
@@ -652,27 +704,27 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
     if (!im->forward_all_clicks) {
-        if (controller) {
+        if (control) {
             enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
-            if (event->button == SDL_BUTTON_X1) {
-                action_app_switch(controller, action);
+            if (im->kp && event->button == SDL_BUTTON_X1) {
+                action_app_switch(im, action);
                 return;
             }
             if (event->button == SDL_BUTTON_X2 && down) {
                 if (event->clicks < 2) {
-                    expand_notification_panel(controller);
+                    expand_notification_panel(im);
                 } else {
-                    expand_settings_panel(controller);
+                    expand_settings_panel(im);
                 }
                 return;
             }
-            if (event->button == SDL_BUTTON_RIGHT) {
-                press_back_or_turn_screen_on(controller, action);
+            if (im->kp && event->button == SDL_BUTTON_RIGHT) {
+                press_back_or_turn_screen_on(im, action);
                 return;
             }
-            if (event->button == SDL_BUTTON_MIDDLE) {
-                action_home(controller, action);
+            if (im->kp && event->button == SDL_BUTTON_MIDDLE) {
+                action_home(im, action);
                 return;
             }
         }
@@ -695,7 +747,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         // otherwise, send the click event to the device
     }
 
-    if (!controller) {
+    if (!im->mp) {
         return;
     }
 
@@ -726,7 +778,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         return;
     }
 
-    // Pinch-to-zoom simulation.
+    // Pinch-to-zoom, rotate and tilt simulation.
     //
     // If Ctrl is hold when the left-click button is pressed, then
     // pinch-to-zoom mode is enabled: on every mouse event until the left-click
@@ -735,14 +787,29 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     //
     // In other words, the center of the rotation/scaling is the center of the
     // screen.
-#define CTRL_PRESSED (SDL_GetModState() & (KMOD_LCTRL | KMOD_RCTRL))
+    //
+    // To simulate a tilt gesture (a vertical slide with two fingers), Shift
+    // can be used instead of Ctrl. The "virtual finger" has a position
+    // inverted with respect to the vertical axis of symmetry in the middle of
+    // the screen.
+    const SDL_Keymod keymod = SDL_GetModState();
+    const bool ctrl_pressed = keymod & KMOD_CTRL;
+    const bool shift_pressed = keymod & KMOD_SHIFT;
     if (event->button == SDL_BUTTON_LEFT &&
-            ((down && !im->vfinger_down && CTRL_PRESSED) ||
+            ((down && !im->vfinger_down &&
+              ((ctrl_pressed && !shift_pressed) ||
+               (!ctrl_pressed && shift_pressed))) ||
              (!down && im->vfinger_down))) {
         struct sc_point mouse =
             sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                                  event->y);
-        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size);
+        if (down) {
+            im->vfinger_invert_x = ctrl_pressed || shift_pressed;
+            im->vfinger_invert_y = ctrl_pressed;
+        }
+        struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
+                                                im->vfinger_invert_x,
+                                                im->vfinger_invert_y);
         enum android_motionevent_action action = down
                                                ? AMOTION_EVENT_ACTION_DOWN
                                                : AMOTION_EVENT_ACTION_UP;
@@ -820,7 +887,7 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
     bool control = im->controller;
     switch (event->type) {
         case SDL_TEXTINPUT:
-            if (!control) {
+            if (!im->kp) {
                 break;
             }
             sc_input_manager_process_text_input(im, &event->text);
@@ -832,13 +899,13 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
             sc_input_manager_process_key(im, &event->key);
             break;
         case SDL_MOUSEMOTION:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_mouse_motion(im, &event->motion);
             break;
         case SDL_MOUSEWHEEL:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_mouse_wheel(im, &event->wheel);
@@ -852,7 +919,7 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
         case SDL_FINGERMOTION:
         case SDL_FINGERDOWN:
         case SDL_FINGERUP:
-            if (!control) {
+            if (!im->mp) {
                 break;
             }
             sc_input_manager_process_touch(im, &event->tfinger);

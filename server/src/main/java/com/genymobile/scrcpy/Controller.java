@@ -1,7 +1,9 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.InputManager;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -26,8 +28,11 @@ public class Controller implements AsyncProcessor {
 
     private Thread thread;
 
+    private UhidManager uhidManager;
+
     private final Device device;
-    private final DesktopConnection connection;
+    private final ControlChannel controlChannel;
+    private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
@@ -41,13 +46,21 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
-        this.connection = connection;
+        this.controlChannel = controlChannel;
+        this.cleanUp = cleanUp;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
         initPointers();
-        sender = new DeviceMessageSender(connection);
+        sender = new DeviceMessageSender(controlChannel);
+    }
+
+    private UhidManager getUhidManager() {
+        if (uhidManager == null) {
+            uhidManager = new UhidManager(sender);
+        }
+        return uhidManager;
     }
 
     private void initPointers() {
@@ -79,8 +92,9 @@ public class Controller implements AsyncProcessor {
             SystemClock.sleep(500);
         }
 
-        while (!Thread.currentThread().isInterrupted()) {
-            handleEvent();
+        boolean alive = true;
+        while (!Thread.currentThread().isInterrupted() && alive) {
+            alive = handleEvent();
         }
     }
 
@@ -90,9 +104,12 @@ public class Controller implements AsyncProcessor {
             try {
                 control();
             } catch (IOException e) {
-                // this is expected on close
+                Ln.e("Controller error", e);
             } finally {
                 Ln.d("Controller stopped");
+                if (uhidManager != null) {
+                    uhidManager.closeAll();
+                }
                 listener.onTerminated(true);
             }
         }, "control-recv");
@@ -120,8 +137,15 @@ public class Controller implements AsyncProcessor {
         return sender;
     }
 
-    private void handleEvent() throws IOException {
-        ControlMessage msg = connection.receiveControlMessage();
+    private boolean handleEvent() throws IOException {
+        ControlMessage msg;
+        try {
+            msg = controlChannel.recv();
+        } catch (IOException e) {
+            // this is expected on close
+            return false;
+        }
+
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
                 if (device.supportsInputEvents()) {
@@ -170,15 +194,30 @@ public class Controller implements AsyncProcessor {
                     if (setPowerModeOk) {
                         keepPowerModeOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+                        if (cleanUp != null) {
+                            boolean mustRestoreOnExit = mode != Device.POWER_MODE_NORMAL;
+                            cleanUp.setRestoreNormalPowerMode(mustRestoreOnExit);
+                        }
                     }
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
-                Device.rotateDevice();
+                device.rotateDevice();
+                break;
+            case ControlMessage.TYPE_UHID_CREATE:
+                getUhidManager().open(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_UHID_INPUT:
+                getUhidManager().writeInput(msg.getId(), msg.getData());
+                break;
+            case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
+                openHardKeyboardSettings();
                 break;
             default:
                 // do nothing
         }
+
+        return true;
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
@@ -387,7 +426,8 @@ public class Controller implements AsyncProcessor {
         if (!clipboardAutosync) {
             String clipboardText = Device.getClipboardText();
             if (clipboardText != null) {
-                sender.pushClipboardText(clipboardText);
+                DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
+                sender.send(msg);
             }
         }
     }
@@ -405,9 +445,15 @@ public class Controller implements AsyncProcessor {
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
             // Acknowledgement requested
-            sender.pushAckClipboard(sequence);
+            DeviceMessage msg = DeviceMessage.createAckClipboard(sequence);
+            sender.send(msg);
         }
 
         return ok;
+    }
+
+    private void openHardKeyboardSettings() {
+        Intent intent = new Intent("android.settings.HARD_KEYBOARD_SETTINGS");
+        ServiceManager.getActivityManager().startActivity(intent);
     }
 }

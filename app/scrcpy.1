@@ -124,7 +124,7 @@ Use USB device (if there is exactly one, like adb -d).
 Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 
 .TP
-.BI "\-\-disable-screensaver"
+.BI "\-\-disable\-screensaver"
 Disable screensaver while scrcpy is running.
 
 .TP
@@ -172,24 +172,31 @@ By default, right-click triggers BACK (or POWER on) and middle-click triggers HO
 Print this help.
 
 .TP
-.B \-\-kill\-adb\-on\-close
-Kill adb when scrcpy terminates.
+.B \-K
+Same as \fB\-\-keyboard=uhid\fR.
 
 .TP
-.B \-K, \-\-hid\-keyboard
-Simulate a physical keyboard by using HID over AOAv2.
+.BI "\-\-keyboard " mode
+Select how to send keyboard inputs to the device.
 
-This provides a better experience for IME users, and allows to generate non-ASCII characters, contrary to the default injection method.
+Possible values are "disabled", "sdk", "uhid" and "aoa":
 
-It may only work over USB.
+ - "disabled" does not send keyboard inputs to the device.
+ - "sdk" uses the Android system API to deliver keyboard events to applications.
+ - "uhid" simulates a physical HID keyboard using the Linux HID kernel module on the device.
+ - "aoa" simulates a physical HID keyboard using the AOAv2 protocol. It may only work over USB.
 
-The keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly:
+For "uhid" and "aoa", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly using the shortcut MOD+k (except in OTG mode), or by executing:
 
     adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
 
-However, the option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
+This option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
 
-Also see \fB\-\-hid\-mouse\fR.
+Also see \fB\-\-mouse\fR.
+
+.TP
+.B \-\-kill\-adb\-on\-close
+Kill adb when scrcpy terminates.
 
 .TP
 .B \-\-legacy\-paste
@@ -230,20 +237,30 @@ Limit both the width and height of the video to \fIvalue\fR. The other dimension
 Default is 0 (unlimited).
 
 .TP
-.B \-M, \-\-hid\-mouse
-Simulate a physical mouse by using HID over AOAv2.
-
-In this mode, the computer mouse is captured to control the device directly (relative mouse mode).
-
-LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
-
-It may only work over USB.
-
-Also see \fB\-\-hid\-keyboard\fR.
+.B \-M
+Same as \fB\-\-mouse=uhid\fR.
 
 .TP
 .BI "\-\-max\-fps " value
 Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
+
+.TP
+.BI "\-\-mouse " mode
+Select how to send mouse inputs to the device.
+
+Possible values are "disabled", "sdk", "uhid" and "aoa":
+
+ - "disabled" does not send mouse inputs to the device.
+ - "sdk" uses the Android system API to deliver mouse events to applications.
+ - "uhid" simulates a physical HID mouse using the Linux HID kernel module on the device.
+ - "aoa" simulates a physical mouse using the AOAv2 protocol. It may only work over USB.
+
+In "uhid" and "aoa" modes, the computer mouse is captured to control the device directly (relative mouse mode).
+
+LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
+
+Also see \fB\-\-keyboard\fR.
+
 
 .TP
 .B \-n, \-\-no\-control
@@ -637,12 +654,20 @@ Copy computer clipboard to device, then paste (inject PASTE keycode, Android >= 
 Inject computer clipboard text as a sequence of key events
 
 .TP
+.B MOD+k
+Open keyboard settings on the device (for HID keyboard only)
+
+.TP
 .B MOD+i
 Enable/disable FPS counter (print frames/second in logs)
 
 .TP
 .B Ctrl+click-and-move
-Pinch-to-zoom from the center of the screen
+Pinch-to-zoom and rotate from the center of the screen
+
+.TP
+.B Shift+click-and-move
+Tilt (slide vertically with two fingers)
 
 .TP
 .B Drag & drop APK file
@@ -689,7 +714,7 @@ Report bugs to <https://github.com/Genymobile/scrcpy/issues>.
 .SH COPYRIGHT
 Copyright \(co 2018 Genymobile <https://www.genymobile.com>
 
-Copyright \(co 2018\-2023 Romain Vimont <rom@rom1v.com>
+Copyright \(co 2018\-2024 Romain Vimont <rom@rom1v.com>
 
 Licensed under the Apache License, Version 2.0.
 
