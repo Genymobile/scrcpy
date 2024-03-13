@@ -1,0 +1,185 @@
+name: Build and Publish Release
+
+on:
+  push:
+    branches:
+      - master
+      - main
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - distro: "debian:bookworm"
+            os_name: "bookworm"
+          - distro: "debian:bullseye"
+            os_name: "bullseye"
+          - distro: "ubuntu:focal"
+            os_name: "focal"
+
+    container:
+      image: docker://${{ matrix.distro }}
+
+    env:
+      SCRCPY_USER: scrcpy
+      SCRCPY_BUILD_DIR: ./build-auto
+      ANDROID_SDK_ROOT: /opt/android-sdk
+      ANDROID_HOME: /opt/android-sdk
+      DISTRIBUTION: ${{ matrix.os_name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache APT packages, Android SDK and Gradle dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            /var/cache/apt
+            /var/lib/apt/lists
+            /opt/android-sdk
+            /home/${{ env.SCRCPY_USER }}/.gradle
+          key: ${{ runner.os }}-${{ matrix.os_name }}-apt-gradle-${{ hashFiles('**/build.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.os_name }}-apt-gradle-
+            ${{ runner.os }}-${{ matrix.os_name }}-
+            ${{ runner.os }}-apt-gradle-
+
+      - name: Setup user and permissions
+        run: |
+          if [ ! -d "/etc/sudoers.d" ]; then
+            mkdir -p /etc/sudoers.d
+            chmod 750 /etc/sudoers.d
+          fi
+          groupadd -r ${SCRCPY_USER} || true
+          echo "${SCRCPY_USER} ALL=(ALL) NOPASSWD: ALL" | tee /etc/sudoers.d/${SCRCPY_USER}
+          chmod 0440 /etc/sudoers.d/${SCRCPY_USER}
+          useradd -m -u 1000 -r -g ${SCRCPY_USER} ${SCRCPY_USER} || true
+          usermod -aG sudo ${SCRCPY_USER} || true
+          chown -R ${SCRCPY_USER}:${SCRCPY_USER} /home/${SCRCPY_USER}
+
+      - name: Install dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sed -i '/DPkg::Post-Invoke/d' /etc/apt/apt.conf.d/docker-clean
+          sed -i '/APT::Update::Post-Invoke/d' /etc/apt/apt.conf.d/docker-clean
+          apt-get update -q
+          apt-get -qq -y upgrade
+          apt-get -o APT::Keep-Downloaded-Packages=true -y install \
+            sudo \
+            jq \
+            curl \
+            unzip \
+            gcc \
+            pkg-config \
+            meson \
+            ninja-build \
+            libsdl2-dev \
+            libavcodec-dev \
+            libavdevice-dev \
+            libavformat-dev \
+            libavutil-dev \
+            libswresample-dev \
+            libusb-1.0-0-dev \
+            openjdk-17-jdk
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Fix Android SDK directory permissions
+        run: |
+          chown -R ${SCRCPY_USER}:${SCRCPY_USER} ${ANDROID_HOME}
+
+      - name: Build scrcpy
+        run: |
+          mkdir -p ${SCRCPY_BUILD_DIR}
+          mkdir -p .gradle
+          mkdir -p server/build
+          chown -R ${SCRCPY_USER}:${SCRCPY_USER} ${SCRCPY_BUILD_DIR}
+          chown -R ${SCRCPY_USER}:${SCRCPY_USER} .gradle
+          chown -R ${SCRCPY_USER}:${SCRCPY_USER} server/build
+
+          sudo -u ${SCRCPY_USER} \
+            meson setup "${SCRCPY_BUILD_DIR}" \
+            --buildtype=release \
+            --strip \
+            -Db_lto=true
+          sudo ANDROID_HOME=${ANDROID_HOME} -u ${SCRCPY_USER} \
+            ninja -C "${SCRCPY_BUILD_DIR}"
+
+      - name: Build and package scrcpy as a .deb
+        run: |
+          sudo SCRCPY_BUILD_DIR=${SCRCPY_BUILD_DIR} \
+            DISTRIBUTION=${DISTRIBUTION} -u ${SCRCPY_USER} \
+            sh <<'EOF'
+            # Setup the debian directory
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/DEBIAN
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/bin
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/scrcpy
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/man/man1
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/icons/hicolor/256x256/apps
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/zsh/site-functions
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/bash-completion/completions
+            mkdir -p ${SCRCPY_BUILD_DIR}/debian/usr/local/share/applications
+
+            # Create the control file
+            cat <<EOL >${SCRCPY_BUILD_DIR}/debian/DEBIAN/control
+          Package: scrcpy
+          Version: 2.2
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: ffmpeg, libsdl2-2.0-0, libusb-1.0-0
+          Suggests: adb
+          Maintainer: Scrcpy Developers <scrcpy-devs@github.com>
+          Description: Display and control your Android device
+           This application provides display and control of Android devices connected
+           on USB (or over TCP/IP). It does not require any root access.
+          EOL
+
+            cp -f ${SCRCPY_BUILD_DIR}/app/scrcpy ${SCRCPY_BUILD_DIR}/debian/usr/local/bin/
+            cp -f ${SCRCPY_BUILD_DIR}/server/scrcpy-server ${SCRCPY_BUILD_DIR}/debian/usr/local/share/scrcpy/scrcpy-server
+            cp -f app/scrcpy.1 ${SCRCPY_BUILD_DIR}/debian/usr/local/share/man/man1
+            cp -f app/data/icon.png ${SCRCPY_BUILD_DIR}/debian/usr/local/share/icons/hicolor/256x256/apps/scrcpy.png
+            cp -f app/data/zsh-completion/_scrcpy ${SCRCPY_BUILD_DIR}/debian/usr/local/share/zsh/site-functions
+            cp -f app/data/bash-completion/scrcpy ${SCRCPY_BUILD_DIR}/debian/usr/local/share/bash-completion/completions
+            cp -f app/data/scrcpy.desktop ${SCRCPY_BUILD_DIR}/debian/usr/local/share/applications
+            cp -f app/data/scrcpy-console.desktop ${SCRCPY_BUILD_DIR}/debian/usr/local/share/applications
+
+            dpkg-deb --build ${SCRCPY_BUILD_DIR}/debian ${SCRCPY_BUILD_DIR}/scrcpy_${DISTRIBUTION}_amd64.deb
+          EOF
+
+      - name: Fix Android SDK directory permissions
+        run: |
+          chown -R root:root ${ANDROID_HOME}
+
+      - name: Get Release ID
+        id: get_release
+        run: |
+          response=$(curl \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/latest")
+          release_id=$(echo $response | jq .id)
+          echo "release_id=$release_id" >> $GITHUB_ENV
+        continue-on-error: true
+
+      - name: Create Release
+        if: env.release_id == ''
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: release-${{ github.sha }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Package to Release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.SCRCPY_BUILD_DIR }}/scrcpy_${{ env.DISTRIBUTION }}_amd64.deb
+          asset_name: scrcpy_${{ env.DISTRIBUTION }}_amd64.deb
+          tag: release-${{ github.sha }}
+          overwrite: true
