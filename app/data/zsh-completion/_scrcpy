@@ -96,6 +96,7 @@ arguments=(
     '--window-y=[Set the initial window vertical position]'
     '--window-width=[Set the initial window width]'
     '--window-height=[Set the initial window height]'
+    '--system-resize[Leave the window size to be completely managed by the desktop manager]'
 )
 
 _arguments -s $arguments

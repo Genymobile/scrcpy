@@ -60,6 +60,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .show_touches = false,
     .fullscreen = false,
     .always_on_top = false,
+    .system_resize = false,
     .control = true,
     .video_playback = true,
     .audio_playback = true,

@@ -97,6 +97,7 @@ enum {
     OPT_MOUSE,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
+    OPT_SYSTEM_RESIZE,
 };
 
 struct sc_option {
@@ -876,6 +877,11 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Set the initial window height.\n"
                 "Default is 0 (automatic).",
+    },
+    {
+        .longopt_id = OPT_SYSTEM_RESIZE,
+        .longopt = "system-resize",
+        .text = "Leave the window size to be completely managed by the desktop manager",
     },
 };
 
@@ -2185,6 +2191,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_ALWAYS_ON_TOP:
                 opts->always_on_top = true;
+                break;
+            case OPT_SYSTEM_RESIZE:
+                opts->system_resize = true;
                 break;
             case 'v':
                 args->version = true;
