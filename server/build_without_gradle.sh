@@ -56,6 +56,7 @@ javac -bootclasspath "$ANDROID_JAR" \
     -cp "$LAMBDA_JAR:$GEN_DIR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
+    -encoding UTF-8 \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/wrappers/*.java
 
