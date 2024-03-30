@@ -1,6 +1,7 @@
 #include "display.h"
 
 #include <assert.h>
+#include <libavutil/pixfmt.h>
 
 #include "util/log.h"
 
@@ -65,6 +66,7 @@ sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps) {
     display->texture = NULL;
     display->pending.flags = 0;
     display->pending.frame = NULL;
+    display->has_frame = false;
 
     return true;
 }
@@ -196,9 +198,25 @@ sc_display_set_texture_size(struct sc_display *display, struct sc_size size) {
     return SC_DISPLAY_RESULT_OK;
 }
 
+static SDL_YUV_CONVERSION_MODE
+sc_display_to_sdl_color_range(enum AVColorRange color_range) {
+    return color_range == AVCOL_RANGE_JPEG ? SDL_YUV_CONVERSION_JPEG
+                                           : SDL_YUV_CONVERSION_AUTOMATIC;
+}
+
 static bool
 sc_display_update_texture_internal(struct sc_display *display,
                                    const AVFrame *frame) {
+    if (!display->has_frame) {
+        // First frame
+        display->has_frame = true;
+
+        // Configure YUV color range conversion
+        SDL_YUV_CONVERSION_MODE sdl_color_range =
+            sc_display_to_sdl_color_range(frame->color_range);
+        SDL_SetYUVConversionMode(sdl_color_range);
+    }
+
     int ret = SDL_UpdateYUVTexture(display->texture, NULL,
                                    frame->data[0], frame->linesize[0],
                                    frame->data[1], frame->linesize[1],
