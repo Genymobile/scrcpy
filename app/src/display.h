@@ -33,6 +33,8 @@ struct sc_display {
         struct sc_size size;
         AVFrame *frame;
     } pending;
+
+    bool has_frame;
 };
 
 enum sc_display_result {
