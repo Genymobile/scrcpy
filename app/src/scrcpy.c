@@ -805,9 +805,12 @@ scrcpy(struct scrcpy_options *options) {
     ret = event_loop(s);
     LOGD("quit...");
 
-    // Close the window immediately on closing, because screen_destroy() may
-    // only be called once the video demuxer thread is joined (it may take time)
-    sc_screen_hide_window(&s->screen);
+    if (options->video_playback) {
+        // Close the window immediately on closing, because screen_destroy()
+        // may only be called once the video demuxer thread is joined (it may
+        // take time)
+        sc_screen_hide_window(&s->screen);
+    }
 
 end:
     if (timeout_started) {
