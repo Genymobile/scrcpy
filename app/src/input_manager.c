@@ -403,6 +403,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // controller is NULL if --no-control is requested
     bool control = im->controller;
     bool paused = im->screen->paused;
+    bool video = im->screen->video;
 
     SDL_Keycode keycode = event->keysym.sym;
     uint16_t mod = event->keysym.mod;
@@ -462,13 +463,13 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_z:
-                if (down && !repeat) {
+                if (video && down && !repeat) {
                     sc_screen_set_paused(im->screen, !shift);
                 }
                 return;
             case SDLK_DOWN:
                 if (shift) {
-                    if (!repeat && down) {
+                    if (video && !repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
@@ -479,7 +480,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_UP:
                 if (shift) {
-                    if (!repeat && down) {
+                    if (video && !repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
@@ -489,7 +490,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_LEFT:
-                if (!repeat && down) {
+                if (video && !repeat && down) {
                     if (shift) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
@@ -500,7 +501,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_RIGHT:
-                if (!repeat && down) {
+                if (video && !repeat && down) {
                     if (shift) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
@@ -533,22 +534,22 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_f:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_switch_fullscreen(im->screen);
                 }
                 return;
             case SDLK_w:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_fit(im->screen);
                 }
                 return;
             case SDLK_g:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
             case SDLK_i:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     switch_fps_counter_state(im);
                 }
                 return;
