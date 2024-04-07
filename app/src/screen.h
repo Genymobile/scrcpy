@@ -26,6 +26,8 @@ struct sc_screen {
     bool open; // track the open/close state to assert correct behavior
 #endif
 
+    bool video;
+
     struct sc_display display;
     struct sc_input_manager im;
     struct sc_frame_buffer fb;
@@ -70,6 +72,8 @@ struct sc_screen {
 };
 
 struct sc_screen_params {
+    bool video;
+
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
     struct sc_key_processor *kp;

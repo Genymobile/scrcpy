@@ -5,8 +5,30 @@
 
 #include "util/log.h"
 
+static bool
+sc_display_init_novideo_icon(struct sc_display *display,
+                             SDL_Surface *icon_novideo) {
+    assert(icon_novideo);
+
+    if (SDL_RenderSetLogicalSize(display->renderer,
+                                 icon_novideo->w, icon_novideo->h)) {
+        LOGW("Could not set renderer logical size: %s", SDL_GetError());
+        // don't fail
+    }
+
+    display->texture = SDL_CreateTextureFromSurface(display->renderer,
+                                                    icon_novideo);
+    if (!display->texture) {
+        LOGE("Could not create texture: %s", SDL_GetError());
+        return false;
+    }
+
+    return true;
+}
+
 bool
-sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps) {
+sc_display_init(struct sc_display *display, SDL_Window *window,
+                SDL_Surface *icon_novideo, bool mipmaps) {
     display->renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!display->renderer) {
@@ -67,6 +89,18 @@ sc_display_init(struct sc_display *display, SDL_Window *window, bool mipmaps) {
     display->pending.flags = 0;
     display->pending.frame = NULL;
     display->has_frame = false;
+
+    if (icon_novideo) {
+        // Without video, set a static scrcpy icon as window content
+        bool ok = sc_display_init_novideo_icon(display, icon_novideo);
+        if (!ok) {
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+            SDL_GL_DeleteContext(display->gl_context);
+#endif
+            SDL_DestroyRenderer(display->renderer);
+            return false;
+        }
+    }
 
     return true;
 }

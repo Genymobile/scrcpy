@@ -279,6 +279,7 @@ struct scrcpy_options {
 #define SC_OPTION_LIST_CAMERAS 0x4
 #define SC_OPTION_LIST_CAMERA_SIZES 0x8
     uint8_t list;
+    bool window;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

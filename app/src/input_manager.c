@@ -403,6 +403,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // controller is NULL if --no-control is requested
     bool control = im->controller;
     bool paused = im->screen->paused;
+    bool video = im->screen->video;
 
     SDL_Keycode keycode = event->keysym.sym;
     uint16_t mod = event->keysym.mod;
@@ -462,13 +463,13 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_z:
-                if (down && !repeat) {
+                if (video && down && !repeat) {
                     sc_screen_set_paused(im->screen, !shift);
                 }
                 return;
             case SDLK_DOWN:
                 if (shift) {
-                    if (!repeat && down) {
+                    if (video && !repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
@@ -479,7 +480,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_UP:
                 if (shift) {
-                    if (!repeat && down) {
+                    if (video && !repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
@@ -489,7 +490,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_LEFT:
-                if (!repeat && down) {
+                if (video && !repeat && down) {
                     if (shift) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
@@ -500,7 +501,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_RIGHT:
-                if (!repeat && down) {
+                if (video && !repeat && down) {
                     if (shift) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_0);
@@ -533,22 +534,22 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_f:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_switch_fullscreen(im->screen);
                 }
                 return;
             case SDLK_w:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_fit(im->screen);
                 }
                 return;
             case SDLK_g:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
             case SDLK_i:
-                if (!shift && !repeat && down) {
+                if (video && !shift && !repeat && down) {
                     switch_fps_counter_state(im);
                 }
                 return;
@@ -625,6 +626,23 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 
+static struct sc_position
+sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
+                                                           int32_t y) {
+    if (im->mp->relative_mode) {
+        // No absolute position
+        return (struct sc_position) {
+            .screen_size = {0, 0},
+            .point = {0, 0},
+        };
+    }
+
+    return (struct sc_position) {
+        .screen_size = im->screen->frame_size,
+        .point = sc_screen_convert_window_to_frame_coords(im->screen, x, y),
+    };
+}
+
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
@@ -634,12 +652,7 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
     }
 
     struct sc_mouse_motion_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              event->x,
-                                                              event->y),
-        },
+        .position = sc_input_manager_get_position(im, event->x, event->y),
         .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
                                              : POINTER_ID_GENERIC_FINGER,
         .xrel = event->xrel,
@@ -735,7 +748,8 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         }
 
         // double-click on black borders resize to fit the device screen
-        if (event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
+        bool video = im->screen->video;
+        if (video && event->button == SDL_BUTTON_LEFT && event->clicks == 2) {
             int32_t x = event->x;
             int32_t y = event->y;
             sc_screen_hidpi_scale_coords(im->screen, &x, &y);
@@ -759,12 +773,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     uint32_t sdl_buttons_state = SDL_GetMouseState(NULL, NULL);
 
     struct sc_mouse_click_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              event->x,
-                                                              event->y),
-        },
+        .position = sc_input_manager_get_position(im, event->x, event->y),
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
         .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
@@ -839,11 +848,7 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
     struct sc_mouse_scroll_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              mouse_x, mouse_y),
-        },
+        .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
 #if SDL_VERSION_ATLEAST(2, 0, 18)
         .hscroll = CLAMP(event->preciseX, -1.0f, 1.0f),
         .vscroll = CLAMP(event->preciseY, -1.0f, 1.0f),
