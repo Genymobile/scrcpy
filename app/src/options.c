@@ -89,6 +89,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .kill_adb_on_close = false,
     .camera_high_speed = false,
     .list = 0,
+    .window = true,
 };
 
 enum sc_orientation
