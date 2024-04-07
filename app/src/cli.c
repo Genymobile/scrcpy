@@ -97,6 +97,7 @@ enum {
     OPT_MOUSE,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
+    OPT_NO_WINDOW,
 };
 
 struct sc_option {
@@ -565,6 +566,12 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_VIDEO_PLAYBACK,
         .longopt = "no-video-playback",
         .text = "Disable video playback on the computer.",
+    },
+    {
+        .longopt_id = OPT_NO_WINDOW,
+        .longopt = "no-window",
+        .text = "Disable scrcpy window. Implies --no-video-playback and "
+                "--no-control.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -2486,6 +2493,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
                 break;
+            case OPT_NO_WINDOW:
+                opts->window = false;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2523,6 +2533,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
+    if (!opts->window) {
+        // Without window, there cannot be any video playback or control
+        opts->video_playback = false;
+        opts->control = false;
+    }
+
     if (!opts->video) {
         opts->video_playback = false;
         // Do not power on the device on start if video capture is disabled
@@ -2544,8 +2560,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !otg) {
-        LOGE("No video, no audio, no OTG: nothing to do");
+    if (!opts->video && !opts->audio && !opts->control && !otg) {
+        LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
     }
 
@@ -2588,13 +2604,26 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
-    if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
-        opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
-                                        : SC_KEYBOARD_INPUT_MODE_SDK;
-    }
-    if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
-        opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
-                                     : SC_MOUSE_INPUT_MODE_SDK;
+    if (opts->control) {
+        if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
+            opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                            : SC_KEYBOARD_INPUT_MODE_SDK;
+        }
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
+            if (otg) {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
+            } else if (!opts->video_playback) {
+                LOGI("No video mirroring, SDK mouse disabled (you might want "
+                     "--mouse=uhid)");
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_DISABLED;
+            } else {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
+            }
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK
+                    && !opts->video_playback) {
+            LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
+            return false;
+        }
     }
 
     if (otg) {
