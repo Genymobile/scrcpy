@@ -2598,6 +2598,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (otg) {
+        if (!opts->control) {
+            LOGE("--no-control is not allowed in OTG mode");
+            return false;
+        }
+
         enum sc_keyboard_input_mode kmode = opts->keyboard_input_mode;
         if (kmode != SC_KEYBOARD_INPUT_MODE_AOA
                 && kmode != SC_KEYBOARD_INPUT_MODE_DISABLED) {
