@@ -76,9 +76,15 @@ public final class ClipboardManager {
             } catch (NoSuchMethodException e) {
                 // fall through
             }
-            getPrimaryClipMethod = manager.getClass()
-                    .getMethod("getPrimaryClip", String.class, String.class, String.class, String.class, int.class, int.class, boolean.class);
-            getMethodVersion = 5;
+            try {
+                getPrimaryClipMethod = manager.getClass()
+                        .getMethod("getPrimaryClip", String.class, String.class, String.class, String.class, int.class, int.class, boolean.class);
+                getMethodVersion = 5;
+            } catch (NoSuchMethodException e) {
+                // fall through
+            }
+            getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class, int.class, String.class);
+            getMethodVersion = 6;
         }
         return getPrimaryClipMethod;
     }
@@ -135,8 +141,10 @@ public final class ClipboardManager {
             case 4:
                 // The last boolean parameter is "userOperate"
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, true);
-            default:
+            case 5:
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, null, null, FakeContext.ROOT_UID, 0, true);
+            default:
+                return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, null);
         }
     }
 
