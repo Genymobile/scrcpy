@@ -58,6 +58,7 @@ struct sc_screen {
     bool fullscreen;
     bool maximized;
     bool minimized;
+    bool hidden;
 
     // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
     // RGUI) must be pressed. This variable tracks the pressed capture key.
@@ -118,8 +119,13 @@ sc_screen_destroy(struct sc_screen *screen);
 //
 // It is used to hide the window immediately on closing without waiting for
 // screen_destroy()
+// It is also used for hide the window temporarly as a feature
 void
 sc_screen_hide_window(struct sc_screen *screen);
+
+// show the window
+void
+sc_screen_show_window(struct sc_screen *screen);
 
 // switch the fullscreen mode
 void

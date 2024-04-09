@@ -881,136 +881,141 @@ static const struct sc_option options[] = {
 
 static const struct sc_shortcut shortcuts[] = {
     {
-        .shortcuts = { "MOD+f" },
+        .shortcuts = {"MOD+f"},
         .text = "Switch fullscreen mode",
     },
     {
-        .shortcuts = { "MOD+Left" },
+        .shortcuts = {"MOD+Left"},
         .text = "Rotate display left",
     },
     {
-        .shortcuts = { "MOD+Right" },
+        .shortcuts = {"MOD+Right"},
         .text = "Rotate display right",
     },
     {
-        .shortcuts = { "MOD+Shift+Left", "MOD+Shift+Right" },
+        .shortcuts = {"MOD+Shift+Left", "MOD+Shift+Right"},
         .text = "Flip display horizontally",
     },
     {
-        .shortcuts = { "MOD+Shift+Up", "MOD+Shift+Down" },
+        .shortcuts = {"MOD+Shift+Up", "MOD+Shift+Down"},
         .text = "Flip display vertically",
     },
     {
-        .shortcuts = { "MOD+z" },
+        .shortcuts = {"MOD+z"},
         .text = "Pause or re-pause display",
     },
     {
-        .shortcuts = { "MOD+Shift+z" },
+        .shortcuts = {"MOD+Shift+z"},
         .text = "Unpause display",
     },
     {
-        .shortcuts = { "MOD+g" },
+        .shortcuts = {"MOD+g"},
         .text = "Resize window to 1:1 (pixel-perfect)",
     },
     {
-        .shortcuts = { "MOD+w", "Double-click on black borders" },
+        .shortcuts = {"MOD+w", "Double-click on black borders"},
         .text = "Resize window to remove black borders",
     },
     {
-        .shortcuts = { "MOD+h", "Middle-click" },
+        .shortcuts = {"MOD+h", "Middle-click"},
         .text = "Click on HOME",
     },
     {
-        .shortcuts = {
-            "MOD+b",
-            "MOD+Backspace",
-            "Right-click (when screen is on)",
-        },
+        .shortcuts =
+            {
+                "MOD+b",
+                "MOD+Backspace",
+                "Right-click (when screen is on)",
+            },
         .text = "Click on BACK",
     },
     {
-        .shortcuts = { "MOD+s", "4th-click" },
+        .shortcuts = {"MOD+s", "4th-click"},
         .text = "Click on APP_SWITCH",
     },
     {
-        .shortcuts = { "MOD+m" },
+        .shortcuts = {"MOD+m"},
         .text = "Click on MENU",
     },
     {
-        .shortcuts = { "MOD+Up" },
+        .shortcuts = {"MOD+Up"},
         .text = "Click on VOLUME_UP",
     },
     {
-        .shortcuts = { "MOD+Down" },
+        .shortcuts = {"MOD+Down"},
         .text = "Click on VOLUME_DOWN",
     },
     {
-        .shortcuts = { "MOD+p" },
+        .shortcuts = {"MOD+p"},
         .text = "Click on POWER (turn screen on/off)",
     },
     {
-        .shortcuts = { "Right-click (when screen is off)" },
+        .shortcuts = {"Right-click (when screen is off)"},
         .text = "Power on",
     },
     {
-        .shortcuts = { "MOD+o" },
+        .shortcuts = {"MOD+o"},
         .text = "Turn device screen off (keep mirroring)",
     },
     {
-        .shortcuts = { "MOD+Shift+o" },
+        .shortcuts = {"MOD+Shift+o"},
         .text = "Turn device screen on",
     },
     {
-        .shortcuts = { "MOD+r" },
+        .shortcuts = {"MOD+r"},
         .text = "Rotate device screen",
     },
     {
-        .shortcuts = { "MOD+n", "5th-click" },
+        .shortcuts = {"MOD+n", "5th-click"},
         .text = "Expand notification panel",
     },
     {
-        .shortcuts = { "MOD+Shift+n" },
+        .shortcuts = {"MOD+Shift+n"},
         .text = "Collapse notification panel",
     },
     {
-        .shortcuts = { "MOD+c" },
+        .shortcuts = {"MOD+c"},
         .text = "Copy to clipboard (inject COPY keycode, Android >= 7 only)",
     },
     {
-        .shortcuts = { "MOD+x" },
+        .shortcuts = {"MOD+x"},
         .text = "Cut to clipboard (inject CUT keycode, Android >= 7 only)",
     },
     {
-        .shortcuts = { "MOD+v" },
+        .shortcuts = {"MOD+v"},
         .text = "Copy computer clipboard to device, then paste (inject PASTE "
                 "keycode, Android >= 7 only)",
     },
     {
-        .shortcuts = { "MOD+Shift+v" },
+        .shortcuts = {"MOD+Shift+v"},
         .text = "Inject computer clipboard text as a sequence of key events",
     },
     {
-        .shortcuts = { "MOD+k" },
+        .shortcuts = {"MOD+k"},
         .text = "Open keyboard settings on the device (for HID keyboard only)",
     },
     {
-        .shortcuts = { "MOD+i" },
+        .shortcuts = {"MOD+i"},
         .text = "Enable/disable FPS counter (print frames/second in logs)",
     },
     {
-        .shortcuts = { "Ctrl+click-and-move" },
+        .shortcuts = {"MOD+d"},
+        .text = "Hides the window (press enter in console to recover)",
+    },
+    {
+        .shortcuts = {"Ctrl+click-and-move"},
         .text = "Pinch-to-zoom and rotate from the center of the screen",
     },
     {
-        .shortcuts = { "Shift+click-and-move" },
+        .shortcuts = {"Shift+click-and-move"},
         .text = "Tilt (slide vertically with two fingers)",
     },
     {
-        .shortcuts = { "Drag & drop APK file" },
+        .shortcuts = {"Drag & drop APK file"},
         .text = "Install APK from computer",
     },
     {
-        .shortcuts = { "Drag & drop non-APK file" },
+        .shortcuts = {"Drag & drop non-APK file"},
         .text = "Push file to device (see --push-target)",
     },
 };

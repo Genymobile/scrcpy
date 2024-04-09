@@ -361,6 +361,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->fullscreen = false;
     screen->maximized = false;
     screen->minimized = false;
+    screen->hidden = false;
     screen->mouse_capture_key_pressed = 0;
     screen->paused = false;
     screen->resume_frame = NULL;
@@ -496,7 +497,22 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
 
 void
 sc_screen_hide_window(struct sc_screen *screen) {
+    if (screen->hidden) {
+        return;
+    }
+
+    screen->hidden = true;
     SDL_HideWindow(screen->window);
+ }
+
+void
+sc_screen_show_window(struct sc_screen *screen) {
+    if (!screen->hidden) {
+        return;
+    }
+
+    screen->hidden = false;
+    SDL_ShowWindow(screen->window);
 }
 
 void
