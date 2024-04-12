@@ -49,7 +49,9 @@ public final class WindowManager {
     private Method getFreezeDisplayRotationMethod() throws NoSuchMethodException {
         if (freezeDisplayRotationMethod == null) {
             try {
-                freezeDisplayRotationMethod = manager.getClass().getMethod("freezeRotation", int.class);
+                // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
+                // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
+                freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class, String.class);
                 freezeDisplayRotationMethodVersion = 0;
             } catch (NoSuchMethodException e) {
                 try {
@@ -58,9 +60,7 @@ public final class WindowManager {
                     freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class);
                     freezeDisplayRotationMethodVersion = 1;
                 } catch (NoSuchMethodException e1) {
-                    // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
-                    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
-                    freezeDisplayRotationMethod = manager.getClass().getMethod("freezeDisplayRotation", int.class, int.class, String.class);
+                    freezeDisplayRotationMethod = manager.getClass().getMethod("freezeRotation", int.class);
                     freezeDisplayRotationMethodVersion = 2;
                 }
             }
@@ -71,12 +71,12 @@ public final class WindowManager {
     private Method getIsDisplayRotationFrozenMethod() throws NoSuchMethodException {
         if (isDisplayRotationFrozenMethod == null) {
             try {
-                isDisplayRotationFrozenMethod = manager.getClass().getMethod("isRotationFrozen");
-                isDisplayRotationFrozenMethodVersion = 0;
-            } catch (NoSuchMethodException e) {
                 // New method added by this commit:
                 // <https://android.googlesource.com/platform/frameworks/base/+/90c9005e687aa0f63f1ac391adc1e8878ab31759%5E%21/>
                 isDisplayRotationFrozenMethod = manager.getClass().getMethod("isDisplayRotationFrozen", int.class);
+                isDisplayRotationFrozenMethodVersion = 0;
+            } catch (NoSuchMethodException e) {
+                isDisplayRotationFrozenMethod = manager.getClass().getMethod("isRotationFrozen");
                 isDisplayRotationFrozenMethodVersion = 1;
             }
         }
@@ -86,7 +86,9 @@ public final class WindowManager {
     private Method getThawDisplayRotationMethod() throws NoSuchMethodException {
         if (thawDisplayRotationMethod == null) {
             try {
-                thawDisplayRotationMethod = manager.getClass().getMethod("thawRotation");
+                // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
+                // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
+                thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class, String.class);
                 thawDisplayRotationMethodVersion = 0;
             } catch (NoSuchMethodException e) {
                 try {
@@ -95,9 +97,7 @@ public final class WindowManager {
                     thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class);
                     thawDisplayRotationMethodVersion = 1;
                 } catch (NoSuchMethodException e1) {
-                    // Android 15 preview and 14 QPR3 Beta added a String caller parameter for debugging:
-                    // <https://android.googlesource.com/platform/frameworks/base/+/670fb7f5c0d23cf51ead25538bcb017e03ed73ac%5E%21/>
-                    thawDisplayRotationMethod = manager.getClass().getMethod("thawDisplayRotation", int.class, String.class);
+                    thawDisplayRotationMethod = manager.getClass().getMethod("thawRotation");
                     thawDisplayRotationMethodVersion = 2;
                 }
             }
@@ -120,17 +120,17 @@ public final class WindowManager {
             Method method = getFreezeDisplayRotationMethod();
             switch (freezeDisplayRotationMethodVersion) {
                 case 0:
-                    if (displayId != 0) {
-                        Ln.e("Secondary display rotation not supported on this device");
-                        return;
-                    }
-                    method.invoke(manager, rotation);
+                    method.invoke(manager, displayId, rotation, "scrcpy#freezeRotation");
                     break;
                 case 1:
                     method.invoke(manager, displayId, rotation);
                     break;
                 default:
-                    method.invoke(manager, displayId, rotation, "scrcpy#freezeRotation");
+                    if (displayId != 0) {
+                        Ln.e("Secondary display rotation not supported on this device");
+                        return;
+                    }
+                    method.invoke(manager, rotation);
                     break;
             }
         } catch (ReflectiveOperationException e) {
@@ -143,13 +143,13 @@ public final class WindowManager {
             Method method = getIsDisplayRotationFrozenMethod();
             switch (isDisplayRotationFrozenMethodVersion) {
                 case 0:
+                    return (boolean) method.invoke(manager, displayId);
+                default:
                     if (displayId != 0) {
                         Ln.e("Secondary display rotation not supported on this device");
                         return false;
                     }
                     return (boolean) method.invoke(manager);
-                default:
-                    return (boolean) method.invoke(manager, displayId);
             }
         } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
@@ -162,17 +162,17 @@ public final class WindowManager {
             Method method = getThawDisplayRotationMethod();
             switch (thawDisplayRotationMethodVersion) {
                 case 0:
-                    if (displayId != 0) {
-                        Ln.e("Secondary display rotation not supported on this device");
-                        return;
-                    }
-                    method.invoke(manager);
+                    method.invoke(manager, displayId, "scrcpy#thawRotation");
                     break;
                 case 1:
                     method.invoke(manager, displayId);
                     break;
                 default:
-                    method.invoke(manager, displayId, "scrcpy#thawRotation");
+                    if (displayId != 0) {
+                        Ln.e("Secondary display rotation not supported on this device");
+                        return;
+                    }
+                    method.invoke(manager);
                     break;
             }
         } catch (ReflectiveOperationException e) {
