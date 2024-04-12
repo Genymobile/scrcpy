@@ -189,6 +189,10 @@ public final class WindowManager {
                 cls.getMethod("watchRotation", IRotationWatcher.class, int.class).invoke(manager, rotationWatcher, displayId);
             } catch (NoSuchMethodException e) {
                 // old version
+                if (displayId != 0) {
+                    Ln.e("Secondary display rotation not supported on this device");
+                    return;
+                }
                 cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);
             }
         } catch (Exception e) {
