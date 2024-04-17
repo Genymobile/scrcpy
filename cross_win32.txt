@@ -6,15 +6,11 @@ c = 'i686-w64-mingw32-gcc'
 cpp = 'i686-w64-mingw32-g++'
 ar = 'i686-w64-mingw32-ar'
 strip = 'i686-w64-mingw32-strip'
-pkgconfig = 'i686-w64-mingw32-pkg-config'
+pkg-config = 'i686-w64-mingw32-pkg-config'
+windres = 'i686-w64-mingw32-windres'
 
 [host_machine]
 system = 'windows'
 cpu_family = 'x86'
 cpu = 'i686'
 endian = 'little'
-
-[properties]
-prebuilt_ffmpeg_shared = 'ffmpeg-4.3.1-win32-shared'
-prebuilt_ffmpeg_dev = 'ffmpeg-4.3.1-win32-dev'
-prebuilt_sdl2 = 'SDL2-2.0.16/i686-w64-mingw32'

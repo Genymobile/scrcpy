@@ -9,7 +9,14 @@ public abstract class DeviceMessage {
     public static final int TYPE_CLIPBOARD = 0;
     public static final int TYPE_PUSH_RESPONSE = 101;
 
+    public static final int TYPE_ACK_CLIPBOARD = 1;
+    public static final int TYPE_UHID_OUTPUT = 2;
+
     private int type;
+    private String text;
+    private long sequence;
+    private int id;
+    private byte[] data;
 
     private DeviceMessage(int type) {
         this.type = type;
@@ -67,17 +74,47 @@ public abstract class DeviceMessage {
         return new FilePushResponseMessage(id, result);
     }
 
+    public static DeviceMessage createAckClipboard(long sequence) {
+        DeviceMessage event = new DeviceMessage();
+        event.type = TYPE_ACK_CLIPBOARD;
+        event.sequence = sequence;
+        return event;
+    }
+
+    public static DeviceMessage createUhidOutput(int id, byte[] data) {
+        DeviceMessage event = new DeviceMessage();
+        event.type = TYPE_UHID_OUTPUT;
+        event.id = id;
+        event.data = data;
+        return event;
+    }
+
     public int getType() {
         return type;
     }
+
     public void writeToByteArray(byte[] array) {
         writeToByteArray(array, 0);
     }
+
     public byte[] writeToByteArray(int offset) {
         byte[] temp = new byte[offset + this.getLen()];
         writeToByteArray(temp, offset);
         return temp;
     }
+    
     public abstract void writeToByteArray(byte[] array, int offset);
     public abstract int getLen();
+
+    public long getSequence() {
+        return sequence;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public byte[] getData() {
+        return data;
+    }
 }

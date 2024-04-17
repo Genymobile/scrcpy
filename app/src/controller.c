@@ -4,25 +4,35 @@
 
 #include "util/log.h"
 
-bool
-controller_init(struct controller *controller, socket_t control_socket) {
-    cbuf_init(&controller->queue);
+#define SC_CONTROL_MSG_QUEUE_MAX 64
 
-    bool ok = receiver_init(&controller->receiver, control_socket);
+bool
+sc_controller_init(struct sc_controller *controller, sc_socket control_socket) {
+    sc_vecdeque_init(&controller->queue);
+
+    bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
     if (!ok) {
+        return false;
+    }
+
+    ok = sc_receiver_init(&controller->receiver, control_socket);
+    if (!ok) {
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
     ok = sc_mutex_init(&controller->mutex);
     if (!ok) {
-        receiver_destroy(&controller->receiver);
+        sc_receiver_destroy(&controller->receiver);
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
     ok = sc_cond_init(&controller->msg_cond);
     if (!ok) {
-        receiver_destroy(&controller->receiver);
+        sc_receiver_destroy(&controller->receiver);
         sc_mutex_destroy(&controller->mutex);
+        sc_vecdeque_destroy(&controller->queue);
         return false;
     }
 
@@ -33,54 +43,72 @@ controller_init(struct controller *controller, socket_t control_socket) {
 }
 
 void
-controller_destroy(struct controller *controller) {
+sc_controller_configure(struct sc_controller *controller,
+                        struct sc_acksync *acksync,
+                        struct sc_uhid_devices *uhid_devices) {
+    controller->receiver.acksync = acksync;
+    controller->receiver.uhid_devices = uhid_devices;
+}
+
+void
+sc_controller_destroy(struct sc_controller *controller) {
     sc_cond_destroy(&controller->msg_cond);
     sc_mutex_destroy(&controller->mutex);
 
-    struct control_msg msg;
-    while (cbuf_take(&controller->queue, &msg)) {
-        control_msg_destroy(&msg);
+    while (!sc_vecdeque_is_empty(&controller->queue)) {
+        struct sc_control_msg *msg = sc_vecdeque_popref(&controller->queue);
+        assert(msg);
+        sc_control_msg_destroy(msg);
     }
+    sc_vecdeque_destroy(&controller->queue);
 
-    receiver_destroy(&controller->receiver);
+    sc_receiver_destroy(&controller->receiver);
 }
 
 bool
-controller_push_msg(struct controller *controller,
-                      const struct control_msg *msg) {
+sc_controller_push_msg(struct sc_controller *controller,
+                       const struct sc_control_msg *msg) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
-        control_msg_log(msg);
+        sc_control_msg_log(msg);
     }
 
     sc_mutex_lock(&controller->mutex);
-    bool was_empty = cbuf_is_empty(&controller->queue);
-    bool res = cbuf_push(&controller->queue, *msg);
-    if (was_empty) {
-        sc_cond_signal(&controller->msg_cond);
+    bool full = sc_vecdeque_is_full(&controller->queue);
+    if (!full) {
+        bool was_empty = sc_vecdeque_is_empty(&controller->queue);
+        sc_vecdeque_push_noresize(&controller->queue, *msg);
+        if (was_empty) {
+            sc_cond_signal(&controller->msg_cond);
+        }
     }
+    // Otherwise (if the queue is full), the msg is discarded
+
     sc_mutex_unlock(&controller->mutex);
-    return res;
+
+    return !full;
 }
 
 static bool
-process_msg(struct controller *controller,
-              const struct control_msg *msg) {
-    static unsigned char serialized_msg[CONTROL_MSG_MAX_SIZE];
-    size_t length = control_msg_serialize(msg, serialized_msg);
+process_msg(struct sc_controller *controller,
+            const struct sc_control_msg *msg) {
+    static uint8_t serialized_msg[SC_CONTROL_MSG_MAX_SIZE];
+    size_t length = sc_control_msg_serialize(msg, serialized_msg);
     if (!length) {
         return false;
     }
-    ssize_t w = net_send_all(controller->control_socket, serialized_msg, length);
+    ssize_t w =
+        net_send_all(controller->control_socket, serialized_msg, length);
     return (size_t) w == length;
 }
 
 static int
 run_controller(void *data) {
-    struct controller *controller = data;
+    struct sc_controller *controller = data;
 
     for (;;) {
         sc_mutex_lock(&controller->mutex);
-        while (!controller->stopped && cbuf_is_empty(&controller->queue)) {
+        while (!controller->stopped
+                && sc_vecdeque_is_empty(&controller->queue)) {
             sc_cond_wait(&controller->msg_cond, &controller->mutex);
         }
         if (controller->stopped) {
@@ -88,14 +116,13 @@ run_controller(void *data) {
             sc_mutex_unlock(&controller->mutex);
             break;
         }
-        struct control_msg msg;
-        bool non_empty = cbuf_take(&controller->queue, &msg);
-        assert(non_empty);
-        (void) non_empty;
+
+        assert(!sc_vecdeque_is_empty(&controller->queue));
+        struct sc_control_msg msg = sc_vecdeque_pop(&controller->queue);
         sc_mutex_unlock(&controller->mutex);
 
         bool ok = process_msg(controller, &msg);
-        control_msg_destroy(&msg);
+        sc_control_msg_destroy(&msg);
         if (!ok) {
             LOGD("Could not write msg to socket");
             break;
@@ -105,18 +132,18 @@ run_controller(void *data) {
 }
 
 bool
-controller_start(struct controller *controller) {
+sc_controller_start(struct sc_controller *controller) {
     LOGD("Starting controller thread");
 
     bool ok = sc_thread_create(&controller->thread, run_controller,
-                               "controller", controller);
+                               "scrcpy-ctl", controller);
     if (!ok) {
-        LOGC("Could not start controller thread");
+        LOGE("Could not start controller thread");
         return false;
     }
 
-    if (!receiver_start(&controller->receiver)) {
-        controller_stop(controller);
+    if (!sc_receiver_start(&controller->receiver)) {
+        sc_controller_stop(controller);
         sc_thread_join(&controller->thread, NULL);
         return false;
     }
@@ -125,7 +152,7 @@ controller_start(struct controller *controller) {
 }
 
 void
-controller_stop(struct controller *controller) {
+sc_controller_stop(struct sc_controller *controller) {
     sc_mutex_lock(&controller->mutex);
     controller->stopped = true;
     sc_cond_signal(&controller->msg_cond);
@@ -133,7 +160,7 @@ controller_stop(struct controller *controller) {
 }
 
 void
-controller_join(struct controller *controller) {
+sc_controller_join(struct sc_controller *controller) {
     sc_thread_join(&controller->thread, NULL);
-    receiver_join(&controller->receiver);
+    sc_receiver_join(&controller->receiver);
 }

@@ -1,13 +1,11 @@
-#ifndef SC_PACKET_SINK
-#define SC_PACKET_SINK
+#ifndef SC_PACKET_SINK_H
+#define SC_PACKET_SINK_H
 
 #include "common.h"
 
 #include <assert.h>
 #include <stdbool.h>
-
-typedef struct AVCodec AVCodec;
-typedef struct AVPacket AVPacket;
+#include <libavcodec/avcodec.h>
 
 /**
  * Packet sink trait.
@@ -19,9 +17,20 @@ struct sc_packet_sink {
 };
 
 struct sc_packet_sink_ops {
-    bool (*open)(struct sc_packet_sink *sink, const AVCodec *codec);
+    /* The codec context is valid until the sink is closed */
+    bool (*open)(struct sc_packet_sink *sink, AVCodecContext *ctx);
     void (*close)(struct sc_packet_sink *sink);
     bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
+
+    /*/
+     * Called when the input stream has been disabled at runtime.
+     *
+     * If it is called, then open(), close() and push() will never be called.
+     *
+     * It is useful to notify the recorder that the requested audio stream has
+     * finally been disabled because the device could not capture it.
+     */
+    void (*disable)(struct sc_packet_sink *sink);
 };
 
 #endif

@@ -92,7 +92,6 @@ public final class ScreenInfo {
             lockedVideoOrientation = rotation;
         }
 
-        Size deviceSize = displayInfo.getSize();
         Rect contentRect = new Rect(0, 0, deviceSize.getWidth(), deviceSize.getHeight());
         if (crop != null) {
             if (rotation % 2 != 0) { // 180s preserve dimensions

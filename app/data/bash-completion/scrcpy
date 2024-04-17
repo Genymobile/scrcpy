@@ -1,0 +1,205 @@
+_scrcpy() {
+    local cur prev words cword
+    local opts="
+        --always-on-top
+        --audio-bit-rate=
+        --audio-buffer=
+        --audio-codec=
+        --audio-codec-options=
+        --audio-encoder=
+        --audio-source=
+        --audio-output-buffer=
+        -b --video-bit-rate=
+        --camera-ar=
+        --camera-id=
+        --camera-facing=
+        --camera-fps=
+        --camera-high-speed
+        --camera-size=
+        --crop=
+        -d --select-usb
+        --disable-screensaver
+        --display-buffer=
+        --display-id=
+        --display-orientation=
+        -e --select-tcpip
+        -f --fullscreen
+        --force-adb-forward
+        --forward-all-clicks
+        -h --help
+        -K
+        --keyboard=
+        --kill-adb-on-close
+        --legacy-paste
+        --list-camera-sizes
+        --list-cameras
+        --list-displays
+        --list-encoders
+        --lock-video-orientation
+        --lock-video-orientation=
+        -m --max-size=
+        -M
+        --max-fps=
+        --mouse=
+        -n --no-control
+        -N --no-playback
+        --no-audio
+        --no-audio-playback
+        --no-cleanup
+        --no-clipboard-autosync
+        --no-downsize-on-error
+        --no-key-repeat
+        --no-mipmaps
+        --no-power-on
+        --no-video
+        --no-video-playback
+        --orientation=
+        --otg
+        -p --port=
+        --pause-on-exit
+        --pause-on-exit=
+        --power-off-on-close
+        --prefer-text
+        --print-fps
+        --push-target=
+        -r --record=
+        --raw-key-events
+        --record-format=
+        --record-orientation=
+        --render-driver=
+        --require-audio
+        --rotation=
+        -s --serial=
+        -S --turn-screen-off
+        --shortcut-mod=
+        -t --show-touches
+        --tcpip
+        --tcpip=
+        --time-limit=
+        --tunnel-host=
+        --tunnel-port=
+        --v4l2-buffer=
+        --v4l2-sink=
+        -v --version
+        -V --verbosity=
+        --video-codec=
+        --video-codec-options=
+        --video-encoder=
+        --video-source=
+        -w --stay-awake
+        --window-borderless
+        --window-title=
+        --window-x=
+        --window-y=
+        --window-width=
+        --window-height="
+
+    _init_completion -s || return
+
+    case "$prev" in
+        --video-codec)
+            COMPREPLY=($(compgen -W 'h264 h265 av1' -- "$cur"))
+            return
+            ;;
+        --audio-codec)
+            COMPREPLY=($(compgen -W 'opus aac flac raw' -- "$cur"))
+            return
+            ;;
+        --video-source)
+            COMPREPLY=($(compgen -W 'display camera' -- "$cur"))
+            return
+            ;;
+        --audio-source)
+            COMPREPLY=($(compgen -W 'output mic' -- "$cur"))
+            return
+            ;;
+        --camera-facing)
+            COMPREPLY=($(compgen -W 'front back external' -- "$cur"))
+            return
+            ;;
+        --keyboard)
+            COMPREPLY=($(compgen -W 'disabled sdk uhid aoa' -- "$cur"))
+            return
+            ;;
+        --mouse)
+            COMPREPLY=($(compgen -W 'disabled sdk uhid aoa' -- "$cur"))
+            return
+            ;;
+        --orientation|--display-orientation)
+            COMPREPLY=($(compgen -W '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
+        --record-orientation)
+            COMPREPLY=($(compgen -W '0 90 180 270' -- "$cur"))
+            return
+            ;;
+        --lock-video-orientation)
+            COMPREPLY=($(compgen -W 'unlocked initial 0 90 180 270' -- "$cur"))
+            return
+            ;;
+        --pause-on-exit)
+            COMPREPLY=($(compgen -W 'true false if-error' -- "$cur"))
+            return
+            ;;
+        -r|--record)
+            COMPREPLY=($(compgen -f -- "$cur"))
+            return
+            ;;
+        --record-format)
+            COMPREPLY=($(compgen -W 'mp4 mkv m4a mka opus aac flac wav' -- "$cur"))
+            return
+            ;;
+        --render-driver)
+            COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
+            return
+            ;;
+        --shortcut-mod)
+            # Only auto-complete a single key
+            COMPREPLY=($(compgen -W 'lctrl rctrl lalt ralt lsuper rsuper' -- "$cur"))
+            return
+            ;;
+        -V|--verbosity)
+            COMPREPLY=($(compgen -W 'verbose debug info warn error' -- "$cur"))
+            return
+            ;;
+        -s|--serial)
+            # Use 'adb devices' to list serial numbers
+            COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
+            return
+            ;;
+        --audio-bit-rate \
+        |--audio-buffer \
+        |-b|--video-bit-rate \
+        |--audio-codec-options \
+        |--audio-encoder \
+        |--audio-output-buffer \
+        |--camera-ar \
+        |--camera-id \
+        |--camera-fps \
+        |--camera-size \
+        |--crop \
+        |--display-id \
+        |--display-buffer \
+        |--max-fps \
+        |-m|--max-size \
+        |-p|--port \
+        |--push-target \
+        |--rotation \
+        |--tunnel-host \
+        |--tunnel-port \
+        |--v4l2-buffer \
+        |--v4l2-sink \
+        |--video-codec-options \
+        |--video-encoder \
+        |--tcpip \
+        |--window-*)
+            # Option accepting an argument, but nothing to auto-complete
+            return
+            ;;
+    esac
+
+    COMPREPLY=($(compgen -W "$opts" -- "$cur"))
+    [[ $COMPREPLY == *= ]] && compopt -o nospace
+}
+
+complete -F _scrcpy scrcpy

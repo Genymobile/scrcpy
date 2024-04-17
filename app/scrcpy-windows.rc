@@ -1,0 +1,23 @@
+#include <winuser.h>
+
+0 ICON "data/icon.ico"
+1 RT_MANIFEST "scrcpy-windows.manifest"
+2 VERSIONINFO
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "FileDescription", "Display and control your Android device"
+      VALUE "InternalName", "scrcpy"
+      VALUE "LegalCopyright", "Romain Vimont, Genymobile"
+      VALUE "OriginalFilename", "scrcpy.exe"
+      VALUE "ProductName", "scrcpy"
+      VALUE "ProductVersion", "2.4"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1252
+  END
+END

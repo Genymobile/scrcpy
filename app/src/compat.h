@@ -1,15 +1,20 @@
-#ifndef COMPAT_H
-#define COMPAT_H
+#ifndef SC_COMPAT_H
+#define SC_COMPAT_H
 
-#define _POSIX_C_SOURCE 200809L
-#define _XOPEN_SOURCE 700
-#define _GNU_SOURCE
-#ifdef __APPLE__
-# define _DARWIN_C_SOURCE
-#endif
+#include "config.h"
 
+#include <libavcodec/version.h>
 #include <libavformat/version.h>
+#include <libavutil/version.h>
 #include <SDL2/SDL_version.h>
+
+#ifndef __WIN32
+# define PRIu64_ PRIu64
+# define SC_PRIsizet "zu"
+#else
+# define PRIu64_ "I64u"  // Windows...
+# define SC_PRIsizet "Iu"
+#endif
 
 // In ffmpeg/doc/APIchanges:
 // 2018-02-06 - 0694d87024 - lavf 58.9.100 - avformat.h
@@ -22,6 +27,12 @@
 # define SCRCPY_LAVF_REQUIRES_REGISTER_ALL
 #endif
 
+// Not documented in ffmpeg/doc/APIchanges, but AV_CODEC_ID_AV1 has been added
+// by FFmpeg commit d42809f9835a4e9e5c7c63210abb09ad0ef19cfb (included in tag
+// n3.3).
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 89, 100)
+# define SCRCPY_LAVC_HAS_AV1
+#endif
 
 // In ffmpeg/doc/APIchanges:
 // 2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
@@ -34,13 +45,25 @@
 # define SCRCPY_LAVF_HAS_AVFORMATCONTEXT_URL
 #endif
 
-#if SDL_VERSION_ATLEAST(2, 0, 5)
-// <https://wiki.libsdl.org/SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH>
-# define SCRCPY_SDL_HAS_HINT_MOUSE_FOCUS_CLICKTHROUGH
-// <https://wiki.libsdl.org/SDL_GetDisplayUsableBounds>
-# define SCRCPY_SDL_HAS_GET_DISPLAY_USABLE_BOUNDS
-// <https://wiki.libsdl.org/SDL_WindowFlags>
-# define SCRCPY_SDL_HAS_WINDOW_ALWAYS_ON_TOP
+// Not documented in ffmpeg/doc/APIchanges, but the channel_layout API
+// has been replaced by chlayout in FFmpeg commit
+// f423497b455da06c1337846902c770028760e094.
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 23, 100)
+# define SCRCPY_LAVU_HAS_CHLAYOUT
+#endif
+
+// In ffmpeg/doc/APIchanges:
+// 2023-10-06 - 5432d2aacad - lavc 60.15.100 - avformat.h
+//   Deprecate AVFormatContext.{nb_,}side_data, av_stream_add_side_data(),
+//   av_stream_new_side_data(), and av_stream_get_side_data(). Side data fields
+//   from AVFormatContext.codecpar should be used from now on.
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 15, 100)
+# define SCRCPY_LAVC_HAS_CODECPAR_CODEC_SIDEDATA
+#endif
+
+#if SDL_VERSION_ATLEAST(2, 0, 6)
+// <https://github.com/libsdl-org/SDL/commit/d7a318de563125e5bb465b1000d6bc9576fbc6fc>
+# define SCRCPY_SDL_HAS_HINT_TOUCH_MOUSE_EVENTS
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 8)
@@ -48,8 +71,32 @@
 # define SCRCPY_SDL_HAS_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR
 #endif
 
+#if SDL_VERSION_ATLEAST(2, 0, 16)
+# define SCRCPY_SDL_HAS_THREAD_PRIORITY_TIME_CRITICAL
+#endif
+
 #ifndef HAVE_STRDUP
 char *strdup(const char *s);
+#endif
+
+#ifndef HAVE_ASPRINTF
+int asprintf(char **strp, const char *fmt, ...);
+#endif
+
+#ifndef HAVE_VASPRINTF
+int vasprintf(char **strp, const char *fmt, va_list ap);
+#endif
+
+#ifndef HAVE_NRAND48
+long nrand48(unsigned short xsubi[3]);
+#endif
+
+#ifndef HAVE_JRAND48
+long jrand48(unsigned short xsubi[3]);
+#endif
+
+#ifndef HAVE_REALLOCARRAY
+void *reallocarray(void *ptr, size_t nmemb, size_t size);
 #endif
 
 #endif

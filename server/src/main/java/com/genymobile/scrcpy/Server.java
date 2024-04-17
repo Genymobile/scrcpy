@@ -6,9 +6,46 @@ import android.media.MediaCodecInfo;
 import android.os.Build;
 
 import java.util.Locale;
+import java.util.ArrayList;
 
 public final class Server {
 
+    public static final String SERVER_PATH;
+
+    static {
+        String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
+        // By convention, scrcpy is always executed with the absolute path of scrcpy-server.jar as the first item in the classpath
+        SERVER_PATH = classPaths[0];
+    }
+
+    private static class Completion {
+        private int running;
+        private boolean fatalError;
+
+        Completion(int running) {
+            this.running = running;
+        }
+
+        synchronized void addCompleted(boolean fatalError) {
+            --running;
+            if (fatalError) {
+                this.fatalError = true;
+            }
+            if (running == 0 || this.fatalError) {
+                notify();
+            }
+        }
+
+        synchronized void await() {
+            try {
+                while (running > 0 && !fatalError) {
+                    wait();
+                }
+            } catch (InterruptedException e) {
+                // ignore
+            }
+        }
+    }
 
     private Server() {
         // not instantiable
@@ -145,25 +182,65 @@ public final class Server {
         }
     }
 
-    public static void main(String... args) throws Exception {
-        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-            @Override
-            public void uncaughtException(Thread t, Throwable e) {
-                Ln.e("Exception on thread " + t, e);
-                suggestFix(e);
-            }
+    public static void main(String... args) {
+        int status = 0;
+        try {
+            internalMain(args);
+        } catch (Throwable t) {
+            Ln.e(t.getMessage(), t);
+            status = 1;
+        } finally {
+            // By default, the Java process exits when all non-daemon threads are terminated.
+            // The Android SDK might start some non-daemon threads internally, preventing the scrcpy server to exit.
+            // So force the process to exit explicitly.
+            System.exit(status);
+        }
+    }
+
+    private static void internalMain(String... args) throws Exception {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            Ln.e("Exception on thread " + t, e);
         });
 
         Options options = new Options();
         VideoSettings videoSettings = new VideoSettings();
         parseArguments(options, videoSettings, args);
+
+        Ln.disableSystemStreams();
         Ln.initLogLevel(options.getLogLevel());
-        if (options.getServerType() == Options.TYPE_LOCAL_SOCKET) {
-            new DesktopConnection(options, videoSettings);
-        } else if (options.getServerType() == Options.TYPE_WEB_SOCKET) {
-            WSServer wsServer = new WSServer(options);
-            wsServer.setReuseAddr(true);
-            wsServer.run();
+
+        Ln.i("Device: [" + Build.MANUFACTURER + "] " + Build.BRAND + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
+
+        if (options.getList()) {
+            if (options.getCleanup()) {
+                CleanUp.unlinkSelf();
+            }
+
+            if (options.getListEncoders()) {
+                Ln.i(LogUtils.buildVideoEncoderListMessage());
+                Ln.i(LogUtils.buildAudioEncoderListMessage());
+            }
+            if (options.getListDisplays()) {
+                Ln.i(LogUtils.buildDisplayListMessage());
+            }
+            if (options.getListCameras() || options.getListCameraSizes()) {
+                Workarounds.apply(false, true);
+                Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
+            }
+            // Just print the requested data, do not mirror
+            return;
+        }
+
+        try {
+            if (options.getServerType() == Options.TYPE_LOCAL_SOCKET) {
+                new DesktopConnection(options, videoSettings);
+            } else if (options.getServerType() == Options.TYPE_WEB_SOCKET) {
+                WSServer wsServer = new WSServer(options);
+                wsServer.setReuseAddr(true);
+                wsServer.run();
+            }
+        } catch (ConfigurationException e) {
+            // Do not print stack trace, a user-friendly error-message has already been logged
         }
     }
 }

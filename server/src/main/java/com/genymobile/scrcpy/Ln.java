@@ -2,6 +2,11 @@ package com.genymobile.scrcpy;
 
 import android.util.Log;
 
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.io.PrintStream;
+
 /**
  * Log both to Android logger (so that logs are visible in "adb logcat") and standard output/error (so that they are visible in the terminal
  * directly).
@@ -11,6 +16,9 @@ public final class Ln {
     private static final String TAG = "scrcpy";
     private static final String PREFIX = "[server] ";
 
+    private static final PrintStream CONSOLE_OUT = new PrintStream(new FileOutputStream(FileDescriptor.out));
+    private static final PrintStream CONSOLE_ERR = new PrintStream(new FileOutputStream(FileDescriptor.err));
+
     enum Level {
         VERBOSE, DEBUG, INFO, WARN, ERROR
     }
@@ -19,6 +27,12 @@ public final class Ln {
 
     private Ln() {
         // not instantiable
+    }
+
+    public static void disableSystemStreams() {
+        PrintStream nullStream = new PrintStream(new NullOutputStream());
+        System.setOut(nullStream);
+        System.setErr(nullStream);
     }
 
     /**
@@ -39,42 +53,66 @@ public final class Ln {
     public static void v(String message) {
         if (isEnabled(Level.VERBOSE)) {
             Log.v(TAG, message);
-            System.out.println(PREFIX + "VERBOSE: " + message);
+            CONSOLE_OUT.print(PREFIX + "VERBOSE: " + message + '\n');
         }
     }
 
     public static void d(String message) {
         if (isEnabled(Level.DEBUG)) {
             Log.d(TAG, message);
-            System.out.println(PREFIX + "DEBUG: " + message);
+            CONSOLE_OUT.print(PREFIX + "DEBUG: " + message + '\n');
         }
     }
 
     public static void i(String message) {
         if (isEnabled(Level.INFO)) {
             Log.i(TAG, message);
-            System.out.println(PREFIX + "INFO: " + message);
+            CONSOLE_OUT.print(PREFIX + "INFO: " + message + '\n');
+        }
+    }
+
+    public static void w(String message, Throwable throwable) {
+        if (isEnabled(Level.WARN)) {
+            Log.w(TAG, message, throwable);
+            CONSOLE_ERR.print(PREFIX + "WARN: " + message + '\n');
+            if (throwable != null) {
+                throwable.printStackTrace(CONSOLE_ERR);
+            }
         }
     }
 
     public static void w(String message) {
-        if (isEnabled(Level.WARN)) {
-            Log.w(TAG, message);
-            System.out.println(PREFIX + "WARN: " + message);
-        }
+        w(message, null);
     }
 
     public static void e(String message, Throwable throwable) {
         if (isEnabled(Level.ERROR)) {
             Log.e(TAG, message, throwable);
-            System.out.println(PREFIX + "ERROR: " + message);
+            CONSOLE_ERR.print(PREFIX + "ERROR: " + message + '\n');
             if (throwable != null) {
-                throwable.printStackTrace();
+                throwable.printStackTrace(CONSOLE_ERR);
             }
         }
     }
 
     public static void e(String message) {
         e(message, null);
+    }
+
+    static class NullOutputStream extends OutputStream {
+        @Override
+        public void write(byte[] b) {
+            // ignore
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) {
+            // ignore
+        }
+
+        @Override
+        public void write(int b) {
+            // ignore
+        }
     }
 }

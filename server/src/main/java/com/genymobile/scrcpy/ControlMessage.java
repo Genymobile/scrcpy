@@ -28,18 +28,29 @@ public final class ControlMessage {
     public static final int PUSH_STATE_APPEND = 2;
     public static final int PUSH_STATE_FINISH = 3;
     public static final int PUSH_STATE_CANCEL = 4;
+    public static final int TYPE_UHID_CREATE = 12;
+    public static final int TYPE_UHID_INPUT = 13;
+    public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
+
+    public static final long SEQUENCE_INVALID = 0;
+
+    public static final int COPY_KEY_NONE = 0;
+    public static final int COPY_KEY_COPY = 1;
+    public static final int COPY_KEY_CUT = 2;
 
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
     private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_*
     private int keycode; // KeyEvent.KEYCODE_*
+    private int actionButton; // MotionEvent.BUTTON_*
     private int buttons; // MotionEvent.BUTTON_*
     private long pointerId;
     private float pressure;
     private Position position;
-    private int hScroll;
-    private int vScroll;
+    private float hScroll;
+    private float vScroll;
+    private int copyKey;
     private boolean paste;
     private int repeat;
     private byte[] bytes;
@@ -50,6 +61,9 @@ public final class ControlMessage {
     private int fileSize;
     private String fileName;
     private VideoSettings videoSettings;
+    private long sequence;
+    private int id;
+    private byte[] data;
 
     private ControlMessage() {
     }
@@ -71,23 +85,26 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure, int buttons) {
+    public static ControlMessage createInjectTouchEvent(int action, long pointerId, Position position, float pressure, int actionButton,
+            int buttons) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_TOUCH_EVENT;
         msg.action = action;
         msg.pointerId = pointerId;
         msg.pressure = pressure;
         msg.position = position;
+        msg.actionButton = actionButton;
         msg.buttons = buttons;
         return msg;
     }
 
-    public static ControlMessage createInjectScrollEvent(Position position, int hScroll, int vScroll) {
+    public static ControlMessage createInjectScrollEvent(Position position, float hScroll, float vScroll, int buttons) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_INJECT_SCROLL_EVENT;
         msg.position = position;
         msg.hScroll = hScroll;
         msg.vScroll = vScroll;
+        msg.buttons = buttons;
         return msg;
     }
 
@@ -98,9 +115,17 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createSetClipboard(String text, boolean paste) {
+    public static ControlMessage createGetClipboard(int copyKey) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_GET_CLIPBOARD;
+        msg.copyKey = copyKey;
+        return msg;
+    }
+
+    public static ControlMessage createSetClipboard(long sequence, String text, boolean paste) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_CLIPBOARD;
+        msg.sequence = sequence;
         msg.text = text;
         msg.paste = paste;
         return msg;
@@ -166,6 +191,22 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createUhidCreate(int id, byte[] reportDesc) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_CREATE;
+        msg.id = id;
+        msg.data = reportDesc;
+        return msg;
+    }
+
+    public static ControlMessage createUhidInput(int id, byte[] data) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_INPUT;
+        msg.id = id;
+        msg.data = data;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -186,6 +227,10 @@ public final class ControlMessage {
         return keycode;
     }
 
+    public int getActionButton() {
+        return actionButton;
+    }
+
     public int getButtons() {
         return buttons;
     }
@@ -202,12 +247,16 @@ public final class ControlMessage {
         return position;
     }
 
-    public int getHScroll() {
+    public float getHScroll() {
         return hScroll;
     }
 
-    public int getVScroll() {
+    public float getVScroll() {
         return vScroll;
+    }
+
+    public int getCopyKey() {
+        return copyKey;
     }
 
     public boolean getPaste() {
@@ -248,5 +297,15 @@ public final class ControlMessage {
 
     public VideoSettings getVideoSettings() {
         return videoSettings;
+    public long getSequence() {
+        return sequence;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public byte[] getData() {
+        return data;
     }
 }

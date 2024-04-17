@@ -20,20 +20,94 @@ provides display and control of Android devices connected on USB (or over TCP/IP
 Make scrcpy window always on top (above other windows).
 
 .TP
-.BI "\-b, \-\-bit\-rate " value
-Encode the video at the given bit\-rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
+.BI "\-\-audio\-bit\-rate " value
+Encode the audio at the given bit rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
 
-Default is 8000000.
+Default is 128K (128000).
 
 .TP
-.BI "\-\-codec\-options " key[:type]=value[,...]
-Set a list of comma-separated key:type=value options for the device encoder.
+.BI "\-\-audio\-buffer " ms
+Configure the audio buffering delay (in milliseconds).
+
+Lower values decrease the latency, but increase the likelyhood of buffer underrun (causing audio glitches).
+
+Default is 50.
+
+.TP
+.BI "\-\-audio\-codec " name
+Select an audio codec (opus, aac, flac or raw).
+
+Default is opus.
+
+.TP
+.BI "\-\-audio\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
+Set a list of comma-separated key:type=value options for the device audio encoder.
 
 The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
 
-The list of possible codec options is available in the Android documentation
-.UR https://d.android.com/reference/android/media/MediaFormat
-.UE .
+The list of possible codec options is available in the Android documentation:
+
+<https://d.android.com/reference/android/media/MediaFormat>
+
+.TP
+.BI "\-\-audio\-encoder " name
+Use a specific MediaCodec audio encoder (depending on the codec provided by \fB\-\-audio\-codec\fR).
+
+The available encoders can be listed by \fB\-\-list\-encoders\fR.
+
+.TP
+.BI "\-\-audio\-source " source
+Select the audio source (output or mic).
+
+Default is output.
+
+.TP
+.BI "\-\-audio\-output\-buffer " ms
+Configure the size of the SDL audio output buffer (in milliseconds).
+
+If you get "robotic" audio playback, you should test with a higher value (10). Do not change this setting otherwise.
+
+Default is 5.
+
+.TP
+.BI "\-b, \-\-video\-bit\-rate " value
+Encode the video at the given bit rate, expressed in bits/s. Unit suffixes are supported: '\fBK\fR' (x1000) and '\fBM\fR' (x1000000).
+
+Default is 8M (8000000).
+
+.TP
+.BI "\-\-camera\-ar " ar
+Select the camera size by its aspect ratio (+/- 10%).
+
+Possible values are "sensor" (use the camera sensor aspect ratio), "\fInum\fR:\fIden\fR" (e.g. "4:3") and "\fIvalue\fR" (e.g. "1.6").
+
+.TP
+.B \-\-camera\-high\-speed
+Enable high-speed camera capture mode.
+
+This mode is restricted to specific resolutions and frame rates, listed by \fB\-\-list\-camera\-sizes\fR.
+
+.TP
+.BI "\-\-camera\-id " id
+Specify the device camera id to mirror.
+
+The available camera ids can be listed by \fB\-\-list\-cameras\fR.
+
+.TP
+.BI "\-\-camera\-facing " facing
+Select the device camera by its facing direction.
+
+Possible values are "front", "back" and "external".
+
+.TP
+.BI "\-\-camera\-fps " fps
+Specify the camera capture frame rate.
+
+If not specified, Android's default frame rate (30 fps) is used.
+
+.TP
+.BI "\-\-camera\-size " width\fRx\fIheight
+Specify an explicit camera capture size.
 
 .TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
@@ -44,27 +118,46 @@ The values are expressed in the device natural orientation (typically, portrait 
 value is computed on the cropped size.
 
 .TP
-.BI "\-\-disable-screensaver"
+.B \-d, \-\-select\-usb
+Use USB device (if there is exactly one, like adb -d).
+
+Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
+
+.TP
+.BI "\-\-disable\-screensaver"
 Disable screensaver while scrcpy is running.
 
 .TP
-.BI "\-\-display " id
-Specify the display id to mirror.
-
-The list of possible display ids can be listed by "adb shell dumpsys display"
-(search "mDisplayId=" in the output).
-
-Default is 0.
-
-.TP
-.BI "\-\-display\-buffer ms
+.BI "\-\-display\-buffer " ms
 Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
 
 Default is 0 (no buffering).
 
 .TP
-.BI "\-\-encoder " name
-Use a specific MediaCodec encoder (must be a H.264 encoder).
+.BI "\-\-display\-id " id
+Specify the device display id to mirror.
+
+The available display ids can be listed by \fB\-\-list\-displays\fR.
+
+Default is 0.
+
+.TP
+.BI "\-\-display\-orientation " value
+Set the initial display orientation.
+
+Possible values are 0, 90, 180, 270, flip0, flip90, flip180 and flip270. The number represents the clockwise rotation in degrees; the "flip" keyword applies a horizontal flip before the rotation.
+
+Default is 0.
+
+.TP
+.B \-e, \-\-select\-tcpip
+Use TCP/IP device (if there is exactly one, like adb -e).
+
+Also see \fB\-d\fR (\fB\-\-select\-usb\fR).
+
+.TP
+.B \-f, \-\-fullscreen
+Start in fullscreen.
 
 .TP
 .B \-\-force\-adb\-forward
@@ -75,12 +168,35 @@ Do not attempt to use "adb reverse" to connect to the device.
 By default, right-click triggers BACK (or POWER on) and middle-click triggers HOME. This option disables these shortcuts and forward the clicks to the device instead.
 
 .TP
-.B \-f, \-\-fullscreen
-Start in fullscreen.
-
-.TP
 .B \-h, \-\-help
 Print this help.
+
+.TP
+.B \-K
+Same as \fB\-\-keyboard=uhid\fR.
+
+.TP
+.BI "\-\-keyboard " mode
+Select how to send keyboard inputs to the device.
+
+Possible values are "disabled", "sdk", "uhid" and "aoa":
+
+ - "disabled" does not send keyboard inputs to the device.
+ - "sdk" uses the Android system API to deliver keyboard events to applications.
+ - "uhid" simulates a physical HID keyboard using the Linux HID kernel module on the device.
+ - "aoa" simulates a physical HID keyboard using the AOAv2 protocol. It may only work over USB.
+
+For "uhid" and "aoa", the keyboard layout must be configured (once and for all) on the device, via Settings -> System -> Languages and input -> Physical keyboard. This settings page can be started directly using the shortcut MOD+k (except in OTG mode), or by executing:
+
+    adb shell am start -a android.settings.HARD_KEYBOARD_SETTINGS
+
+This option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
+
+Also see \fB\-\-mouse\fR.
+
+.TP
+.B \-\-kill\-adb\-on\-close
+Kill adb when scrcpy terminates.
 
 .TP
 .B \-\-legacy\-paste
@@ -89,16 +205,30 @@ Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+S
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
 
 .TP
-.BI "\-\-lock\-video\-orientation[=value]
-Lock video orientation to \fIvalue\fR. Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 1, 2 and 3. Natural device orientation is 0, and each increment adds a 90 degrees rotation counterclockwise.
+.B \-\-list\-camera\-sizes
+List the valid camera capture sizes.
+
+.TP
+.B \-\-list\-cameras
+List cameras available on the device.
+
+.TP
+.B \-\-list\-encoders
+List video and audio encoders available on the device.
+
+.TP
+.B \-\-list\-displays
+List displays available on the device.
+
+.TP
+\fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
+Lock capture video orientation to \fIvalue\fR.
+
+Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 90, 180, and 270. The values represent the clockwise rotation from the natural device orientation, in degrees.
 
 Default is "unlocked".
 
 Passing the option without argument is equivalent to passing "initial".
-
-.TP
-.BI "\-\-max\-fps " value
-Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
 .TP
 .BI "\-m, \-\-max\-size " value
@@ -107,12 +237,64 @@ Limit both the width and height of the video to \fIvalue\fR. The other dimension
 Default is 0 (unlimited).
 
 .TP
+.B \-M
+Same as \fB\-\-mouse=uhid\fR.
+
+.TP
+.BI "\-\-max\-fps " value
+Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
+
+.TP
+.BI "\-\-mouse " mode
+Select how to send mouse inputs to the device.
+
+Possible values are "disabled", "sdk", "uhid" and "aoa":
+
+ - "disabled" does not send mouse inputs to the device.
+ - "sdk" uses the Android system API to deliver mouse events to applications.
+ - "uhid" simulates a physical HID mouse using the Linux HID kernel module on the device.
+ - "aoa" simulates a physical mouse using the AOAv2 protocol. It may only work over USB.
+
+In "uhid" and "aoa" modes, the computer mouse is captured to control the device directly (relative mouse mode).
+
+LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
+
+Also see \fB\-\-keyboard\fR.
+
+
+.TP
 .B \-n, \-\-no\-control
 Disable device control (mirror the device in read\-only).
 
 .TP
-.B \-N, \-\-no\-display
-Do not display device (only when screen recording is enabled).
+.B \-N, \-\-no\-playback
+Disable video and audio playback on the computer (equivalent to \fB\-\-no\-video\-playback \-\-no\-audio\-playback\fR).
+
+.TP
+.B \-\-no\-audio
+Disable audio forwarding.
+
+.TP
+.B \-\-no\-audio\-playback
+Disable audio playback on the computer.
+
+.TP
+.B \-\-no\-cleanup
+By default, scrcpy removes the server binary from the device and restores the device state (show touches, stay awake and power mode) on exit.
+
+This option disables this cleanup.
+
+.TP
+.B \-\-no\-clipboard\-autosync
+By default, scrcpy automatically synchronizes the computer clipboard to the device clipboard before injecting Ctrl+v, and the device clipboard to the computer clipboard whenever it changes.
+
+This option disables this automatic synchronization.
+
+.TP
+.B \-\-no\-downsize\-on\-error
+By default, on MediaCodec error, scrcpy automatically tries again with a lower definition.
+
+This option disables this behavior.
 
 .TP
 .B \-\-no\-key\-repeat
@@ -123,10 +305,54 @@ Do not forward repeated key events when a key is held down.
 If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
 
 .TP
-.BI "\-p, \-\-port " port[:port]
+.B \-\-no\-power\-on
+Do not power on the device on start.
+
+.TP
+.B \-\-no\-video
+Disable video forwarding.
+
+.TP
+.B \-\-no\-video\-playback
+Disable video playback on the computer.
+
+.TP
+.BI "\-\-orientation " value
+Same as --display-orientation=value --record-orientation=value.
+
+.TP
+.B \-\-otg
+Run in OTG mode: simulate physical keyboard and mouse, as if the computer keyboard and mouse were plugged directly to the device via an OTG cable.
+
+In this mode, adb (USB debugging) is not necessary, and mirroring is disabled.
+
+LAlt, LSuper or RSuper toggle the mouse capture mode, to give control of the mouse back to the computer.
+
+If any of \fB\-\-hid\-keyboard\fR or \fB\-\-hid\-mouse\fR is set, only enable keyboard or mouse respectively, otherwise enable both.
+
+It may only work over USB.
+
+See \fB\-\-hid\-keyboard\fR and \fB\-\-hid\-mouse\fR.
+
+.TP
+.BI "\-p, \-\-port " port\fR[:\fIport\fR]
 Set the TCP port (range) used by the client to listen.
 
 Default is 27183:27199.
+
+.TP
+\fB\-\-pause\-on\-exit\fR[=\fImode\fR]
+Configure pause on exit. Possible values are "true" (always pause on exit), "false" (never pause on exit) and "if-error" (pause only if an error occured).
+
+This is useful to prevent the terminal window from automatically closing, so that error messages can be read.
+
+Default is "false".
+
+Passing the option without argument is equivalent to passing "true".
+
+.TP
+.B \-\-power\-off\-on\-close
+Turn the device screen off when closing scrcpy.
 
 .TP
 .B \-\-prefer\-text
@@ -134,6 +360,10 @@ Inject alpha characters and space as text events instead of key events.
 
 This avoids issues when combining multiple keys to enter special characters,
 but breaks the expected behavior of alpha keys in games (typically WASD).
+
+.TP
+.B "\-\-print\-fps
+Start FPS counter, to print framerate logs to the console. It can be started or stopped at any time with MOD+i.
 
 .TP
 .BI "\-\-push\-target " path
@@ -148,11 +378,23 @@ Record screen to
 
 The format is determined by the
 .B \-\-record\-format
-option if set, or by the file extension (.mp4 or .mkv).
+option if set, or by the file extension.
+
+.TP
+.B \-\-raw\-key\-events
+Inject key events for all input keys, and ignore text events.
 
 .TP
 .BI "\-\-record\-format " format
-Force recording format (either mp4 or mkv).
+Force recording format (mp4, mkv, m4a, mka, opus, aac, flac or wav).
+
+.TP
+.BI "\-\-record\-orientation " value
+Set the record orientation.
+
+Possible values are 0, 90, 180 and 270. The number represents the clockwise rotation in degrees.
+
+Default is 0.
 
 .TP
 .BI "\-\-render\-driver " name
@@ -160,19 +402,22 @@ Request SDL to use the given render driver (this is just a hint).
 
 Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "metal" and "software".
 
-.UR https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER
-.UE
+<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>
 
 .TP
-.BI "\-\-rotation " value
-Set the initial display rotation. Possibles values are 0, 1, 2 and 3. Each increment adds a 90 degrees rotation counterclockwise.
+.B \-\-require\-audio
+By default, scrcpy mirrors only the video if audio capture fails on the device. This option makes scrcpy fail if audio is enabled but does not work.
 
 .TP
 .BI "\-s, \-\-serial " number
 The device serial number. Mandatory only if several devices are connected to adb.
 
 .TP
-.BI "\-\-shortcut\-mod " key[+...]][,...]
+.B \-S, \-\-turn\-screen\-off
+Turn the device screen off immediately.
+
+.TP
+.BI "\-\-shortcut\-mod " key\fR[+...]][,...]
 Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lsuper" and "rsuper".
 
 A shortcut can consist in several keys, separated by '+'. Several shortcuts can be specified, separated by ','.
@@ -182,14 +427,44 @@ For example, to use either LCtrl+LAlt or LSuper for scrcpy shortcuts, pass "lctr
 Default is "lalt,lsuper" (left-Alt or left-Super).
 
 .TP
-.B \-S, \-\-turn\-screen\-off
-Turn the device screen off immediately.
-
-.TP
 .B \-t, \-\-show\-touches
 Enable "show touches" on start, restore the initial value on exit.
 
 It only shows physical touches (not clicks from scrcpy).
+
+.TP
+.BI "\-\-tcpip\fR[=\fIip\fR[:\fIport\fR]]
+Configure and reconnect the device over TCP/IP.
+
+If a destination address is provided, then scrcpy connects to this address before starting. The device must listen on the given TCP port (default is 5555).
+
+If no destination address is provided, then scrcpy attempts to find the IP address and adb port of the current device (typically connected over USB), enables TCP/IP mode if necessary, then connects to this address before starting.
+
+.TP
+.BI "\-\-time\-limit " seconds
+Set the maximum mirroring time, in seconds.
+
+.TP
+.BI "\-\-tunnel\-host " ip
+Set the IP address of the adb tunnel to reach the scrcpy server. This option automatically enables \fB\-\-force\-adb\-forward\fR.
+
+Default is localhost.
+
+.TP
+.BI "\-\-tunnel\-port " port
+Set the TCP port of the adb tunnel to reach the scrcpy server. This option automatically enables \fB\-\-force\-adb\-forward\fR.
+
+Default is 0 (not forced): the local port used for establishing the tunnel will be used.
+
+.TP
+.B \-v, \-\-version
+Print the version of scrcpy.
+
+.TP
+.BI "\-V, \-\-verbosity " value
+Set the log level ("verbose", "debug", "info", "warn" or "error").
+
+Default is "info" for release builds, "debug" for debug builds.
 
 .TP
 .BI "\-\-v4l2-sink " /dev/videoN
@@ -206,14 +481,34 @@ This option is similar to \fB\-\-display\-buffer\fR, but specific to V4L2 sink.
 Default is 0 (no buffering).
 
 .TP
-.BI "\-V, \-\-verbosity " value
-Set the log level ("verbose", "debug", "info", "warn" or "error").
+.BI "\-\-video\-codec " name
+Select a video codec (h264, h265 or av1).
 
-Default is "info" for release builds, "debug" for debug builds.
+Default is h264.
 
 .TP
-.B \-v, \-\-version
-Print the version of scrcpy.
+.BI "\-\-video\-codec\-options " key\fR[:\fItype\fR]=\fIvalue\fR[,...]
+Set a list of comma-separated key:type=value options for the device video encoder.
+
+The possible values for 'type' are 'int' (default), 'long', 'float' and 'string'.
+
+The list of possible codec options is available in the Android documentation:
+
+<https://d.android.com/reference/android/media/MediaFormat>
+
+.TP
+.BI "\-\-video\-encoder " name
+Use a specific MediaCodec video encoder (depending on the codec provided by \fB\-\-video\-codec\fR).
+
+The available encoders can be listed by \fB\-\-list\-encoders\fR.
+
+.TP
+.BI "\-\-video\-source " source
+Select the video source (display or camera).
+
+Camera mirroring requires Android 12+.
+
+Default is display.
 
 .TP
 .B \-w, \-\-stay-awake
@@ -251,6 +546,12 @@ Set the initial window height.
 
 Default is 0 (automatic).
 
+.SH EXIT STATUS
+.B scrcpy
+will exit with code 0 on normal program termination. If an initial
+connection cannot be established, the exit code 1 will be returned. If the
+device disconnects while a session is active, exit code 2 will be returned.
+
 .SH SHORTCUTS
 
 In the following list, MOD is the shortcut modifier. By default, it's (left)
@@ -267,6 +568,14 @@ Rotate display left
 .TP
 .B MOD+Right
 Rotate display right
+
+.TP
+.B MOD+Shift+Left, MOD+Shift+Right
+Flip display horizontally
+
+.TP
+.B MOD+Shift+Up, MOD+Shift+Down
+Flip display vertically
 
 .TP
 .B MOD+g
@@ -345,27 +654,47 @@ Copy computer clipboard to device, then paste (inject PASTE keycode, Android >= 
 Inject computer clipboard text as a sequence of key events
 
 .TP
+.B MOD+k
+Open keyboard settings on the device (for HID keyboard only)
+
+.TP
 .B MOD+i
 Enable/disable FPS counter (print frames/second in logs)
 
 .TP
 .B Ctrl+click-and-move
-Pinch-to-zoom from the center of the screen
+Pinch-to-zoom and rotate from the center of the screen
+
+.TP
+.B Shift+click-and-move
+Tilt (slide vertically with two fingers)
 
 .TP
 .B Drag & drop APK file
 Install APK from computer
+
+.TP
+.B Drag & drop non-APK file
+Push file to device (see \fB\-\-push\-target\fR)
 
 
 .SH Environment variables
 
 .TP
 .B ADB
-Specify the path to adb.
+Path to adb.
+
+.TP
+.B ANDROID_SERIAL
+Device serial to use if no selector (\fB-s\fR, \fB-d\fR, \fB-e\fR or \fB\-\-tcpip=\fIaddr\fR) is specified.
+
+.TP
+.B SCRCPY_ICON_PATH
+Path to the program icon.
 
 .TP
 .B SCRCPY_SERVER_PATH
-Specify the path to server binary.
+Path to the server binary.
 
 
 .SH AUTHORS
@@ -380,23 +709,14 @@ for the Debian Project (and may be used by others).
 
 
 .SH "REPORTING BUGS"
-Report bugs to
-.UR https://github.com/Genymobile/scrcpy/issues
-.UE .
+Report bugs to <https://github.com/Genymobile/scrcpy/issues>.
 
 .SH COPYRIGHT
-Copyright \(co 2018 Genymobile
-.UR https://www.genymobile.com
-Genymobile
-.UE
+Copyright \(co 2018 Genymobile <https://www.genymobile.com>
 
-Copyright \(co 2018\-2020
-.MT rom@rom1v.com
-Romain Vimont
-.ME
+Copyright \(co 2018\-2024 Romain Vimont <rom@rom1v.com>
 
 Licensed under the Apache License, Version 2.0.
 
 .SH WWW
-.UR https://github.com/Genymobile/scrcpy
-.UE
+<https://github.com/Genymobile/scrcpy>

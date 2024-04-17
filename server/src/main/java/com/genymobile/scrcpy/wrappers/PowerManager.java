@@ -6,21 +6,25 @@ import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.IInterface;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class PowerManager {
     private final IInterface manager;
     private Method isScreenOnMethod;
 
-    public PowerManager(IInterface manager) {
+    static PowerManager create() {
+        IInterface manager = ServiceManager.getService("power", "android.os.IPowerManager");
+        return new PowerManager(manager);
+    }
+
+    private PowerManager(IInterface manager) {
         this.manager = manager;
     }
 
     private Method getIsScreenOnMethod() throws NoSuchMethodException {
         if (isScreenOnMethod == null) {
             @SuppressLint("ObsoleteSdkInt") // we may lower minSdkVersion in the future
-                    String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
+            String methodName = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH ? "isInteractive" : "isScreenOn";
             isScreenOnMethod = manager.getClass().getMethod(methodName);
         }
         return isScreenOnMethod;
@@ -30,7 +34,7 @@ public final class PowerManager {
         try {
             Method method = getIsScreenOnMethod();
             return (boolean) method.invoke(manager);
-        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
+        } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
             return false;
         }

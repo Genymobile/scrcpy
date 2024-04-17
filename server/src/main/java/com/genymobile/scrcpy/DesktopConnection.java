@@ -7,21 +7,24 @@ import android.os.SystemClock;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 public final class DesktopConnection extends Connection {
+
+    private static final String SOCKET_NAME_PREFIX = "scrcpy";
 
     private static final String SOCKET_NAME = "scrcpy";
 
     private final LocalSocket videoSocket;
     private final FileDescriptor videoFd;
 
+    private final LocalSocket audioSocket;
+    private final FileDescriptor audioFd;
+
     private final LocalSocket controlSocket;
-    private final InputStream controlInputStream;
-    private final OutputStream controlOutputStream;
+    private final ControlChannel controlChannel;
 
     private final DeviceMessageWriter writer = new DeviceMessageWriter();
 
@@ -73,28 +76,62 @@ public final class DesktopConnection extends Connection {
         screenEncoder.run();
     }
 
-    public void close() throws IOException {
-        videoSocket.shutdownInput();
-        videoSocket.shutdownOutput();
-        videoSocket.close();
-        controlSocket.shutdownInput();
-        controlSocket.shutdownOutput();
-        controlSocket.close();
+    private static String getSocketName(int scid) {
+        if (scid == -1) {
+            // If no SCID is set, use "scrcpy" to simplify using scrcpy-server alone
+            return SOCKET_NAME_PREFIX;
+        }
+
+        return SOCKET_NAME_PREFIX + String.format("_%08x", scid);
     }
 
-    private void send(String deviceName, int width, int height) throws IOException {
-        byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH + 4];
+    private LocalSocket getFirstSocket() {
+        if (videoSocket != null) {
+            return videoSocket;
+        }
+        if (audioSocket != null) {
+            return audioSocket;
+        }
+        return controlSocket;
+    }
+
+    public void shutdown() throws IOException {
+        if (videoSocket != null) {
+            videoSocket.shutdownInput();
+            videoSocket.shutdownOutput();
+        }
+        if (audioSocket != null) {
+            audioSocket.shutdownInput();
+            audioSocket.shutdownOutput();
+        }
+        if (controlSocket != null) {
+            controlSocket.shutdownInput();
+            controlSocket.shutdownOutput();
+        }
+    }
+
+    public void close() throws IOException {
+        if (videoSocket != null) {
+            videoSocket.close();
+        }
+        if (audioSocket != null) {
+            audioSocket.close();
+        }
+        if (controlSocket != null) {
+            controlSocket.close();
+        }
+    }
+
+    public void sendDeviceMeta(String deviceName) throws IOException {
+        byte[] buffer = new byte[DEVICE_NAME_FIELD_LENGTH];
 
         byte[] deviceNameBytes = deviceName.getBytes(StandardCharsets.UTF_8);
         int len = StringUtils.getUtf8TruncationIndex(deviceNameBytes, DEVICE_NAME_FIELD_LENGTH - 1);
         System.arraycopy(deviceNameBytes, 0, buffer, 0, len);
         // byte[] are always 0-initialized in java, no need to set '\0' explicitly
 
-        buffer[DEVICE_NAME_FIELD_LENGTH] = (byte) (width >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 1] = (byte) width;
-        buffer[DEVICE_NAME_FIELD_LENGTH + 2] = (byte) (height >> 8);
-        buffer[DEVICE_NAME_FIELD_LENGTH + 3] = (byte) height;
-        IO.writeFully(videoFd, buffer, 0, buffer.length);
+        FileDescriptor fd = getFirstSocket().getFileDescriptor();
+        IO.writeFully(fd, buffer, 0, buffer.length);
     }
 
     public void send(ByteBuffer data) {
@@ -155,8 +192,12 @@ public final class DesktopConnection extends Connection {
         }
         return msg;
     }
+    
+    public FileDescriptor getAudioFd() {
+        return audioFd;
+    }
 
-    public void sendDeviceMessage(DeviceMessage msg) throws IOException {
-        writer.writeTo(msg, controlOutputStream);
+    public ControlChannel getControlChannel() {
+        return controlChannel;
     }
 }

@@ -21,6 +21,13 @@ typedef struct sc_thread {
     SDL_Thread *thread;
 } sc_thread;
 
+enum sc_thread_priority {
+    SC_THREAD_PRIORITY_LOW,
+    SC_THREAD_PRIORITY_NORMAL,
+    SC_THREAD_PRIORITY_HIGH,
+    SC_THREAD_PRIORITY_TIME_CRITICAL,
+};
+
 typedef struct sc_mutex {
     SDL_mutex *mutex;
 #ifndef NDEBUG
@@ -38,6 +45,9 @@ sc_thread_create(sc_thread *thread, sc_thread_fn fn, const char *name,
 
 void
 sc_thread_join(sc_thread *thread, int *status);
+
+bool
+sc_thread_set_priority(enum sc_thread_priority priority);
 
 bool
 sc_mutex_init(sc_mutex *mutex);

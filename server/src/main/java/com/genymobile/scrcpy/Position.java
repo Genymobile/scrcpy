@@ -3,8 +3,8 @@ package com.genymobile.scrcpy;
 import java.util.Objects;
 
 public class Position {
-    private Point point;
-    private Size screenSize;
+    private final Point point;
+    private final Size screenSize;
 
     public Position(Point point, Size screenSize) {
         this.point = point;

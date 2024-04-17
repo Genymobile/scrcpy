@@ -1,13 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 30
+    namespace 'com.genymobile.scrcpy'
+    compileSdk 34
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
         minSdkVersion 21
-        targetSdkVersion 30
-        versionCode 11900
-        versionName "1.19-ws5"
+        targetSdkVersion 34
+        versionCode 20400
+        versionName "2.4-ws5"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -16,6 +17,10 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    buildFeatures {
+        buildConfig true
+        aidl true
+    }
 }
 
 dependencies {
@@ -23,7 +28,7 @@ dependencies {
     implementation 'org.java-websocket:Java-WebSocket:1.4.0'
     implementation 'org.slf4j:slf4j-api:1.7.25'
     implementation 'uk.uuid.slf4j:slf4j-android:1.7.25-1'
-    testImplementation 'junit:junit:4.13'
+    testImplementation 'junit:junit:4.13.2'
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"
