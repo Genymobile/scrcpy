@@ -127,6 +127,10 @@ public class CameraCapture extends SurfaceCapture {
 
         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
         android.util.Size[] sizes = highSpeed ? configs.getHighSpeedVideoSizes() : configs.getOutputSizes(MediaCodec.class);
+        if (sizes == null) {
+            return null;
+        }
+
         Stream<android.util.Size> stream = Arrays.stream(sizes);
         if (maxSize > 0) {
             stream = stream.filter(it -> it.getWidth() <= maxSize && it.getHeight() <= maxSize);
