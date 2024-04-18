@@ -7,16 +7,17 @@ import android.os.Build;
 
 import java.util.Locale;
 import java.util.ArrayList;
+import java.io.IOException;
 
 public final class Server {
 
-    public static final String SERVER_PATH;
+   // public static final String SERVER_PATH;
 
-    static {
-        String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
-        // By convention, scrcpy is always executed with the absolute path of scrcpy-server.jar as the first item in the classpath
-        SERVER_PATH = classPaths[0];
-    }
+    // static {
+    //     String[] classPaths = System.getProperty("java.class.path").split(File.pathSeparator);
+    //     // By convention, scrcpy is always executed with the absolute path of scrcpy-server.jar as the first item in the classpath
+    //     SERVER_PATH = classPaths[0];
+    // }
 
     private static class Completion {
         private int running;
@@ -57,10 +58,10 @@ public final class Server {
         }
 
         String clientVersion = args[0];
-        if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
-            throw new IllegalArgumentException(
-                    "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
-        }
+       if (!clientVersion.equals(BuildConfig.VERSION_NAME)) {
+           throw new IllegalArgumentException(
+                   "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
+       }
 
         if (args[1].toLowerCase().equals("web")) {
             options.setServerType(Options.TYPE_WEB_SOCKET);
@@ -232,6 +233,7 @@ public final class Server {
         }
 
         try {
+            Ln.i("scrcpy server type is " + options.getServerType());
             if (options.getServerType() == Options.TYPE_LOCAL_SOCKET) {
                 new DesktopConnection(options, videoSettings);
             } else if (options.getServerType() == Options.TYPE_WEB_SOCKET) {
@@ -239,7 +241,7 @@ public final class Server {
                 wsServer.setReuseAddr(true);
                 wsServer.run();
             }
-        } catch (ConfigurationException e) {
+        } catch (Exception e) {
             // Do not print stack trace, a user-friendly error-message has already been logged
         }
     }

@@ -26,6 +26,7 @@ public final class Workarounds {
     private static final Class<?> ACTIVITY_THREAD_CLASS;
     private static final Object ACTIVITY_THREAD;
 
+   
     static {
         prepareMainLooper();
 
@@ -108,7 +109,7 @@ public final class Workarounds {
     }
 
     @SuppressWarnings("deprecation")
-    private static void prepareMainLooper() {
+    public static void prepareMainLooper() {
         // Some devices internally create a Handler when creating an input Surface, causing an exception:
         //   "Can't create handler inside thread that has not called Looper.prepare()"
         // <https://github.com/Genymobile/scrcpy/issues/240>
@@ -124,7 +125,7 @@ public final class Workarounds {
         Looper.prepareMainLooper();
     }
 
-    private static void fillAppInfo() {
+    public static void fillAppInfo() {
         try {
             // ActivityThread.AppBindData appBindData = new ActivityThread.AppBindData();
             Class<?> appBindDataClass = Class.forName("android.app.ActivityThread$AppBindData");

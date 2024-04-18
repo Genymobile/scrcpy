@@ -15,6 +15,7 @@ public class Options {
     private boolean video = true;
     private boolean audio = true;
     private int maxSize;
+    private int bitRate;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
     private VideoSource videoSource = VideoSource.DISPLAY;
@@ -35,6 +36,7 @@ public class Options {
     private boolean cameraHighSpeed;
     private boolean showTouches = false;
     private boolean stayAwake = false;
+    private String codecOptions;
     private List<CodecOption> videoCodecOptions;
     private List<CodecOption> audioCodecOptions;
 
@@ -43,7 +45,7 @@ public class Options {
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
-    private boolean cleanup = true;
+    private boolean cleanup = false;
     private boolean powerOn = true;
 
     private boolean listEncoders;
@@ -65,6 +67,10 @@ public class Options {
         return logLevel;
     }
 
+    public void setLogLevel(Ln.Level logLevel) {
+        this.logLevel = logLevel;
+    }
+
     public int getScid() {
         return scid;
     }
@@ -83,6 +89,14 @@ public class Options {
 
     public void setMaxSize(int maxSize) {
         this.maxSize = (maxSize / 8) * 8;
+    }
+
+    public int getBitRate() {
+        return bitRate;
+    }
+
+    public void setBitRate(int bitRate) {
+        this.bitRate = bitRate;
     }
     
     public VideoCodec getVideoCodec() {
@@ -121,12 +135,20 @@ public class Options {
         return tunnelForward;
     }
 
+    public void setTunnelForward(boolean tunnelForward) {
+        this.tunnelForward = tunnelForward;
+    }
+
     public Rect getCrop() {
         return crop;
     }
 
     public boolean getControl() {
         return control;
+    }
+
+    public void setControl(boolean control) {
+        this.control = control;
     }
 
     public int getDisplayId() {
@@ -161,6 +183,10 @@ public class Options {
         return showTouches;
     }
 
+    public void setShowTouches(boolean showTouches) {
+        this.showTouches = showTouches;
+    }
+
     public boolean getStayAwake() {
         return stayAwake;
     }
@@ -183,6 +209,10 @@ public class Options {
 
     public boolean getPowerOffScreenOnClose() {
         return this.powerOffScreenOnClose;
+    }
+
+    public void setPowerOffScreenOnClose(boolean powerOffScreenOnClose) {
+        this.powerOffScreenOnClose = powerOffScreenOnClose;
     }
 
     public int getServerType() {
@@ -275,6 +305,14 @@ public class Options {
 
     public boolean getSendCodecMeta() {
         return sendCodecMeta;
+    }
+
+    public void setStayAwake(boolean stayAwake) {
+        this.stayAwake = stayAwake;
+    }
+
+    public void setCodecOptions(String codecOptions) {
+        this.codecOptions = codecOptions;
     }
 
     @SuppressWarnings("MethodLength")

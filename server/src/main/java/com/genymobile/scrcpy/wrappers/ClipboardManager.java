@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.IInterface;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 
 public final class ClipboardManager {
     private final IInterface manager;

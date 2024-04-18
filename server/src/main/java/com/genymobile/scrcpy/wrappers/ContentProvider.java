@@ -158,4 +158,16 @@ public final class ContentProvider implements Closeable {
             throw new SettingsException(table, "put", key, value, e);
         }
     }
+
+    public String getAndPutValue(String table, String key, String value) {
+        try {
+            String oldValue = getValue(table, key);
+            if (!value.equals(oldValue)) {
+                putValue(table, key, value);
+            }
+            return oldValue;
+        }catch (Exception e) {
+            return null;
+        }
+    }
 }

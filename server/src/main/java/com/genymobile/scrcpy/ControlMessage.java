@@ -297,6 +297,8 @@ public final class ControlMessage {
 
     public VideoSettings getVideoSettings() {
         return videoSettings;
+    }
+    
     public long getSequence() {
         return sequence;
     }

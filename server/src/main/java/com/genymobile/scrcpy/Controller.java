@@ -32,11 +32,11 @@ public class Controller implements AsyncProcessor {
 
     private final Device device;
     private final Connection connection;
-    private final ControlChannel controlChannel;
-    private final CleanUp cleanUp;
+  //  private final ControlChannel controlChannel;
+  //  private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
-    private final boolean clipboardAutosync;
-    private final boolean powerOn;
+   // private final boolean clipboardAutosync;
+    private final boolean powerOn = true;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -47,14 +47,22 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
+    // public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
+    //     this.device = device;
+    //     this.controlChannel = controlChannel;
+    //     this.cleanUp = cleanUp;
+    //     this.clipboardAutosync = clipboardAutosync;
+    //     this.powerOn = powerOn;
+    //     this.Connection = new Connection();
+    //     initPointers();
+    //     sender = new DeviceMessageSender(controlChannel);
+    // }
+
+    public Controller(Device device, Connection connection) {
         this.device = device;
-        this.controlChannel = controlChannel;
-        this.cleanUp = cleanUp;
-        this.clipboardAutosync = clipboardAutosync;
-        this.powerOn = powerOn;
+        this.connection = connection;
         initPointers();
-        sender = new DeviceMessageSender(controlChannel);
+        sender = new DeviceMessageSender(connection);
     }
 
     private UhidManager getUhidManager() {
@@ -93,10 +101,10 @@ public class Controller implements AsyncProcessor {
             SystemClock.sleep(500);
         }
 
-        boolean alive = true;
-        while (!Thread.currentThread().isInterrupted() && alive) {
-            alive = handleEvent();
-        }
+        // boolean alive = true;
+        // while (!Thread.currentThread().isInterrupted() && alive) {
+        //     alive = handleEvent();
+        // }
     }
 
     @Override
@@ -195,10 +203,10 @@ public class Controller implements AsyncProcessor {
                     if (setPowerModeOk) {
                         keepPowerModeOff = mode == Device.POWER_MODE_OFF;
                         Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
-                        if (cleanUp != null) {
-                            boolean mustRestoreOnExit = mode != Device.POWER_MODE_NORMAL;
-                            cleanUp.setRestoreNormalPowerMode(mustRestoreOnExit);
-                        }
+                        // if (cleanUp != null) {
+                        //     boolean mustRestoreOnExit = mode != Device.POWER_MODE_NORMAL;
+                        //     cleanUp.setRestoreNormalPowerMode(mustRestoreOnExit);
+                        // }
                     }
                 }
                 break;
@@ -206,19 +214,26 @@ public class Controller implements AsyncProcessor {
                 device.rotateDevice();
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
-                getUhidManager().open(msg.getId(), msg.getData());
-                break;
+                try {
+                    getUhidManager().open(msg.getId(), msg.getData());
+                    break; 
+                } catch (Exception e) {
+                    break;
+                }
+
             case ControlMessage.TYPE_UHID_INPUT:
-                getUhidManager().writeInput(msg.getId(), msg.getData());
-                break;
+                try {
+                    getUhidManager().writeInput(msg.getId(), msg.getData());
+                    break;
+                } catch (Exception e) {
+                    break;
+                }
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 openHardKeyboardSettings();
                 break;
             default:
                 // do nothing
         }
-
-        return true;
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
@@ -424,13 +439,13 @@ public class Controller implements AsyncProcessor {
         // If clipboard autosync is enabled, then the device clipboard is synchronized to the computer clipboard whenever it changes, in
         // particular when COPY or CUT are injected, so it should not be synchronized twice. On Android < 7, do not synchronize at all rather than
         // copying an old clipboard content.
-        if (!clipboardAutosync) {
-            String clipboardText = Device.getClipboardText();
-            if (clipboardText != null) {
-                DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
-                sender.send(msg);
-            }
-        }
+        // if (!clipboardAutosync) {
+        //     String clipboardText = Device.getClipboardText();
+        //     if (clipboardText != null) {
+        //         DeviceMessage msg = DeviceMessage.createClipboard(clipboardText);
+        //         sender.send(msg);
+        //     }
+        // }
     }
 
     private boolean setClipboard(String text, boolean paste, long sequence) {

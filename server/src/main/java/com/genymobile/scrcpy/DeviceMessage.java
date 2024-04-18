@@ -22,6 +22,11 @@ public abstract class DeviceMessage {
         this.type = type;
     }
 
+    private DeviceMessage(int type, int sequence) {
+        this.type = type;
+        this.sequence = sequence;
+    }
+
     private static final class ClipboardMessage extends DeviceMessage {
         public static final int CLIPBOARD_TEXT_MAX_LENGTH = MESSAGE_MAX_SIZE - 5; // type: 1 byte; length: 4 bytes
         private byte[] raw;
@@ -31,6 +36,11 @@ public abstract class DeviceMessage {
             this.raw = text.getBytes(StandardCharsets.UTF_8);
             this.len = StringUtils.getUtf8TruncationIndex(raw, CLIPBOARD_TEXT_MAX_LENGTH);
         }
+
+        private ClipboardMessage(long sequence) {
+            super(TYPE_ACK_CLIPBOARD);
+        }
+
         public void writeToByteArray(byte[] array, int offset) {
             ByteBuffer buffer = ByteBuffer.wrap(array, offset, array.length - offset);
             buffer.put((byte) this.getType());
@@ -75,19 +85,16 @@ public abstract class DeviceMessage {
     }
 
     public static DeviceMessage createAckClipboard(long sequence) {
-        DeviceMessage event = new DeviceMessage();
-        event.type = TYPE_ACK_CLIPBOARD;
-        event.sequence = sequence;
-        return event;
+        return new ClipboardMessage(sequence);
     }
 
-    public static DeviceMessage createUhidOutput(int id, byte[] data) {
-        DeviceMessage event = new DeviceMessage();
-        event.type = TYPE_UHID_OUTPUT;
-        event.id = id;
-        event.data = data;
-        return event;
-    }
+    // public static DeviceMessage createUhidOutput(int id, byte[] data) {
+    //     // DeviceMessage event = new DeviceMessage();
+    //     // event.type = TYPE_UHID_OUTPUT;
+    //     // event.id = id;
+    //     // event.data = data;
+    //     // return event;
+    // }
 
     public int getType() {
         return type;

@@ -14,6 +14,9 @@ import java.lang.reflect.Method;
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
 public final class ServiceManager {
 
+    public static final String PACKAGE_NAME = "com.android.shell";
+    public static final int USER_ID = 0;
+
     private static final Method GET_SERVICE_METHOD;
 
     static {
@@ -33,7 +36,7 @@ public final class ServiceManager {
     private static ActivityManager activityManager;
     private static CameraManager cameraManager;
 
-    private ServiceManager() {
+    public ServiceManager() {
         /* not instantiable */
     }
 

@@ -79,8 +79,8 @@ public final class UhidManager {
                         if (type == UHID_OUTPUT) {
                             byte[] data = extractHidOutputData(buffer);
                             if (data != null) {
-                                DeviceMessage msg = DeviceMessage.createUhidOutput(id, data);
-                                sender.send(msg);
+                                // DeviceMessage msg = DeviceMessage.createUhidOutput(id, data);
+                                // sender.send(msg);
                             }
                         }
                     }

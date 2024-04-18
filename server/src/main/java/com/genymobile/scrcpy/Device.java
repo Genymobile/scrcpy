@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
+import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -33,6 +34,8 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
+    public static final ServiceManager SERVICE_MANAGER = new ServiceManager();
+
     public interface RotationListener {
         void onRotationChanged(int rotation);
     }
@@ -45,9 +48,9 @@ public final class Device {
         void onClipboardTextChanged(String text);
     }
 
-    private final Rect crop;
+   // private final Rect crop;
     private int maxSize;
-    private final int lockVideoOrientation;
+   // private final int lockVideoOrientation;
 
     private Size deviceSize;
     private ScreenInfo screenInfo;
@@ -124,7 +127,7 @@ public final class Device {
                         }
                     }
                 }
-            }
+            };
         };
 
         if (options.getControl() && options.getClipboardAutosync()) {
@@ -146,13 +149,13 @@ public final class Device {
                         }
                     }
                 }
+            };
+            if (clipboardManager != null) {
+                clipboardManager.addPrimaryClipChangedListener(clipChangedListener);
+            } else {
+                Ln.w("No clipboard manager, copy-paste between device and computer will not work");
             }
         };
-        if (clipboardManager != null) {
-            clipboardManager.addPrimaryClipChangedListener(clipChangedListener);
-        } else {
-            Ln.w("No clipboard manager, copy-paste between device and computer will not work");
-        }
 
         if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
@@ -171,7 +174,7 @@ public final class Device {
 
     public synchronized void setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
-        screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
+       // screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
     }
 
     public synchronized ScreenInfo getScreenInfo() {
@@ -261,6 +264,10 @@ public final class Device {
 
     public boolean pressReleaseKeycode(int keyCode, int injectMode) {
         return pressReleaseKeycode(keyCode, displayId, injectMode);
+    }
+
+    public boolean pressReleaseKeycode(int keyCode) {
+        return pressReleaseKeycode(keyCode, displayId);
     }
 
     public static boolean isScreenOn() {
@@ -417,5 +424,9 @@ public final class Device {
 
     public static DisplayInfo getDisplayInfo(int displayId) {
         return SERVICE_MANAGER.getDisplayManager().getDisplayInfo(displayId);
+    }
+
+    public static ContentProvider createSettingsProvider() {
+        return SERVICE_MANAGER.getActivityManager().createSettingsProvider();
     }
 }

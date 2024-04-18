@@ -8,6 +8,7 @@ import android.view.IDisplayFoldListener;
 import android.view.IRotationWatcher;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 
 public final class WindowManager {
     private final IInterface manager;

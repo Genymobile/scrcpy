@@ -72,7 +72,7 @@ public abstract class Connection implements Device.RotationListener, Device.Clip
             Ln.w("CleanUp.configure() failed:" + e.getMessage());
         }
     }
-
+    
     public boolean setVideoSettings(VideoSettings newSettings) {
         if (!videoSettings.equals(newSettings)) {
             videoSettings.merge(newSettings);
