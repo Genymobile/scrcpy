@@ -468,7 +468,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_DOWN:
                 if (shift) {
-                    if (!repeat & down) {
+                    if (!repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
@@ -479,7 +479,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_UP:
                 if (shift) {
-                    if (!repeat & down) {
+                    if (!repeat && down) {
                         apply_orientation_transform(im,
                                                     SC_ORIENTATION_FLIP_180);
                     }
