@@ -2811,6 +2811,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 # endif
 
+    if (opts->start_fps_counter && !opts->video_playback) {
+        LOGW("--print-fps has no effect without video playback");
+        opts->start_fps_counter = false;
+    }
+
     if (otg) {
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
