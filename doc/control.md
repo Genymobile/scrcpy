@@ -15,6 +15,25 @@ scrcpy -n   # short version
 Read [keyboard](keyboard.md) and [mouse](mouse.md).
 
 
+## Control only
+
+To control the device without mirroring:
+
+```bash
+scrcpy --no-video --no-audio
+```
+
+By default, mouse mode is switched to UHID if video mirroring is disabled (a
+relative mouse mode is required).
+
+To also use a UHID keyboard, set it explicitly:
+
+```bash
+scrcpy --no-video --no-audio --keyboard=uhid
+scrcpy --no-video --no-audio -K  # short version
+```
+
+
 ## Copy-paste
 
 Any time the Android clipboard changes, it is automatically synchronized to the
