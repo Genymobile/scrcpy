@@ -15,6 +15,16 @@ scrcpy -n   # short version
 Read [keyboard](keyboard.md) and [mouse](mouse.md).
 
 
+## Control only
+
+To control only with UHID mouse and keyboard:
+
+```bash
+scrcpy --no-video --no-audio --keyboard=uhid --mouse=uhid
+scrcpy --no-video --no-audio -KM  # short version
+```
+
+
 ## Copy-paste
 
 Any time the Android clipboard changes, it is automatically synchronized to the
