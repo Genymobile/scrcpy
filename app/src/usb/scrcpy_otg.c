@@ -159,6 +159,7 @@ scrcpy_otg(struct scrcpy_options *options) {
         .mouse = mouse,
         .window_title = window_title,
         .always_on_top = options->always_on_top,
+        .system_resize = options->system_resize,
         .window_x = options->window_x,
         .window_y = options->window_y,
         .window_width = options->window_width,

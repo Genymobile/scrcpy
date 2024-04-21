@@ -57,7 +57,9 @@ set_window_size(struct sc_screen *screen, struct sc_size new_size) {
     assert(!screen->fullscreen);
     assert(!screen->maximized);
     assert(!screen->minimized);
-    SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
+    if(!(screen->req.system_resize)){
+        SDL_SetWindowSize(screen->window, new_size.width, new_size.height);
+    }
 }
 
 // get the preferred display bounds (i.e. the screen bounds with some margins)
@@ -367,6 +369,7 @@ sc_screen_init(struct sc_screen *screen,
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
+    screen->req.system_resize = params->system_resize;
     screen->req.width = params->window_width;
     screen->req.height = params->window_height;
     screen->req.fullscreen = params->fullscreen;

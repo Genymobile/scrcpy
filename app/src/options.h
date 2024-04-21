@@ -246,6 +246,7 @@ struct scrcpy_options {
     bool show_touches;
     bool fullscreen;
     bool always_on_top;
+    bool system_resize;
     bool control;
     bool video_playback;
     bool audio_playback;

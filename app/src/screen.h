@@ -38,6 +38,7 @@ struct sc_screen {
         uint16_t width;
         uint16_t height;
         bool fullscreen;
+        bool system_resize;
         bool start_fps_counter;
     } req;
 
@@ -82,6 +83,7 @@ struct sc_screen_params {
 
     const char *window_title;
     bool always_on_top;
+    bool system_resize;
 
     int16_t window_x; // accepts SC_WINDOW_POSITION_UNDEFINED
     int16_t window_y; // accepts SC_WINDOW_POSITION_UNDEFINED
