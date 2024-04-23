@@ -706,13 +706,18 @@ scrcpy(struct scrcpy_options *options) {
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
 
+        // The option forward_all_clicks must have been resolved at this point
+        assert(options->forward_all_clicks != SC_FORWARD_ALL_CLICKS_AUTO);
+        bool forward_all_clicks =
+            options->forward_all_clicks == SC_FORWARD_ALL_CLICKS_TRUE;
+
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
             .controller = controller,
             .fp = fp,
             .kp = kp,
             .mp = mp,
-            .forward_all_clicks = options->forward_all_clicks,
+            .forward_all_clicks = forward_all_clicks,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,

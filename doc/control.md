@@ -108,11 +108,20 @@ This only works for the default mouse mode (`--mouse=sdk`).
 
 ## Right-click and middle-click
 
-By default, right-click triggers BACK (or POWER on) and middle-click triggers
-HOME. To disable these shortcuts and forward the clicks to the device instead:
+Two behaviors are possible:
+
+ - either right-click triggers BACK (or POWER on) and middle-click triggers
+   HOME, or
+ - these shortcuts are disabled and the clicks are forwarded to the device.
+
+By default, the clicks are forwarded only for UHID and AOA [mouse
+modes](mouse.md).
 
 ```bash
-scrcpy --forward-all-clicks
+scrcpy --forward-all-clicks        # enable
+scrcpy --forward-all-clicks=auto   # enable only for UHID and AOA (default)
+scrcpy --forward-all-clicks=true   # enable (equivalent to no argument)
+scrcpy --forward-all-clicks=false  # disable
 ```
 
 ## File drop

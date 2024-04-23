@@ -83,6 +83,12 @@ enum sc_orientation {         // v v v
     SC_ORIENTATION_FLIP_270,  // 1 1 1
 };
 
+enum sc_forward_all_clicks {
+    SC_FORWARD_ALL_CLICKS_AUTO,
+    SC_FORWARD_ALL_CLICKS_TRUE,
+    SC_FORWARD_ALL_CLICKS_FALSE,
+};
+
 static inline bool
 sc_orientation_is_mirror(enum sc_orientation orientation) {
     assert(!(orientation & ~7));
@@ -250,7 +256,7 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
-    bool forward_all_clicks;
+    enum sc_forward_all_clicks forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
     bool clipboard_autosync;

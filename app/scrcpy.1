@@ -165,7 +165,14 @@ Do not attempt to use "adb reverse" to connect to the device.
 
 .TP
 .B \-\-forward\-all\-clicks
-By default, right-click triggers BACK (or POWER on) and middle-click triggers HOME. This option disables these shortcuts and forward the clicks to the device instead.
+Two behaviors are possible: either right-click triggers BACK (or POWER on) and middle-click triggers HOME, or these shortcuts are disabled and the clicks are forwarded to the device.
+
+Possible values are "auto" (forward all clicks only for UHID and AOA mouse modes), "true" (fordward all clicks) and "false" (enable shortcuts for right-click and middle-click).
+
+Default is "auto".
+
+Passing the option without argument is equivalent to passing "true".
+
 
 .TP
 .B \-h, \-\-help

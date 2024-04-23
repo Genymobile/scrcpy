@@ -354,9 +354,18 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_FORWARD_ALL_CLICKS,
         .longopt = "forward-all-clicks",
-        .text = "By default, right-click triggers BACK (or POWER on) and "
-                "middle-click triggers HOME. This option disables these "
-                "shortcuts and forwards the clicks to the device instead.",
+        .argdesc = "value",
+        .optional_arg = true,
+        .text = "Two behaviors are possible: either right-click triggers BACK "
+                "(or POWER on) and middle-click triggers HOME, or these "
+                "shortcuts are disabled and the clicks are forwarded to the "
+                "device.\n"
+                "Possible values are \"auto\" (forward all clicks only for "
+                "UHID and AOA mouse modes), \"true\" (forward all clicks) and "
+                "\"false\" (enable shortcuts for right and middle clicks).\n"
+                "Default is \"auto\".\n"
+                "Passing the option without argument is equivalent to passing "
+                "\"true\".",
     },
     {
         .shortopt = 'h',
@@ -1532,6 +1541,28 @@ parse_lock_video_orientation(const char *s,
 }
 
 static bool
+parse_forward_all_clicks(const char *s, enum sc_forward_all_clicks *value) {
+    if (!s || !strcmp(s, "true")) {
+        *value = SC_FORWARD_ALL_CLICKS_TRUE;
+        return true;
+    }
+
+    if (!strcmp(s, "false")) {
+        *value = SC_FORWARD_ALL_CLICKS_FALSE;
+        return true;
+    }
+
+    if (!strcmp(s, "auto")) {
+        *value = SC_FORWARD_ALL_CLICKS_AUTO;
+        return true;
+    }
+
+    LOGE("Unsupported --forward-all-clicks value: %s (expected auto, true or "
+         "false).", s);
+    return false;
+}
+
+static bool
 parse_rotation(const char *s, uint8_t *rotation) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 3, "rotation");
@@ -2322,7 +2353,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_FORWARD_ALL_CLICKS:
-                opts->forward_all_clicks = true;
+                if (!parse_forward_all_clicks(optarg,
+                        &opts->forward_all_clicks)) {
+                    return false;
+                }
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
@@ -2607,6 +2641,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     && !opts->video_playback) {
             LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
             return false;
+        }
+
+        if (opts->forward_all_clicks == SC_FORWARD_ALL_CLICKS_AUTO) {
+            // By default, forward all clicks only for UHID and AOA
+            if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
+                opts->forward_all_clicks = SC_FORWARD_ALL_CLICKS_FALSE;
+            } else {
+                opts->forward_all_clicks = SC_FORWARD_ALL_CLICKS_TRUE;
+            }
         }
     }
 
