@@ -9,6 +9,8 @@
 #include "util/log.h"
 #include "util/str.h"
 
+#define RTMP_URL "rtmp://localhost/live/stream"
+
 /** Downcast packet sinks to recorder */
 #define DOWNCAST_VIDEO(SINK) \
     container_of(SINK, struct sc_recorder, video_packet_sink)
@@ -131,7 +133,7 @@ static bool
 sc_recorder_open_output_file(struct sc_recorder *recorder) {
     const char *format_name = sc_recorder_get_format_name(recorder->format);
     assert(format_name);
-    const AVOutputFormat *format = find_muxer(format_name);
+    const AVOutputFormat *format = find_muxer("flv");
     if (!format) {
         LOGE("Could not find muxer");
         return false;
@@ -143,8 +145,11 @@ sc_recorder_open_output_file(struct sc_recorder *recorder) {
         return false;
     }
 
-    int ret = avio_open(&recorder->ctx->pb, recorder->filename,
-                        AVIO_FLAG_WRITE);
+    AVDictionary *options = NULL;
+    av_dict_set(&options, "listen", "1", 0); // Enable listening
+
+    int ret = avio_open2(&recorder->ctx->pb, RTMP_URL,
+                        AVIO_FLAG_WRITE, NULL, &options);
     if (ret < 0) {
         LOGE("Failed to open output file: %s", recorder->filename);
         avformat_free_context(recorder->ctx);
