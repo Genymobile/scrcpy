@@ -272,6 +272,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
 static int
 event_watcher(void *data, SDL_Event *event) {
     struct sc_screen *screen = data;
+    assert(screen->video);
+
     if (event->type == SDL_WINDOWEVENT
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
         // In practice, it seems to always be called from the same thread in
@@ -477,7 +479,9 @@ sc_screen_init(struct sc_screen *screen,
     sc_input_manager_init(&screen->im, &im_params);
 
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
-    SDL_AddEventWatch(event_watcher, screen);
+    if (screen->video) {
+        SDL_AddEventWatch(event_watcher, screen);
+    }
 #endif
 
     static const struct sc_frame_sink_ops ops = {
