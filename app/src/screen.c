@@ -962,6 +962,8 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
 struct sc_point
 sc_screen_convert_drawable_to_frame_coords(struct sc_screen *screen,
                                            int32_t x, int32_t y) {
+    assert(screen->video);
+
     enum sc_orientation orientation = screen->orientation;
 
     int32_t w = screen->content_size.width;

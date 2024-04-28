@@ -626,6 +626,23 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
 
+static struct sc_position
+sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
+                                                           int32_t y) {
+    if (im->mp->relative_mode) {
+        // No absolute position
+        return (struct sc_position) {
+            .screen_size = {0, 0},
+            .point = {0, 0},
+        };
+    }
+
+    return (struct sc_position) {
+        .screen_size = im->screen->frame_size,
+        .point = sc_screen_convert_window_to_frame_coords(im->screen, x, y),
+    };
+}
+
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
@@ -635,12 +652,7 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
     }
 
     struct sc_mouse_motion_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              event->x,
-                                                              event->y),
-        },
+        .position = sc_input_manager_get_position(im, event->x, event->y),
         .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
                                              : POINTER_ID_GENERIC_FINGER,
         .xrel = event->xrel,
@@ -760,12 +772,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     uint32_t sdl_buttons_state = SDL_GetMouseState(NULL, NULL);
 
     struct sc_mouse_click_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              event->x,
-                                                              event->y),
-        },
+        .position = sc_input_manager_get_position(im, event->x, event->y),
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
         .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
@@ -840,11 +847,7 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     uint32_t buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
     struct sc_mouse_scroll_event evt = {
-        .position = {
-            .screen_size = im->screen->frame_size,
-            .point = sc_screen_convert_window_to_frame_coords(im->screen,
-                                                              mouse_x, mouse_y),
-        },
+        .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
 #if SDL_VERSION_ATLEAST(2, 0, 18)
         .hscroll = CLAMP(event->preciseX, -1.0f, 1.0f),
         .vscroll = CLAMP(event->preciseY, -1.0f, 1.0f),
