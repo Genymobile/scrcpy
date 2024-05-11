@@ -22,10 +22,19 @@ struct sc_controller {
     bool stopped;
     struct sc_control_msg_queue queue;
     struct sc_receiver receiver;
+
+    const struct sc_controller_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct sc_controller_callbacks {
+    void (*on_error)(struct sc_controller *controller, void *userdata);
 };
 
 bool
-sc_controller_init(struct sc_controller *controller, sc_socket control_socket);
+sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
+                   const struct sc_controller_callbacks *cbs,
+                   void *cbs_userdata);
 
 void
 sc_controller_configure(struct sc_controller *controller,
