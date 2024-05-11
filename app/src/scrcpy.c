@@ -174,6 +174,9 @@ event_loop(struct scrcpy *s) {
             case SC_EVENT_DEMUXER_ERROR:
                 LOGE("Demuxer error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_CONTROLLER_ERROR:
+                LOGE("Controller error");
+                return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
@@ -263,6 +266,16 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
                 && options->require_audio)) {
         PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
     }
+}
+
+static void
+sc_controller_on_error(struct sc_controller *controller, void *userdata) {
+    // Note: this function may be called twice, once from the controller thread
+    // and once from the receiver thread
+    (void) controller;
+    (void) userdata;
+
+    PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
 }
 
 static void
@@ -553,7 +566,12 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
-        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
+        static const struct sc_controller_callbacks controller_cbs = {
+            .on_error = sc_controller_on_error,
+        };
+
+        if (!sc_controller_init(&s->controller, s->server.control_socket,
+            &controller_cbs, NULL)) {
             goto end;
         }
         controller_initialized = true;

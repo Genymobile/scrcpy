@@ -19,10 +19,18 @@ struct sc_receiver {
 
     struct sc_acksync *acksync;
     struct sc_uhid_devices *uhid_devices;
+
+    const struct sc_receiver_callbacks *cbs;
+    void *cbs_userdata;
+};
+
+struct sc_receiver_callbacks {
+    void (*on_error)(struct sc_receiver *receiver, void *userdata);
 };
 
 bool
-sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket);
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
+                 const struct sc_receiver_callbacks *cbs, void *cbs_userdata);
 
 void
 sc_receiver_destroy(struct sc_receiver *receiver);
