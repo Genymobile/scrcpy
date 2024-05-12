@@ -2738,6 +2738,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->record_filename) {
+        if (!opts->video && !opts->audio) {
+            LOGE("Video and audio disabled, nothing to record");
+            return false;
+        }
+
         if (!opts->record_format) {
             opts->record_format = guess_record_format(opts->record_filename);
             if (!opts->record_format) {
