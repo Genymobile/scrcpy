@@ -48,7 +48,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.downsizeOnError = downsizeOnError;
     }
 
-    private void streamScreen() throws IOException, ConfigurationException {
+    private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
@@ -254,7 +254,7 @@ public class SurfaceEncoder implements AsyncProcessor {
             Looper.prepare();
 
             try {
-                streamScreen();
+                streamCapture();
             } catch (ConfigurationException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (IOException e) {
