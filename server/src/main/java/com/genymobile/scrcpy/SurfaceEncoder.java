@@ -6,6 +6,7 @@ import android.media.MediaFormat;
 import android.os.Build;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Range;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -48,11 +49,34 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.downsizeOnError = downsizeOnError;
     }
 
+    /**
+     * Fixing the issue that the server crashes when requesting the maximum integer value(2147483647) for 'videoBitRate'
+     */
+    private void adjustMediaFormatValuesToSupported(MediaFormat format, MediaCodec mediaCodec) {
+        // Adjust VideoBitRate
+        try {
+            String mimeType = format.getString(MediaFormat.KEY_MIME);
+            if (mimeType != null) {
+                MediaCodecInfo mediaCodecInfo = mediaCodec.getCodecInfo();
+                Range<Integer> bitrateRange = mediaCodecInfo.getCapabilitiesForType(mimeType).getVideoCapabilities().getBitrateRange();
+                if (videoBitRate > bitrateRange.getUpper()) {
+                    Ln.i("Adjust VideoBitRate("+videoBitRate+") to " + bitrateRange.getUpper());
+                    format.setInteger(MediaFormat.KEY_BIT_RATE, bitrateRange.getUpper());
+                } else if (videoBitRate < bitrateRange.getLower()) {
+                    Ln.i("Adjust VideoBitRate("+videoBitRate+") to " + bitrateRange.getLower());
+                    format.setInteger(MediaFormat.KEY_BIT_RATE, bitrateRange.getLower());
+                }
+            }
+        } catch (Exception e) {
+            Ln.e("Adjust MediaFormat Values to Supported Error: " + e.getClass().getName() + ": " + e.getMessage());
+        }
+    }
+
     private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
-
+        adjustMediaFormatValuesToSupported(format, mediaCodec);
         capture.init();
 
         try {
