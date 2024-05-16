@@ -6,8 +6,19 @@
 
 #define SC_CONTROL_MSG_QUEUE_MAX 64
 
+static void
+sc_controller_receiver_on_error(struct sc_receiver *receiver, void *userdata) {
+    (void) receiver;
+
+    struct sc_controller *controller = userdata;
+    // Forward the event to the controller listener
+    controller->cbs->on_error(controller, controller->cbs_userdata);
+}
+
 bool
-sc_controller_init(struct sc_controller *controller, sc_socket control_socket) {
+sc_controller_init(struct sc_controller *controller, sc_socket control_socket,
+                   const struct sc_controller_callbacks *cbs,
+                   void *cbs_userdata) {
     sc_vecdeque_init(&controller->queue);
 
     bool ok = sc_vecdeque_reserve(&controller->queue, SC_CONTROL_MSG_QUEUE_MAX);
@@ -15,7 +26,12 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket) {
         return false;
     }
 
-    ok = sc_receiver_init(&controller->receiver, control_socket);
+    static const struct sc_receiver_callbacks receiver_cbs = {
+        .on_error = sc_controller_receiver_on_error,
+    };
+
+    ok = sc_receiver_init(&controller->receiver, control_socket, &receiver_cbs,
+                          controller);
     if (!ok) {
         sc_vecdeque_destroy(&controller->queue);
         return false;
@@ -38,6 +54,10 @@ sc_controller_init(struct sc_controller *controller, sc_socket control_socket) {
 
     controller->control_socket = control_socket;
     controller->stopped = false;
+
+    assert(cbs && cbs->on_error);
+    controller->cbs = cbs;
+    controller->cbs_userdata = cbs_userdata;
 
     return true;
 }
@@ -125,10 +145,16 @@ run_controller(void *data) {
         sc_control_msg_destroy(&msg);
         if (!ok) {
             LOGD("Could not write msg to socket");
-            break;
+            goto error;
         }
     }
+
     return 0;
+
+error:
+    controller->cbs->on_error(controller, controller->cbs_userdata);
+
+    return 1; // ignored
 }
 
 bool

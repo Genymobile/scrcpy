@@ -118,12 +118,16 @@ public final class LogUtils {
                         StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 
                         android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
-                        for (android.util.Size size : sizes) {
-                            builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                        if (sizes == null || sizes.length == 0) {
+                            builder.append("\n        (none)");
+                        } else {
+                            for (android.util.Size size : sizes) {
+                                builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                            }
                         }
 
                         android.util.Size[] highSpeedSizes = configs.getHighSpeedVideoSizes();
-                        if (highSpeedSizes.length > 0) {
+                        if (highSpeedSizes != null && highSpeedSizes.length > 0) {
                             builder.append("\n      High speed capture (--camera-high-speed):");
                             for (android.util.Size size : highSpeedSizes) {
                                 Range<Integer>[] highFpsRanges = configs.getHighSpeedVideoFpsRanges();

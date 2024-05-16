@@ -97,6 +97,7 @@ enum {
     OPT_MOUSE,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
+    OPT_NO_WINDOW,
 };
 
 struct sc_option {
@@ -567,6 +568,12 @@ static const struct sc_option options[] = {
         .text = "Disable video playback on the computer.",
     },
     {
+        .longopt_id = OPT_NO_WINDOW,
+        .longopt = "no-window",
+        .text = "Disable scrcpy window. Implies --no-video-playback and "
+                "--no-control.",
+    },
+    {
         .longopt_id = OPT_ORIENTATION,
         .longopt = "orientation",
         .argdesc = "value",
@@ -899,6 +906,14 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+Shift+Up", "MOD+Shift+Down" },
         .text = "Flip display vertically",
+    },
+    {
+        .shortcuts = { "MOD+z" },
+        .text = "Pause or re-pause display",
+    },
+    {
+        .shortcuts = { "MOD+Shift+z" },
+        .text = "Unpause display",
     },
     {
         .shortcuts = { "MOD+g" },
@@ -2478,6 +2493,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
                 break;
+            case OPT_NO_WINDOW:
+                opts->window = false;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2515,6 +2533,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
+    if (!opts->window) {
+        // Without window, there cannot be any video playback or control
+        opts->video_playback = false;
+        opts->control = false;
+    }
+
     if (!opts->video) {
         opts->video_playback = false;
         // Do not power on the device on start if video capture is disabled
@@ -2536,8 +2560,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !otg) {
-        LOGE("No video, no audio, no OTG: nothing to do");
+    if (!opts->video && !opts->audio && !opts->control && !otg) {
+        LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
     }
 
@@ -2548,9 +2572,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->audio_playback && opts->audio_buffer == -1) {
         if (opts->audio_codec == SC_CODEC_FLAC) {
-            // Use 50 ms audio buffer by default, but use a higher value for FLAC,
-            // which is not low latency (the default encoder produces blocks of
-            // 4096 samples, which represent ~85.333ms).
+            // Use 50 ms audio buffer by default, but use a higher value for
+            // FLAC, which is not low latency (the default encoder produces
+            // blocks of 4096 samples, which represent ~85.333ms).
             LOGI("FLAC audio: audio buffer increased to 120 ms (use "
                  "--audio-buffer to set a custom value)");
             opts->audio_buffer = SC_TICK_FROM_MS(120);
@@ -2561,6 +2585,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
 #ifdef HAVE_V4L2
     if (v4l2) {
+        if (!opts->video) {
+            LOGE("V4L2 sink requires video capture, but --no-video was set.");
+            return false;
+        }
+
         if (opts->lock_video_orientation ==
                 SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
             LOGI("Video orientation is locked for v4l2 sink. "
@@ -2580,16 +2609,33 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
-    if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
-        opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
-                                        : SC_KEYBOARD_INPUT_MODE_SDK;
-    }
-    if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
-        opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
-                                     : SC_MOUSE_INPUT_MODE_SDK;
+    if (opts->control) {
+        if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
+            opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                            : SC_KEYBOARD_INPUT_MODE_SDK;
+        }
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
+            if (otg) {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
+            } else if (!opts->video_playback) {
+                LOGI("No video mirroring, mouse mode switched to UHID");
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+            } else {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
+            }
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK
+                    && !opts->video_playback) {
+            LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
+            return false;
+        }
     }
 
     if (otg) {
+        if (!opts->control) {
+            LOGE("--no-control is not allowed in OTG mode");
+            return false;
+        }
+
         enum sc_keyboard_input_mode kmode = opts->keyboard_input_mode;
         if (kmode != SC_KEYBOARD_INPUT_MODE_AOA
                 && kmode != SC_KEYBOARD_INPUT_MODE_DISABLED) {
@@ -2692,6 +2738,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->record_filename) {
+        if (!opts->video && !opts->audio) {
+            LOGE("Video and audio disabled, nothing to record");
+            return false;
+        }
+
         if (!opts->record_format) {
             opts->record_format = guess_record_format(opts->record_filename);
             if (!opts->record_format) {
@@ -2797,6 +2848,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 # endif
+
+    if (opts->start_fps_counter && !opts->video_playback) {
+        LOGW("--print-fps has no effect without video playback");
+        opts->start_fps_counter = false;
+    }
 
     if (otg) {
         // OTG mode is compatible with only very few options.

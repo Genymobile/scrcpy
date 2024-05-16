@@ -317,6 +317,10 @@ Disable video forwarding.
 Disable video playback on the computer.
 
 .TP
+.B \-\-no\-window
+Disable scrcpy window. Implies --no-video-playback and --no-control.
+
+.TP
 .BI "\-\-orientation " value
 Same as --display-orientation=value --record-orientation=value.
 
@@ -576,6 +580,14 @@ Flip display horizontally
 .TP
 .B MOD+Shift+Up, MOD+Shift+Down
 Flip display vertically
+
+.TP
+.B MOD+z
+Pause or re-pause display
+
+.TP
+.B MOD+Shift+z
+Unpause display
 
 .TP
 .B MOD+g
