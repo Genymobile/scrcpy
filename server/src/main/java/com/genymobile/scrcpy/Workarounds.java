@@ -26,9 +26,9 @@ public final class Workarounds {
     private static final Object ACTIVITY_THREAD;
 
     static {
-        prepareMainLooper();
-
         try {
+            prepareMainLooper();
+
             // ActivityThread activityThread = new ActivityThread();
             ACTIVITY_THREAD_CLASS = Class.forName("android.app.ActivityThread");
             Constructor<?> activityThreadConstructor = ACTIVITY_THREAD_CLASS.getDeclaredConstructor();
@@ -106,8 +106,7 @@ public final class Workarounds {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    private static void prepareMainLooper() {
+    private static void prepareMainLooper() throws ReflectiveOperationException {
         // Some devices internally create a Handler when creating an input Surface, causing an exception:
         //   "Can't create handler inside thread that has not called Looper.prepare()"
         // <https://github.com/Genymobile/scrcpy/issues/240>
@@ -116,7 +115,10 @@ public final class Workarounds {
         //   "Attempt to read from field 'android.os.MessageQueue android.os.Looper.mQueue'
         //    on a null object reference"
         // <https://github.com/Genymobile/scrcpy/issues/921>
-        Looper.prepareMainLooper();
+        Looper.prepare();
+        Field mainLooper = Looper.class.getDeclaredField("sMainLooper");
+        mainLooper.setAccessible(true);
+        mainLooper.set(null, Looper.myLooper());
     }
 
     private static void fillAppInfo() {

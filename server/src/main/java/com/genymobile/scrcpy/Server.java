@@ -2,6 +2,8 @@ package com.genymobile.scrcpy;
 
 import android.os.BatteryManager;
 import android.os.Build;
+import android.os.Looper;
+import android.system.Os;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +22,6 @@ public final class Server {
 
     private static class Completion {
         private int running;
-        private boolean fatalError;
 
         Completion(int running) {
             this.running = running;
@@ -28,21 +29,8 @@ public final class Server {
 
         synchronized void addCompleted(boolean fatalError) {
             --running;
-            if (fatalError) {
-                this.fatalError = true;
-            }
-            if (running == 0 || this.fatalError) {
-                notify();
-            }
-        }
-
-        synchronized void await() {
-            try {
-                while (running > 0 && !fatalError) {
-                    wait();
-                }
-            } catch (InterruptedException e) {
-                // ignore
+            if (running == 0 || fatalError) {
+                Looper.getMainLooper().quitSafely();
             }
         }
     }
@@ -176,7 +164,7 @@ public final class Server {
                 });
             }
 
-            completion.await();
+            Looper.loop();
         } finally {
             if (initThread != null) {
                 initThread.interrupt();
@@ -223,10 +211,17 @@ public final class Server {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static void internalMain(String... args) throws Exception {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Ln.e("Exception on thread " + t, e);
+            t.interrupt();
         });
+
+        // Binder IPC uses the eUID of the main thread to determine the remote process's UID
+        if (Os.getuid() == 0) {
+            Os.seteuid(2000);
+        }
 
         Options options = Options.parse(args);
 

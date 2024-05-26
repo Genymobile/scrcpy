@@ -6,12 +6,17 @@ import com.genymobile.scrcpy.Ln;
 import com.genymobile.scrcpy.Size;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
+import android.content.Context;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
+import android.media.projection.MediaProjection;
+import android.os.Build;
 import android.view.Display;
-import android.view.Surface;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.concurrent.Executor;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -112,16 +117,20 @@ public final class DisplayManager {
         }
     }
 
+    @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     private Method getCreateVirtualDisplayMethod() throws NoSuchMethodException {
         if (createVirtualDisplayMethod == null) {
-            createVirtualDisplayMethod = android.hardware.display.DisplayManager.class
-                    .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class);
+            createVirtualDisplayMethod = manager.getClass()
+                    .getMethod("createVirtualDisplay", Context.class,
+                            MediaProjection.class, VirtualDisplayConfig.class,
+                            VirtualDisplay.Callback.class, Executor.class);
         }
         return createVirtualDisplayMethod;
     }
 
-    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+    @TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    public VirtualDisplay createVirtualDisplay(Context context, VirtualDisplayConfig virtualDisplayConfig) throws Exception {
         Method method = getCreateVirtualDisplayMethod();
-        return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
+        return (VirtualDisplay) method.invoke(manager, context, null, virtualDisplayConfig, null, null);
     }
 }
