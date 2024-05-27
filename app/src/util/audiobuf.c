@@ -38,9 +38,8 @@ sc_audiobuf_read(struct sc_audiobuf *buf, void *to_, uint32_t samples_count) {
 
     uint8_t *to = to_;
 
-    // Only the reader thread can write tail without synchronization, so
-    // memory_order_relaxed is sufficient
-    uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_relaxed);
+    // The tail cursor may be updated by the writer thread to drop samples
+    uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
 
     // The head cursor is updated after the data is written to the array
     uint32_t head = atomic_load_explicit(&buf->head, memory_order_acquire);
@@ -115,4 +114,30 @@ sc_audiobuf_write(struct sc_audiobuf *buf, const void *from_,
     atomic_store_explicit(&buf->head, new_head, memory_order_release);
 
     return samples_count;
+}
+
+uint32_t
+sc_audiobuf_truncate(struct sc_audiobuf *buf, uint32_t samples_limit) {
+    for (;;) {
+        // Only the writer thread can write head, so memory_order_relaxed is
+        // sufficient
+        uint32_t head = atomic_load_explicit(&buf->head, memory_order_relaxed);
+
+        // The tail cursor is updated after the data is consumed by the reader
+        uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
+
+        uint32_t can_read = (buf->alloc_size + head - tail) % buf->alloc_size;
+        if (can_read <= samples_limit) {
+            // Nothing to truncate
+            return 0;
+        }
+
+        uint32_t skip = can_read - samples_limit;
+        uint32_t new_tail = (tail + skip) % buf->alloc_size;
+        if (atomic_compare_exchange_weak_explicit(&buf->tail, &tail, new_tail,
+                                                  memory_order_acq_rel,
+                                                  memory_order_acquire)) {
+            return skip;
+        }
+    }
 }
