@@ -49,6 +49,16 @@ uint32_t
 sc_audiobuf_write(struct sc_audiobuf *buf, const void *from,
                   uint32_t samples_count);
 
+/**
+ * Drop old samples to keep at most sample_limit samples
+ *
+ * Must be called by the writer thread.
+ *
+ * \return the number of samples dropped
+ */
+uint32_t
+sc_audiobuf_truncate(struct sc_audiobuf *buf, uint32_t samples_limit);
+
 static inline uint32_t
 sc_audiobuf_capacity(struct sc_audiobuf *buf) {
     assert(buf->alloc_size);

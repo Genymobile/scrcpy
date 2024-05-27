@@ -66,8 +66,6 @@ static void SDLCALL
 sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     struct sc_audio_player *ap = userdata;
 
-    // This callback is called with the lock used by SDL_LockAudioDevice()
-
     assert(len_int > 0);
     size_t len = len_int;
     uint32_t count = TO_SAMPLES(len);
@@ -181,29 +179,19 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     if (written < samples) {
         uint32_t remaining = samples - written;
 
-        // All samples that could be written without locking have been written,
-        // now we need to lock to drop/consume old samples
-        SDL_LockAudioDevice(ap->device);
+        assert(remaining <= cap);
+        skipped_samples = sc_audiobuf_truncate(&ap->buf, cap - remaining);
 
-        // Retry with the lock
-        written += sc_audiobuf_write(&ap->buf,
-                                     swr_buf + TO_BYTES(written),
-                                     remaining);
-        if (written < samples) {
-            remaining = samples - written;
-            // Still insufficient, drop old samples to make space
-            skipped_samples = sc_audiobuf_read(&ap->buf, NULL, remaining);
-            assert(skipped_samples == remaining);
+        LOGW("Audio buffer full, %" PRIu32 " samples dropped", skipped_samples);
 
-            // Now there is enough space
-            uint32_t w = sc_audiobuf_write(&ap->buf,
-                                           swr_buf + TO_BYTES(written),
-                                           remaining);
-            assert(w == remaining);
-            (void) w;
-        }
+        // Now there is enough space
+        uint32_t w = sc_audiobuf_write(&ap->buf,
+                                       swr_buf + TO_BYTES(written),
+                                       remaining);
+        assert(w == remaining);
+        (void) w;
 
-        SDL_UnlockAudioDevice(ap->device);
+        written = samples;
     }
 
     uint32_t underflow = 0;
@@ -225,30 +213,22 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
     uint32_t can_read = sc_audiobuf_can_read(&ap->buf);
     if (can_read > max_buffered_samples) {
-        uint32_t skip_samples = 0;
+        uint32_t skipped = sc_audiobuf_truncate(&ap->buf, max_buffered_samples);
+        assert(skipped);
 
-        SDL_LockAudioDevice(ap->device);
-        can_read = sc_audiobuf_can_read(&ap->buf);
-        if (can_read > max_buffered_samples) {
-            skip_samples = can_read - max_buffered_samples;
-            uint32_t r = sc_audiobuf_read(&ap->buf, NULL, skip_samples);
-            assert(r == skip_samples);
-            (void) r;
-            skipped_samples += skip_samples;
-        }
-        SDL_UnlockAudioDevice(ap->device);
-
-        if (skip_samples) {
-            if (played) {
-                LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
-                     " samples", skip_samples);
+        if (played) {
+            LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
+                 " samples", skipped);
 #ifndef SC_AUDIO_PLAYER_NDEBUG
-            } else {
-                LOGD("[Audio] Playback not started, skipping %" PRIu32
-                     " samples", skip_samples);
+        } else {
+            LOGD("[Audio] Playback not started, skipping %" PRIu32 " samples",
+                 skipped);
 #endif
-            }
         }
+
+        skipped_samples += skipped;
+
+        can_read = sc_audiobuf_can_read(&ap->buf);
     }
 
     atomic_store_explicit(&ap->received, true, memory_order_relaxed);
@@ -408,7 +388,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // Use a ring-buffer of the target buffering size plus 1 second between the
     // producer and the consumer. It's too big on purpose, to guarantee that
     // the producer and the consumer will be able to access it in parallel
-    // without locking.
+    // without dropping samples.
     uint32_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
 
     size_t sample_size = ap->nb_channels * ap->out_bytes_per_sample;
