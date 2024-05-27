@@ -37,6 +37,7 @@ sc_audiobuf_read(struct sc_audiobuf *buf, void *to_, uint32_t samples_count) {
     assert(samples_count);
 
     uint8_t *to = to_;
+    assert(to);
 
     // The tail cursor may be updated by the writer thread to drop samples
     uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
@@ -49,21 +50,19 @@ sc_audiobuf_read(struct sc_audiobuf *buf, void *to_, uint32_t samples_count) {
         samples_count = can_read;
     }
 
-    if (to) {
-        uint32_t right_count = buf->alloc_size - tail;
-        if (right_count > samples_count) {
-            right_count = samples_count;
-        }
-        memcpy(to,
-               buf->data + (tail * buf->sample_size),
-               right_count * buf->sample_size);
+    uint32_t right_count = buf->alloc_size - tail;
+    if (right_count > samples_count) {
+        right_count = samples_count;
+    }
+    memcpy(to,
+           buf->data + (tail * buf->sample_size),
+           right_count * buf->sample_size);
 
-        if (samples_count > right_count) {
-            uint32_t left_count = samples_count - right_count;
-            memcpy(to + (right_count * buf->sample_size),
-                   buf->data,
-                   left_count * buf->sample_size);
-        }
+    if (samples_count > right_count) {
+        uint32_t left_count = samples_count - right_count;
+        memcpy(to + (right_count * buf->sample_size),
+               buf->data,
+               left_count * buf->sample_size);
     }
 
     uint32_t new_tail = (tail + samples_count) % buf->alloc_size;
