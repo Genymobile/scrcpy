@@ -46,6 +46,9 @@ sc_audiobuf_read(struct sc_audiobuf *buf, void *to_, uint32_t samples_count) {
     uint32_t head = atomic_load_explicit(&buf->head, memory_order_acquire);
 
     uint32_t can_read = (buf->alloc_size + head - tail) % buf->alloc_size;
+    if (!can_read) {
+        return 0;
+    }
     if (samples_count > can_read) {
         samples_count = can_read;
     }
@@ -86,6 +89,9 @@ sc_audiobuf_write(struct sc_audiobuf *buf, const void *from_,
     uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
 
     uint32_t can_write = (buf->alloc_size + tail - head - 1) % buf->alloc_size;
+    if (!can_write) {
+        return 0;
+    }
     if (samples_count > can_write) {
         samples_count = can_write;
     }
