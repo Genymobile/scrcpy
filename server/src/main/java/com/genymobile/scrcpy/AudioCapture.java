@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
+import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.os.Build;
 import android.os.SystemClock;
@@ -34,6 +35,7 @@ public final class AudioCapture {
     private final int audioSource;
 
     private AudioRecord recorder;
+    private AudioTrack audioTrack;
 
     private final AudioTimestamp timestamp = new AudioTimestamp();
     private long previousRecorderTimestamp = -1;
@@ -66,6 +68,15 @@ public final class AudioCapture {
         // This buffer size does not impact latency
         builder.setBufferSizeInBytes(8 * minBufferSize);
         return builder.build();
+    }
+
+    private static AudioTrack createAudioTrack() {
+        int minBufferSize = AudioTrack.getMinBufferSize(SAMPLE_RATE, AudioFormat.CHANNEL_OUT_STEREO, ENCODING);
+        return new AudioTrack.Builder()
+                .setAudioFormat(createAudioFormat())
+                .setBufferSizeInBytes(minBufferSize)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build();
     }
 
     private static void startWorkaroundAndroid11() {
@@ -116,6 +127,9 @@ public final class AudioCapture {
             recorder = Workarounds.createAudioRecord(audioSource, SAMPLE_RATE, CHANNEL_CONFIG, CHANNELS, CHANNEL_MASK, ENCODING);
         }
         recorder.startRecording();
+
+        audioTrack = createAudioTrack();
+        audioTrack.play();
     }
 
     public void start() throws AudioCaptureForegroundException {
@@ -135,6 +149,9 @@ public final class AudioCapture {
         if (recorder != null) {
             // Will call .stop() if necessary, without throwing an IllegalStateException
             recorder.release();
+        }
+        if (audioTrack != null) {
+            audioTrack.release();
         }
     }
 
@@ -174,6 +191,12 @@ public final class AudioCapture {
         previousPts = pts;
 
         outBufferInfo.set(0, r, pts, 0);
+
+        // Play the captured audio on the device
+        byte[] audioData = new byte[r];
+        directBuffer.get(audioData, 0, r);
+        audioTrack.write(audioData, 0, r);
+
         return r;
     }
 }
