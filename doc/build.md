@@ -94,7 +94,7 @@ This is the preferred method (and the way the release is built).
 From _Debian_, install _mingw_:
 
 ```bash
-sudo apt install mingw-w64 mingw-w64-tools
+sudo apt install mingw-w64 mingw-w64-tools libz-mingw-w64-dev
 ```
 
 You also need the JDK to build the server:
