@@ -1,0 +1,16 @@
+on:
+  push:
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    container: cimg/android:2022.12.1
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: |
+        ./gradlew -p server assembleRelease
+    - uses: actions/upload-artifact@v2
+      with:
+        name: scrcpy
+        path: ./server/build/outputs/apk/release/
