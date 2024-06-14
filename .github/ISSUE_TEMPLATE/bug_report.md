@@ -4,18 +4,16 @@ about: Create a report to help us improve
 title: ''
 labels: ''
 assignees: ''
-
 ---
-
  - [ ] I have read the [FAQ](https://github.com/Genymobile/scrcpy/blob/master/FAQ.md).
  - [ ] I have searched in existing [issues](https://github.com/Genymobile/scrcpy/issues).
 
 **Environment**
- - OS: [e.g. Debian, Windows, macOS...]
- - scrcpy version: [e.g. 1.12.1]
- - installation method: [e.g. manual build, apt, snap, brew, Windows release...]
- - device model:
- - Android version: [e.g. 10]
+ - **OS**: [e.g. Debian, Windows, macOS...]
+ - **Scrcpy version**: [e.g. 1.12.1]
+ - **Installation method**: [e.g. manual build, apt, snap, brew, Windows release...]
+ - **Device model**:
+ - **Android versio**n: [e.g. 10]
 
 **Describe the bug**
 A clear and concise description of what the bug is.
