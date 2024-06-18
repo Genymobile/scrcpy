@@ -176,6 +176,8 @@ sc_process_execute_p(const char *const argv[], HANDLE *handle, unsigned flags,
         free(lpAttributeList);
     }
 
+    CloseHandle(pi.hThread);
+
     // These handles are used by the child process, close them for this process
     if (pin) {
         CloseHandle(stdin_read_handle);
