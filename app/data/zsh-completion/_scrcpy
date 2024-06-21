@@ -56,6 +56,7 @@ arguments=(
     '--no-downsize-on-error[Disable lowering definition on MediaCodec error]'
     '--no-key-repeat[Do not forward repeated key events when a key is held down]'
     '--no-mipmaps[Disable the generation of mipmaps]'
+    '--no-mouse-hover[Do not forward mouse hover events]'
     '--no-power-on[Do not power on the device on start]'
     '--no-video[Disable video forwarding]'
     '--no-video-playback[Disable video playback]'

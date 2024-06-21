@@ -18,6 +18,14 @@ Note that on some devices, an additional option must be enabled in developer
 options for this mouse mode to work. See
 [prerequisites](/README.md#prerequisites).
 
+### Mouse hover
+
+By default, mouse hover (mouse motion without any clicks) events are forwarded
+to the device. This can be disabled with:
+
+```
+scrcpy --no-mouse-hover
+```
 
 ## Physical mouse simulation
 

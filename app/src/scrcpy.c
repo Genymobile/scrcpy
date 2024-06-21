@@ -681,7 +681,8 @@ scrcpy(struct scrcpy_options *options) {
         }
 
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
-            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
+            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller,
+                              options->mouse_hover);
             mp = &s->mouse_sdk.mouse_processor;
         } else if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
             bool ok = sc_mouse_uhid_init(&s->mouse_uhid, &s->controller);

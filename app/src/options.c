@@ -92,6 +92,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .camera_high_speed = false,
     .list = 0,
     .window = true,
+    .mouse_hover = true,
 };
 
 enum sc_orientation

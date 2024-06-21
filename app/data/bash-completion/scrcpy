@@ -50,6 +50,7 @@ _scrcpy() {
         --no-downsize-on-error
         --no-key-repeat
         --no-mipmaps
+        --no-mouse-hover
         --no-power-on
         --no-video
         --no-video-playback

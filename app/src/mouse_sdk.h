@@ -13,9 +13,11 @@ struct sc_mouse_sdk {
     struct sc_mouse_processor mouse_processor; // mouse processor trait
 
     struct sc_controller *controller;
+    bool mouse_hover;
 };
 
 void
-sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller);
+sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller,
+                  bool mouse_hover);
 
 #endif

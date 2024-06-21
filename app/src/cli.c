@@ -99,6 +99,7 @@ enum {
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
+    OPT_NO_MOUSE_HOVER,
 };
 
 struct sc_option {
@@ -567,6 +568,12 @@ static const struct sc_option options[] = {
         .text = "If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then "
                 "mipmaps are automatically generated to improve downscaling "
                 "quality. This option disables the generation of mipmaps.",
+    },
+    {
+        .longopt_id = OPT_NO_MOUSE_HOVER,
+        .longopt = "no-mouse-hover",
+        .text = "Do not forward mouse hover (mouse motion without any clicks) "
+                "events.",
     },
     {
         .longopt_id = OPT_NO_POWER_ON,
@@ -2198,6 +2205,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_NO_MOUSE_HOVER:
+                opts->mouse_hover = false;
+                break;
             case OPT_HID_MOUSE_DEPRECATED:
                 LOGE("--hid-mouse has been removed, use --mouse=aoa or "
                      "--mouse=uhid instead.");
@@ -2756,6 +2766,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--no-key-repeat is specific to --keyboard=sdk");
             return false;
         }
+    }
+
+    if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK
+            && !opts->mouse_hover) {
+        LOGE("--no-mouse-over is specific to --mouse=sdk");
+        return false;
     }
 
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
