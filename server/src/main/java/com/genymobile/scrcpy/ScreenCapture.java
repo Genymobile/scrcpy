@@ -68,6 +68,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         device.setFoldListener(null);
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
+            display = null;
+        }
+        if (virtualDisplay != null) {
+            virtualDisplay.release();
+            virtualDisplay = null;
         }
     }
 
