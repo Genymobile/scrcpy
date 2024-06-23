@@ -693,15 +693,15 @@ static const struct sc_option options[] = {
                 "is enabled but does not work."
     },
     {
+        .longopt_id = OPT_ROOT,
+        .longopt = "root",
+        .text = "Launch the server as root (disabled by default).",
+    },
+    {
         // deprecated
         .longopt_id = OPT_ROTATION,
         .longopt = "rotation",
         .argdesc = "value",
-    },
-    {
-        .longopt_id = OPT_ROOT,
-        .longopt = "root",
-        .text = "Launch the server as root (disabled by default).",
     },
     {
         .shortopt = 's',
