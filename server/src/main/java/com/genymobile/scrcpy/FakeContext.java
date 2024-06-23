@@ -34,7 +34,6 @@ public final class FakeContext extends ContextWrapper {
         return PACKAGE_NAME;
     }
 
-
     @TargetApi(Build.VERSION_CODES.S)
     @Override
     public AttributionSource getAttributionSource() {

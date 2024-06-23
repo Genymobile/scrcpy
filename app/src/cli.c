@@ -2499,11 +2499,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
                 break;
-            case OPT_ROOT:
-                opts->root = true;
-                break;
             case OPT_NO_WINDOW:
                 opts->window = false;
+                break;
+            case OPT_ROOT:
+                opts->root = true;
                 break;
             default:
                 // getopt prints the error message on stderr

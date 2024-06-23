@@ -2,8 +2,9 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ContentProvider;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
-import android.system.Os;
+
 import android.os.Build;
+import android.system.Os;
 
 import java.io.IOException;
 
