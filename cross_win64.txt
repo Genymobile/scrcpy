@@ -6,7 +6,7 @@ c = 'x86_64-w64-mingw32-gcc'
 cpp = 'x86_64-w64-mingw32-g++'
 ar = 'x86_64-w64-mingw32-ar'
 strip = 'x86_64-w64-mingw32-strip'
-pkg-config = 'x86_64-w64-mingw32-pkg-config'
+pkgconfig = 'x86_64-w64-mingw32-pkg-config'
 windres = 'x86_64-w64-mingw32-windres'
 
 [host_machine]
