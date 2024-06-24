@@ -504,7 +504,7 @@ static const struct sc_option options[] = {
                 " 'h': trigger shortcut HOME\n"
                 " 's': trigger shortcut APP_SWITCH\n"
                 " 'n': trigger shortcut \"expand notification panel\"\n"
-                "Default is 'bhsn'.",
+                "Default is 'bhsn' for SDK mouse, and '++++' for AOA and UHID.",
     },
     {
         .shortopt = 'n',
@@ -2687,6 +2687,30 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     && !opts->video_playback) {
             LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
             return false;
+        }
+    }
+
+    // If mouse bindings are not explictly set, configure default bindings
+    if (opts->mouse_bindings.right_click == SC_MOUSE_BINDING_AUTO) {
+        assert(opts->mouse_bindings.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.click5 == SC_MOUSE_BINDING_AUTO);
+
+        // By default, forward all clicks only for UHID and AOA
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
+            opts->mouse_bindings = (struct sc_mouse_bindings) {
+                .right_click = SC_MOUSE_BINDING_BACK,
+                .middle_click = SC_MOUSE_BINDING_HOME,
+                .click4 = SC_MOUSE_BINDING_APP_SWITCH,
+                .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+            };
+        } else {
+            opts->mouse_bindings = (struct sc_mouse_bindings) {
+                .right_click = SC_MOUSE_BINDING_CLICK,
+                .middle_click = SC_MOUSE_BINDING_CLICK,
+                .click4 = SC_MOUSE_BINDING_CLICK,
+                .click5 = SC_MOUSE_BINDING_CLICK,
+            };
         }
     }
 

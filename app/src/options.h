@@ -156,6 +156,7 @@ enum sc_mouse_input_mode {
 };
 
 enum sc_mouse_binding {
+    SC_MOUSE_BINDING_AUTO,
     SC_MOUSE_BINDING_DISABLED,
     SC_MOUSE_BINDING_CLICK,
     SC_MOUSE_BINDING_BACK,

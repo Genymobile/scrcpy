@@ -72,12 +72,14 @@ process like the _adb daemon_).
 
 ## Mouse bindings
 
-By default, right-click triggers BACK (or POWER on) and middle-click triggers
-HOME. In addition, the 4th click triggers APP_SWITCH and the 5th click expands
-the notification panel.
+By default, with SDK mouse, right-click triggers BACK (or POWER on) and
+middle-click triggers HOME. In addition, the 4th click triggers APP_SWITCH and
+the 5th click expands the notification panel.
 
-The shortcuts can be configured using `--mouse-bind=xxxx`. The argument must be
-exactly 4 characters, one for each secondary click:
+In AOA and UHID mouse modes, all clicks are forwarded by default.
+
+The shortcuts can be configured using `--mouse-bind=xxxx` for any mouse mode.
+The argument must be exactly 4 characters, one for each secondary click:
 
 ```
 --mouse-bind=xxxx
@@ -101,8 +103,8 @@ Each character must be one of the following:
 For example:
 
 ```bash
-scrcpy --mouse-bind=bhsn  # the default mode
-scrcpy --mouse-bind=++++  # forward all clicks
+scrcpy --mouse-bind=bhsn  # the default mode with SDK mouse
+scrcpy --mouse-bind=++++  # forward all clicks (default for AOA/UHID)
 scrcpy --mouse-bind=++bh  # forward right and middle clicks,
                           # use 4th and 5th for BACK and HOME
 ```

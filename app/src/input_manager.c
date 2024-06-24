@@ -753,6 +753,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 
         enum sc_mouse_binding binding =
             sc_input_manager_get_binding(&im->mouse_bindings, event->button);
+        assert(binding != SC_MOUSE_BINDING_AUTO);
         switch (binding) {
             case SC_MOUSE_BINDING_DISABLED:
                 // ignore click
