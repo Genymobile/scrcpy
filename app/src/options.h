@@ -155,6 +155,22 @@ enum sc_mouse_input_mode {
     SC_MOUSE_INPUT_MODE_AOA,
 };
 
+enum sc_mouse_binding {
+    SC_MOUSE_BINDING_DISABLED,
+    SC_MOUSE_BINDING_CLICK,
+    SC_MOUSE_BINDING_BACK,
+    SC_MOUSE_BINDING_HOME,
+    SC_MOUSE_BINDING_APP_SWITCH,
+    SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+};
+
+struct sc_mouse_bindings {
+    enum sc_mouse_binding right_click;
+    enum sc_mouse_binding middle_click;
+    enum sc_mouse_binding click4;
+    enum sc_mouse_binding click5;
+};
+
 enum sc_key_inject_mode {
     // Inject special keys, letters and space as key events.
     // Inject numbers and punctuation as text events.
@@ -208,6 +224,7 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
+    struct sc_mouse_bindings mouse_bindings;
     enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
@@ -250,7 +267,6 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
-    bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
     bool clipboard_autosync;

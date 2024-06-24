@@ -164,10 +164,6 @@ Start in fullscreen.
 Do not attempt to use "adb reverse" to connect to the device.
 
 .TP
-.B \-\-forward\-all\-clicks
-By default, right-click triggers BACK (or POWER on) and middle-click triggers HOME. This option disables these shortcuts and forward the clicks to the device instead.
-
-.TP
 .B \-h, \-\-help
 Print this help.
 
@@ -260,6 +256,23 @@ In "uhid" and "aoa" modes, the computer mouse is captured to control the device 
 LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
 
 Also see \fB\-\-keyboard\fR.
+
+.TP
+.BI "\-\-mouse\-bind " xxxx
+Configure bindings of secondary clicks.
+
+The argument must be exactly 4 characters, one for each secondary click (in order: right click, middle click, 4th click, 5th click).
+
+Each character must be one of the following:
+
+ - '+': forward the click to the device
+ - '-': ignore the click
+ - 'b': trigger shortcut BACK (or turn screen on if off)
+ - 'h': trigger shortcut HOME
+ - 's': trigger shortcut APP_SWITCH
+ - 'n': trigger shortcut "expand notification panel"
+
+Default is 'bhsn'.
 
 
 .TP

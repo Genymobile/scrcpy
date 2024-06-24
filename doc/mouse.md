@@ -68,3 +68,41 @@ debugging disabled (see [OTG](otg.md)).
 Note: On Windows, it may only work in [OTG mode](otg.md), not while mirroring
 (it is not possible to open a USB device if it is already open by another
 process like the _adb daemon_).
+
+
+## Mouse bindings
+
+By default, right-click triggers BACK (or POWER on) and middle-click triggers
+HOME. In addition, the 4th click triggers APP_SWITCH and the 5th click expands
+the notification panel.
+
+The shortcuts can be configured using `--mouse-bind=xxxx`. The argument must be
+exactly 4 characters, one for each secondary click:
+
+```
+--mouse-bind=xxxx
+             ^^^^
+             ||||
+             ||| `- 5th click
+             || `-- 4th click
+             | `--- middle click
+              `---- right click
+```
+
+Each character must be one of the following:
+
+ - `+`: forward the click to the device
+ - `-`: ignore the click
+ - `b`: trigger shortcut BACK (or turn screen on if off)
+ - `h`: trigger shortcut HOME
+ - `s`: trigger shortcut APP_SWITCH
+ - `n`: trigger shortcut "expand notification panel"
+
+For example:
+
+```bash
+scrcpy --mouse-bind=bhsn  # the default mode
+scrcpy --mouse-bind=++++  # forward all clicks
+scrcpy --mouse-bind=++bh  # forward right and middle clicks,
+                          # use 4th and 5th for BACK and HOME
+```

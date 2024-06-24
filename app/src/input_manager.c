@@ -52,6 +52,14 @@ is_shortcut_key(struct sc_input_manager *im, SDL_Keycode keycode) {
         || (im->sdl_shortcut_mods & KMOD_RGUI  && keycode == SDLK_RGUI);
 }
 
+static inline bool
+mouse_bindings_has_secondary_click(const struct sc_mouse_bindings *mb) {
+    return mb->right_click == SC_MOUSE_BINDING_CLICK
+        || mb->middle_click == SC_MOUSE_BINDING_CLICK
+        || mb->click4 == SC_MOUSE_BINDING_CLICK
+        || mb->click5 == SC_MOUSE_BINDING_CLICK;
+}
+
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
@@ -67,7 +75,9 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->kp = params->kp;
     im->mp = params->mp;
 
-    im->forward_all_clicks = params->forward_all_clicks;
+    im->mouse_bindings = params->mouse_bindings;
+    im->has_secondary_click =
+        mouse_bindings_has_secondary_click(&im->mouse_bindings);
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
 
@@ -366,8 +376,8 @@ simulate_virtual_finger(struct sc_input_manager *im,
     msg.inject_touch_event.position.screen_size = im->screen->frame_size;
     msg.inject_touch_event.position.point = point;
     msg.inject_touch_event.pointer_id =
-        im->forward_all_clicks ? POINTER_ID_VIRTUAL_MOUSE
-                               : POINTER_ID_VIRTUAL_FINGER;
+        im->has_secondary_click ? POINTER_ID_VIRTUAL_MOUSE
+                                : POINTER_ID_VIRTUAL_FINGER;
     msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
     msg.inject_touch_event.action_button = 0;
     msg.inject_touch_event.buttons = 0;
@@ -652,13 +662,12 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
 
     struct sc_mouse_motion_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
-        .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
-                                             : POINTER_ID_GENERIC_FINGER,
+        .pointer_id = im->has_secondary_click ? POINTER_ID_MOUSE
+                                              : POINTER_ID_GENERIC_FINGER,
         .xrel = event->xrel,
         .yrel = event->yrel,
         .buttons_state =
-            sc_mouse_buttons_state_from_sdl(event->state,
-                                            im->forward_all_clicks),
+            sc_mouse_buttons_state_from_sdl(event->state, &im->mouse_bindings),
     };
 
     assert(im->mp->ops->process_mouse_motion);
@@ -709,6 +718,25 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
     im->mp->ops->process_touch(im->mp, &evt);
 }
 
+static enum sc_mouse_binding
+sc_input_manager_get_binding(const struct sc_mouse_bindings *bindings,
+                             uint8_t sdl_button) {
+    switch (sdl_button) {
+        case SDL_BUTTON_LEFT:
+            return SC_MOUSE_BINDING_CLICK;
+        case SDL_BUTTON_RIGHT:
+            return bindings->right_click;
+        case SDL_BUTTON_MIDDLE:
+            return bindings->middle_click;
+        case SDL_BUTTON_X1:
+            return bindings->click4;
+        case SDL_BUTTON_X2:
+            return bindings->click5;
+        default:
+            return SC_MOUSE_BINDING_DISABLED;
+    }
+}
+
 static void
 sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                                       const SDL_MouseButtonEvent *event) {
@@ -720,28 +748,42 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool control = im->controller;
     bool paused = im->screen->paused;
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
-    if (control && !paused && !im->forward_all_clicks) {
+    if (control && !paused) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
-        if (im->kp && event->button == SDL_BUTTON_X1) {
-            action_app_switch(im, action);
-            return;
-        }
-        if (event->button == SDL_BUTTON_X2 && down) {
-            if (event->clicks < 2) {
-                expand_notification_panel(im);
-            } else {
-                expand_settings_panel(im);
-            }
-            return;
-        }
-        if (im->kp && event->button == SDL_BUTTON_RIGHT) {
-            press_back_or_turn_screen_on(im, action);
-            return;
-        }
-        if (im->kp && event->button == SDL_BUTTON_MIDDLE) {
-            action_home(im, action);
-            return;
+        enum sc_mouse_binding binding =
+            sc_input_manager_get_binding(&im->mouse_bindings, event->button);
+        switch (binding) {
+            case SC_MOUSE_BINDING_DISABLED:
+                // ignore click
+                return;
+            case SC_MOUSE_BINDING_BACK:
+                if (im->kp) {
+                    press_back_or_turn_screen_on(im, action);
+                }
+                return;
+            case SC_MOUSE_BINDING_HOME:
+                if (im->kp) {
+                    action_home(im, action);
+                }
+                return;
+            case SC_MOUSE_BINDING_APP_SWITCH:
+                if (im->kp) {
+                    action_app_switch(im, action);
+                }
+                return;
+            case SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL:
+                if (down) {
+                    if (event->clicks < 2) {
+                        expand_notification_panel(im);
+                    } else {
+                        expand_settings_panel(im);
+                    }
+                }
+                return;
+            default:
+                assert(binding == SC_MOUSE_BINDING_CLICK);
+                break;
         }
     }
 
@@ -774,11 +816,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
-        .pointer_id = im->forward_all_clicks ? POINTER_ID_MOUSE
-                                             : POINTER_ID_GENERIC_FINGER,
-        .buttons_state =
-            sc_mouse_buttons_state_from_sdl(sdl_buttons_state,
-                                            im->forward_all_clicks),
+        .pointer_id = im->has_secondary_click ? POINTER_ID_MOUSE
+                                              : POINTER_ID_GENERIC_FINGER,
+        .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state,
+                                                         &im->mouse_bindings),
     };
 
     assert(im->mp->ops->process_mouse_click);
@@ -854,8 +895,8 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         .hscroll = CLAMP(event->x, -1, 1),
         .vscroll = CLAMP(event->y, -1, 1),
 #endif
-        .buttons_state =
-            sc_mouse_buttons_state_from_sdl(buttons, im->forward_all_clicks),
+        .buttons_state = sc_mouse_buttons_state_from_sdl(buttons,
+                                                         &im->mouse_bindings),
     };
 
     im->mp->ops->process_mouse_scroll(im->mp, &evt);

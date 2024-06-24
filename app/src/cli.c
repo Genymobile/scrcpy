@@ -98,6 +98,7 @@ enum {
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
+    OPT_MOUSE_BIND,
 };
 
 struct sc_option {
@@ -352,11 +353,9 @@ static const struct sc_option options[] = {
                 "device.",
     },
     {
+        // deprecated
         .longopt_id = OPT_FORWARD_ALL_CLICKS,
         .longopt = "forward-all-clicks",
-        .text = "By default, right-click triggers BACK (or POWER on) and "
-                "middle-click triggers HOME. This option disables these "
-                "shortcuts and forwards the clicks to the device instead.",
     },
     {
         .shortopt = 'h',
@@ -489,6 +488,23 @@ static const struct sc_option options[] = {
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
                 "Also see --keyboard.",
+    },
+    {
+        .longopt_id = OPT_MOUSE_BIND,
+        .longopt = "mouse-bind",
+        .argdesc = "xxxx",
+        .text = "Configure bindings of secondary clicks.\n"
+                "The argument must be exactly 4 characters, one for each "
+                "secondary click (in order: right click, middle click, 4th "
+                "click, 5th click).\n"
+                "Each character must be one of the following:\n"
+                " '+': forward the click to the device\n"
+                " '-': ignore the click\n"
+                " 'b': trigger shortcut BACK (or turn screen on if off)\n"
+                " 'h': trigger shortcut HOME\n"
+                " 's': trigger shortcut APP_SWITCH\n"
+                " 'n': trigger shortcut \"expand notification panel\"\n"
+                "Default is 'bhsn'.",
     },
     {
         .shortopt = 'n',
@@ -2044,6 +2060,58 @@ parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
 }
 
 static bool
+parse_mouse_binding(char c, enum sc_mouse_binding *b) {
+    switch (c) {
+        case '+':
+            *b = SC_MOUSE_BINDING_CLICK;
+            return true;
+        case '-':
+            *b = SC_MOUSE_BINDING_DISABLED;
+            return true;
+        case 'b':
+            *b = SC_MOUSE_BINDING_BACK;
+            return true;
+        case 'h':
+            *b = SC_MOUSE_BINDING_HOME;
+            return true;
+        case 's':
+            *b = SC_MOUSE_BINDING_APP_SWITCH;
+            return true;
+        case 'n':
+            *b = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL;
+            return true;
+        default:
+            LOGE("Invalid mouse binding: '%c' "
+                 "(expected '+', '-', 'b', 'h', 's' or 'n')", c);
+            return false;
+    }
+}
+
+static bool
+parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
+    if (strlen(s) != 4) {
+        LOGE("Invalid mouse bindings: '%s' (expected exactly 4 characters from "
+             "{'+', '-', 'b', 'h', 's', 'n'})", s);
+        return false;
+    }
+
+    if (!parse_mouse_binding(s[0], &mb->right_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[1], &mb->middle_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[2], &mb->click4)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[3], &mb->click5)) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2122,6 +2190,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_MOUSE:
                 if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
+                    return false;
+                }
+                break;
+            case OPT_MOUSE_BIND:
+                if (!parse_mouse_bindings(optarg, &opts->mouse_bindings)) {
                     return false;
                 }
                 break;
@@ -2322,7 +2395,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_FORWARD_ALL_CLICKS:
-                opts->forward_all_clicks = true;
+                LOGW("--forward-all-clicks is deprecated, "
+                     "use --mouse-bind=++++ instead.");
+                opts->mouse_bindings = (struct sc_mouse_bindings) {
+                    .right_click = SC_MOUSE_BINDING_CLICK,
+                    .middle_click = SC_MOUSE_BINDING_CLICK,
+                    .click4 = SC_MOUSE_BINDING_CLICK,
+                    .click5 = SC_MOUSE_BINDING_CLICK,
+                };
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;

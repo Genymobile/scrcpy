@@ -712,7 +712,7 @@ scrcpy(struct scrcpy_options *options) {
             .fp = fp,
             .kp = kp,
             .mp = mp,
-            .forward_all_clicks = options->forward_all_clicks,
+            .mouse_bindings = options->mouse_bindings,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,
