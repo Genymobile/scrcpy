@@ -2038,7 +2038,7 @@ parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
     }
 
     LOGE("Unsupported pause on exit mode: %s "
-         "(expected true, false or if-error)", optarg);
+         "(expected true, false or if-error)", s);
     return false;
 
 }
