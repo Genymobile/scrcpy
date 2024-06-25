@@ -98,6 +98,7 @@ enum {
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
+    OPT_ROOT,
 };
 
 struct sc_option {
@@ -690,6 +691,11 @@ static const struct sc_option options[] = {
         .text = "By default, scrcpy mirrors only the video when audio capture "
                 "fails on the device. This option makes scrcpy fail if audio "
                 "is enabled but does not work."
+    },
+    {
+        .longopt_id = OPT_ROOT,
+        .longopt = "root",
+        .text = "Launch the server as root (disabled by default).",
     },
     {
         // deprecated
@@ -2475,6 +2481,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_WINDOW:
                 opts->window = false;
+                break;
+            case OPT_ROOT:
+                opts->root = true;
                 break;
             default:
                 // getopt prints the error message on stderr

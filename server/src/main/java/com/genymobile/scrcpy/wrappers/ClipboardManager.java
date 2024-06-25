@@ -117,11 +117,9 @@ public final class ClipboardManager {
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0);
             case 3:
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, FakeContext.ROOT_UID, null);
-            case 4:
+            default:
                 // The last boolean parameter is "userOperate"
                 return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, true);
-            default:
-                return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME, null, null, null, FakeContext.ROOT_UID, 0, true);
         }
     }
 
@@ -138,12 +136,9 @@ public final class ClipboardManager {
             case 1:
                 method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID);
                 break;
-            case 2:
+            default:
                 method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0);
                 break;
-            default:
-                // The last boolean parameter is "userOperate"
-                method.invoke(manager, clipData, FakeContext.PACKAGE_NAME, null, FakeContext.ROOT_UID, 0, true);
         }
     }
 

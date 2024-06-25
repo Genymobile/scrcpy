@@ -126,6 +126,7 @@ public final class ActivityManager {
                     /* this */ manager,
                     /* caller */ null,
                     /* callingPackage */ FakeContext.PACKAGE_NAME,
+                    /* callingFeatureId */ null,
                     /* intent */ intent,
                     /* resolvedType */ null,
                     /* resultTo */ null,
