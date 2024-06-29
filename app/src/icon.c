@@ -117,21 +117,21 @@ decode_image(const char *path) {
     AVFrame *frame = av_frame_alloc();
     if (!frame) {
         LOG_OOM();
-        goto close_codec;
+        goto free_codec_ctx;
     }
 
     AVPacket *packet = av_packet_alloc();
     if (!packet) {
         LOG_OOM();
         av_frame_free(&frame);
-        goto close_codec;
+        goto free_codec_ctx;
     }
 
     if (av_read_frame(ctx, packet) < 0) {
         LOGE("Could not read frame");
         av_packet_free(&packet);
         av_frame_free(&frame);
-        goto close_codec;
+        goto free_codec_ctx;
     }
 
     int ret;
@@ -139,22 +139,20 @@ decode_image(const char *path) {
         LOGE("Could not send icon packet: %d", ret);
         av_packet_free(&packet);
         av_frame_free(&frame);
-        goto close_codec;
+        goto free_codec_ctx;
     }
 
     if ((ret = avcodec_receive_frame(codec_ctx, frame)) != 0) {
         LOGE("Could not receive icon frame: %d", ret);
         av_packet_free(&packet);
         av_frame_free(&frame);
-        goto close_codec;
+        goto free_codec_ctx;
     }
 
     av_packet_free(&packet);
 
     result = frame;
 
-close_codec:
-    avcodec_close(codec_ctx);
 free_codec_ctx:
     avcodec_free_context(&codec_ctx);
 close_input:

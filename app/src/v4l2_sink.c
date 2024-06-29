@@ -240,7 +240,7 @@ sc_v4l2_sink_open(struct sc_v4l2_sink *vs, const AVCodecContext *ctx) {
     vs->frame = av_frame_alloc();
     if (!vs->frame) {
         LOG_OOM();
-        goto error_avcodec_close;
+        goto error_avcodec_free_context;
     }
 
     vs->packet = av_packet_alloc();
@@ -268,8 +268,6 @@ error_av_packet_free:
     av_packet_free(&vs->packet);
 error_av_frame_free:
     av_frame_free(&vs->frame);
-error_avcodec_close:
-    avcodec_close(vs->encoder_ctx);
 error_avcodec_free_context:
     avcodec_free_context(&vs->encoder_ctx);
 error_avio_close:
@@ -297,7 +295,6 @@ sc_v4l2_sink_close(struct sc_v4l2_sink *vs) {
 
     av_packet_free(&vs->packet);
     av_frame_free(&vs->frame);
-    avcodec_close(vs->encoder_ctx);
     avcodec_free_context(&vs->encoder_ctx);
     avio_close(vs->format_ctx->pb);
     avformat_free_context(vs->format_ctx);
