@@ -15,13 +15,7 @@ Download the [latest release]:
 
 and extract it.
 
-Alternatively, you could install it from packages manager, like [Winget]:
-
-```bash
-winget install scrcpy
-```
-
-or [Chocolatey]:
+Alternatively, you could install it from packages manager, like [Chocolatey]:
 
 ```bash
 choco install scrcpy

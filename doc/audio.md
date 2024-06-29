@@ -42,7 +42,7 @@ scrcpy --no-window
 # interrupt with Ctrl+C
 ```
 
-Without video, the audio latency is typically not criticial, so it might be
+Without video, the audio latency is typically not critical, so it might be
 interesting to add [buffering](#buffering) to minimize glitches:
 
 ```
