@@ -4,10 +4,10 @@ DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
 
-VERSION=6.1.1
+VERSION=7.0.1
 FILENAME=ffmpeg-$VERSION.tar.xz
 PROJECT_DIR=ffmpeg-$VERSION
-SHA256SUM=8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968
+SHA256SUM=bce9eeb0f17ef8982390b1f37711a61b4290dc8c2a0c1a37b5857e85bfb0e4ff
 
 cd "$SOURCES_DIR"
 
@@ -17,7 +17,6 @@ then
 else
     get_file "https://ffmpeg.org/releases/$FILENAME" "$FILENAME" "$SHA256SUM"
     tar xf "$FILENAME"  # First level directory is "$PROJECT_DIR"
-    patch -d "$PROJECT_DIR" -p1 < "$PATCHES_DIR"/ffmpeg-6.1-fix-build.patch
 fi
 
 mkdir -p "$BUILD_DIR/$PROJECT_DIR"
