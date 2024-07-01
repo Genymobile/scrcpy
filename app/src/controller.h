@@ -28,7 +28,8 @@ struct sc_controller {
 };
 
 struct sc_controller_callbacks {
-    void (*on_error)(struct sc_controller *controller, void *userdata);
+    void (*on_ended)(struct sc_controller *controller, bool error,
+                     void *userdata);
 };
 
 bool
