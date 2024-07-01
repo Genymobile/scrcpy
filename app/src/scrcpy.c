@@ -269,13 +269,18 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
 }
 
 static void
-sc_controller_on_error(struct sc_controller *controller, void *userdata) {
+sc_controller_on_ended(struct sc_controller *controller, bool error,
+                       void *userdata) {
     // Note: this function may be called twice, once from the controller thread
     // and once from the receiver thread
     (void) controller;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
+    if (error) {
+        PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
+    } else {
+        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+    }
 }
 
 static void
@@ -567,7 +572,7 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
-            .on_error = sc_controller_on_error,
+            .on_ended = sc_controller_on_ended,
         };
 
         if (!sc_controller_init(&s->controller, s->server.control_socket,
