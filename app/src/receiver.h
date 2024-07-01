@@ -25,7 +25,7 @@ struct sc_receiver {
 };
 
 struct sc_receiver_callbacks {
-    void (*on_error)(struct sc_receiver *receiver, void *userdata);
+    void (*on_ended)(struct sc_receiver *receiver, bool error, void *userdata);
 };
 
 bool
