@@ -730,23 +730,20 @@ scrcpy(struct scrcpy_options *options) {
             .start_fps_counter = options->start_fps_counter,
         };
 
-        struct sc_frame_source *src;
-        if (options->video_playback) {
-            src = &s->video_decoder.frame_source;
-            if (options->display_buffer) {
-                sc_delay_buffer_init(&s->display_buffer,
-                                     options->display_buffer, true);
-                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
-                src = &s->display_buffer.frame_source;
-            }
-        }
-
         if (!sc_screen_init(&s->screen, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
 
         if (options->video_playback) {
+            struct sc_frame_source *src = &s->video_decoder.frame_source;
+            if (options->display_buffer) {
+                sc_delay_buffer_init(&s->display_buffer,
+                                     options->display_buffer, true);
+                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
+                src = &s->display_buffer.frame_source;
+            }
+
             sc_frame_source_add_sink(src, &s->screen.frame_sink);
         }
     }
