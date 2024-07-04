@@ -43,6 +43,10 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
 
     display->mipmaps = false;
 
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    display->gl_context = NULL;
+#endif
+
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (use_opengl) {
