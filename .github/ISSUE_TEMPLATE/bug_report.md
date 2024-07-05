@@ -7,8 +7,14 @@ assignees: ''
 
 ---
 
- - [ ] I have read the [FAQ](https://github.com/Genymobile/scrcpy/blob/master/FAQ.md).
- - [ ] I have searched in existing [issues](https://github.com/Genymobile/scrcpy/issues).
+_Please read the [prerequisites] to run scrcpy._
+
+[prerequisites]: https://github.com/Genymobile/scrcpy#prerequisites
+
+_Also read the [FAQ] and check if your [issue][issues] already exists._
+
+[FAQ]: https://github.com/Genymobile/scrcpy/blob/master/FAQ.md
+[issues]: https://github.com/Genymobile/scrcpy/issues
 
 ## Environment
 
