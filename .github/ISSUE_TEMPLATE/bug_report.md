@@ -19,10 +19,10 @@ _Also read the [FAQ] and check if your [issue][issues] already exists._
 ## Environment
 
  - **OS:** [e.g. Debian, Windows, macOS...]
- - **Scrcpy version:** [e.g. 1.12.1]
+ - **Scrcpy version:** [e.g. 2.5]
  - **Installation method:** [e.g. manual build, apt, snap, brew, Windows release...]
  - **Device model:**
- - **Android version:** [e.g. 10]
+ - **Android version:** [e.g. 14]
 
 ## Describe the bug
 
