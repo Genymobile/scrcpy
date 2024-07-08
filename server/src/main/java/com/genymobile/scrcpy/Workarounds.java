@@ -63,9 +63,11 @@ public final class Workarounds {
             //  - <https://github.com/Genymobile/scrcpy/issues/940>
             //  - <https://github.com/Genymobile/scrcpy/issues/994>
             mustFillAppInfo = true;
-        } else if (Build.BRAND.equalsIgnoreCase("honor")) {
+        } else if (Build.BRAND.equalsIgnoreCase("honor") || Build.MANUFACTURER.equalsIgnoreCase("skyworth")) {
             // More workarounds must be applied for Honor devices:
             //  - <https://github.com/Genymobile/scrcpy/issues/4015>
+            // and Skyworth devices:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4922>
             //
             // The system context must not be set for all devices, because it would cause other problems:
             //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
