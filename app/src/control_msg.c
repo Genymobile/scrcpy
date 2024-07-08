@@ -68,8 +68,6 @@ get_well_known_pointer_id_name(uint64_t pointer_id) {
             return "mouse";
         case SC_POINTER_ID_GENERIC_FINGER:
             return "finger";
-        case SC_POINTER_ID_VIRTUAL_MOUSE:
-            return "vmouse";
         case SC_POINTER_ID_VIRTUAL_FINGER:
             return "vfinger";
         default:

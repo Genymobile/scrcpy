@@ -22,7 +22,6 @@ public class Controller implements AsyncProcessor {
 
     // control_msg.h values of the pointerId field in inject_touch_event message
     private static final int POINTER_ID_MOUSE = -1;
-    private static final int POINTER_ID_VIRTUAL_MOUSE = -3;
 
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
 
@@ -273,8 +272,8 @@ public class Controller implements AsyncProcessor {
         pointer.setPressure(pressure);
 
         int source;
-        if (pointerId == POINTER_ID_MOUSE || pointerId == POINTER_ID_VIRTUAL_MOUSE) {
-            // real mouse event (forced by the client when --forward-on-click)
+        if (pointerId == POINTER_ID_MOUSE) {
+            // real mouse event
             pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_MOUSE;
             source = InputDevice.SOURCE_MOUSE;
             pointer.setUp(buttons == 0);
