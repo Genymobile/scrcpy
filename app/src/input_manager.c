@@ -846,9 +846,9 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     // can be used instead of Ctrl. The "virtual finger" has a position
     // inverted with respect to the vertical axis of symmetry in the middle of
     // the screen.
-    const SDL_Keymod keymod = SDL_GetModState();
-    const bool ctrl_pressed = keymod & KMOD_CTRL;
-    const bool shift_pressed = keymod & KMOD_SHIFT;
+    SDL_Keymod keymod = SDL_GetModState();
+    bool ctrl_pressed = keymod & KMOD_CTRL;
+    bool shift_pressed = keymod & KMOD_SHIFT;
     if (event->button == SDL_BUTTON_LEFT &&
             ((down && !im->vfinger_down &&
               ((ctrl_pressed && !shift_pressed) ||
