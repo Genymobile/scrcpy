@@ -850,9 +850,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool ctrl_pressed = keymod & KMOD_CTRL;
     bool shift_pressed = keymod & KMOD_SHIFT;
     if (event->button == SDL_BUTTON_LEFT &&
-            ((down && !im->vfinger_down &&
-              ((ctrl_pressed && !shift_pressed) ||
-               (!ctrl_pressed && shift_pressed))) ||
+            ((down && !im->vfinger_down && (ctrl_pressed ^ shift_pressed)) ||
              (!down && im->vfinger_down))) {
         struct sc_point mouse =
             sc_screen_convert_window_to_frame_coords(im->screen, event->x,
