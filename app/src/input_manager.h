@@ -23,7 +23,6 @@ struct sc_input_manager {
     struct sc_mouse_processor *mp;
 
     struct sc_mouse_bindings mouse_bindings;
-    bool has_secondary_click;
     bool legacy_paste;
     bool clipboard_autosync;
 

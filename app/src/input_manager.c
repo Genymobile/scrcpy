@@ -52,14 +52,6 @@ is_shortcut_key(struct sc_input_manager *im, SDL_Keycode keycode) {
         || (im->sdl_shortcut_mods & KMOD_RGUI  && keycode == SDLK_RGUI);
 }
 
-static inline bool
-mouse_bindings_has_secondary_click(const struct sc_mouse_bindings *mb) {
-    return mb->right_click == SC_MOUSE_BINDING_CLICK
-        || mb->middle_click == SC_MOUSE_BINDING_CLICK
-        || mb->click4 == SC_MOUSE_BINDING_CLICK
-        || mb->click5 == SC_MOUSE_BINDING_CLICK;
-}
-
 void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
@@ -76,8 +68,6 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->mp = params->mp;
 
     im->mouse_bindings = params->mouse_bindings;
-    im->has_secondary_click =
-        mouse_bindings_has_secondary_click(&im->mouse_bindings);
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
 
@@ -375,9 +365,7 @@ simulate_virtual_finger(struct sc_input_manager *im,
     msg.inject_touch_event.action = action;
     msg.inject_touch_event.position.screen_size = im->screen->frame_size;
     msg.inject_touch_event.position.point = point;
-    msg.inject_touch_event.pointer_id =
-        im->has_secondary_click ? SC_POINTER_ID_VIRTUAL_MOUSE
-                                : SC_POINTER_ID_VIRTUAL_FINGER;
+    msg.inject_touch_event.pointer_id = SC_POINTER_ID_VIRTUAL_MOUSE;
     msg.inject_touch_event.pressure = up ? 0.0f : 1.0f;
     msg.inject_touch_event.action_button = 0;
     msg.inject_touch_event.buttons = 0;
@@ -662,8 +650,7 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
 
     struct sc_mouse_motion_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
-        .pointer_id = im->has_secondary_click ? SC_POINTER_ID_MOUSE
-                                              : SC_POINTER_ID_GENERIC_FINGER,
+        .pointer_id = SC_POINTER_ID_MOUSE,
         .xrel = event->xrel,
         .yrel = event->yrel,
         .buttons_state =
@@ -817,8 +804,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
-        .pointer_id = im->has_secondary_click ? SC_POINTER_ID_MOUSE
-                                              : SC_POINTER_ID_GENERIC_FINGER,
+        .pointer_id = SC_POINTER_ID_MOUSE,
         .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state,
                                                          &im->mouse_bindings),
     };
