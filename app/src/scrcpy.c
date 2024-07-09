@@ -484,6 +484,13 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     LOGD("Server connected");
+    // Initialize GAMECONTROLLER subsystem after server connected
+    // Otherwise the initial CONTROLLERDEVICEADDED event might
+    // be handled by `await_for_server`
+    if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER)) {
+        LOGE("Could not initialize SDL: %s", SDL_GetError());
+        return false;
+    }
 
     // It is necessarily initialized here, since the device is connected
     struct sc_server_info *info = &s->server.info;
@@ -714,6 +721,8 @@ scrcpy(struct scrcpy_options *options) {
             .kp = kp,
             .mp = mp,
             .mouse_bindings = options->mouse_bindings,
+            .forward_game_controllers = options->forward_game_controllers,
+            .forward_all_clicks = options->forward_all_clicks,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
             .shortcut_mods = options->shortcut_mods,

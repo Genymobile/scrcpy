@@ -267,6 +267,7 @@ struct scrcpy_options {
     bool stay_awake;
     bool force_adb_forward;
     bool disable_screensaver;
+    bool forward_game_controllers;
     bool forward_key_repeat;
     bool legacy_paste;
     bool power_off_on_close;

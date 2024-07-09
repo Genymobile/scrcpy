@@ -164,6 +164,20 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
             // no additional data
             return 1;
+        case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS:
+            sc_write16be(&buf[1], msg->inject_game_controller_axis.id);
+            buf[3] = msg->inject_game_controller_axis.axis;
+            sc_write16be(&buf[4], msg->inject_game_controller_axis.value);
+            return 6;
+        case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON:
+            sc_write16be(&buf[1], msg->inject_game_controller_button.id);
+            buf[3] = msg->inject_game_controller_button.button;
+            buf[4] = msg->inject_game_controller_button.state;
+            return 5;
+        case SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE:
+            sc_write16be(&buf[1], msg->inject_game_controller_device.id);
+            buf[3] = msg->inject_game_controller_device.event;
+            return 4;
         default:
             LOGW("Unknown message type: %u", (unsigned) msg->type);
             return 0;

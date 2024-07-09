@@ -80,6 +80,8 @@ struct sc_screen_params {
     struct sc_mouse_processor *mp;
 
     struct sc_mouse_bindings mouse_bindings;
+    bool forward_game_controllers;
+    bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values

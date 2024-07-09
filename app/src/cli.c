@@ -101,6 +101,48 @@ enum {
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
 };
+#define OPT_RENDER_EXPIRED_FRAMES  1000
+#define OPT_WINDOW_TITLE           1001
+#define OPT_PUSH_TARGET            1002
+#define OPT_ALWAYS_ON_TOP          1003
+#define OPT_CROP                   1004
+#define OPT_RECORD_FORMAT          1005
+#define OPT_PREFER_TEXT            1006
+#define OPT_WINDOW_X               1007
+#define OPT_WINDOW_Y               1008
+#define OPT_WINDOW_WIDTH           1009
+#define OPT_WINDOW_HEIGHT          1010
+#define OPT_WINDOW_BORDERLESS      1011
+#define OPT_MAX_FPS                1012
+#define OPT_LOCK_VIDEO_ORIENTATION 1013
+#define OPT_DISPLAY_ID             1014
+#define OPT_ROTATION               1015
+#define OPT_RENDER_DRIVER          1016
+#define OPT_NO_MIPMAPS             1017
+#define OPT_CODEC_OPTIONS          1018
+#define OPT_FORCE_ADB_FORWARD      1019
+#define OPT_DISABLE_SCREENSAVER    1020
+#define OPT_SHORTCUT_MOD           1021
+#define OPT_NO_KEY_REPEAT          1022
+#define OPT_FORWARD_ALL_CLICKS     1023
+#define OPT_LEGACY_PASTE           1024
+#define OPT_ENCODER_NAME           1025
+#define OPT_POWER_OFF_ON_CLOSE     1026
+#define OPT_V4L2_SINK              1027
+#define OPT_DISPLAY_BUFFER         1028
+#define OPT_V4L2_BUFFER            1029
+#define OPT_TUNNEL_HOST            1030
+#define OPT_TUNNEL_PORT            1031
+#define OPT_NO_CLIPBOARD_AUTOSYNC  1032
+#define OPT_TCPIP                  1033
+#define OPT_RAW_KEY_EVENTS         1034
+#define OPT_NO_DOWNSIZE_ON_ERROR   1035
+#define OPT_OTG                    1036
+#define OPT_NO_CLEANUP             1037
+#define OPT_PRINT_FPS              1038
+#define OPT_NO_POWER_ON            1039
+#define OPT_CODEC                  1040
+#define OPT_NO_GAME_CONTROLLER     1041
 
 struct sc_option {
     char shortopt;
@@ -556,6 +598,11 @@ static const struct sc_option options[] = {
         // deprecated
         .longopt_id = OPT_NO_DISPLAY,
         .longopt = "no-display",
+    },
+    {
+        .longopt_id = OPT_NO_GAME_CONTROLLER,
+        .longopt = "no-game-controller",
+        .text = "Disable game controller support.",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -2369,6 +2416,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_GAME_CONTROLLER:
+                opts->forward_game_controllers = false;
                 break;
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;

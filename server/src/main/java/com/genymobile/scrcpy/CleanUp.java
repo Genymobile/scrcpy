@@ -16,6 +16,7 @@ public final class CleanUp {
     private static final int MSG_TYPE_DISABLE_SHOW_TOUCHES = 1;
     private static final int MSG_TYPE_RESTORE_NORMAL_POWER_MODE = 2;
     private static final int MSG_TYPE_POWER_OFF_SCREEN = 3;
+    public static final String SERVER_PATH = Server.SERVER_DIR + "/scrcpy-server.jar";
 
     private static final int MSG_PARAM_SHIFT = 2;
 
@@ -74,8 +75,19 @@ public final class CleanUp {
         }
     }
 
+    private static void unlinkNativeLibs() {
+        for (String lib : Server.NATIVE_LIBRARIES) {
+            try {
+                new File(Server.SERVER_DIR + "/" + lib).delete();
+            } catch (Exception e) {
+                Ln.e("Could not unlink native library " + lib, e);
+            }
+        }
+    }
+
     public static void main(String... args) {
         unlinkSelf();
+        unlinkNativeLibs();
 
         int displayId = Integer.parseInt(args[0]);
 
