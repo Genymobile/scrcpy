@@ -437,25 +437,11 @@ sc_mouse_button_from_sdl(uint8_t button) {
 }
 
 static inline uint8_t
-sc_mouse_buttons_state_from_sdl(uint32_t buttons_state,
-                                const struct sc_mouse_bindings *mb) {
+sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
     assert(buttons_state < 0x100); // fits in uint8_t
 
-    uint8_t mask = SC_MOUSE_BUTTON_LEFT;
-    if (!mb || mb->right_click == SC_MOUSE_BINDING_CLICK) {
-        mask |= SC_MOUSE_BUTTON_RIGHT;
-    }
-    if (!mb || mb->middle_click == SC_MOUSE_BINDING_CLICK) {
-        mask |= SC_MOUSE_BUTTON_MIDDLE;
-    }
-    if (!mb || mb->click4 == SC_MOUSE_BINDING_CLICK) {
-        mask |= SC_MOUSE_BUTTON_X1;
-    }
-    if (!mb || mb->click5 == SC_MOUSE_BINDING_CLICK) {
-        mask |= SC_MOUSE_BUTTON_X2;
-    }
-
-    return buttons_state & mask;
+    // SC_MOUSE_BUTTON_* constants are initialized from SDL_BUTTON(index)
+    return buttons_state;
 }
 
 #endif
