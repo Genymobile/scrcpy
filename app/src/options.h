@@ -165,11 +165,16 @@ enum sc_mouse_binding {
     SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
 };
 
-struct sc_mouse_bindings {
+struct sc_mouse_binding_set {
     enum sc_mouse_binding right_click;
     enum sc_mouse_binding middle_click;
     enum sc_mouse_binding click4;
     enum sc_mouse_binding click5;
+};
+
+struct sc_mouse_bindings {
+    struct sc_mouse_binding_set pri;
+    struct sc_mouse_binding_set sec; // When Shift is pressed
 };
 
 enum sc_key_inject_mode {

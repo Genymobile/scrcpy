@@ -493,11 +493,17 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_MOUSE_BIND,
         .longopt = "mouse-bind",
-        .argdesc = "xxxx",
+        .argdesc = "xxxx[:xxxx]",
         .text = "Configure bindings of secondary clicks.\n"
-                "The argument must be exactly 4 characters, one for each "
-                "secondary click (in order: right click, middle click, 4th "
-                "click, 5th click).\n"
+                "The argument must be one or two sequences (separated by ':') "
+                "of exactly 4 characters, one for each secondary click (in "
+                "order: right click, middle click, 4th click, 5th click).\n"
+                "The first sequence defines the primary bindings, used when a "
+                "mouse button is pressed alone. The second sequence defines "
+                "the secondary bindings, used when a mouse button is pressed "
+                "while the Shift key is held.\n"
+                "If the second sequence of bindings is omitted, then it is the "
+                "same as the first one.\n"
                 "Each character must be one of the following:\n"
                 " '+': forward the click to the device\n"
                 " '-': ignore the click\n"
@@ -505,7 +511,8 @@ static const struct sc_option options[] = {
                 " 'h': trigger shortcut HOME\n"
                 " 's': trigger shortcut APP_SWITCH\n"
                 " 'n': trigger shortcut \"expand notification panel\"\n"
-                "Default is 'bhsn' for SDK mouse, and '++++' for AOA and UHID.",
+                "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
+                "and UHID.",
     },
     {
         .shortopt = 'n',
@@ -2095,24 +2102,46 @@ parse_mouse_binding(char c, enum sc_mouse_binding *b) {
 }
 
 static bool
-parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
-    if (strlen(s) != 4) {
-        LOGE("Invalid mouse bindings: '%s' (expected exactly 4 characters from "
-             "{'+', '-', 'b', 'h', 's', 'n'})", s);
+parse_mouse_binding_set(const char *s, struct sc_mouse_binding_set *mbs) {
+    assert(strlen(s) >= 4);
+
+    if (!parse_mouse_binding(s[0], &mbs->right_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[1], &mbs->middle_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[2], &mbs->click4)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[3], &mbs->click5)) {
         return false;
     }
 
-    if (!parse_mouse_binding(s[0], &mb->right_click)) {
+    return true;
+}
+
+static bool
+parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
+    size_t len = strlen(s);
+    // either "xxxx" or "xxxx:xxxx"
+    if (len != 4 && (len != 9 || s[4] != ':')) {
+        LOGE("Invalid mouse bindings: '%s' (expected 'xxxx' or 'xxxx:xxxx', "
+             "with each 'x' being in {'+', '-', 'b', 'h', 's', 'n'})", s);
         return false;
     }
-    if (!parse_mouse_binding(s[1], &mb->middle_click)) {
+
+    if (!parse_mouse_binding_set(s, &mb->pri)) {
         return false;
     }
-    if (!parse_mouse_binding(s[2], &mb->click4)) {
-        return false;
-    }
-    if (!parse_mouse_binding(s[3], &mb->click5)) {
-        return false;
+
+    if (len == 9) {
+        if (!parse_mouse_binding_set(s + 5, &mb->sec)) {
+            return false;
+        }
+    } else {
+        // use the same bindings for Shift+click
+        mb->sec = mb->pri;
     }
 
     return true;
@@ -2408,10 +2437,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGW("--forward-all-clicks is deprecated, "
                      "use --mouse-bind=++++ instead.");
                 opts->mouse_bindings = (struct sc_mouse_bindings) {
-                    .right_click = SC_MOUSE_BINDING_CLICK,
-                    .middle_click = SC_MOUSE_BINDING_CLICK,
-                    .click4 = SC_MOUSE_BINDING_CLICK,
-                    .click5 = SC_MOUSE_BINDING_CLICK,
+                    .pri = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
+                    .sec = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
                 };
                 break;
             case OPT_LEGACY_PASTE:
@@ -2701,26 +2738,36 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     // If mouse bindings are not explictly set, configure default bindings
-    if (opts->mouse_bindings.right_click == SC_MOUSE_BINDING_AUTO) {
-        assert(opts->mouse_bindings.middle_click == SC_MOUSE_BINDING_AUTO);
-        assert(opts->mouse_bindings.click4 == SC_MOUSE_BINDING_AUTO);
-        assert(opts->mouse_bindings.click5 == SC_MOUSE_BINDING_AUTO);
+    if (opts->mouse_bindings.pri.right_click == SC_MOUSE_BINDING_AUTO) {
+        assert(opts->mouse_bindings.pri.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click5 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.right_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click5 == SC_MOUSE_BINDING_AUTO);
+
+        static struct sc_mouse_binding_set default_shortcuts = {
+            .right_click = SC_MOUSE_BINDING_BACK,
+            .middle_click = SC_MOUSE_BINDING_HOME,
+            .click4 = SC_MOUSE_BINDING_APP_SWITCH,
+            .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+        };
+
+        static struct sc_mouse_binding_set forward = {
+            .right_click = SC_MOUSE_BINDING_CLICK,
+            .middle_click = SC_MOUSE_BINDING_CLICK,
+            .click4 = SC_MOUSE_BINDING_CLICK,
+            .click5 = SC_MOUSE_BINDING_CLICK,
+        };
 
         // By default, forward all clicks only for UHID and AOA
         if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
-            opts->mouse_bindings = (struct sc_mouse_bindings) {
-                .right_click = SC_MOUSE_BINDING_BACK,
-                .middle_click = SC_MOUSE_BINDING_HOME,
-                .click4 = SC_MOUSE_BINDING_APP_SWITCH,
-                .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
-            };
+            opts->mouse_bindings.pri = default_shortcuts;
+            opts->mouse_bindings.sec = forward;
         } else {
-            opts->mouse_bindings = (struct sc_mouse_bindings) {
-                .right_click = SC_MOUSE_BINDING_CLICK,
-                .middle_click = SC_MOUSE_BINDING_CLICK,
-                .click4 = SC_MOUSE_BINDING_CLICK,
-                .click5 = SC_MOUSE_BINDING_CLICK,
-            };
+            opts->mouse_bindings.pri = forward;
+            opts->mouse_bindings.sec = default_shortcuts;
         }
     }
 

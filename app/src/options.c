@@ -24,10 +24,18 @@ const struct scrcpy_options scrcpy_options_default = {
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_AUTO,
     .mouse_input_mode = SC_MOUSE_INPUT_MODE_AUTO,
     .mouse_bindings = {
-        .right_click = SC_MOUSE_BINDING_AUTO,
-        .middle_click = SC_MOUSE_BINDING_AUTO,
-        .click4 = SC_MOUSE_BINDING_AUTO,
-        .click5 = SC_MOUSE_BINDING_AUTO,
+        .pri = {
+            .right_click = SC_MOUSE_BINDING_AUTO,
+            .middle_click = SC_MOUSE_BINDING_AUTO,
+            .click4 = SC_MOUSE_BINDING_AUTO,
+            .click5 = SC_MOUSE_BINDING_AUTO,
+        },
+        .sec = {
+            .right_click = SC_MOUSE_BINDING_AUTO,
+            .middle_click = SC_MOUSE_BINDING_AUTO,
+            .click4 = SC_MOUSE_BINDING_AUTO,
+            .click5 = SC_MOUSE_BINDING_AUTO,
+        },
     },
     .camera_facing = SC_CAMERA_FACING_ANY,
     .port_range = {

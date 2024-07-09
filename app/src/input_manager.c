@@ -708,7 +708,7 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
 }
 
 static enum sc_mouse_binding
-sc_input_manager_get_binding(const struct sc_mouse_bindings *bindings,
+sc_input_manager_get_binding(const struct sc_mouse_binding_set *bindings,
                              uint8_t sdl_button) {
     switch (sdl_button) {
         case SDL_BUTTON_LEFT:
@@ -744,11 +744,18 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         im->mouse_buttons_state &= ~button;
     }
 
+    SDL_Keymod keymod = SDL_GetModState();
+    bool ctrl_pressed = keymod & KMOD_CTRL;
+    bool shift_pressed = keymod & KMOD_SHIFT;
+
     if (control && !paused) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
 
+        struct sc_mouse_binding_set *bindings = !shift_pressed
+                                              ? &im->mouse_bindings.pri
+                                              : &im->mouse_bindings.sec;
         enum sc_mouse_binding binding =
-            sc_input_manager_get_binding(&im->mouse_bindings, event->button);
+            sc_input_manager_get_binding(bindings, event->button);
         assert(binding != SC_MOUSE_BINDING_AUTO);
         switch (binding) {
             case SC_MOUSE_BINDING_DISABLED:
@@ -812,9 +819,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         im->mouse_buttons_state |= button;
     }
 
-    SDL_Keymod keymod = SDL_GetModState();
-    bool ctrl_pressed = keymod & KMOD_CTRL;
-    bool shift_pressed = keymod & KMOD_SHIFT;
     bool change_vfinger = event->button == SDL_BUTTON_LEFT &&
             ((down && !im->vfinger_down && (ctrl_pressed ^ shift_pressed)) ||
              (!down && im->vfinger_down));
