@@ -38,38 +38,53 @@ public final class ClipboardManager {
         if (getPrimaryClipMethod == null) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
-            } else {
-                try {
-                    getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
-                    getMethodVersion = 0;
-                } catch (NoSuchMethodException e1) {
-                    try {
-                        getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class);
-                        getMethodVersion = 1;
-                    } catch (NoSuchMethodException e2) {
-                        try {
-                            getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class, int.class);
-                            getMethodVersion = 2;
-                        } catch (NoSuchMethodException e3) {
-                            try {
-                                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class, String.class);
-                                getMethodVersion = 3;
-                            } catch (NoSuchMethodException e4) {
-                                try {
-                                    getPrimaryClipMethod = manager.getClass()
-                                            .getMethod("getPrimaryClip", String.class, String.class, int.class, int.class, boolean.class);
-                                    getMethodVersion = 4;
-                                } catch (NoSuchMethodException e5) {
-                                    getPrimaryClipMethod = manager.getClass()
-                                            .getMethod("getPrimaryClip", String.class, String.class, String.class, String.class, int.class, int.class,
-                                                    boolean.class);
-                                    getMethodVersion = 5;
-                                }
-                            }
-                        }
-                    }
-                }
+                return getPrimaryClipMethod;
             }
+
+            try {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class);
+                getMethodVersion = 0;
+                return getPrimaryClipMethod;
+            } catch (NoSuchMethodException e) {
+                // fall-through
+            }
+
+            try {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class);
+                getMethodVersion = 1;
+                return getPrimaryClipMethod;
+            } catch (NoSuchMethodException e) {
+                // fall-through
+            }
+
+            try {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, String.class, int.class, int.class);
+                getMethodVersion = 2;
+                return getPrimaryClipMethod;
+            } catch (NoSuchMethodException e) {
+                // fall-through
+            }
+
+            try {
+                getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class, int.class, String.class);
+                getMethodVersion = 3;
+                return getPrimaryClipMethod;
+            } catch (NoSuchMethodException e) {
+                // fall-through
+            }
+
+            try {
+                getPrimaryClipMethod = manager.getClass()
+                        .getMethod("getPrimaryClip", String.class, String.class, int.class, int.class, boolean.class);
+                getMethodVersion = 4;
+                return getPrimaryClipMethod;
+            } catch (NoSuchMethodException e) {
+                // fall-through
+            }
+
+            getPrimaryClipMethod = manager.getClass()
+                    .getMethod("getPrimaryClip", String.class, String.class, String.class, String.class, int.class, int.class, boolean.class);
+            getMethodVersion = 5;
         }
         return getPrimaryClipMethod;
     }
@@ -78,27 +93,37 @@ public final class ClipboardManager {
         if (setPrimaryClipMethod == null) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
-            } else {
-                try {
-                    setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
-                    setMethodVersion = 0;
-                } catch (NoSuchMethodException e1) {
-                    try {
-                        setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class);
-                        setMethodVersion = 1;
-                    } catch (NoSuchMethodException e2) {
-                        try {
-                            setPrimaryClipMethod = manager.getClass()
-                                    .getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class, int.class);
-                            setMethodVersion = 2;
-                        } catch (NoSuchMethodException e3) {
-                            setPrimaryClipMethod = manager.getClass()
-                                    .getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class, int.class, boolean.class);
-                            setMethodVersion = 3;
-                        }
-                    }
-                }
+                return setPrimaryClipMethod;
             }
+
+            try {
+                setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, int.class);
+                setMethodVersion = 0;
+                return setPrimaryClipMethod;
+            } catch (NoSuchMethodException e1) {
+                // fall-through
+            }
+
+            try {
+                setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class);
+                setMethodVersion = 1;
+                return setPrimaryClipMethod;
+            } catch (NoSuchMethodException e2) {
+                // fall-through
+            }
+
+            try {
+                setPrimaryClipMethod = manager.getClass()
+                        .getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class, int.class);
+                setMethodVersion = 2;
+                return setPrimaryClipMethod;
+            } catch (NoSuchMethodException e3) {
+                // fall-through
+            }
+
+            setPrimaryClipMethod = manager.getClass()
+                    .getMethod("setPrimaryClip", ClipData.class, String.class, String.class, int.class, int.class, boolean.class);
+            setMethodVersion = 3;
         }
         return setPrimaryClipMethod;
     }
