@@ -1,5 +1,26 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.audio.AudioCapture;
+import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioEncoder;
+import com.genymobile.scrcpy.audio.AudioRawRecorder;
+import com.genymobile.scrcpy.control.ControlChannel;
+import com.genymobile.scrcpy.control.Controller;
+import com.genymobile.scrcpy.control.DeviceMessage;
+import com.genymobile.scrcpy.device.ConfigurationException;
+import com.genymobile.scrcpy.device.DesktopConnection;
+import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.Streamer;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.util.Settings;
+import com.genymobile.scrcpy.util.SettingsException;
+import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.ScreenCapture;
+import com.genymobile.scrcpy.video.SurfaceCapture;
+import com.genymobile.scrcpy.video.SurfaceEncoder;
+import com.genymobile.scrcpy.video.VideoSource;
+
 import android.os.BatteryManager;
 import android.os.Build;
 

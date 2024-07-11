@@ -1,5 +1,10 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.Settings;
+import com.genymobile.scrcpy.util.SettingsException;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;

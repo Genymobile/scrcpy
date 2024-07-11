@@ -1,5 +1,15 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.CodecOption;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.video.CameraAspectRatio;
+import com.genymobile.scrcpy.video.CameraFacing;
+import com.genymobile.scrcpy.video.VideoCodec;
+import com.genymobile.scrcpy.video.VideoSource;
+
 import android.graphics.Rect;
 
 import java.util.List;

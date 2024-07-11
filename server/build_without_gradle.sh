@@ -52,6 +52,11 @@ cd "$SERVER_DIR/src/main/aidl"
 
 SRC=( \
     com/genymobile/scrcpy/*.java \
+    com/genymobile/scrcpy/audio/*.java \
+    com/genymobile/scrcpy/control/*.java \
+    com/genymobile/scrcpy/device/*.java \
+    com/genymobile/scrcpy/util/*.java \
+    com/genymobile/scrcpy/video/*.java \
     com/genymobile/scrcpy/wrappers/*.java \
 )
 
