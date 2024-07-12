@@ -93,7 +93,7 @@ public final class GameController extends UinputDevice {
     }
 
     protected String getName() {
-        return "Microsoft X-Box 360 pad";
+        return "scrcpy Xbox Controller";
     }
 
     private static short translateAxis(int axis) {
