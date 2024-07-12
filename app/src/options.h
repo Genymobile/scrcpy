@@ -269,6 +269,7 @@ struct scrcpy_options {
     bool disable_screensaver;
     bool forward_game_controllers;
     bool forward_key_repeat;
+    bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
     bool clipboard_autosync;

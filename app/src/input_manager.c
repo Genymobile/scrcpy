@@ -934,7 +934,7 @@ sc_input_manager_process_file(struct sc_input_manager *im,
     }
 }
 
-void
+static void
 input_manager_process_controller_axis(struct sc_input_manager *im,
                                       const SDL_ControllerAxisEvent *event) {
     struct sc_control_msg msg;
@@ -945,7 +945,7 @@ input_manager_process_controller_axis(struct sc_input_manager *im,
     sc_controller_push_msg(im->controller, &msg);
 }
 
-void
+static void
 input_manager_process_controller_button(struct sc_input_manager *im,
                                         const SDL_ControllerButtonEvent *event) {
     struct sc_control_msg msg;
@@ -980,7 +980,7 @@ free_game_controller_slot(struct sc_input_manager *im,
     return false;
 }
 
-void
+static void
 input_manager_process_controller_device(struct sc_input_manager *im,
                                         const SDL_ControllerDeviceEvent *event) {
     SDL_JoystickID id;

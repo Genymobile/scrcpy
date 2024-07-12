@@ -50,7 +50,7 @@ public class Controller implements AsyncProcessor {
     private SparseArray<GameController> gameControllers = new SparseArray<GameController>();
     private boolean gameControllersEnabled;
 
-    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, DesktopConnection connection, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;

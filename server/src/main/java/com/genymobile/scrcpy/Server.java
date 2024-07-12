@@ -21,6 +21,11 @@ public final class Server {
         SERVER_PATH = classPaths[0];
     }
 
+    public static final String SERVER_DIR = "/data/local/tmp";
+    public static final String[] NATIVE_LIBRARIES = {
+        "libjnidispatch.so",
+    };
+
     private static class Completion {
         private int running;
         private boolean fatalError;
@@ -49,10 +54,6 @@ public final class Server {
             }
         }
     }
-    public static final String SERVER_DIR = "/data/local/tmp";
-    public static final String[] NATIVE_LIBRARIES = {
-        "libjnidispatch.so",
-    };
 
     private Server() {
         // not instantiable
@@ -108,10 +109,6 @@ public final class Server {
             Ln.e("Camera mirroring is not supported before Android 12");
             throw new ConfigurationException("Camera mirroring is not supported");
         }
-        Ln.i("Device: " + Build.MANUFACTURER + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
-        Ln.i("Supported ABIs: " + TextUtils.join(", ", Build.SUPPORTED_ABIS));
-        final Device device = new Device(options);
-        List<CodecOption> codecOptions = options.getCodecOptions();
 
         for (String lib : NATIVE_LIBRARIES) {
             for (String abi : Build.SUPPORTED_ABIS) {
@@ -144,8 +141,6 @@ public final class Server {
         }
 
         int scid = options.getScid();
-        int uid = options.getUid();
-        
         boolean tunnelForward = options.isTunnelForward();
         boolean control = options.getControl();
         boolean video = options.getVideo();

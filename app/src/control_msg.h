@@ -109,6 +109,7 @@ struct sc_control_msg {
             uint16_t size;
             uint8_t data[SC_HID_MAX_SIZE];
         } uhid_input;
+        struct {
             int16_t id;
             uint8_t axis;
             int16_t value;

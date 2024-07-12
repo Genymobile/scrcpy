@@ -20,9 +20,9 @@ public final class ControlMessage {
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
-    public static final int TYPE_INJECT_GAME_CONTROLLER_AXIS = 12;
-    public static final int TYPE_INJECT_GAME_CONTROLLER_BUTTON = 13;
-    public static final int TYPE_INJECT_GAME_CONTROLLER_DEVICE = 14;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_AXIS = 15;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_BUTTON = 16;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_DEVICE = 17;
 
     public static final long SEQUENCE_INVALID = 0;
 
