@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioDirectCapture;
 import com.genymobile.scrcpy.audio.AudioEncoder;
 import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.control.ControlChannel;
@@ -163,7 +164,7 @@ public final class Server {
 
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
-                AudioCapture audioCapture = new AudioCapture(options.getAudioSource());
+                AudioCapture audioCapture = new AudioDirectCapture(options.getAudioSource());
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
                 AsyncProcessor audioRecorder;
                 if (audioCodec == AudioCodec.RAW) {
