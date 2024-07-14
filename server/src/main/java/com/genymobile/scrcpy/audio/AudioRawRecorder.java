@@ -23,7 +23,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
         this.streamer = streamer;
     }
 
-    private void record() throws IOException, AudioCaptureForegroundException {
+    private void record() throws IOException, AudioCaptureException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
@@ -69,7 +69,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
             boolean fatalError = false;
             try {
                 record();
-            } catch (AudioCaptureForegroundException e) {
+            } catch (AudioCaptureException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (Throwable t) {
                 Ln.e("Audio recording error", t);

@@ -132,7 +132,7 @@ public final class AudioEncoder implements AsyncProcessor {
             } catch (ConfigurationException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
                 fatalError = true;
-            } catch (AudioCaptureForegroundException e) {
+            } catch (AudioCaptureException e) {
                 // Do not print stack trace, a user-friendly error-message has already been logged
             } catch (IOException e) {
                 Ln.e("Audio encoding error", e);
@@ -176,7 +176,7 @@ public final class AudioEncoder implements AsyncProcessor {
     }
 
     @TargetApi(Build.VERSION_CODES.M)
-    private void encode() throws IOException, ConfigurationException, AudioCaptureForegroundException {
+    private void encode() throws IOException, ConfigurationException, AudioCaptureException {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);

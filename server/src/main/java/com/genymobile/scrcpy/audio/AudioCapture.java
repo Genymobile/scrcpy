@@ -89,7 +89,7 @@ public final class AudioCapture {
         ServiceManager.getActivityManager().forceStopPackage(FakeContext.PACKAGE_NAME);
     }
 
-    private void tryStartRecording(int attempts, int delayMs) throws AudioCaptureForegroundException {
+    private void tryStartRecording(int attempts, int delayMs) throws AudioCaptureException {
         while (attempts-- > 0) {
             // Wait for activity to start
             SystemClock.sleep(delayMs);
@@ -101,7 +101,7 @@ public final class AudioCapture {
                     Ln.e("Failed to start audio capture");
                     Ln.e("On Android 11, audio capture must be started in the foreground, make sure that the device is unlocked when starting "
                             + "scrcpy.");
-                    throw new AudioCaptureForegroundException();
+                    throw new AudioCaptureException();
                 } else {
                     Ln.d("Failed to start audio capture, retrying...");
                 }
@@ -121,7 +121,7 @@ public final class AudioCapture {
         recorder.startRecording();
     }
 
-    public void start() throws AudioCaptureForegroundException {
+    public void start() throws AudioCaptureException {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
             startWorkaroundAndroid11();
             try {
