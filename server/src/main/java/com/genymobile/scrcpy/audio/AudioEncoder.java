@@ -44,8 +44,8 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
-    private static final int SAMPLE_RATE = AudioCapture.SAMPLE_RATE;
-    private static final int CHANNELS = AudioCapture.CHANNELS;
+    private static final int SAMPLE_RATE = AudioConfig.SAMPLE_RATE;
+    private static final int CHANNELS = AudioConfig.CHANNELS;
 
     private final AudioCapture capture;
     private final Streamer streamer;

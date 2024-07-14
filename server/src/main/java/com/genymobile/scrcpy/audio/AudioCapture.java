@@ -20,17 +20,14 @@ import java.nio.ByteBuffer;
 
 public final class AudioCapture {
 
-    public static final int SAMPLE_RATE = 48000;
-    public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;
-    public static final int CHANNELS = 2;
-    public static final int CHANNEL_MASK = AudioFormat.CHANNEL_IN_LEFT | AudioFormat.CHANNEL_IN_RIGHT;
-    public static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
-    public static final int BYTES_PER_SAMPLE = 2;
+    private static final int SAMPLE_RATE = AudioConfig.SAMPLE_RATE;
+    private static final int CHANNEL_CONFIG = AudioConfig.CHANNEL_CONFIG;
+    private static final int CHANNELS = AudioConfig.CHANNELS;
+    private static final int CHANNEL_MASK = AudioConfig.CHANNEL_MASK;
+    private static final int ENCODING = AudioConfig.ENCODING;
+    private static final int BYTES_PER_SAMPLE = AudioConfig.BYTES_PER_SAMPLE;
 
-    // Never read more than 1024 samples, even if the buffer is bigger (that would increase latency).
-    // A lower value is useless, since the system captures audio samples by blocks of 1024 (so for example if we read by blocks of 256 samples, we
-    // receive 4 successive blocks without waiting, then we wait for the 4 next ones).
-    public static final int MAX_READ_SIZE = 1024 * CHANNELS * BYTES_PER_SAMPLE;
+    private static final int MAX_READ_SIZE = AudioConfig.MAX_READ_SIZE;
 
     private static final long ONE_SAMPLE_US = (1000000 + SAMPLE_RATE - 1) / SAMPLE_RATE; // 1 sample in microseconds (used for fixing PTS)
 

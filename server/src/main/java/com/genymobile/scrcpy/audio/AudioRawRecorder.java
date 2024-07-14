@@ -30,7 +30,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
             return;
         }
 
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(AudioCapture.MAX_READ_SIZE);
+        final ByteBuffer buffer = ByteBuffer.allocateDirect(AudioConfig.MAX_READ_SIZE);
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         try {
