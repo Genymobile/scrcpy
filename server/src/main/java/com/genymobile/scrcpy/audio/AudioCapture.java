@@ -10,7 +10,6 @@ import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.media.AudioRecord;
-import android.media.AudioTimestamp;
 import android.media.MediaCodec;
 import android.os.Build;
 import android.os.SystemClock;
@@ -24,20 +23,11 @@ public final class AudioCapture {
     private static final int CHANNELS = AudioConfig.CHANNELS;
     private static final int CHANNEL_MASK = AudioConfig.CHANNEL_MASK;
     private static final int ENCODING = AudioConfig.ENCODING;
-    private static final int BYTES_PER_SAMPLE = AudioConfig.BYTES_PER_SAMPLE;
-
-    private static final int MAX_READ_SIZE = AudioConfig.MAX_READ_SIZE;
-
-    private static final long ONE_SAMPLE_US = (1000000 + SAMPLE_RATE - 1) / SAMPLE_RATE; // 1 sample in microseconds (used for fixing PTS)
 
     private final int audioSource;
 
     private AudioRecord recorder;
-
-    private final AudioTimestamp timestamp = new AudioTimestamp();
-    private long previousRecorderTimestamp = -1;
-    private long previousPts = 0;
-    private long nextPts = 0;
+    private AudioRecordReader reader;
 
     public AudioCapture(AudioSource audioSource) {
         this.audioSource = audioSource.value();
@@ -107,6 +97,7 @@ public final class AudioCapture {
             recorder = Workarounds.createAudioRecord(audioSource, SAMPLE_RATE, CHANNEL_CONFIG, CHANNELS, CHANNEL_MASK, ENCODING);
         }
         recorder.startRecording();
+        reader = new AudioRecordReader(recorder);
     }
 
     public void checkCompatibility() throws AudioCaptureException {
@@ -137,41 +128,7 @@ public final class AudioCapture {
     }
 
     @TargetApi(Build.VERSION_CODES.N)
-    public int read(ByteBuffer directBuffer, MediaCodec.BufferInfo outBufferInfo) {
-        int r = recorder.read(directBuffer, MAX_READ_SIZE);
-        if (r <= 0) {
-            return r;
-        }
-
-        long pts;
-
-        int ret = recorder.getTimestamp(timestamp, AudioTimestamp.TIMEBASE_MONOTONIC);
-        if (ret == AudioRecord.SUCCESS && timestamp.nanoTime != previousRecorderTimestamp) {
-            pts = timestamp.nanoTime / 1000;
-            previousRecorderTimestamp = timestamp.nanoTime;
-        } else {
-            if (nextPts == 0) {
-                Ln.w("Could not get initial audio timestamp");
-                nextPts = System.nanoTime() / 1000;
-            }
-            // compute from previous timestamp and packet size
-            pts = nextPts;
-        }
-
-        long durationUs = r * 1000000L / (CHANNELS * BYTES_PER_SAMPLE * SAMPLE_RATE);
-        nextPts = pts + durationUs;
-
-        if (previousPts != 0 && pts < previousPts + ONE_SAMPLE_US) {
-            // Audio PTS may come from two sources:
-            //  - recorder.getTimestamp() if the call works;
-            //  - an estimation from the previous PTS and the packet size as a fallback.
-            //
-            // Therefore, the property that PTS are monotonically increasing is no guaranteed in corner cases, so enforce it.
-            pts = previousPts + ONE_SAMPLE_US;
-        }
-        previousPts = pts;
-
-        outBufferInfo.set(0, r, pts, 0);
-        return r;
+    public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
+        return reader.read(outDirectBuffer, outBufferInfo);
     }
 }
