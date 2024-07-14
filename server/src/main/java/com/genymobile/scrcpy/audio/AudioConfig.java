@@ -18,4 +18,12 @@ public final class AudioConfig {
     private AudioConfig() {
         // Not instantiable
     }
+
+    public static AudioFormat createAudioFormat() {
+        AudioFormat.Builder builder = new AudioFormat.Builder();
+        builder.setEncoding(ENCODING);
+        builder.setSampleRate(SAMPLE_RATE);
+        builder.setChannelMask(CHANNEL_CONFIG);
+        return builder.build();
+    }
 }

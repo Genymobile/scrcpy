@@ -9,7 +9,6 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.media.AudioFormat;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
 import android.media.MediaCodec;
@@ -44,14 +43,6 @@ public final class AudioCapture {
         this.audioSource = audioSource.value();
     }
 
-    private static AudioFormat createAudioFormat() {
-        AudioFormat.Builder builder = new AudioFormat.Builder();
-        builder.setEncoding(ENCODING);
-        builder.setSampleRate(SAMPLE_RATE);
-        builder.setChannelMask(CHANNEL_CONFIG);
-        return builder.build();
-    }
-
     @TargetApi(Build.VERSION_CODES.M)
     @SuppressLint({"WrongConstant", "MissingPermission"})
     private static AudioRecord createAudioRecord(int audioSource) {
@@ -61,7 +52,7 @@ public final class AudioCapture {
             builder.setContext(FakeContext.get());
         }
         builder.setAudioSource(audioSource);
-        builder.setAudioFormat(createAudioFormat());
+        builder.setAudioFormat(AudioConfig.createAudioFormat());
         int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
         // This buffer size does not impact latency
         builder.setBufferSizeInBytes(8 * minBufferSize);
