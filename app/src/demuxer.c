@@ -278,7 +278,6 @@ run_demuxer(void *data) {
 finally_close_sinks:
     sc_packet_source_sinks_close(&demuxer->packet_source);
 finally_free_context:
-    // This also calls avcodec_close() internally
     avcodec_free_context(&codec_ctx);
 end:
     demuxer->cbs->on_ended(demuxer, status, demuxer->cbs_userdata);

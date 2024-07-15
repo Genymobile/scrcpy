@@ -1,5 +1,14 @@
 # Window
 
+## Disable window
+
+To disable window (may be useful for recording or for playing audio only):
+
+```bash
+scrcpy --no-window --record=file.mp4
+# Ctrl+C to interrupt
+```
+
 ## Title
 
 By default, the window title is the device model. It can be changed:

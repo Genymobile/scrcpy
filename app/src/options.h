@@ -155,6 +155,23 @@ enum sc_mouse_input_mode {
     SC_MOUSE_INPUT_MODE_AOA,
 };
 
+enum sc_mouse_binding {
+    SC_MOUSE_BINDING_AUTO,
+    SC_MOUSE_BINDING_DISABLED,
+    SC_MOUSE_BINDING_CLICK,
+    SC_MOUSE_BINDING_BACK,
+    SC_MOUSE_BINDING_HOME,
+    SC_MOUSE_BINDING_APP_SWITCH,
+    SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+};
+
+struct sc_mouse_bindings {
+    enum sc_mouse_binding right_click;
+    enum sc_mouse_binding middle_click;
+    enum sc_mouse_binding click4;
+    enum sc_mouse_binding click5;
+};
+
 enum sc_key_inject_mode {
     // Inject special keys, letters and space as key events.
     // Inject numbers and punctuation as text events.
@@ -169,8 +186,6 @@ enum sc_key_inject_mode {
     SC_KEY_INJECT_MODE_RAW,
 };
 
-#define SC_MAX_SHORTCUT_MODS 8
-
 enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_LCTRL = 1 << 0,
     SC_SHORTCUT_MOD_RCTRL = 1 << 1,
@@ -178,11 +193,6 @@ enum sc_shortcut_mod {
     SC_SHORTCUT_MOD_RALT = 1 << 3,
     SC_SHORTCUT_MOD_LSUPER = 1 << 4,
     SC_SHORTCUT_MOD_RSUPER = 1 << 5,
-};
-
-struct sc_shortcut_mods {
-    unsigned data[SC_MAX_SHORTCUT_MODS];
-    unsigned count;
 };
 
 struct sc_port_range {
@@ -215,11 +225,12 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
+    struct sc_mouse_bindings mouse_bindings;
     enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
-    struct sc_shortcut_mods shortcut_mods;
+    uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
     uint16_t max_size;
     uint32_t video_bit_rate;
     uint32_t audio_bit_rate;
@@ -257,7 +268,6 @@ struct scrcpy_options {
     bool force_adb_forward;
     bool disable_screensaver;
     bool forward_key_repeat;
-    bool forward_all_clicks;
     bool legacy_paste;
     bool power_off_on_close;
     bool clipboard_autosync;
@@ -279,6 +289,8 @@ struct scrcpy_options {
 #define SC_OPTION_LIST_CAMERAS 0x4
 #define SC_OPTION_LIST_CAMERA_SIZES 0x8
     uint8_t list;
+    bool window;
+    bool mouse_hover;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

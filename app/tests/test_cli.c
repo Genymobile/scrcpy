@@ -124,32 +124,22 @@ static void test_options2(void) {
 }
 
 static void test_parse_shortcut_mods(void) {
-    struct sc_shortcut_mods mods;
+    uint8_t mods;
     bool ok;
 
     ok = sc_parse_shortcut_mods("lctrl", &mods);
     assert(ok);
-    assert(mods.count == 1);
-    assert(mods.data[0] == SC_SHORTCUT_MOD_LCTRL);
-
-    ok = sc_parse_shortcut_mods("lctrl+lalt", &mods);
-    assert(ok);
-    assert(mods.count == 1);
-    assert(mods.data[0] == (SC_SHORTCUT_MOD_LCTRL | SC_SHORTCUT_MOD_LALT));
+    assert(mods == SC_SHORTCUT_MOD_LCTRL);
 
     ok = sc_parse_shortcut_mods("rctrl,lalt", &mods);
     assert(ok);
-    assert(mods.count == 2);
-    assert(mods.data[0] == SC_SHORTCUT_MOD_RCTRL);
-    assert(mods.data[1] == SC_SHORTCUT_MOD_LALT);
+    assert(mods == (SC_SHORTCUT_MOD_RCTRL | SC_SHORTCUT_MOD_LALT));
 
-    ok = sc_parse_shortcut_mods("lsuper,rsuper+lalt,lctrl+rctrl+ralt", &mods);
+    ok = sc_parse_shortcut_mods("lsuper,rsuper,lctrl", &mods);
     assert(ok);
-    assert(mods.count == 3);
-    assert(mods.data[0] == SC_SHORTCUT_MOD_LSUPER);
-    assert(mods.data[1] == (SC_SHORTCUT_MOD_RSUPER | SC_SHORTCUT_MOD_LALT));
-    assert(mods.data[2] == (SC_SHORTCUT_MOD_LCTRL | SC_SHORTCUT_MOD_RCTRL |
-                            SC_SHORTCUT_MOD_RALT));
+    assert(mods == (SC_SHORTCUT_MOD_LSUPER
+                  | SC_SHORTCUT_MOD_RSUPER
+                  | SC_SHORTCUT_MOD_LCTRL));
 
     ok = sc_parse_shortcut_mods("", &mods);
     assert(!ok);

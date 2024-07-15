@@ -194,7 +194,11 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             // Still insufficient, drop old samples to make space
             skipped_samples = sc_audiobuf_read(&ap->buf, NULL, remaining);
             assert(skipped_samples == remaining);
+        }
 
+        SDL_UnlockAudioDevice(ap->device);
+
+        if (written < samples) {
             // Now there is enough space
             uint32_t w = sc_audiobuf_write(&ap->buf,
                                            swr_buf + TO_BYTES(written),
@@ -202,8 +206,6 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             assert(w == remaining);
             (void) w;
         }
-
-        SDL_UnlockAudioDevice(ap->device);
     }
 
     uint32_t underflow = 0;

@@ -23,6 +23,12 @@ const struct scrcpy_options scrcpy_options_default = {
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_AUTO,
     .mouse_input_mode = SC_MOUSE_INPUT_MODE_AUTO,
+    .mouse_bindings = {
+        .right_click = SC_MOUSE_BINDING_AUTO,
+        .middle_click = SC_MOUSE_BINDING_AUTO,
+        .click4 = SC_MOUSE_BINDING_AUTO,
+        .click5 = SC_MOUSE_BINDING_AUTO,
+    },
     .camera_facing = SC_CAMERA_FACING_ANY,
     .port_range = {
         .first = DEFAULT_LOCAL_PORT_RANGE_FIRST,
@@ -30,10 +36,7 @@ const struct scrcpy_options scrcpy_options_default = {
     },
     .tunnel_host = 0,
     .tunnel_port = 0,
-    .shortcut_mods = {
-        .data = {SC_SHORTCUT_MOD_LALT, SC_SHORTCUT_MOD_LSUPER},
-        .count = 2,
-    },
+    .shortcut_mods = SC_SHORTCUT_MOD_LALT | SC_SHORTCUT_MOD_LSUPER,
     .max_size = 0,
     .video_bit_rate = 0,
     .audio_bit_rate = 0,
@@ -71,7 +74,6 @@ const struct scrcpy_options scrcpy_options_default = {
     .force_adb_forward = false,
     .disable_screensaver = false,
     .forward_key_repeat = true,
-    .forward_all_clicks = false,
     .legacy_paste = false,
     .power_off_on_close = false,
     .clipboard_autosync = true,
@@ -89,6 +91,8 @@ const struct scrcpy_options scrcpy_options_default = {
     .kill_adb_on_close = false,
     .camera_high_speed = false,
     .list = 0,
+    .window = true,
+    .mouse_hover = true,
 };
 
 enum sc_orientation

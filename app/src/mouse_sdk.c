@@ -58,17 +58,18 @@ convert_touch_action(enum sc_touch_action action) {
 static void
 sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
-    if (!event->buttons_state) {
+    struct sc_mouse_sdk *m = DOWNCAST(mp);
+
+    if (!m->mouse_hover && !event->buttons_state) {
         // Do not send motion events when no click is pressed
         return;
     }
 
-    struct sc_mouse_sdk *m = DOWNCAST(mp);
-
     struct sc_control_msg msg = {
         .type = SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT,
         .inject_touch_event = {
-            .action = AMOTION_EVENT_ACTION_MOVE,
+            .action = event->buttons_state ? AMOTION_EVENT_ACTION_MOVE
+                                           : AMOTION_EVENT_ACTION_HOVER_MOVE,
             .pointer_id = event->pointer_id,
             .position = event->position,
             .pressure = 1.f,
@@ -145,8 +146,10 @@ sc_mouse_processor_process_touch(struct sc_mouse_processor *mp,
 }
 
 void
-sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller) {
+sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller,
+                  bool mouse_hover) {
     m->controller = controller;
+    m->mouse_hover = mouse_hover;
 
     static const struct sc_mouse_processor_ops ops = {
         .process_mouse_motion = sc_mouse_processor_process_mouse_motion,

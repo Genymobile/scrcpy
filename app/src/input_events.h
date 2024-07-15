@@ -9,6 +9,7 @@
 #include <SDL2/SDL_events.h>
 
 #include "coords.h"
+#include "options.h"
 
 /* The representation of input events in scrcpy is very close to the SDL API,
  * for simplicity.
@@ -437,15 +438,21 @@ sc_mouse_button_from_sdl(uint8_t button) {
 
 static inline uint8_t
 sc_mouse_buttons_state_from_sdl(uint32_t buttons_state,
-                                bool forward_all_clicks) {
+                                const struct sc_mouse_bindings *mb) {
     assert(buttons_state < 0x100); // fits in uint8_t
 
     uint8_t mask = SC_MOUSE_BUTTON_LEFT;
-    if (forward_all_clicks) {
-        mask |= SC_MOUSE_BUTTON_RIGHT
-              | SC_MOUSE_BUTTON_MIDDLE
-              | SC_MOUSE_BUTTON_X1
-              | SC_MOUSE_BUTTON_X2;
+    if (!mb || mb->right_click == SC_MOUSE_BINDING_CLICK) {
+        mask |= SC_MOUSE_BUTTON_RIGHT;
+    }
+    if (!mb || mb->middle_click == SC_MOUSE_BINDING_CLICK) {
+        mask |= SC_MOUSE_BUTTON_MIDDLE;
+    }
+    if (!mb || mb->click4 == SC_MOUSE_BINDING_CLICK) {
+        mask |= SC_MOUSE_BUTTON_X1;
+    }
+    if (!mb || mb->click5 == SC_MOUSE_BINDING_CLICK) {
+        mask |= SC_MOUSE_BUTTON_X2;
     }
 
     return buttons_state & mask;

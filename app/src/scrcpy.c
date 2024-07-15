@@ -174,6 +174,9 @@ event_loop(struct scrcpy *s) {
             case SC_EVENT_DEMUXER_ERROR:
                 LOGE("Demuxer error");
                 return SCRCPY_EXIT_FAILURE;
+            case SC_EVENT_CONTROLLER_ERROR:
+                LOGE("Controller error");
+                return SCRCPY_EXIT_FAILURE;
             case SC_EVENT_RECORDER_ERROR:
                 LOGE("Recorder error");
                 return SCRCPY_EXIT_FAILURE;
@@ -263,6 +266,16 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
                 && options->require_audio)) {
         PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
     }
+}
+
+static void
+sc_controller_on_error(struct sc_controller *controller, void *userdata) {
+    // Note: this function may be called twice, once from the controller thread
+    // and once from the receiver thread
+    (void) controller;
+    (void) userdata;
+
+    PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
 }
 
 static void
@@ -408,7 +421,7 @@ scrcpy(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
-    if (options->video_playback) {
+    if (options->window) {
         // Set hints before starting the server thread to avoid race conditions
         // in SDL
         sdl_set_hints(options->render_driver);
@@ -430,7 +443,7 @@ scrcpy(struct scrcpy_options *options) {
     assert(!options->video_playback || options->video);
     assert(!options->audio_playback || options->audio);
 
-    if (options->video_playback ||
+    if (options->window ||
             (options->control && options->clipboard_autosync)) {
         // Initialize the video subsystem even if --no-video or
         // --no-video-playback is passed so that clipboard synchronization
@@ -553,7 +566,12 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_mouse_processor *mp = NULL;
 
     if (options->control) {
-        if (!sc_controller_init(&s->controller, s->server.control_socket)) {
+        static const struct sc_controller_callbacks controller_cbs = {
+            .on_error = sc_controller_on_error,
+        };
+
+        if (!sc_controller_init(&s->controller, s->server.control_socket,
+            &controller_cbs, NULL)) {
             goto end;
         }
         controller_initialized = true;
@@ -663,7 +681,8 @@ scrcpy(struct scrcpy_options *options) {
         }
 
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
-            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller);
+            sc_mouse_sdk_init(&s->mouse_sdk, &s->controller,
+                              options->mouse_hover);
             mp = &s->mouse_sdk.mouse_processor;
         } else if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
             bool ok = sc_mouse_uhid_init(&s->mouse_uhid, &s->controller);
@@ -684,19 +703,20 @@ scrcpy(struct scrcpy_options *options) {
     // There is a controller if and only if control is enabled
     assert(options->control == !!controller);
 
-    if (options->video_playback) {
+    if (options->window) {
         const char *window_title =
             options->window_title ? options->window_title : info->device_name;
 
         struct sc_screen_params screen_params = {
+            .video = options->video_playback,
             .controller = controller,
             .fp = fp,
             .kp = kp,
             .mp = mp,
-            .forward_all_clicks = options->forward_all_clicks,
+            .mouse_bindings = options->mouse_bindings,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
-            .shortcut_mods = &options->shortcut_mods,
+            .shortcut_mods = options->shortcut_mods,
             .window_title = window_title,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
@@ -710,12 +730,15 @@ scrcpy(struct scrcpy_options *options) {
             .start_fps_counter = options->start_fps_counter,
         };
 
-        struct sc_frame_source *src = &s->video_decoder.frame_source;
-        if (options->display_buffer) {
-            sc_delay_buffer_init(&s->display_buffer, options->display_buffer,
-                                 true);
-            sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
-            src = &s->display_buffer.frame_source;
+        struct sc_frame_source *src;
+        if (options->video_playback) {
+            src = &s->video_decoder.frame_source;
+            if (options->display_buffer) {
+                sc_delay_buffer_init(&s->display_buffer,
+                                     options->display_buffer, true);
+                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
+                src = &s->display_buffer.frame_source;
+            }
         }
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -723,7 +746,9 @@ scrcpy(struct scrcpy_options *options) {
         }
         screen_initialized = true;
 
-        sc_frame_source_add_sink(src, &s->screen.frame_sink);
+        if (options->video_playback) {
+            sc_frame_source_add_sink(src, &s->screen.frame_sink);
+        }
     }
 
     if (options->audio_playback) {
@@ -805,9 +830,12 @@ scrcpy(struct scrcpy_options *options) {
     ret = event_loop(s);
     LOGD("quit...");
 
-    // Close the window immediately on closing, because screen_destroy() may
-    // only be called once the video demuxer thread is joined (it may take time)
-    sc_screen_hide_window(&s->screen);
+    if (options->video_playback) {
+        // Close the window immediately on closing, because screen_destroy()
+        // may only be called once the video demuxer thread is joined (it may
+        // take time)
+        sc_screen_hide_window(&s->screen);
+    }
 
 end:
     if (timeout_started) {

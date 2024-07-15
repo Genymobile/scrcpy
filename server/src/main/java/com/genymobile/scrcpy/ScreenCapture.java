@@ -45,18 +45,18 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         }
 
         try {
-            display = createDisplay();
-            setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
-            Ln.d("Display: using SurfaceControl API");
-        } catch (Exception surfaceControlException) {
             Rect videoRect = screenInfo.getVideoSize().toRect();
+            virtualDisplay = ServiceManager.getDisplayManager()
+                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+            Ln.d("Display: using DisplayManager API");
+        } catch (Exception displayManagerException) {
             try {
-                virtualDisplay = ServiceManager.getDisplayManager()
-                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
-                Ln.d("Display: using DisplayManager API");
-            } catch (Exception displayManagerException) {
-                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                display = createDisplay();
+                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                Ln.d("Display: using SurfaceControl API");
+            } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
+                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
                 throw new AssertionError("Could not create display");
             }
         }
@@ -68,6 +68,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         device.setFoldListener(null);
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
+            display = null;
+        }
+        if (virtualDisplay != null) {
+            virtualDisplay.release();
+            virtualDisplay = null;
         }
     }
 

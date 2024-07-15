@@ -164,10 +164,6 @@ Start in fullscreen.
 Do not attempt to use "adb reverse" to connect to the device.
 
 .TP
-.B \-\-forward\-all\-clicks
-By default, right-click triggers BACK (or POWER on) and middle-click triggers HOME. This option disables these shortcuts and forward the clicks to the device instead.
-
-.TP
 .B \-h, \-\-help
 Print this help.
 
@@ -261,6 +257,23 @@ LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse bac
 
 Also see \fB\-\-keyboard\fR.
 
+.TP
+.BI "\-\-mouse\-bind " xxxx
+Configure bindings of secondary clicks.
+
+The argument must be exactly 4 characters, one for each secondary click (in order: right click, middle click, 4th click, 5th click).
+
+Each character must be one of the following:
+
+ - '+': forward the click to the device
+ - '-': ignore the click
+ - 'b': trigger shortcut BACK (or turn screen on if off)
+ - 'h': trigger shortcut HOME
+ - 's': trigger shortcut APP_SWITCH
+ - 'n': trigger shortcut "expand notification panel"
+
+Default is 'bhsn' for SDK mouse, and '++++' for AOA and UHID.
+
 
 .TP
 .B \-n, \-\-no\-control
@@ -305,6 +318,10 @@ Do not forward repeated key events when a key is held down.
 If the renderer is OpenGL 3.0+ or OpenGL ES 2.0+, then mipmaps are automatically generated to improve downscaling quality. This option disables the generation of mipmaps.
 
 .TP
+.B \-\-no\-mouse\-hover
+Do not forward mouse hover (mouse motion without any clicks) events.
+
+.TP
 .B \-\-no\-power\-on
 Do not power on the device on start.
 
@@ -315,6 +332,10 @@ Disable video forwarding.
 .TP
 .B \-\-no\-video\-playback
 Disable video playback on the computer.
+
+.TP
+.B \-\-no\-window
+Disable scrcpy window. Implies --no-video-playback and --no-control.
 
 .TP
 .BI "\-\-orientation " value
@@ -420,9 +441,9 @@ Turn the device screen off immediately.
 .BI "\-\-shortcut\-mod " key\fR[+...]][,...]
 Specify the modifiers to use for scrcpy shortcuts. Possible keys are "lctrl", "rctrl", "lalt", "ralt", "lsuper" and "rsuper".
 
-A shortcut can consist in several keys, separated by '+'. Several shortcuts can be specified, separated by ','.
+Several shortcut modifiers can be specified, separated by ','.
 
-For example, to use either LCtrl+LAlt or LSuper for scrcpy shortcuts, pass "lctrl+lalt,lsuper".
+For example, to use either LCtrl or LSuper for scrcpy shortcuts, pass "lctrl,lsuper".
 
 Default is "lalt,lsuper" (left-Alt or left-Super).
 
@@ -576,6 +597,14 @@ Flip display horizontally
 .TP
 .B MOD+Shift+Up, MOD+Shift+Down
 Flip display vertically
+
+.TP
+.B MOD+z
+Pause or re-pause display
+
+.TP
+.B MOD+Shift+z
+Unpause display
 
 .TP
 .B MOD+g
