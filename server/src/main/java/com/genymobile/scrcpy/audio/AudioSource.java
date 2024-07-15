@@ -1,21 +1,13 @@
 package com.genymobile.scrcpy.audio;
 
-import android.media.MediaRecorder;
-
 public enum AudioSource {
-    OUTPUT("output", MediaRecorder.AudioSource.REMOTE_SUBMIX),
-    MIC("mic", MediaRecorder.AudioSource.MIC);
+    OUTPUT("output"),
+    MIC("mic");
 
     private final String name;
-    private final int value;
 
-    AudioSource(String name, int value) {
+    AudioSource(String name) {
         this.name = name;
-        this.value = value;
-    }
-
-    int value() {
-        return value;
     }
 
     public static AudioSource findByName(String name) {
