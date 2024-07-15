@@ -57,7 +57,13 @@ The available encoders can be listed by \fB\-\-list\-encoders\fR.
 
 .TP
 .BI "\-\-audio\-source " source
-Select the audio source (output or mic).
+Select the audio source (output, mic or playback).
+
+The "output" source forwards the whole audio output, and disables playback on the device.
+
+The "playback" source captures the audio playback (Android apps can opt-out, so the whole output is not necessarily captured).
+
+The "mic" source captures the microphone.
 
 Default is output.
 

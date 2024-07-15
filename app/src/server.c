@@ -203,6 +203,21 @@ sc_server_get_camera_facing_name(enum sc_camera_facing camera_facing) {
     }
 }
 
+static const char *
+sc_server_get_audio_source_name(enum sc_audio_source audio_source) {
+    switch (audio_source) {
+        case SC_AUDIO_SOURCE_OUTPUT:
+            return "output";
+        case SC_AUDIO_SOURCE_MIC:
+            return "mic";
+        case SC_AUDIO_SOURCE_PLAYBACK:
+            return "playback";
+        default:
+            assert(!"unexpected audio source");
+            return NULL;
+    }
+}
+
 static sc_pid
 execute_server(struct sc_server *server,
                const struct sc_server_params *params) {
@@ -273,8 +288,9 @@ execute_server(struct sc_server *server,
         assert(params->video_source == SC_VIDEO_SOURCE_CAMERA);
         ADD_PARAM("video_source=camera");
     }
-    if (params->audio_source == SC_AUDIO_SOURCE_MIC) {
-        ADD_PARAM("audio_source=mic");
+    if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT) {
+        ADD_PARAM("audio_source=%s",
+                  sc_server_get_audio_source_name(params->audio_source));
     }
     if (params->max_size) {
         ADD_PARAM("max_size=%" PRIu16, params->max_size);

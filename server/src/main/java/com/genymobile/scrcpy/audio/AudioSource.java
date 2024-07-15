@@ -2,12 +2,17 @@ package com.genymobile.scrcpy.audio;
 
 public enum AudioSource {
     OUTPUT("output"),
-    MIC("mic");
+    MIC("mic"),
+    PLAYBACK("playback");
 
     private final String name;
 
     AudioSource(String name) {
         this.name = name;
+    }
+
+    public boolean isDirect() {
+        return this != PLAYBACK;
     }
 
     public static AudioSource findByName(String name) {

@@ -59,6 +59,7 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_AUTO, // OUTPUT for video DISPLAY, MIC for video CAMERA
     SC_AUDIO_SOURCE_OUTPUT,
     SC_AUDIO_SOURCE_MIC,
+    SC_AUDIO_SOURCE_PLAYBACK,
 };
 
 enum sc_camera_facing {

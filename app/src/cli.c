@@ -189,7 +189,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_SOURCE,
         .longopt = "audio-source",
         .argdesc = "source",
-        .text = "Select the audio source (output or mic).\n"
+        .text = "Select the audio source (output, mic or playback).\n"
+                "The \"output\" source forwards the whole audio output, and "
+                "disables playback on the device.\n"
+                "The \"playback\" source captures the audio playback (Android "
+                "apps can opt-out, so the whole output is not necessarily "
+                "captured).\n"
+                "The \"mic\" source captures the microphone.\n"
                 "Default is output.",
     },
     {
@@ -1931,7 +1937,13 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
         return true;
     }
 
-    LOGE("Unsupported audio source: %s (expected output or mic)", optarg);
+    if (!strcmp(optarg, "playback")) {
+        *source = SC_AUDIO_SOURCE_PLAYBACK;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output, mic or playback)",
+         optarg);
     return false;
 }
 
