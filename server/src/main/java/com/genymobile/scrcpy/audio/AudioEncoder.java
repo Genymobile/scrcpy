@@ -187,6 +187,8 @@ public final class AudioEncoder implements AsyncProcessor {
 
         boolean mediaCodecStarted = false;
         try {
+            capture.checkCompatibility(); // throws an AudioCaptureException on error
+
             Codec codec = streamer.getCodec();
             mediaCodec = createMediaCodec(codec, encoderName);
 

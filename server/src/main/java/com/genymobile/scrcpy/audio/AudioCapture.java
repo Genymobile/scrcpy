@@ -121,6 +121,13 @@ public final class AudioCapture {
         recorder.startRecording();
     }
 
+    public void checkCompatibility() throws AudioCaptureException {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            Ln.w("Audio disabled: it is not supported before Android 11");
+            throw new AudioCaptureException();
+        }
+    }
+
     public void start() throws AudioCaptureException {
         if (Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
             startWorkaroundAndroid11();
