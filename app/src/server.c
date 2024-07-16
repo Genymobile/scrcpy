@@ -147,7 +147,7 @@ log_level_to_server_string(enum sc_log_level level) {
             return "error";
         default:
             assert(!"unexpected log level");
-            return "(unknown)";
+            return NULL;
     }
 }
 
@@ -183,6 +183,7 @@ sc_server_get_codec_name(enum sc_codec codec) {
         case SC_CODEC_RAW:
             return "raw";
         default:
+            assert(!"unexpected codec");
             return NULL;
     }
 }
@@ -197,6 +198,7 @@ sc_server_get_camera_facing_name(enum sc_camera_facing camera_facing) {
         case SC_CAMERA_FACING_EXTERNAL:
             return "external";
         default:
+            assert(!"unexpected camera facing");
             return NULL;
     }
 }
