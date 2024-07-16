@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.audio.AudioCaptureException;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
@@ -195,7 +196,8 @@ public final class Workarounds {
 
     @TargetApi(Build.VERSION_CODES.R)
     @SuppressLint("WrongConstant,MissingPermission")
-    public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) {
+    public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) throws
+            AudioCaptureException {
         // Vivo (and maybe some other third-party ROMs) modified `AudioRecord`'s constructor, requiring `Context`s from real App environment.
         //
         // This method invokes the `AudioRecord(long nativeRecordInJavaObj)` constructor to create an empty `AudioRecord` instance, then uses
@@ -336,8 +338,8 @@ public final class Workarounds {
 
             return audioRecord;
         } catch (Exception e) {
-            Ln.e("Failed to invoke AudioRecord.<init>.", e);
-            throw new RuntimeException("Cannot create AudioRecord");
+            Ln.e("Cannot create AudioRecord", e);
+            throw new AudioCaptureException();
         }
     }
 }

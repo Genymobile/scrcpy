@@ -109,7 +109,7 @@ public final class AudioCapture {
         }
     }
 
-    private void startRecording() {
+    private void startRecording() throws AudioCaptureException {
         try {
             recorder = createAudioRecord(audioSource);
         } catch (NullPointerException e) {
