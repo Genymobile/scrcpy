@@ -50,6 +50,12 @@ The list of possible codec options is available in the Android documentation:
 <https://d.android.com/reference/android/media/MediaFormat>
 
 .TP
+.B \-\-audio\-dup
+Duplicate audio (capture and keep playing on the device).
+
+This feature is only available with --audio-source=playback.
+
+.TP
 .BI "\-\-audio\-encoder " name
 Use a specific MediaCodec audio encoder (depending on the codec provided by \fB\-\-audio\-codec\fR).
 

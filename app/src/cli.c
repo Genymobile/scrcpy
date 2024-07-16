@@ -100,6 +100,7 @@ enum {
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
+    OPT_AUDIO_DUP,
 };
 
 struct sc_option {
@@ -176,6 +177,13 @@ static const struct sc_option options[] = {
                 "The list of possible codec options is available in the "
                 "Android documentation: "
                 "<https://d.android.com/reference/android/media/MediaFormat>",
+    },
+    {
+        .longopt_id = OPT_AUDIO_DUP,
+        .longopt = "audio-dup",
+        .text = "Duplicate audio (capture and keep playing on the device).\n"
+                "This feature is only available with --audio-source=playback."
+
     },
     {
         .longopt_id = OPT_AUDIO_ENCODER,
@@ -2615,6 +2623,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_WINDOW:
                 opts->window = false;
                 break;
+            case OPT_AUDIO_DUP:
+                opts->audio_dup = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2888,6 +2899,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         } else {
             opts->audio_source = SC_AUDIO_SOURCE_MIC;
             LOGI("Camera video source: microphone audio source selected");
+        }
+    }
+
+    if (opts->audio_dup) {
+        if (!opts->audio) {
+            LOGE("--audio-dup not supported if audio is disabled");
+            return false;
+        }
+
+        if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
+            LOGE("--audio-dup is specific to --audio-source=playback");
+            return false;
         }
     }
 

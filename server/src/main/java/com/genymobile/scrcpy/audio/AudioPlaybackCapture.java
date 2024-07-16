@@ -18,8 +18,14 @@ import java.nio.ByteBuffer;
 
 public final class AudioPlaybackCapture implements AudioCapture {
 
+    private final boolean keepPlayingOnDevice;
+
     private AudioRecord recorder;
     private AudioRecordReader reader;
+
+    public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
+        this.keepPlayingOnDevice = keepPlayingOnDevice;
+    }
 
     @SuppressLint("PrivateApi")
     private AudioRecord createAudioRecord() throws AudioCaptureException {
@@ -60,7 +66,8 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Method setFormat = audioMixBuilder.getClass().getMethod("setFormat", AudioFormat.class);
             setFormat.invoke(audioMixBuilder, AudioConfig.createAudioFormat());
 
-            int routeFlags = audioMixClass.getField("ROUTE_FLAG_LOOP_BACK").getInt(null);
+            String routeFlagName = keepPlayingOnDevice ? "ROUTE_FLAG_LOOP_BACK_RENDER" : "ROUTE_FLAG_LOOP_BACK";
+            int routeFlags = audioMixClass.getField(routeFlagName).getInt(null);
 
             // audioMixBuilder.setRouteFlags(routeFlag);
             Method setRouteFlags = audioMixBuilder.getClass().getMethod("setRouteFlags", int.class);

@@ -26,6 +26,7 @@ public class Options {
     private AudioCodec audioCodec = AudioCodec.OPUS;
     private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
+    private boolean audioDup;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private int maxFps;
@@ -98,6 +99,10 @@ public class Options {
 
     public AudioSource getAudioSource() {
         return audioSource;
+    }
+
+    public boolean getAudioDup() {
+        return audioDup;
     }
 
     public int getVideoBitRate() {
@@ -302,6 +307,9 @@ public class Options {
                         throw new IllegalArgumentException("Audio source " + value + " not supported");
                     }
                     options.audioSource = audioSource;
+                    break;
+                case "audio_dup":
+                    options.audioDup = Boolean.parseBoolean(value);
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8

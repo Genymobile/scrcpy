@@ -50,6 +50,7 @@ struct sc_server_params {
     uint32_t display_id;
     bool video;
     bool audio;
+    bool audio_dup;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;

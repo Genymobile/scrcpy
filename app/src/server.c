@@ -292,6 +292,9 @@ execute_server(struct sc_server *server,
         ADD_PARAM("audio_source=%s",
                   sc_server_get_audio_source_name(params->audio_source));
     }
+    if (params->audio_dup) {
+        ADD_PARAM("audio_dup=true");
+    }
     if (params->max_size) {
         ADD_PARAM("max_size=%" PRIu16, params->max_size);
     }

@@ -297,6 +297,7 @@ struct scrcpy_options {
     uint8_t list;
     bool window;
     bool mouse_hover;
+    bool audio_dup;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
