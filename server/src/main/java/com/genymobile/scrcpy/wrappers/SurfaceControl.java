@@ -134,7 +134,7 @@ public final class SurfaceControl {
         return getPhysicalDisplayIdsMethod;
     }
 
-    public static boolean hasPhysicalDisplayIdsMethod() {
+    public static boolean hasGetPhysicalDisplayIdsMethod() {
         try {
             getGetPhysicalDisplayIdsMethod();
             return true;

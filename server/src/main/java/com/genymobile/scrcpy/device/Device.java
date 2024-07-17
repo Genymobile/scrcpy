@@ -326,7 +326,7 @@ public final class Device {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             // On Android 14, these internal methods have been moved to DisplayControl
             boolean useDisplayControl =
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasPhysicalDisplayIdsMethod();
+                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasGetPhysicalDisplayIdsMethod();
 
             // Change the power mode for all physical displays
             long[] physicalDisplayIds = useDisplayControl ? DisplayControl.getPhysicalDisplayIds() : SurfaceControl.getPhysicalDisplayIds();
