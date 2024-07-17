@@ -323,7 +323,19 @@ public final class Device {
      * @param mode one of the {@code POWER_MODE_*} constants
      */
     public static boolean setScreenPowerMode(int mode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        boolean applyToMultiPhysicalDisplays = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+
+        if (applyToMultiPhysicalDisplays
+                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                && Build.BRAND.equalsIgnoreCase("honor")
+                && SurfaceControl.hasGetBuildInDisplayMethod()) {
+            // Workaround for Honor devices with Android 14:
+            //  - <https://github.com/Genymobile/scrcpy/issues/4823>
+            //  - <https://github.com/Genymobile/scrcpy/issues/4943>
+            applyToMultiPhysicalDisplays = false;
+        }
+
+        if (applyToMultiPhysicalDisplays) {
             // On Android 14, these internal methods have been moved to DisplayControl
             boolean useDisplayControl =
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasGetPhysicalDisplayIdsMethod();
