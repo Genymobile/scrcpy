@@ -94,6 +94,15 @@ public final class SurfaceControl {
         return getBuiltInDisplayMethod;
     }
 
+    public static boolean hasGetBuildInDisplayMethod() {
+        try {
+            getGetBuiltInDisplayMethod();
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+
     public static IBinder getBuiltInDisplay() {
         try {
             Method method = getGetBuiltInDisplayMethod();
