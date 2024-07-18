@@ -14,16 +14,21 @@
 #include "trait/key_processor.h"
 #include "trait/mouse_processor.h"
 
+#define MAX_GAME_CONTROLLERS 16
+
 struct sc_input_manager {
     struct sc_controller *controller;
     struct sc_file_pusher *fp;
     struct sc_screen *screen;
+    SDL_GameController *game_controllers[MAX_GAME_CONTROLLERS];
 
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
     struct sc_mouse_bindings mouse_bindings;
     bool has_secondary_click;
+    bool forward_game_controllers;
+    bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;
 
@@ -51,6 +56,8 @@ struct sc_input_manager_params {
     struct sc_mouse_processor *mp;
 
     struct sc_mouse_bindings mouse_bindings;
+    bool forward_game_controllers;
+    bool forward_all_clicks;
     bool legacy_paste;
     bool clipboard_autosync;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values

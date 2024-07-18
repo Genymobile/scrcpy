@@ -41,6 +41,9 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_UHID_CREATE,
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_AXIS,
+    SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_BUTTON,
+    SC_CONTROL_MSG_TYPE_INJECT_GAME_CONTROLLER_DEVICE,
 };
 
 enum sc_screen_power_mode {
@@ -106,6 +109,20 @@ struct sc_control_msg {
             uint16_t size;
             uint8_t data[SC_HID_MAX_SIZE];
         } uhid_input;
+        struct {
+            int16_t id;
+            uint8_t axis;
+            int16_t value;
+        } inject_game_controller_axis;
+        struct {
+            int16_t id;
+            uint8_t button;
+            uint8_t state;
+        } inject_game_controller_button;
+        struct {
+            int16_t id;
+            uint8_t event;
+        } inject_game_controller_device;
     };
 };
 

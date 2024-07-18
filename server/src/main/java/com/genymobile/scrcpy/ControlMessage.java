@@ -20,6 +20,9 @@ public final class ControlMessage {
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_AXIS = 15;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_BUTTON = 16;
+    public static final int TYPE_INJECT_GAME_CONTROLLER_DEVICE = 17;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -45,6 +48,12 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+    private int gameControllerId;
+    private int gameControllerAxis;
+    private int gameControllerAxisValue;
+    private int gameControllerButton;
+    private int gameControllerButtonState;
+    private int gameControllerDeviceEvent;
 
     private ControlMessage() {
     }
@@ -119,6 +128,32 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_SET_SCREEN_POWER_MODE;
         msg.action = mode;
+        return msg;
+    }
+
+    public static ControlMessage createInjectGameControllerAxis(int id, int axis, int value) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_AXIS;
+        msg.gameControllerId = id;
+        msg.gameControllerAxis = axis;
+        msg.gameControllerAxisValue = value;
+        return msg;
+    }
+
+    public static ControlMessage createInjectGameControllerButton(int id, int button, int state) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_BUTTON;
+        msg.gameControllerId = id;
+        msg.gameControllerButton = button;
+        msg.gameControllerButtonState = state;
+        return msg;
+    }
+
+    public static ControlMessage createInjectGameControllerDevice(int id, int event) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_INJECT_GAME_CONTROLLER_DEVICE;
+        msg.gameControllerId = id;
+        msg.gameControllerDeviceEvent = event;
         return msg;
     }
 
@@ -215,4 +250,28 @@ public final class ControlMessage {
     public byte[] getData() {
         return data;
     }
+    public int getGameControllerId() {
+        return gameControllerId;
+    }
+
+    public int getGameControllerAxis() {
+        return gameControllerAxis;
+    }
+
+    public int getGameControllerAxisValue() {
+        return gameControllerAxisValue;
+    }
+
+    public int getGameControllerButton() {
+        return gameControllerButton;
+    }
+
+    public int getGameControllerButtonState() {
+        return gameControllerButtonState;
+    }
+
+    public int getGameControllerDeviceEvent() {
+        return gameControllerDeviceEvent;
+    }
+
 }

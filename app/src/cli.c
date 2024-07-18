@@ -100,6 +100,7 @@ enum {
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
+    OPT_NO_GAME_CONTROLLER
 };
 
 struct sc_option {
@@ -556,6 +557,11 @@ static const struct sc_option options[] = {
         // deprecated
         .longopt_id = OPT_NO_DISPLAY,
         .longopt = "no-display",
+    },
+    {
+        .longopt_id = OPT_NO_GAME_CONTROLLER,
+        .longopt = "no-game-controller",
+        .text = "Disable game controller support.",
     },
     {
         .longopt_id = OPT_NO_KEY_REPEAT,
@@ -2369,6 +2375,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_MIPMAPS:
                 opts->mipmaps = false;
+                break;
+            case OPT_NO_GAME_CONTROLLER:
+                opts->forward_game_controllers = false;
                 break;
             case OPT_NO_KEY_REPEAT:
                 opts->forward_key_repeat = false;

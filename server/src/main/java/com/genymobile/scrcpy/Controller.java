@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
+import android.util.SparseArray;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -46,6 +47,9 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
+    private SparseArray<GameController> gameControllers = new SparseArray<GameController>();
+    private boolean gameControllersEnabled;
+
     public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
         this.controlChannel = controlChannel;
@@ -54,6 +58,14 @@ public class Controller implements AsyncProcessor {
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
+
+        try {
+            UinputDevice.loadNativeLibraries();
+            gameControllersEnabled = true;
+        } catch (UnsatisfiedLinkError e) {
+            Ln.e("Could not load native libraries. Game controllers will be disabled.", e);
+            gameControllersEnabled = false;
+        }
     }
 
     private UhidManager getUhidManager() {
@@ -212,6 +224,69 @@ public class Controller implements AsyncProcessor {
                 break;
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 openHardKeyboardSettings();
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_AXIS:
+                if (gameControllersEnabled) {
+                    int id = msg.getGameControllerId();
+                    int axis = msg.getGameControllerAxis();
+                    int value = msg.getGameControllerAxisValue();
+
+                    GameController controller = gameControllers.get(id);
+
+                    if (controller != null) {
+                        controller.setAxis(axis, value);
+                    } else {
+                        Ln.w("Received data for non-existant controller.");
+                    }
+                    break;
+                }
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_BUTTON:
+                if (gameControllersEnabled) {
+                    int id = msg.getGameControllerId();
+                    int button = msg.getGameControllerButton();
+                    int state = msg.getGameControllerButtonState();
+
+                    GameController controller = gameControllers.get(id);
+
+                    if (controller != null) {
+                        controller.setButton(button, state);
+                    } else {
+                        Ln.w("Received data for non-existant controller.");
+                    }
+                }
+                break;
+            case ControlMessage.TYPE_INJECT_GAME_CONTROLLER_DEVICE:
+                if (gameControllersEnabled) {
+                    int id = msg.getGameControllerId();
+                    int event = msg.getGameControllerDeviceEvent();
+
+                    switch (event) {
+                        case GameController.DEVICE_ADDED:
+                            try {
+                                gameControllers.append(id, new GameController());
+                            } catch (Exception e) {
+                                Ln.e("Failed to add new game controller. Game controllers will be disabled.", e);
+                                gameControllersEnabled = false;
+                            }
+                            break;
+
+                        case GameController.DEVICE_REMOVED:
+                            GameController controller = gameControllers.get(id);
+
+                            if (controller != null) {
+                                controller.close();
+                                gameControllers.delete(id);
+                            } else {
+                                Ln.w("Non-existant game controller removed.");
+                            }
+
+                            break;
+
+                        default:
+                            Ln.w("Unknown game controller event received.");
+                    }
+                }
                 break;
             default:
                 // do nothing
