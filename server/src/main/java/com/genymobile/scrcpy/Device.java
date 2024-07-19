@@ -59,7 +59,9 @@ public final class Device {
     /**
      * Logical display identifier
      */
-    private final int displayId;
+    private int displayId;
+
+    private ScreenCapture sc;
 
     /**
      * The surface flinger layer stack associated with this logical display
@@ -69,11 +71,19 @@ public final class Device {
     private final boolean supportsInputEvents;
 
     public Device(Options options) throws ConfigurationException {
-        displayId = options.getDisplayId();
-        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-        if (displayInfo == null) {
-            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-            throw new ConfigurationException("Unknown display id: " + displayId);
+        Size newDisplaySize = options.getCreateNewDisplay();
+        DisplayInfo displayInfo;
+        if (newDisplaySize != null) {
+            displayId = -1;
+            deviceSize = newDisplaySize;
+            displayInfo = new DisplayInfo(displayId, deviceSize, 0, 0, 0);
+        } else {
+            displayId = options.getDisplayId();
+            displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+            if (displayInfo == null) {
+                Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+                throw new ConfigurationException("Unknown display id: " + displayId);
+            }
         }
 
         int displayInfoFlags = displayInfo.getFlags();
@@ -86,45 +96,47 @@ public final class Device {
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
         layerStack = displayInfo.getLayerStack();
 
-        ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                synchronized (Device.this) {
-                    screenInfo = screenInfo.withDeviceRotation(rotation);
+        if (displayId >= 0) {
+            ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
+                @Override
+                public void onRotationChanged(int rotation) {
+                    synchronized (Device.this) {
+                        screenInfo = screenInfo.withDeviceRotation(rotation);
 
-                    // notify
-                    if (rotationListener != null) {
-                        rotationListener.onRotationChanged(rotation);
+                        // notify
+                        if (rotationListener != null) {
+                            rotationListener.onRotationChanged(rotation);
+                        }
                     }
                 }
-            }
-        }, displayId);
+            }, displayId);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
-                @Override
-                public void onDisplayFoldChanged(int displayId, boolean folded) {
-                    if (Device.this.displayId != displayId) {
-                        // Ignore events related to other display ids
-                        return;
-                    }
-
-                    synchronized (Device.this) {
-                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                        if (displayInfo == null) {
-                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
+                    @Override
+                    public void onDisplayFoldChanged(int displayId, boolean folded) {
+                        if (Device.this.displayId != displayId) {
+                            // Ignore events related to other display ids
                             return;
                         }
 
-                        deviceSize = displayInfo.getSize();
-                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-                        // notify
-                        if (foldListener != null) {
-                            foldListener.onFoldChanged(displayId, folded);
+                        synchronized (Device.this) {
+                            DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                            if (displayInfo == null) {
+                                Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+                                return;
+                            }
+
+                            deviceSize = displayInfo.getSize();
+                            screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
+                            // notify
+                            if (foldListener != null) {
+                                foldListener.onFoldChanged(displayId, folded);
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
 
         if (options.getControl() && options.getClipboardAutosync()) {
@@ -168,6 +180,14 @@ public final class Device {
         return displayId;
     }
 
+    public void setDisplayId(int i) {
+        displayId = i;
+    }
+
+    public void setScreenCapture(ScreenCapture cap) {
+        sc = cap;
+    }
+
     public synchronized void setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
         screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
@@ -204,6 +224,12 @@ public final class Device {
         int convertedX = contentRect.left + point.getX() * contentRect.width() / unlockedVideoSize.getWidth();
         int convertedY = contentRect.top + point.getY() * contentRect.height() / unlockedVideoSize.getHeight();
         return new Point(convertedX, convertedY);
+    }
+
+    public void resizeDisplay(int width, int height) {
+        if (sc == null) return;
+        screenInfo = new ScreenInfo(new Rect(0, 0, width, height), new Size(width, height), 0, 0);
+        sc.resizeDisplay(width, height);
     }
 
     public static String getDeviceName() {

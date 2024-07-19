@@ -31,6 +31,10 @@ struct sc_screen {
     struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
 
+    // Whether the underlying display on the device is virtual -
+    // this allows resizing with the window
+    bool is_virtual;
+
     // The initial requested window properties
     struct {
         int16_t x;
@@ -92,6 +96,7 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+    bool is_virtual;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

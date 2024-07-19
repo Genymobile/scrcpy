@@ -374,6 +374,7 @@ scrcpy(struct scrcpy_options *options) {
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
         .display_id = options->display_id,
+        .create_new_display = options->create_new_display,
         .video = options->video,
         .audio = options->audio,
         .show_touches = options->show_touches,
@@ -708,6 +709,7 @@ scrcpy(struct scrcpy_options *options) {
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .is_virtual = options->create_new_display != NULL,
         };
 
         struct sc_frame_source *src = &s->video_decoder.frame_source;

@@ -20,6 +20,7 @@ public final class ControlMessage {
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
+    public static final int TYPE_RESIZE_DISPLAY = 15;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -45,6 +46,8 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+    private int width;
+    private int height;
 
     private ControlMessage() {
     }
@@ -144,6 +147,14 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createResizeDisplay(int width, int height) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_RESIZE_DISPLAY;
+        msg.width = width - (width % 16);
+        msg.height = height - (height % 16);
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -214,5 +225,13 @@ public final class ControlMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
     }
 }

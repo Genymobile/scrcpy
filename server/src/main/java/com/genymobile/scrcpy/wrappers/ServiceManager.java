@@ -37,7 +37,7 @@ public final class ServiceManager {
         /* not instantiable */
     }
 
-    static IInterface getService(String service, String type) {
+    public static IInterface getService(String service, String type) {
         try {
             IBinder binder = (IBinder) GET_SERVICE_METHOD.invoke(null, service);
             Method asInterfaceMethod = Class.forName(type + "$Stub").getMethod("asInterface", IBinder.class);

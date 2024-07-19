@@ -3,17 +3,26 @@ package com.genymobile.scrcpy;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
+import android.content.Context;
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
+import android.util.DisplayMetrics;
+
+import java.lang.reflect.Constructor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenCapture extends SurfaceCapture implements Device.RotationListener, Device.FoldListener {
 
     private final Device device;
     private IBinder display;
     private VirtualDisplay virtualDisplay;
+    private boolean isFresh = false;
+    private int lastWidth;
+    private int lastHeight;
 
     public ScreenCapture(Device device) {
         this.device = device;
@@ -27,6 +36,24 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void start(Surface surface) {
+        // change the surface
+        if (isFresh && virtualDisplay != null) {
+            Size s = getSize();
+            DisplayMetrics m = new DisplayMetrics();
+            virtualDisplay.getDisplay().getMetrics(m);
+            Ln.d("Real resize: size is " + s.getWidth() + "x" + s.getHeight() + " dpi=" + m.densityDpi);
+            if (m.widthPixels == s.getWidth() && m.heightPixels + 24 == s.getHeight()) {
+                Ln.d("Virtual display is same size, nothing to do");
+            } else {
+                Ln.d("Old size is " + m.widthPixels + "x" + m.heightPixels);
+                virtualDisplay.resize(s.getWidth(), s.getHeight(), m.densityDpi);
+            }
+            virtualDisplay.setSurface(surface);
+            int i = virtualDisplay.getDisplay().getDisplayId();
+            device.setDisplayId(i);
+            return;
+        }
+
         ScreenInfo screenInfo = device.getScreenInfo();
         Rect contentRect = screenInfo.getContentRect();
 
@@ -45,14 +72,29 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         }
 
         try {
+            if (device.getDisplayId() < 0) throw new Exception("Fake exception to use DisplayManager API for new display");
             display = createDisplay();
             setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
             Ln.d("Display: using SurfaceControl API");
         } catch (Exception surfaceControlException) {
             Rect videoRect = screenInfo.getVideoSize().toRect();
             try {
-                virtualDisplay = ServiceManager.getDisplayManager()
-                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+                if (device.getDisplayId() < 0) {
+                    Constructor<DisplayManager> ctor = DisplayManager.class.getDeclaredConstructor(Context.class);
+                    ctor.setAccessible(true);
+                    DisplayManager dm = ctor.newInstance(FakeContext.get());
+                    Ln.d("Video rect = " + videoRect.width() + "x" + videoRect.height());
+                    virtualDisplay = dm
+                            .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), /*FIXME: configure DPI*/160, surface,
+                                    /*flags*/ 1 << 0 | 1 << 3 | 1 << 6 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14);
+                    int i = virtualDisplay.getDisplay().getDisplayId();
+                    device.setDisplayId(i);
+                    Ln.d("Virtual display id is " + i);
+                    isFresh = true;
+                } else {
+                    virtualDisplay = ServiceManager.getDisplayManager()
+                            .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+                }
                 Ln.d("Display: using DisplayManager API");
             } catch (Exception displayManagerException) {
                 Ln.e("Could not create display using SurfaceControl", surfaceControlException);
@@ -80,6 +122,32 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
     public boolean setMaxSize(int maxSize) {
         device.setMaxSize(maxSize);
         return true;
+    }
+
+    public void resizeDisplay(int width, int height) {
+        if (virtualDisplay == null || !isFresh) {
+            Ln.d("Tried to resize without fresh virtual display");
+            return;
+        }
+        DisplayMetrics m = new DisplayMetrics();
+        virtualDisplay.getDisplay().getMetrics(m);
+        if (m.widthPixels == width && m.heightPixels + 24 == height) {
+            Ln.d("Virtual display is same size, nothing to do");
+            return;
+        }
+        Ln.d("New size is " + width + "x" + height + " dpi=" + m.densityDpi);
+        virtualDisplay.setSurface(null);
+        virtualDisplay.resize(width, height, m.densityDpi);
+        //resizeWidth = width;
+        //resizeHeight = height;
+        //isResizing.set(true);
+        
+        // makes sure that fallback code works fine
+        //device.setDisplayId(-1);
+        // Device should set the new screenInfo
+        requestReset();
+        // hack
+        //resetCapture.getAndSet(true);
     }
 
     @Override
