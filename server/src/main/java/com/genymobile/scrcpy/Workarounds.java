@@ -72,6 +72,11 @@ public final class Workarounds {
             //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
             mustFillAppInfo = true;
             mustFillAppContext = true;
+        } else if (Build.BRAND.equalsIgnoreCase("tcl") && Build.VERSION.SDK_INT == Build.VERSION_CODES.S) {
+            // Workarounds must be applied for certain TCL devices:
+            //  - <https://github.com/Genymobile/scrcpy/issues/5140>
+            mustFillAppInfo = true;
+            mustFillAppContext = true;
         }
 
         if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
