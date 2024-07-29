@@ -288,7 +288,9 @@ execute_server(struct sc_server *server,
         assert(params->video_source == SC_VIDEO_SOURCE_CAMERA);
         ADD_PARAM("video_source=camera");
     }
-    if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT) {
+    // If audio is enabled, an "auto" audio source must have been resolved
+    assert(params->audio_source != SC_AUDIO_SOURCE_AUTO || !params->audio);
+    if (params->audio_source != SC_AUDIO_SOURCE_OUTPUT && params->audio) {
         ADD_PARAM("audio_source=%s",
                   sc_server_get_audio_source_name(params->audio_source));
     }
