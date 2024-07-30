@@ -51,66 +51,18 @@ public final class Workarounds {
         // not instantiable
     }
 
-    public static void apply(boolean audio, boolean camera) {
-        boolean mustFillConfigurationController = false;
-        boolean mustFillAppInfo = false;
-        boolean mustFillAppContext = false;
-
-        if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            // Workarounds must be applied for Meizu phones:
-            //  - <https://github.com/Genymobile/scrcpy/issues/240>
-            //  - <https://github.com/Genymobile/scrcpy/issues/365>
-            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
-            //
-            // But only apply when strictly necessary, since workarounds can cause other issues:
-            //  - <https://github.com/Genymobile/scrcpy/issues/940>
-            //  - <https://github.com/Genymobile/scrcpy/issues/994>
-            mustFillAppInfo = true;
-        } else if (Build.BRAND.equalsIgnoreCase("honor") || Build.MANUFACTURER.equalsIgnoreCase("skyworth") || Build.BRAND.equalsIgnoreCase("tcl")) {
-            // More workarounds must be applied for Honor devices:
-            //  - <https://github.com/Genymobile/scrcpy/issues/4015>
-            // for Skyworth devices:
-            //  - <https://github.com/Genymobile/scrcpy/issues/4922>
-            // and for TCL devices:
-            //  - <https://github.com/Genymobile/scrcpy/issues/5140>
-            //
-            // The system context must not be set for all devices, because it would cause other problems:
-            //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
-            //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
-            mustFillAppInfo = true;
-            mustFillAppContext = true;
-        }
-
-        if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-            // Before Android 11, audio is not supported.
-            // Since Android 12, we can properly set a context on the AudioRecord.
-            // Only on Android 11 we must fill the application context for the AudioRecord to work.
-            mustFillAppContext = true;
-        }
-
-        if (camera) {
-            mustFillAppInfo = true;
-            mustFillAppContext = true;
-        }
-
+    public static void apply() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // On some Samsung devices, DisplayManagerGlobal.getDisplayInfoLocked() calls ActivityThread.currentActivityThread().getConfiguration(),
             // which requires a non-null ConfigurationController.
             // ConfigurationController was introduced in Android 12, so do not attempt to set it on lower versions.
             // <https://github.com/Genymobile/scrcpy/issues/4467>
-            mustFillConfigurationController = true;
-        }
-
-        if (mustFillConfigurationController) {
-            // Must be call before fillAppContext() because it is necessary to get a valid system context
+            // Must be called before fillAppContext() because it is necessary to get a valid system context.
             fillConfigurationController();
         }
-        if (mustFillAppInfo) {
-            fillAppInfo();
-        }
-        if (mustFillAppContext) {
-            fillAppContext();
-        }
+
+        fillAppInfo();
+        fillAppContext();
     }
 
     @SuppressWarnings("deprecation")

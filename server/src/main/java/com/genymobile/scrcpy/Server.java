@@ -144,7 +144,7 @@ public final class Server {
 
         final Device device = camera ? null : new Device(options);
 
-        Workarounds.apply(audio, camera);
+        Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
@@ -279,7 +279,7 @@ public final class Server {
                 Ln.i(LogUtils.buildDisplayListMessage());
             }
             if (options.getListCameras() || options.getListCameraSizes()) {
-                Workarounds.apply(false, true);
+                Workarounds.apply();
                 Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
             }
             // Just print the requested data, do not mirror
