@@ -328,6 +328,13 @@ public final class Device {
             boolean useDisplayControl =
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasGetPhysicalDisplayIdsMethod();
 
+            if (useDisplayControl && Build.BRAND.equalsIgnoreCase("honor")) {
+                // Workaround for Honor devices with Android 14:
+                //  - <https://github.com/Genymobile/scrcpy/issues/4823>
+                //  - <https://github.com/Genymobile/scrcpy/issues/4943>
+                useDisplayControl = false;
+            }
+
             // Change the power mode for all physical displays
             long[] physicalDisplayIds = useDisplayControl ? DisplayControl.getPhysicalDisplayIds() : SurfaceControl.getPhysicalDisplayIds();
             if (physicalDisplayIds == null) {
