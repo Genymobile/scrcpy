@@ -50,6 +50,12 @@ The list of possible codec options is available in the Android documentation:
 <https://d.android.com/reference/android/media/MediaFormat>
 
 .TP
+.B \-\-audio\-dup
+Duplicate audio (capture and keep playing on the device).
+
+This feature is only available with --audio-source=playback.
+
+.TP
 .BI "\-\-audio\-encoder " name
 Use a specific MediaCodec audio encoder (depending on the codec provided by \fB\-\-audio\-codec\fR).
 
@@ -57,7 +63,13 @@ The available encoders can be listed by \fB\-\-list\-encoders\fR.
 
 .TP
 .BI "\-\-audio\-source " source
-Select the audio source (output or mic).
+Select the audio source (output, mic or playback).
+
+The "output" source forwards the whole audio output, and disables playback on the device.
+
+The "playback" source captures the audio playback (Android apps can opt-out, so the whole output is not necessarily captured).
+
+The "mic" source captures the microphone.
 
 Default is output.
 
@@ -258,10 +270,14 @@ LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse bac
 Also see \fB\-\-keyboard\fR.
 
 .TP
-.BI "\-\-mouse\-bind " xxxx
+.BI "\-\-mouse\-bind " xxxx[:xxxx]
 Configure bindings of secondary clicks.
 
-The argument must be exactly 4 characters, one for each secondary click (in order: right click, middle click, 4th click, 5th click).
+The argument must be one or two sequences (separated by ':') of exactly 4 characters, one for each secondary click (in order: right click, middle click, 4th click, 5th click).
+
+The first sequence defines the primary bindings, used when a mouse button is pressed alone. The second sequence defines the secondary bindings, used when a mouse button is pressed while the Shift key is held.
+
+If the second sequence of bindings is omitted, then it is the same as the first one.
 
 Each character must be one of the following:
 
@@ -272,7 +288,7 @@ Each character must be one of the following:
  - 's': trigger shortcut APP_SWITCH
  - 'n': trigger shortcut "expand notification panel"
 
-Default is 'bhsn' for SDK mouse, and '++++' for AOA and UHID.
+Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA and UHID.
 
 
 .TP

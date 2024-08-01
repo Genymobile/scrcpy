@@ -6,6 +6,7 @@ _scrcpy() {
         --audio-buffer=
         --audio-codec=
         --audio-codec-options=
+        --audio-dup
         --audio-encoder=
         --audio-source=
         --audio-output-buffer=
@@ -111,7 +112,7 @@ _scrcpy() {
             return
             ;;
         --audio-source)
-            COMPREPLY=($(compgen -W 'output mic' -- "$cur"))
+            COMPREPLY=($(compgen -W 'output mic playback' -- "$cur"))
             return
             ;;
         --camera-facing)

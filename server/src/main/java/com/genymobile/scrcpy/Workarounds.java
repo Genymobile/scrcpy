@@ -1,5 +1,8 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.audio.AudioCaptureException;
+import com.genymobile.scrcpy.util.Ln;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
@@ -48,62 +51,18 @@ public final class Workarounds {
         // not instantiable
     }
 
-    public static void apply(boolean audio, boolean camera) {
-        boolean mustFillConfigurationController = false;
-        boolean mustFillAppInfo = false;
-        boolean mustFillAppContext = false;
-
-        if (Build.BRAND.equalsIgnoreCase("meizu")) {
-            // Workarounds must be applied for Meizu phones:
-            //  - <https://github.com/Genymobile/scrcpy/issues/240>
-            //  - <https://github.com/Genymobile/scrcpy/issues/365>
-            //  - <https://github.com/Genymobile/scrcpy/issues/2656>
-            //
-            // But only apply when strictly necessary, since workarounds can cause other issues:
-            //  - <https://github.com/Genymobile/scrcpy/issues/940>
-            //  - <https://github.com/Genymobile/scrcpy/issues/994>
-            mustFillAppInfo = true;
-        } else if (Build.BRAND.equalsIgnoreCase("honor")) {
-            // More workarounds must be applied for Honor devices:
-            //  - <https://github.com/Genymobile/scrcpy/issues/4015>
-            //
-            // The system context must not be set for all devices, because it would cause other problems:
-            //  - <https://github.com/Genymobile/scrcpy/issues/4015#issuecomment-1595382142>
-            //  - <https://github.com/Genymobile/scrcpy/issues/3805#issuecomment-1596148031>
-            mustFillAppInfo = true;
-            mustFillAppContext = true;
-        }
-
-        if (audio && Build.VERSION.SDK_INT == Build.VERSION_CODES.R) {
-            // Before Android 11, audio is not supported.
-            // Since Android 12, we can properly set a context on the AudioRecord.
-            // Only on Android 11 we must fill the application context for the AudioRecord to work.
-            mustFillAppContext = true;
-        }
-
-        if (camera) {
-            mustFillAppInfo = true;
-            mustFillAppContext = true;
-        }
-
+    public static void apply() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // On some Samsung devices, DisplayManagerGlobal.getDisplayInfoLocked() calls ActivityThread.currentActivityThread().getConfiguration(),
             // which requires a non-null ConfigurationController.
             // ConfigurationController was introduced in Android 12, so do not attempt to set it on lower versions.
             // <https://github.com/Genymobile/scrcpy/issues/4467>
-            mustFillConfigurationController = true;
-        }
-
-        if (mustFillConfigurationController) {
-            // Must be call before fillAppContext() because it is necessary to get a valid system context
+            // Must be called before fillAppContext() because it is necessary to get a valid system context.
             fillConfigurationController();
         }
-        if (mustFillAppInfo) {
-            fillAppInfo();
-        }
-        if (mustFillAppContext) {
-            fillAppContext();
-        }
+
+        fillAppInfo();
+        fillAppContext();
     }
 
     @SuppressWarnings("deprecation")
@@ -191,7 +150,8 @@ public final class Workarounds {
 
     @TargetApi(Build.VERSION_CODES.R)
     @SuppressLint("WrongConstant,MissingPermission")
-    public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) {
+    public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) throws
+            AudioCaptureException {
         // Vivo (and maybe some other third-party ROMs) modified `AudioRecord`'s constructor, requiring `Context`s from real App environment.
         //
         // This method invokes the `AudioRecord(long nativeRecordInJavaObj)` constructor to create an empty `AudioRecord` instance, then uses
@@ -332,8 +292,8 @@ public final class Workarounds {
 
             return audioRecord;
         } catch (Exception e) {
-            Ln.e("Failed to invoke AudioRecord.<init>.", e);
-            throw new RuntimeException("Cannot create AudioRecord");
+            Ln.e("Cannot create AudioRecord", e);
+            throw new AudioCaptureException();
         }
     }
 }

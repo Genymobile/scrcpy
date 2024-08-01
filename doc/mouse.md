@@ -80,21 +80,37 @@ process like the _adb daemon_).
 
 ## Mouse bindings
 
-By default, with SDK mouse, right-click triggers BACK (or POWER on) and
-middle-click triggers HOME. In addition, the 4th click triggers APP_SWITCH and
-the 5th click expands the notification panel.
+By default, with SDK mouse:
+ - right-click triggers BACK (or POWER on)
+ - middle-click triggers HOME
+ - the 4th click triggers APP_SWITCH
+ - the 5th click expands the notification panel
 
-In AOA and UHID mouse modes, all clicks are forwarded by default.
+The secondary clicks may be forwarded to the device instead by pressing the
+<kbd>Shift</kbd> key (e.g. <kbd>Shift</kbd>+right-click injects a right click to
+the device).
 
-The shortcuts can be configured using `--mouse-bind=xxxx` for any mouse mode.
-The argument must be exactly 4 characters, one for each secondary click:
+In AOA and UHID mouse modes, the default bindings are reversed: all clicks are
+forwarded by default, and pressing <kbd>Shift</kbd> gives access to the
+shortcuts (since the cursor is handled on the device side, it makes more sense
+to forward all mouse buttons by default in these modes).
+
+The shortcuts can be configured using `--mouse-bind=xxxx:xxxx` for any mouse
+mode. The argument must be one or two sequences (separated by `:`) of exactly 4
+characters, one for each secondary click:
 
 ```
---mouse-bind=xxxx
+                  .---- Shift + right click
+       SECONDARY  |.--- Shift + middle click
+        BINDINGS  ||.-- Shift + 4th click
+                  |||.- Shift + 5th click
+                  ||||
+                  vvvv
+--mouse-bind=xxxx:xxxx
              ^^^^
              ||||
-             ||| `- 5th click
-             || `-- 4th click
+   PRIMARY   ||| `- 5th click
+  BINDINGS   || `-- 4th click
              | `--- middle click
               `---- right click
 ```
@@ -111,8 +127,18 @@ Each character must be one of the following:
 For example:
 
 ```bash
-scrcpy --mouse-bind=bhsn  # the default mode with SDK mouse
-scrcpy --mouse-bind=++++  # forward all clicks (default for AOA/UHID)
-scrcpy --mouse-bind=++bh  # forward right and middle clicks,
-                          # use 4th and 5th for BACK and HOME
+scrcpy --mouse-bind=bhsn:++++  # the default mode for SDK mouse
+scrcpy --mouse-bind=++++:bhsn  # the default mode for AOA and UHID
+scrcpy --mouse-bind=++bh:++sn  # forward right and middle clicks,
+                               # use 4th and 5th for BACK and HOME,
+                               # use Shift+4th and Shift+5th for APP_SWITCH
+                               # and expand notification panel
+```
+
+The second sequence of bindings may be omitted. In that case, it is the same as
+the first one:
+
+```bash
+scrcpy --mouse-bind=bhsn
+scrcpy --mouse-bind=bhsn:bhsn  # equivalent
 ```

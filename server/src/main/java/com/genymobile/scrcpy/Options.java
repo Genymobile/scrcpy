@@ -1,5 +1,15 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.CodecOption;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.video.CameraAspectRatio;
+import com.genymobile.scrcpy.video.CameraFacing;
+import com.genymobile.scrcpy.video.VideoCodec;
+import com.genymobile.scrcpy.video.VideoSource;
+
 import android.graphics.Rect;
 
 import java.util.List;
@@ -16,6 +26,7 @@ public class Options {
     private AudioCodec audioCodec = AudioCodec.OPUS;
     private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
+    private boolean audioDup;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private int maxFps;
@@ -88,6 +99,10 @@ public class Options {
 
     public AudioSource getAudioSource() {
         return audioSource;
+    }
+
+    public boolean getAudioDup() {
+        return audioDup;
     }
 
     public int getVideoBitRate() {
@@ -292,6 +307,9 @@ public class Options {
                         throw new IllegalArgumentException("Audio source " + value + " not supported");
                     }
                     options.audioSource = audioSource;
+                    break;
+                case "audio_dup":
+                    options.audioDup = Boolean.parseBoolean(value);
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
