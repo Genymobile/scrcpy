@@ -148,11 +148,14 @@ documented in the following pages:
 
 ## Contact
 
-If you encounter a bug, please read the [FAQ](FAQ.md) first, then open an [issue].
+You can open an [issue] for bug reports, feature requests or general questions.
+
+For bug reports, please read the [FAQ](FAQ.md) first, you might find a solution
+to your problem immediately.
 
 [issue]: https://github.com/Genymobile/scrcpy/issues
 
-For general questions or discussions, you can also use:
+You can also use:
 
  - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
  - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
