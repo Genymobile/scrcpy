@@ -278,8 +278,9 @@ public class Controller implements AsyncProcessor {
         pointer.setPressure(pressure);
 
         int source;
-        if (pointerId == POINTER_ID_MOUSE) {
-            // real mouse event
+        boolean activeSecondaryButtons = ((actionButton | buttons) & ~MotionEvent.BUTTON_PRIMARY) != 0;
+        if (pointerId == POINTER_ID_MOUSE && (action == MotionEvent.ACTION_HOVER_MOVE || activeSecondaryButtons)) {
+            // real mouse event, or event incompatible with a finger
             pointerProperties[pointerIndex].toolType = MotionEvent.TOOL_TYPE_MOUSE;
             source = InputDevice.SOURCE_MOUSE;
             pointer.setUp(buttons == 0);
