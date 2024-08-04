@@ -269,13 +269,18 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
 }
 
 static void
-sc_controller_on_error(struct sc_controller *controller, void *userdata) {
+sc_controller_on_ended(struct sc_controller *controller, bool error,
+                       void *userdata) {
     // Note: this function may be called twice, once from the controller thread
     // and once from the receiver thread
     (void) controller;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
+    if (error) {
+        PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
+    } else {
+        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+    }
 }
 
 static void
@@ -389,6 +394,7 @@ scrcpy(struct scrcpy_options *options) {
         .display_id = options->display_id,
         .video = options->video,
         .audio = options->audio,
+        .audio_dup = options->audio_dup,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
         .video_codec_options = options->video_codec_options,
@@ -567,7 +573,7 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
-            .on_error = sc_controller_on_error,
+            .on_ended = sc_controller_on_ended,
         };
 
         if (!sc_controller_init(&s->controller, s->server.control_socket,
@@ -730,23 +736,20 @@ scrcpy(struct scrcpy_options *options) {
             .start_fps_counter = options->start_fps_counter,
         };
 
-        struct sc_frame_source *src;
-        if (options->video_playback) {
-            src = &s->video_decoder.frame_source;
-            if (options->display_buffer) {
-                sc_delay_buffer_init(&s->display_buffer,
-                                     options->display_buffer, true);
-                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
-                src = &s->display_buffer.frame_source;
-            }
-        }
-
         if (!sc_screen_init(&s->screen, &screen_params)) {
             goto end;
         }
         screen_initialized = true;
 
         if (options->video_playback) {
+            struct sc_frame_source *src = &s->video_decoder.frame_source;
+            if (options->display_buffer) {
+                sc_delay_buffer_init(&s->display_buffer,
+                                     options->display_buffer, true);
+                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
+                src = &s->display_buffer.frame_source;
+            }
+
             sc_frame_source_add_sink(src, &s->screen.frame_sink);
         }
     }

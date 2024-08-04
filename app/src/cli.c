@@ -100,6 +100,7 @@ enum {
     OPT_NO_WINDOW,
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
+    OPT_AUDIO_DUP,
 };
 
 struct sc_option {
@@ -178,6 +179,13 @@ static const struct sc_option options[] = {
                 "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
+        .longopt_id = OPT_AUDIO_DUP,
+        .longopt = "audio-dup",
+        .text = "Duplicate audio (capture and keep playing on the device).\n"
+                "This feature is only available with --audio-source=playback."
+
+    },
+    {
         .longopt_id = OPT_AUDIO_ENCODER,
         .longopt = "audio-encoder",
         .argdesc = "name",
@@ -189,7 +197,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_SOURCE,
         .longopt = "audio-source",
         .argdesc = "source",
-        .text = "Select the audio source (output or mic).\n"
+        .text = "Select the audio source (output, mic or playback).\n"
+                "The \"output\" source forwards the whole audio output, and "
+                "disables playback on the device.\n"
+                "The \"playback\" source captures the audio playback (Android "
+                "apps can opt-out, so the whole output is not necessarily "
+                "captured).\n"
+                "The \"mic\" source captures the microphone.\n"
                 "Default is output.",
     },
     {
@@ -493,11 +507,17 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_MOUSE_BIND,
         .longopt = "mouse-bind",
-        .argdesc = "xxxx",
+        .argdesc = "xxxx[:xxxx]",
         .text = "Configure bindings of secondary clicks.\n"
-                "The argument must be exactly 4 characters, one for each "
-                "secondary click (in order: right click, middle click, 4th "
-                "click, 5th click).\n"
+                "The argument must be one or two sequences (separated by ':') "
+                "of exactly 4 characters, one for each secondary click (in "
+                "order: right click, middle click, 4th click, 5th click).\n"
+                "The first sequence defines the primary bindings, used when a "
+                "mouse button is pressed alone. The second sequence defines "
+                "the secondary bindings, used when a mouse button is pressed "
+                "while the Shift key is held.\n"
+                "If the second sequence of bindings is omitted, then it is the "
+                "same as the first one.\n"
                 "Each character must be one of the following:\n"
                 " '+': forward the click to the device\n"
                 " '-': ignore the click\n"
@@ -505,7 +525,8 @@ static const struct sc_option options[] = {
                 " 'h': trigger shortcut HOME\n"
                 " 's': trigger shortcut APP_SWITCH\n"
                 " 'n': trigger shortcut \"expand notification panel\"\n"
-                "Default is 'bhsn' for SDK mouse, and '++++' for AOA and UHID.",
+                "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
+                "and UHID.",
     },
     {
         .shortopt = 'n',
@@ -1924,7 +1945,13 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
         return true;
     }
 
-    LOGE("Unsupported audio source: %s (expected output or mic)", optarg);
+    if (!strcmp(optarg, "playback")) {
+        *source = SC_AUDIO_SOURCE_PLAYBACK;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output, mic or playback)",
+         optarg);
     return false;
 }
 
@@ -2095,24 +2122,46 @@ parse_mouse_binding(char c, enum sc_mouse_binding *b) {
 }
 
 static bool
-parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
-    if (strlen(s) != 4) {
-        LOGE("Invalid mouse bindings: '%s' (expected exactly 4 characters from "
-             "{'+', '-', 'b', 'h', 's', 'n'})", s);
+parse_mouse_binding_set(const char *s, struct sc_mouse_binding_set *mbs) {
+    assert(strlen(s) >= 4);
+
+    if (!parse_mouse_binding(s[0], &mbs->right_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[1], &mbs->middle_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[2], &mbs->click4)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[3], &mbs->click5)) {
         return false;
     }
 
-    if (!parse_mouse_binding(s[0], &mb->right_click)) {
+    return true;
+}
+
+static bool
+parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
+    size_t len = strlen(s);
+    // either "xxxx" or "xxxx:xxxx"
+    if (len != 4 && (len != 9 || s[4] != ':')) {
+        LOGE("Invalid mouse bindings: '%s' (expected 'xxxx' or 'xxxx:xxxx', "
+             "with each 'x' being in {'+', '-', 'b', 'h', 's', 'n'})", s);
         return false;
     }
-    if (!parse_mouse_binding(s[1], &mb->middle_click)) {
+
+    if (!parse_mouse_binding_set(s, &mb->pri)) {
         return false;
     }
-    if (!parse_mouse_binding(s[2], &mb->click4)) {
-        return false;
-    }
-    if (!parse_mouse_binding(s[3], &mb->click5)) {
-        return false;
+
+    if (len == 9) {
+        if (!parse_mouse_binding_set(s + 5, &mb->sec)) {
+            return false;
+        }
+    } else {
+        // use the same bindings for Shift+click
+        mb->sec = mb->pri;
     }
 
     return true;
@@ -2408,10 +2457,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGW("--forward-all-clicks is deprecated, "
                      "use --mouse-bind=++++ instead.");
                 opts->mouse_bindings = (struct sc_mouse_bindings) {
-                    .right_click = SC_MOUSE_BINDING_CLICK,
-                    .middle_click = SC_MOUSE_BINDING_CLICK,
-                    .click4 = SC_MOUSE_BINDING_CLICK,
-                    .click5 = SC_MOUSE_BINDING_CLICK,
+                    .pri = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
+                    .sec = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
                 };
                 break;
             case OPT_LEGACY_PASTE:
@@ -2566,6 +2623,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_WINDOW:
                 opts->window = false;
                 break;
+            case OPT_AUDIO_DUP:
+                opts->audio_dup = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2701,26 +2761,36 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     // If mouse bindings are not explictly set, configure default bindings
-    if (opts->mouse_bindings.right_click == SC_MOUSE_BINDING_AUTO) {
-        assert(opts->mouse_bindings.middle_click == SC_MOUSE_BINDING_AUTO);
-        assert(opts->mouse_bindings.click4 == SC_MOUSE_BINDING_AUTO);
-        assert(opts->mouse_bindings.click5 == SC_MOUSE_BINDING_AUTO);
+    if (opts->mouse_bindings.pri.right_click == SC_MOUSE_BINDING_AUTO) {
+        assert(opts->mouse_bindings.pri.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click5 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.right_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click5 == SC_MOUSE_BINDING_AUTO);
+
+        static struct sc_mouse_binding_set default_shortcuts = {
+            .right_click = SC_MOUSE_BINDING_BACK,
+            .middle_click = SC_MOUSE_BINDING_HOME,
+            .click4 = SC_MOUSE_BINDING_APP_SWITCH,
+            .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+        };
+
+        static struct sc_mouse_binding_set forward = {
+            .right_click = SC_MOUSE_BINDING_CLICK,
+            .middle_click = SC_MOUSE_BINDING_CLICK,
+            .click4 = SC_MOUSE_BINDING_CLICK,
+            .click5 = SC_MOUSE_BINDING_CLICK,
+        };
 
         // By default, forward all clicks only for UHID and AOA
         if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
-            opts->mouse_bindings = (struct sc_mouse_bindings) {
-                .right_click = SC_MOUSE_BINDING_BACK,
-                .middle_click = SC_MOUSE_BINDING_HOME,
-                .click4 = SC_MOUSE_BINDING_APP_SWITCH,
-                .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
-            };
+            opts->mouse_bindings.pri = default_shortcuts;
+            opts->mouse_bindings.sec = forward;
         } else {
-            opts->mouse_bindings = (struct sc_mouse_bindings) {
-                .right_click = SC_MOUSE_BINDING_CLICK,
-                .middle_click = SC_MOUSE_BINDING_CLICK,
-                .click4 = SC_MOUSE_BINDING_CLICK,
-                .click5 = SC_MOUSE_BINDING_CLICK,
-            };
+            opts->mouse_bindings.pri = forward;
+            opts->mouse_bindings.sec = default_shortcuts;
         }
     }
 
@@ -2825,10 +2895,28 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (opts->audio && opts->audio_source == SC_AUDIO_SOURCE_AUTO) {
         // Select the audio source according to the video source
         if (opts->video_source == SC_VIDEO_SOURCE_DISPLAY) {
-            opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
+            if (opts->audio_dup) {
+                LOGI("Audio duplication enabled: audio source switched to "
+                     "\"playback\"");
+                opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
+            } else {
+                opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
+            }
         } else {
             opts->audio_source = SC_AUDIO_SOURCE_MIC;
             LOGI("Camera video source: microphone audio source selected");
+        }
+    }
+
+    if (opts->audio_dup) {
+        if (!opts->audio) {
+            LOGE("--audio-dup not supported if audio is disabled");
+            return false;
+        }
+
+        if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
+            LOGE("--audio-dup is specific to --audio-source=playback");
+            return false;
         }
     }
 

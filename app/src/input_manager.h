@@ -23,7 +23,6 @@ struct sc_input_manager {
     struct sc_mouse_processor *mp;
 
     struct sc_mouse_bindings mouse_bindings;
-    bool has_secondary_click;
     bool legacy_paste;
     bool clipboard_autosync;
 
@@ -32,6 +31,8 @@ struct sc_input_manager {
     bool vfinger_down;
     bool vfinger_invert_x;
     bool vfinger_invert_y;
+
+    uint8_t mouse_buttons_state; // OR of enum sc_mouse_button values
 
     // Tracks the number of identical consecutive shortcut key down events.
     // Not to be confused with event->repeat, which counts the number of

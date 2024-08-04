@@ -59,6 +59,7 @@ enum sc_audio_source {
     SC_AUDIO_SOURCE_AUTO, // OUTPUT for video DISPLAY, MIC for video CAMERA
     SC_AUDIO_SOURCE_OUTPUT,
     SC_AUDIO_SOURCE_MIC,
+    SC_AUDIO_SOURCE_PLAYBACK,
 };
 
 enum sc_camera_facing {
@@ -165,11 +166,16 @@ enum sc_mouse_binding {
     SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
 };
 
-struct sc_mouse_bindings {
+struct sc_mouse_binding_set {
     enum sc_mouse_binding right_click;
     enum sc_mouse_binding middle_click;
     enum sc_mouse_binding click4;
     enum sc_mouse_binding click5;
+};
+
+struct sc_mouse_bindings {
+    struct sc_mouse_binding_set pri;
+    struct sc_mouse_binding_set sec; // When Shift is pressed
 };
 
 enum sc_key_inject_mode {
@@ -291,6 +297,7 @@ struct scrcpy_options {
     uint8_t list;
     bool window;
     bool mouse_hover;
+    bool audio_dup;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
