@@ -156,7 +156,7 @@ static const struct sc_option options[] = {
         .argdesc = "ms",
         .text = "Configure the audio buffering delay (in milliseconds).\n"
                 "Lower values decrease the latency, but increase the "
-                "likelyhood of buffer underrun (causing audio glitches).\n"
+                "likelihood of buffer underrun (causing audio glitches).\n"
                 "Default is 50.",
     },
     {
@@ -654,7 +654,7 @@ static const struct sc_option options[] = {
         .optional_arg = true,
         .text = "Configure pause on exit. Possible values are \"true\" (always "
                 "pause on exit), \"false\" (never pause on exit) and "
-                "\"if-error\" (pause only if an error occured).\n"
+                "\"if-error\" (pause only if an error occurred).\n"
                 "This is useful to prevent the terminal window from "
                 "automatically closing, so that error messages can be read.\n"
                 "Default is \"false\".\n"
@@ -1349,7 +1349,7 @@ print_exit_status(const struct sc_exit_status *status, unsigned cols) {
         return;
     }
 
-    assert(strlen(text) >= 9); // Contains at least the initial identation
+    assert(strlen(text) >= 9); // Contains at least the initial indentation
 
     // text + 9 to remove the initial indentation
     printf("    %3d  %s\n", status->value, text + 9);
@@ -2760,7 +2760,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
-    // If mouse bindings are not explictly set, configure default bindings
+    // If mouse bindings are not explicitly set, configure default bindings
     if (opts->mouse_bindings.pri.right_click == SC_MOUSE_BINDING_AUTO) {
         assert(opts->mouse_bindings.pri.middle_click == SC_MOUSE_BINDING_AUTO);
         assert(opts->mouse_bindings.pri.click4 == SC_MOUSE_BINDING_AUTO);
@@ -3101,7 +3101,7 @@ sc_get_pause_on_exit(int argc, char *argv[]) {
             if (!strcmp(value, "if-error")) {
                 return SC_PAUSE_ON_EXIT_IF_ERROR;
             }
-            // Set to false, inclusing when the value is invalid
+            // Set to false, including when the value is invalid
             return SC_PAUSE_ON_EXIT_FALSE;
         }
     }
