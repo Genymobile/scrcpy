@@ -51,6 +51,11 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             Rect videoRect = screenInfo.getVideoSize().toRect();
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+            // 'createVirtualDisplay' will copy the configuration of the original display (including the rotation),
+            // but 'videoRect' is already rotated according to the device rotation,
+            // so we need to freeze the rotation to 0 to avoid a double rotation
+            int displayId = virtualDisplay.getDisplay().getDisplayId();
+            ServiceManager.getWindowManager().freezeRotation(displayId, 0);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
