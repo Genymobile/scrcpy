@@ -2,7 +2,7 @@
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
-# scrcpy (v2.6)
+# scrcpy (v2.6.1)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -53,10 +53,16 @@ Make sure you [enabled USB debugging][enable-adb] on your device(s).
 
 [enable-adb]: https://developer.android.com/studio/debug/dev-options#enable
 
-On some devices, you also need to enable [an additional option][control] `USB
-debugging (Security Settings)` (this is an item different from `USB debugging`)
-to control it using a keyboard and mouse. Rebooting the device is necessary once
-this option is set.
+On some devices (especially Xiaomi), you might get the following error:
+
+```
+java.lang.SecurityException: Injecting input events requires the caller (or the source of the instrumentation, if any) to have the INJECT_EVENTS permission.
+```
+
+In that case, you need to enable [an additional option][control] `USB debugging
+(Security Settings)` (this is an item different from `USB debugging`) to control
+it using a keyboard and mouse. Rebooting the device is necessary once this
+option is set.
 
 [control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
 
