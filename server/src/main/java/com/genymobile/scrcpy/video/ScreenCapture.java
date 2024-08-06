@@ -73,10 +73,9 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             virtualDisplay = null;
         }
 
-//            from master
+                Rect videoRect = screenInfo.getVideoSize().toRect();
         if (device.getDisplayId() >= 0) {
             try {
-                Rect videoRect = screenInfo.getVideoSize().toRect();
                 virtualDisplay = ServiceManager.getDisplayManager()
                         .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
                 Ln.d("Display: using DisplayManager API");
@@ -93,13 +92,13 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             }
         } else {
             try {
-                Rect videoRect = screenInfo.getVideoSize().toRect();
                 Constructor<DisplayManager> ctor = DisplayManager.class.getDeclaredConstructor(Context.class);
                 ctor.setAccessible(true);
                 DisplayManager dm = ctor.newInstance(FakeContext.get());
                 Ln.d("Video rect = " + videoRect.width() + "x" + videoRect.height());
                 virtualDisplay = dm
-                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), /*FIXME: configure DPI*/160, surface,
+                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(),
+                                /*FIXME: configure DPI*/160, surface,
                                 /*flags*/ 1 << 0 | 1 << 3 | 1 << 6 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14);
                 int i = virtualDisplay.getDisplay().getDisplayId();
                 device.setDisplayId(i);
