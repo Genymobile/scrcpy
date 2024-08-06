@@ -1,22 +1,21 @@
 package com.genymobile.scrcpy.video;
 
-import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.util.Ln;
-import com.genymobile.scrcpy.device.Size;
-import com.genymobile.scrcpy.wrappers.ServiceManager;
-import com.genymobile.scrcpy.wrappers.SurfaceControl;
-
 import android.content.Context;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
-import android.view.Surface;
 import android.util.DisplayMetrics;
+import android.view.Surface;
+import com.genymobile.scrcpy.FakeContext;
+import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import java.lang.reflect.Constructor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScreenCapture extends SurfaceCapture implements Device.RotationListener, Device.FoldListener {
 
@@ -74,46 +73,43 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             virtualDisplay = null;
         }
 
-        /*try {
-            if (device.getDisplayId() < 0) throw new Exception("Fake exception to use DisplayManager API for new display");
-            display = createDisplay();
-            setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
-            Ln.d("Display: using SurfaceControl API");
-        } catch (Exception surfaceControlException) {
-            Rect videoRect = screenInfo.getVideoSize().toRect();
+//            from master
+        if (device.getDisplayId() >= 0) {
             try {
+                Rect videoRect = screenInfo.getVideoSize().toRect();
                 virtualDisplay = ServiceManager.getDisplayManager()
                         .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
                 Ln.d("Display: using DisplayManager API");
             } catch (Exception displayManagerException) {
-                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
-                Ln.e("Could not create display using DisplayManager", displayManagerException);
-                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
-                throw new AssertionError("Could not create display");
+                try {
+                    display = createDisplay();
+                    setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                    Ln.d("Display: using SurfaceControl API");
+                } catch (Exception surfaceControlException) {
+                    Ln.e("Could not create display using DisplayManager", displayManagerException);
+                    Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                    throw new AssertionError("Could not create display");
+                }
             }
-        }*/
-
-//            from master
-        try {
-            Rect videoRect = screenInfo.getVideoSize().toRect();
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
-            Ln.d("Display: using DisplayManager API");
-        } catch (Exception displayManagerException) {
+        } else {
             try {
-                display = createDisplay();
-                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
-                Ln.d("Display: using SurfaceControl API");
-            } catch (Exception surfaceControlException) {
-                Ln.e("Could not create display using DisplayManager", displayManagerException);
-                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                Rect videoRect = screenInfo.getVideoSize().toRect();
+                Constructor<DisplayManager> ctor = DisplayManager.class.getDeclaredConstructor(Context.class);
+                ctor.setAccessible(true);
+                DisplayManager dm = ctor.newInstance(FakeContext.get());
+                Ln.d("Video rect = " + videoRect.width() + "x" + videoRect.height());
+                virtualDisplay = dm
+                        .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), /*FIXME: configure DPI*/160, surface,
+                                /*flags*/ 1 << 0 | 1 << 3 | 1 << 6 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14);
+                int i = virtualDisplay.getDisplay().getDisplayId();
+                device.setDisplayId(i);
+                Ln.d("Virtual display id is " + i);
+                isFresh = true;
+            } catch (Exception e) {
+                Ln.e("Could not create display using DisplayManager", e);
                 throw new AssertionError("Could not create display");
             }
         }
-
-
-//        from virtual display
-
     }
 
     @Override
