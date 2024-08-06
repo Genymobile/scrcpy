@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class SurfaceCapture {
 
-    private final AtomicBoolean resetCapture = new AtomicBoolean();
+    protected final AtomicBoolean resetCapture = new AtomicBoolean();
 
     /**
      * Request the encoding session to be restarted, for example if the capture implementation detects that the video source size has changed (on

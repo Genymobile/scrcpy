@@ -392,6 +392,7 @@ scrcpy(struct scrcpy_options *options) {
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
         .display_id = options->display_id,
+        .create_new_display = options->create_new_display,
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,
@@ -734,6 +735,7 @@ scrcpy(struct scrcpy_options *options) {
             .mipmaps = options->mipmaps,
             .fullscreen = options->fullscreen,
             .start_fps_counter = options->start_fps_counter,
+            .is_virtual = options->create_new_display != NULL,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {

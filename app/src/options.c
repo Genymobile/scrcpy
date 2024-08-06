@@ -93,6 +93,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .cleanup = true,
     .start_fps_counter = false,
     .power_on = true,
+    .create_new_display = NULL,
     .video = true,
     .audio = true,
     .require_audio = false,

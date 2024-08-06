@@ -4,6 +4,8 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
+#include "control_msg.h"
+#include "display.h"
 #include "events.h"
 #include "icon.h"
 #include "options.h"
@@ -283,9 +285,38 @@ event_watcher(void *data, SDL_Event *event) {
 
     if (event->type == SDL_WINDOWEVENT
             && event->window.event == SDL_WINDOWEVENT_RESIZED) {
-        // In practice, it seems to always be called from the same thread in
-        // that specific case. Anyway, it's just a workaround.
-        sc_screen_render(screen, true);
+        // idk
+        if (screen->is_virtual) { //((sz.width % 16) == 0 && (sz.height % 16) == 0) {
+            // FIXME: probably slow
+            struct sc_size sz = get_window_size(screen);
+            struct sc_control_msg msg;
+            msg.type = SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY;
+            msg.resize_display.width = sz.width;
+            msg.resize_display.height = sz.height;
+            if (!sc_controller_push_msg(screen->im.controller, &msg)) {
+                LOGW("Could not request 'resize display'");
+            } else {
+                screen->content_size.width = sz.width;
+                // FIXME: wtf
+                screen->content_size.height = sz.height; //MAX(sz.height - 24, 0);
+            }
+            LOGD("New size is %dx%d", sz.width, sz.height);
+
+            // resize the texture?
+            //struct sc_size sz;
+            //sz.width = dw;
+            //sz.height = dh;
+            //sc_display_set_texture_size(&screen->display, sz);
+            //screen->rect.x = 0;
+            //screen->rect.y = 0;
+            //screen->rect.w = sz.width;
+            //screen->rect.h = sz.height;
+            sc_screen_render(screen, false);
+        } else {
+            // In practice, it seems to always be called from the same thread in
+            // that specific case. Anyway, it's just a workaround.
+            sc_screen_render(screen, true);
+        }
     }
     return 0;
 }
@@ -375,6 +406,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->fullscreen = false;
     screen->maximized = false;
     screen->minimized = false;
+    screen->is_virtual = params->is_virtual;
     screen->mouse_capture_key_pressed = 0;
     screen->paused = false;
     screen->resume_frame = NULL;

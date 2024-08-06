@@ -155,6 +155,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             sc_write16be(&buf[3], msg->uhid_input.size);
             memcpy(&buf[5], msg->uhid_input.data, msg->uhid_input.size);
             return 5 + msg->uhid_input.size;
+        case SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY:
+            sc_write16be(&buf[1], msg->resize_display.width);
+            sc_write16be(&buf[3], msg->resize_display.height);
+            return 5;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:

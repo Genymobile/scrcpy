@@ -190,7 +190,9 @@ public final class Server {
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
-                    surfaceCapture = new ScreenCapture(device);
+                    ScreenCapture s = new ScreenCapture(device);
+                    device.setScreenCapture(s);
+                    surfaceCapture = s;
                 } else {
                     surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraFacing(), options.getCameraSize(),
                             options.getMaxSize(), options.getCameraAspectRatio(), options.getCameraFps(), options.getCameraHighSpeed());

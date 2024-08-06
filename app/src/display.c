@@ -190,6 +190,7 @@ sc_display_apply_pending(struct sc_display *display) {
         }
 
         display->pending.flags &= ~SC_DISPLAY_PENDING_FLAG_SIZE;
+        LOGI("Pending texture: %" PRIu16 "x%" PRIu16, display->pending.size.width, display->pending.size.height);
     }
 
     if (display->pending.flags & SC_DISPLAY_PENDING_FLAG_FRAME) {

@@ -313,6 +313,9 @@ execute_server(struct sc_server *server,
     if (params->crop) {
         ADD_PARAM("crop=%s", params->crop);
     }
+    if (params->create_new_display) {
+        ADD_PARAM("create_new_display=%s", params->create_new_display);
+    }
     if (!params->control) {
         // By default, control is true
         ADD_PARAM("control=false");

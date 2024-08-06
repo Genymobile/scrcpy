@@ -218,6 +218,9 @@ public class Controller implements AsyncProcessor {
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 openHardKeyboardSettings();
                 break;
+            case ControlMessage.TYPE_RESIZE_DISPLAY:
+                device.resizeDisplay(msg.getWidth(), msg.getHeight());
+                break;
             default:
                 // do nothing
         }

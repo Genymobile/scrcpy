@@ -285,6 +285,7 @@ struct scrcpy_options {
     bool cleanup;
     bool start_fps_counter;
     bool power_on;
+    const char *create_new_display;
     bool video;
     bool audio;
     bool require_audio;

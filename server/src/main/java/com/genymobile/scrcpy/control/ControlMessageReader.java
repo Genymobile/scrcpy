@@ -21,6 +21,7 @@ public class ControlMessageReader {
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 9;
     static final int UHID_CREATE_FIXED_PAYLOAD_LENGTH = 4;
     static final int UHID_INPUT_FIXED_PAYLOAD_LENGTH = 4;
+    static final int RESIZE_DISPLAY_PAYLOAD_LENGTH = 5;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
@@ -98,6 +99,9 @@ public class ControlMessageReader {
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
                 msg = parseUhidInput();
+                break;
+            case ControlMessage.TYPE_RESIZE_DISPLAY:
+                msg = parseResizeDisplay();
                 break;
             default:
                 Ln.w("Unknown event type: " + type);
@@ -247,6 +251,15 @@ public class ControlMessageReader {
             return null;
         }
         return ControlMessage.createUhidInput(id, data);
+    }
+
+    private ControlMessage parseResizeDisplay() {
+        if (buffer.remaining() < RESIZE_DISPLAY_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int width = buffer.getShort();
+        int height = buffer.getShort();
+        return ControlMessage.createResizeDisplay(width, height);
     }
 
     private static Position readPosition(ByteBuffer buffer) {

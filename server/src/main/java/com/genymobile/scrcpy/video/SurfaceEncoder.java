@@ -32,7 +32,7 @@ public class SurfaceEncoder implements AsyncProcessor {
 
     // Keep the values in descending order
     private static final int[] MAX_SIZE_FALLBACK = {2560, 1920, 1600, 1280, 1024, 800};
-    private static final int MAX_CONSECUTIVE_ERRORS = 3;
+    private static final int MAX_CONSECUTIVE_ERRORS = 10;
 
     private final SurfaceCapture capture;
     private final Streamer streamer;
@@ -73,11 +73,13 @@ public class SurfaceEncoder implements AsyncProcessor {
 
             do {
                 Size size = capture.getSize();
+                Ln.d("Creating new stream size=" + size.getWidth() + "x" + size.getHeight());
                 format.setInteger(MediaFormat.KEY_WIDTH, size.getWidth());
                 format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
 
                 Surface surface = null;
                 try {
+                    //mediaCodec.reset();
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
 
@@ -166,7 +168,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                 alive = false;
                 break;
             }
-            int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
+            int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, 100000);
             try {
                 if (capture.consumeReset()) {
                     // must restart encoding with new size

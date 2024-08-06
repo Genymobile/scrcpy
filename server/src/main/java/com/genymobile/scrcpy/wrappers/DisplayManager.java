@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 public final class DisplayManager {
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
     private Method createVirtualDisplayMethod;
+    private Method createVirtualDisplayMethod2;
 
     static DisplayManager create() {
         try {
@@ -123,5 +124,18 @@ public final class DisplayManager {
     public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
         Method method = getCreateVirtualDisplayMethod();
         return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
+    }
+
+    private Method getCreateVirtualDisplayMethod2() throws NoSuchMethodException {
+        if (createVirtualDisplayMethod2 == null) {
+            createVirtualDisplayMethod2 = android.hardware.display.DisplayManager.class
+                    .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class, int.class);
+        }
+        return createVirtualDisplayMethod2;
+    }
+
+    public VirtualDisplay createVirtualDisplay2(Object o, String name, int width, int height, int densityDpi, Surface surface, int flags) throws Exception {
+        Method method = getCreateVirtualDisplayMethod2();
+        return (VirtualDisplay) method.invoke(o, name, width, height, densityDpi, surface, flags);
     }
 }

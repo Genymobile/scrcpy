@@ -19,6 +19,7 @@ public class Options {
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int scid = -1; // 31-bit non-negative value, or -1
+    private Size createNewDisplay;
     private boolean video = true;
     private boolean audio = true;
     private int maxSize;
@@ -71,6 +72,10 @@ public class Options {
 
     public int getScid() {
         return scid;
+    }
+
+    public Size getCreateNewDisplay() {
+        return createNewDisplay;
     }
 
     public boolean getVideo() {
@@ -273,6 +278,11 @@ public class Options {
                     break;
                 case "log_level":
                     options.logLevel = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
+                    break;
+                case "create_new_display":
+                    if (!value.isEmpty()) {
+                        options.createNewDisplay = parseSize(value);
+                    }
                     break;
                 case "video":
                     options.video = Boolean.parseBoolean(value);

@@ -40,6 +40,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_UHID_CREATE,
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY,
 };
 
 enum sc_screen_power_mode {
@@ -105,6 +106,10 @@ struct sc_control_msg {
             uint16_t size;
             uint8_t data[SC_HID_MAX_SIZE];
         } uhid_input;
+        struct {
+            uint16_t width;
+            uint16_t height;
+        } resize_display;
     };
 };
 

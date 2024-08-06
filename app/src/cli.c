@@ -101,6 +101,7 @@ enum {
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
+    OPT_CREATE_NEW_DISPLAY,
 };
 
 struct sc_option {
@@ -332,6 +333,12 @@ static const struct sc_option options[] = {
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
                 "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_CREATE_NEW_DISPLAY,
+        .longopt = "create-new-display",
+        .argdesc = "<width>x<height>",
+        .text = "Creates a new display with the specified resolution.",
     },
     {
         .longopt_id = OPT_DISPLAY_ORIENTATION,
@@ -2323,6 +2330,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case 'w':
                 opts->stay_awake = true;
+                break;
+            case OPT_CREATE_NEW_DISPLAY:
+                opts->create_new_display = optarg;
                 break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
