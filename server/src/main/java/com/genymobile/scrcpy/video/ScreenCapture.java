@@ -74,7 +74,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             virtualDisplay = null;
         }
 
-        try {
+        /*try {
             if (device.getDisplayId() < 0) throw new Exception("Fake exception to use DisplayManager API for new display");
             display = createDisplay();
             setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
@@ -91,7 +91,29 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
                 Ln.e("Could not create display using SurfaceControl", surfaceControlException);
                 throw new AssertionError("Could not create display");
             }
+        }*/
+
+//            from master
+        try {
+            Rect videoRect = screenInfo.getVideoSize().toRect();
+            virtualDisplay = ServiceManager.getDisplayManager()
+                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+            Ln.d("Display: using DisplayManager API");
+        } catch (Exception displayManagerException) {
+            try {
+                display = createDisplay();
+                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                Ln.d("Display: using SurfaceControl API");
+            } catch (Exception surfaceControlException) {
+                Ln.e("Could not create display using DisplayManager", displayManagerException);
+                Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                throw new AssertionError("Could not create display");
+            }
         }
+
+
+//        from virtual display
+
     }
 
     @Override
