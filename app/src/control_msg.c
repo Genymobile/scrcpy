@@ -64,13 +64,11 @@ static const char *const copy_key_labels[] = {
 static inline const char *
 get_well_known_pointer_id_name(uint64_t pointer_id) {
     switch (pointer_id) {
-        case POINTER_ID_MOUSE:
+        case SC_POINTER_ID_MOUSE:
             return "mouse";
-        case POINTER_ID_GENERIC_FINGER:
+        case SC_POINTER_ID_GENERIC_FINGER:
             return "finger";
-        case POINTER_ID_VIRTUAL_MOUSE:
-            return "vmouse";
-        case POINTER_ID_VIRTUAL_FINGER:
+        case SC_POINTER_ID_VIRTUAL_FINGER:
             return "vfinger";
         default:
             return NULL;

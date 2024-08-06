@@ -28,10 +28,17 @@ To disable only the audio playback, see [no playback](video.md#no-playback).
 
 ## Audio only
 
-To play audio only, disable the video:
+To play audio only, disable video and control:
 
 ```bash
-scrcpy --no-video
+scrcpy --no-video --no-control
+```
+
+To play audio without a window:
+
+```bash
+# --no-video and --no-control are implied by --no-window
+scrcpy --no-window
 # interrupt with Ctrl+C
 ```
 
@@ -58,6 +65,30 @@ the computer:
 ```
 scrcpy --audio-source=mic --no-video --no-playback --record=file.opus
 ```
+
+### Duplication
+
+An alternative device audio capture method is also available (only for Android
+13 and above):
+
+```
+scrcpy --audio-source=playback
+```
+
+This audio source supports keeping the audio playing on the device while
+mirroring, with `--audio-dup`:
+
+```bash
+scrcpy --audio-source=playback --audio-dup
+# or simply:
+scrcpy --audio-dup  # --audio-source=playback is implied
+```
+
+However, it requires Android 13, and Android apps can opt-out (so they are not
+captured).
+
+
+See [#4380](https://github.com/Genymobile/scrcpy/issues/4380).
 
 
 ## Codec

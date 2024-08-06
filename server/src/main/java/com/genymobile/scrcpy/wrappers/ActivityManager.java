@@ -1,7 +1,7 @@
 package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.FakeContext;
-import com.genymobile.scrcpy.Ln;
+import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;

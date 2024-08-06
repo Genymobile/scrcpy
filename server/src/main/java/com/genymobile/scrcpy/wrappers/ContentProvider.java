@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.FakeContext;
-import com.genymobile.scrcpy.Ln;
-import com.genymobile.scrcpy.SettingsException;
+import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.SettingsException;
 
 import android.annotation.SuppressLint;
 import android.content.AttributionSource;

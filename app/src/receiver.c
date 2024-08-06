@@ -10,7 +10,8 @@
 #include "util/str.h"
 
 bool
-sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
+sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
+                 const struct sc_receiver_callbacks *cbs, void *cbs_userdata) {
     bool ok = sc_mutex_init(&receiver->mutex);
     if (!ok) {
         return false;
@@ -19,6 +20,10 @@ sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket) {
     receiver->control_socket = control_socket;
     receiver->acksync = NULL;
     receiver->uhid_devices = NULL;
+
+    assert(cbs && cbs->on_ended);
+    receiver->cbs = cbs;
+    receiver->cbs_userdata = cbs_userdata;
 
     return true;
 }
@@ -129,12 +134,15 @@ run_receiver(void *data) {
     static uint8_t buf[DEVICE_MSG_MAX_SIZE];
     size_t head = 0;
 
+    bool error = false;
+
     for (;;) {
         assert(head < DEVICE_MSG_MAX_SIZE);
         ssize_t r = net_recv(receiver->control_socket, buf + head,
                              DEVICE_MSG_MAX_SIZE - head);
         if (r <= 0) {
             LOGD("Receiver stopped");
+            // device disconnected: keep error=false
             break;
         }
 
@@ -142,6 +150,7 @@ run_receiver(void *data) {
         ssize_t consumed = process_msgs(receiver, buf, head);
         if (consumed == -1) {
             // an error occurred
+            error = true;
             break;
         }
 
@@ -151,6 +160,8 @@ run_receiver(void *data) {
             memmove(buf, &buf[consumed], head);
         }
     }
+
+    receiver->cbs->on_ended(receiver, error, receiver->cbs_userdata);
 
     return 0;
 }

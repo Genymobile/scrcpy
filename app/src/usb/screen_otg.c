@@ -169,7 +169,7 @@ sc_screen_otg_process_mouse_motion(struct sc_screen_otg *screen,
         // .position not used for HID events
         .xrel = event->xrel,
         .yrel = event->yrel,
-        .buttons_state = sc_mouse_buttons_state_from_sdl(event->state, true),
+        .buttons_state = sc_mouse_buttons_state_from_sdl(event->state),
     };
 
     assert(mp->ops->process_mouse_motion);
@@ -188,8 +188,7 @@ sc_screen_otg_process_mouse_button(struct sc_screen_otg *screen,
         // .position not used for HID events
         .action = sc_action_from_sdl_mousebutton_type(event->type),
         .button = sc_mouse_button_from_sdl(event->button),
-        .buttons_state =
-            sc_mouse_buttons_state_from_sdl(sdl_buttons_state, true),
+        .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state),
     };
 
     assert(mp->ops->process_mouse_click);
@@ -208,8 +207,7 @@ sc_screen_otg_process_mouse_wheel(struct sc_screen_otg *screen,
         // .position not used for HID events
         .hscroll = event->x,
         .vscroll = event->y,
-        .buttons_state =
-            sc_mouse_buttons_state_from_sdl(sdl_buttons_state, true),
+        .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state),
     };
 
     assert(mp->ops->process_mouse_scroll);

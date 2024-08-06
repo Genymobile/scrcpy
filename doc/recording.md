@@ -58,12 +58,10 @@ orientation](video.md#orientation).
 
 ## No playback
 
-To disable playback while recording:
+To disable playback and control while recording:
 
 ```bash
-scrcpy --no-playback --record=file.mp4
-scrcpy -Nr file.mkv
-# interrupt recording with Ctrl+C
+scrcpy --no-playback --no-control --record=file.mp4
 ```
 
 It is also possible to disable video and audio playback separately:
@@ -71,6 +69,13 @@ It is also possible to disable video and audio playback separately:
 ```bash
 # Record both video and audio, but only play video
 scrcpy --record=file.mkv --no-audio-playback
+```
+
+To also disable the window:
+
+```bash
+scrcpy --no-playback --no-window --record=file.mp4
+# interrupt recording with Ctrl+C
 ```
 
 ## Time limit

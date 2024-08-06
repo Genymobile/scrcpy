@@ -51,6 +51,7 @@ struct sc_server_params {
     const char *create_new_display;
     bool video;
     bool audio;
+    bool audio_dup;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;

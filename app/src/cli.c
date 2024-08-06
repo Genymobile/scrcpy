@@ -97,6 +97,10 @@ enum {
     OPT_MOUSE,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
+    OPT_NO_WINDOW,
+    OPT_MOUSE_BIND,
+    OPT_NO_MOUSE_HOVER,
+    OPT_AUDIO_DUP,
     OPT_CREATE_NEW_DISPLAY,
 };
 
@@ -176,6 +180,13 @@ static const struct sc_option options[] = {
                 "<https://d.android.com/reference/android/media/MediaFormat>",
     },
     {
+        .longopt_id = OPT_AUDIO_DUP,
+        .longopt = "audio-dup",
+        .text = "Duplicate audio (capture and keep playing on the device).\n"
+                "This feature is only available with --audio-source=playback."
+
+    },
+    {
         .longopt_id = OPT_AUDIO_ENCODER,
         .longopt = "audio-encoder",
         .argdesc = "name",
@@ -187,7 +198,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_SOURCE,
         .longopt = "audio-source",
         .argdesc = "source",
-        .text = "Select the audio source (output or mic).\n"
+        .text = "Select the audio source (output, mic or playback).\n"
+                "The \"output\" source forwards the whole audio output, and "
+                "disables playback on the device.\n"
+                "The \"playback\" source captures the audio playback (Android "
+                "apps can opt-out, so the whole output is not necessarily "
+                "captured).\n"
+                "The \"mic\" source captures the microphone.\n"
                 "Default is output.",
     },
     {
@@ -358,11 +375,9 @@ static const struct sc_option options[] = {
                 "device.",
     },
     {
+        // deprecated
         .longopt_id = OPT_FORWARD_ALL_CLICKS,
         .longopt = "forward-all-clicks",
-        .text = "By default, right-click triggers BACK (or POWER on) and "
-                "middle-click triggers HOME. This option disables these "
-                "shortcuts and forwards the clicks to the device instead.",
     },
     {
         .shortopt = 'h',
@@ -497,6 +512,30 @@ static const struct sc_option options[] = {
                 "Also see --keyboard.",
     },
     {
+        .longopt_id = OPT_MOUSE_BIND,
+        .longopt = "mouse-bind",
+        .argdesc = "xxxx[:xxxx]",
+        .text = "Configure bindings of secondary clicks.\n"
+                "The argument must be one or two sequences (separated by ':') "
+                "of exactly 4 characters, one for each secondary click (in "
+                "order: right click, middle click, 4th click, 5th click).\n"
+                "The first sequence defines the primary bindings, used when a "
+                "mouse button is pressed alone. The second sequence defines "
+                "the secondary bindings, used when a mouse button is pressed "
+                "while the Shift key is held.\n"
+                "If the second sequence of bindings is omitted, then it is the "
+                "same as the first one.\n"
+                "Each character must be one of the following:\n"
+                " '+': forward the click to the device\n"
+                " '-': ignore the click\n"
+                " 'b': trigger shortcut BACK (or turn screen on if off)\n"
+                " 'h': trigger shortcut HOME\n"
+                " 's': trigger shortcut APP_SWITCH\n"
+                " 'n': trigger shortcut \"expand notification panel\"\n"
+                "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
+                "and UHID.",
+    },
+    {
         .shortopt = 'n',
         .longopt = "no-control",
         .text = "Disable device control (mirror the device in read-only).",
@@ -559,6 +598,12 @@ static const struct sc_option options[] = {
                 "quality. This option disables the generation of mipmaps.",
     },
     {
+        .longopt_id = OPT_NO_MOUSE_HOVER,
+        .longopt = "no-mouse-hover",
+        .text = "Do not forward mouse hover (mouse motion without any clicks) "
+                "events.",
+    },
+    {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
@@ -572,6 +617,12 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_VIDEO_PLAYBACK,
         .longopt = "no-video-playback",
         .text = "Disable video playback on the computer.",
+    },
+    {
+        .longopt_id = OPT_NO_WINDOW,
+        .longopt = "no-window",
+        .text = "Disable scrcpy window. Implies --no-video-playback and "
+                "--no-control.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -716,10 +767,10 @@ static const struct sc_option options[] = {
         .text = "Specify the modifiers to use for scrcpy shortcuts.\n"
                 "Possible keys are \"lctrl\", \"rctrl\", \"lalt\", \"ralt\", "
                 "\"lsuper\" and \"rsuper\".\n"
-                "A shortcut can consist in several keys, separated by '+'. "
-                "Several shortcuts can be specified, separated by ','.\n"
-                "For example, to use either LCtrl+LAlt or LSuper for scrcpy "
-                "shortcuts, pass \"lctrl+lalt,lsuper\".\n"
+                "Several shortcut modifiers can be specified, separated by "
+                "','.\n"
+                "For example, to use either LCtrl or LSuper for scrcpy "
+                "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
     },
     {
@@ -906,6 +957,14 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+Shift+Up", "MOD+Shift+Down" },
         .text = "Flip display vertically",
+    },
+    {
+        .shortcuts = { "MOD+z" },
+        .text = "Pause or re-pause display",
+    },
+    {
+        .shortcuts = { "MOD+Shift+z" },
+        .text = "Unpause display",
     },
     {
         .shortcuts = { "MOD+g" },
@@ -1679,82 +1738,62 @@ parse_log_level(const char *s, enum sc_log_level *log_level) {
     return false;
 }
 
-// item is a list of mod keys separated by '+' (e.g. "lctrl+lalt")
-// returns a bitwise-or of SC_SHORTCUT_MOD_* constants (or 0 on error)
-static unsigned
+static enum sc_shortcut_mod
 parse_shortcut_mods_item(const char *item, size_t len) {
-    unsigned mod = 0;
-
-    for (;;) {
-        char *plus = strchr(item, '+');
-        // strchr() does not consider the "len" parameter, to it could find an
-        // occurrence too far in the string (there is no strnchr())
-        bool has_plus = plus && plus < item + len;
-
-        assert(!has_plus || plus > item);
-        size_t key_len = has_plus ? (size_t) (plus - item) : len;
-
 #define STREQ(literal, s, len) \
     ((sizeof(literal)-1 == len) && !memcmp(literal, s, len))
 
-        if (STREQ("lctrl", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LCTRL;
-        } else if (STREQ("rctrl", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RCTRL;
-        } else if (STREQ("lalt", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LALT;
-        } else if (STREQ("ralt", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RALT;
-        } else if (STREQ("lsuper", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_LSUPER;
-        } else if (STREQ("rsuper", item, key_len)) {
-            mod |= SC_SHORTCUT_MOD_RSUPER;
-        } else {
-            LOGE("Unknown modifier key: %.*s "
-                 "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
-                 (int) key_len, item);
-            return 0;
-        }
+    if (STREQ("lctrl", item, len)) {
+        return SC_SHORTCUT_MOD_LCTRL;
+    }
+    if (STREQ("rctrl", item, len)) {
+        return SC_SHORTCUT_MOD_RCTRL;
+    }
+    if (STREQ("lalt", item, len)) {
+        return SC_SHORTCUT_MOD_LALT;
+    }
+    if (STREQ("ralt", item, len)) {
+        return SC_SHORTCUT_MOD_RALT;
+    }
+    if (STREQ("lsuper", item, len)) {
+        return SC_SHORTCUT_MOD_LSUPER;
+    }
+    if (STREQ("rsuper", item, len)) {
+        return SC_SHORTCUT_MOD_RSUPER;
+    }
 #undef STREQ
 
-        if (!has_plus) {
-            break;
-        }
-
-        item = plus + 1;
-        assert(len >= key_len + 1);
-        len -= key_len + 1;
+    bool has_plus = strchr(item, '+');
+    if (has_plus) {
+        LOGE("Shortcut mod combination with '+' is not supported anymore: "
+             "'%.*s' (see #4741)", (int) len, item);
+        return 0;
     }
 
-    return mod;
+    LOGE("Unknown modifier key: %.*s "
+         "(must be one of: lctrl, rctrl, lalt, ralt, lsuper, rsuper)",
+         (int) len, item);
+
+    return 0;
 }
 
 static bool
-parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
-    unsigned count = 0;
-    unsigned current = 0;
+parse_shortcut_mods(const char *s, uint8_t *shortcut_mods) {
+    uint8_t mods = 0;
 
-    // LCtrl+LAlt or RCtrl or LCtrl+RSuper: "lctrl+lalt,rctrl,lctrl+rsuper"
+    // A list of shortcut modifiers, for example "lctrl,rctrl,rsuper"
 
     for (;;) {
         char *comma = strchr(s, ',');
-        if (comma && count == SC_MAX_SHORTCUT_MODS - 1) {
-            assert(count < SC_MAX_SHORTCUT_MODS);
-            LOGW("Too many shortcut modifiers alternatives");
-            return false;
-        }
-
         assert(!comma || comma > s);
         size_t limit = comma ? (size_t) (comma - s) : strlen(s);
 
-        unsigned mod = parse_shortcut_mods_item(s, limit);
+        enum sc_shortcut_mod mod = parse_shortcut_mods_item(s, limit);
         if (!mod) {
-            LOGE("Invalid modifier keys: %.*s", (int) limit, s);
             return false;
         }
 
-        mods->data[current++] = mod;
-        ++count;
+        mods |= mod;
 
         if (!comma) {
             break;
@@ -1763,7 +1802,7 @@ parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
         s = comma + 1;
     }
 
-    mods->count = count;
+    *shortcut_mods = mods;
 
     return true;
 }
@@ -1771,7 +1810,7 @@ parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
 #ifdef SC_TEST
 // expose the function to unit-tests
 bool
-sc_parse_shortcut_mods(const char *s, struct sc_shortcut_mods *mods) {
+sc_parse_shortcut_mods(const char *s, uint8_t *mods) {
     return parse_shortcut_mods(s, mods);
 }
 #endif
@@ -1913,7 +1952,13 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
         return true;
     }
 
-    LOGE("Unsupported audio source: %s (expected output or mic)", optarg);
+    if (!strcmp(optarg, "playback")) {
+        *source = SC_AUDIO_SOURCE_PLAYBACK;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output, mic or playback)",
+         optarg);
     return false;
 }
 
@@ -2050,9 +2095,83 @@ parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
     }
 
     LOGE("Unsupported pause on exit mode: %s "
-         "(expected true, false or if-error)", optarg);
+         "(expected true, false or if-error)", s);
     return false;
 
+}
+
+static bool
+parse_mouse_binding(char c, enum sc_mouse_binding *b) {
+    switch (c) {
+        case '+':
+            *b = SC_MOUSE_BINDING_CLICK;
+            return true;
+        case '-':
+            *b = SC_MOUSE_BINDING_DISABLED;
+            return true;
+        case 'b':
+            *b = SC_MOUSE_BINDING_BACK;
+            return true;
+        case 'h':
+            *b = SC_MOUSE_BINDING_HOME;
+            return true;
+        case 's':
+            *b = SC_MOUSE_BINDING_APP_SWITCH;
+            return true;
+        case 'n':
+            *b = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL;
+            return true;
+        default:
+            LOGE("Invalid mouse binding: '%c' "
+                 "(expected '+', '-', 'b', 'h', 's' or 'n')", c);
+            return false;
+    }
+}
+
+static bool
+parse_mouse_binding_set(const char *s, struct sc_mouse_binding_set *mbs) {
+    assert(strlen(s) >= 4);
+
+    if (!parse_mouse_binding(s[0], &mbs->right_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[1], &mbs->middle_click)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[2], &mbs->click4)) {
+        return false;
+    }
+    if (!parse_mouse_binding(s[3], &mbs->click5)) {
+        return false;
+    }
+
+    return true;
+}
+
+static bool
+parse_mouse_bindings(const char *s, struct sc_mouse_bindings *mb) {
+    size_t len = strlen(s);
+    // either "xxxx" or "xxxx:xxxx"
+    if (len != 4 && (len != 9 || s[4] != ':')) {
+        LOGE("Invalid mouse bindings: '%s' (expected 'xxxx' or 'xxxx:xxxx', "
+             "with each 'x' being in {'+', '-', 'b', 'h', 's', 'n'})", s);
+        return false;
+    }
+
+    if (!parse_mouse_binding_set(s, &mb->pri)) {
+        return false;
+    }
+
+    if (len == 9) {
+        if (!parse_mouse_binding_set(s + 5, &mb->sec)) {
+            return false;
+        }
+    } else {
+        // use the same bindings for Shift+click
+        mb->sec = mb->pri;
+    }
+
+    return true;
 }
 
 static bool
@@ -2136,6 +2255,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
                     return false;
                 }
+                break;
+            case OPT_MOUSE_BIND:
+                if (!parse_mouse_bindings(optarg, &opts->mouse_bindings)) {
+                    return false;
+                }
+                break;
+            case OPT_NO_MOUSE_HOVER:
+                opts->mouse_hover = false;
                 break;
             case OPT_HID_MOUSE_DEPRECATED:
                 LOGE("--hid-mouse has been removed, use --mouse=aoa or "
@@ -2337,7 +2464,22 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_FORWARD_ALL_CLICKS:
-                opts->forward_all_clicks = true;
+                LOGW("--forward-all-clicks is deprecated, "
+                     "use --mouse-bind=++++ instead.");
+                opts->mouse_bindings = (struct sc_mouse_bindings) {
+                    .pri = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
+                    .sec = {
+                        .right_click = SC_MOUSE_BINDING_CLICK,
+                        .middle_click = SC_MOUSE_BINDING_CLICK,
+                        .click4 = SC_MOUSE_BINDING_CLICK,
+                        .click5 = SC_MOUSE_BINDING_CLICK,
+                    },
+                };
                 break;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
@@ -2488,6 +2630,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_CAMERA_HIGH_SPEED:
                 opts->camera_high_speed = true;
                 break;
+            case OPT_NO_WINDOW:
+                opts->window = false;
+                break;
+            case OPT_AUDIO_DUP:
+                opts->audio_dup = true;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2525,6 +2673,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     v4l2 = !!opts->v4l2_device;
 #endif
 
+    if (!opts->window) {
+        // Without window, there cannot be any video playback or control
+        opts->video_playback = false;
+        opts->control = false;
+    }
+
     if (!opts->video) {
         opts->video_playback = false;
         // Do not power on the device on start if video capture is disabled
@@ -2546,8 +2700,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !otg) {
-        LOGE("No video, no audio, no OTG: nothing to do");
+    if (!opts->video && !opts->audio && !opts->control && !otg) {
+        LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
     }
 
@@ -2558,9 +2712,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->audio_playback && opts->audio_buffer == -1) {
         if (opts->audio_codec == SC_CODEC_FLAC) {
-            // Use 50 ms audio buffer by default, but use a higher value for FLAC,
-            // which is not low latency (the default encoder produces blocks of
-            // 4096 samples, which represent ~85.333ms).
+            // Use 50 ms audio buffer by default, but use a higher value for
+            // FLAC, which is not low latency (the default encoder produces
+            // blocks of 4096 samples, which represent ~85.333ms).
             LOGI("FLAC audio: audio buffer increased to 120 ms (use "
                  "--audio-buffer to set a custom value)");
             opts->audio_buffer = SC_TICK_FROM_MS(120);
@@ -2571,6 +2725,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
 #ifdef HAVE_V4L2
     if (v4l2) {
+        if (!opts->video) {
+            LOGE("V4L2 sink requires video capture, but --no-video was set.");
+            return false;
+        }
+
         if (opts->lock_video_orientation ==
                 SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
             LOGI("Video orientation is locked for v4l2 sink. "
@@ -2590,16 +2749,67 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 #endif
 
-    if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
-        opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
-                                        : SC_KEYBOARD_INPUT_MODE_SDK;
+    if (opts->control) {
+        if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
+            opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                            : SC_KEYBOARD_INPUT_MODE_SDK;
+        }
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
+            if (otg) {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
+            } else if (!opts->video_playback) {
+                LOGI("No video mirroring, mouse mode switched to UHID");
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+            } else {
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
+            }
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK
+                    && !opts->video_playback) {
+            LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
+            return false;
+        }
     }
-    if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
-        opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
-                                     : SC_MOUSE_INPUT_MODE_SDK;
+
+    // If mouse bindings are not explictly set, configure default bindings
+    if (opts->mouse_bindings.pri.right_click == SC_MOUSE_BINDING_AUTO) {
+        assert(opts->mouse_bindings.pri.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.pri.click5 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.right_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.middle_click == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click4 == SC_MOUSE_BINDING_AUTO);
+        assert(opts->mouse_bindings.sec.click5 == SC_MOUSE_BINDING_AUTO);
+
+        static struct sc_mouse_binding_set default_shortcuts = {
+            .right_click = SC_MOUSE_BINDING_BACK,
+            .middle_click = SC_MOUSE_BINDING_HOME,
+            .click4 = SC_MOUSE_BINDING_APP_SWITCH,
+            .click5 = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL,
+        };
+
+        static struct sc_mouse_binding_set forward = {
+            .right_click = SC_MOUSE_BINDING_CLICK,
+            .middle_click = SC_MOUSE_BINDING_CLICK,
+            .click4 = SC_MOUSE_BINDING_CLICK,
+            .click5 = SC_MOUSE_BINDING_CLICK,
+        };
+
+        // By default, forward all clicks only for UHID and AOA
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
+            opts->mouse_bindings.pri = default_shortcuts;
+            opts->mouse_bindings.sec = forward;
+        } else {
+            opts->mouse_bindings.pri = forward;
+            opts->mouse_bindings.sec = default_shortcuts;
+        }
     }
 
     if (otg) {
+        if (!opts->control) {
+            LOGE("--no-control is not allowed in OTG mode");
+            return false;
+        }
+
         enum sc_keyboard_input_mode kmode = opts->keyboard_input_mode;
         if (kmode != SC_KEYBOARD_INPUT_MODE_AOA
                 && kmode != SC_KEYBOARD_INPUT_MODE_DISABLED) {
@@ -2636,6 +2846,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             LOGE("--no-key-repeat is specific to --keyboard=sdk");
             return false;
         }
+    }
+
+    if (opts->mouse_input_mode != SC_MOUSE_INPUT_MODE_SDK
+            && !opts->mouse_hover) {
+        LOGE("--no-mouse-over is specific to --mouse=sdk");
+        return false;
     }
 
     if ((opts->tunnel_host || opts->tunnel_port) && !opts->force_adb_forward) {
@@ -2689,10 +2905,28 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     if (opts->audio && opts->audio_source == SC_AUDIO_SOURCE_AUTO) {
         // Select the audio source according to the video source
         if (opts->video_source == SC_VIDEO_SOURCE_DISPLAY) {
-            opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
+            if (opts->audio_dup) {
+                LOGI("Audio duplication enabled: audio source switched to "
+                     "\"playback\"");
+                opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
+            } else {
+                opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
+            }
         } else {
             opts->audio_source = SC_AUDIO_SOURCE_MIC;
             LOGI("Camera video source: microphone audio source selected");
+        }
+    }
+
+    if (opts->audio_dup) {
+        if (!opts->audio) {
+            LOGE("--audio-dup not supported if audio is disabled");
+            return false;
+        }
+
+        if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
+            LOGE("--audio-dup is specific to --audio-source=playback");
+            return false;
         }
     }
 
@@ -2702,6 +2936,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->record_filename) {
+        if (!opts->video && !opts->audio) {
+            LOGE("Video and audio disabled, nothing to record");
+            return false;
+        }
+
         if (!opts->record_format) {
             opts->record_format = guess_record_format(opts->record_filename);
             if (!opts->record_format) {
@@ -2807,6 +3046,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 # endif
+
+    if (opts->start_fps_counter && !opts->video_playback) {
+        LOGW("--print-fps has no effect without video playback");
+        opts->start_fps_counter = false;
+    }
 
     if (otg) {
         // OTG mode is compatible with only very few options.

@@ -24,7 +24,7 @@ SERVER_BUILD_DIR := build-server
 WIN32_BUILD_DIR := build-win32
 WIN64_BUILD_DIR := build-win64
 
-VERSION := $(shell git describe --tags --always)
+VERSION := $(shell git describe --tags --exclude='*install-release' --always)
 
 DIST := dist
 WIN32_TARGET_DIR := scrcpy-win32-$(VERSION)

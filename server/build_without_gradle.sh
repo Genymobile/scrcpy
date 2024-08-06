@@ -12,7 +12,7 @@
 set -e
 
 SCRCPY_DEBUG=false
-SCRCPY_VERSION_NAME=2.4
+SCRCPY_VERSION_NAME=2.6.1
 
 PLATFORM=${ANDROID_PLATFORM:-34}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-34.0.0}
@@ -50,14 +50,29 @@ cd "$SERVER_DIR/src/main/aidl"
     android/content/IOnPrimaryClipChangedListener.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" android/view/IDisplayFoldListener.aidl
 
+SRC=( \
+    com/genymobile/scrcpy/*.java \
+    com/genymobile/scrcpy/audio/*.java \
+    com/genymobile/scrcpy/control/*.java \
+    com/genymobile/scrcpy/device/*.java \
+    com/genymobile/scrcpy/util/*.java \
+    com/genymobile/scrcpy/video/*.java \
+    com/genymobile/scrcpy/wrappers/*.java \
+)
+
+CLASSES=()
+for src in "${SRC[@]}"
+do
+    CLASSES+=("${src%.java}.class")
+done
+
 echo "Compiling java sources..."
 cd ../java
 javac -bootclasspath "$ANDROID_JAR" \
     -cp "$LAMBDA_JAR:$GEN_DIR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
-    com/genymobile/scrcpy/*.java \
-    com/genymobile/scrcpy/wrappers/*.java
+    ${SRC[@]}
 
 echo "Dexing..."
 cd "$CLASSES_DIR"
@@ -68,8 +83,7 @@ then
     "$BUILD_TOOLS_DIR/dx" --dex --output "$BUILD_DIR/classes.dex" \
         android/view/*.class \
         android/content/*.class \
-        com/genymobile/scrcpy/*.class \
-        com/genymobile/scrcpy/wrappers/*.class
+        ${CLASSES[@]}
 
     echo "Archiving..."
     cd "$BUILD_DIR"
@@ -81,8 +95,7 @@ else
         --output "$BUILD_DIR/classes.zip" \
         android/view/*.class \
         android/content/*.class \
-        com/genymobile/scrcpy/*.class \
-        com/genymobile/scrcpy/wrappers/*.class
+        ${CLASSES[@]}
 
     cd "$BUILD_DIR"
     mv classes.zip "$SERVER_BINARY"

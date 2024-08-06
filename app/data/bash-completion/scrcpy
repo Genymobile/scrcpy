@@ -6,6 +6,7 @@ _scrcpy() {
         --audio-buffer=
         --audio-codec=
         --audio-codec-options=
+        --audio-dup
         --audio-encoder=
         --audio-source=
         --audio-output-buffer=
@@ -25,7 +26,6 @@ _scrcpy() {
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward
-        --forward-all-clicks
         -h --help
         -K
         --keyboard=
@@ -41,6 +41,7 @@ _scrcpy() {
         -M
         --max-fps=
         --mouse=
+        --mouse-bind=
         -n --no-control
         -N --no-playback
         --no-audio
@@ -50,6 +51,7 @@ _scrcpy() {
         --no-downsize-on-error
         --no-key-repeat
         --no-mipmaps
+        --no-mouse-hover
         --no-power-on
         --no-video
         --no-video-playback
@@ -110,7 +112,7 @@ _scrcpy() {
             return
             ;;
         --audio-source)
-            COMPREPLY=($(compgen -W 'output mic' -- "$cur"))
+            COMPREPLY=($(compgen -W 'output mic playback' -- "$cur"))
             return
             ;;
         --camera-facing)

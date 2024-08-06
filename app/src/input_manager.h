@@ -22,18 +22,17 @@ struct sc_input_manager {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
-    bool forward_all_clicks;
+    struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
     bool clipboard_autosync;
 
-    struct {
-        unsigned data[SC_MAX_SHORTCUT_MODS];
-        unsigned count;
-    } sdl_shortcut_mods;
+    uint16_t sdl_shortcut_mods;
 
     bool vfinger_down;
     bool vfinger_invert_x;
     bool vfinger_invert_y;
+
+    uint8_t mouse_buttons_state; // OR of enum sc_mouse_button values
 
     // Tracks the number of identical consecutive shortcut key down events.
     // Not to be confused with event->repeat, which counts the number of
@@ -52,10 +51,10 @@ struct sc_input_manager_params {
     struct sc_key_processor *kp;
     struct sc_mouse_processor *mp;
 
-    bool forward_all_clicks;
+    struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
     bool clipboard_autosync;
-    const struct sc_shortcut_mods *shortcut_mods;
+    uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
 };
 
 void
