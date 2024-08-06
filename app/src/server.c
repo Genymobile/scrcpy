@@ -16,6 +16,8 @@
 #include "util/str.h"
 
 #define SC_SERVER_FILENAME "scrcpy-server"
+#define SC_SERVER_FILENAME_SUFFIX "-v" SCRCPY_VERSION
+#define SC_SERVER_FULL_FILENAME SC_SERVER_FILENAME SC_SERVER_FILENAME_SUFFIX
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
@@ -53,11 +55,28 @@ get_server_path(void) {
         return NULL;
     }
 #else
-    char *server_path = sc_file_get_local_path(SC_SERVER_FILENAME);
+    char *server_path = sc_file_get_local_path(SC_SERVER_FULL_FILENAME);
     if (!server_path) {
-        LOGE("Could not get local file path, "
-             "using " SC_SERVER_FILENAME " from current directory");
-        return strdup(SC_SERVER_FILENAME);
+        LOGE("Could not get path of the executable file itself, "
+             "searching from current working directory");
+        server_path = strdup(SC_SERVER_FULL_FILENAME);
+        if (!server_path) {
+            LOG_OOM();
+            return NULL;
+        }
+    }
+
+    if (!sc_file_is_regular(server_path)) {
+        // versioned server file not found; give another try
+        int i_sep = strlen(server_path) - strlen(SC_SERVER_FILENAME_SUFFIX);
+        server_path[i_sep] = '\0';
+#ifndef __WINDOWS__
+        if (!sc_file_is_regular(server_path)) {
+            // Windows: just use the release zip
+            // non-Windows: suggest them to download versioned file
+            server_path[i_sep] = '-';
+        }
+#endif
     }
 
     LOGD("Using server (portable): %s", server_path);
