@@ -1,5 +1,7 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.device.Size;
+
 import java.util.Objects;
 
 public final class DisplaySpec {

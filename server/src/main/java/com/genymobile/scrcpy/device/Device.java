@@ -10,6 +10,7 @@ import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
+import com.genymobile.scrcpy.video.ScreenCapture;
 
 import android.content.IOnPrimaryClipChangedListener;
 import android.graphics.Rect;
