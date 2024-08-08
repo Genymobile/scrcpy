@@ -33,13 +33,13 @@ public final class UhidManager {
     private final ByteBuffer buffer = ByteBuffer.allocate(SIZE_OF_UHID_EVENT).order(ByteOrder.nativeOrder());
 
     private final DeviceMessageSender sender;
-    private final HandlerThread thread = new HandlerThread("UHidManager");
     private final MessageQueue queue;
 
     public UhidManager(DeviceMessageSender sender) {
         this.sender = sender;
-        thread.start();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            HandlerThread thread = new HandlerThread("UHidManager");
+            thread.start();
             queue = thread.getLooper().getQueue();
         } else {
             queue = null;
