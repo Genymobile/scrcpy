@@ -58,6 +58,8 @@ public class Options {
     private boolean listDisplays;
     private boolean listCameras;
     private boolean listCameraSizes;
+    // when screen virtual display, input event should be dispatched to virtual display
+    private boolean dispatchToVD = false;
 
     // Options not used by the scrcpy client, but useful to use scrcpy-server directly
     private boolean sendDeviceMeta = true; // send device name and size
@@ -207,6 +209,10 @@ public class Options {
 
     public boolean getList() {
         return listEncoders || listDisplays || listCameras || listCameraSizes;
+    }
+
+    public boolean getDispatchToVD() {
+        return dispatchToVD;
     }
 
     public boolean getListEncoders() {
@@ -387,6 +393,9 @@ public class Options {
                     break;
                 case "list_camera_sizes":
                     options.listCameraSizes = Boolean.parseBoolean(value);
+                    break;
+                case "dispatch_to_vd":
+                    options.dispatchToVD = Boolean.parseBoolean(value);
                     break;
                 case "camera_id":
                     if (!value.isEmpty()) {

@@ -52,6 +52,9 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
             Ln.d("Display: using DisplayManager API");
+            if (device.isDispatchToVD()) {
+                device.setInputDisplayId(virtualDisplay.getDisplay().getDisplayId());
+            }
         } catch (Exception displayManagerException) {
             try {
                 display = createDisplay();

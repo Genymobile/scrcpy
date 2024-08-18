@@ -64,6 +64,7 @@ public final class Device {
      * Logical display identifier
      */
     private final int displayId;
+    private int inputDisplayId;
 
     /**
      * The surface flinger layer stack associated with this logical display
@@ -72,8 +73,15 @@ public final class Device {
 
     private final boolean supportsInputEvents;
 
+    /**
+     * Whether to dispatch input events to the virtual display
+     */
+    private final boolean dispatchToVD;
+
     public Device(Options options) throws ConfigurationException {
         displayId = options.getDisplayId();
+        inputDisplayId = displayId;
+        dispatchToVD = options.getDispatchToVD();
         DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         if (displayInfo == null) {
             Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
@@ -172,6 +180,14 @@ public final class Device {
         return displayId;
     }
 
+    public int getInputDisplayId() {
+        return inputDisplayId;
+    }
+
+    public void setInputDisplayId(int id) {
+        inputDisplayId = id;
+    }
+
     public synchronized void setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
         screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
@@ -222,11 +238,14 @@ public final class Device {
         return supportsInputEvents;
     }
 
+    public  boolean isDispatchToVD() {
+        return dispatchToVD;
+    }
+
     public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
         if (!supportsInputEvents(displayId)) {
             throw new AssertionError("Could not inject input event if !supportsInputEvents()");
         }
-
         if (displayId != 0 && !InputManager.setDisplayId(inputEvent, displayId)) {
             return false;
         }
@@ -235,7 +254,7 @@ public final class Device {
     }
 
     public boolean injectEvent(InputEvent event, int injectMode) {
-        return injectEvent(event, displayId, injectMode);
+        return injectEvent(event, inputDisplayId, injectMode);
     }
 
     public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId, int injectMode) {
