@@ -30,8 +30,8 @@ public final class CleanUp {
         this.out = out;
     }
 
-    public static CleanUp configure(int displayId) throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(displayId)};
+    public static CleanUp configure(int displayId, String configPath) throws IOException {
+        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(displayId), configPath};
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", Server.SERVER_PATH);
@@ -83,6 +83,7 @@ public final class CleanUp {
         unlinkSelf();
 
         int displayId = Integer.parseInt(args[0]);
+        String configPath = args.length > 1 ? args[1] : null;
 
         int restoreStayOn = -1;
         boolean disableShowTouches = false;
@@ -118,6 +119,14 @@ public final class CleanUp {
         }
 
         Ln.i("Cleaning up");
+
+        if (configPath != null && !configPath.isBlank()) {
+            try {
+                new File(configPath).delete();
+            } catch (Exception e) {
+                Ln.e("Could not unlink server config", e);
+            }
+        }
 
         if (disableShowTouches) {
             Ln.i("Disabling \"show touches\"");

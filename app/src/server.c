@@ -19,6 +19,7 @@
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
 #define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_DEVICE_SERVER_CONFIG_PATH "/data/local/tmp/scrcpy-server.properties"
 
 #define SC_ADB_PORT_DEFAULT 5555
 #define SC_SOCKET_NAME_PREFIX "scrcpy_"
@@ -71,6 +72,7 @@ sc_server_params_destroy(struct sc_server_params *params) {
     // The server stores a copy of the params provided by the user
     free((char *) params->req_serial);
     free((char *) params->crop);
+    free((char *) params->config);
     free((char *) params->video_codec_options);
     free((char *) params->audio_codec_options);
     free((char *) params->video_encoder);
@@ -100,6 +102,7 @@ sc_server_params_copy(struct sc_server_params *dst,
 
     COPY(req_serial);
     COPY(crop);
+    COPY(config);
     COPY(video_codec_options);
     COPY(audio_codec_options);
     COPY(video_encoder);
@@ -114,6 +117,18 @@ sc_server_params_copy(struct sc_server_params *dst,
 error:
     sc_server_params_destroy(dst);
     return false;
+}
+
+static bool
+push_server_config(struct sc_intr *intr,
+                   const char *serial,
+                   const char *config) {
+    if (!sc_file_is_regular(config)) {
+        LOGE("'%s' does not exist or is not a regular file\n", config);
+        return false;
+    }
+
+    return sc_adb_push(intr, serial, config, SC_DEVICE_SERVER_CONFIG_PATH, 0);
 }
 
 static bool
@@ -313,6 +328,9 @@ execute_server(struct sc_server *server,
     if (params->crop) {
         ADD_PARAM("crop=%s", params->crop);
     }
+    if (params->config) {
+        ADD_PARAM("config=%s", SC_DEVICE_SERVER_CONFIG_PATH);
+    }
     if (!params->control) {
         // By default, control is true
         ADD_PARAM("control=false");
@@ -404,6 +422,8 @@ execute_server(struct sc_server *server,
     //     Port: 5005
     // Then click on "Debug"
 #endif
+    LOGI("Server command: %s %s %s", cmd[9], cmd[10], cmd[11]);
+
     // Inherit both stdout and stderr (all server logs are printed to stdout)
     pid = sc_adb_execute(cmd, 0);
 
@@ -468,8 +488,11 @@ connect_to_server(struct sc_server *server, unsigned attempts, sc_tick delay,
 }
 
 bool
-sc_server_init(struct sc_server *server, const struct sc_server_params *params,
-              const struct sc_server_callbacks *cbs, void *cbs_userdata) {
+sc_server_init(struct sc_server *server,
+               const char *config_path,
+               const struct sc_server_params *params,
+               const struct sc_server_callbacks *cbs, 
+               void *cbs_userdata) {
     bool ok = sc_server_params_copy(&server->params, params);
     if (!ok) {
         LOG_OOM();
@@ -498,6 +521,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     }
 
     server->serial = NULL;
+    server->config = config_path != NULL ? strdup(config_path) : NULL;
     server->device_socket_name = NULL;
     server->stopped = false;
 
@@ -960,6 +984,13 @@ run_server(void *data) {
     assert(serial);
     LOGD("Device serial: %s", serial);
 
+    if (server->config) {
+        ok = push_server_config(&server->intr, serial, server->config);
+        if (!ok) {
+            goto error_connection_failed;
+        }
+    }
+
     ok = push_server(&server->intr, serial);
     if (!ok) {
         goto error_connection_failed;
@@ -1123,6 +1154,7 @@ sc_server_destroy(struct sc_server *server) {
     }
 
     free(server->serial);
+    free(server->config);
     free(server->device_socket_name);
     sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);

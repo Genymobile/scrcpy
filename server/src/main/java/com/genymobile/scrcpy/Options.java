@@ -12,10 +12,18 @@ import com.genymobile.scrcpy.video.VideoSource;
 
 import android.graphics.Rect;
 
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 
 public class Options {
+
+    private String configPath;
 
     private Ln.Level logLevel = Ln.Level.DEBUG;
     private int scid = -1; // 31-bit non-negative value, or -1
@@ -64,6 +72,10 @@ public class Options {
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
     private boolean sendCodecMeta = true; // write the codec metadata before the stream
+
+    public String getConfigPath() {
+        return configPath;
+    }
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -253,17 +265,34 @@ public class Options {
                     "The server version (" + BuildConfig.VERSION_NAME + ") does not match the client " + "(" + clientVersion + ")");
         }
 
+        Properties params = new Properties();
+
+        try {
+            String[] arguments = Arrays.copyOfRange(args, 1, args.length);
+            StringReader reader = new StringReader(String.join("\n", arguments));
+
+            params.load(reader);
+            reader.close();
+
+            if (params.containsKey("config")) {
+                String configFilename = params.getProperty("config");
+                Properties configParams = Options.loadFromConfig(configFilename);
+                params.putAll(configParams);
+
+                Ln.i("Add options from \"" + configFilename + "\"");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+
         Options options = new Options();
 
-        for (int i = 1; i < args.length; ++i) {
-            String arg = args[i];
-            int equalIndex = arg.indexOf('=');
-            if (equalIndex == -1) {
-                throw new IllegalArgumentException("Invalid key=value pair: \"" + arg + "\"");
-            }
-            String key = arg.substring(0, equalIndex);
-            String value = arg.substring(equalIndex + 1);
+        for (String key : params.stringPropertyNames()) {
+            String value = params.getProperty(key, "");
             switch (key) {
+                case "config":
+                    options.configPath = value;
+                    break;
                 case "scid":
                     int scid = Integer.parseInt(value, 0x10);
                     if (scid < -1) {
@@ -486,5 +515,19 @@ public class Options {
 
         float floatAr = Float.parseFloat(tokens[0]);
         return CameraAspectRatio.fromFloat(floatAr);
+    }
+
+    private static Properties loadFromConfig(String filename) {
+        try {
+            Properties props = new Properties();
+            FileReader reader = new FileReader(filename);
+
+            props.load(reader);
+            reader.close();
+
+            return props;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 }

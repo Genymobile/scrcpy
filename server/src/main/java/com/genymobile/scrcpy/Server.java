@@ -130,7 +130,7 @@ public final class Server {
         Thread initThread = null;
 
         if (options.getCleanup()) {
-            cleanUp = CleanUp.configure(options.getDisplayId());
+            cleanUp = CleanUp.configure(options.getDisplayId(), options.getConfigPath());
             initThread = startInitThread(options, cleanUp);
         }
 

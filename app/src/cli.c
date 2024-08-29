@@ -19,6 +19,7 @@
 
 enum {
     OPT_BIT_RATE = 1000,
+    OPT_SERVER_CONFIG,
     OPT_WINDOW_TITLE,
     OPT_PUSH_TARGET,
     OPT_ALWAYS_ON_TOP,
@@ -298,6 +299,17 @@ static const struct sc_option options[] = {
                 "The values are expressed in the device natural orientation "
                 "(typically, portrait for a phone, landscape for a tablet). "
                 "Any --max-size value is computed on the cropped size.",
+    },
+    {
+        .longopt_id = OPT_SERVER_CONFIG,
+        .longopt = "server-config",
+        .argdesc = "/path/to/config",
+        .text = "Server configuration file path.\n"
+                "The file must be in Properties format.\n"
+                "Exmaple:\n"
+                "# scrcpy server configuration\n"
+                "power_off_on_close=true\n"
+                "cleanup=true\n",
     },
     {
         .shortopt = 'd',
@@ -2193,6 +2205,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_CROP:
                 opts->crop = optarg;
+                break;
+            case OPT_SERVER_CONFIG:
+                opts->server_config = optarg;
                 break;
             case OPT_DISPLAY:
                 LOGW("--display is deprecated, use --display-id instead.");

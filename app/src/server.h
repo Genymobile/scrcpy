@@ -30,6 +30,7 @@ struct sc_server_params {
     enum sc_audio_source audio_source;
     enum sc_camera_facing camera_facing;
     const char *crop;
+    const char *config;
     const char *video_codec_options;
     const char *audio_codec_options;
     const char *video_encoder;
@@ -71,6 +72,7 @@ struct sc_server_params {
 struct sc_server {
     // The internal allocated strings are copies owned by the server
     struct sc_server_params params;
+    char *config;
     char *serial;
     char *device_socket_name;
 
@@ -114,7 +116,7 @@ struct sc_server_callbacks {
 
 // init the server with the given params
 bool
-sc_server_init(struct sc_server *server, const struct sc_server_params *params,
+sc_server_init(struct sc_server *server, const char *config_path, const struct sc_server_params *params,
                const struct sc_server_callbacks *cbs, void *cbs_userdata);
 
 // start the server asynchronously
