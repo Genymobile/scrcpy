@@ -51,6 +51,10 @@
 
 #define SC_BACKPRESSURE_THRESHOLD 8 // in-flight frames in video regulator
 
+#ifdef HAVE_MPRIS
+# include "mpris.h"
+#endif
+
 struct scrcpy {
     struct sc_server server;
     struct sc_screen screen;
@@ -95,6 +99,9 @@ struct scrcpy {
         struct sc_gamepad_aoa gamepad_aoa;
 #endif
     };
+#ifdef HAVE_MPRIS
+    struct sc_mpris mpris;
+#endif
     struct sc_timeout timeout;
 };
 
@@ -413,6 +420,9 @@ scrcpy(struct scrcpy_options *options) {
     bool keyboard_aoa_initialized = false;
     bool mouse_aoa_initialized = false;
     bool gamepad_aoa_initialized = false;
+#endif
+#ifdef HAVE_MPRIS
+    bool mpris_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -962,6 +972,13 @@ aoa_complete:
     }
 #endif
 
+#ifdef HAVE_MPRIS
+	if (!sc_mpris_start(&s->mpris)) {
+		goto end;
+	}
+	mpris_initialized = true;
+#endif
+
     // Now that the header values have been consumed, the socket(s) will
     // receive the stream(s). Start the demuxer(s).
 
@@ -1135,6 +1152,12 @@ end:
     }
     if (v4l2_sink_initialized) {
         sc_v4l2_sink_destroy(&s->v4l2_sink);
+    }
+#endif
+
+#ifdef HAVE_MPRIS
+    if(mpris_initialized) {
+	sc_mpris_stop(&s->mpris);
     }
 #endif
 
