@@ -864,6 +864,10 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             }
             return true;
         }
+        case SC_EVENT_RAISE_WINDOW: {
+            SDL_RaiseWindow(screen->window);
+            return true;
+        }
         case SDL_WINDOWEVENT:
             if (!screen->video
                     && event->window.event == SDL_WINDOWEVENT_EXPOSED) {

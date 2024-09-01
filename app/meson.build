@@ -105,6 +105,11 @@ if usb_support
     ]
 endif
 
+mpris_support = get_option('mpris') and host_machine.system() == 'linux'
+if mpris_support
+    src += [ 'src/mpris.c' ]
+endif
+
 cc = meson.get_compiler('c')
 
 dependencies = [
@@ -121,6 +126,11 @@ endif
 
 if usb_support
     dependencies += dependency('libusb-1.0')
+endif
+
+if mpris_support
+    dependencies += dependency('glib-2.0')
+    dependencies += dependency('gio-2.0')
 endif
 
 if host_machine.system() == 'windows'
@@ -173,6 +183,9 @@ conf.set('HAVE_V4L2', v4l2_support)
 
 # enable HID over AOA support (linux only)
 conf.set('HAVE_USB', usb_support)
+
+# enable DBus MPRIS support (linux only)
+conf.set('HAVE_MPRIS', mpris_support)
 
 configure_file(configuration: conf, output: 'config.h')
 
