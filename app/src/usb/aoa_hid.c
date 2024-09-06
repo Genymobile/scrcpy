@@ -126,26 +126,6 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
     return true;
 }
 
-bool
-sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
-                 const uint8_t *report_desc, uint16_t report_desc_size) {
-    bool ok = sc_aoa_register_hid(aoa, accessory_id, report_desc_size);
-    if (!ok) {
-        return false;
-    }
-
-    ok = sc_aoa_set_hid_report_desc(aoa, accessory_id, report_desc,
-                                    report_desc_size);
-    if (!ok) {
-        if (!sc_aoa_unregister_hid(aoa, accessory_id)) {
-            LOGW("Could not unregister HID");
-        }
-        return false;
-    }
-
-    return true;
-}
-
 static bool
 sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
@@ -186,6 +166,26 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id) {
     if (result < 0) {
         LOGE("UNREGISTER_HID: libusb error: %s", libusb_strerror(result));
         sc_usb_check_disconnected(aoa->usb, result);
+        return false;
+    }
+
+    return true;
+}
+
+bool
+sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
+                 const uint8_t *report_desc, uint16_t report_desc_size) {
+    bool ok = sc_aoa_register_hid(aoa, accessory_id, report_desc_size);
+    if (!ok) {
+        return false;
+    }
+
+    ok = sc_aoa_set_hid_report_desc(aoa, accessory_id, report_desc,
+                                    report_desc_size);
+    if (!ok) {
+        if (!sc_aoa_unregister_hid(aoa, accessory_id)) {
+            LOGW("Could not unregister HID");
+        }
         return false;
     }
 
