@@ -16,9 +16,6 @@
 
 #define SC_HID_ID_KEYBOARD 1
 
-extern const uint8_t SC_HID_KEYBOARD_REPORT_DESC[];
-extern const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN;
-
 /**
  * HID keyboard events are sequence-based, every time keyboard state changes
  * it sends an array of currently pressed keys, the host is responsible for
@@ -37,6 +34,12 @@ struct sc_hid_keyboard {
 
 void
 sc_hid_keyboard_init(struct sc_hid_keyboard *hid);
+
+void
+sc_hid_keyboard_generate_open(struct sc_hid_open *hid_open);
+
+void
+sc_hid_keyboard_generate_close(struct sc_hid_close *hid_close);
 
 bool
 sc_hid_keyboard_generate_input_from_key(struct sc_hid_keyboard *hid,

@@ -13,4 +13,14 @@ struct sc_hid_input {
     uint8_t size;
 };
 
+struct sc_hid_open {
+    uint16_t hid_id;
+    const uint8_t *report_desc; // pointer to static memory
+    size_t report_desc_size;
+};
+
+struct sc_hid_close {
+    uint16_t hid_id;
+};
+
 #endif

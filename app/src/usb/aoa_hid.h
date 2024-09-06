@@ -23,12 +23,10 @@ struct sc_aoa_event {
     enum sc_aoa_event_type type;
     union {
         struct {
-            uint16_t hid_id;
-            const uint8_t *report_desc; // pointer to static memory
-            uint16_t report_desc_size;
+            struct sc_hid_open hid;
         } open;
         struct {
-            uint16_t hid_id;
+            struct sc_hid_close hid;
         } close;
         struct {
             struct sc_hid_input hid;
@@ -75,11 +73,10 @@ sc_aoa_join(struct sc_aoa *aoa);
 // report_desc must be a pointer to static memory, accessed at any time from
 // another thread
 bool
-sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
-                 const uint8_t *report_desc, uint16_t report_desc_size);
+sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open);
 
 bool
-sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id);
+sc_aoa_push_close(struct sc_aoa *aoa, const struct sc_hid_close *hid_close);
 
 bool
 sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
