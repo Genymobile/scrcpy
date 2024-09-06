@@ -82,22 +82,10 @@ struct scrcpy {
     struct sc_timeout timeout;
 };
 
-static inline void
-push_event(uint32_t type, const char *name) {
-    SDL_Event event;
-    event.type = type;
-    int ret = SDL_PushEvent(&event);
-    if (ret < 0) {
-        LOGE("Could not post %s event: %s", name, SDL_GetError());
-        // What could we do?
-    }
-}
-#define PUSH_EVENT(TYPE) push_event(TYPE, # TYPE)
-
 #ifdef _WIN32
 static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     if (ctrl_type == CTRL_C_EVENT) {
-        PUSH_EVENT(SDL_QUIT);
+        sc_push_event(SDL_QUIT);
         return TRUE;
     }
     return FALSE;
@@ -230,7 +218,7 @@ sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
     (void) userdata;
 
     if (!success) {
-        PUSH_EVENT(SC_EVENT_RECORDER_ERROR);
+        sc_push_event(SC_EVENT_RECORDER_ERROR);
     }
 }
 
@@ -244,9 +232,9 @@ sc_video_demuxer_on_ended(struct sc_demuxer *demuxer,
     assert(status != SC_DEMUXER_STATUS_DISABLED);
 
     if (status == SC_DEMUXER_STATUS_EOS) {
-        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+        sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
     } else {
-        PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
+        sc_push_event(SC_EVENT_DEMUXER_ERROR);
     }
 }
 
@@ -260,11 +248,11 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
     // Contrary to the video demuxer, keep mirroring if only the audio fails
     // (unless --require-audio is set).
     if (status == SC_DEMUXER_STATUS_EOS) {
-        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+        sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
     } else if (status == SC_DEMUXER_STATUS_ERROR
             || (status == SC_DEMUXER_STATUS_DISABLED
                 && options->require_audio)) {
-        PUSH_EVENT(SC_EVENT_DEMUXER_ERROR);
+        sc_push_event(SC_EVENT_DEMUXER_ERROR);
     }
 }
 
@@ -277,9 +265,9 @@ sc_controller_on_ended(struct sc_controller *controller, bool error,
     (void) userdata;
 
     if (error) {
-        PUSH_EVENT(SC_EVENT_CONTROLLER_ERROR);
+        sc_push_event(SC_EVENT_CONTROLLER_ERROR);
     } else {
-        PUSH_EVENT(SC_EVENT_DEVICE_DISCONNECTED);
+        sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
     }
 }
 
@@ -288,7 +276,7 @@ sc_server_on_connection_failed(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_SERVER_CONNECTION_FAILED);
+    sc_push_event(SC_EVENT_SERVER_CONNECTION_FAILED);
 }
 
 static void
@@ -296,7 +284,7 @@ sc_server_on_connected(struct sc_server *server, void *userdata) {
     (void) server;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_SERVER_CONNECTED);
+    sc_push_event(SC_EVENT_SERVER_CONNECTED);
 }
 
 static void
@@ -314,7 +302,7 @@ sc_timeout_on_timeout(struct sc_timeout *timeout, void *userdata) {
     (void) timeout;
     (void) userdata;
 
-    PUSH_EVENT(SC_EVENT_TIME_LIMIT_REACHED);
+    sc_push_event(SC_EVENT_TIME_LIMIT_REACHED);
 }
 
 // Generate a scrcpy id to differentiate multiple running scrcpy instances

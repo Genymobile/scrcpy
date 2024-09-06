@@ -3,6 +3,8 @@
 
 #include "common.h"
 
+#include <stdbool.h>
+#include <stdint.h>
 #include <SDL_events.h>
 
 enum {
@@ -17,5 +19,10 @@ enum {
     SC_EVENT_TIME_LIMIT_REACHED,
     SC_EVENT_CONTROLLER_ERROR,
 };
+
+bool
+sc_push_event_impl(uint32_t type, const char *name);
+
+#define sc_push_event(TYPE) sc_push_event_impl(TYPE, # TYPE)
 
 #endif
