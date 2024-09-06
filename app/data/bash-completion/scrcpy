@@ -26,6 +26,7 @@ _scrcpy() {
         -e --select-tcpip
         -f --fullscreen
         --force-adb-forward
+        -G
         --gamepad=
         -h --help
         -K
@@ -129,7 +130,7 @@ _scrcpy() {
             return
             ;;
         --gamepad)
-            COMPREPLY=($(compgen -W 'disabled aoa' -- "$cur"))
+            COMPREPLY=($(compgen -W 'disabled uhid aoa' -- "$cur"))
             return
             ;;
         --orientation|--display-orientation)

@@ -95,6 +95,12 @@ public final class UhidManager {
         }
     }
 
+    private void unregisterUhidListener(FileDescriptor fd) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            queue.removeOnFileDescriptorEventListener(fd);
+        }
+    }
+
     private static byte[] extractHidOutputData(ByteBuffer buffer) {
         /*
          * #define UHID_DATA_MAX 4096
@@ -199,9 +205,15 @@ public final class UhidManager {
     }
 
     public void close(int id) {
-        FileDescriptor fd = fds.get(id);
-        assert fd != null;
-        close(fd);
+        // Linux: Documentation/hid/uhid.rst
+        // If you close() the fd, the device is automatically unregistered and destroyed internally.
+        FileDescriptor fd = fds.remove(id);
+        if (fd != null) {
+            unregisterUhidListener(fd);
+            close(fd);
+        } else {
+            Ln.w("Closing unknown UHID device: " + id);
+        }
     }
 
     public void closeAll() {

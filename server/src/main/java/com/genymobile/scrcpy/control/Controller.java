@@ -215,6 +215,9 @@ public class Controller implements AsyncProcessor {
             case ControlMessage.TYPE_UHID_INPUT:
                 getUhidManager().writeInput(msg.getId(), msg.getData());
                 break;
+            case ControlMessage.TYPE_UHID_DESTROY:
+                getUhidManager().close(msg.getId());
+                break;
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 openHardKeyboardSettings();
                 break;
