@@ -21,10 +21,8 @@ sc_usb_on_disconnected(struct sc_usb *usb, void *userdata) {
     (void) usb;
     (void) userdata;
 
-    SDL_Event event;
-    event.type = SC_EVENT_USB_DEVICE_DISCONNECTED;
-    int ret = SDL_PushEvent(&event);
-    if (ret < 0) {
+    bool ok = sc_push_event(SC_EVENT_USB_DEVICE_DISCONNECTED);
+    if (!ok) {
         LOGE("Could not post USB disconnection event: %s", SDL_GetError());
     }
 }
