@@ -21,6 +21,7 @@ public class ControlMessageReader {
     static final int SET_CLIPBOARD_FIXED_PAYLOAD_LENGTH = 9;
     static final int UHID_CREATE_FIXED_PAYLOAD_LENGTH = 4;
     static final int UHID_INPUT_FIXED_PAYLOAD_LENGTH = 4;
+    static final int UHID_DESTROY_PAYLOAD_LENGTH = 2;
 
     private static final int MESSAGE_MAX_SIZE = 1 << 18; // 256k
 
@@ -98,6 +99,9 @@ public class ControlMessageReader {
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
                 msg = parseUhidInput();
+                break;
+            case ControlMessage.TYPE_UHID_DESTROY:
+                msg = parseUhidDestroy();
                 break;
             default:
                 Ln.w("Unknown event type: " + type);
@@ -247,6 +251,14 @@ public class ControlMessageReader {
             return null;
         }
         return ControlMessage.createUhidInput(id, data);
+    }
+
+    private ControlMessage parseUhidDestroy() {
+        if (buffer.remaining() < UHID_DESTROY_PAYLOAD_LENGTH) {
+            return null;
+        }
+        int id = buffer.getShort();
+        return ControlMessage.createUhidDestroy(id);
     }
 
     private static Position readPosition(ByteBuffer buffer) {
