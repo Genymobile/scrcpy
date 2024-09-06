@@ -17,7 +17,7 @@ push_mod_lock_state(struct sc_keyboard_aoa *kb, uint16_t mods_state) {
     }
 
     if (!sc_aoa_push_input(kb->aoa, &hid_input)) {
-        LOGW("Could not push HID input (mod lock state)");
+        LOGW("Could not push AOA HID input (mod lock state)");
         return false;
     }
 
@@ -57,7 +57,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
         if (!sc_aoa_push_input_with_ack_to_wait(kb->aoa, &hid_input,
                                                 ack_to_wait)) {
-            LOGW("Could not push HID input (key)");
+            LOGW("Could not push AOA HID input (key)");
         }
     }
 }
@@ -71,7 +71,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 
     bool ok = sc_aoa_push_open(aoa, &hid_open);
     if (!ok) {
-        LOGW("Could not push AOA keyboard open request");
+        LOGW("Could not push AOA HID open (keyboard)");
         return false;
     }
 
@@ -103,6 +103,6 @@ sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
 
     bool ok = sc_aoa_push_close(kb->aoa, &hid_close);
     if (!ok) {
-        LOGW("Could not push AOA keyboard close request");
+        LOGW("Could not push AOA HID close (keyboard)");
     }
 }

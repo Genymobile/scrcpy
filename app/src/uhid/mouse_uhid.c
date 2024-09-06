@@ -20,7 +20,7 @@ sc_mouse_uhid_send_input(struct sc_mouse_uhid *mouse,
     msg.uhid_input.size = hid_input->size;
 
     if (!sc_controller_push_msg(mouse->controller, &msg)) {
-        LOGE("Could not send UHID_INPUT message (%s)", name);
+        LOGE("Could not push UHID_INPUT message (%s)", name);
     }
 }
 
@@ -84,7 +84,7 @@ sc_mouse_uhid_init(struct sc_mouse_uhid *mouse,
     msg.uhid_create.report_desc = hid_open.report_desc;
     msg.uhid_create.report_desc_size = hid_open.report_desc_size;
     if (!sc_controller_push_msg(controller, &msg)) {
-        LOGE("Could not send UHID_CREATE message (mouse)");
+        LOGE("Could not push UHID_CREATE message (mouse)");
         return false;
     }
 
