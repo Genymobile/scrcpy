@@ -14,11 +14,11 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
     struct sc_mouse_aoa *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_motion(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_motion(&hid_input, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        LOGW("Could not request HID event (mouse motion)");
+    if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
+        LOGW("Could not push HID input (mouse motion)");
     }
 }
 
@@ -27,11 +27,11 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_click_event *event) {
     struct sc_mouse_aoa *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_click(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_click(&hid_input, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        LOGW("Could not request HID event (mouse click)");
+    if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
+        LOGW("Could not push HID input (mouse click)");
     }
 }
 
@@ -40,11 +40,11 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_aoa *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_scroll(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
-        LOGW("Could not request HID event (mouse scroll)");
+    if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
+        LOGW("Could not push HID input (mouse scroll)");
     }
 }
 
