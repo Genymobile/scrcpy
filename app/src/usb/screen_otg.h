@@ -8,10 +8,12 @@
 
 #include "keyboard_aoa.h"
 #include "mouse_aoa.h"
+#include "gamepad_aoa.h"
 
 struct sc_screen_otg {
     struct sc_keyboard_aoa *keyboard;
     struct sc_mouse_aoa *mouse;
+    struct sc_gamepad_aoa *gamepad;
 
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -24,6 +26,7 @@ struct sc_screen_otg {
 struct sc_screen_otg_params {
     struct sc_keyboard_aoa *keyboard;
     struct sc_mouse_aoa *mouse;
+    struct sc_gamepad_aoa *gamepad;
 
     const char *window_title;
     bool always_on_top;
