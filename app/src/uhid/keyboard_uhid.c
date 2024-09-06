@@ -9,14 +9,12 @@
 #define DOWNCAST_RECEIVER(UR) \
     container_of(UR, struct sc_keyboard_uhid, uhid_receiver)
 
-#define UHID_KEYBOARD_ID 1
-
 static void
 sc_keyboard_uhid_send_input(struct sc_keyboard_uhid *kb,
                             const struct sc_hid_event *event) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-    msg.uhid_input.id = UHID_KEYBOARD_ID;
+    msg.uhid_input.id = event->hid_id;
 
     assert(event->size <= SC_HID_MAX_SIZE);
     memcpy(msg.uhid_input.data, event->data, event->size);
@@ -143,13 +141,13 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
         .process_output = sc_uhid_receiver_process_output,
     };
 
-    kb->uhid_receiver.id = UHID_KEYBOARD_ID;
+    kb->uhid_receiver.id = SC_HID_ID_KEYBOARD;
     kb->uhid_receiver.ops = &uhid_receiver_ops;
     sc_uhid_devices_add_receiver(uhid_devices, &kb->uhid_receiver);
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
-    msg.uhid_create.id = UHID_KEYBOARD_ID;
+    msg.uhid_create.id = SC_HID_ID_KEYBOARD;
     msg.uhid_create.report_desc = SC_HID_KEYBOARD_REPORT_DESC;
     msg.uhid_create.report_desc_size = SC_HID_KEYBOARD_REPORT_DESC_LEN;
     if (!sc_controller_push_msg(controller, &msg)) {

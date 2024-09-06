@@ -8,6 +8,8 @@
 #include "hid/hid_event.h"
 #include "input_events.h"
 
+#define SC_HID_ID_MOUSE 2
+
 extern const uint8_t SC_HID_MOUSE_REPORT_DESC[];
 extern const size_t SC_HID_MOUSE_REPORT_DESC_LEN;
 
