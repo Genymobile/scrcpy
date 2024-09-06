@@ -98,11 +98,6 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
-    struct sc_hid_close hid_close;
-    sc_hid_keyboard_generate_close(&hid_close);
-
-    bool ok = sc_aoa_push_close(kb->aoa, &hid_close);
-    if (!ok) {
-        LOGW("Could not push AOA HID close (keyboard)");
-    }
+    (void) kb;
+    // Do nothing, kb->aoa will automatically unregister all devices
 }
