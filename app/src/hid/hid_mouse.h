@@ -1,8 +1,6 @@
 #ifndef SC_HID_MOUSE_H
 #define SC_HID_MOUSE_H
 
-#endif
-
 #include "common.h"
 
 #include <stdbool.h>
@@ -24,3 +22,5 @@ sc_hid_mouse_event_from_click(struct sc_hid_event *hid_event,
 void
 sc_hid_mouse_event_from_scroll(struct sc_hid_event *hid_event,
                                const struct sc_mouse_scroll_event *event);
+
+#endif
