@@ -52,9 +52,10 @@ bool
 sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
     mouse->aoa = aoa;
 
-    bool ok = sc_aoa_push_open(aoa, SC_HID_ID_MOUSE,
-                               SC_HID_MOUSE_REPORT_DESC,
-                               SC_HID_MOUSE_REPORT_DESC_LEN);
+    struct sc_hid_open hid_open;
+    sc_hid_mouse_generate_open(&hid_open);
+
+    bool ok = sc_aoa_push_open(aoa, &hid_open);
     if (!ok) {
         LOGW("Could not push AOA mouse open request");
         return false;
@@ -77,7 +78,10 @@ sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
 
 void
 sc_mouse_aoa_destroy(struct sc_mouse_aoa *mouse) {
-    bool ok = sc_aoa_push_close(mouse->aoa, SC_HID_ID_MOUSE);
+    struct sc_hid_close hid_close;
+    sc_hid_mouse_generate_close(&hid_close);
+
+    bool ok = sc_aoa_push_close(mouse->aoa, &hid_close);
     if (!ok) {
         LOGW("Could not push AOA mouse close request");
     }

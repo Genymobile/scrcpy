@@ -230,8 +230,7 @@ sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
 }
 
 bool
-sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
-                 const uint8_t *report_desc, uint16_t report_desc_size) {
+sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open) {
     // TODO log verbose
 
     sc_mutex_lock(&aoa->mutex);
@@ -247,9 +246,7 @@ sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
     }
 
     aoa_event->type = SC_AOA_EVENT_TYPE_OPEN;
-    aoa_event->open.hid_id = accessory_id;
-    aoa_event->open.report_desc = report_desc;
-    aoa_event->open.report_desc_size = report_desc_size;
+    aoa_event->open.hid = *hid_open;
 
     if (was_empty) {
         sc_cond_signal(&aoa->event_cond);
@@ -261,7 +258,7 @@ sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
 }
 
 bool
-sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id) {
+sc_aoa_push_close(struct sc_aoa *aoa, const struct sc_hid_close *hid_close) {
     // TODO log verbose
 
     sc_mutex_lock(&aoa->mutex);
@@ -277,7 +274,7 @@ sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id) {
     }
 
     aoa_event->type = SC_AOA_EVENT_TYPE_CLOSE;
-    aoa_event->close.hid_id = accessory_id;
+    aoa_event->close.hid = *hid_close;
 
     if (was_empty) {
         sc_cond_signal(&aoa->event_cond);
@@ -316,29 +313,31 @@ sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
                 }
             }
 
-            bool ok = sc_aoa_send_hid_event(aoa, &event->input.hid);
+            struct sc_hid_input *hid_input = &event->input.hid;
+            bool ok = sc_aoa_send_hid_event(aoa, hid_input);
             if (!ok) {
                 LOGW("Could not send HID event to USB device: %" PRIu16,
-                     event->input.hid.hid_id);
+                     hid_input->hid_id);
             }
 
             break;
         }
         case SC_AOA_EVENT_TYPE_OPEN: {
-            bool ok = sc_aoa_setup_hid(aoa, event->open.hid_id,
-                                       event->open.report_desc,
-                                       event->open.report_desc_size);
+            struct sc_hid_open *hid_open = &event->open.hid;
+            bool ok = sc_aoa_setup_hid(aoa, hid_open->hid_id,
+                                       hid_open->report_desc,
+                                       hid_open->report_desc_size);
             if (!ok) {
-                LOGW("Could not open AOA device: %" PRIu16, event->open.hid_id);
+                LOGW("Could not open AOA device: %" PRIu16, hid_open->hid_id);
             }
 
             break;
         }
         case SC_AOA_EVENT_TYPE_CLOSE: {
-            bool ok = sc_aoa_unregister_hid(aoa, event->close.hid_id);
+            struct sc_hid_close *hid_close = &event->close.hid;
+            bool ok = sc_aoa_unregister_hid(aoa, hid_close->hid_id);
             if (!ok) {
-                LOGW("Could not close AOA device: %" PRIu16,
-                     event->close.hid_id);
+                LOGW("Could not close AOA device: %" PRIu16, hid_close->hid_id);
             }
 
             break;
