@@ -179,9 +179,10 @@ Do not attempt to use "adb reverse" to connect to the device.
 .BI "\-\-gamepad " mode
 Select how to send gamepad inputs to the device.
 
-Possible values are "disabled" and "aoa":
+Possible values are "disabled", "uhid" and "aoa":
 
  - "disabled" does not send keyboard inputs to the device.
+ - "uhid" simulates a physical HID gamepad using the Linux HID kernel module on the device.
  - "aoa" simulates a physical HID gamepad using the AOAv2 protocol. It may only work over USB.
 
 Also see \fB\-\-keyboard\f and R\fB\-\-mouse\fR.

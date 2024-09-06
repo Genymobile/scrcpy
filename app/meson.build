@@ -37,6 +37,7 @@ src = [
     'src/hid/hid_mouse.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
+    'src/uhid/gamepad_uhid.c',
     'src/uhid/keyboard_uhid.c',
     'src/uhid/mouse_uhid.c',
     'src/uhid/uhid_output.c',

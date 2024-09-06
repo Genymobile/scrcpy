@@ -374,12 +374,18 @@ static const struct sc_option options[] = {
         .longopt = "forward-all-clicks",
     },
     {
+        .shortopt = 'G',
+        .text = "Same as --gamepad=uhid.",
+    },
+    {
         .longopt_id = OPT_GAMEPAD,
         .longopt = "gamepad",
         .argdesc = "mode",
         .text = "Select how to send gamepad inputs to the device.\n"
-                "Possible values are \"disabled\" and \"aoa\".\n"
+                "Possible values are \"disabled\", \"uhid\" and \"aoa\".\n"
                 "\"disabled\" does not send gamepad inputs to the device.\n"
+                "\"uhid\" simulates a physical HID gamepad using the Linux "
+                "UHID kernel module on the device.\n"
                 "\"aoa\" simulates a physical gamepad using the AOAv2 "
                 "protocol. It may only work over USB.\n"
                 "Also see --keyboard and --mouse.",
@@ -2077,6 +2083,11 @@ parse_gamepad(const char *optarg, enum sc_gamepad_input_mode *mode) {
         return true;
     }
 
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_GAMEPAD_INPUT_MODE_UHID;
+        return true;
+    }
+
     if (!strcmp(optarg, "aoa")) {
 #ifdef HAVE_USB
         *mode = SC_GAMEPAD_INPUT_MODE_AOA;
@@ -2659,6 +2670,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
                 break;
+            case 'G':
+                opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID;
+                break;
             case OPT_GAMEPAD:
                 if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
                     return false;
@@ -2800,6 +2814,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             if (otg) {
                 opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_AOA;
             } else {
+                // UHID does not work on all devices (with old Android
+                // versions), so it cannot be enabled by default
                 opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_DISABLED;
             }
         }
