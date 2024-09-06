@@ -16,7 +16,7 @@ struct sc_keyboard_uhid {
 
     struct sc_hid_keyboard hid;
     struct sc_controller *controller;
-    atomic_uint_least16_t device_mod;
+    uint16_t device_mod;
 };
 
 bool
