@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "aoa_hid.h"
+#include "events.h"
 #include "util/log.h"
 #include "util/str.h"
 #include "util/vector.h"
@@ -252,7 +253,8 @@ sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
 }
 
 bool
-sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open) {
+sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open,
+                 bool exit_on_open_error) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
         sc_hid_open_log(hid_open);
     }
@@ -271,6 +273,7 @@ sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open) {
 
     aoa_event->type = SC_AOA_EVENT_TYPE_OPEN;
     aoa_event->open.hid = *hid_open;
+    aoa_event->open.exit_on_error = exit_on_open_error;
 
     if (was_empty) {
         sc_cond_signal(&aoa->event_cond);
@@ -365,6 +368,10 @@ sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event,
                 }
             } else {
                 LOGW("Could not open AOA device: %" PRIu16, hid_open->hid_id);
+                if (event->open.exit_on_error) {
+                    // Notify the error to the main thread, which will exit
+                    sc_push_event(SC_EVENT_AOA_OPEN_ERROR);
+                }
             }
 
             break;
