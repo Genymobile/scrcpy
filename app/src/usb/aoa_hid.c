@@ -16,7 +16,8 @@
 
 #define DEFAULT_TIMEOUT 1000
 
-#define SC_AOA_EVENT_QUEUE_MAX 64
+// Drop droppable events above this limit
+#define SC_AOA_EVENT_QUEUE_LIMIT 60
 
 static void
 sc_hid_event_log(const struct sc_hid_event *event) {
@@ -35,7 +36,8 @@ sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
     sc_vecdeque_init(&aoa->queue);
 
-    if (!sc_vecdeque_reserve(&aoa->queue, SC_AOA_EVENT_QUEUE_MAX)) {
+    // Add 4 to support 4 non-droppable events without re-allocation
+    if (!sc_vecdeque_reserve(&aoa->queue, SC_AOA_EVENT_QUEUE_LIMIT + 4)) {
         return false;
     }
 
@@ -149,7 +151,7 @@ sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     return true;
 }
 
-bool
+static bool
 sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id) {
     uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
     uint8_t request = ACCESSORY_UNREGISTER_HID;
@@ -172,7 +174,7 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id) {
     return true;
 }
 
-bool
+static bool
 sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
                  const uint8_t *report_desc, uint16_t report_desc_size) {
     bool ok = sc_aoa_register_hid(aoa, accessory_id, report_desc_size);
@@ -201,55 +203,145 @@ sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
     }
 
     sc_mutex_lock(&aoa->mutex);
-    bool full = sc_vecdeque_is_full(&aoa->queue);
-    if (!full) {
+
+    bool pushed = false;
+
+    size_t size = sc_vecdeque_size(&aoa->queue);
+    if (size < SC_AOA_EVENT_QUEUE_LIMIT) {
         bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
 
         struct sc_aoa_event *aoa_event =
             sc_vecdeque_push_hole_noresize(&aoa->queue);
-        aoa_event->hid = *event;
-        aoa_event->ack_to_wait = ack_to_wait;
+        aoa_event->type = SC_AOA_EVENT_TYPE_INPUT;
+        aoa_event->input.hid = *event;
+        aoa_event->input.ack_to_wait = ack_to_wait;
+        pushed = true;
 
         if (was_empty) {
             sc_cond_signal(&aoa->event_cond);
         }
     }
-    // Otherwise (if the queue is full), the event is discarded
+    // Otherwise, the event is discarded
 
     sc_mutex_unlock(&aoa->mutex);
 
-    return !full;
+    return pushed;
+}
+
+bool
+sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
+                 const uint8_t *report_desc, uint16_t report_desc_size) {
+    // TODO log verbose
+
+    sc_mutex_lock(&aoa->mutex);
+    bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
+
+    // an OPEN event is non-droppable, so push it to the queue even above the
+    // SC_AOA_EVENT_QUEUE_LIMIT
+    struct sc_aoa_event *aoa_event = sc_vecdeque_push_hole(&aoa->queue);
+    if (!aoa_event) {
+        LOG_OOM();
+        sc_mutex_unlock(&aoa->mutex);
+        return false;
+    }
+
+    aoa_event->type = SC_AOA_EVENT_TYPE_OPEN;
+    aoa_event->open.hid_id = accessory_id;
+    aoa_event->open.report_desc = report_desc;
+    aoa_event->open.report_desc_size = report_desc_size;
+
+    if (was_empty) {
+        sc_cond_signal(&aoa->event_cond);
+    }
+
+    sc_mutex_unlock(&aoa->mutex);
+
+    return true;
+}
+
+bool
+sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id) {
+    // TODO log verbose
+
+    sc_mutex_lock(&aoa->mutex);
+    bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
+
+    // a CLOSE event is non-droppable, so push it to the queue even above the
+    // SC_AOA_EVENT_QUEUE_LIMIT
+    struct sc_aoa_event *aoa_event = sc_vecdeque_push_hole(&aoa->queue);
+    if (!aoa_event) {
+        LOG_OOM();
+        sc_mutex_unlock(&aoa->mutex);
+        return false;
+    }
+
+    aoa_event->type = SC_AOA_EVENT_TYPE_CLOSE;
+    aoa_event->close.hid_id = accessory_id;
+
+    if (was_empty) {
+        sc_cond_signal(&aoa->event_cond);
+    }
+
+    sc_mutex_unlock(&aoa->mutex);
+
+    return true;
 }
 
 static bool
 sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
-    uint64_t ack_to_wait = event->ack_to_wait;
-    if (ack_to_wait != SC_SEQUENCE_INVALID) {
-        LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
+    switch (event->type) {
+        case SC_AOA_EVENT_TYPE_INPUT: {
+            uint64_t ack_to_wait = event->input.ack_to_wait;
+            if (ack_to_wait != SC_SEQUENCE_INVALID) {
+                LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
 
-        // If some events have ack_to_wait set, then sc_aoa must have been
-        // initialized with a non NULL acksync
-        assert(aoa->acksync);
+                // If some events have ack_to_wait set, then sc_aoa must have
+                // been initialized with a non NULL acksync
+                assert(aoa->acksync);
 
-        // Do not block the loop indefinitely if the ack never comes (it
-        // should never happen)
-        sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
-        enum sc_acksync_wait_result result =
-            sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
+                // Do not block the loop indefinitely if the ack never comes (it
+                // should never happen)
+                sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
+                enum sc_acksync_wait_result result =
+                    sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
 
-        if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
-            LOGW("Ack not received after 500ms, discarding HID event");
-            // continue to process events
-            return true;
-        } else if (result == SC_ACKSYNC_WAIT_INTR) {
-            // stopped
-            return false;
+                if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
+                    LOGW("Ack not received after 500ms, discarding HID event");
+                    // continue to process events
+                    return true;
+                } else if (result == SC_ACKSYNC_WAIT_INTR) {
+                    // stopped
+                    return false;
+                }
+            }
+
+            bool ok = sc_aoa_send_hid_event(aoa, &event->input.hid);
+            if (!ok) {
+                LOGW("Could not send HID event to USB device: %" PRIu16,
+                     event->input.hid.hid_id);
+            }
+
+            break;
         }
-    }
+        case SC_AOA_EVENT_TYPE_OPEN: {
+            bool ok = sc_aoa_setup_hid(aoa, event->open.hid_id,
+                                       event->open.report_desc,
+                                       event->open.report_desc_size);
+            if (!ok) {
+                LOGW("Could not open AOA device: %" PRIu16, event->open.hid_id);
+            }
 
-    bool ok = sc_aoa_send_hid_event(aoa, &event->hid);
-    if (!ok) {
-        LOGW("Could not send HID event to USB device");
+            break;
+        }
+        case SC_AOA_EVENT_TYPE_CLOSE: {
+            bool ok = sc_aoa_unregister_hid(aoa, event->close.hid_id);
+            if (!ok) {
+                LOGW("Could not close AOA device: %" PRIu16,
+                     event->close.hid_id);
+            }
+
+            break;
+        }
     }
 
     // continue to process events
