@@ -6,13 +6,13 @@
 
 /**
  * Mouse descriptor from the specification:
- * <https://www.usb.org/sites/default/files/hid1_11.pdf>
+ * <https://www.usb.org/document-library/device-class-definition-hid-111>
  *
  * Appendix E (p71): §E.10 Report Descriptor (Mouse)
  *
  * The usage tags (like Wheel) are listed in "HID Usage Tables":
- * <https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf>
- * §4 Generic Desktop Page (0x01) (p26)
+ * <https://www.usb.org/document-library/hid-usage-tables-15>
+ * §4 Generic Desktop Page (0x01) (p32)
  */
 static const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
     // Usage Page (Generic Desktop)
@@ -34,7 +34,7 @@ static const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
 
     // Usage Minimum (1)
     0x19, 0x01,
-     // Usage Maximum (5)
+    // Usage Maximum (5)
     0x29, 0x05,
     // Logical Minimum (0)
     0x15, 0x00,
@@ -62,9 +62,9 @@ static const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
     0x09, 0x31,
     // Usage (Wheel)
     0x09, 0x38,
-    // Local Minimum (-127)
+    // Logical Minimum (-127)
     0x15, 0x81,
-    // Local Maximum (127)
+    // Logical Maximum (127)
     0x25, 0x7F,
     // Report Size (8)
     0x75, 0x08,
