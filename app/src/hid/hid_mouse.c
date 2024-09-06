@@ -2,7 +2,7 @@
 
 // 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position,
 // 1 byte for wheel motion
-#define HID_MOUSE_EVENT_SIZE 4
+#define SC_HID_MOUSE_EVENT_SIZE 4
 
 /**
  * Mouse descriptor from the specification:
@@ -126,7 +126,7 @@ const size_t SC_HID_MOUSE_REPORT_DESC_LEN =
 
 static void
 sc_hid_mouse_event_init(struct sc_hid_event *hid_event) {
-    hid_event->size = HID_MOUSE_EVENT_SIZE;
+    hid_event->size = SC_HID_MOUSE_EVENT_SIZE;
     // Leave hid_event->data uninitialized, it will be fully initialized by
     // callers
 }
