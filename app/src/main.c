@@ -16,6 +16,7 @@
 #include "usb/scrcpy_otg.h"
 #include "util/log.h"
 #include "util/net.h"
+#include "util/thread.h"
 #include "version.h"
 
 #ifdef _WIN32
@@ -66,6 +67,9 @@ main_scrcpy(int argc, char *argv[]) {
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
+
+    // The current thread is the main thread
+    SC_MAIN_THREAD_ID = sc_thread_get_id();
 
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
