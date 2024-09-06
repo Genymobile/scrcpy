@@ -7,6 +7,7 @@
 #include "aoa_hid.h"
 #include "util/log.h"
 #include "util/str.h"
+#include "util/vector.h"
 
 // See <https://source.android.com/devices/accessories/aoa2#hid-support>.
 #define ACCESSORY_REGISTER_HID 54
@@ -18,6 +19,8 @@
 
 // Drop droppable events above this limit
 #define SC_AOA_EVENT_QUEUE_LIMIT 60
+
+struct sc_vec_hid_ids SC_VECTOR(uint16_t);
 
 static void
 sc_hid_input_log(const struct sc_hid_input *hid_input) {
@@ -309,7 +312,8 @@ sc_aoa_push_close(struct sc_aoa *aoa, const struct sc_hid_close *hid_close) {
 }
 
 static bool
-sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
+sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event,
+                     struct sc_vec_hid_ids *vec_open) {
     switch (event->type) {
         case SC_AOA_EVENT_TYPE_INPUT: {
             uint64_t ack_to_wait = event->input.ack_to_wait;
@@ -350,7 +354,16 @@ sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
             bool ok = sc_aoa_setup_hid(aoa, hid_open->hid_id,
                                        hid_open->report_desc,
                                        hid_open->report_desc_size);
-            if (!ok) {
+            if (ok) {
+                // The device is now open, add it to the list of devices to
+                // close automatically on exit
+                bool pushed = sc_vector_push(vec_open, hid_open->hid_id);
+                if (!pushed) {
+                    LOG_OOM();
+                    // this is not fatal, the HID device will just not be
+                    // explicitly unregistered
+                }
+            } else {
                 LOGW("Could not open AOA device: %" PRIu16, hid_open->hid_id);
             }
 
@@ -359,7 +372,14 @@ sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
         case SC_AOA_EVENT_TYPE_CLOSE: {
             struct sc_hid_close *hid_close = &event->close.hid;
             bool ok = sc_aoa_unregister_hid(aoa, hid_close->hid_id);
-            if (!ok) {
+            if (ok) {
+                // The device is not open anymore, remove it from the list of
+                // devices to close automatically on exit
+                ssize_t idx = sc_vector_index_of(vec_open, hid_close->hid_id);
+                if (idx >= 0) {
+                    sc_vector_remove(vec_open, idx);
+                }
+            } else {
                 LOGW("Could not close AOA device: %" PRIu16, hid_close->hid_id);
             }
 
@@ -374,6 +394,9 @@ sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
 static int
 run_aoa_thread(void *data) {
     struct sc_aoa *aoa = data;
+
+    // Store the HID ids of opened devices to unregister them all before exiting
+    struct sc_vec_hid_ids vec_open = SC_VECTOR_INITIALIZER;
 
     for (;;) {
         sc_mutex_lock(&aoa->mutex);
@@ -390,12 +413,24 @@ run_aoa_thread(void *data) {
         struct sc_aoa_event event = sc_vecdeque_pop(&aoa->queue);
         sc_mutex_unlock(&aoa->mutex);
 
-        bool cont = sc_aoa_process_event(aoa, &event);
+        bool cont = sc_aoa_process_event(aoa, &event, &vec_open);
         if (!cont) {
             // stopped
             break;
         }
     }
+
+    // Explicitly unregister all registered HID ids before exiting
+    for (size_t i = 0; i < vec_open.size; ++i) {
+        uint16_t hid_id = vec_open.data[i];
+        LOGD("Unregistering AOA device %" PRIu16 "...", hid_id);
+        bool ok = sc_aoa_unregister_hid(aoa, hid_id);
+        if (!ok) {
+            LOGW("Could not close AOA device: %" PRIu16, hid_id);
+        }
+    }
+    sc_vector_destroy(&vec_open);
+
     return 0;
 }
 
