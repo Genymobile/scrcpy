@@ -641,12 +641,15 @@ scrcpy(struct scrcpy_options *options) {
                 goto end;
             }
 
+            bool aoa_fail = false;
             if (use_keyboard_aoa) {
                 if (sc_keyboard_aoa_init(&s->keyboard_aoa, &s->aoa)) {
                     keyboard_aoa_initialized = true;
                     kp = &s->keyboard_aoa.key_processor;
                 } else {
                     LOGE("Could not initialize HID keyboard");
+                    aoa_fail = true;
+                    goto aoa_complete;
                 }
             }
 
@@ -656,12 +659,13 @@ scrcpy(struct scrcpy_options *options) {
                     mp = &s->mouse_aoa.mouse_processor;
                 } else {
                     LOGE("Could not initialized HID mouse");
+                    aoa_fail = true;
+                    goto aoa_complete;
                 }
             }
 
-            bool need_aoa = keyboard_aoa_initialized || mouse_aoa_initialized;
-
-            if (!need_aoa || !sc_aoa_start(&s->aoa)) {
+aoa_complete:
+            if (aoa_fail || !sc_aoa_start(&s->aoa)) {
                 sc_acksync_destroy(&s->acksync);
                 sc_usb_disconnect(&s->usb);
                 sc_usb_destroy(&s->usb);
