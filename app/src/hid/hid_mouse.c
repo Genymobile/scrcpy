@@ -2,7 +2,7 @@
 
 // 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position,
 // 1 byte for wheel motion
-#define SC_HID_MOUSE_EVENT_SIZE 4
+#define SC_HID_MOUSE_INPUT_SIZE 4
 
 /**
  * Mouse descriptor from the specification:
@@ -84,7 +84,7 @@ const size_t SC_HID_MOUSE_REPORT_DESC_LEN =
     sizeof(SC_HID_MOUSE_REPORT_DESC);
 
 /**
- * A mouse HID event is 4 bytes long:
+ * A mouse HID input report is 4 bytes long:
  *
  *  - byte 0: buttons state
  *  - byte 1: relative x motion (signed byte from -127 to 127)
@@ -125,11 +125,10 @@ const size_t SC_HID_MOUSE_REPORT_DESC_LEN =
  */
 
 static void
-sc_hid_mouse_event_init(struct sc_hid_event *hid_event) {
-    hid_event->hid_id = SC_HID_ID_MOUSE;
-    hid_event->size = SC_HID_MOUSE_EVENT_SIZE;
-    // Leave hid_event->data uninitialized, it will be fully initialized by
-    // callers
+sc_hid_mouse_input_init(struct sc_hid_input *hid_input) {
+    hid_input->hid_id = SC_HID_ID_MOUSE;
+    hid_input->size = SC_HID_MOUSE_INPUT_SIZE;
+    // Leave ->data uninitialized, it will be fully initialized by callers
 }
 
 static uint8_t
@@ -154,11 +153,11 @@ sc_hid_buttons_from_buttons_state(uint8_t buttons_state) {
 }
 
 void
-sc_hid_mouse_event_from_motion(struct sc_hid_event *hid_event,
-                               const struct sc_mouse_motion_event *event) {
-    sc_hid_mouse_event_init(hid_event);
+sc_hid_mouse_generate_input_from_motion(struct sc_hid_input *hid_input,
+                                    const struct sc_mouse_motion_event *event) {
+    sc_hid_mouse_input_init(hid_input);
 
-    uint8_t *data = hid_event->data;
+    uint8_t *data = hid_input->data;
     data[0] = sc_hid_buttons_from_buttons_state(event->buttons_state);
     data[1] = CLAMP(event->xrel, -127, 127);
     data[2] = CLAMP(event->yrel, -127, 127);
@@ -166,11 +165,11 @@ sc_hid_mouse_event_from_motion(struct sc_hid_event *hid_event,
 }
 
 void
-sc_hid_mouse_event_from_click(struct sc_hid_event *hid_event,
-                              const struct sc_mouse_click_event *event) {
-    sc_hid_mouse_event_init(hid_event);
+sc_hid_mouse_generate_input_from_click(struct sc_hid_input *hid_input,
+                                     const struct sc_mouse_click_event *event) {
+    sc_hid_mouse_input_init(hid_input);
 
-    uint8_t *data = hid_event->data;
+    uint8_t *data = hid_input->data;
     data[0] = sc_hid_buttons_from_buttons_state(event->buttons_state);
     data[1] = 0; // no x motion
     data[2] = 0; // no y motion
@@ -178,11 +177,11 @@ sc_hid_mouse_event_from_click(struct sc_hid_event *hid_event,
 }
 
 void
-sc_hid_mouse_event_from_scroll(struct sc_hid_event *hid_event,
-                               const struct sc_mouse_scroll_event *event) {
-    sc_hid_mouse_event_init(hid_event);
+sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
+                                    const struct sc_mouse_scroll_event *event) {
+    sc_hid_mouse_input_init(hid_input);
 
-    uint8_t *data = hid_event->data;
+    uint8_t *data = hid_input->data;
     data[0] = 0; // buttons state irrelevant (and unknown)
     data[1] = 0; // no x motion
     data[2] = 0; // no y motion

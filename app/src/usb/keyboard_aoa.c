@@ -10,14 +10,14 @@
 
 static bool
 push_mod_lock_state(struct sc_keyboard_aoa *kb, uint16_t mods_state) {
-    struct sc_hid_event hid_event;
-    if (!sc_hid_keyboard_event_from_mods(&hid_event, mods_state)) {
+    struct sc_hid_input hid_input;
+    if (!sc_hid_keyboard_generate_input_from_mods(&hid_input, mods_state)) {
         // Nothing to do
         return true;
     }
 
-    if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
-        LOGW("Could not request HID event (mod lock state)");
+    if (!sc_aoa_push_input(kb->aoa, &hid_input)) {
+        LOGW("Could not push HID input (mod lock state)");
         return false;
     }
 
@@ -38,10 +38,10 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct sc_keyboard_aoa *kb = DOWNCAST(kp);
 
-    struct sc_hid_event hid_event;
+    struct sc_hid_input hid_input;
 
     // Not all keys are supported, just ignore unsupported keys
-    if (sc_hid_keyboard_event_from_key(&kb->hid, &hid_event, event)) {
+    if (sc_hid_keyboard_generate_input_from_key(&kb->hid, &hid_input, event)) {
         if (!kb->mod_lock_synchronized) {
             // Inject CAPSLOCK and/or NUMLOCK if necessary to synchronize
             // keyboard state
@@ -55,9 +55,9 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
         // synchronization is acknowledged by the server, otherwise it could
         // paste the old clipboard content.
 
-        if (!sc_aoa_push_hid_event_with_ack_to_wait(kb->aoa, &hid_event,
-                                                    ack_to_wait)) {
-            LOGW("Could not request HID event (key)");
+        if (!sc_aoa_push_input_with_ack_to_wait(kb->aoa, &hid_input,
+                                                ack_to_wait)) {
+            LOGW("Could not push HID input (key)");
         }
     }
 }

@@ -9,14 +9,15 @@
 
 static void
 sc_mouse_uhid_send_input(struct sc_mouse_uhid *mouse,
-                         const struct sc_hid_event *event, const char *name) {
+                         const struct sc_hid_input *hid_input,
+                         const char *name) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-    msg.uhid_input.id = event->hid_id;
+    msg.uhid_input.id = hid_input->hid_id;
 
-    assert(event->size <= SC_HID_MAX_SIZE);
-    memcpy(msg.uhid_input.data, event->data, event->size);
-    msg.uhid_input.size = event->size;
+    assert(hid_input->size <= SC_HID_MAX_SIZE);
+    memcpy(msg.uhid_input.data, hid_input->data, hid_input->size);
+    msg.uhid_input.size = hid_input->size;
 
     if (!sc_controller_push_msg(mouse->controller, &msg)) {
         LOGE("Could not send UHID_INPUT message (%s)", name);
@@ -28,10 +29,10 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_motion(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_motion(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse motion");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse motion");
 }
 
 static void
@@ -39,10 +40,10 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_click_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_click(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_click(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse click");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse click");
 }
 
 static void
@@ -50,10 +51,10 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_scroll(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse scroll");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse scroll");
 }
 
 bool

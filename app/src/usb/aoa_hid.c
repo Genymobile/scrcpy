@@ -20,14 +20,14 @@
 #define SC_AOA_EVENT_QUEUE_LIMIT 60
 
 static void
-sc_hid_event_log(const struct sc_hid_event *event) {
-    // HID Event: [00] FF FF FF FF...
-    assert(event->size);
-    char *hex = sc_str_to_hex_string(event->data, event->size);
+sc_hid_input_log(const struct sc_hid_input *hid_input) {
+    // HID input: [00] FF FF FF FF...
+    assert(hid_input->size);
+    char *hex = sc_str_to_hex_string(hid_input->data, hid_input->size);
     if (!hex) {
         return;
     }
-    LOGV("HID Event: [%" PRIu16 "] %s", event->hid_id, hex);
+    LOGV("HID input: [%" PRIu16 "] %s", hid_input->hid_id, hex);
     free(hex);
 }
 
@@ -129,16 +129,17 @@ sc_aoa_set_hid_report_desc(struct sc_aoa *aoa, uint16_t accessory_id,
 }
 
 static bool
-sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
+sc_aoa_send_hid_event(struct sc_aoa *aoa,
+                      const struct sc_hid_input *hid_input) {
     uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
     uint8_t request = ACCESSORY_SEND_HID_EVENT;
     // <https://source.android.com/devices/accessories/aoa2.html#hid-support>
     // value (arg0): accessory assigned ID for the HID device
     // index (arg1): 0 (unused)
-    uint16_t value = event->hid_id;
+    uint16_t value = hid_input->hid_id;
     uint16_t index = 0;
-    unsigned char *data = (uint8_t *) event->data; // discard const
-    uint16_t length = event->size;
+    unsigned char *data = (uint8_t *) hid_input->data; // discard const
+    uint16_t length = hid_input->size;
     int result = libusb_control_transfer(aoa->usb->handle, request_type,
                                          request, value, index, data, length,
                                          DEFAULT_TIMEOUT);
@@ -195,11 +196,11 @@ sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
 }
 
 bool
-sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
-                                       const struct sc_hid_event *event,
-                                       uint64_t ack_to_wait) {
+sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
+                                   const struct sc_hid_input *hid_input,
+                                   uint64_t ack_to_wait) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
-        sc_hid_event_log(event);
+        sc_hid_input_log(hid_input);
     }
 
     sc_mutex_lock(&aoa->mutex);
@@ -213,7 +214,7 @@ sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
         struct sc_aoa_event *aoa_event =
             sc_vecdeque_push_hole_noresize(&aoa->queue);
         aoa_event->type = SC_AOA_EVENT_TYPE_INPUT;
-        aoa_event->input.hid = *event;
+        aoa_event->input.hid = *hid_input;
         aoa_event->input.ack_to_wait = ack_to_wait;
         pushed = true;
 
