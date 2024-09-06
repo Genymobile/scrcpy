@@ -66,9 +66,10 @@ bool
 sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
 
-    bool ok = sc_aoa_push_open(aoa, SC_HID_ID_KEYBOARD,
-                               SC_HID_KEYBOARD_REPORT_DESC,
-                               SC_HID_KEYBOARD_REPORT_DESC_LEN);
+    struct sc_hid_open hid_open;
+    sc_hid_keyboard_generate_open(&hid_open);
+
+    bool ok = sc_aoa_push_open(aoa, &hid_open);
     if (!ok) {
         LOGW("Could not push AOA keyboard open request");
         return false;
@@ -97,7 +98,10 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
-    bool ok = sc_aoa_push_close(kb->aoa, SC_HID_ID_KEYBOARD);
+    struct sc_hid_close hid_close;
+    sc_hid_keyboard_generate_close(&hid_close);
+
+    bool ok = sc_aoa_push_close(kb->aoa, &hid_close);
     if (!ok) {
         LOGW("Could not push AOA keyboard close request");
     }
