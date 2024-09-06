@@ -10,8 +10,11 @@
 
 #define SC_HID_ID_MOUSE 2
 
-extern const uint8_t SC_HID_MOUSE_REPORT_DESC[];
-extern const size_t SC_HID_MOUSE_REPORT_DESC_LEN;
+void
+sc_hid_mouse_generate_open(struct sc_hid_open *hid_open);
+
+void
+sc_hid_mouse_generate_close(struct sc_hid_close *hid_close);
 
 void
 sc_hid_mouse_generate_input_from_motion(struct sc_hid_input *hid_input,

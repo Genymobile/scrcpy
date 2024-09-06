@@ -47,7 +47,7 @@
  *
  * (change vid:pid' to your device's vendor ID and product ID).
  */
-const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
+static const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     // Usage Page (Generic Desktop)
     0x05, 0x01,
     // Usage (Keyboard)
@@ -120,9 +120,6 @@ const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     // End Collection
     0xC0
 };
-
-const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN =
-    sizeof(SC_HID_KEYBOARD_REPORT_DESC);
 
 /**
  * A keyboard HID input report is 8 bytes long:
@@ -331,4 +328,14 @@ sc_hid_keyboard_generate_input_from_mods(struct sc_hid_input *hid_input,
     }
 
     return true;
+}
+
+void sc_hid_keyboard_generate_open(struct sc_hid_open *hid_open) {
+    hid_open->hid_id = SC_HID_ID_KEYBOARD;
+    hid_open->report_desc = SC_HID_KEYBOARD_REPORT_DESC;
+    hid_open->report_desc_size = sizeof(SC_HID_KEYBOARD_REPORT_DESC);
+}
+
+void sc_hid_keyboard_generate_close(struct sc_hid_close *hid_close) {
+    hid_close->hid_id = SC_HID_ID_KEYBOARD;
 }

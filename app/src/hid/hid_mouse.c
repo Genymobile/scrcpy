@@ -14,7 +14,7 @@
  * <https://www.usb.org/sites/default/files/documents/hut1_12v2.pdf>
  * §4 Generic Desktop Page (0x01) (p26)
  */
-const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
+static const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
     // Usage Page (Generic Desktop)
     0x05, 0x01,
     // Usage (Mouse)
@@ -79,9 +79,6 @@ const uint8_t SC_HID_MOUSE_REPORT_DESC[] = {
     // End Collection
     0xC0,
 };
-
-const size_t SC_HID_MOUSE_REPORT_DESC_LEN =
-    sizeof(SC_HID_MOUSE_REPORT_DESC);
 
 /**
  * A mouse HID input report is 4 bytes long:
@@ -189,4 +186,14 @@ sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
     // are possible
     data[3] = CLAMP(event->vscroll, -127, 127);
     // Horizontal scrolling ignored
+}
+
+void sc_hid_mouse_generate_open(struct sc_hid_open *hid_open) {
+    hid_open->hid_id = SC_HID_ID_MOUSE;
+    hid_open->report_desc = SC_HID_MOUSE_REPORT_DESC;
+    hid_open->report_desc_size = sizeof(SC_HID_MOUSE_REPORT_DESC);
+}
+
+void sc_hid_mouse_generate_close(struct sc_hid_close *hid_close) {
+    hid_close->hid_id = SC_HID_ID_MOUSE;
 }
