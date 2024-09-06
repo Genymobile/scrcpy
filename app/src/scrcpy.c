@@ -402,7 +402,6 @@ scrcpy(struct scrcpy_options *options) {
     bool timeout_started = false;
 
     struct sc_acksync *acksync = NULL;
-    struct sc_uhid_devices *uhid_devices = NULL;
 
     uint32_t scid = scrcpy_generate_scid();
 
@@ -725,6 +724,8 @@ aoa_complete:
         assert(options->mouse_input_mode != SC_MOUSE_INPUT_MODE_AOA);
 #endif
 
+        struct sc_keyboard_uhid *uhid_keyboard = NULL;
+
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
                                  options->key_inject_mode,
@@ -732,14 +733,12 @@ aoa_complete:
             kp = &s->keyboard_sdk.key_processor;
         } else if (options->keyboard_input_mode
                 == SC_KEYBOARD_INPUT_MODE_UHID) {
-            sc_uhid_devices_init(&s->uhid_devices);
-            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller,
-                                            &s->uhid_devices);
+            bool ok = sc_keyboard_uhid_init(&s->keyboard_uhid, &s->controller);
             if (!ok) {
                 goto end;
             }
-            uhid_devices = &s->uhid_devices;
             kp = &s->keyboard_uhid.key_processor;
+            uhid_keyboard = &s->keyboard_uhid;
         }
 
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
@@ -757,6 +756,12 @@ aoa_complete:
         if (options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_UHID) {
             sc_gamepad_uhid_init(&s->gamepad_uhid, &s->controller);
             gp = &s->gamepad_uhid.gamepad_processor;
+        }
+
+        struct sc_uhid_devices *uhid_devices = NULL;
+        if (uhid_keyboard) {
+            sc_uhid_devices_init(&s->uhid_devices, uhid_keyboard);
+            uhid_devices = &s->uhid_devices;
         }
 
         sc_controller_configure(&s->controller, acksync, uhid_devices);
