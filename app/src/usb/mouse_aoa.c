@@ -78,11 +78,6 @@ sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
 
 void
 sc_mouse_aoa_destroy(struct sc_mouse_aoa *mouse) {
-    struct sc_hid_close hid_close;
-    sc_hid_mouse_generate_close(&hid_close);
-
-    bool ok = sc_aoa_push_close(mouse->aoa, &hid_close);
-    if (!ok) {
-        LOGW("Could not push AOA HID close (mouse)");
-    }
+    (void) mouse;
+    // Do nothing, mouse->aoa will automatically unregister all devices
 }
