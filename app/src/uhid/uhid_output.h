@@ -14,11 +14,13 @@
 
 struct sc_uhid_devices {
     struct sc_keyboard_uhid *keyboard;
+    struct sc_gamepad_uhid *gamepad;
 };
 
 void
 sc_uhid_devices_init(struct sc_uhid_devices *devices,
-                     struct sc_keyboard_uhid *keyboard);
+                     struct sc_keyboard_uhid *keyboard,
+                     struct sc_gamepad_uhid *gamepad);
 
 void
 sc_uhid_devices_process_hid_output(struct sc_uhid_devices *devices, uint16_t id,
