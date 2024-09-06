@@ -11,14 +11,14 @@
 
 static void
 sc_keyboard_uhid_send_input(struct sc_keyboard_uhid *kb,
-                            const struct sc_hid_event *event) {
+                            const struct sc_hid_input *hid_input) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-    msg.uhid_input.id = event->hid_id;
+    msg.uhid_input.id = hid_input->hid_id;
 
-    assert(event->size <= SC_HID_MAX_SIZE);
-    memcpy(msg.uhid_input.data, event->data, event->size);
-    msg.uhid_input.size = event->size;
+    assert(hid_input->size <= SC_HID_MAX_SIZE);
+    memcpy(msg.uhid_input.data, hid_input->data, hid_input->size);
+    msg.uhid_input.size = hid_input->size;
 
     if (!sc_controller_push_msg(kb->controller, &msg)) {
         LOGE("Could not send UHID_INPUT message (key)");
@@ -37,14 +37,14 @@ sc_keyboard_uhid_synchronize_mod(struct sc_keyboard_uhid *kb) {
         // or HID output anyway
         kb->device_mod = mod;
 
-        struct sc_hid_event hid_event;
-        if (!sc_hid_keyboard_event_from_mods(&hid_event, diff)) {
+        struct sc_hid_input hid_input;
+        if (!sc_hid_keyboard_generate_input_from_mods(&hid_input, diff)) {
             return;
         }
 
         LOGV("HID keyboard state synchronized");
 
-        sc_keyboard_uhid_send_input(kb, &hid_event);
+        sc_keyboard_uhid_send_input(kb, &hid_input);
     }
 }
 
@@ -64,10 +64,10 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct sc_keyboard_uhid *kb = DOWNCAST(kp);
 
-    struct sc_hid_event hid_event;
+    struct sc_hid_input hid_input;
 
     // Not all keys are supported, just ignore unsupported keys
-    if (sc_hid_keyboard_event_from_key(&kb->hid, &hid_event, event)) {
+    if (sc_hid_keyboard_generate_input_from_key(&kb->hid, &hid_input, event)) {
         if (event->scancode == SC_SCANCODE_CAPSLOCK) {
             kb->device_mod ^= SC_MOD_CAPS;
         } else if (event->scancode == SC_SCANCODE_NUMLOCK) {
@@ -77,7 +77,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             // change the modifiers)
             sc_keyboard_uhid_synchronize_mod(kb);
         }
-        sc_keyboard_uhid_send_input(kb, &hid_event);
+        sc_keyboard_uhid_send_input(kb, &hid_input);
     }
 }
 
