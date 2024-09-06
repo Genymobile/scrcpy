@@ -158,6 +158,7 @@ enum sc_mouse_input_mode {
 
 enum sc_gamepad_input_mode {
     SC_GAMEPAD_INPUT_MODE_DISABLED,
+    SC_GAMEPAD_INPUT_MODE_UHID,
     SC_GAMEPAD_INPUT_MODE_AOA,
 };
 

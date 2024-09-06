@@ -25,6 +25,7 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"
 #ifdef HAVE_USB
@@ -80,9 +81,12 @@ struct scrcpy {
         struct sc_mouse_aoa mouse_aoa;
 #endif
     };
+    union {
+        struct sc_gamepad_uhid gamepad_uhid;
 #ifdef HAVE_USB
-    struct sc_gamepad_aoa gamepad_aoa;
+        struct sc_gamepad_aoa gamepad_aoa;
 #endif
+    };
     struct sc_timeout timeout;
 };
 
@@ -748,6 +752,11 @@ aoa_complete:
                 goto end;
             }
             mp = &s->mouse_uhid.mouse_processor;
+        }
+
+        if (options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_UHID) {
+            sc_gamepad_uhid_init(&s->gamepad_uhid, &s->controller);
+            gp = &s->gamepad_uhid.gamepad_processor;
         }
 
         sc_controller_configure(&s->controller, acksync, uhid_devices);
