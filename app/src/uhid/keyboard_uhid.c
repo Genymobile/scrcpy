@@ -31,16 +31,13 @@ static void
 sc_keyboard_uhid_synchronize_mod(struct sc_keyboard_uhid *kb) {
     SDL_Keymod sdl_mod = SDL_GetModState();
     uint16_t mod = sc_mods_state_from_sdl(sdl_mod) & (SC_MOD_CAPS | SC_MOD_NUM);
-
-    uint16_t device_mod =
-        atomic_load_explicit(&kb->device_mod, memory_order_relaxed);
-    uint16_t diff = mod ^ device_mod;
+    uint16_t diff = mod ^ kb->device_mod;
 
     if (diff) {
         // Inherently racy (the HID output reports arrive asynchronously in
         // response to key presses), but will re-synchronize on next key press
         // or HID output anyway
-        atomic_store_explicit(&kb->device_mod, mod, memory_order_relaxed);
+        kb->device_mod = mod;
 
         struct sc_hid_event hid_event;
         if (!sc_hid_keyboard_event_from_mods(&hid_event, diff)) {
@@ -59,6 +56,8 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
                              uint64_t ack_to_wait) {
     (void) ack_to_wait;
 
+    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+
     if (event->repeat) {
         // In USB HID protocol, key repeat is handled by the host (Android), so
         // just ignore key repeat here.
@@ -72,11 +71,9 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     // Not all keys are supported, just ignore unsupported keys
     if (sc_hid_keyboard_event_from_key(&kb->hid, &hid_event, event)) {
         if (event->scancode == SC_SCANCODE_CAPSLOCK) {
-            atomic_fetch_xor_explicit(&kb->device_mod, SC_MOD_CAPS,
-                                      memory_order_relaxed);
+            kb->device_mod ^= SC_MOD_CAPS;
         } else if (event->scancode == SC_SCANCODE_NUMLOCK) {
-            atomic_fetch_xor_explicit(&kb->device_mod, SC_MOD_NUM,
-                                      memory_order_relaxed);
+            kb->device_mod ^= SC_MOD_NUM;
         } else {
             // Synchronize modifiers (only if the scancode itself does not
             // change the modifiers)
@@ -103,7 +100,7 @@ sc_keyboard_uhid_to_sc_mod(uint8_t hid_led) {
 static void
 sc_uhid_receiver_process_output(struct sc_uhid_receiver *receiver,
                                 const uint8_t *data, size_t len) {
-    // Called from the thread receiving device messages
+    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
 
     assert(len);
 
@@ -117,7 +114,7 @@ sc_uhid_receiver_process_output(struct sc_uhid_receiver *receiver,
 
     uint8_t hid_led = data[0];
     uint16_t device_mod = sc_keyboard_uhid_to_sc_mod(hid_led);
-    atomic_store_explicit(&kb->device_mod, device_mod, memory_order_relaxed);
+    kb->device_mod = device_mod;
 }
 
 bool
@@ -127,7 +124,7 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     sc_hid_keyboard_init(&kb->hid);
 
     kb->controller = controller;
-    atomic_init(&kb->device_mod, 0);
+    kb->device_mod = 0;
 
     static const struct sc_key_processor_ops ops = {
         .process_key = sc_key_processor_process_key,
