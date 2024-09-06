@@ -32,6 +32,7 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
+    'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
     'src/trait/frame_source.c',
