@@ -24,6 +24,7 @@ struct sc_aoa_event {
     union {
         struct {
             struct sc_hid_open hid;
+            bool exit_on_error;
         } open;
         struct {
             struct sc_hid_close hid;
@@ -73,7 +74,8 @@ sc_aoa_join(struct sc_aoa *aoa);
 // report_desc must be a pointer to static memory, accessed at any time from
 // another thread
 bool
-sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open);
+sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open,
+                 bool exit_on_open_error);
 
 bool
 sc_aoa_push_close(struct sc_aoa *aoa, const struct sc_hid_close *hid_close);

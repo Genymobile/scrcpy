@@ -69,7 +69,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     struct sc_hid_open hid_open;
     sc_hid_keyboard_generate_open(&hid_open);
 
-    bool ok = sc_aoa_push_open(aoa, &hid_open);
+    bool ok = sc_aoa_push_open(aoa, &hid_open, true);
     if (!ok) {
         LOGW("Could not push AOA HID open (keyboard)");
         return false;
