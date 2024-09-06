@@ -59,6 +59,7 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
                    const struct sc_screen_otg_params *params) {
     screen->keyboard = params->keyboard;
     screen->mouse = params->mouse;
+    screen->gamepad = params->gamepad;
 
     screen->mouse_capture_key_pressed = 0;
 
@@ -214,6 +215,87 @@ sc_screen_otg_process_mouse_wheel(struct sc_screen_otg *screen,
     mp->ops->process_mouse_scroll(mp, &evt);
 }
 
+static void
+sc_screen_otg_process_gamepad_device(struct sc_screen_otg *screen,
+                                     const SDL_ControllerDeviceEvent *event) {
+    assert(screen->gamepad);
+    struct sc_gamepad_processor *gp = &screen->gamepad->gamepad_processor;
+
+    SDL_JoystickID id;
+    if (event->type == SDL_CONTROLLERDEVICEADDED) {
+        SDL_GameController *gc = SDL_GameControllerOpen(event->which);
+        if (!gc) {
+            LOGW("Could not open game controller");
+            return;
+        }
+
+        SDL_Joystick *joystick = SDL_GameControllerGetJoystick(gc);
+        if (!joystick) {
+            LOGW("Could not get controller joystick");
+            SDL_GameControllerClose(gc);
+            return;
+        }
+
+        id = SDL_JoystickInstanceID(joystick);
+    } else if (event->type == SDL_CONTROLLERDEVICEREMOVED) {
+        id = event->which;
+
+        SDL_GameController *gc = SDL_GameControllerFromInstanceID(id);
+        if (gc) {
+            SDL_GameControllerClose(gc);
+        } else {
+            LOGW("Unknown gamepad device removed");
+        }
+    } else {
+        // Nothing to do
+        return;
+    }
+
+    struct sc_gamepad_device_event evt = {
+        .type = sc_gamepad_device_event_type_from_sdl_type(event->type),
+        .gamepad_id = id,
+    };
+    gp->ops->process_gamepad_device(gp, &evt);
+}
+
+static void
+sc_screen_otg_process_gamepad_axis(struct sc_screen_otg *screen,
+                                   const SDL_ControllerAxisEvent *event) {
+    assert(screen->gamepad);
+    struct sc_gamepad_processor *gp = &screen->gamepad->gamepad_processor;
+
+    enum sc_gamepad_axis axis = sc_gamepad_axis_from_sdl(event->axis);
+    if (axis == SC_GAMEPAD_AXIS_UNKNOWN) {
+        return;
+    }
+
+    struct sc_gamepad_axis_event evt = {
+        .gamepad_id = event->which,
+        .axis = axis,
+        .value = event->value,
+    };
+    gp->ops->process_gamepad_axis(gp, &evt);
+}
+
+static void
+sc_screen_otg_process_gamepad_button(struct sc_screen_otg *screen,
+                                     const SDL_ControllerButtonEvent *event) {
+    assert(screen->gamepad);
+    struct sc_gamepad_processor *gp = &screen->gamepad->gamepad_processor;
+
+    enum sc_gamepad_button button = sc_gamepad_button_from_sdl(event->button);
+    if (button == SC_GAMEPAD_BUTTON_UNKNOWN) {
+        return;
+    }
+
+    struct sc_gamepad_button_event evt = {
+        .gamepad_id = event->which,
+        .action = sc_action_from_sdl_controllerbutton_type(event->type),
+        .button = button,
+    };
+    gp->ops->process_gamepad_button(gp, &evt);
+}
+
 void
 sc_screen_otg_handle_event(struct sc_screen_otg *screen, SDL_Event *event) {
     switch (event->type) {
@@ -291,6 +373,24 @@ sc_screen_otg_handle_event(struct sc_screen_otg *screen, SDL_Event *event) {
         case SDL_MOUSEWHEEL:
             if (screen->mouse && sc_screen_otg_get_mouse_capture(screen)) {
                 sc_screen_otg_process_mouse_wheel(screen, &event->wheel);
+            }
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+            // Handle device added or removed even if paused
+            if (screen->gamepad) {
+                sc_screen_otg_process_gamepad_device(screen, &event->cdevice);
+            }
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            if (screen->gamepad) {
+                sc_screen_otg_process_gamepad_axis(screen, &event->caxis);
+            }
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            if (screen->gamepad) {
+                sc_screen_otg_process_gamepad_button(screen, &event->cbutton);
             }
             break;
     }
