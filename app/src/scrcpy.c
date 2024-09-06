@@ -174,6 +174,12 @@ event_loop(struct scrcpy *s) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
+            case SC_EVENT_RUN_ON_MAIN_THREAD: {
+                sc_runnable_fn run = event.user.data1;
+                void *userdata = event.user.data2;
+                run(userdata);
+                break;
+            }
             default:
                 if (!sc_screen_handle_event(&s->screen, &event)) {
                     return SCRCPY_EXIT_FAILURE;
@@ -182,6 +188,21 @@ event_loop(struct scrcpy *s) {
         }
     }
     return SCRCPY_EXIT_FAILURE;
+}
+
+static void
+terminate_event_loop(void) {
+    sc_reject_new_runnables();
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        if (event.type == SC_EVENT_RUN_ON_MAIN_THREAD) {
+            // Make sure all posted runnables are run, to avoid memory leaks
+            sc_runnable_fn run = event.user.data1;
+            void *userdata = event.user.data2;
+            run(userdata);
+        }
+    }
 }
 
 // Return true on success, false on error
@@ -819,6 +840,7 @@ scrcpy(struct scrcpy_options *options) {
     }
 
     ret = event_loop(s);
+    terminate_event_loop();
     LOGD("quit...");
 
     if (options->video_playback) {
