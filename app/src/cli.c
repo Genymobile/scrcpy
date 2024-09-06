@@ -101,6 +101,7 @@ enum {
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
+    OPT_GAMEPAD,
 };
 
 struct sc_option {
@@ -373,6 +374,17 @@ static const struct sc_option options[] = {
         .longopt = "forward-all-clicks",
     },
     {
+        .longopt_id = OPT_GAMEPAD,
+        .longopt = "gamepad",
+        .argdesc = "mode",
+        .text = "Select how to send gamepad inputs to the device.\n"
+                "Possible values are \"disabled\" and \"aoa\".\n"
+                "\"disabled\" does not send gamepad inputs to the device.\n"
+                "\"aoa\" simulates physical gamepads using the AOAv2 protocol."
+                "It may only work over USB.\n"
+                "Also see --keyboard and --mouse.",
+    },
+    {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
@@ -403,7 +415,7 @@ static const struct sc_option options[] = {
                 "start -a android.settings.HARD_KEYBOARD_SETTINGS`.\n"
                 "This option is only available when a HID keyboard is enabled "
                 "(or a physical keyboard is connected).\n"
-                "Also see --mouse.",
+                "Also see --mouse and --gamepad.",
     },
     {
         .longopt_id = OPT_KILL_ADB_ON_CLOSE,
@@ -502,7 +514,7 @@ static const struct sc_option options[] = {
                 "to control the device directly (relative mouse mode).\n"
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
-                "Also see --keyboard.",
+                "Also see --keyboard and --gamepad.",
     },
     {
         .longopt_id = OPT_MOUSE_BIND,
@@ -637,7 +649,7 @@ static const struct sc_option options[] = {
                 "Keyboard and mouse may be disabled separately using"
                 "--keyboard=disabled and --mouse=disabled.\n"
                 "It may only work over USB.\n"
-                "See --keyboard and --mouse.",
+                "See --keyboard, --mouse and --gamepad.",
     },
     {
         .shortopt = 'p',
@@ -2047,6 +2059,27 @@ parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
 }
 
 static bool
+parse_gamepad(const char *optarg, enum sc_gamepad_input_mode *mode) {
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_GAMEPAD_INPUT_MODE_DISABLED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "aoa")) {
+#ifdef HAVE_USB
+        *mode = SC_GAMEPAD_INPUT_MODE_AOA;
+        return true;
+#else
+        LOGE("--gamepad=aoa is disabled.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported gamepad: %s (expected disabled or aoa)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -2611,6 +2644,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
+                break;
+            case OPT_GAMEPAD:
+                if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr

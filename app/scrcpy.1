@@ -176,6 +176,16 @@ Start in fullscreen.
 Do not attempt to use "adb reverse" to connect to the device.
 
 .TP
+.BI "\-\-gamepad " mode
+Select how to send gamepad inputs to the device.
+
+Possible values are "disabled" and "aoa":
+
+ - "disabled" does not send gamepad inputs to the device.
+ - "aoa" simulates physical HID gamepads using the AOAv2 protocol. It may only work over USB.
+
+Also see \fB\-\-keyboard\f and R\fB\-\-mouse\fR.
+.TP
 .B \-h, \-\-help
 Print this help.
 
@@ -200,7 +210,7 @@ For "uhid" and "aoa", the keyboard layout must be configured (once and for all) 
 
 This option is only available when the HID keyboard is enabled (or a physical keyboard is connected).
 
-Also see \fB\-\-mouse\fR.
+Also see \fB\-\-mouse\fR and \fB\-\-gamepad\fR.
 
 .TP
 .B \-\-kill\-adb\-on\-close
@@ -267,7 +277,7 @@ In "uhid" and "aoa" modes, the computer mouse is captured to control the device 
 
 LAlt, LSuper or RSuper toggle the capture mode, to give control of the mouse back to the computer.
 
-Also see \fB\-\-keyboard\fR.
+Also see \fB\-\-keyboard\fR and \fB\-\-gamepad\fR.
 
 .TP
 .BI "\-\-mouse\-bind " xxxx[:xxxx]
@@ -369,7 +379,7 @@ If any of \fB\-\-hid\-keyboard\fR or \fB\-\-hid\-mouse\fR is set, only enable ke
 
 It may only work over USB.
 
-See \fB\-\-keyboard\fR and \fB\-\-mouse\fR.
+See \fB\-\-keyboard\fR, \fB\-\-mouse\fR and \fB\-\-gamepad\fR.
 
 .TP
 .BI "\-p, \-\-port " port\fR[:\fIport\fR]

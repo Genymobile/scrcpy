@@ -29,6 +29,7 @@
 #include "uhid/mouse_uhid.h"
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
+# include "usb/gamepad_aoa.h"
 # include "usb/keyboard_aoa.h"
 # include "usb/mouse_aoa.h"
 # include "usb/usb.h"
@@ -79,6 +80,9 @@ struct scrcpy {
         struct sc_mouse_aoa mouse_aoa;
 #endif
     };
+#ifdef HAVE_USB
+    struct sc_gamepad_aoa gamepad_aoa;
+#endif
     struct sc_timeout timeout;
 };
 
@@ -370,6 +374,7 @@ scrcpy(struct scrcpy_options *options) {
     bool aoa_hid_initialized = false;
     bool keyboard_aoa_initialized = false;
     bool mouse_aoa_initialized = false;
+    bool gamepad_aoa_initialized = false;
 #endif
     bool controller_initialized = false;
     bool controller_started = false;
@@ -485,9 +490,11 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
-    if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
-        LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
-        goto end;
+    if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+        if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
+            LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
+            goto end;
+        }
     }
 
     sdl_configure(options->video_playback, options->disable_screensaver);
@@ -587,6 +594,7 @@ scrcpy(struct scrcpy_options *options) {
     struct sc_controller *controller = NULL;
     struct sc_key_processor *kp = NULL;
     struct sc_mouse_processor *mp = NULL;
+    struct sc_gamepad_processor *gp = NULL;
 
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
@@ -606,7 +614,9 @@ scrcpy(struct scrcpy_options *options) {
             options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
         bool use_mouse_aoa =
             options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
-        if (use_keyboard_aoa || use_mouse_aoa) {
+        bool use_gamepad_aoa =
+            options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_AOA;
+        if (use_keyboard_aoa || use_mouse_aoa || use_gamepad_aoa) {
             bool ok = sc_acksync_init(&s->acksync);
             if (!ok) {
                 goto end;
@@ -670,6 +680,12 @@ scrcpy(struct scrcpy_options *options) {
                     aoa_fail = true;
                     goto aoa_complete;
                 }
+            }
+
+            if (use_gamepad_aoa) {
+                sc_gamepad_aoa_init(&s->gamepad_aoa, &s->aoa);
+                gp = &s->gamepad_aoa.gamepad_processor;
+                gamepad_aoa_initialized = true;
             }
 
 aoa_complete:
@@ -740,7 +756,7 @@ aoa_complete:
             .fp = fp,
             .kp = kp,
             .mp = mp,
-            .gp = NULL,
+            .gp = gp,
             .mouse_bindings = options->mouse_bindings,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
@@ -877,6 +893,9 @@ end:
         }
         if (mouse_aoa_initialized) {
             sc_mouse_aoa_destroy(&s->mouse_aoa);
+        }
+        if (gamepad_aoa_initialized) {
+            sc_gamepad_aoa_destroy(&s->gamepad_aoa);
         }
         sc_aoa_stop(&s->aoa);
         sc_usb_stop(&s->usb);
