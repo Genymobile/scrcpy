@@ -39,6 +39,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
     SC_CONTROL_MSG_TYPE_UHID_CREATE,
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
+    SC_CONTROL_MSG_TYPE_UHID_DESTROY,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
 };
 
@@ -105,6 +106,9 @@ struct sc_control_msg {
             uint16_t size;
             uint8_t data[SC_HID_MAX_SIZE];
         } uhid_input;
+        struct {
+            uint16_t id;
+        } uhid_destroy;
     };
 };
 
