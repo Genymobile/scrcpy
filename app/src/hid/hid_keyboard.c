@@ -31,12 +31,15 @@
  * For HID, only report descriptor is needed.
  *
  * The specification is available here:
- * <https://www.usb.org/sites/default/files/hid1_11.pdf>
+ * <https://www.usb.org/document-library/device-class-definition-hid-111>
  *
  * In particular, read:
- *  - 6.2.2 Report Descriptor
+ *  - §6.2.2 Report Descriptor
  *  - Appendix B.1 Protocol 1 (Keyboard)
  *  - Appendix C: Keyboard Implementation
+ *
+ * The HID Usage Tables is also useful:
+ * <https://www.usb.org/document-library/hid-usage-tables-15>
  *
  * Normally a basic HID keyboard uses 8 bytes:
  *     Modifier Reserved Key Key Key Key Key Key
@@ -60,7 +63,7 @@ static const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     0x05, 0x07,
     // Usage Minimum (224)
     0x19, 0xE0,
-     // Usage Maximum (231)
+    // Usage Maximum (231)
     0x29, 0xE7,
     // Logical Minimum (0)
     0x15, 0x00,
