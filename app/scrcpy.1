@@ -176,12 +176,17 @@ Start in fullscreen.
 Do not attempt to use "adb reverse" to connect to the device.
 
 .TP
+.B \-K
+Same as \fB\-\-gamepad=uhid\fR.
+
+.TP
 .BI "\-\-gamepad " mode
 Select how to send gamepad inputs to the device.
 
-Possible values are "disabled" and "aoa":
+Possible values are "disabled", "uhid" and "aoa":
 
  - "disabled" does not send gamepad inputs to the device.
+ - "uhid" simulates physical HID gamepads using the Linux HID kernel module on the device.
  - "aoa" simulates physical HID gamepads using the AOAv2 protocol. It may only work over USB.
 
 Also see \fB\-\-keyboard\f and R\fB\-\-mouse\fR.
