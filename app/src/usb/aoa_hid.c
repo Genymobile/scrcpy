@@ -221,6 +221,41 @@ sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
     return !full;
 }
 
+static bool
+sc_aoa_process_event(struct sc_aoa *aoa, struct sc_aoa_event *event) {
+    uint64_t ack_to_wait = event->ack_to_wait;
+    if (ack_to_wait != SC_SEQUENCE_INVALID) {
+        LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
+
+        // If some events have ack_to_wait set, then sc_aoa must have been
+        // initialized with a non NULL acksync
+        assert(aoa->acksync);
+
+        // Do not block the loop indefinitely if the ack never comes (it
+        // should never happen)
+        sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
+        enum sc_acksync_wait_result result =
+            sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
+
+        if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
+            LOGW("Ack not received after 500ms, discarding HID event");
+            // continue to process events
+            return true;
+        } else if (result == SC_ACKSYNC_WAIT_INTR) {
+            // stopped
+            return false;
+        }
+    }
+
+    bool ok = sc_aoa_send_hid_event(aoa, &event->hid);
+    if (!ok) {
+        LOGW("Could not send HID event to USB device");
+    }
+
+    // continue to process events
+    return true;
+}
+
 static int
 run_aoa_thread(void *data) {
     struct sc_aoa *aoa = data;
@@ -238,34 +273,12 @@ run_aoa_thread(void *data) {
 
         assert(!sc_vecdeque_is_empty(&aoa->queue));
         struct sc_aoa_event event = sc_vecdeque_pop(&aoa->queue);
-        uint64_t ack_to_wait = event.ack_to_wait;
         sc_mutex_unlock(&aoa->mutex);
 
-        if (ack_to_wait != SC_SEQUENCE_INVALID) {
-            LOGD("Waiting ack from server sequence=%" PRIu64_, ack_to_wait);
-
-            // If some events have ack_to_wait set, then sc_aoa must have been
-            // initialized with a non NULL acksync
-            assert(aoa->acksync);
-
-            // Do not block the loop indefinitely if the ack never comes (it
-            // should never happen)
-            sc_tick deadline = sc_tick_now() + SC_TICK_FROM_MS(500);
-            enum sc_acksync_wait_result result =
-                sc_acksync_wait(aoa->acksync, ack_to_wait, deadline);
-
-            if (result == SC_ACKSYNC_WAIT_TIMEOUT) {
-                LOGW("Ack not received after 500ms, discarding HID event");
-                continue;
-            } else if (result == SC_ACKSYNC_WAIT_INTR) {
-                // stopped
-                break;
-            }
-        }
-
-        bool ok = sc_aoa_send_hid_event(aoa, &event.hid);
-        if (!ok) {
-            LOGW("Could not send HID event to USB device");
+        bool cont = sc_aoa_process_event(aoa, &event);
+        if (!cont) {
+            // stopped
+            break;
         }
     }
     return 0;
