@@ -200,6 +200,7 @@ const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN =
 
 static void
 sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
+    hid_event->hid_id = SC_HID_ID_KEYBOARD;
     hid_event->size = SC_HID_KEYBOARD_EVENT_SIZE;
 
     uint8_t *data = hid_event->data;

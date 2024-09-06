@@ -8,8 +8,6 @@
 /** Downcast key processor to keyboard_aoa */
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_aoa, key_processor)
 
-#define HID_KEYBOARD_ACCESSORY_ID 1
-
 static bool
 push_mod_lock_state(struct sc_keyboard_aoa *kb, uint16_t mods_state) {
     struct sc_hid_event hid_event;
@@ -18,8 +16,7 @@ push_mod_lock_state(struct sc_keyboard_aoa *kb, uint16_t mods_state) {
         return true;
     }
 
-    if (!sc_aoa_push_hid_event(kb->aoa, HID_KEYBOARD_ACCESSORY_ID,
-                               &hid_event)) {
+    if (!sc_aoa_push_hid_event(kb->aoa, &hid_event)) {
         LOGW("Could not request HID event (mod lock state)");
         return false;
     }
@@ -58,9 +55,7 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
         // synchronization is acknowledged by the server, otherwise it could
         // paste the old clipboard content.
 
-        if (!sc_aoa_push_hid_event_with_ack_to_wait(kb->aoa,
-                                                    HID_KEYBOARD_ACCESSORY_ID,
-                                                    &hid_event,
+        if (!sc_aoa_push_hid_event_with_ack_to_wait(kb->aoa, &hid_event,
                                                     ack_to_wait)) {
             LOGW("Could not request HID event (key)");
         }
@@ -71,7 +66,7 @@ bool
 sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
 
-    bool ok = sc_aoa_setup_hid(aoa, HID_KEYBOARD_ACCESSORY_ID,
+    bool ok = sc_aoa_setup_hid(aoa, SC_HID_ID_KEYBOARD,
                                SC_HID_KEYBOARD_REPORT_DESC,
                                SC_HID_KEYBOARD_REPORT_DESC_LEN);
     if (!ok) {
@@ -103,7 +98,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
     // Unregister HID keyboard so the soft keyboard shows again on Android
-    bool ok = sc_aoa_unregister_hid(kb->aoa, HID_KEYBOARD_ACCESSORY_ID);
+    bool ok = sc_aoa_unregister_hid(kb->aoa, SC_HID_ID_KEYBOARD);
     if (!ok) {
         LOGW("Could not unregister HID keyboard");
     }
