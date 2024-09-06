@@ -13,8 +13,6 @@
 #include "util/tick.h"
 #include "util/vecdeque.h"
 
-#define SC_HID_MAX_SIZE 8
-
 struct sc_aoa_event {
     struct sc_hid_event hid;
     uint16_t accessory_id;
