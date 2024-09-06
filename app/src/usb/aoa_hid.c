@@ -1,6 +1,7 @@
 #include "util/log.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "aoa_hid.h"
@@ -18,14 +19,14 @@
 #define SC_AOA_EVENT_QUEUE_MAX 64
 
 static void
-sc_hid_event_log(uint16_t accessory_id, const struct sc_hid_event *event) {
+sc_hid_event_log(const struct sc_hid_event *event) {
     // HID Event: [00] FF FF FF FF...
     assert(event->size);
     char *hex = sc_str_to_hex_string(event->data, event->size);
     if (!hex) {
         return;
     }
-    LOGV("HID Event: [%d] %s", accessory_id, hex);
+    LOGV("HID Event: [%" PRIu16 "] %s", event->hid_id, hex);
     free(hex);
 }
 
@@ -146,14 +147,13 @@ sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
 }
 
 static bool
-sc_aoa_send_hid_event(struct sc_aoa *aoa, uint16_t accessory_id,
-                      const struct sc_hid_event *event) {
+sc_aoa_send_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
     uint8_t request_type = LIBUSB_ENDPOINT_OUT | LIBUSB_REQUEST_TYPE_VENDOR;
     uint8_t request = ACCESSORY_SEND_HID_EVENT;
     // <https://source.android.com/devices/accessories/aoa2.html#hid-support>
     // value (arg0): accessory assigned ID for the HID device
     // index (arg1): 0 (unused)
-    uint16_t value = accessory_id;
+    uint16_t value = event->hid_id;
     uint16_t index = 0;
     unsigned char *data = (uint8_t *) event->data; // discard const
     uint16_t length = event->size;
@@ -194,11 +194,10 @@ sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id) {
 
 bool
 sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
-                                       uint16_t accessory_id,
                                        const struct sc_hid_event *event,
                                        uint64_t ack_to_wait) {
     if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
-        sc_hid_event_log(accessory_id, event);
+        sc_hid_event_log(event);
     }
 
     sc_mutex_lock(&aoa->mutex);
@@ -209,7 +208,6 @@ sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
         struct sc_aoa_event *aoa_event =
             sc_vecdeque_push_hole_noresize(&aoa->queue);
         aoa_event->hid = *event;
-        aoa_event->accessory_id = accessory_id;
         aoa_event->ack_to_wait = ack_to_wait;
 
         if (was_empty) {
@@ -265,7 +263,7 @@ run_aoa_thread(void *data) {
             }
         }
 
-        bool ok = sc_aoa_send_hid_event(aoa, event.accessory_id, &event.hid);
+        bool ok = sc_aoa_send_hid_event(aoa, &event.hid);
         if (!ok) {
             LOGW("Could not send HID event to USB device");
         }
