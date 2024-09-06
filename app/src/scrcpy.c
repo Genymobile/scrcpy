@@ -485,6 +485,11 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
+    if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
+        LOGE("Could not initialize SDL gamepad: %s", SDL_GetError());
+        goto end;
+    }
+
     sdl_configure(options->video_playback, options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
@@ -735,6 +740,7 @@ aoa_complete:
             .fp = fp,
             .kp = kp,
             .mp = mp,
+            .gp = NULL,
             .mouse_bindings = options->mouse_bindings,
             .legacy_paste = options->legacy_paste,
             .clipboard_autosync = options->clipboard_autosync,
