@@ -23,6 +23,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .record_format = SC_RECORD_FORMAT_AUTO,
     .keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_AUTO,
     .mouse_input_mode = SC_MOUSE_INPUT_MODE_AUTO,
+    .gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_DISABLED,
     .mouse_bindings = {
         .pri = {
             .right_click = SC_MOUSE_BINDING_AUTO,

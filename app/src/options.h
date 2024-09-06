@@ -156,6 +156,11 @@ enum sc_mouse_input_mode {
     SC_MOUSE_INPUT_MODE_AOA,
 };
 
+enum sc_gamepad_input_mode {
+    SC_GAMEPAD_INPUT_MODE_DISABLED,
+    SC_GAMEPAD_INPUT_MODE_AOA,
+};
+
 enum sc_mouse_binding {
     SC_MOUSE_BINDING_AUTO,
     SC_MOUSE_BINDING_DISABLED,
@@ -231,6 +236,7 @@ struct scrcpy_options {
     enum sc_record_format record_format;
     enum sc_keyboard_input_mode keyboard_input_mode;
     enum sc_mouse_input_mode mouse_input_mode;
+    enum sc_gamepad_input_mode gamepad_input_mode;
     struct sc_mouse_bindings mouse_bindings;
     enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
