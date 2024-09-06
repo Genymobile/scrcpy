@@ -174,6 +174,11 @@ event_loop(struct scrcpy *s) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
+            case SC_EVENT_RUN_ON_MAIN_THREAD:
+                sc_runnable_fn run = event.user.data1;
+                void *userdata = event.user.data2;
+                run(userdata);
+                break;
             default:
                 if (!sc_screen_handle_event(&s->screen, &event)) {
                     return SCRCPY_EXIT_FAILURE;

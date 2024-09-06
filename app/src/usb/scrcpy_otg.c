@@ -38,6 +38,11 @@ event_loop(struct scrcpy_otg *s) {
             case SDL_QUIT:
                 LOGD("User requested to quit");
                 return SCRCPY_EXIT_SUCCESS;
+            case SC_EVENT_RUN_ON_MAIN_THREAD:
+                sc_runnable_fn run = event.user.data1;
+                void *userdata = event.user.data2;
+                run(userdata);
+                break;
             default:
                 sc_screen_otg_handle_event(&s->screen_otg, &event);
                 break;
