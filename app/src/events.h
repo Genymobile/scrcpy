@@ -9,6 +9,7 @@
 
 enum {
     SC_EVENT_NEW_FRAME = SDL_USEREVENT,
+    SC_EVENT_RUN_ON_MAIN_THREAD,
     SC_EVENT_DEVICE_DISCONNECTED,
     SC_EVENT_SERVER_CONNECTION_FAILED,
     SC_EVENT_SERVER_CONNECTED,
@@ -24,5 +25,13 @@ bool
 sc_push_event_impl(uint32_t type, const char *name);
 
 #define sc_push_event(TYPE) sc_push_event_impl(TYPE, # TYPE)
+
+typedef void (*sc_runnable_fn)(void *userdata);
+
+bool
+sc_post_to_main_thread(sc_runnable_fn run, void *userdata);
+
+void
+sc_reject_new_runnables(void);
 
 #endif
