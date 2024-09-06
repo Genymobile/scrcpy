@@ -709,6 +709,7 @@ aoa_complete:
 #endif
 
         struct sc_keyboard_uhid *uhid_keyboard = NULL;
+        struct sc_gamepad_uhid *uhid_gamepad = NULL;
 
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
@@ -743,8 +744,8 @@ aoa_complete:
         }
 
         struct sc_uhid_devices *uhid_devices = NULL;
-        if (uhid_keyboard) {
-            sc_uhid_devices_init(&s->uhid_devices, uhid_keyboard);
+        if (uhid_keyboard || uhid_gamepad) {
+            sc_uhid_devices_init(&s->uhid_devices, uhid_keyboard, uhid_gamepad);
             uhid_devices = &s->uhid_devices;
         }
 

@@ -3,6 +3,7 @@
 #include "hid/hid_gamepad.h"
 #include "input_events.h"
 #include "util/log.h"
+#include "util/str.h"
 
 /** Downcast gamepad processor to sc_gamepad_uhid */
 #define DOWNCAST(GP) container_of(GP, struct sc_gamepad_uhid, gamepad_processor)
@@ -97,6 +98,22 @@ sc_gamepad_processor_process_gamepad_button(struct sc_gamepad_processor *gp,
 
     sc_gamepad_uhid_send_input(gamepad, &hid_input, "gamepad button");
 
+}
+
+void
+sc_gamepad_uhid_process_hid_output(struct sc_gamepad_uhid *gamepad,
+                                   uint16_t hid_id, const uint8_t *data,
+                                   size_t size) {
+    (void) gamepad;
+    char *hex = sc_str_to_hex_string(data, size);
+    if (hex) {
+        LOGI("==== HID output [%" PRIu16 "] %s", hid_id, hex);
+        free(hex);
+    } else {
+        LOGI("==== HID output [%" PRIu16 "]", hid_id);
+    }
+
+    // TODO
 }
 
 void
