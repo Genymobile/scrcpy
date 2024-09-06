@@ -95,20 +95,18 @@ sc_keyboard_uhid_to_sc_mod(uint8_t hid_led) {
     return mod;
 }
 
-static void
-sc_uhid_receiver_process_output(struct sc_uhid_receiver *receiver,
-                                const uint8_t *data, size_t len) {
+void
+sc_keyboard_uhid_process_hid_output(struct sc_keyboard_uhid *kb,
+                                    const uint8_t *data, size_t size) {
     assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
 
-    assert(len);
+    assert(size);
 
     // Also check at runtime (do not trust the server)
-    if (!len) {
+    if (!size) {
         LOGE("Unexpected empty HID output message");
         return;
     }
-
-    struct sc_keyboard_uhid *kb = DOWNCAST_RECEIVER(receiver);
 
     uint8_t hid_led = data[0];
     uint16_t device_mod = sc_keyboard_uhid_to_sc_mod(hid_led);
@@ -117,8 +115,7 @@ sc_uhid_receiver_process_output(struct sc_uhid_receiver *receiver,
 
 bool
 sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
-                      struct sc_controller *controller,
-                      struct sc_uhid_devices *uhid_devices) {
+                      struct sc_controller *controller) {
     sc_hid_keyboard_init(&kb->hid);
 
     kb->controller = controller;
@@ -136,14 +133,6 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     kb->key_processor.async_paste = false;
     kb->key_processor.hid = true;
     kb->key_processor.ops = &ops;
-
-    static const struct sc_uhid_receiver_ops uhid_receiver_ops = {
-        .process_output = sc_uhid_receiver_process_output,
-    };
-
-    kb->uhid_receiver.id = SC_HID_ID_KEYBOARD;
-    kb->uhid_receiver.ops = &uhid_receiver_ops;
-    sc_uhid_devices_add_receiver(uhid_devices, &kb->uhid_receiver);
 
     struct sc_hid_open hid_open;
     sc_hid_keyboard_generate_open(&hid_open);

@@ -67,14 +67,8 @@ task_uhid_output(void *userdata) {
 
     struct sc_uhid_output_task_data *data = userdata;
 
-    struct sc_uhid_receiver *uhid_receiver =
-        sc_uhid_devices_get_receiver(data->uhid_devices, data->id);
-    if (uhid_receiver) {
-        uhid_receiver->ops->process_output(uhid_receiver, data->data,
-                                           data->size);
-    } else {
-        LOGW("No UHID receiver for id %" PRIu16, data->id);
-    }
+    sc_uhid_devices_process_hid_output(data->uhid_devices, data->id, data->data,
+                                       data->size);
 
     free(data->data);
     free(data);

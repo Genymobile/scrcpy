@@ -1,25 +1,27 @@
 #include "uhid_output.h"
 
 #include <assert.h>
+#include <inttypes.h>
+
+#include "uhid/keyboard_uhid.h"
+#include "util/log.h"
 
 void
-sc_uhid_devices_init(struct sc_uhid_devices *devices) {
-    devices->count = 0;
+sc_uhid_devices_init(struct sc_uhid_devices *devices,
+                     struct sc_keyboard_uhid *keyboard) {
+    devices->keyboard = keyboard;
 }
 
 void
-sc_uhid_devices_add_receiver(struct sc_uhid_devices *devices,
-                             struct sc_uhid_receiver *receiver) {
-    assert(devices->count < SC_UHID_MAX_RECEIVERS);
-    devices->receivers[devices->count++] = receiver;
-}
-
-struct sc_uhid_receiver *
-sc_uhid_devices_get_receiver(struct sc_uhid_devices *devices, uint16_t id) {
-    for (size_t i = 0; i < devices->count; ++i) {
-        if (devices->receivers[i]->id == id) {
-            return devices->receivers[i];
+sc_uhid_devices_process_hid_output(struct sc_uhid_devices *devices, uint16_t id,
+                                   const uint8_t *data, size_t size) {
+    if (id == SC_HID_ID_KEYBOARD) {
+        if (devices->keyboard) {
+            sc_keyboard_uhid_process_hid_output(devices->keyboard, data, size);
+        } else {
+            LOGW("Unexpected keyboard HID output without UHID keyboard");
         }
+    } else {
+        LOGW("HID output ignored for id %" PRIu16, id);
     }
-    return NULL;
 }
