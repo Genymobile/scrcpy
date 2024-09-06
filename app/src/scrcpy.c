@@ -342,6 +342,21 @@ scrcpy_generate_scid(void) {
     return sc_rand_u32(&rand) & 0x7FFFFFFF;
 }
 
+static void
+init_sdl_gamepads(void) {
+    // Trigger a SDL_CONTROLLERDEVICEADDED event for all gamepads already
+    // connected
+    int num_joysticks = SDL_NumJoysticks();
+    for (int i = 0; i < num_joysticks; ++i) {
+        if (SDL_IsGameController(i)) {
+            SDL_Event event;
+            event.cdevice.type = SDL_CONTROLLERDEVICEADDED;
+            event.cdevice.which = i;
+            SDL_PushEvent(&event);
+        }
+    }
+}
+
 enum scrcpy_exit_code
 scrcpy(struct scrcpy_options *options) {
     static struct scrcpy scrcpy;
@@ -866,6 +881,11 @@ aoa_complete:
         }
 
         timeout_started = true;
+    }
+
+    if (options->control
+            && options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+        init_sdl_gamepads();
     }
 
     ret = event_loop(s);
