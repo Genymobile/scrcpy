@@ -2838,9 +2838,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        enum sc_gamepad_input_mode gmode = opts->gamepad_input_mode;
+        if (gmode != SC_GAMEPAD_INPUT_MODE_AOA
+                && gmode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+            LOGE("In OTG mode, --gamepad only supports aoa or disabled.");
+            return false;
+        }
+
         if (kmode == SC_KEYBOARD_INPUT_MODE_DISABLED
-                && mmode == SC_MOUSE_INPUT_MODE_DISABLED) {
-            LOGE("Cannot disable both keyboard and mouse in OTG mode.");
+                && mmode == SC_MOUSE_INPUT_MODE_DISABLED
+                && gmode == SC_GAMEPAD_INPUT_MODE_DISABLED) {
+            LOGE("Cannot not disable all inputs in OTG mode.");
             return false;
         }
     }

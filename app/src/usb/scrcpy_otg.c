@@ -12,6 +12,7 @@ struct scrcpy_otg {
     struct sc_aoa aoa;
     struct sc_keyboard_aoa keyboard;
     struct sc_mouse_aoa mouse;
+    struct sc_gamepad_aoa gamepad;
 
     struct sc_screen_otg screen_otg;
 };
@@ -63,6 +64,13 @@ scrcpy_otg(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
+    if (options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+        if (SDL_Init(SDL_INIT_GAMECONTROLLER)) {
+            LOGE("Could not initialize SDL controller: %s", SDL_GetError());
+            // Not fatal, keyboard/mouse should still work
+        }
+    }
+
     atexit(SDL_Quit);
 
     if (!SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1")) {
@@ -73,6 +81,7 @@ scrcpy_otg(struct scrcpy_options *options) {
 
     struct sc_keyboard_aoa *keyboard = NULL;
     struct sc_mouse_aoa *mouse = NULL;
+    struct sc_gamepad_aoa *gamepad = NULL;
     bool usb_device_initialized = false;
     bool usb_connected = false;
     bool aoa_started = false;
@@ -119,11 +128,15 @@ scrcpy_otg(struct scrcpy_options *options) {
         || options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_DISABLED);
     assert(options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA
         || options->mouse_input_mode == SC_MOUSE_INPUT_MODE_DISABLED);
+    assert(options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_AOA
+        || options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_DISABLED);
 
     bool enable_keyboard =
         options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA;
     bool enable_mouse =
         options->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA;
+    bool enable_gamepad =
+        options->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_AOA;
 
     if (enable_keyboard) {
         ok = sc_keyboard_aoa_init(&s->keyboard, &s->aoa);
@@ -141,6 +154,11 @@ scrcpy_otg(struct scrcpy_options *options) {
         mouse = &s->mouse;
     }
 
+    if (enable_gamepad) {
+        sc_gamepad_aoa_init(&s->gamepad, &s->aoa);
+        gamepad = &s->gamepad;
+    }
+
     ok = sc_aoa_start(&s->aoa);
     if (!ok) {
         goto end;
@@ -155,6 +173,7 @@ scrcpy_otg(struct scrcpy_options *options) {
     struct sc_screen_otg_params params = {
         .keyboard = keyboard,
         .mouse = mouse,
+        .gamepad = gamepad,
         .window_title = window_title,
         .always_on_top = options->always_on_top,
         .window_x = options->window_x,
@@ -187,6 +206,9 @@ end:
     }
     if (keyboard) {
         sc_keyboard_aoa_destroy(&s->keyboard);
+    }
+    if (gamepad) {
+        sc_gamepad_aoa_destroy(&s->gamepad);
     }
 
     if (aoa_initialized) {
