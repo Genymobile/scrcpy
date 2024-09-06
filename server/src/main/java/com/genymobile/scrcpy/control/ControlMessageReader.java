@@ -51,6 +51,8 @@ public class ControlMessageReader {
                 return parseUhidCreate();
             case ControlMessage.TYPE_UHID_INPUT:
                 return parseUhidInput();
+            case ControlMessage.TYPE_UHID_DESTROY:
+                return parseUhidDestroy();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -140,6 +142,11 @@ public class ControlMessageReader {
         int id = dis.readUnsignedShort();
         byte[] data = parseByteArray(2);
         return ControlMessage.createUhidInput(id, data);
+    }
+
+    private ControlMessage parseUhidDestroy() throws IOException {
+        int id = dis.readUnsignedShort();
+        return ControlMessage.createUhidDestroy(id);
     }
 
     private Position parsePosition() throws IOException {
