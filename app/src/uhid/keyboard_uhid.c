@@ -21,7 +21,7 @@ sc_keyboard_uhid_send_input(struct sc_keyboard_uhid *kb,
     msg.uhid_input.size = hid_input->size;
 
     if (!sc_controller_push_msg(kb->controller, &msg)) {
-        LOGE("Could not send UHID_INPUT message (key)");
+        LOGE("Could not push UHID_INPUT message (key)");
     }
 }
 
