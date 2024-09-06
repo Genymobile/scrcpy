@@ -31,6 +31,25 @@ sc_hid_input_log(const struct sc_hid_input *hid_input) {
     free(hex);
 }
 
+static void
+sc_hid_open_log(const struct sc_hid_open *hid_open) {
+    // HID open: [00] FF FF FF FF...
+    assert(hid_open->report_desc_size);
+    char *hex = sc_str_to_hex_string(hid_open->report_desc,
+                                     hid_open->report_desc_size);
+    if (!hex) {
+        return;
+    }
+    LOGV("HID open: [%" PRIu16 "] %s", hid_open->hid_id, hex);
+    free(hex);
+}
+
+static void
+sc_hid_close_log(const struct sc_hid_close *hid_close) {
+    // HID close: [00]
+    LOGV("HID close: [%" PRIu16 "]", hid_close->hid_id);
+}
+
 bool
 sc_aoa_init(struct sc_aoa *aoa, struct sc_usb *usb,
             struct sc_acksync *acksync) {
@@ -231,7 +250,9 @@ sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
 
 bool
 sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open) {
-    // TODO log verbose
+    if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
+        sc_hid_open_log(hid_open);
+    }
 
     sc_mutex_lock(&aoa->mutex);
     bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
@@ -259,7 +280,9 @@ sc_aoa_push_open(struct sc_aoa *aoa, const struct sc_hid_open *hid_open) {
 
 bool
 sc_aoa_push_close(struct sc_aoa *aoa, const struct sc_hid_close *hid_close) {
-    // TODO log verbose
+    if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
+        sc_hid_close_log(hid_close);
+    }
 
     sc_mutex_lock(&aoa->mutex);
     bool was_empty = sc_vecdeque_is_empty(&aoa->queue);
