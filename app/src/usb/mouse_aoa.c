@@ -18,7 +18,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     sc_hid_mouse_generate_input_from_motion(&hid_input, event);
 
     if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
-        LOGW("Could not push HID input (mouse motion)");
+        LOGW("Could not push AOA HID input (mouse motion)");
     }
 }
 
@@ -31,7 +31,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
     sc_hid_mouse_generate_input_from_click(&hid_input, event);
 
     if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
-        LOGW("Could not push HID input (mouse click)");
+        LOGW("Could not push AOA HID input (mouse click)");
     }
 }
 
@@ -44,7 +44,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
 
     if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
-        LOGW("Could not push HID input (mouse scroll)");
+        LOGW("Could not push AOA HID input (mouse scroll)");
     }
 }
 
@@ -57,7 +57,7 @@ sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
 
     bool ok = sc_aoa_push_open(aoa, &hid_open);
     if (!ok) {
-        LOGW("Could not push AOA mouse open request");
+        LOGW("Could not push AOA HID open (mouse)");
         return false;
     }
 
@@ -83,6 +83,6 @@ sc_mouse_aoa_destroy(struct sc_mouse_aoa *mouse) {
 
     bool ok = sc_aoa_push_close(mouse->aoa, &hid_close);
     if (!ok) {
-        LOGW("Could not push AOA mouse close request");
+        LOGW("Could not push AOA HID close (mouse)");
     }
 }
