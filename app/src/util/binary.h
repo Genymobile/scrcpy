@@ -14,6 +14,12 @@ sc_write16be(uint8_t *buf, uint16_t value) {
 }
 
 static inline void
+sc_write16le(uint8_t *buf, uint16_t value) {
+    buf[0] = value;
+    buf[1] = value >> 8;
+}
+
+static inline void
 sc_write32be(uint8_t *buf, uint32_t value) {
     buf[0] = value >> 24;
     buf[1] = value >> 16;
@@ -22,9 +28,23 @@ sc_write32be(uint8_t *buf, uint32_t value) {
 }
 
 static inline void
+sc_write32le(uint8_t *buf, uint32_t value) {
+    buf[0] = value;
+    buf[1] = value >> 8;
+    buf[2] = value >> 16;
+    buf[3] = value >> 24;
+}
+
+static inline void
 sc_write64be(uint8_t *buf, uint64_t value) {
     sc_write32be(buf, value >> 32);
     sc_write32be(&buf[4], (uint32_t) value);
+}
+
+static inline void
+sc_write64le(uint8_t *buf, uint64_t value) {
+    sc_write32le(buf, (uint32_t) value);
+    sc_write32le(&buf[4], value >> 32);
 }
 
 static inline uint16_t
