@@ -278,6 +278,13 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
     }
 }
 
+bool
+sc_control_msg_is_droppable(const struct sc_control_msg *msg) {
+    // Cannot drop UHID_CREATE messages, because it would cause all further
+    // UHID_INPUT messages for this device to be invalid
+    return msg->type != SC_CONTROL_MSG_TYPE_UHID_CREATE;
+}
+
 void
 sc_control_msg_destroy(struct sc_control_msg *msg) {
     switch (msg->type) {

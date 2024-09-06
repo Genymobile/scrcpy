@@ -116,6 +116,11 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf);
 void
 sc_control_msg_log(const struct sc_control_msg *msg);
 
+// Even when the buffer is "full", some messages must absolutely not be dropped
+// to avoid inconsistencies.
+bool
+sc_control_msg_is_droppable(const struct sc_control_msg *msg);
+
 void
 sc_control_msg_destroy(struct sc_control_msg *msg);
 
