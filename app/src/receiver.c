@@ -11,6 +11,13 @@
 #include "util/str.h"
 #include "util/thread.h"
 
+struct sc_uhid_output_task_data {
+    struct sc_uhid_devices *uhid_devices;
+    uint16_t id;
+    uint16_t size;
+    uint8_t *data;
+};
+
 bool
 sc_receiver_init(struct sc_receiver *receiver, sc_socket control_socket,
                  const struct sc_receiver_callbacks *cbs, void *cbs_userdata) {
@@ -52,6 +59,25 @@ task_set_clipboard(void *userdata) {
     }
 
     free(text);
+}
+
+static void
+task_uhid_output(void *userdata) {
+    assert(sc_thread_get_id() == SC_MAIN_THREAD_ID);
+
+    struct sc_uhid_output_task_data *data = userdata;
+
+    struct sc_uhid_receiver *uhid_receiver =
+        sc_uhid_devices_get_receiver(data->uhid_devices, data->id);
+    if (uhid_receiver) {
+        uhid_receiver->ops->process_output(uhid_receiver, data->data,
+                                           data->size);
+    } else {
+        LOGW("No UHID receiver for id %" PRIu16, data->id);
+    }
+
+    free(data->data);
+    free(data);
 }
 
 static void
@@ -112,18 +138,29 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
                 return;
             }
 
-            struct sc_uhid_receiver *uhid_receiver =
-                sc_uhid_devices_get_receiver(receiver->uhid_devices,
-                                             msg->uhid_output.id);
-            if (uhid_receiver) {
-                uhid_receiver->ops->process_output(uhid_receiver,
-                                                   msg->uhid_output.data,
-                                                   msg->uhid_output.size);
-            } else {
-                LOGW("No UHID receiver for id %" PRIu16, msg->uhid_output.id);
+            struct sc_uhid_output_task_data *data = malloc(sizeof(*data));
+            if (!data) {
+                LOG_OOM();
+                return;
             }
 
-            sc_device_msg_destroy(msg);
+            // It is guaranteed that these pointers will still be valid when
+            // the main thread will process them (the main thread will stop
+            // processing SC_EVENT_RUN_ON_MAIN_THREAD on exit, when everything
+            // gets deinitialized)
+            data->uhid_devices = receiver->uhid_devices;
+            data->id = msg->uhid_output.id;
+            data->data = msg->uhid_output.data; // take ownership
+            data->size = msg->uhid_output.size;
+
+            bool ok = sc_post_to_main_thread(task_uhid_output, data);
+            if (!ok) {
+                LOGW("Could not post UHID output to main thread");
+                free(data->data);
+                free(data);
+                return;
+            }
+
             break;
     }
 }
