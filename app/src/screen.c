@@ -306,13 +306,9 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
     screen->frame_size.width = ctx->width;
     screen->frame_size.height = ctx->height;
 
-    static SDL_Event event = {
-        .type = SC_EVENT_SCREEN_INIT_SIZE,
-    };
-
     // Post the event on the UI thread (the texture must be created from there)
-    int ret = SDL_PushEvent(&event);
-    if (ret < 0) {
+    bool ok = sc_push_event(SC_EVENT_SCREEN_INIT_SIZE);
+    if (!ok) {
         LOGW("Could not post init size event: %s", SDL_GetError());
         return false;
     }
@@ -352,13 +348,9 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         // The SC_EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead
     } else {
-        static SDL_Event new_frame_event = {
-            .type = SC_EVENT_NEW_FRAME,
-        };
-
         // Post the event on the UI thread
-        int ret = SDL_PushEvent(&new_frame_event);
-        if (ret < 0) {
+        bool ok = sc_push_event(SC_EVENT_NEW_FRAME);
+        if (!ok) {
             LOGW("Could not post new frame event: %s", SDL_GetError());
             return false;
         }
