@@ -31,7 +31,7 @@ struct sc_aoa_event {
             uint16_t hid_id;
         } close;
         struct {
-            struct sc_hid_event hid;
+            struct sc_hid_input hid;
             uint64_t ack_to_wait;
         } input;
     };
@@ -82,14 +82,14 @@ bool
 sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id);
 
 bool
-sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,
-                                       const struct sc_hid_event *event,
-                                       uint64_t ack_to_wait);
+sc_aoa_push_input_with_ack_to_wait(struct sc_aoa *aoa,
+                                   const struct sc_hid_input *hid_input,
+                                   uint64_t ack_to_wait);
 
 static inline bool
-sc_aoa_push_hid_event(struct sc_aoa *aoa, const struct sc_hid_event *event) {
-    return sc_aoa_push_hid_event_with_ack_to_wait(aoa, event,
-                                                  SC_SEQUENCE_INVALID);
+sc_aoa_push_input(struct sc_aoa *aoa, const struct sc_hid_input *hid_input) {
+    return sc_aoa_push_input_with_ack_to_wait(aoa, hid_input,
+                                              SC_SEQUENCE_INVALID);
 }
 
 #endif
