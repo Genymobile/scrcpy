@@ -14,6 +14,8 @@
 // 0x65 is Application, typically AT-101 Keyboard ends here.
 #define SC_HID_KEYBOARD_KEYS 0x66
 
+#define SC_HID_ID_KEYBOARD 1
+
 extern const uint8_t SC_HID_KEYBOARD_REPORT_DESC[];
 extern const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN;
 

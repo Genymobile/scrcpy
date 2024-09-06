@@ -7,14 +7,12 @@
 /** Downcast mouse processor to mouse_uhid */
 #define DOWNCAST(MP) container_of(MP, struct sc_mouse_uhid, mouse_processor)
 
-#define UHID_MOUSE_ID 2
-
 static void
 sc_mouse_uhid_send_input(struct sc_mouse_uhid *mouse,
                          const struct sc_hid_event *event, const char *name) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-    msg.uhid_input.id = UHID_MOUSE_ID;
+    msg.uhid_input.id = event->hid_id;
 
     assert(event->size <= SC_HID_MAX_SIZE);
     memcpy(msg.uhid_input.data, event->data, event->size);
@@ -77,7 +75,7 @@ sc_mouse_uhid_init(struct sc_mouse_uhid *mouse,
 
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
-    msg.uhid_create.id = UHID_MOUSE_ID;
+    msg.uhid_create.id = SC_HID_ID_MOUSE;
     msg.uhid_create.report_desc = SC_HID_MOUSE_REPORT_DESC;
     msg.uhid_create.report_desc_size = SC_HID_MOUSE_REPORT_DESC_LEN;
     if (!sc_controller_push_msg(controller, &msg)) {

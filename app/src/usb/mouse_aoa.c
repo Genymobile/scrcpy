@@ -9,8 +9,6 @@
 /** Downcast mouse processor to mouse_aoa */
 #define DOWNCAST(MP) container_of(MP, struct sc_mouse_aoa, mouse_processor)
 
-#define HID_MOUSE_ACCESSORY_ID 2
-
 static void
 sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
@@ -19,8 +17,7 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
     struct sc_hid_event hid_event;
     sc_hid_mouse_event_from_motion(&hid_event, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
-                               &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         LOGW("Could not request HID event (mouse motion)");
     }
 }
@@ -33,8 +30,7 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
     struct sc_hid_event hid_event;
     sc_hid_mouse_event_from_click(&hid_event, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
-                               &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         LOGW("Could not request HID event (mouse click)");
     }
 }
@@ -47,8 +43,7 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     struct sc_hid_event hid_event;
     sc_hid_mouse_event_from_scroll(&hid_event, event);
 
-    if (!sc_aoa_push_hid_event(mouse->aoa, HID_MOUSE_ACCESSORY_ID,
-                               &hid_event)) {
+    if (!sc_aoa_push_hid_event(mouse->aoa, &hid_event)) {
         LOGW("Could not request HID event (mouse scroll)");
     }
 }
@@ -57,7 +52,7 @@ bool
 sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
     mouse->aoa = aoa;
 
-    bool ok = sc_aoa_setup_hid(aoa, HID_MOUSE_ACCESSORY_ID,
+    bool ok = sc_aoa_setup_hid(aoa, SC_HID_ID_MOUSE,
                                SC_HID_MOUSE_REPORT_DESC,
                                SC_HID_MOUSE_REPORT_DESC_LEN);
     if (!ok) {
@@ -82,7 +77,7 @@ sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
 
 void
 sc_mouse_aoa_destroy(struct sc_mouse_aoa *mouse) {
-    bool ok = sc_aoa_unregister_hid(mouse->aoa, HID_MOUSE_ACCESSORY_ID);
+    bool ok = sc_aoa_unregister_hid(mouse->aoa, SC_HID_ID_MOUSE);
     if (!ok) {
         LOGW("Could not unregister HID mouse");
     }

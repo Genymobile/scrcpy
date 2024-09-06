@@ -8,6 +8,7 @@
 #define SC_HID_MAX_SIZE 8
 
 struct sc_hid_event {
+    uint16_t hid_id;
     uint8_t data[SC_HID_MAX_SIZE];
     uint8_t size;
 };
