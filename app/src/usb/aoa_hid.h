@@ -13,9 +13,28 @@
 #include "util/tick.h"
 #include "util/vecdeque.h"
 
+enum sc_aoa_event_type {
+    SC_AOA_EVENT_TYPE_OPEN,
+    SC_AOA_EVENT_TYPE_INPUT,
+    SC_AOA_EVENT_TYPE_CLOSE,
+};
+
 struct sc_aoa_event {
-    struct sc_hid_event hid;
-    uint64_t ack_to_wait;
+    enum sc_aoa_event_type type;
+    union {
+        struct {
+            uint16_t hid_id;
+            const uint8_t *report_desc; // pointer to static memory
+            uint16_t report_desc_size;
+        } open;
+        struct {
+            uint16_t hid_id;
+        } close;
+        struct {
+            struct sc_hid_event hid;
+            uint64_t ack_to_wait;
+        } input;
+    };
 };
 
 struct sc_aoa_event_queue SC_VECDEQUE(struct sc_aoa_event);
@@ -46,12 +65,21 @@ sc_aoa_stop(struct sc_aoa *aoa);
 void
 sc_aoa_join(struct sc_aoa *aoa);
 
+//bool
+//sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
+//              const uint8_t *report_desc, uint16_t report_desc_size);
+//
+//bool
+//sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id);
+
+// report_desc must be a pointer to static memory, accessed at any time from
+// another thread
 bool
-sc_aoa_setup_hid(struct sc_aoa *aoa, uint16_t accessory_id,
-              const uint8_t *report_desc, uint16_t report_desc_size);
+sc_aoa_push_open(struct sc_aoa *aoa, uint16_t accessory_id,
+                 const uint8_t *report_desc, uint16_t report_desc_size);
 
 bool
-sc_aoa_unregister_hid(struct sc_aoa *aoa, uint16_t accessory_id);
+sc_aoa_push_close(struct sc_aoa *aoa, uint16_t accessory_id);
 
 bool
 sc_aoa_push_hid_event_with_ack_to_wait(struct sc_aoa *aoa,

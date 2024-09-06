@@ -66,11 +66,11 @@ bool
 sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
 
-    bool ok = sc_aoa_setup_hid(aoa, SC_HID_ID_KEYBOARD,
+    bool ok = sc_aoa_push_open(aoa, SC_HID_ID_KEYBOARD,
                                SC_HID_KEYBOARD_REPORT_DESC,
                                SC_HID_KEYBOARD_REPORT_DESC_LEN);
     if (!ok) {
-        LOGW("Register HID keyboard failed");
+        LOGW("Could not push AOA keyboard open request");
         return false;
     }
 
@@ -97,9 +97,8 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
-    // Unregister HID keyboard so the soft keyboard shows again on Android
-    bool ok = sc_aoa_unregister_hid(kb->aoa, SC_HID_ID_KEYBOARD);
+    bool ok = sc_aoa_push_close(kb->aoa, SC_HID_ID_KEYBOARD);
     if (!ok) {
-        LOGW("Could not unregister HID keyboard");
+        LOGW("Could not push AOA keyboard close request");
     }
 }
