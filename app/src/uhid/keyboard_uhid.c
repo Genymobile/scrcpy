@@ -43,7 +43,9 @@ sc_keyboard_uhid_synchronize_mod(struct sc_keyboard_uhid *kb) {
         atomic_store_explicit(&kb->device_mod, mod, memory_order_relaxed);
 
         struct sc_hid_event hid_event;
-        sc_hid_keyboard_event_from_mods(&hid_event, diff);
+        if (!sc_hid_keyboard_event_from_mods(&hid_event, diff)) {
+            return;
+        }
 
         LOGV("HID keyboard state synchronized");
 
