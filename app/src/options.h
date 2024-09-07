@@ -142,6 +142,7 @@ enum sc_lock_video_orientation {
 
 enum sc_keyboard_input_mode {
     SC_KEYBOARD_INPUT_MODE_AUTO,
+    SC_KEYBOARD_INPUT_MODE_UHID_OR_AOA, // normal vs otg mode
     SC_KEYBOARD_INPUT_MODE_DISABLED,
     SC_KEYBOARD_INPUT_MODE_SDK,
     SC_KEYBOARD_INPUT_MODE_UHID,
@@ -150,6 +151,7 @@ enum sc_keyboard_input_mode {
 
 enum sc_mouse_input_mode {
     SC_MOUSE_INPUT_MODE_AUTO,
+    SC_MOUSE_INPUT_MODE_UHID_OR_AOA, // normal vs otg mode
     SC_MOUSE_INPUT_MODE_DISABLED,
     SC_MOUSE_INPUT_MODE_SDK,
     SC_MOUSE_INPUT_MODE_UHID,
@@ -158,6 +160,7 @@ enum sc_mouse_input_mode {
 
 enum sc_gamepad_input_mode {
     SC_GAMEPAD_INPUT_MODE_DISABLED,
+    SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA, // normal vs otg mode
     SC_GAMEPAD_INPUT_MODE_UHID,
     SC_GAMEPAD_INPUT_MODE_AOA,
 };

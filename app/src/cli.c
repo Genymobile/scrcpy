@@ -375,7 +375,7 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'G',
-        .text = "Same as --gamepad=uhid.",
+        .text = "Same as --gamepad=uhid, or --gamepad=aoa if --otg is set.",
     },
     {
         .longopt_id = OPT_GAMEPAD,
@@ -397,7 +397,7 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'K',
-        .text = "Same as --keyboard=uhid.",
+        .text = "Same as --keyboard=uhid, or --keyboard=aoa if --otg is set.",
     },
     {
         .longopt_id = OPT_KEYBOARD,
@@ -493,7 +493,7 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'M',
-        .text = "Same as --mouse=uhid.",
+        .text = "Same as --mouse=uhid, or --mouse=aoa if --otg is set.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -2252,7 +2252,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
-                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID;
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID_OR_AOA;
                 break;
             case OPT_KEYBOARD:
                 if (!parse_keyboard(optarg, &opts->keyboard_input_mode)) {
@@ -2272,7 +2272,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'M':
-                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID_OR_AOA;
                 break;
             case OPT_MOUSE:
                 if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
@@ -2657,7 +2657,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->audio_dup = true;
                 break;
             case 'G':
-                opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID;
+                opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA;
                 break;
             case OPT_GAMEPAD:
                 if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
@@ -2781,7 +2781,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
             opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
                                             : SC_KEYBOARD_INPUT_MODE_SDK;
+        } else if (opts->keyboard_input_mode
+                == SC_KEYBOARD_INPUT_MODE_UHID_OR_AOA) {
+            opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                            : SC_KEYBOARD_INPUT_MODE_UHID;
         }
+
         if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
             if (otg) {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
@@ -2791,10 +2796,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             } else {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
             }
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID_OR_AOA) {
+            opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
+                                         : SC_MOUSE_INPUT_MODE_UHID;
         } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK
                     && !opts->video_playback) {
             LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
             return false;
+        }
+        if (opts->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA) {
+            opts->gamepad_input_mode = otg ? SC_GAMEPAD_INPUT_MODE_AOA
+                                           : SC_GAMEPAD_INPUT_MODE_UHID;
         }
     }
 
