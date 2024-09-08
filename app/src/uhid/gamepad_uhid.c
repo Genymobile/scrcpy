@@ -119,7 +119,14 @@ sc_gamepad_uhid_process_hid_output(struct sc_gamepad_uhid *gamepad,
         LOGI("==== HID output [%" PRIu16 "]", hid_id);
     }
 
-    // TODO
+    struct sc_hid_gamepad *gp = &gamepad->hid;
+    struct sc_hid_gamepad_slot* slot = &gp->slots[hid_id - SC_HID_ID_GAMEPAD_FIRST];
+    SDL_GameController *gc = SDL_GameControllerFromInstanceID(slot->gamepad_id);
+    // |           | HID Report | SDL Parameter |
+    // |-----------|------------|---------------|
+    // | Intensity | 0 - 100    | 0 - 65535     |
+    // | Duration  | 0 - 255    | 0 - 1000      |
+    SDL_GameControllerRumble(gc, data[4] * 0xFFFF / 100, data[5] * 0xFFFF / 100, data[6] * 1000 / 0xFF);
 }
 
 void

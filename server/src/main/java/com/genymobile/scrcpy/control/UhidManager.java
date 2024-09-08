@@ -25,6 +25,7 @@ public final class UhidManager {
     private static final int UHID_INPUT2 = 12;
 
     // Linux: include/uapi/linux/input.h
+    private static final short BUS_BLUETOOTH = 0x05;
     private static final short BUS_VIRTUAL = 0x06;
 
     private static final int SIZE_OF_UHID_EVENT = 4380; // sizeof(struct uhid_event)
@@ -174,9 +175,9 @@ public final class UhidManager {
         buf.put("scrcpy".getBytes(StandardCharsets.US_ASCII));
         buf.put(empty, 0, 256 - "scrcpy".length());
         buf.putShort((short) reportDesc.length);
-        buf.putShort(BUS_VIRTUAL);
-        buf.putInt(0); // vendor id
-        buf.putInt(0); // product id
+        buf.putShort(BUS_BLUETOOTH);
+        buf.putInt(0x045e); // product id
+        buf.putInt(0x02fd); // vendor id
         buf.putInt(0); // version
         buf.putInt(0); // country;
         buf.put(reportDesc);
