@@ -85,7 +85,7 @@ write_position(uint8_t *buf, const struct sc_position *position) {
 
 // write length (4 bytes) + string (non null-terminated)
 static size_t
-write_string(const char *utf8, size_t max_len, uint8_t *buf) {
+write_string(uint8_t *buf, const char *utf8, size_t max_len) {
     size_t len = sc_str_utf8_truncation_index(utf8, max_len);
     sc_write32be(buf, len);
     memcpy(&buf[4], utf8, len);
@@ -103,9 +103,8 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             sc_write32be(&buf[10], msg->inject_keycode.metastate);
             return 14;
         case SC_CONTROL_MSG_TYPE_INJECT_TEXT: {
-            size_t len =
-                write_string(msg->inject_text.text,
-                             SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH, &buf[1]);
+            size_t len = write_string(&buf[1], msg->inject_text.text,
+                                      SC_CONTROL_MSG_INJECT_TEXT_MAX_LENGTH);
             return 1 + len;
         }
         case SC_CONTROL_MSG_TYPE_INJECT_TOUCH_EVENT:
@@ -137,9 +136,8 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             sc_write64be(&buf[1], msg->set_clipboard.sequence);
             buf[9] = !!msg->set_clipboard.paste;
-            size_t len = write_string(msg->set_clipboard.text,
-                                      SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH,
-                                      &buf[10]);
+            size_t len = write_string(&buf[10], msg->set_clipboard.text,
+                                      SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
             return 10 + len;
         case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
             buf[1] = msg->set_screen_power_mode.mode;
