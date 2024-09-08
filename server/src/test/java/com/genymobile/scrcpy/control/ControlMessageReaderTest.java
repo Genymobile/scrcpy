@@ -324,8 +324,10 @@ public class ControlMessageReaderTest {
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_UHID_CREATE);
         dos.writeShort(42); // id
+        dos.writeByte(3); // name size
+        dos.write("ABC".getBytes(StandardCharsets.US_ASCII));
         byte[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-        dos.writeShort(data.length); // size
+        dos.writeShort(data.length); // report desc size
         dos.write(data);
         byte[] packet = bos.toByteArray();
 
@@ -335,6 +337,7 @@ public class ControlMessageReaderTest {
         ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_UHID_CREATE, event.getType());
         Assert.assertEquals(42, event.getId());
+        Assert.assertEquals("ABC", event.getText());
         Assert.assertArrayEquals(data, event.getData());
 
         Assert.assertEquals(-1, bis.read()); // EOS

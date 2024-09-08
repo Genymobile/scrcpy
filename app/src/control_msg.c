@@ -83,13 +83,32 @@ write_position(uint8_t *buf, const struct sc_position *position) {
     sc_write16be(&buf[10], position->screen_size.height);
 }
 
-// write length (4 bytes) + string (non null-terminated)
+// Write truncated string, and return the size
+static size_t
+write_string_payload(uint8_t *payload, const char *utf8, size_t max_len) {
+    if (!utf8) {
+        return 0;
+    }
+    size_t len = sc_str_utf8_truncation_index(utf8, max_len);
+    memcpy(payload, utf8, len);
+    return len;
+}
+
+// Write length (4 bytes) + string (non null-terminated)
 static size_t
 write_string(uint8_t *buf, const char *utf8, size_t max_len) {
-    size_t len = sc_str_utf8_truncation_index(utf8, max_len);
+    size_t len = write_string_payload(buf + 4, utf8, max_len);
     sc_write32be(buf, len);
-    memcpy(&buf[4], utf8, len);
     return 4 + len;
+}
+
+// Write length (1 byte) + string (non null-terminated)
+static size_t
+write_string_tiny(uint8_t *buf, const char *utf8, size_t max_len) {
+    assert(max_len <= 0xFF);
+    size_t len = write_string_payload(buf + 1, utf8, max_len);
+    buf[0] = len;
+    return 1 + len;
 }
 
 size_t
@@ -144,10 +163,18 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             return 2;
         case SC_CONTROL_MSG_TYPE_UHID_CREATE:
             sc_write16be(&buf[1], msg->uhid_create.id);
-            sc_write16be(&buf[3], msg->uhid_create.report_desc_size);
-            memcpy(&buf[5], msg->uhid_create.report_desc,
-                            msg->uhid_create.report_desc_size);
-            return 5 + msg->uhid_create.report_desc_size;
+
+            size_t index = 3;
+            index += write_string_tiny(&buf[index], msg->uhid_create.name, 127);
+
+            sc_write16be(&buf[index], msg->uhid_create.report_desc_size);
+            index += 2;
+
+            memcpy(&buf[index], msg->uhid_create.report_desc,
+                                msg->uhid_create.report_desc_size);
+            index += msg->uhid_create.report_desc_size;
+
+            return index;
         case SC_CONTROL_MSG_TYPE_UHID_INPUT:
             sc_write16be(&buf[1], msg->uhid_input.id);
             sc_write16be(&buf[3], msg->uhid_input.size);
@@ -253,10 +280,15 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
             LOG_CMSG("rotate device");
             break;
-        case SC_CONTROL_MSG_TYPE_UHID_CREATE:
-            LOG_CMSG("UHID create [%" PRIu16 "] report_desc_size=%" PRIu16,
-                     msg->uhid_create.id, msg->uhid_create.report_desc_size);
+        case SC_CONTROL_MSG_TYPE_UHID_CREATE: {
+            // Quote only if name is not null
+            const char *name = msg->uhid_create.name;
+            const char *quote = name ? "\"" : "";
+            LOG_CMSG("UHID create [%" PRIu16 "] name=%s%s%s "
+                     "report_desc_size=%" PRIu16, msg->uhid_create.id,
+                     quote, name, quote, msg->uhid_create.report_desc_size);
             break;
+        }
         case SC_CONTROL_MSG_TYPE_UHID_INPUT: {
             char *hex = sc_str_to_hex_string(msg->uhid_input.data,
                                              msg->uhid_input.size);
