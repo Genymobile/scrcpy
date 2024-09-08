@@ -35,6 +35,7 @@ src = [
     'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
+    'src/resampler/gamepad_resampler.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
     'src/uhid/gamepad_uhid.c',

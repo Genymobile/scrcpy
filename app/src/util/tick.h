@@ -9,6 +9,8 @@ typedef int64_t sc_tick;
 #define PRItick PRIi64
 #define SC_TICK_FREQ 1000000 // microsecond
 
+#define SC_TICK_INVALID INT64_MIN
+
 // To be adapted if SC_TICK_FREQ changes
 #define SC_TICK_TO_NS(tick) ((tick) * 1000)
 #define SC_TICK_TO_US(tick) (tick)
