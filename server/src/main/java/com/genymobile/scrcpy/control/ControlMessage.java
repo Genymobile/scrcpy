@@ -131,10 +131,11 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createUhidCreate(int id, byte[] reportDesc) {
+    public static ControlMessage createUhidCreate(int id, String name, byte[] reportDesc) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_UHID_CREATE;
         msg.id = id;
+        msg.text = name;
         msg.data = reportDesc;
         return msg;
     }

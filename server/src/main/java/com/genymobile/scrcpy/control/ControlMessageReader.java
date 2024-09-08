@@ -75,9 +75,14 @@ public class ControlMessageReader {
         return value;
     }
 
-    private String parseString() throws IOException {
-        byte[] data = parseByteArray(4);
+    private String parseString(int sizeBytes) throws IOException {
+        assert sizeBytes > 0 && sizeBytes <= 4;
+        byte[] data = parseByteArray(sizeBytes);
         return new String(data, StandardCharsets.UTF_8);
+    }
+
+    private String parseString() throws IOException {
+        return parseString(4);
     }
 
     private byte[] parseByteArray(int sizeBytes) throws IOException {
@@ -134,8 +139,9 @@ public class ControlMessageReader {
 
     private ControlMessage parseUhidCreate() throws IOException {
         int id = dis.readUnsignedShort();
+        String name = parseString(1);
         byte[] data = parseByteArray(2);
-        return ControlMessage.createUhidCreate(id, data);
+        return ControlMessage.createUhidCreate(id, name, data);
     }
 
     private ControlMessage parseUhidInput() throws IOException {
