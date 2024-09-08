@@ -30,6 +30,7 @@ sc_gamepad_uhid_send_open(struct sc_gamepad_uhid *gamepad,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
     msg.uhid_create.id = hid_open->hid_id;
+    msg.uhid_create.name = hid_open->name;
     msg.uhid_create.report_desc = hid_open->report_desc;
     msg.uhid_create.report_desc_size = hid_open->report_desc_size;
 

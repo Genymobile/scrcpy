@@ -81,6 +81,7 @@ sc_mouse_uhid_init(struct sc_mouse_uhid *mouse,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
     msg.uhid_create.id = SC_HID_ID_MOUSE;
+    msg.uhid_create.name = hid_open.name;
     msg.uhid_create.report_desc = hid_open.report_desc;
     msg.uhid_create.report_desc_size = hid_open.report_desc_size;
     if (!sc_controller_push_msg(controller, &msg)) {
