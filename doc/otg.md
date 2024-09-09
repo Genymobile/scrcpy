@@ -9,13 +9,15 @@ device (see [keyboard](keyboard.md) and [mouse](mouse.md)).
 [physical mouse]: mouse.md#physical-mouse-simulation
 
 A special mode (OTG) allows to control the device using AOA
-[keyboard](keyboard.md#aoa) and [mouse](mouse.md#aoa), without using _adb_ at
-all (so USB debugging is not necessary). In this mode, video and audio are
-disabled, and `--keyboard=aoa and `--mouse=aoa` are implicitly set.
+[keyboard](keyboard.md#aoa), [mouse](mouse.md#aoa) and
+[gamepad](gamepad.md#aoa), without using _adb_ at all (so USB debugging is not
+necessary). In this mode, video and audio are disabled, and `--keyboard=aoa` and
+`--mouse=aoa` are implicitly set. However, gamepads are disabled by default, so
+`--gamepad=aoa` (or `-G` in OTG mode) must be explicitly set.
 
-Therefore, it is possible to run _scrcpy_ with only physical keyboard and mouse
-simulation, as if the computer keyboard and mouse were plugged directly to the
-device via an OTG cable.
+Therefore, it is possible to run _scrcpy_ with only physical keyboard, mouse and
+gamepad simulation, as if the computer keyboard, mouse and gamepads were plugged
+directly to the device via an OTG cable.
 
 To enable OTG mode:
 
@@ -30,6 +32,13 @@ It is possible to disable keyboard or mouse:
 ```bash
 scrcpy --otg --keyboard=disabled
 scrcpy --otg --mouse=disabled
+```
+
+and to enable gamepads:
+
+```bash
+scrcpy --otg --gamepad=aoa
+scrcpy --otg -G  # short version
 ```
 
 It only works if the device is connected over USB.
@@ -50,9 +59,9 @@ is enabled, then OTG mode is not necessary.
 Instead, disable video and audio, and select UHID (or AOA):
 
 ```bash
-scrcpy --no-video --no-audio --keyboard=uhid --mouse=uhid
-scrcpy --no-video --no-audio -KM  # short version
-scrcpy --no-video --no-audio --keyboard=aoa --mouse=aoa
+scrcpy --no-video --no-audio --keyboard=uhid --mouse=uhid --gamepad=uhid
+scrcpy --no-video --no-audio -KMG  # short version
+scrcpy --no-video --no-audio --keyboard=aoa --mouse=aoa --gamepad=aoa
 ```
 
 One benefit of UHID is that it also works wirelessly.
