@@ -2816,7 +2816,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (kmode == SC_KEYBOARD_INPUT_MODE_DISABLED
                 && mmode == SC_MOUSE_INPUT_MODE_DISABLED) {
-            LOGE("Could not disable both keyboard and mouse in OTG mode.");
+            LOGE("Cannot disable both keyboard and mouse in OTG mode.");
             return false;
         }
     }
@@ -2857,18 +2857,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
 
         if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
-            LOGE("Could not specify both --camera-id and --camera-facing");
+            LOGE("Cannot specify both --camera-id and --camera-facing");
             return false;
         }
 
         if (opts->camera_size) {
             if (opts->max_size) {
-                LOGE("Could not specify both --camera-size and -m/--max-size");
+                LOGE("Cannot specify both --camera-size and -m/--max-size");
                 return false;
             }
 
             if (opts->camera_ar) {
-                LOGE("Could not specify both --camera-size and --camera-ar");
+                LOGE("Cannot specify both --camera-size and --camera-ar");
                 return false;
             }
         }
@@ -3009,19 +3009,19 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (!opts->control) {
         if (opts->turn_screen_off) {
-            LOGE("Could not request to turn screen off if control is disabled");
+            LOGE("Cannot request to turn screen off if control is disabled");
             return false;
         }
         if (opts->stay_awake) {
-            LOGE("Could not request to stay awake if control is disabled");
+            LOGE("Cannot request to stay awake if control is disabled");
             return false;
         }
         if (opts->show_touches) {
-            LOGE("Could not request to show touches if control is disabled");
+            LOGE("Cannot request to show touches if control is disabled");
             return false;
         }
         if (opts->power_off_on_close) {
-            LOGE("Could not request power off on close if control is disabled");
+            LOGE("Cannot request power off on close if control is disabled");
             return false;
         }
     }
@@ -3046,7 +3046,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
         if (opts->record_filename) {
-            LOGE("OTG mode: could not record");
+            LOGE("OTG mode: cannot record");
             return false;
         }
         if (opts->turn_screen_off) {
