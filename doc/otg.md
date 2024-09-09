@@ -6,7 +6,7 @@ was a [physical keyboard] and/or a [physical mouse] connected to the Android
 device (see [keyboard](keyboard.md) and [mouse](mouse.md)).
 
 [physical keyboard]: keyboard.md#physical-keyboard-simulation
-[physical mouse]: physical-keyboard-simulation
+[physical mouse]: mouse.md#physical-mouse-simulation
 
 A special mode (OTG) allows to control the device using AOA
 [keyboard](keyboard.md#aoa) and [mouse](mouse.md#aoa), without using _adb_ at
