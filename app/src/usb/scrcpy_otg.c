@@ -58,6 +58,10 @@ scrcpy_otg(struct scrcpy_options *options) {
         LOGW("Could not enable linear filtering");
     }
 
+    if (!SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1")) {
+        LOGW("Could not allow joystick background events");
+    }
+
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
         LOGE("Could not initialize SDL: %s", SDL_GetError());
