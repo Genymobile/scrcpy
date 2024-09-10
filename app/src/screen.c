@@ -869,7 +869,8 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         }
         case SDL_WINDOWEVENT:
             if (!screen->video
-                    && event->window.event == SDL_WINDOWEVENT_EXPOSED) {
+                    && (event->window.event == SDL_WINDOWEVENT_EXPOSED
+                        || event->window.event == SDL_WINDOWEVENT_SHOWN)) {
                 sc_screen_render_novideo(screen);
             }
 
@@ -881,6 +882,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             }
             switch (event->window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
+                case SDL_WINDOWEVENT_SHOWN:
                     sc_screen_render(screen, true);
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:

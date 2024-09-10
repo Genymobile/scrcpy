@@ -220,6 +220,7 @@ sc_screen_otg_handle_event(struct sc_screen_otg *screen, SDL_Event *event) {
         case SDL_WINDOWEVENT:
             switch (event->window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
+                case SDL_WINDOWEVENT_SHOWN:
                     sc_screen_otg_render(screen);
                     break;
                 case SDL_WINDOWEVENT_FOCUS_LOST:
