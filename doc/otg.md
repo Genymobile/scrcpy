@@ -11,7 +11,7 @@ device (see [keyboard](keyboard.md) and [mouse](mouse.md)).
 A special mode (OTG) allows to control the device using AOA
 [keyboard](keyboard.md#aoa) and [mouse](mouse.md#aoa), without using _adb_ at
 all (so USB debugging is not necessary). In this mode, video and audio are
-disabled, and `--keyboard=aoa and `--mouse=aoa` are implicitly set.
+disabled, and `--keyboard=aoa` and `--mouse=aoa` are implicitly set.
 
 Therefore, it is possible to run _scrcpy_ with only physical keyboard and mouse
 simulation, as if the computer keyboard and mouse were plugged directly to the
