@@ -12,12 +12,14 @@
 #include "util/tick.h"
 #include "util/vecdeque.h"
 
+#define SC_BUFFERING_NDEBUG // comment to debug
+
 // forward declarations
 typedef struct AVFrame AVFrame;
 
 struct sc_delayed_frame {
     AVFrame *frame;
-#ifndef NDEBUG
+#ifndef SC_BUFFERING_NDEBUG
     sc_tick push_date;
 #endif
 };

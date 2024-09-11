@@ -8,8 +8,6 @@
 
 #include "util/log.h"
 
-#define SC_BUFFERING_NDEBUG // comment to debug
-
 /** Downcast frame_sink to sc_delay_buffer */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_delay_buffer, frame_sink)
 
