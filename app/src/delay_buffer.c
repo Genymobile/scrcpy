@@ -78,7 +78,7 @@ run_buffering(void *data) {
             goto stopped;
         }
 
-#ifndef SC_BUFFERING_NDEBUG
+#ifdef SC_BUFFERING_DEBUG
         LOGD("Buffering: %" PRItick ";%" PRItick ";%" PRItick,
              pts, dframe.push_date, sc_tick_now());
 #endif
@@ -204,7 +204,7 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
         return false;
     }
 
-#ifndef SC_BUFFERING_NDEBUG
+#ifdef SC_BUFFERING_DEBUG
     dframe.push_date = sc_tick_now();
 #endif
 

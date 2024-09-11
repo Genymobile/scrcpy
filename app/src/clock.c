@@ -4,7 +4,7 @@
 
 #include "util/log.h"
 
-#define SC_CLOCK_NDEBUG // comment to debug
+//#define SC_CLOCK_DEBUG // uncomment to debug
 
 #define SC_CLOCK_RANGE 32
 
@@ -24,7 +24,7 @@ sc_clock_update(struct sc_clock *clock, sc_tick system, sc_tick stream) {
     clock->offset = ((clock->range - 1) * clock->offset + offset)
                   / clock->range;
 
-#ifndef SC_CLOCK_NDEBUG
+#ifdef SC_CLOCK_DEBUG
     LOGD("Clock estimation: pts + %" PRItick, clock->offset);
 #endif
 }
