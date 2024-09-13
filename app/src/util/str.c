@@ -148,6 +148,25 @@ sc_str_parse_integer_with_suffix(const char *s, long *out) {
 }
 
 bool
+sc_str_parse_float(const char *s, float *out) {
+    char *endptr;
+    if (*s == '\0') {
+        return false;
+    }
+    errno = 0;
+    float value = strtof(s, &endptr);
+    if (errno == ERANGE) {
+        return false;
+    }
+    if (*endptr != '\0') {
+        return false;
+    }
+
+    *out = value;
+    return true;
+}
+
+bool
 sc_str_list_contains(const char *list, char sep, const char *s) {
     char *p;
     do {

@@ -39,7 +39,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final String encoderName;
     private final List<CodecOption> codecOptions;
     private final int videoBitRate;
-    private final int maxFps;
+    private final float maxFps;
     private final boolean downsizeOnError;
 
     private boolean firstFrameSent;
@@ -48,8 +48,8 @@ public class SurfaceEncoder implements AsyncProcessor {
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
-    public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, int videoBitRate, int maxFps, List<CodecOption> codecOptions, String encoderName,
-            boolean downsizeOnError) {
+    public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, int videoBitRate, float maxFps, List<CodecOption> codecOptions,
+            String encoderName, boolean downsizeOnError) {
         this.capture = capture;
         this.streamer = streamer;
         this.videoBitRate = videoBitRate;
@@ -225,7 +225,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         }
     }
 
-    private static MediaFormat createFormat(String videoMimeType, int bitRate, int maxFps, List<CodecOption> codecOptions) {
+    private static MediaFormat createFormat(String videoMimeType, int bitRate, float maxFps, List<CodecOption> codecOptions) {
         MediaFormat format = new MediaFormat();
         format.setString(MediaFormat.KEY_MIME, videoMimeType);
         format.setInteger(MediaFormat.KEY_BIT_RATE, bitRate);

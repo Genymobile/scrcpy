@@ -29,7 +29,7 @@ public class Options {
     private boolean audioDup;
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
-    private int maxFps;
+    private float maxFps;
     private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
@@ -113,7 +113,7 @@ public class Options {
         return audioBitRate;
     }
 
-    public int getMaxFps() {
+    public float getMaxFps() {
         return maxFps;
     }
 
@@ -321,7 +321,7 @@ public class Options {
                     options.audioBitRate = Integer.parseInt(value);
                     break;
                 case "max_fps":
-                    options.maxFps = Integer.parseInt(value);
+                    options.maxFps = parseFloat("max_fps", value);
                     break;
                 case "lock_video_orientation":
                     options.lockVideoOrientation = Integer.parseInt(value);
@@ -492,5 +492,13 @@ public class Options {
 
         float floatAr = Float.parseFloat(tokens[0]);
         return CameraAspectRatio.fromFloat(floatAr);
+    }
+
+    private static float parseFloat(String key, String value) {
+        try {
+            return Float.parseFloat(value);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid float value for " + key + ": \"" + value + "\"");
+        }
     }
 }

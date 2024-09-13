@@ -321,7 +321,7 @@ execute_server(struct sc_server *server,
         ADD_PARAM("max_size=%" PRIu16, params->max_size);
     }
     if (params->max_fps) {
-        ADD_PARAM("max_fps=%" PRIu16, params->max_fps);
+        ADD_PARAM("max_fps=%f" , params->max_fps);
     }
     if (params->lock_video_orientation != SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
         ADD_PARAM("lock_video_orientation=%" PRIi8,

@@ -67,6 +67,14 @@ bool
 sc_str_parse_integer_with_suffix(const char *s, long *out);
 
 /**
+ * `Parse `s` as a float into `out`
+ *
+ * Return true if the conversion succeeded, false otherwise.
+ */
+bool
+sc_str_parse_float(const char *s, float *out);
+
+/**
  * Search `s` in the list separated by `sep`
  *
  * For example, sc_str_list_contains("a,bc,def", ',', "bc") returns true.
