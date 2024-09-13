@@ -121,11 +121,6 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
                 }
             }
 
-            // This is a programming error to receive this message if there is
-            // no uhid_devices instance
-            assert(receiver->uhid_devices);
-
-            // Also check at runtime (do not trust the server)
             if (!receiver->uhid_devices) {
                 LOGE("Received unexpected HID output message");
                 sc_device_msg_destroy(msg);
