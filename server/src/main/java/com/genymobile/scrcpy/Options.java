@@ -456,8 +456,14 @@ public class Options {
         }
         int width = Integer.parseInt(tokens[0]);
         int height = Integer.parseInt(tokens[1]);
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("Invalid crop size: " + width + "x" + height);
+        }
         int x = Integer.parseInt(tokens[2]);
         int y = Integer.parseInt(tokens[3]);
+        if (x < 0 || y < 0) {
+            throw new IllegalArgumentException("Invalid crop offset: " + x + ":" + y);
+        }
         return new Rect(x, y, x + width, y + height);
     }
 
