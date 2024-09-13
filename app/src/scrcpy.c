@@ -63,8 +63,8 @@ struct scrcpy {
     struct sc_aoa aoa;
     // sequence/ack helper to synchronize clipboard and Ctrl+v via HID
     struct sc_acksync acksync;
-    struct sc_uhid_devices uhid_devices;
 #endif
+    struct sc_uhid_devices uhid_devices;
     union {
         struct sc_keyboard_sdk keyboard_sdk;
         struct sc_keyboard_uhid keyboard_uhid;
