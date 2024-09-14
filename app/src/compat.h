@@ -8,7 +8,7 @@
 #include <libavutil/version.h>
 #include <SDL2/SDL_version.h>
 
-#ifndef __WIN32
+#ifndef _WIN32
 # define PRIu64_ PRIu64
 # define SC_PRIsizet "zu"
 #else
