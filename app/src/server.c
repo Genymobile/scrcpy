@@ -659,6 +659,14 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
         }
     }
 
+    if (control_socket != SC_SOCKET_NONE) {
+        // Disable Nagle's algorithm for the control socket
+        // (it only impacts the sending side, so it is useless to set it
+        // for the other sockets)
+        bool ok = net_set_tcp_nodelay(control_socket, true);
+        (void) ok; // error already logged
+    }
+
     // we don't need the adb tunnel anymore
     sc_adb_tunnel_close(tunnel, &server->intr, serial,
                         server->device_socket_name);

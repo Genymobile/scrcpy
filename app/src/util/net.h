@@ -67,6 +67,10 @@ net_interrupt(sc_socket socket);
 bool
 net_close(sc_socket socket);
 
+// Disable Nagle's algorithm (if tcp_nodelay is true)
+bool
+net_set_tcp_nodelay(sc_socket socket, bool tcp_nodelay);
+
 /**
  * Parse `ip` "xxx.xxx.xxx.xxx" to an IPv4 host representation
  */
