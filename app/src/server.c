@@ -225,7 +225,7 @@ validate_string(const char *s) {
     // special shell characters.
     // Since they are not properly escaped on Windows anyway (see
     // sys/win/process.c), just forbid special shell characters.
-    if (strpbrk(s, " ;'\"*$?&`#\\|<>[]{}()!~")) {
+    if (strpbrk(s, " ;'\"*$?&`#\\|<>[]{}()!~\r\n")) {
         LOGE("Invalid server param: [%s]", s);
         return false;
     }
