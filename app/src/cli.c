@@ -1448,26 +1448,6 @@ parse_integers_arg(const char *s, const char sep, size_t max_items, long *out,
 }
 
 static bool
-parse_float_arg(const char *s, float *out, float min, float max,
-                const char *name) {
-    float value;
-    bool ok = sc_str_parse_float(s, &value);
-    if (!ok) {
-        LOGE("Could not parse %s: %s", name, s);
-        return false;
-    }
-
-    if (value < min || value > max) {
-        LOGE("Could not parse %s: value (%f) out-of-range (%f; %f)",
-             name, value, min, max);
-        return false;
-    }
-
-    *out = value;
-    return true;
-}
-
-static bool
 parse_bit_rate(const char *s, uint32_t *bit_rate) {
     long value;
     // long may be 32 bits (it is the case on mingw), so do not use more than
@@ -1490,18 +1470,6 @@ parse_max_size(const char *s, uint16_t *max_size) {
     }
 
     *max_size = (uint16_t) value;
-    return true;
-}
-
-static bool
-parse_max_fps(const char *s, float *max_fps) {
-    float value;
-    bool ok = parse_float_arg(s, &value, 0, (float) (1 << 16), "max fps");
-    if (!ok) {
-        return false;
-    }
-
-    *max_fps = value;
     return true;
 }
 
@@ -2252,9 +2220,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "--keyboard=uhid instead.");
                 return false;
             case OPT_MAX_FPS:
-                if (!parse_max_fps(optarg, &opts->max_fps)) {
-                    return false;
-                }
+                opts->max_fps = optarg;
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {

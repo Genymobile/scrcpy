@@ -78,7 +78,7 @@ static void test_options(void) {
     assert(opts->video_bit_rate == 5000000);
     assert(!strcmp(opts->crop, "100:200:300:400"));
     assert(opts->fullscreen);
-    assert(opts->max_fps == 30);
+    assert(!strcmp(opts->max_fps, "30"));
     assert(opts->max_size == 1024);
     assert(opts->lock_video_orientation == 2);
     assert(opts->port_range.first == 1234);
