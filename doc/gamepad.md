@@ -28,6 +28,8 @@ scrcpy --gamepad=uhid
 scrcpy -G  # short version
 ```
 
+Note: UHID may not work on old Android versions due to permission errors.
+
 
 ### AOA
 
