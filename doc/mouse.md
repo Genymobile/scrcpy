@@ -53,6 +53,8 @@ scrcpy --mouse=uhid
 scrcpy -M  # short version
 ```
 
+Note: UHID may not work on old Android versions due to permission errors.
+
 
 ### AOA
 

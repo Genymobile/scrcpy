@@ -10,6 +10,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -18,8 +19,6 @@ public class ControlMessageReaderTest {
 
     @Test
     public void testParseKeycodeEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_KEYCODE);
@@ -29,23 +28,21 @@ public class ControlMessageReaderTest {
         dos.writeInt(KeyEvent.META_CTRL_ON);
         byte[] packet = bos.toByteArray();
 
-        // The message type (1 byte) does not count
-        Assert.assertEquals(ControlMessageReader.INJECT_KEYCODE_PAYLOAD_LENGTH, packet.length - 1);
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
-
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
         Assert.assertEquals(5, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseTextEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
@@ -54,17 +51,18 @@ public class ControlMessageReaderTest {
         dos.write(text);
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_TEXT, event.getType());
         Assert.assertEquals("testé", event.getText());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseLongTextEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TEXT);
@@ -74,17 +72,18 @@ public class ControlMessageReaderTest {
         dos.write(text);
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_TEXT, event.getType());
         Assert.assertEquals(new String(text, StandardCharsets.US_ASCII), event.getText());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseTouchEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_TOUCH_EVENT);
@@ -100,12 +99,10 @@ public class ControlMessageReaderTest {
 
         byte[] packet = bos.toByteArray();
 
-        // The message type (1 byte) does not count
-        Assert.assertEquals(ControlMessageReader.INJECT_TOUCH_EVENT_PAYLOAD_LENGTH, packet.length - 1);
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
-
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_TOUCH_EVENT, event.getType());
         Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
         Assert.assertEquals(-42, event.getPointerId());
@@ -116,12 +113,12 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(1f, event.getPressure(), 0f); // must be exact
         Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getActionButton());
         Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getButtons());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseScrollEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_INJECT_SCROLL_EVENT);
@@ -132,15 +129,12 @@ public class ControlMessageReaderTest {
         dos.writeShort(0); // 0.0f encoded as i16
         dos.writeShort(0x8000); // -1.0f encoded as i16
         dos.writeInt(1);
-
         byte[] packet = bos.toByteArray();
 
-        // The message type (1 byte) does not count
-        Assert.assertEquals(ControlMessageReader.INJECT_SCROLL_EVENT_PAYLOAD_LENGTH, packet.length - 1);
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
-
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_SCROLL_EVENT, event.getType());
         Assert.assertEquals(260, event.getPosition().getPoint().getX());
         Assert.assertEquals(1026, event.getPosition().getPoint().getY());
@@ -149,96 +143,96 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(0f, event.getHScroll(), 0f);
         Assert.assertEquals(-1f, event.getVScroll(), 0f);
         Assert.assertEquals(1, event.getButtons());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseBackOrScreenOnEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_BACK_OR_SCREEN_ON);
         dos.writeByte(KeyEvent.ACTION_UP);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_BACK_OR_SCREEN_ON, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseExpandNotificationPanelEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_EXPAND_NOTIFICATION_PANEL, event.getType());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseExpandSettingsPanelEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_EXPAND_SETTINGS_PANEL);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_EXPAND_SETTINGS_PANEL, event.getType());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseCollapsePanelsEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_COLLAPSE_PANELS);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_COLLAPSE_PANELS, event.getType());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseGetClipboardEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_GET_CLIPBOARD);
         dos.writeByte(ControlMessage.COPY_KEY_COPY);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_GET_CLIPBOARD, event.getType());
         Assert.assertEquals(ControlMessage.COPY_KEY_COPY, event.getCopyKey());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseSetClipboardEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_SET_CLIPBOARD);
@@ -247,22 +241,22 @@ public class ControlMessageReaderTest {
         byte[] text = "testé".getBytes(StandardCharsets.UTF_8);
         dos.writeInt(text.length);
         dos.write(text);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals(0x0102030405060708L, event.getSequence());
         Assert.assertEquals("testé", event.getText());
         Assert.assertTrue(event.getPaste());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseBigSetClipboardEvent() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_SET_CLIPBOARD);
@@ -278,78 +272,79 @@ public class ControlMessageReaderTest {
 
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_SET_CLIPBOARD, event.getType());
         Assert.assertEquals(0x0807060504030201L, event.getSequence());
         Assert.assertEquals(text, event.getText());
         Assert.assertTrue(event.getPaste());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseSetScreenPowerMode() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_SET_SCREEN_POWER_MODE);
         dos.writeByte(Device.POWER_MODE_NORMAL);
-
         byte[] packet = bos.toByteArray();
 
-        // The message type (1 byte) does not count
-        Assert.assertEquals(ControlMessageReader.SET_SCREEN_POWER_MODE_PAYLOAD_LENGTH, packet.length - 1);
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
-
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_SET_SCREEN_POWER_MODE, event.getType());
         Assert.assertEquals(Device.POWER_MODE_NORMAL, event.getAction());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseRotateDevice() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_ROTATE_DEVICE);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_ROTATE_DEVICE, event.getType());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseUhidCreate() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_UHID_CREATE);
         dos.writeShort(42); // id
+        dos.writeByte(3); // name size
+        dos.write("ABC".getBytes(StandardCharsets.US_ASCII));
         byte[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
-        dos.writeShort(data.length); // size
+        dos.writeShort(data.length); // report desc size
         dos.write(data);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_UHID_CREATE, event.getType());
         Assert.assertEquals(42, event.getId());
+        Assert.assertEquals("ABC", event.getText());
         Assert.assertArrayEquals(data, event.getData());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseUhidInput() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_UHID_INPUT);
@@ -357,37 +352,55 @@ public class ControlMessageReaderTest {
         byte[] data = {1, 2, 3, 4, 5};
         dos.writeShort(data.length); // size
         dos.write(data);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_UHID_INPUT, event.getType());
         Assert.assertEquals(42, event.getId());
         Assert.assertArrayEquals(data, event.getData());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
+    }
+
+    @Test
+    public void testParseUhidDestroy() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_UHID_DESTROY);
+        dos.writeShort(42); // id
+        byte[] packet = bos.toByteArray();
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
+
+        ControlMessage event = reader.read();
+        Assert.assertEquals(ControlMessage.TYPE_UHID_DESTROY, event.getType());
+        Assert.assertEquals(42, event.getId());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testParseOpenHardKeyboardSettings() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS);
-
         byte[] packet = bos.toByteArray();
 
-        reader.readFrom(new ByteArrayInputStream(packet));
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS, event.getType());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testMultiEvents() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
@@ -404,27 +417,29 @@ public class ControlMessageReaderTest {
         dos.writeInt(KeyEvent.META_CTRL_ON);
 
         byte[] packet = bos.toByteArray();
-        reader.readFrom(new ByteArrayInputStream(packet));
 
-        ControlMessage event = reader.next();
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
+
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
         Assert.assertEquals(0, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
 
-        event = reader.next();
+        event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
         Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getKeycode());
         Assert.assertEquals(1, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
     }
 
     @Test
     public void testPartialEvents() throws IOException {
-        ControlMessageReader reader = new ControlMessageReader();
-
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
 
@@ -438,31 +453,21 @@ public class ControlMessageReaderTest {
         dos.writeByte(MotionEvent.ACTION_DOWN);
 
         byte[] packet = bos.toByteArray();
-        reader.readFrom(new ByteArrayInputStream(packet));
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
 
-        ControlMessage event = reader.next();
+        ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
         Assert.assertEquals(KeyEvent.ACTION_UP, event.getAction());
         Assert.assertEquals(KeyEvent.KEYCODE_ENTER, event.getKeycode());
         Assert.assertEquals(4, event.getRepeat());
         Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
 
-        event = reader.next();
-        Assert.assertNull(event); // the event is not complete
-
-        bos.reset();
-        dos.writeInt(MotionEvent.BUTTON_PRIMARY);
-        dos.writeInt(5); // repeat
-        dos.writeInt(KeyEvent.META_CTRL_ON);
-        packet = bos.toByteArray();
-        reader.readFrom(new ByteArrayInputStream(packet));
-
-        // the event is now complete
-        event = reader.next();
-        Assert.assertEquals(ControlMessage.TYPE_INJECT_KEYCODE, event.getType());
-        Assert.assertEquals(MotionEvent.ACTION_DOWN, event.getAction());
-        Assert.assertEquals(MotionEvent.BUTTON_PRIMARY, event.getKeycode());
-        Assert.assertEquals(5, event.getRepeat());
-        Assert.assertEquals(KeyEvent.META_CTRL_ON, event.getMetaState());
+        try {
+            event = reader.read();
+            Assert.fail("Reader did not reach EOF");
+        } catch (EOFException e) {
+            // expected
+        }
     }
 }

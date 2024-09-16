@@ -61,7 +61,14 @@ public final class Workarounds {
             fillConfigurationController();
         }
 
-        fillAppInfo();
+        // On ONYX devices, fillAppInfo() breaks video mirroring:
+        // <https://github.com/Genymobile/scrcpy/issues/5182>
+        boolean mustFillAppInfo = !Build.BRAND.equalsIgnoreCase("ONYX");
+
+        if (mustFillAppInfo) {
+            fillAppInfo();
+        }
+
         fillAppContext();
     }
 

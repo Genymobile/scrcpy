@@ -15,6 +15,7 @@
 # include <sys/types.h>
 # include <sys/socket.h>
 # include <netinet/in.h>
+# include <netinet/tcp.h>
 # include <arpa/inet.h>
 # include <unistd.h>
 # include <fcntl.h>
@@ -271,6 +272,22 @@ net_close(sc_socket socket) {
 #else
     return !close(raw_sock);
 #endif
+}
+
+bool
+net_set_tcp_nodelay(sc_socket socket, bool tcp_nodelay) {
+    sc_raw_socket raw_sock = unwrap(socket);
+
+    int value = tcp_nodelay ? 1 : 0;
+    int ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_NODELAY,
+                         (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_NODELAY)");
+        return false;
+    }
+
+    assert(ret == 0);
+    return true;
 }
 
 bool

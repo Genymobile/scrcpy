@@ -8,19 +8,16 @@
 /** Downcast key processor to keyboard_aoa */
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_aoa, key_processor)
 
-#define HID_KEYBOARD_ACCESSORY_ID 1
-
 static bool
 push_mod_lock_state(struct sc_keyboard_aoa *kb, uint16_t mods_state) {
-    struct sc_hid_event hid_event;
-    if (!sc_hid_keyboard_event_from_mods(&hid_event, mods_state)) {
+    struct sc_hid_input hid_input;
+    if (!sc_hid_keyboard_generate_input_from_mods(&hid_input, mods_state)) {
         // Nothing to do
         return true;
     }
 
-    if (!sc_aoa_push_hid_event(kb->aoa, HID_KEYBOARD_ACCESSORY_ID,
-                               &hid_event)) {
-        LOGW("Could not request HID event (mod lock state)");
+    if (!sc_aoa_push_input(kb->aoa, &hid_input)) {
+        LOGW("Could not push AOA HID input (mod lock state)");
         return false;
     }
 
@@ -41,10 +38,10 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct sc_keyboard_aoa *kb = DOWNCAST(kp);
 
-    struct sc_hid_event hid_event;
+    struct sc_hid_input hid_input;
 
     // Not all keys are supported, just ignore unsupported keys
-    if (sc_hid_keyboard_event_from_key(&kb->hid, &hid_event, event)) {
+    if (sc_hid_keyboard_generate_input_from_key(&kb->hid, &hid_input, event)) {
         if (!kb->mod_lock_synchronized) {
             // Inject CAPSLOCK and/or NUMLOCK if necessary to synchronize
             // keyboard state
@@ -58,11 +55,9 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
         // synchronization is acknowledged by the server, otherwise it could
         // paste the old clipboard content.
 
-        if (!sc_aoa_push_hid_event_with_ack_to_wait(kb->aoa,
-                                                    HID_KEYBOARD_ACCESSORY_ID,
-                                                    &hid_event,
-                                                    ack_to_wait)) {
-            LOGW("Could not request HID event (key)");
+        if (!sc_aoa_push_input_with_ack_to_wait(kb->aoa, &hid_input,
+                                                ack_to_wait)) {
+            LOGW("Could not push AOA HID input (key)");
         }
     }
 }
@@ -71,11 +66,12 @@ bool
 sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
 
-    bool ok = sc_aoa_setup_hid(aoa, HID_KEYBOARD_ACCESSORY_ID,
-                               SC_HID_KEYBOARD_REPORT_DESC,
-                               SC_HID_KEYBOARD_REPORT_DESC_LEN);
+    struct sc_hid_open hid_open;
+    sc_hid_keyboard_generate_open(&hid_open);
+
+    bool ok = sc_aoa_push_open(aoa, &hid_open, true);
     if (!ok) {
-        LOGW("Register HID keyboard failed");
+        LOGW("Could not push AOA HID open (keyboard)");
         return false;
     }
 
@@ -102,9 +98,6 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
 
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb) {
-    // Unregister HID keyboard so the soft keyboard shows again on Android
-    bool ok = sc_aoa_unregister_hid(kb->aoa, HID_KEYBOARD_ACCESSORY_ID);
-    if (!ok) {
-        LOGW("Could not unregister HID keyboard");
-    }
+    (void) kb;
+    // Do nothing, kb->aoa will automatically unregister all devices
 }

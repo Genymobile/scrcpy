@@ -633,7 +633,7 @@ enum android_keycode {
      * Toggles between BS and CS digital satellite services. */
     AKEYCODE_TV_SATELLITE_SERVICE = 240,
     /** Toggle Network key.
-     * Toggles selecting broacast services. */
+     * Toggles selecting broadcast services. */
     AKEYCODE_TV_NETWORK      = 241,
     /** Antenna/Cable key.
      * Toggles broadcast input source between antenna and cable. */

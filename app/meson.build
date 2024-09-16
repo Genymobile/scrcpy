@@ -15,6 +15,7 @@ src = [
     'src/demuxer.c',
     'src/device_msg.c',
     'src/display.c',
+    'src/events.c',
     'src/icon.c',
     'src/file_pusher.c',
     'src/fps_counter.c',
@@ -31,10 +32,12 @@ src = [
     'src/screen.c',
     'src/server.c',
     'src/version.c',
+    'src/hid/hid_gamepad.c',
     'src/hid/hid_keyboard.c',
     'src/hid/hid_mouse.c',
     'src/trait/frame_source.c',
     'src/trait/packet_source.c',
+    'src/uhid/gamepad_uhid.c',
     'src/uhid/keyboard_uhid.c',
     'src/uhid/mouse_uhid.c',
     'src/uhid/uhid_output.c',
@@ -93,6 +96,7 @@ usb_support = get_option('usb')
 if usb_support
     src += [
         'src/usb/aoa_hid.c',
+        'src/usb/gamepad_aoa.c',
         'src/usb/keyboard_aoa.c',
         'src/usb/mouse_aoa.c',
         'src/usb/scrcpy_otg.c',

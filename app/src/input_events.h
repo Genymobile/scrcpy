@@ -323,6 +323,38 @@ enum sc_mouse_button {
     SC_MOUSE_BUTTON_X2 = SDL_BUTTON(SDL_BUTTON_X2),
 };
 
+// Use the naming from SDL3 for gamepad axis and buttons:
+// <https://wiki.libsdl.org/SDL3/README/migration>
+
+enum sc_gamepad_axis {
+    SC_GAMEPAD_AXIS_UNKNOWN = -1,
+    SC_GAMEPAD_AXIS_LEFTX = SDL_CONTROLLER_AXIS_LEFTX,
+    SC_GAMEPAD_AXIS_LEFTY = SDL_CONTROLLER_AXIS_LEFTY,
+    SC_GAMEPAD_AXIS_RIGHTX = SDL_CONTROLLER_AXIS_RIGHTX,
+    SC_GAMEPAD_AXIS_RIGHTY = SDL_CONTROLLER_AXIS_RIGHTY,
+    SC_GAMEPAD_AXIS_LEFT_TRIGGER = SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+    SC_GAMEPAD_AXIS_RIGHT_TRIGGER = SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+};
+
+enum sc_gamepad_button {
+    SC_GAMEPAD_BUTTON_UNKNOWN = -1,
+    SC_GAMEPAD_BUTTON_SOUTH = SDL_CONTROLLER_BUTTON_A,
+    SC_GAMEPAD_BUTTON_EAST = SDL_CONTROLLER_BUTTON_B,
+    SC_GAMEPAD_BUTTON_WEST = SDL_CONTROLLER_BUTTON_X,
+    SC_GAMEPAD_BUTTON_NORTH = SDL_CONTROLLER_BUTTON_Y,
+    SC_GAMEPAD_BUTTON_BACK = SDL_CONTROLLER_BUTTON_BACK,
+    SC_GAMEPAD_BUTTON_GUIDE = SDL_CONTROLLER_BUTTON_GUIDE,
+    SC_GAMEPAD_BUTTON_START = SDL_CONTROLLER_BUTTON_START,
+    SC_GAMEPAD_BUTTON_LEFT_STICK = SDL_CONTROLLER_BUTTON_LEFTSTICK,
+    SC_GAMEPAD_BUTTON_RIGHT_STICK = SDL_CONTROLLER_BUTTON_RIGHTSTICK,
+    SC_GAMEPAD_BUTTON_LEFT_SHOULDER = SDL_CONTROLLER_BUTTON_LEFTSHOULDER,
+    SC_GAMEPAD_BUTTON_RIGHT_SHOULDER = SDL_CONTROLLER_BUTTON_RIGHTSHOULDER,
+    SC_GAMEPAD_BUTTON_DPAD_UP = SDL_CONTROLLER_BUTTON_DPAD_UP,
+    SC_GAMEPAD_BUTTON_DPAD_DOWN = SDL_CONTROLLER_BUTTON_DPAD_DOWN,
+    SC_GAMEPAD_BUTTON_DPAD_LEFT = SDL_CONTROLLER_BUTTON_DPAD_LEFT,
+    SC_GAMEPAD_BUTTON_DPAD_RIGHT = SDL_CONTROLLER_BUTTON_DPAD_RIGHT,
+};
+
 static_assert(sizeof(enum sc_mod) >= sizeof(SDL_Keymod),
               "SDL_Keymod must be convertible to sc_mod");
 
@@ -378,6 +410,33 @@ struct sc_touch_event {
     enum sc_touch_action action;
     uint64_t pointer_id;
     float pressure;
+};
+
+enum sc_gamepad_device_event_type {
+    SC_GAMEPAD_DEVICE_ADDED,
+    SC_GAMEPAD_DEVICE_REMOVED,
+};
+
+// As documented in <https://wiki.libsdl.org/SDL2/SDL_JoystickID>:
+// The ID value starts at 0 and increments from there. The value -1 is an
+// invalid ID.
+#define SC_GAMEPAD_ID_INVALID UINT32_C(-1)
+
+struct sc_gamepad_device_event {
+    enum sc_gamepad_device_event_type type;
+    uint32_t gamepad_id;
+};
+
+struct sc_gamepad_button_event {
+    uint32_t gamepad_id;
+    enum sc_action action;
+    enum sc_gamepad_button button;
+};
+
+struct sc_gamepad_axis_event {
+    uint32_t gamepad_id;
+    enum sc_gamepad_axis axis;
+    int16_t value;
 };
 
 static inline uint16_t
@@ -442,6 +501,45 @@ sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
 
     // SC_MOUSE_BUTTON_* constants are initialized from SDL_BUTTON(index)
     return buttons_state;
+}
+
+static inline enum sc_gamepad_device_event_type
+sc_gamepad_device_event_type_from_sdl_type(uint32_t type) {
+    assert(type == SDL_CONTROLLERDEVICEADDED
+        || type == SDL_CONTROLLERDEVICEREMOVED);
+    if (type == SDL_CONTROLLERDEVICEADDED) {
+        return SC_GAMEPAD_DEVICE_ADDED;
+    }
+    return SC_GAMEPAD_DEVICE_REMOVED;
+}
+
+static inline enum sc_gamepad_axis
+sc_gamepad_axis_from_sdl(uint8_t axis) {
+    if (axis <= SDL_CONTROLLER_AXIS_TRIGGERRIGHT) {
+        // SC_GAMEPAD_AXIS_* constants are initialized from
+        // SDL_CONTROLLER_AXIS_*
+        return axis;
+    }
+    return SC_GAMEPAD_AXIS_UNKNOWN;
+}
+
+static inline enum sc_gamepad_button
+sc_gamepad_button_from_sdl(uint8_t button) {
+    if (button <= SDL_CONTROLLER_BUTTON_DPAD_RIGHT) {
+        // SC_GAMEPAD_BUTTON_* constants are initialized from
+        // SDL_CONTROLLER_BUTTON_*
+        return button;
+    }
+    return SC_GAMEPAD_BUTTON_UNKNOWN;
+}
+
+static inline enum sc_action
+sc_action_from_sdl_controllerbutton_type(uint32_t type) {
+    assert(type == SDL_CONTROLLERBUTTONDOWN || type == SDL_CONTROLLERBUTTONUP);
+    if (type == SDL_CONTROLLERBUTTONDOWN) {
+        return SC_ACTION_DOWN;
+    }
+    return SC_ACTION_UP;
 }
 
 #endif

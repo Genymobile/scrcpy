@@ -299,6 +299,12 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
 
     struct sc_screen *screen = DOWNCAST(sink);
 
+    if (ctx->width <= 0 || ctx->width > 0xFFFF
+            || ctx->height <= 0 || ctx->height > 0xFFFF) {
+        LOGE("Invalid video size: %dx%d", ctx->width, ctx->height);
+        return false;
+    }
+
     assert(ctx->width > 0 && ctx->width <= 0xFFFF);
     assert(ctx->height > 0 && ctx->height <= 0xFFFF);
     // screen->frame_size is never used before the event is pushed, and the
@@ -306,14 +312,9 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
     screen->frame_size.width = ctx->width;
     screen->frame_size.height = ctx->height;
 
-    static SDL_Event event = {
-        .type = SC_EVENT_SCREEN_INIT_SIZE,
-    };
-
     // Post the event on the UI thread (the texture must be created from there)
-    int ret = SDL_PushEvent(&event);
-    if (ret < 0) {
-        LOGW("Could not post init size event: %s", SDL_GetError());
+    bool ok = sc_push_event(SC_EVENT_SCREEN_INIT_SIZE);
+    if (!ok) {
         return false;
     }
 
@@ -352,14 +353,9 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
         // The SC_EVENT_NEW_FRAME triggered for the previous frame will consume
         // this new frame instead
     } else {
-        static SDL_Event new_frame_event = {
-            .type = SC_EVENT_NEW_FRAME,
-        };
-
         // Post the event on the UI thread
-        int ret = SDL_PushEvent(&new_frame_event);
-        if (ret < 0) {
-            LOGW("Could not post new frame event: %s", SDL_GetError());
+        bool ok = sc_push_event(SC_EVENT_NEW_FRAME);
+        if (!ok) {
             return false;
         }
     }
@@ -481,6 +477,7 @@ sc_screen_init(struct sc_screen *screen,
         .screen = screen,
         .kp = params->kp,
         .mp = params->mp,
+        .gp = params->gp,
         .mouse_bindings = params->mouse_bindings,
         .legacy_paste = params->legacy_paste,
         .clipboard_autosync = params->clipboard_autosync,

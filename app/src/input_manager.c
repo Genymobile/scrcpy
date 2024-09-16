@@ -56,16 +56,18 @@ void
 sc_input_manager_init(struct sc_input_manager *im,
                       const struct sc_input_manager_params *params) {
     // A key/mouse processor may not be present if there is no controller
-    assert((!params->kp && !params->mp) || params->controller);
+    assert((!params->kp && !params->mp && !params->gp) || params->controller);
     // A processor must have ops initialized
     assert(!params->kp || params->kp->ops);
     assert(!params->mp || params->mp->ops);
+    assert(!params->gp || params->gp->ops);
 
     im->controller = params->controller;
     im->fp = params->fp;
     im->screen = params->screen;
     im->kp = params->kp;
     im->mp = params->mp;
+    im->gp = params->gp;
 
     im->mouse_bindings = params->mouse_bindings;
     im->legacy_paste = params->legacy_paste;
@@ -400,7 +402,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool paused = im->screen->paused;
     bool video = im->screen->video;
 
-    SDL_Keycode keycode = event->keysym.sym;
+    SDL_Keycode sdl_keycode = event->keysym.sym;
     uint16_t mod = event->keysym.mod;
     bool down = event->type == SDL_KEYDOWN;
     bool ctrl = event->keysym.mod & KMOD_CTRL;
@@ -412,21 +414,21 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // The second condition is necessary to ignore the release of the modifier
     // key (because in this case mod is 0).
     bool is_shortcut = is_shortcut_mod(im, mod)
-                    || is_shortcut_key(im, keycode);
+                    || is_shortcut_key(im, sdl_keycode);
 
     if (down && !repeat) {
-        if (keycode == im->last_keycode && mod == im->last_mod) {
+        if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
             ++im->key_repeat;
         } else {
             im->key_repeat = 0;
-            im->last_keycode = keycode;
+            im->last_keycode = sdl_keycode;
             im->last_mod = mod;
         }
     }
 
     if (is_shortcut) {
         enum sc_action action = down ? SC_ACTION_DOWN : SC_ACTION_UP;
-        switch (keycode) {
+        switch (sdl_keycode) {
             case SDLK_h:
                 if (im->kp && !shift && !repeat && !paused) {
                     action_home(im, action);
@@ -585,7 +587,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     }
 
     uint64_t ack_to_wait = SC_SEQUENCE_INVALID;
-    bool is_ctrl_v = ctrl && !shift && keycode == SDLK_v && down && !repeat;
+    bool is_ctrl_v = ctrl && !shift && sdl_keycode == SDLK_v && down && !repeat;
     if (im->clipboard_autosync && is_ctrl_v) {
         if (im->legacy_paste) {
             // inject the text as input events
@@ -613,10 +615,20 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
+    enum sc_keycode keycode = sc_keycode_from_sdl(sdl_keycode);
+    if (keycode == SC_KEYCODE_UNKNOWN) {
+        return;
+    }
+
+    enum sc_scancode scancode = sc_scancode_from_sdl(event->keysym.scancode);
+    if (scancode == SC_SCANCODE_UNKNOWN) {
+        return;
+    }
+
     struct sc_key_event evt = {
         .action = sc_action_from_sdl_keyboard_type(event->type),
-        .keycode = sc_keycode_from_sdl(event->keysym.sym),
-        .scancode = sc_scancode_from_sdl(event->keysym.scancode),
+        .keycode = keycode,
+        .scancode = scancode,
         .repeat = event->repeat,
         .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
     };
@@ -739,6 +751,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     bool down = event->type == SDL_MOUSEBUTTONDOWN;
 
     enum sc_mouse_button button = sc_mouse_button_from_sdl(event->button);
+    if (button == SC_MOUSE_BUTTON_UNKNOWN) {
+        return;
+    }
+
     if (!down) {
         // Mark the button as released
         im->mouse_buttons_state &= ~button;
@@ -827,7 +843,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     struct sc_mouse_click_event evt = {
         .position = sc_input_manager_get_position(im, event->x, event->y),
         .action = sc_action_from_sdl_mousebutton_type(event->type),
-        .button = sc_mouse_button_from_sdl(event->button),
+        .button = button,
         .pointer_id = use_finger ? SC_POINTER_ID_GENERIC_FINGER
                                  : SC_POINTER_ID_MOUSE,
         .buttons_state = im->mouse_buttons_state,
@@ -906,6 +922,78 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
 }
 
+static void
+sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
+                                       const SDL_ControllerDeviceEvent *event) {
+    SDL_JoystickID id;
+    if (event->type == SDL_CONTROLLERDEVICEADDED) {
+        SDL_GameController *gc = SDL_GameControllerOpen(event->which);
+        if (!gc) {
+            LOGW("Could not open game controller");
+            return;
+        }
+
+        SDL_Joystick *joystick = SDL_GameControllerGetJoystick(gc);
+        if (!joystick) {
+            LOGW("Could not get controller joystick");
+            SDL_GameControllerClose(gc);
+            return;
+        }
+
+        id = SDL_JoystickInstanceID(joystick);
+    } else if (event->type == SDL_CONTROLLERDEVICEREMOVED) {
+        id = event->which;
+
+        SDL_GameController *gc = SDL_GameControllerFromInstanceID(id);
+        if (gc) {
+            SDL_GameControllerClose(gc);
+        } else {
+            LOGW("Unknown gamepad device removed");
+        }
+    } else {
+        // Nothing to do
+        return;
+    }
+
+    struct sc_gamepad_device_event evt = {
+        .type = sc_gamepad_device_event_type_from_sdl_type(event->type),
+        .gamepad_id = id,
+    };
+    im->gp->ops->process_gamepad_device(im->gp, &evt);
+}
+
+static void
+sc_input_manager_process_gamepad_axis(struct sc_input_manager *im,
+                                      const SDL_ControllerAxisEvent *event) {
+    enum sc_gamepad_axis axis = sc_gamepad_axis_from_sdl(event->axis);
+    if (axis == SC_GAMEPAD_AXIS_UNKNOWN) {
+        return;
+    }
+
+    struct sc_gamepad_axis_event evt = {
+        .gamepad_id = event->which,
+        .axis = axis,
+        .value = event->value,
+    };
+    im->gp->ops->process_gamepad_axis(im->gp, &evt);
+}
+
+static void
+sc_input_manager_process_gamepad_button(struct sc_input_manager *im,
+                                       const SDL_ControllerButtonEvent *event) {
+    enum sc_gamepad_button button = sc_gamepad_button_from_sdl(event->button);
+    if (button == SC_GAMEPAD_BUTTON_UNKNOWN) {
+        return;
+    }
+
+    struct sc_gamepad_button_event evt = {
+        .gamepad_id = event->which,
+        .action = sc_action_from_sdl_controllerbutton_type(event->type),
+        .button = button,
+    };
+    im->gp->ops->process_gamepad_button(im->gp, &evt);
+}
+
 static bool
 is_apk(const char *file) {
     const char *ext = strrchr(file, '.');
@@ -977,6 +1065,27 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
                 break;
             }
             sc_input_manager_process_touch(im, &event->tfinger);
+            break;
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+            // Handle device added or removed even if paused
+            if (!im->gp) {
+                break;
+            }
+            sc_input_manager_process_gamepad_device(im, &event->cdevice);
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            if (!im->gp || paused) {
+                break;
+            }
+            sc_input_manager_process_gamepad_axis(im, &event->caxis);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            if (!im->gp || paused) {
+                break;
+            }
+            sc_input_manager_process_gamepad_button(im, &event->cbutton);
             break;
         case SDL_DROPFILE: {
             if (!control) {

@@ -39,6 +39,8 @@ typedef struct sc_cond {
     SDL_cond *cond;
 } sc_cond;
 
+extern sc_thread_id SC_MAIN_THREAD_ID;
+
 bool
 sc_thread_create(sc_thread *thread, sc_thread_fn fn, const char *name,
                  void *userdata);
