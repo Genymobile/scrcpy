@@ -11,7 +11,7 @@
 .PHONY: default clean \
 	test \
 	build-server \
-	prepare-deps \
+	prepare-deps-win32 prepare-deps-win64 \
 	build-win32 build-win64 \
 	dist-win32 dist-win64 \
 	zip-win32 zip-win64 \
