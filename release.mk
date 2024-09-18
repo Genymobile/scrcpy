@@ -62,9 +62,10 @@ test-server:
 test: test-client test-server
 
 build-server:
-	[ -d "$(SERVER_BUILD_DIR)" ] || ( mkdir "$(SERVER_BUILD_DIR)" && \
-		meson setup "$(SERVER_BUILD_DIR)" --buildtype release -Dcompile_app=false )
-	ninja -C "$(SERVER_BUILD_DIR)"
+	$(GRADLE) -p server assembleRelease
+	mkdir -p "$(SERVER_BUILD_DIR)/server"
+	cp server/build/outputs/apk/release/server-release-unsigned.apk \
+		"$(SERVER_BUILD_DIR)/server/scrcpy-server"
 
 prepare-deps-win32:
 	@app/deps/adb.sh win32
