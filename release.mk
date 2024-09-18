@@ -9,7 +9,7 @@
 # the server to the device.
 
 .PHONY: default clean \
-	test \
+	test test-client test-server \
 	build-server \
 	prepare-deps-win32 prepare-deps-win64 \
 	build-win32 build-win64 \
@@ -51,11 +51,15 @@ clean:
 	rm -rf "$(DIST)" "$(TEST_BUILD_DIR)" "$(SERVER_BUILD_DIR)" \
 		"$(WIN32_BUILD_DIR)" "$(WIN64_BUILD_DIR)"
 
-test:
+test-client:
 	[ -d "$(TEST_BUILD_DIR)" ] || ( mkdir "$(TEST_BUILD_DIR)" && \
 		meson setup "$(TEST_BUILD_DIR)" -Db_sanitize=address )
 	ninja -C "$(TEST_BUILD_DIR)"
+
+test-server:
 	$(GRADLE) -p server check
+
+test: test-client test-server
 
 build-server:
 	[ -d "$(SERVER_BUILD_DIR)" ] || ( mkdir "$(SERVER_BUILD_DIR)" && \
