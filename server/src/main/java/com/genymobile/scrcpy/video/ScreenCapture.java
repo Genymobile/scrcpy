@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 

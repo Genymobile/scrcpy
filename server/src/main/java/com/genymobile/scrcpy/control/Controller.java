@@ -3,9 +3,9 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
+import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 

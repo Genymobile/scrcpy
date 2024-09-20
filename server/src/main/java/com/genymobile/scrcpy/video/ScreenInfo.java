@@ -2,8 +2,8 @@ package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.BuildConfig;
 import com.genymobile.scrcpy.device.Device;
-import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.Ln;
 
 import android.graphics.Rect;
 

@@ -1,15 +1,15 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AsyncProcessor;
+import com.genymobile.scrcpy.device.ConfigurationException;
+import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.Codec;
 import com.genymobile.scrcpy.util.CodecOption;
 import com.genymobile.scrcpy.util.CodecUtils;
-import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
-import com.genymobile.scrcpy.device.Size;
-import com.genymobile.scrcpy.device.Streamer;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;

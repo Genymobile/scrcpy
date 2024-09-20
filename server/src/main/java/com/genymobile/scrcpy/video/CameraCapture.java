@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.HandlerExecutor;
 import com.genymobile.scrcpy.util.Ln;
-import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;

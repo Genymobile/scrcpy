@@ -1,9 +1,9 @@
 package com.genymobile.scrcpy.wrappers;
 
-import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.device.DisplayInfo;
-import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.Command;
+import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
 import android.hardware.display.VirtualDisplay;

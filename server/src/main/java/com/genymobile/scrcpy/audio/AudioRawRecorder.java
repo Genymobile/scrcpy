@@ -1,9 +1,9 @@
 package com.genymobile.scrcpy.audio;
 
 import com.genymobile.scrcpy.AsyncProcessor;
+import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
-import com.genymobile.scrcpy.device.Streamer;
 
 import android.media.MediaCodec;
 import android.os.Build;
