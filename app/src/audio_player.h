@@ -68,13 +68,6 @@ struct sc_audio_player {
 
     // Set to true the first time the SDL callback is called
     atomic_bool played;
-
-    const struct sc_audio_player_callbacks *cbs;
-    void *cbs_userdata;
-};
-
-struct sc_audio_player_callbacks {
-    void (*on_ended)(struct sc_audio_player *ap, bool success, void *userdata);
 };
 
 void
