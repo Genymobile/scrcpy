@@ -20,6 +20,8 @@ struct sc_audio_player {
 
     SDL_AudioDeviceID device;
 
+    sc_mutex mutex;
+
     // The target buffering between the producer and the consumer. This value
     // is directly use for compensation.
     // Since audio capture and/or encoding on the device typically produce

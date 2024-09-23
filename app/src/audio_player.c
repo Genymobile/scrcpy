@@ -66,8 +66,6 @@ static void SDLCALL
 sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     struct sc_audio_player *ap = userdata;
 
-    // This callback is called with the lock used by SDL_LockAudioDevice()
-
     assert(len_int > 0);
     size_t len = len_int;
     uint32_t count = TO_SAMPLES(len);
@@ -75,6 +73,10 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
 #ifdef SC_AUDIO_PLAYER_DEBUG
     LOGD("[Audio] SDL callback requests %" PRIu32 " samples", count);
 #endif
+
+    // A lock is necessary in the rare case where the producer needs to drop
+    // samples already pushed (when the buffer is full)
+    sc_mutex_lock(&ap->mutex);
 
     bool played = atomic_load_explicit(&ap->played, memory_order_relaxed);
     if (!played) {
@@ -88,11 +90,14 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
             // whole buffer with silence (len is small compared to the
             // arbitrary margin value).
             memset(stream, 0, len);
+            sc_mutex_unlock(&ap->mutex);
             return;
         }
     }
 
     uint32_t read = sc_audiobuf_read(&ap->buf, stream, count);
+
+    sc_mutex_unlock(&ap->mutex);
 
     if (read < count) {
         uint32_t silence = count - read;
@@ -183,7 +188,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
         // All samples that could be written without locking have been written,
         // now we need to lock to drop/consume old samples
-        SDL_LockAudioDevice(ap->device);
+        sc_mutex_lock(&ap->mutex);
 
         // Retry with the lock
         written += sc_audiobuf_write(&ap->buf,
@@ -196,7 +201,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             assert(skipped_samples == remaining);
         }
 
-        SDL_UnlockAudioDevice(ap->device);
+        sc_mutex_unlock(&ap->mutex);
 
         if (written < samples) {
             // Now there is enough space
@@ -229,7 +234,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     if (can_read > max_buffered_samples) {
         uint32_t skip_samples = 0;
 
-        SDL_LockAudioDevice(ap->device);
+        sc_mutex_lock(&ap->mutex);
         can_read = sc_audiobuf_can_read(&ap->buf);
         if (can_read > max_buffered_samples) {
             skip_samples = can_read - max_buffered_samples;
@@ -238,7 +243,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             (void) r;
             skipped_samples += skip_samples;
         }
-        SDL_UnlockAudioDevice(ap->device);
+        sc_mutex_unlock(&ap->mutex);
 
         if (skip_samples) {
             if (played) {
@@ -411,10 +416,15 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // without locking.
     uint32_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
 
-    size_t sample_size = nb_channels * out_bytes_per_sample;
-    bool ok = sc_audiobuf_init(&ap->buf, sample_size, audiobuf_samples);
+    bool ok = sc_mutex_init(&ap->mutex);
     if (!ok) {
         goto error_free_swr_ctx;
+    }
+
+    size_t sample_size = nb_channels * out_bytes_per_sample;
+    ok = sc_audiobuf_init(&ap->buf, sample_size, audiobuf_samples);
+    if (!ok) {
+        goto error_destroy_mutex;
     }
 
     size_t initial_swr_buf_size = TO_BYTES(4096);
@@ -450,6 +460,8 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
 
 error_destroy_audiobuf:
     sc_audiobuf_destroy(&ap->buf);
+error_destroy_mutex:
+    sc_mutex_destroy(&ap->mutex);
 error_free_swr_ctx:
     swr_free(&ap->swr_ctx);
 error_close_audio_device:
@@ -468,6 +480,7 @@ sc_audio_player_frame_sink_close(struct sc_frame_sink *sink) {
 
     free(ap->swr_buf);
     sc_audiobuf_destroy(&ap->buf);
+    sc_mutex_destroy(&ap->mutex);
     swr_free(&ap->swr_ctx);
 }
 
