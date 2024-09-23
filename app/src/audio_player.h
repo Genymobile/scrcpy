@@ -32,7 +32,6 @@ struct sc_audio_player {
 
     // SDL audio output buffer size.
     sc_tick output_buffer_duration;
-    uint16_t output_buffer;
 
     // Audio buffer to communicate between the receiver and the SDL audio
     // callback

@@ -220,14 +220,14 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
         underflow = atomic_exchange_explicit(&ap->underflow, 0,
                                              memory_order_relaxed);
 
-        max_buffered_samples = ap->target_buffering
-                               + 12 * ap->output_buffer
-                               + ap->target_buffering / 10;
+        max_buffered_samples = ap->target_buffering * 11 / 10
+                             + 60 * ap->sample_rate / 1000 /* 60 ms */;
     } else {
         // SDL playback not started yet, do not accumulate more than
         // max_initial_buffering samples, this would cause unnecessary delay
         // (and glitches to compensate) on start.
-        max_buffered_samples = ap->target_buffering + 2 * ap->output_buffer;
+        max_buffered_samples = ap->target_buffering
+                             + 10 * ap->sample_rate / 1000 /* 10 ms */;
     }
 
     uint32_t can_read = sc_audiobuf_can_read(&ap->buf);
@@ -363,7 +363,6 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     uint64_t aout_samples = ap->output_buffer_duration * ap->sample_rate
                                                        / SC_TICK_FREQ;
     assert(aout_samples <= 0xFFFF);
-    ap->output_buffer = (uint16_t) aout_samples;
 
     SDL_AudioSpec desired = {
         .freq = ctx->sample_rate,
