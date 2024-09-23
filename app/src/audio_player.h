@@ -5,22 +5,14 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
 #include <SDL2/SDL.h>
 
+#include "audio_regulator.h"
 #include "trait/frame_sink.h"
-#include "util/audiobuf.h"
-#include "util/average.h"
-#include "util/thread.h"
 #include "util/tick.h"
 
 struct sc_audio_player {
     struct sc_frame_sink frame_sink;
-
-    SDL_AudioDeviceID device;
-
-    sc_mutex mutex;
 
     // The target buffering between the producer and the consumer. This value
     // is directly use for compensation.
@@ -28,43 +20,12 @@ struct sc_audio_player {
     // blocks of 960 samples (20ms) or 1024 samples (~21.3ms), this target
     // value should be higher.
     sc_tick target_buffering_delay;
-    uint32_t target_buffering; // in samples
 
-    // SDL audio output buffer size.
+    // SDL audio output buffer size
     sc_tick output_buffer_duration;
 
-    // Audio buffer to communicate between the receiver and the SDL audio
-    // callback
-    struct sc_audiobuf buf;
-
-    // Resampler (only used from the receiver thread)
-    struct SwrContext *swr_ctx;
-
-    // The sample rate is the same for input and output
-    uint32_t sample_rate;
-
-    // Target buffer for resampling (only used by the receiver thread)
-    uint8_t *swr_buf;
-    size_t swr_buf_alloc_size;
-
-    // Number of buffered samples (may be negative on underflow) (only used by
-    // the receiver thread)
-    struct sc_average avg_buffering;
-    // Count the number of samples to trigger a compensation update regularly
-    // (only used by the receiver thread)
-    uint32_t samples_since_resync;
-
-    // Number of silence samples inserted since the last received packet
-    atomic_uint_least32_t underflow;
-
-    // Current applied compensation value (only used by the receiver thread)
-    int compensation;
-
-    // Set to true the first time a sample is received
-    atomic_bool received;
-
-    // Set to true the first time the SDL callback is called
-    atomic_bool played;
+    SDL_AudioDeviceID device;
+    struct sc_audio_regulator audioreg;
 };
 
 void
