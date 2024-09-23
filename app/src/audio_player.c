@@ -351,8 +351,6 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     assert(out_bytes_per_sample > 0);
 
     ap->sample_rate = ctx->sample_rate;
-    ap->nb_channels = nb_channels;
-    ap->out_bytes_per_sample = out_bytes_per_sample;
 
     ap->target_buffering = ap->target_buffering_delay * ap->sample_rate
                                                       / SC_TICK_FREQ;
@@ -413,7 +411,7 @@ sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
     // without locking.
     uint32_t audiobuf_samples = ap->target_buffering + ap->sample_rate;
 
-    size_t sample_size = ap->nb_channels * ap->out_bytes_per_sample;
+    size_t sample_size = nb_channels * out_bytes_per_sample;
     bool ok = sc_audiobuf_init(&ap->buf, sample_size, audiobuf_samples);
     if (!ok) {
         goto error_free_swr_ctx;

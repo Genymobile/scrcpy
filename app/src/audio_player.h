@@ -41,10 +41,6 @@ struct sc_audio_player {
 
     // The sample rate is the same for input and output
     unsigned sample_rate;
-    // The number of channels is the same for input and output
-    unsigned nb_channels;
-    // The number of bytes per sample for a single channel
-    size_t out_bytes_per_sample;
 
     // Target buffer for resampling (only used by the receiver thread)
     uint8_t *swr_buf;
