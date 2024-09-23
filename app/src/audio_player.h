@@ -42,7 +42,7 @@ struct sc_audio_player {
     struct SwrContext *swr_ctx;
 
     // The sample rate is the same for input and output
-    unsigned sample_rate;
+    uint32_t sample_rate;
 
     // Target buffer for resampling (only used by the receiver thread)
     uint8_t *swr_buf;
