@@ -45,6 +45,10 @@ convert_keycode(enum sc_keycode from, enum android_keycode *to, uint16_t mod,
         {SC_KEYCODE_RCTRL,     AKEYCODE_CTRL_RIGHT},
         {SC_KEYCODE_LSHIFT,    AKEYCODE_SHIFT_LEFT},
         {SC_KEYCODE_RSHIFT,    AKEYCODE_SHIFT_RIGHT},
+        {SC_KEYCODE_LALT,      AKEYCODE_ALT_LEFT},
+        {SC_KEYCODE_RALT,      AKEYCODE_ALT_RIGHT},
+        {SC_KEYCODE_LGUI,      AKEYCODE_META_LEFT},
+        {SC_KEYCODE_RGUI,      AKEYCODE_META_RIGHT},
     };
 
     // Numpad navigation keys.
@@ -166,11 +170,7 @@ convert_keycode(enum sc_keycode from, enum android_keycode *to, uint16_t mod,
         return false;
     }
 
-    if (mod & (SC_MOD_LALT | SC_MOD_RALT | SC_MOD_LGUI | SC_MOD_RGUI)) {
-        return false;
-    }
-
-    // if ALT and META are not pressed, also handle letters and space
+    // Handle letters and space
     entry = SC_INTMAP_FIND_ENTRY(alphaspace_keys, from);
     if (entry) {
         *to = entry->value;
