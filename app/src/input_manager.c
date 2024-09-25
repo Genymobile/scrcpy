@@ -536,7 +536,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_f:
                 if (video && !shift && !repeat && down) {
-                    sc_screen_switch_fullscreen(im->screen);
+                    sc_screen_toggle_fullscreen(im->screen);
                 }
                 return;
             case SDLK_w:

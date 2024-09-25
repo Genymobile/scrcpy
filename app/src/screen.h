@@ -126,9 +126,9 @@ sc_screen_destroy(struct sc_screen *screen);
 void
 sc_screen_hide_window(struct sc_screen *screen);
 
-// switch the fullscreen mode
+// toggle the fullscreen mode
 void
-sc_screen_switch_fullscreen(struct sc_screen *screen);
+sc_screen_toggle_fullscreen(struct sc_screen *screen);
 
 // resize window to optimal size (remove black borders)
 void

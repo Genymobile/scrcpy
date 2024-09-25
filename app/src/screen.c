@@ -538,7 +538,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     SDL_SetWindowPosition(screen->window, x, y);
 
     if (screen->req.fullscreen) {
-        sc_screen_switch_fullscreen(screen);
+        sc_screen_toggle_fullscreen(screen);
     }
 
     if (screen->req.start_fps_counter) {
@@ -774,7 +774,7 @@ sc_screen_set_paused(struct sc_screen *screen, bool paused) {
 }
 
 void
-sc_screen_switch_fullscreen(struct sc_screen *screen) {
+sc_screen_toggle_fullscreen(struct sc_screen *screen) {
     assert(screen->video);
 
     uint32_t new_mode = screen->fullscreen ? 0 : SDL_WINDOW_FULLSCREEN_DESKTOP;
