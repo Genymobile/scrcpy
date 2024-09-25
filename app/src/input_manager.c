@@ -33,10 +33,10 @@ to_sdl_mod(uint8_t shortcut_mod) {
     return sdl_mod;
 }
 
-static bool
+static inline bool
 is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
-    // keep only the relevant modifier keys
-    sdl_mod &= SC_SDL_SHORTCUT_MODS_MASK;
+    // im->sdl_shortcut_mods is within the mask
+    assert(!(im->sdl_shortcut_mods & ~SC_SDL_SHORTCUT_MODS_MASK));
 
     // at least one shortcut mod pressed?
     return sdl_mod & im->sdl_shortcut_mods;
