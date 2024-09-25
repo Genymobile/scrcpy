@@ -1072,7 +1072,11 @@ static const struct sc_shortcut shortcuts[] = {
     },
     {
         .shortcuts = { "Shift+click-and-move" },
-        .text = "Tilt (slide vertically with two fingers)",
+        .text = "Tilt vertically (slide with 2 fingers)",
+    },
+    {
+        .shortcuts = { "Ctrl+Shift+click-and-move" },
+        .text = "Tilt horizontally (slide with 2 fingers)",
     },
     {
         .shortcuts = { "Drag & drop APK file" },

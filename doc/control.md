@@ -94,14 +94,18 @@ the content (if supported by the app) relative to the center of the screen.
 
 https://github.com/Genymobile/scrcpy/assets/543275/26c4a920-9805-43f1-8d4c-608752d04767
 
-To simulate a tilt gesture: <kbd>Shift</kbd>+_click-and-move-up-or-down_.
+To simulate a vertical tilt gesture: <kbd>Shift</kbd>+_click-and-move-up-or-down_.
 
 https://github.com/Genymobile/scrcpy/assets/543275/1e252341-4a90-4b29-9d11-9153b324669f
+
+Similarly, to simulate a horizontal tilt gesture:
+<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+_click-and-move-left-or-right_.
 
 Technically, _scrcpy_ generates additional touch events from a "virtual finger"
 at a location inverted through the center of the screen. When pressing
 <kbd>Ctrl</kbd> the _x_ and _y_ coordinates are inverted. Using <kbd>Shift</kbd>
-only inverts _x_.
+only inverts _x_, whereas using <kbd>Ctrl</kbd>+<kbd>Shift</kbd> only inverts
+_y_.
 
 This only works for the default mouse mode (`--mouse=sdk`).
 

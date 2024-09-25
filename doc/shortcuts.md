@@ -53,7 +53,8 @@ _<kbd>[Super]</kbd> is typically the <kbd>Windows</kbd> or <kbd>Cmd</kbd> key._
  | Open keyboard settings (HID keyboard only)  | <kbd>MOD</kbd>+<kbd>k</kbd>
  | Enable/disable FPS counter (on stdout)      | <kbd>MOD</kbd>+<kbd>i</kbd>
  | Pinch-to-zoom/rotate                        | <kbd>Ctrl</kbd>+_click-and-move_
- | Tilt (slide vertically with 2 fingers)      | <kbd>Shift</kbd>+_click-and-move_
+ | Tilt vertically (slide with 2 fingers)      | <kbd>Shift</kbd>+_click-and-move_
+ | Tilt horizontally (slide with 2 fingers)    | <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+_click-and-move_
  | Drag & drop APK file                        | Install APK from computer
  | Drag & drop non-APK file                    | [Push file to device](control.md#push-file-to-device)
 

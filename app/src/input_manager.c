@@ -836,7 +836,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     }
 
     bool change_vfinger = event->button == SDL_BUTTON_LEFT &&
-            ((down && !im->vfinger_down && (ctrl_pressed ^ shift_pressed)) ||
+            ((down && !im->vfinger_down && (ctrl_pressed || shift_pressed)) ||
              (!down && im->vfinger_down));
     bool use_finger = im->vfinger_down || change_vfinger;
 
@@ -868,16 +868,28 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     // In other words, the center of the rotation/scaling is the center of the
     // screen.
     //
-    // To simulate a tilt gesture (a vertical slide with two fingers), Shift
-    // can be used instead of Ctrl. The "virtual finger" has a position
+    // To simulate a vertical tilt gesture (a vertical slide with two fingers),
+    // Shift can be used instead of Ctrl. The "virtual finger" has a position
     // inverted with respect to the vertical axis of symmetry in the middle of
     // the screen.
+    //
+    // To simulate a horizontal tilt gesture (a horizontal slide with two
+    // fingers), Ctrl+Shift can be used. The "virtual finger" has a position
+    // inverted with respect to the horizontal axis of symmetry in the middle
+    // of the screen. It is expected to be less frequently used, that's why the
+    // one-mod shortcuts are assigned to rotation and vertical tilt.
     if (change_vfinger) {
         struct sc_point mouse =
             sc_screen_convert_window_to_frame_coords(im->screen, event->x,
                                                                  event->y);
         if (down) {
-            im->vfinger_invert_x = ctrl_pressed || shift_pressed;
+            // Ctrl  Shift     invert_x  invert_y
+            // ----  ----- ==> --------  --------
+            //   0     0           0         0      -
+            //   0     1           1         0      vertical tilt
+            //   1     0           1         1      rotate
+            //   1     1           0         1      horizontal tilt
+            im->vfinger_invert_x = ctrl_pressed ^ shift_pressed;
             im->vfinger_invert_y = ctrl_pressed;
         }
         struct sc_point vfinger = inverse_point(mouse, im->screen->frame_size,
