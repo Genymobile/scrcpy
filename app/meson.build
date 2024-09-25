@@ -23,6 +23,7 @@ src = [
     'src/frame_buffer.c',
     'src/input_manager.c',
     'src/keyboard_sdk.c',
+    'src/mouse_capture.c',
     'src/mouse_sdk.c',
     'src/opengl.c',
     'src/options.c',

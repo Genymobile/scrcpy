@@ -13,6 +13,7 @@
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
+#include "mouse_capture.h"
 #include "opengl.h"
 #include "options.h"
 #include "trait/key_processor.h"
@@ -30,6 +31,7 @@ struct sc_screen {
 
     struct sc_display display;
     struct sc_input_manager im;
+    struct sc_mouse_capture mc; // only used in mouse relative mode
     struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
 
@@ -60,10 +62,6 @@ struct sc_screen {
     bool fullscreen;
     bool maximized;
     bool minimized;
-
-    // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
-    // RGUI) must be pressed. This variable tracks the pressed capture key.
-    SDL_Keycode mouse_capture_key_pressed;
 
     AVFrame *frame;
 

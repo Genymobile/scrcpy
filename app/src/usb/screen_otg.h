@@ -8,6 +8,7 @@
 
 #include "keyboard_aoa.h"
 #include "mouse_aoa.h"
+#include "mouse_capture.h"
 #include "gamepad_aoa.h"
 
 struct sc_screen_otg {
@@ -19,8 +20,7 @@ struct sc_screen_otg {
     SDL_Renderer *renderer;
     SDL_Texture *texture;
 
-    // See equivalent mechanism in screen.h
-    SDL_Keycode mouse_capture_key_pressed;
+    struct sc_mouse_capture mc;
 };
 
 struct sc_screen_otg_params {

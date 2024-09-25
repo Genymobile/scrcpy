@@ -5,47 +5,6 @@
 #include "util/log.h"
 
 static void
-sc_screen_otg_set_mouse_capture(struct sc_screen_otg *screen, bool capture) {
-#ifdef __APPLE__
-    // Workaround for SDL bug on macOS:
-    // <https://github.com/libsdl-org/SDL/issues/5340>
-    if (capture) {
-        int mouse_x, mouse_y;
-        SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
-
-        int x, y, w, h;
-        SDL_GetWindowPosition(screen->window, &x, &y);
-        SDL_GetWindowSize(screen->window, &w, &h);
-
-        bool outside_window = mouse_x < x || mouse_x >= x + w
-                           || mouse_y < y || mouse_y >= y + h;
-        if (outside_window) {
-            SDL_WarpMouseInWindow(screen->window, w / 2, h / 2);
-        }
-    }
-#else
-    (void) screen;
-#endif
-    if (SDL_SetRelativeMouseMode(capture)) {
-        LOGE("Could not set relative mouse mode to %s: %s",
-             capture ? "true" : "false", SDL_GetError());
-    }
-}
-
-static inline bool
-sc_screen_otg_get_mouse_capture(struct sc_screen_otg *screen) {
-    (void) screen;
-    return SDL_GetRelativeMouseMode();
-}
-
-static inline void
-sc_screen_otg_toggle_mouse_capture(struct sc_screen_otg *screen) {
-    (void) screen;
-    bool new_value = !sc_screen_otg_get_mouse_capture(screen);
-    sc_screen_otg_set_mouse_capture(screen, new_value);
-}
-
-static void
 sc_screen_otg_render(struct sc_screen_otg *screen) {
     SDL_RenderClear(screen->renderer);
     if (screen->texture) {
@@ -60,8 +19,6 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
     screen->keyboard = params->keyboard;
     screen->mouse = params->mouse;
     screen->gamepad = params->gamepad;
-
-    screen->mouse_capture_key_pressed = 0;
 
     const char *title = params->window_title;
     assert(title);
@@ -113,9 +70,11 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
         LOGW("Could not load icon");
     }
 
+    sc_mouse_capture_init(&screen->mc, screen->window);
+
     if (screen->mouse) {
         // Capture mouse on start
-        sc_screen_otg_set_mouse_capture(screen, true);
+        sc_mouse_capture_set_active(&screen->mc, true);
     }
 
     return true;
@@ -135,11 +94,6 @@ sc_screen_otg_destroy(struct sc_screen_otg *screen) {
     }
     SDL_DestroyRenderer(screen->renderer);
     SDL_DestroyWindow(screen->window);
-}
-
-static inline bool
-sc_screen_otg_is_mouse_capture_key(SDL_Keycode key) {
-    return key == SDLK_LALT || key == SDLK_LGUI || key == SDLK_RGUI;
 }
 
 static void
@@ -298,80 +252,46 @@ sc_screen_otg_process_gamepad_button(struct sc_screen_otg *screen,
 
 void
 sc_screen_otg_handle_event(struct sc_screen_otg *screen, SDL_Event *event) {
+    if (sc_mouse_capture_handle_event(&screen->mc, event)) {
+        // The mouse capture handler consumed the event
+        return;
+    }
+
     switch (event->type) {
         case SDL_WINDOWEVENT:
             switch (event->window.event) {
                 case SDL_WINDOWEVENT_EXPOSED:
                     sc_screen_otg_render(screen);
                     break;
-                case SDL_WINDOWEVENT_FOCUS_LOST:
-                    if (screen->mouse) {
-                        sc_screen_otg_set_mouse_capture(screen, false);
-                    }
-                    break;
             }
             return;
         case SDL_KEYDOWN:
-            if (screen->mouse) {
-                SDL_Keycode key = event->key.keysym.sym;
-                if (sc_screen_otg_is_mouse_capture_key(key)) {
-                    if (!screen->mouse_capture_key_pressed) {
-                        screen->mouse_capture_key_pressed = key;
-                    } else {
-                        // Another mouse capture key has been pressed, cancel
-                        // mouse (un)capture
-                        screen->mouse_capture_key_pressed = 0;
-                    }
-                    // Mouse capture keys are never forwarded to the device
-                    return;
-                }
-            }
-
             if (screen->keyboard) {
                 sc_screen_otg_process_key(screen, &event->key);
             }
             break;
         case SDL_KEYUP:
-            if (screen->mouse) {
-                SDL_Keycode key = event->key.keysym.sym;
-                SDL_Keycode cap = screen->mouse_capture_key_pressed;
-                screen->mouse_capture_key_pressed = 0;
-                if (sc_screen_otg_is_mouse_capture_key(key)) {
-                    if (key == cap) {
-                        // A mouse capture key has been pressed then released:
-                        // toggle the capture mouse mode
-                        sc_screen_otg_toggle_mouse_capture(screen);
-                    }
-                    // Mouse capture keys are never forwarded to the device
-                    return;
-                }
-            }
-
             if (screen->keyboard) {
                 sc_screen_otg_process_key(screen, &event->key);
             }
             break;
         case SDL_MOUSEMOTION:
-            if (screen->mouse && sc_screen_otg_get_mouse_capture(screen)) {
+            if (screen->mouse) {
                 sc_screen_otg_process_mouse_motion(screen, &event->motion);
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
-            if (screen->mouse && sc_screen_otg_get_mouse_capture(screen)) {
+            if (screen->mouse) {
                 sc_screen_otg_process_mouse_button(screen, &event->button);
             }
             break;
         case SDL_MOUSEBUTTONUP:
             if (screen->mouse) {
-                if (sc_screen_otg_get_mouse_capture(screen)) {
-                    sc_screen_otg_process_mouse_button(screen, &event->button);
-                } else {
-                    sc_screen_otg_set_mouse_capture(screen, true);
-                }
+                sc_screen_otg_process_mouse_button(screen, &event->button);
             }
             break;
         case SDL_MOUSEWHEEL:
-            if (screen->mouse && sc_screen_otg_get_mouse_capture(screen)) {
+            if (screen->mouse) {
                 sc_screen_otg_process_mouse_wheel(screen, &event->wheel);
             }
             break;

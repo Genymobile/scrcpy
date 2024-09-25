@@ -163,47 +163,6 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
 }
 
 static void
-sc_screen_set_mouse_capture(struct sc_screen *screen, bool capture) {
-#ifdef __APPLE__
-    // Workaround for SDL bug on macOS:
-    // <https://github.com/libsdl-org/SDL/issues/5340>
-    if (capture) {
-        int mouse_x, mouse_y;
-        SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
-
-        int x, y, w, h;
-        SDL_GetWindowPosition(screen->window, &x, &y);
-        SDL_GetWindowSize(screen->window, &w, &h);
-
-        bool outside_window = mouse_x < x || mouse_x >= x + w
-                           || mouse_y < y || mouse_y >= y + h;
-        if (outside_window) {
-            SDL_WarpMouseInWindow(screen->window, w / 2, h / 2);
-        }
-    }
-#else
-    (void) screen;
-#endif
-    if (SDL_SetRelativeMouseMode(capture)) {
-        LOGE("Could not set relative mouse mode to %s: %s",
-             capture ? "true" : "false", SDL_GetError());
-    }
-}
-
-static inline bool
-sc_screen_get_mouse_capture(struct sc_screen *screen) {
-    (void) screen;
-    return SDL_GetRelativeMouseMode();
-}
-
-static inline void
-sc_screen_toggle_mouse_capture(struct sc_screen *screen) {
-    (void) screen;
-    bool new_value = !sc_screen_get_mouse_capture(screen);
-    sc_screen_set_mouse_capture(screen, new_value);
-}
-
-static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
     assert(screen->video);
 
@@ -371,7 +330,6 @@ sc_screen_init(struct sc_screen *screen,
     screen->fullscreen = false;
     screen->maximized = false;
     screen->minimized = false;
-    screen->mouse_capture_key_pressed = 0;
     screen->paused = false;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
@@ -486,6 +444,9 @@ sc_screen_init(struct sc_screen *screen,
 
     sc_input_manager_init(&screen->im, &im_params);
 
+    // Initialize even if not used for simplicity
+    sc_mouse_capture_init(&screen->mc, screen->window);
+
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (screen->video) {
         SDL_AddEventWatch(event_watcher, screen);
@@ -506,7 +467,7 @@ sc_screen_init(struct sc_screen *screen,
 
     if (!screen->video && sc_screen_is_relative_mode(screen)) {
         // Capture mouse immediately if video mirroring is disabled
-        sc_screen_set_mouse_capture(screen, true);
+        sc_mouse_capture_set_active(&screen->mc, true);
     }
 
     return true;
@@ -713,7 +674,7 @@ sc_screen_apply_frame(struct sc_screen *screen) {
 
         if (sc_screen_is_relative_mode(screen)) {
             // Capture mouse on start
-            sc_screen_set_mouse_capture(screen, true);
+            sc_mouse_capture_set_active(&screen->mc, true);
         }
     }
 
@@ -837,15 +798,8 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
                                             content_size.height);
 }
 
-static inline bool
-sc_screen_is_mouse_capture_key(SDL_Keycode key) {
-    return key == SDLK_LALT || key == SDLK_LGUI || key == SDLK_RGUI;
-}
-
 bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
-    bool relative_mode = sc_screen_is_relative_mode(screen);
-
     switch (event->type) {
         case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size
@@ -903,69 +857,14 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     apply_pending_resize(screen);
                     sc_screen_render(screen, true);
                     break;
-                case SDL_WINDOWEVENT_FOCUS_LOST:
-                    if (relative_mode) {
-                        sc_screen_set_mouse_capture(screen, false);
-                    }
-                    break;
             }
             return true;
-        case SDL_KEYDOWN:
-            if (relative_mode) {
-                SDL_Keycode key = event->key.keysym.sym;
-                if (sc_screen_is_mouse_capture_key(key)) {
-                    if (!screen->mouse_capture_key_pressed) {
-                        screen->mouse_capture_key_pressed = key;
-                    } else {
-                        // Another mouse capture key has been pressed, cancel
-                        // mouse (un)capture
-                        screen->mouse_capture_key_pressed = 0;
-                    }
-                    // Mouse capture keys are never forwarded to the device
-                    return true;
-                }
-            }
-            break;
-        case SDL_KEYUP:
-            if (relative_mode) {
-                SDL_Keycode key = event->key.keysym.sym;
-                SDL_Keycode cap = screen->mouse_capture_key_pressed;
-                screen->mouse_capture_key_pressed = 0;
-                if (sc_screen_is_mouse_capture_key(key)) {
-                    if (key == cap) {
-                        // A mouse capture key has been pressed then released:
-                        // toggle the capture mouse mode
-                        sc_screen_toggle_mouse_capture(screen);
-                    }
-                    // Mouse capture keys are never forwarded to the device
-                    return true;
-                }
-            }
-            break;
-        case SDL_MOUSEWHEEL:
-        case SDL_MOUSEMOTION:
-        case SDL_MOUSEBUTTONDOWN:
-            if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
-                // Do not forward to input manager, the mouse will be captured
-                // on SDL_MOUSEBUTTONUP
-                return true;
-            }
-            break;
-        case SDL_FINGERMOTION:
-        case SDL_FINGERDOWN:
-        case SDL_FINGERUP:
-            if (relative_mode) {
-                // Touch events are not compatible with relative mode
-                // (coordinates are not relative)
-                return true;
-            }
-            break;
-        case SDL_MOUSEBUTTONUP:
-            if (relative_mode && !sc_screen_get_mouse_capture(screen)) {
-                sc_screen_set_mouse_capture(screen, true);
-                return true;
-            }
-            break;
+    }
+
+    if (sc_screen_is_relative_mode(screen)
+            && sc_mouse_capture_handle_event(&screen->mc, event)) {
+        // The mouse capture handler consumed the event
+        return true;
     }
 
     sc_input_manager_handle_event(&screen->im, event);
