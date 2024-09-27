@@ -9,14 +9,17 @@
 
 struct sc_mouse_capture {
     SDL_Window *window;
+    uint16_t sdl_mouse_capture_keys;
 
     // To enable/disable mouse capture, a mouse capture key (LALT, LGUI or
     // RGUI) must be pressed. This variable tracks the pressed capture key.
     SDL_Keycode mouse_capture_key_pressed;
+
 };
 
 void
-sc_mouse_capture_init(struct sc_mouse_capture *mc, SDL_Window *window);
+sc_mouse_capture_init(struct sc_mouse_capture *mc, SDL_Window *window,
+                      uint8_t shortcut_mods);
 
 void
 sc_mouse_capture_set_active(struct sc_mouse_capture *mc, bool capture);

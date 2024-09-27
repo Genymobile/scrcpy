@@ -1,16 +1,19 @@
 #include "mouse_capture.h"
 
+#include "shortcut_mod.h"
 #include "util/log.h"
 
 void
-sc_mouse_capture_init(struct sc_mouse_capture *mc, SDL_Window *window) {
+sc_mouse_capture_init(struct sc_mouse_capture *mc, SDL_Window *window,
+                      uint8_t shortcut_mods) {
     mc->window = window;
+    mc->sdl_mouse_capture_keys = sc_shortcut_mods_to_sdl(shortcut_mods);
     mc->mouse_capture_key_pressed = SDLK_UNKNOWN;
 }
 
 static inline bool
-sc_mouse_capture_is_capture_key(SDL_Keycode key) {
-    return key == SDLK_LALT || key == SDLK_LGUI || key == SDLK_RGUI;
+sc_mouse_capture_is_capture_key(struct sc_mouse_capture *mc, SDL_Keycode key) {
+    return sc_shortcut_mods_is_shortcut_key(mc->sdl_mouse_capture_keys, key);
 }
 
 bool
@@ -25,7 +28,7 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
             break;
         case SDL_KEYDOWN: {
             SDL_Keycode key = event->key.keysym.sym;
-            if (sc_mouse_capture_is_capture_key(key)) {
+            if (sc_mouse_capture_is_capture_key(mc, key)) {
                 if (!mc->mouse_capture_key_pressed) {
                     mc->mouse_capture_key_pressed = key;
                 } else {
@@ -42,7 +45,7 @@ sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
             SDL_Keycode key = event->key.keysym.sym;
             SDL_Keycode cap = mc->mouse_capture_key_pressed;
             mc->mouse_capture_key_pressed = 0;
-            if (sc_mouse_capture_is_capture_key(key)) {
+            if (sc_mouse_capture_is_capture_key(mc, key)) {
                 if (key == cap) {
                     // A mouse capture key has been pressed then released:
                     // toggle the capture mouse mode

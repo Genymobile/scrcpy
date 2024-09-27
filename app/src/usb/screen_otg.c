@@ -70,7 +70,7 @@ sc_screen_otg_init(struct sc_screen_otg *screen,
         LOGW("Could not load icon");
     }
 
-    sc_mouse_capture_init(&screen->mc, screen->window);
+    sc_mouse_capture_init(&screen->mc, screen->window, params->shortcut_mods);
 
     if (screen->mouse) {
         // Capture mouse on start

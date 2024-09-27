@@ -445,7 +445,7 @@ sc_screen_init(struct sc_screen *screen,
     sc_input_manager_init(&screen->im, &im_params);
 
     // Initialize even if not used for simplicity
-    sc_mouse_capture_init(&screen->mc, screen->window);
+    sc_mouse_capture_init(&screen->mc, screen->window, params->shortcut_mods);
 
 #ifdef CONTINUOUS_RESIZING_WORKAROUND
     if (screen->video) {
