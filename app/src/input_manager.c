@@ -5,52 +5,8 @@
 
 #include "input_events.h"
 #include "screen.h"
+#include "shortcut_mod.h"
 #include "util/log.h"
-
-#define SC_SDL_SHORTCUT_MODS_MASK (KMOD_CTRL | KMOD_ALT | KMOD_GUI)
-
-static inline uint16_t
-to_sdl_mod(uint8_t shortcut_mod) {
-    uint16_t sdl_mod = 0;
-    if (shortcut_mod & SC_SHORTCUT_MOD_LCTRL) {
-        sdl_mod |= KMOD_LCTRL;
-    }
-    if (shortcut_mod & SC_SHORTCUT_MOD_RCTRL) {
-        sdl_mod |= KMOD_RCTRL;
-    }
-    if (shortcut_mod & SC_SHORTCUT_MOD_LALT) {
-        sdl_mod |= KMOD_LALT;
-    }
-    if (shortcut_mod & SC_SHORTCUT_MOD_RALT) {
-        sdl_mod |= KMOD_RALT;
-    }
-    if (shortcut_mod & SC_SHORTCUT_MOD_LSUPER) {
-        sdl_mod |= KMOD_LGUI;
-    }
-    if (shortcut_mod & SC_SHORTCUT_MOD_RSUPER) {
-        sdl_mod |= KMOD_RGUI;
-    }
-    return sdl_mod;
-}
-
-static inline bool
-is_shortcut_mod(struct sc_input_manager *im, uint16_t sdl_mod) {
-    // im->sdl_shortcut_mods is within the mask
-    assert(!(im->sdl_shortcut_mods & ~SC_SDL_SHORTCUT_MODS_MASK));
-
-    // at least one shortcut mod pressed?
-    return sdl_mod & im->sdl_shortcut_mods;
-}
-
-static bool
-is_shortcut_key(struct sc_input_manager *im, SDL_Keycode keycode) {
-    return (im->sdl_shortcut_mods & KMOD_LCTRL && keycode == SDLK_LCTRL)
-        || (im->sdl_shortcut_mods & KMOD_RCTRL && keycode == SDLK_RCTRL)
-        || (im->sdl_shortcut_mods & KMOD_LALT  && keycode == SDLK_LALT)
-        || (im->sdl_shortcut_mods & KMOD_RALT  && keycode == SDLK_RALT)
-        || (im->sdl_shortcut_mods & KMOD_LGUI  && keycode == SDLK_LGUI)
-        || (im->sdl_shortcut_mods & KMOD_RGUI  && keycode == SDLK_RGUI);
-}
 
 void
 sc_input_manager_init(struct sc_input_manager *im,
@@ -73,7 +29,7 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->legacy_paste = params->legacy_paste;
     im->clipboard_autosync = params->clipboard_autosync;
 
-    im->sdl_shortcut_mods = to_sdl_mod(params->shortcut_mods);
+    im->sdl_shortcut_mods = sc_shortcut_mods_to_sdl(params->shortcut_mods);
 
     im->vfinger_down = false;
     im->vfinger_invert_x = false;
@@ -346,7 +302,8 @@ sc_input_manager_process_text_input(struct sc_input_manager *im,
         return;
     }
 
-    if (is_shortcut_mod(im, SDL_GetModState())) {
+    if (sc_shortcut_mods_is_shortcut_mod(im->sdl_shortcut_mods,
+                                         SDL_GetModState())) {
         // A shortcut must never generate text events
         return;
     }
@@ -413,8 +370,9 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // press/release is a modifier key.
     // The second condition is necessary to ignore the release of the modifier
     // key (because in this case mod is 0).
-    bool is_shortcut = is_shortcut_mod(im, mod)
-                    || is_shortcut_key(im, sdl_keycode);
+    uint16_t mods = im->sdl_shortcut_mods;
+    bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
+                    || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
 
     if (down && !repeat) {
         if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
