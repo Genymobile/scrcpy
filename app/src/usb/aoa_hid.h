@@ -1,6 +1,8 @@
 #ifndef SC_AOA_HID_H
 #define SC_AOA_HID_H
 
+#include "common.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 
