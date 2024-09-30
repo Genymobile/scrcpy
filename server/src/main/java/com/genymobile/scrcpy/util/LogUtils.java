@@ -31,7 +31,7 @@ public final class LogUtils {
         } else {
             for (CodecUtils.DeviceEncoder encoder : videoEncoders) {
                 builder.append("\n    --video-codec=").append(encoder.getCodec().getName());
-                builder.append(" --video-encoder='").append(encoder.getInfo().getName()).append("'");
+                builder.append(" --video-encoder=").append(encoder.getInfo().getName());
             }
         }
         return builder.toString();
@@ -45,7 +45,7 @@ public final class LogUtils {
         } else {
             for (CodecUtils.DeviceEncoder encoder : audioEncoders) {
                 builder.append("\n    --audio-codec=").append(encoder.getCodec().getName());
-                builder.append(" --audio-encoder='").append(encoder.getInfo().getName()).append("'");
+                builder.append(" --audio-encoder=").append(encoder.getInfo().getName());
             }
         }
         return builder.toString();
