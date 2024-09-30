@@ -21,7 +21,7 @@
 // keyboard support, though OS could support more keys via modifying the report
 // desc. 6 should be enough for scrcpy.
 #define SC_HID_KEYBOARD_MAX_KEYS 6
-#define SC_HID_KEYBOARD_EVENT_SIZE \
+#define SC_HID_KEYBOARD_INPUT_SIZE \
     (SC_HID_KEYBOARD_INDEX_KEYS + SC_HID_KEYBOARD_MAX_KEYS)
 
 #define SC_HID_RESERVED 0x00
@@ -31,12 +31,15 @@
  * For HID, only report descriptor is needed.
  *
  * The specification is available here:
- * <https://www.usb.org/sites/default/files/hid1_11.pdf>
+ * <https://www.usb.org/document-library/device-class-definition-hid-111>
  *
  * In particular, read:
- *  - 6.2.2 Report Descriptor
+ *  - §6.2.2 Report Descriptor
  *  - Appendix B.1 Protocol 1 (Keyboard)
  *  - Appendix C: Keyboard Implementation
+ *
+ * The HID Usage Tables is also useful:
+ * <https://www.usb.org/document-library/hid-usage-tables-15>
  *
  * Normally a basic HID keyboard uses 8 bytes:
  *     Modifier Reserved Key Key Key Key Key Key
@@ -47,7 +50,7 @@
  *
  * (change vid:pid' to your device's vendor ID and product ID).
  */
-const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
+static const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     // Usage Page (Generic Desktop)
     0x05, 0x01,
     // Usage (Keyboard)
@@ -60,7 +63,7 @@ const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     0x05, 0x07,
     // Usage Minimum (224)
     0x19, 0xE0,
-     // Usage Maximum (231)
+    // Usage Maximum (231)
     0x29, 0xE7,
     // Logical Minimum (0)
     0x15, 0x00,
@@ -121,11 +124,8 @@ const uint8_t SC_HID_KEYBOARD_REPORT_DESC[] = {
     0xC0
 };
 
-const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN =
-    sizeof(SC_HID_KEYBOARD_REPORT_DESC);
-
 /**
- * A keyboard HID event is 8 bytes long:
+ * A keyboard HID input report is 8 bytes long:
  *
  *  - byte 0: modifiers (1 flag per modifier key, 8 possible modifier keys)
  *  - byte 1: reserved (always 0)
@@ -199,10 +199,11 @@ const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN =
  */
 
 static void
-sc_hid_keyboard_event_init(struct sc_hid_event *hid_event) {
-    hid_event->size = SC_HID_KEYBOARD_EVENT_SIZE;
+sc_hid_keyboard_input_init(struct sc_hid_input *hid_input) {
+    hid_input->hid_id = SC_HID_ID_KEYBOARD;
+    hid_input->size = SC_HID_KEYBOARD_INPUT_SIZE;
 
-    uint8_t *data = hid_event->data;
+    uint8_t *data = hid_input->data;
 
     data[SC_HID_KEYBOARD_INDEX_MODS] = SC_HID_MOD_NONE;
     data[1] = SC_HID_RESERVED;
@@ -250,9 +251,9 @@ scancode_is_modifier(enum sc_scancode scancode) {
 }
 
 bool
-sc_hid_keyboard_event_from_key(struct sc_hid_keyboard *hid,
-                               struct sc_hid_event *hid_event,
-                               const struct sc_key_event *event) {
+sc_hid_keyboard_generate_input_from_key(struct sc_hid_keyboard *hid,
+                                        struct sc_hid_input *hid_input,
+                                        const struct sc_key_event *event) {
     enum sc_scancode scancode = event->scancode;
     assert(scancode >= 0);
 
@@ -264,7 +265,7 @@ sc_hid_keyboard_event_from_key(struct sc_hid_keyboard *hid,
         return false;
     }
 
-    sc_hid_keyboard_event_init(hid_event);
+    sc_hid_keyboard_input_init(hid_input);
 
     uint16_t mods = sc_hid_mod_from_sdl_keymod(event->mods_state);
 
@@ -275,9 +276,9 @@ sc_hid_keyboard_event_from_key(struct sc_hid_keyboard *hid,
              hid->keys[scancode] ? "true" : "false");
     }
 
-    hid_event->data[SC_HID_KEYBOARD_INDEX_MODS] = mods;
+    hid_input->data[SC_HID_KEYBOARD_INDEX_MODS] = mods;
 
-    uint8_t *keys_data = &hid_event->data[SC_HID_KEYBOARD_INDEX_KEYS];
+    uint8_t *keys_data = &hid_input->data[SC_HID_KEYBOARD_INDEX_KEYS];
     // Re-calculate pressed keys every time
     int keys_pressed_count = 0;
     for (int i = 0; i < SC_HID_KEYBOARD_KEYS; ++i) {
@@ -308,8 +309,8 @@ end:
 }
 
 bool
-sc_hid_keyboard_event_from_mods(struct sc_hid_event *event,
-                                uint16_t mods_state) {
+sc_hid_keyboard_generate_input_from_mods(struct sc_hid_input *hid_input,
+                                         uint16_t mods_state) {
     bool capslock = mods_state & SC_MOD_CAPS;
     bool numlock = mods_state & SC_MOD_NUM;
     if (!capslock && !numlock) {
@@ -317,17 +318,28 @@ sc_hid_keyboard_event_from_mods(struct sc_hid_event *event,
         return false;
     }
 
-    sc_hid_keyboard_event_init(event);
+    sc_hid_keyboard_input_init(hid_input);
 
     unsigned i = 0;
     if (capslock) {
-        event->data[SC_HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
+        hid_input->data[SC_HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_CAPSLOCK;
         ++i;
     }
     if (numlock) {
-        event->data[SC_HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
+        hid_input->data[SC_HID_KEYBOARD_INDEX_KEYS + i] = SC_SCANCODE_NUMLOCK;
         ++i;
     }
 
     return true;
+}
+
+void sc_hid_keyboard_generate_open(struct sc_hid_open *hid_open) {
+    hid_open->hid_id = SC_HID_ID_KEYBOARD;
+    hid_open->name = NULL; // No name specified after "scrcpy"
+    hid_open->report_desc = SC_HID_KEYBOARD_REPORT_DESC;
+    hid_open->report_desc_size = sizeof(SC_HID_KEYBOARD_REPORT_DESC);
+}
+
+void sc_hid_keyboard_generate_close(struct sc_hid_close *hid_close) {
+    hid_close->hid_id = SC_HID_ID_KEYBOARD;
 }

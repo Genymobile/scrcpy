@@ -14,8 +14,7 @@
 // 0x65 is Application, typically AT-101 Keyboard ends here.
 #define SC_HID_KEYBOARD_KEYS 0x66
 
-extern const uint8_t SC_HID_KEYBOARD_REPORT_DESC[];
-extern const size_t SC_HID_KEYBOARD_REPORT_DESC_LEN;
+#define SC_HID_ID_KEYBOARD 1
 
 /**
  * HID keyboard events are sequence-based, every time keyboard state changes
@@ -36,13 +35,19 @@ struct sc_hid_keyboard {
 void
 sc_hid_keyboard_init(struct sc_hid_keyboard *hid);
 
-bool
-sc_hid_keyboard_event_from_key(struct sc_hid_keyboard *hid,
-                               struct sc_hid_event *hid_event,
-                               const struct sc_key_event *event);
+void
+sc_hid_keyboard_generate_open(struct sc_hid_open *hid_open);
+
+void
+sc_hid_keyboard_generate_close(struct sc_hid_close *hid_close);
 
 bool
-sc_hid_keyboard_event_from_mods(struct sc_hid_event *event,
-                                uint16_t mods_state);
+sc_hid_keyboard_generate_input_from_key(struct sc_hid_keyboard *hid,
+                                        struct sc_hid_input *hid_input,
+                                        const struct sc_key_event *event);
+
+bool
+sc_hid_keyboard_generate_input_from_mods(struct sc_hid_input *hid_input,
+                                         uint16_t mods_state);
 
 #endif

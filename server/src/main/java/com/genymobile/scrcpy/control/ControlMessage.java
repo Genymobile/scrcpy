@@ -21,7 +21,8 @@ public final class ControlMessage {
     public static final int TYPE_ROTATE_DEVICE = 11;
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
-    public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 14;
+    public static final int TYPE_UHID_DESTROY = 14;
+    public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -130,10 +131,11 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createUhidCreate(int id, byte[] reportDesc) {
+    public static ControlMessage createUhidCreate(int id, String name, byte[] reportDesc) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_UHID_CREATE;
         msg.id = id;
+        msg.text = name;
         msg.data = reportDesc;
         return msg;
     }
@@ -143,6 +145,13 @@ public final class ControlMessage {
         msg.type = TYPE_UHID_INPUT;
         msg.id = id;
         msg.data = data;
+        return msg;
+    }
+
+    public static ControlMessage createUhidDestroy(int id) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_UHID_DESTROY;
+        msg.id = id;
         return msg;
     }
 

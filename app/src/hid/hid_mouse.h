@@ -1,8 +1,6 @@
 #ifndef SC_HID_MOUSE_H
 #define SC_HID_MOUSE_H
 
-#endif
-
 #include "common.h"
 
 #include <stdbool.h>
@@ -10,17 +8,24 @@
 #include "hid/hid_event.h"
 #include "input_events.h"
 
-extern const uint8_t SC_HID_MOUSE_REPORT_DESC[];
-extern const size_t SC_HID_MOUSE_REPORT_DESC_LEN;
+#define SC_HID_ID_MOUSE 2
 
 void
-sc_hid_mouse_event_from_motion(struct sc_hid_event *hid_event,
-                               const struct sc_mouse_motion_event *event);
+sc_hid_mouse_generate_open(struct sc_hid_open *hid_open);
 
 void
-sc_hid_mouse_event_from_click(struct sc_hid_event *hid_event,
-                              const struct sc_mouse_click_event *event);
+sc_hid_mouse_generate_close(struct sc_hid_close *hid_close);
 
 void
-sc_hid_mouse_event_from_scroll(struct sc_hid_event *hid_event,
-                               const struct sc_mouse_scroll_event *event);
+sc_hid_mouse_generate_input_from_motion(struct sc_hid_input *hid_input,
+                                    const struct sc_mouse_motion_event *event);
+
+void
+sc_hid_mouse_generate_input_from_click(struct sc_hid_input *hid_input,
+                                    const struct sc_mouse_click_event *event);
+
+void
+sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
+                                    const struct sc_mouse_scroll_event *event);
+
+#endif

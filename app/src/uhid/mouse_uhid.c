@@ -7,21 +7,20 @@
 /** Downcast mouse processor to mouse_uhid */
 #define DOWNCAST(MP) container_of(MP, struct sc_mouse_uhid, mouse_processor)
 
-#define UHID_MOUSE_ID 2
-
 static void
 sc_mouse_uhid_send_input(struct sc_mouse_uhid *mouse,
-                         const struct sc_hid_event *event, const char *name) {
+                         const struct sc_hid_input *hid_input,
+                         const char *name) {
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_INPUT;
-    msg.uhid_input.id = UHID_MOUSE_ID;
+    msg.uhid_input.id = hid_input->hid_id;
 
-    assert(event->size <= SC_HID_MAX_SIZE);
-    memcpy(msg.uhid_input.data, event->data, event->size);
-    msg.uhid_input.size = event->size;
+    assert(hid_input->size <= SC_HID_MAX_SIZE);
+    memcpy(msg.uhid_input.data, hid_input->data, hid_input->size);
+    msg.uhid_input.size = hid_input->size;
 
     if (!sc_controller_push_msg(mouse->controller, &msg)) {
-        LOGE("Could not send UHID_INPUT message (%s)", name);
+        LOGE("Could not push UHID_INPUT message (%s)", name);
     }
 }
 
@@ -30,10 +29,10 @@ sc_mouse_processor_process_mouse_motion(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_motion_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_motion(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_motion(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse motion");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse motion");
 }
 
 static void
@@ -41,10 +40,10 @@ sc_mouse_processor_process_mouse_click(struct sc_mouse_processor *mp,
                                    const struct sc_mouse_click_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_click(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_click(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse click");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse click");
 }
 
 static void
@@ -52,10 +51,10 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
                                     const struct sc_mouse_scroll_event *event) {
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
-    struct sc_hid_event hid_event;
-    sc_hid_mouse_event_from_scroll(&hid_event, event);
+    struct sc_hid_input hid_input;
+    sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
 
-    sc_mouse_uhid_send_input(mouse, &hid_event, "mouse scroll");
+    sc_mouse_uhid_send_input(mouse, &hid_input, "mouse scroll");
 }
 
 bool
@@ -75,13 +74,18 @@ sc_mouse_uhid_init(struct sc_mouse_uhid *mouse,
 
     mouse->mouse_processor.relative_mode = true;
 
+    struct sc_hid_open hid_open;
+    sc_hid_mouse_generate_open(&hid_open);
+    assert(hid_open.hid_id == SC_HID_ID_MOUSE);
+
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
-    msg.uhid_create.id = UHID_MOUSE_ID;
-    msg.uhid_create.report_desc = SC_HID_MOUSE_REPORT_DESC;
-    msg.uhid_create.report_desc_size = SC_HID_MOUSE_REPORT_DESC_LEN;
+    msg.uhid_create.id = SC_HID_ID_MOUSE;
+    msg.uhid_create.name = hid_open.name;
+    msg.uhid_create.report_desc = hid_open.report_desc;
+    msg.uhid_create.report_desc_size = hid_open.report_desc_size;
     if (!sc_controller_push_msg(controller, &msg)) {
-        LOGE("Could not send UHID_CREATE message (mouse)");
+        LOGE("Could not push UHID_CREATE message (mouse)");
         return false;
     }
 

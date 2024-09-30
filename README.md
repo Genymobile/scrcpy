@@ -2,7 +2,7 @@
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
-# scrcpy (v2.6.1)
+# scrcpy (v2.7)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -37,6 +37,7 @@ Its features include:
  - [camera mirroring](doc/camera.md) (Android 12+)
  - [mirroring as a webcam (V4L2)](doc/v4l2.md) (Linux-only)
  - physical [keyboard][hid-keyboard] and [mouse][hid-mouse] simulation (HID)
+ - [gamepad](doc/gamepad.md) support
  - [OTG mode](doc/otg.md)
  - and more…
 
@@ -111,6 +112,13 @@ Here are just some common examples.
     scrcpy --otg
     ```
 
+ - Control the device using gamepad controllers plugged into the computer:
+
+    ```bash
+    scrcpy --gamepad=uhid
+    scrcpy -G  # short version
+    ```
+
 ## User documentation
 
 The application provides a lot of features and configuration options. They are
@@ -122,6 +130,7 @@ documented in the following pages:
  - [Control](doc/control.md)
  - [Keyboard](doc/keyboard.md)
  - [Mouse](doc/mouse.md)
+ - [Gamepad](doc/gamepad.md)
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)

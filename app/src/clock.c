@@ -4,7 +4,7 @@
 
 #include "util/log.h"
 
-#define SC_CLOCK_NDEBUG // comment to debug
+//#define SC_CLOCK_DEBUG // uncomment to debug
 
 #define SC_CLOCK_RANGE 32
 
@@ -21,10 +21,12 @@ sc_clock_update(struct sc_clock *clock, sc_tick system, sc_tick stream) {
     }
 
     sc_tick offset = system - stream;
-    clock->offset = ((clock->range - 1) * clock->offset + offset)
-                  / clock->range;
+    unsigned clock_weight = clock->range - 1;
+    unsigned value_weight = SC_CLOCK_RANGE - clock->range + 1;
+    clock->offset = (clock->offset * clock_weight + offset * value_weight)
+                  / SC_CLOCK_RANGE;
 
-#ifndef SC_CLOCK_NDEBUG
+#ifdef SC_CLOCK_DEBUG
     LOGD("Clock estimation: pts + %" PRItick, clock->offset);
 #endif
 }

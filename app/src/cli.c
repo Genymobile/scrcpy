@@ -101,6 +101,7 @@ enum {
     OPT_MOUSE_BIND,
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
+    OPT_GAMEPAD,
 };
 
 struct sc_option {
@@ -156,7 +157,7 @@ static const struct sc_option options[] = {
         .argdesc = "ms",
         .text = "Configure the audio buffering delay (in milliseconds).\n"
                 "Lower values decrease the latency, but increase the "
-                "likelyhood of buffer underrun (causing audio glitches).\n"
+                "likelihood of buffer underrun (causing audio glitches).\n"
                 "Default is 50.",
     },
     {
@@ -373,13 +374,30 @@ static const struct sc_option options[] = {
         .longopt = "forward-all-clicks",
     },
     {
+        .shortopt = 'G',
+        .text = "Same as --gamepad=uhid, or --gamepad=aoa if --otg is set.",
+    },
+    {
+        .longopt_id = OPT_GAMEPAD,
+        .longopt = "gamepad",
+        .argdesc = "mode",
+        .text = "Select how to send gamepad inputs to the device.\n"
+                "Possible values are \"disabled\", \"uhid\" and \"aoa\".\n"
+                "\"disabled\" does not send gamepad inputs to the device.\n"
+                "\"uhid\" simulates physical HID gamepads using the Linux UHID "
+                "kernel module on the device.\n"
+                "\"aoa\" simulates physical gamepads using the AOAv2 protocol."
+                "It may only work over USB.\n"
+                "Also see --keyboard and --mouse.",
+    },
+    {
         .shortopt = 'h',
         .longopt = "help",
         .text = "Print this help.",
     },
     {
         .shortopt = 'K',
-        .text = "Same as --keyboard=uhid.",
+        .text = "Same as --keyboard=uhid, or --keyboard=aoa if --otg is set.",
     },
     {
         .longopt_id = OPT_KEYBOARD,
@@ -403,7 +421,7 @@ static const struct sc_option options[] = {
                 "start -a android.settings.HARD_KEYBOARD_SETTINGS`.\n"
                 "This option is only available when a HID keyboard is enabled "
                 "(or a physical keyboard is connected).\n"
-                "Also see --mouse.",
+                "Also see --mouse and --gamepad.",
     },
     {
         .longopt_id = OPT_KILL_ADB_ON_CLOSE,
@@ -475,7 +493,7 @@ static const struct sc_option options[] = {
     },
     {
         .shortopt = 'M',
-        .text = "Same as --mouse=uhid.",
+        .text = "Same as --mouse=uhid, or --mouse=aoa if --otg is set.",
     },
     {
         .longopt_id = OPT_MAX_FPS,
@@ -502,7 +520,7 @@ static const struct sc_option options[] = {
                 "to control the device directly (relative mouse mode).\n"
                 "LAlt, LSuper or RSuper toggle the capture mode, to give "
                 "control of the mouse back to the computer.\n"
-                "Also see --keyboard.",
+                "Also see --keyboard and --gamepad.",
     },
     {
         .longopt_id = OPT_MOUSE_BIND,
@@ -637,7 +655,7 @@ static const struct sc_option options[] = {
                 "Keyboard and mouse may be disabled separately using"
                 "--keyboard=disabled and --mouse=disabled.\n"
                 "It may only work over USB.\n"
-                "See --keyboard and --mouse.",
+                "See --keyboard, --mouse and --gamepad.",
     },
     {
         .shortopt = 'p',
@@ -654,7 +672,7 @@ static const struct sc_option options[] = {
         .optional_arg = true,
         .text = "Configure pause on exit. Possible values are \"true\" (always "
                 "pause on exit), \"false\" (never pause on exit) and "
-                "\"if-error\" (pause only if an error occured).\n"
+                "\"if-error\" (pause only if an error occurred).\n"
                 "This is useful to prevent the terminal window from "
                 "automatically closing, so that error messages can be read.\n"
                 "Default is \"false\".\n"
@@ -1349,7 +1367,7 @@ print_exit_status(const struct sc_exit_status *status, unsigned cols) {
         return;
     }
 
-    assert(strlen(text) >= 9); // Contains at least the initial identation
+    assert(strlen(text) >= 9); // Contains at least the initial indentation
 
     // text + 9 to remove the initial indentation
     printf("    %3d  %s\n", status->value, text + 9);
@@ -1470,18 +1488,6 @@ parse_max_size(const char *s, uint16_t *max_size) {
     }
 
     *max_size = (uint16_t) value;
-    return true;
-}
-
-static bool
-parse_max_fps(const char *s, uint16_t *max_fps) {
-    long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 0xFFFF, "max fps");
-    if (!ok) {
-        return false;
-    }
-
-    *max_fps = (uint16_t) value;
     return true;
 }
 
@@ -2059,6 +2065,32 @@ parse_mouse(const char *optarg, enum sc_mouse_input_mode *mode) {
 }
 
 static bool
+parse_gamepad(const char *optarg, enum sc_gamepad_input_mode *mode) {
+    if (!strcmp(optarg, "disabled")) {
+        *mode = SC_GAMEPAD_INPUT_MODE_DISABLED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "uhid")) {
+        *mode = SC_GAMEPAD_INPUT_MODE_UHID;
+        return true;
+    }
+
+    if (!strcmp(optarg, "aoa")) {
+#ifdef HAVE_USB
+        *mode = SC_GAMEPAD_INPUT_MODE_AOA;
+        return true;
+#else
+        LOGE("--gamepad=aoa is disabled.");
+        return false;
+#endif
+    }
+
+    LOGE("Unsupported gamepad: %s (expected disabled or aoa)", optarg);
+    return false;
+}
+
+static bool
 parse_time_limit(const char *s, sc_tick *tick) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF, "time limit");
@@ -2220,7 +2252,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 args->help = true;
                 break;
             case 'K':
-                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID;
+                opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID_OR_AOA;
                 break;
             case OPT_KEYBOARD:
                 if (!parse_keyboard(optarg, &opts->keyboard_input_mode)) {
@@ -2232,9 +2264,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "--keyboard=uhid instead.");
                 return false;
             case OPT_MAX_FPS:
-                if (!parse_max_fps(optarg, &opts->max_fps)) {
-                    return false;
-                }
+                opts->max_fps = optarg;
                 break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {
@@ -2242,7 +2272,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case 'M':
-                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID_OR_AOA;
                 break;
             case OPT_MOUSE:
                 if (!parse_mouse(optarg, &opts->mouse_input_mode)) {
@@ -2626,6 +2656,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
                 break;
+            case 'G':
+                opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA;
+                break;
+            case OPT_GAMEPAD:
+                if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2743,7 +2781,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
             opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
                                             : SC_KEYBOARD_INPUT_MODE_SDK;
+        } else if (opts->keyboard_input_mode
+                == SC_KEYBOARD_INPUT_MODE_UHID_OR_AOA) {
+            opts->keyboard_input_mode = otg ? SC_KEYBOARD_INPUT_MODE_AOA
+                                            : SC_KEYBOARD_INPUT_MODE_UHID;
         }
+
         if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
             if (otg) {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
@@ -2753,14 +2796,21 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             } else {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
             }
+        } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID_OR_AOA) {
+            opts->mouse_input_mode = otg ? SC_MOUSE_INPUT_MODE_AOA
+                                         : SC_MOUSE_INPUT_MODE_UHID;
         } else if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK
                     && !opts->video_playback) {
             LOGE("SDK mouse mode requires video playback. Try --mouse=uhid.");
             return false;
         }
+        if (opts->gamepad_input_mode == SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA) {
+            opts->gamepad_input_mode = otg ? SC_GAMEPAD_INPUT_MODE_AOA
+                                           : SC_GAMEPAD_INPUT_MODE_UHID;
+        }
     }
 
-    // If mouse bindings are not explictly set, configure default bindings
+    // If mouse bindings are not explicitly set, configure default bindings
     if (opts->mouse_bindings.pri.right_click == SC_MOUSE_BINDING_AUTO) {
         assert(opts->mouse_bindings.pri.middle_click == SC_MOUSE_BINDING_AUTO);
         assert(opts->mouse_bindings.pri.click4 == SC_MOUSE_BINDING_AUTO);
@@ -2814,9 +2864,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        enum sc_gamepad_input_mode gmode = opts->gamepad_input_mode;
+        if (gmode != SC_GAMEPAD_INPUT_MODE_AOA
+                && gmode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
+            LOGE("In OTG mode, --gamepad only supports aoa or disabled.");
+            return false;
+        }
+
         if (kmode == SC_KEYBOARD_INPUT_MODE_DISABLED
-                && mmode == SC_MOUSE_INPUT_MODE_DISABLED) {
-            LOGE("Could not disable both keyboard and mouse in OTG mode.");
+                && mmode == SC_MOUSE_INPUT_MODE_DISABLED
+                && gmode == SC_GAMEPAD_INPUT_MODE_DISABLED) {
+            LOGE("Cannot not disable all inputs in OTG mode.");
             return false;
         }
     }
@@ -2857,18 +2915,18 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
 
         if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
-            LOGE("Could not specify both --camera-id and --camera-facing");
+            LOGE("Cannot specify both --camera-id and --camera-facing");
             return false;
         }
 
         if (opts->camera_size) {
             if (opts->max_size) {
-                LOGE("Could not specify both --camera-size and -m/--max-size");
+                LOGE("Cannot specify both --camera-size and -m/--max-size");
                 return false;
             }
 
             if (opts->camera_ar) {
-                LOGE("Could not specify both --camera-size and --camera-ar");
+                LOGE("Cannot specify both --camera-size and --camera-ar");
                 return false;
             }
         }
@@ -3009,19 +3067,19 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (!opts->control) {
         if (opts->turn_screen_off) {
-            LOGE("Could not request to turn screen off if control is disabled");
+            LOGE("Cannot request to turn screen off if control is disabled");
             return false;
         }
         if (opts->stay_awake) {
-            LOGE("Could not request to stay awake if control is disabled");
+            LOGE("Cannot request to stay awake if control is disabled");
             return false;
         }
         if (opts->show_touches) {
-            LOGE("Could not request to show touches if control is disabled");
+            LOGE("Cannot request to show touches if control is disabled");
             return false;
         }
         if (opts->power_off_on_close) {
-            LOGE("Could not request power off on close if control is disabled");
+            LOGE("Cannot request power off on close if control is disabled");
             return false;
         }
     }
@@ -3046,7 +3104,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         // OTG mode is compatible with only very few options.
         // Only report obvious errors.
         if (opts->record_filename) {
-            LOGE("OTG mode: could not record");
+            LOGE("OTG mode: cannot record");
             return false;
         }
         if (opts->turn_screen_off) {
@@ -3101,7 +3159,7 @@ sc_get_pause_on_exit(int argc, char *argv[]) {
             if (!strcmp(value, "if-error")) {
                 return SC_PAUSE_ON_EXIT_IF_ERROR;
             }
-            // Set to false, inclusing when the value is invalid
+            // Set to false, including when the value is invalid
             return SC_PAUSE_ON_EXIT_FALSE;
         }
     }

@@ -1,10 +1,38 @@
-#define SC_EVENT_NEW_FRAME                 SDL_USEREVENT
-#define SC_EVENT_DEVICE_DISCONNECTED      (SDL_USEREVENT + 1)
-#define SC_EVENT_SERVER_CONNECTION_FAILED (SDL_USEREVENT + 2)
-#define SC_EVENT_SERVER_CONNECTED         (SDL_USEREVENT + 3)
-#define SC_EVENT_USB_DEVICE_DISCONNECTED  (SDL_USEREVENT + 4)
-#define SC_EVENT_DEMUXER_ERROR            (SDL_USEREVENT + 5)
-#define SC_EVENT_RECORDER_ERROR           (SDL_USEREVENT + 6)
-#define SC_EVENT_SCREEN_INIT_SIZE         (SDL_USEREVENT + 7)
-#define SC_EVENT_TIME_LIMIT_REACHED       (SDL_USEREVENT + 8)
-#define SC_EVENT_CONTROLLER_ERROR         (SDL_USEREVENT + 9)
+#ifndef SC_EVENTS_H
+#define SC_EVENTS_H
+
+#include "common.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <SDL_events.h>
+
+enum {
+    SC_EVENT_NEW_FRAME = SDL_USEREVENT,
+    SC_EVENT_RUN_ON_MAIN_THREAD,
+    SC_EVENT_DEVICE_DISCONNECTED,
+    SC_EVENT_SERVER_CONNECTION_FAILED,
+    SC_EVENT_SERVER_CONNECTED,
+    SC_EVENT_USB_DEVICE_DISCONNECTED,
+    SC_EVENT_DEMUXER_ERROR,
+    SC_EVENT_RECORDER_ERROR,
+    SC_EVENT_SCREEN_INIT_SIZE,
+    SC_EVENT_TIME_LIMIT_REACHED,
+    SC_EVENT_CONTROLLER_ERROR,
+    SC_EVENT_AOA_OPEN_ERROR,
+};
+
+bool
+sc_push_event_impl(uint32_t type, const char *name);
+
+#define sc_push_event(TYPE) sc_push_event_impl(TYPE, # TYPE)
+
+typedef void (*sc_runnable_fn)(void *userdata);
+
+bool
+sc_post_to_main_thread(sc_runnable_fn run, void *userdata);
+
+void
+sc_reject_new_runnables(void);
+
+#endif

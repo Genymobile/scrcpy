@@ -42,6 +42,44 @@ static void test_write64be(void) {
     assert(buf[7] == 0xEF);
 }
 
+static void test_write16le(void) {
+    uint16_t val = 0xABCD;
+    uint8_t buf[2];
+
+    sc_write16le(buf, val);
+
+    assert(buf[0] == 0xCD);
+    assert(buf[1] == 0xAB);
+}
+
+static void test_write32le(void) {
+    uint32_t val = 0xABCD1234;
+    uint8_t buf[4];
+
+    sc_write32le(buf, val);
+
+    assert(buf[0] == 0x34);
+    assert(buf[1] == 0x12);
+    assert(buf[2] == 0xCD);
+    assert(buf[3] == 0xAB);
+}
+
+static void test_write64le(void) {
+    uint64_t val = 0xABCD1234567890EF;
+    uint8_t buf[8];
+
+    sc_write64le(buf, val);
+
+    assert(buf[0] == 0xEF);
+    assert(buf[1] == 0x90);
+    assert(buf[2] == 0x78);
+    assert(buf[3] == 0x56);
+    assert(buf[4] == 0x34);
+    assert(buf[5] == 0x12);
+    assert(buf[6] == 0xCD);
+    assert(buf[7] == 0xAB);
+}
+
 static void test_read16be(void) {
     uint8_t buf[2] = {0xAB, 0xCD};
 
@@ -107,6 +145,10 @@ int main(int argc, char *argv[]) {
     test_read16be();
     test_read32be();
     test_read64be();
+
+    test_write16le();
+    test_write32le();
+    test_write64le();
 
     test_float_to_u16fp();
     test_float_to_i16fp();

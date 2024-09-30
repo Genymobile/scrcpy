@@ -8,8 +8,6 @@
 
 #include "util/log.h"
 
-#define SC_BUFFERING_NDEBUG // comment to debug
-
 /** Downcast frame_sink to sc_delay_buffer */
 #define DOWNCAST(SINK) container_of(SINK, struct sc_delay_buffer, frame_sink)
 
@@ -80,7 +78,7 @@ run_buffering(void *data) {
             goto stopped;
         }
 
-#ifndef SC_BUFFERING_NDEBUG
+#ifdef SC_BUFFERING_DEBUG
         LOGD("Buffering: %" PRItick ";%" PRItick ";%" PRItick,
              pts, dframe.push_date, sc_tick_now());
 #endif
@@ -134,6 +132,7 @@ sc_delay_buffer_frame_sink_open(struct sc_frame_sink *sink,
 
     sc_clock_init(&db->clock);
     sc_vecdeque_init(&db->queue);
+    db->stopped = false;
 
     if (!sc_frame_source_sinks_open(&db->frame_source, ctx)) {
         goto error_destroy_wait_cond;
@@ -206,7 +205,7 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
         return false;
     }
 
-#ifndef SC_BUFFERING_NDEBUG
+#ifdef SC_BUFFERING_DEBUG
     dframe.push_date = sc_tick_now();
 #endif
 

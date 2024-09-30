@@ -5,7 +5,7 @@
 
 #include "util/log.h"
 
-#define SC_AUDIO_PLAYER_NDEBUG // comment to debug
+//#define SC_AUDIO_PLAYER_DEBUG // uncomment to debug
 
 /**
  * Real-time audio player with configurable latency
@@ -72,7 +72,7 @@ sc_audio_player_sdl_callback(void *userdata, uint8_t *stream, int len_int) {
     size_t len = len_int;
     uint32_t count = TO_SAMPLES(len);
 
-#ifndef SC_AUDIO_PLAYER_NDEBUG
+#ifdef SC_AUDIO_PLAYER_DEBUG
     LOGD("[Audio] SDL callback requests %" PRIu32 " samples", count);
 #endif
 
@@ -162,7 +162,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     // swr_convert() returns the number of samples which would have been
     // written if the buffer was big enough.
     uint32_t samples = MIN(ret, dst_nb_samples);
-#ifndef SC_AUDIO_PLAYER_NDEBUG
+#ifdef SC_AUDIO_PLAYER_DEBUG
     LOGD("[Audio] %" PRIu32 " samples written to buffer", samples);
 #endif
 
@@ -244,7 +244,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
             if (played) {
                 LOGD("[Audio] Buffering threshold exceeded, skipping %" PRIu32
                      " samples", skip_samples);
-#ifndef SC_AUDIO_PLAYER_NDEBUG
+#ifdef SC_AUDIO_PLAYER_DEBUG
             } else {
                 LOGD("[Audio] Playback not started, skipping %" PRIu32
                      " samples", skip_samples);
@@ -282,7 +282,7 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
     // However, the buffering level must be smoothed
     sc_average_push(&ap->avg_buffering, can_read);
 
-#ifndef SC_AUDIO_PLAYER_NDEBUG
+#ifdef SC_AUDIO_PLAYER_DEBUG
     LOGD("[Audio] can_read=%" PRIu32 " avg_buffering=%f",
          can_read, sc_average_get(&ap->avg_buffering));
 #endif

@@ -56,8 +56,11 @@ public class AudioDirectCapture implements AudioCapture {
         builder.setAudioSource(audioSource);
         builder.setAudioFormat(AudioConfig.createAudioFormat());
         int minBufferSize = AudioRecord.getMinBufferSize(SAMPLE_RATE, CHANNEL_CONFIG, ENCODING);
-        // This buffer size does not impact latency
-        builder.setBufferSizeInBytes(8 * minBufferSize);
+        if (minBufferSize > 0) {
+            // This buffer size does not impact latency
+            builder.setBufferSizeInBytes(8 * minBufferSize);
+        }
+
         return builder.build();
     }
 

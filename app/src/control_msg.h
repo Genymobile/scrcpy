@@ -39,6 +39,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
     SC_CONTROL_MSG_TYPE_UHID_CREATE,
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
+    SC_CONTROL_MSG_TYPE_UHID_DESTROY,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
 };
 
@@ -97,6 +98,7 @@ struct sc_control_msg {
         } set_screen_power_mode;
         struct {
             uint16_t id;
+            const char *name; // pointer to static data
             uint16_t report_desc_size;
             const uint8_t *report_desc; // pointer to static data
         } uhid_create;
@@ -105,6 +107,9 @@ struct sc_control_msg {
             uint16_t size;
             uint8_t data[SC_HID_MAX_SIZE];
         } uhid_input;
+        struct {
+            uint16_t id;
+        } uhid_destroy;
     };
 };
 
@@ -115,6 +120,11 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf);
 
 void
 sc_control_msg_log(const struct sc_control_msg *msg);
+
+// Even when the buffer is "full", some messages must absolutely not be dropped
+// to avoid inconsistencies.
+bool
+sc_control_msg_is_droppable(const struct sc_control_msg *msg);
 
 void
 sc_control_msg_destroy(struct sc_control_msg *msg);
