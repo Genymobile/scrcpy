@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.util;
 
 import com.genymobile.scrcpy.BuildConfig;
 
+import android.os.Build;
 import android.system.ErrnoException;
 import android.system.Os;
 import android.system.OsConstants;
@@ -30,20 +31,26 @@ public final class IO {
     }
 
     public static void writeFully(FileDescriptor fd, ByteBuffer from) throws IOException {
-        // ByteBuffer position is not updated as expected by Os.write() on old Android versions, so
-        // handle the position and the remaining bytes manually.
-        // See <https://github.com/Genymobile/scrcpy/issues/291>.
-        int position = from.position();
-        int remaining = from.remaining();
-        while (remaining > 0) {
-            int w = write(fd, from);
-            if (BuildConfig.DEBUG && w < 0) {
-                // w should not be negative, since an exception is thrown on error
-                throw new AssertionError("Os.write() returned a negative value (" + w + ")");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            while (from.hasRemaining()) {
+                write(fd, from);
             }
-            remaining -= w;
-            position += w;
-            from.position(position);
+        } else {
+            // ByteBuffer position is not updated as expected by Os.write() on old Android versions, so
+            // handle the position and the remaining bytes manually.
+            // See <https://github.com/Genymobile/scrcpy/issues/291>.
+            int position = from.position();
+            int remaining = from.remaining();
+            while (remaining > 0) {
+                int w = write(fd, from);
+                if (BuildConfig.DEBUG && w < 0) {
+                    // w should not be negative, since an exception is thrown on error
+                    throw new AssertionError("Os.write() returned a negative value (" + w + ")");
+                }
+                remaining -= w;
+                position += w;
+                from.position(position);
+            }
         }
     }
 
