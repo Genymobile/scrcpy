@@ -772,7 +772,7 @@ static const struct sc_option options[] = {
         .text = "Turn the device screen off immediately.",
     },
     {
-        .longopt_id = OPT_SHORTCUT_MOD,
+        .shortopt = 'z',
         .longopt = "shortcut-mod",
         .argdesc = "key[+...][,...]",
         .text = "Specify the modifiers to use for scrcpy shortcuts.\n"
@@ -2358,6 +2358,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case 'w':
                 opts->stay_awake = true;
                 break;
+            case 'z':
+                if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
+                    return false;
+                }
+                break;
             case OPT_WINDOW_TITLE:
                 opts->window_title = optarg;
                 break;
@@ -2481,11 +2486,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_DISABLE_SCREENSAVER:
                 opts->disable_screensaver = true;
-                break;
-            case OPT_SHORTCUT_MOD:
-                if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
-                    return false;
-                }
                 break;
             case OPT_FORWARD_ALL_CLICKS:
                 LOGW("--forward-all-clicks is deprecated, "
