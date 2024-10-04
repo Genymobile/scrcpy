@@ -30,6 +30,8 @@ public final class ControlMessage {
     public static final int TYPE_CAMERA_ZOOM_OUT = 20;
     public static final int TYPE_RESIZE_DISPLAY = 21;
     public static final int TYPE_SCAN_FILE = 22;
+    public static final int TYPE_MEDIA_STATE = 23;
+    public static final int TYPE_MEDIA_SEEK = 24;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -60,6 +62,8 @@ public final class ControlMessage {
     private int productId;
     private int width;
     private int height;
+    private int mediaState;
+    private long mediaSeek;
 
     private ControlMessage() {
     }
@@ -195,6 +199,22 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createMediaState(int receiverId, byte state) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_STATE;
+        msg.id = receiverId;
+        msg.mediaState = state;
+        return msg;
+    }
+
+    public static ControlMessage createMediaSeek(int receiverId, long position) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_SEEK;
+        msg.id = receiverId;
+        msg.mediaSeek = position;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -285,5 +305,13 @@ public final class ControlMessage {
 
     public int getHeight() {
         return height;
+    }
+
+    public long getMediaSeek() {
+        return mediaSeek;
+    }
+
+    public int getMediaState() {
+        return mediaState;
     }
 }

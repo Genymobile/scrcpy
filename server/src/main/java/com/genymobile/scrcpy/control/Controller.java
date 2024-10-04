@@ -337,6 +337,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
                 return true;
+            case ControlMessage.TYPE_MEDIA_STATE:
+                mediaUpdateState(msg.getId(), msg.getMediaState());
+                return true;
+            case ControlMessage.TYPE_MEDIA_SEEK:
+                mediaSeek(msg.getId(), msg.getMediaSeek());
+                return true;
             default:
                 // fall through
         }
@@ -438,6 +444,14 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
 
         throw new AssertionError("Unexpected message type: " + type);
+    }
+
+    private void mediaUpdateState(int id, int mediaState) {
+        // TODO
+    }
+
+    private void mediaSeek(int id, long mediaSeek) {
+        // TODO
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {

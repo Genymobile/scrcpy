@@ -50,6 +50,8 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT,
     SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY,
     SC_CONTROL_MSG_TYPE_SCAN_FILE,
+    SC_CONTROL_MSG_TYPE_MEDIA_STATE,
+    SC_CONTROL_MSG_TYPE_MEDIA_SEEK,
 };
 
 enum sc_copy_key {
@@ -128,6 +130,14 @@ struct sc_control_msg {
         struct {
             char *path; // owned, to be freed by free()
         } scan_file;
+        struct {
+            uint16_t player_id;
+            uint64_t position;
+        } media_seek;
+        struct {
+            uint16_t player_id;
+            uint8_t state;
+        } media_state;
     };
 };
 
