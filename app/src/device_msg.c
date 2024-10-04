@@ -7,6 +7,20 @@
 #include "util/binary.h"
 #include "util/log.h"
 
+static int read_message(uint8_t **target, const uint8_t *src, const uint16_t size) {
+    uint8_t *data = malloc(size + 1);
+    if (!data) {
+        LOG_OOM();
+        return -1;
+    }
+    if (size) {
+        data[size] = '\0';
+        memcpy(data, src, size);
+    }
+    *target = data;
+    return 0;
+}
+
 ssize_t
 sc_device_msg_deserialize(const uint8_t *buf, size_t len,
                           struct sc_device_msg *msg) {
@@ -25,17 +39,10 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
             if (clipboard_len > len - 5) {
                 return 0; // no complete message
             }
-            char *text = malloc(clipboard_len + 1);
-            if (!text) {
-                LOG_OOM();
+            if (read_message((uint8_t **)&msg->clipboard.text, &buf[5], clipboard_len) == -1) {
                 return -1;
             }
-            if (clipboard_len) {
-                memcpy(text, &buf[5], clipboard_len);
-            }
-            text[clipboard_len] = '\0';
 
-            msg->clipboard.text = text;
             return 5 + clipboard_len;
         }
         case DEVICE_MSG_TYPE_ACK_CLIPBOARD: {
@@ -56,20 +63,42 @@ sc_device_msg_deserialize(const uint8_t *buf, size_t len,
             if (size < len - 5) {
                 return 0; // not available
             }
-            uint8_t *data = malloc(size);
-            if (!data) {
-                LOG_OOM();
-                return -1;
-            }
-            if (size) {
-                memcpy(data, &buf[5], size);
-            }
 
             msg->uhid_output.id = id;
             msg->uhid_output.size = size;
-            msg->uhid_output.data = data;
+            if (read_message(&msg->uhid_output.data, &buf[5], size) == -1) {
+                return -1;
+            }
 
             return 5 + size;
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE: {
+            if (len < 5) {
+                // at least id + size
+                return 0; // not available
+            }
+            uint16_t id = sc_read16be(&buf[1]);
+            size_t size = sc_read16be(&buf[3]);
+            if (size < len - 5) {
+                return 0; // not available
+            }
+
+            msg->media_update.id = id;
+            msg->media_update.size = size;
+            if (read_message(&msg->media_update.data, &buf[5], size) == -1) {
+                return -1;
+            }
+
+            return 5 + size;
+        }
+        case DEVICE_MSG_TYPE_MEDIA_REMOVE: {
+            if (len < 3) {
+                // at least id
+                return 0; // not available
+            }
+            uint16_t id = sc_read16be(&buf[1]);
+            msg->media_remove.id = id;
+            return 3;
+            }
         }
         default:
             LOGW("Unknown device message type: %d", (int) msg->type);
@@ -85,6 +114,9 @@ sc_device_msg_destroy(struct sc_device_msg *msg) {
             break;
         case DEVICE_MSG_TYPE_UHID_OUTPUT:
             free(msg->uhid_output.data);
+            break;
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE:
+            free(msg->media_update.data);
             break;
         default:
             // nothing to do
