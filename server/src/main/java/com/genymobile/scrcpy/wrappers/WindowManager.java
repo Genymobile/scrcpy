@@ -200,13 +200,29 @@ public final class WindowManager {
         }
     }
 
+    public void unregisterRotationWatcher(IRotationWatcher rotationWatcher) {
+        try {
+            manager.getClass().getMethod("removeRotationWatcher", IRotationWatcher.class).invoke(manager, rotationWatcher);
+        } catch (Exception e) {
+            Ln.e("Could not unregister rotation watcher", e);
+        }
+    }
+
     @TargetApi(29)
     public void registerDisplayFoldListener(IDisplayFoldListener foldListener) {
         try {
-            Class<?> cls = manager.getClass();
-            cls.getMethod("registerDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
+            manager.getClass().getMethod("registerDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
         } catch (Exception e) {
             Ln.e("Could not register display fold listener", e);
+        }
+    }
+
+    @TargetApi(29)
+    public void unregisterDisplayFoldListener(IDisplayFoldListener foldListener) {
+        try {
+            manager.getClass().getMethod("unregisterDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
+        } catch (Exception e) {
+            Ln.e("Could not unregister display fold listener", e);
         }
     }
 }

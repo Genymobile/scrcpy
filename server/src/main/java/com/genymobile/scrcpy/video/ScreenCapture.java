@@ -1,8 +1,11 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
@@ -10,33 +13,100 @@ import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
+import android.view.IDisplayFoldListener;
+import android.view.IRotationWatcher;
 import android.view.Surface;
 
-public class ScreenCapture extends SurfaceCapture implements Device.RotationListener, Device.FoldListener {
+public class ScreenCapture extends SurfaceCapture {
 
     private final Device device;
+
+    private final int displayId;
+    private int maxSize;
+    private final Rect crop;
+    private final int lockVideoOrientation;
+    private int layerStack;
+
+    private Size deviceSize;
+    private ScreenInfo screenInfo;
+
     private IBinder display;
     private VirtualDisplay virtualDisplay;
 
-    public ScreenCapture(Device device) {
+    private IRotationWatcher rotationWatcher;
+    private IDisplayFoldListener displayFoldListener;
+
+    public ScreenCapture(Device device, int displayId, int maxSize, Rect crop, int lockVideoOrientation) {
         this.device = device;
+        this.displayId = displayId;
+        this.maxSize = maxSize;
+        this.crop = crop;
+        this.lockVideoOrientation = lockVideoOrientation;
     }
 
     @Override
-    public void init() {
-        device.setRotationListener(this);
-        device.setFoldListener(this);
+    public void init() throws ConfigurationException {
+        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+        if (displayInfo == null) {
+            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+            throw new ConfigurationException("Unknown display id: " + displayId);
+        }
+
+        deviceSize = displayInfo.getSize();
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
+        device.setScreenInfo(screenInfo);
+        layerStack = displayInfo.getLayerStack();
+
+        if (displayId == 0) {
+            rotationWatcher = new IRotationWatcher.Stub() {
+                @Override
+                public void onRotationChanged(int rotation) {
+                    synchronized (ScreenCapture.this) {
+                        screenInfo = screenInfo.withDeviceRotation(rotation);
+                        device.setScreenInfo(screenInfo);
+                    }
+                }
+            };
+            ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            displayFoldListener = new IDisplayFoldListener.Stub() {
+                @Override
+                public void onDisplayFoldChanged(int displayId, boolean folded) {
+                    if (ScreenCapture.this.displayId != displayId) {
+                        // Ignore events related to other display ids
+                        return;
+                    }
+
+                    synchronized (ScreenCapture.this) {
+                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                        if (displayInfo == null) {
+                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+                            return;
+                        }
+
+                        deviceSize = displayInfo.getSize();
+                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
+                        device.setScreenInfo(screenInfo);
+                    }
+                }
+            };
+            ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);
+        }
+
+        if ((displayInfo.getFlags() & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
+            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
+        }
     }
 
     @Override
     public void start(Surface surface) {
-        ScreenInfo screenInfo = device.getScreenInfo();
         Rect contentRect = screenInfo.getContentRect();
 
         // does not include the locked video orientation
         Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
         int videoRotation = screenInfo.getVideoRotation();
-        int layerStack = device.getLayerStack();
 
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
@@ -50,7 +120,7 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
         try {
             Rect videoRect = screenInfo.getVideoSize().toRect();
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
@@ -67,8 +137,12 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
 
     @Override
     public void release() {
-        device.setRotationListener(null);
-        device.setFoldListener(null);
+        if (rotationWatcher != null) {
+            ServiceManager.getWindowManager().unregisterRotationWatcher(rotationWatcher);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            ServiceManager.getWindowManager().unregisterDisplayFoldListener(displayFoldListener);
+        }
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
             display = null;
@@ -80,24 +154,16 @@ public class ScreenCapture extends SurfaceCapture implements Device.RotationList
     }
 
     @Override
-    public Size getSize() {
-        return device.getScreenInfo().getVideoSize();
+    public synchronized Size getSize() {
+        return screenInfo.getVideoSize();
     }
 
     @Override
-    public boolean setMaxSize(int maxSize) {
-        device.setMaxSize(maxSize);
+    public synchronized boolean setMaxSize(int newMaxSize) {
+        maxSize = newMaxSize;
+        screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
+        device.setScreenInfo(screenInfo);
         return true;
-    }
-
-    @Override
-    public void onFoldChanged(int displayId, boolean folded) {
-        requestReset();
-    }
-
-    @Override
-    public void onRotationChanged(int rotation) {
-        requestReset();
     }
 
     private static IBinder createDisplay() throws Exception {
