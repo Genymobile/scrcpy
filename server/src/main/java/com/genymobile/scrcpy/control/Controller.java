@@ -243,7 +243,7 @@ public class Controller implements AsyncProcessor {
             return false;
         }
         for (KeyEvent event : events) {
-            if (!device.injectEvent(event, Device.INJECT_MODE_ASYNC)) {
+            if (!device.injectMainDisplayEvent(event, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -324,7 +324,7 @@ public class Controller implements AsyncProcessor {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!device.injectVirtualDisplayEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -335,7 +335,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!device.injectVirtualDisplayEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -349,7 +349,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!device.injectVirtualDisplayEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -357,7 +357,7 @@ public class Controller implements AsyncProcessor {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!device.injectVirtualDisplayEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -368,7 +368,7 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return device.injectVirtualDisplayEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
@@ -390,7 +390,7 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return device.injectVirtualDisplayEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     /**

@@ -48,10 +48,13 @@ public final class Device {
 
     private final boolean supportsInputEvents;
 
-    private ScreenInfo screenInfo; // set by the ScreenCapture instance
+    // set by the ScreenCapture instance
+    private ScreenInfo screenInfo;
+    private int virtualDisplayId;
 
     public Device(Options options) {
         displayId = options.getDisplayId();
+        virtualDisplayId = displayId; // by default
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
@@ -134,6 +137,14 @@ public final class Device {
         this.screenInfo = screenInfo;
     }
 
+    private synchronized int getVirtualDisplayId() {
+        return virtualDisplayId;
+    }
+
+    public synchronized void setVirtualDisplayId(int virtualDisplayId) {
+        this.virtualDisplayId = virtualDisplayId;
+    }
+
     public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
         if (!supportsInputEvents(displayId)) {
             throw new AssertionError("Could not inject input event if !supportsInputEvents()");
@@ -146,8 +157,12 @@ public final class Device {
         return ServiceManager.getInputManager().injectInputEvent(inputEvent, injectMode);
     }
 
-    public boolean injectEvent(InputEvent event, int injectMode) {
+    public boolean injectMainDisplayEvent(InputEvent event, int injectMode) {
         return injectEvent(event, displayId, injectMode);
+    }
+
+    public boolean injectVirtualDisplayEvent(InputEvent event, int injectMode) {
+        return injectEvent(event, virtualDisplayId, injectMode);
     }
 
     public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId, int injectMode) {

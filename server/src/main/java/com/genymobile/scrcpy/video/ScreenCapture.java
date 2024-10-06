@@ -121,6 +121,7 @@ public class ScreenCapture extends SurfaceCapture {
             Rect videoRect = screenInfo.getVideoSize().toRect();
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), displayId, surface);
+            device.setVirtualDisplayId(virtualDisplay.getDisplay().getDisplayId());
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
