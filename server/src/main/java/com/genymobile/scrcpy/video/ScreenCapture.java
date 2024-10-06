@@ -10,6 +10,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.graphics.Rect;
+import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
@@ -26,6 +27,7 @@ public class ScreenCapture extends SurfaceCapture {
     private final Rect crop;
     private final int lockVideoOrientation;
     private int layerStack;
+    private int dpi;
 
     private Size deviceSize;
     private ScreenInfo screenInfo;
@@ -56,6 +58,7 @@ public class ScreenCapture extends SurfaceCapture {
         screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
         device.setScreenInfo(screenInfo);
         layerStack = displayInfo.getLayerStack();
+        dpi = displayInfo.getLogicalDensityDpi();
 
         if (displayId == 0) {
             rotationWatcher = new IRotationWatcher.Stub() {
@@ -119,8 +122,11 @@ public class ScreenCapture extends SurfaceCapture {
 
         try {
             Rect videoRect = screenInfo.getVideoSize().toRect();
+            int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY | (1
+                    << 6) /* DisplayManager.VIRTUAL_DISPLAY_FLAG_SUPPORT_TOUCH */ | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 11 | 1 << 12 | 1 << 13 | 1 << 14;
+
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), displayId, surface);
+                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), dpi, surface, flags);
             device.setVirtualDisplayId(virtualDisplay.getDisplay().getDisplayId());
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
