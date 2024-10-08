@@ -1,0 +1,147 @@
+name: Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Version name (default is ref name)'
+
+jobs:
+  build-scrcpy-server:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE: gradle  # use native gradle instead of ./gradlew in release.mk
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Test scrcpy-server
+        run: make -f release.mk test-server
+
+      - name: Build scrcpy-server
+        run: make -f release.mk build-server
+
+      - name: Upload scrcpy-server artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrcpy-server
+          path: build-server/server/scrcpy-server
+
+  test-client:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+             libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+             libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev
+
+      - name: Build
+        run: |
+          meson setup d -Db_sanitize=address,undefined
+
+      - name: Test
+        run: |
+          meson test -Cd
+
+  build-win32:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+             libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+             libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
+             mingw-w64 mingw-w64-tools libz-mingw-w64-dev
+
+      - name: Workaround for old meson version run by Github Actions
+        run: sed -i 's/^pkg-config/pkgconfig/' cross_win32.txt
+
+      - name: Build scrcpy win32
+        run: make -f release.mk build-win32
+
+      - name: Upload build-win32 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-win32-intermediate
+          path: build-win32/dist/
+
+  build-win64:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+             libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+             libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
+             mingw-w64 mingw-w64-tools libz-mingw-w64-dev
+
+      - name: Workaround for old meson version run by Github Actions
+        run: sed -i 's/^pkg-config/pkgconfig/' cross_win64.txt
+
+      - name: Build scrcpy win64
+        run: make -f release.mk build-win64
+
+      - name: Upload build-win64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-win64-intermediate
+          path: build-win64/dist/
+
+  package:
+    needs:
+      - build-scrcpy-server
+      - build-win32
+      - build-win64
+    runs-on: ubuntu-latest
+    env:
+      # $VERSION is used by release.mk
+      VERSION: ${{ github.event.inputs.name || github.ref_name }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: build-server/server/
+
+      - name: Download build-win32
+        uses: actions/download-artifact@v4
+        with:
+          name: build-win32-intermediate
+          path: build-win32/dist/
+
+      - name: Download build-win64
+        uses: actions/download-artifact@v4
+        with:
+          name: build-win64-intermediate
+          path: build-win64/dist/
+
+      - name: Package
+        run: make -f release.mk package
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: scrcpy-release-${{ env.VERSION }}
+          path: release-${{ env.VERSION }}
