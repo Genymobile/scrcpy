@@ -62,6 +62,7 @@ void
 sc_timeout_stop(struct sc_timeout *timeout) {
     sc_mutex_lock(&timeout->mutex);
     timeout->stopped = true;
+    sc_cond_signal(&timeout->cond);
     sc_mutex_unlock(&timeout->mutex);
 }
 
