@@ -210,7 +210,7 @@ public class Controller implements AsyncProcessor {
                 device.rotateDevice();
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
-                getUhidManager().open(msg.getId(), msg.getText(), msg.getData());
+                getUhidManager().open(msg.getId(), msg.getText(), msg.getData(), msg.getVendorId(), msg.getProductId(), msg.getProductVersion());
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
                 getUhidManager().writeInput(msg.getId(), msg.getData());

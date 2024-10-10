@@ -139,9 +139,12 @@ public class ControlMessageReader {
 
     private ControlMessage parseUhidCreate() throws IOException {
         int id = dis.readUnsignedShort();
+        int vendorId = dis.readUnsignedShort();
+        int productId = dis.readUnsignedShort();
+        int productVersion = dis.readUnsignedShort();
         String name = parseString(1);
         byte[] data = parseByteArray(2);
-        return ControlMessage.createUhidCreate(id, name, data);
+        return ControlMessage.createUhidCreate(id, name, data, vendorId, productId, productVersion);
     }
 
     private ControlMessage parseUhidInput() throws IOException {

@@ -98,6 +98,9 @@ struct sc_control_msg {
         } set_screen_power_mode;
         struct {
             uint16_t id;
+            uint16_t vendor_id;
+            uint16_t product_id;
+            uint16_t product_version;
             const char *name; // pointer to static data
             uint16_t report_desc_size;
             const uint8_t *report_desc; // pointer to static data

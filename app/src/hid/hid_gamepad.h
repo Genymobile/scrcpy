@@ -33,7 +33,10 @@ sc_hid_gamepad_init(struct sc_hid_gamepad *hid);
 bool
 sc_hid_gamepad_generate_open(struct sc_hid_gamepad *hid,
                              struct sc_hid_open *hid_open,
-                             uint32_t gamepad_id);
+                             uint32_t gamepad_id,
+                             uint16_t vendor_id,
+                             uint16_t product_id,
+                             uint16_t product_version);
 
 bool
 sc_hid_gamepad_generate_close(struct sc_hid_gamepad *hid,

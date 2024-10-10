@@ -30,6 +30,9 @@ sc_gamepad_uhid_send_open(struct sc_gamepad_uhid *gamepad,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
     msg.uhid_create.id = hid_open->hid_id;
+    msg.uhid_create.vendor_id = hid_open->vendor_id;
+    msg.uhid_create.product_id = hid_open->product_id;
+    msg.uhid_create.product_version = hid_open->product_version;
     msg.uhid_create.name = hid_open->name;
     msg.uhid_create.report_desc = hid_open->report_desc;
     msg.uhid_create.report_desc_size = hid_open->report_desc_size;
@@ -59,7 +62,10 @@ sc_gamepad_processor_process_gamepad_device(struct sc_gamepad_processor *gp,
     if (event->type == SC_GAMEPAD_DEVICE_ADDED) {
         struct sc_hid_open hid_open;
         if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                          event->gamepad_id)) {
+                                          event->gamepad_id,
+                                          event->vendor_id,
+                                          event->product_id,
+                                          event->product_version)) {
             return;
         }
 

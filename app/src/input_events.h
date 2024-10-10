@@ -425,6 +425,9 @@ enum sc_gamepad_device_event_type {
 struct sc_gamepad_device_event {
     enum sc_gamepad_device_event_type type;
     uint32_t gamepad_id;
+    uint16_t vendor_id;
+    uint16_t product_id;
+    uint16_t product_version;
 };
 
 struct sc_gamepad_button_event {

@@ -48,6 +48,9 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+    private int vendorId;
+    private int productId;
+    private int productVersion;
 
     private ControlMessage() {
     }
@@ -131,12 +134,15 @@ public final class ControlMessage {
         return msg;
     }
 
-    public static ControlMessage createUhidCreate(int id, String name, byte[] reportDesc) {
+    public static ControlMessage createUhidCreate(int id, String name, byte[] reportDesc, int vendorId, int productId, int productVersion) {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_UHID_CREATE;
         msg.id = id;
         msg.text = name;
         msg.data = reportDesc;
+        msg.vendorId = vendorId;
+        msg.productId = productId;
+        msg.productVersion = productVersion;
         return msg;
     }
 
@@ -225,5 +231,17 @@ public final class ControlMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public int getVendorId() {
+        return vendorId;
+    }
+
+    public int getProductId() {
+        return productId;
+    }
+
+    public int getProductVersion() {
+        return productVersion;
     }
 }

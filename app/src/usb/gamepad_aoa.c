@@ -14,7 +14,10 @@ sc_gamepad_processor_process_gamepad_device(struct sc_gamepad_processor *gp,
     if (event->type == SC_GAMEPAD_DEVICE_ADDED) {
         struct sc_hid_open hid_open;
         if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                          event->gamepad_id)) {
+                                          event->gamepad_id,
+                                          event->vendor_id,
+                                          event->product_id,
+                                          event->product_version)) {
             return;
         }
 

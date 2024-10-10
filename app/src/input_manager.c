@@ -895,6 +895,10 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
 static void
 sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
                                        const SDL_ControllerDeviceEvent *event) {
+    uint16_t vendor_id = 0;
+    uint16_t product_id = 0;
+    uint16_t product_version = 0;
+
     SDL_JoystickID id;
     if (event->type == SDL_CONTROLLERDEVICEADDED) {
         SDL_GameController *gc = SDL_GameControllerOpen(event->which);
@@ -902,6 +906,10 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
             LOGW("Could not open game controller");
             return;
         }
+
+        vendor_id = SDL_GameControllerGetVendor(gc);
+        product_id = SDL_GameControllerGetProduct(gc);
+        product_version = SDL_GameControllerGetProductVersion(gc);
 
         SDL_Joystick *joystick = SDL_GameControllerGetJoystick(gc);
         if (!joystick) {
@@ -928,6 +936,9 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
     struct sc_gamepad_device_event evt = {
         .type = sc_gamepad_device_event_type_from_sdl_type(event->type),
         .gamepad_id = id,
+        .vendor_id = vendor_id,
+        .product_id = product_id,
+        .product_version = product_version,
     };
     im->gp->ops->process_gamepad_device(im->gp, &evt);
 }
