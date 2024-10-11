@@ -475,6 +475,9 @@ public class Options {
         }
         int width = Integer.parseInt(tokens[0]);
         int height = Integer.parseInt(tokens[1]);
+        if (width <= 0 || height <= 0) {
+            throw new IllegalArgumentException("Invalid non-positive size dimension: \"" + size + "\"");
+        }
         return new Size(width, height);
     }
 
