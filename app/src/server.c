@@ -66,56 +66,6 @@ get_server_path(void) {
     return server_path;
 }
 
-static void
-sc_server_params_destroy(struct sc_server_params *params) {
-    // The server stores a copy of the params provided by the user
-    free((char *) params->req_serial);
-    free((char *) params->crop);
-    free((char *) params->video_codec_options);
-    free((char *) params->audio_codec_options);
-    free((char *) params->video_encoder);
-    free((char *) params->audio_encoder);
-    free((char *) params->tcpip_dst);
-    free((char *) params->camera_id);
-    free((char *) params->camera_ar);
-}
-
-static bool
-sc_server_params_copy(struct sc_server_params *dst,
-                      const struct sc_server_params *src) {
-    *dst = *src;
-
-    // The params reference user-allocated memory, so we must copy them to
-    // handle them from another thread
-
-#define COPY(FIELD) do { \
-    dst->FIELD = NULL; \
-    if (src->FIELD) { \
-        dst->FIELD = strdup(src->FIELD); \
-        if (!dst->FIELD) { \
-            goto error; \
-        } \
-    } \
-} while(0)
-
-    COPY(req_serial);
-    COPY(crop);
-    COPY(video_codec_options);
-    COPY(audio_codec_options);
-    COPY(video_encoder);
-    COPY(audio_encoder);
-    COPY(tcpip_dst);
-    COPY(camera_id);
-    COPY(camera_ar);
-#undef COPY
-
-    return true;
-
-error:
-    sc_server_params_destroy(dst);
-    return false;
-}
-
 static bool
 push_server(struct sc_intr *intr, const char *serial) {
     char *server_path = get_server_path();
@@ -499,22 +449,18 @@ connect_to_server(struct sc_server *server, unsigned attempts, sc_tick delay,
 bool
 sc_server_init(struct sc_server *server, const struct sc_server_params *params,
               const struct sc_server_callbacks *cbs, void *cbs_userdata) {
-    bool ok = sc_server_params_copy(&server->params, params);
-    if (!ok) {
-        LOG_OOM();
-        return false;
-    }
+    // The allocated data in params (const char *) must remain valid until the
+    // end of the program
+    server->params = *params;
 
-    ok = sc_mutex_init(&server->mutex);
+    bool ok = sc_mutex_init(&server->mutex);
     if (!ok) {
-        sc_server_params_destroy(&server->params);
         return false;
     }
 
     ok = sc_cond_init(&server->cond_stopped);
     if (!ok) {
         sc_mutex_destroy(&server->mutex);
-        sc_server_params_destroy(&server->params);
         return false;
     }
 
@@ -522,7 +468,6 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     if (!ok) {
         sc_cond_destroy(&server->cond_stopped);
         sc_mutex_destroy(&server->mutex);
-        sc_server_params_destroy(&server->params);
         return false;
     }
 
@@ -1161,7 +1106,6 @@ sc_server_destroy(struct sc_server *server) {
 
     free(server->serial);
     free(server->device_socket_name);
-    sc_server_params_destroy(&server->params);
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);
     sc_mutex_destroy(&server->mutex);
