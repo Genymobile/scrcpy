@@ -1,8 +1,8 @@
 package com.genymobile.scrcpy.device;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.util.Ln;
-import com.genymobile.scrcpy.video.ScreenInfo;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
 import com.genymobile.scrcpy.wrappers.InputManager;
@@ -10,7 +10,6 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
-import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
@@ -33,34 +32,17 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    private final AtomicReference<ScreenInfo> screenInfo = new AtomicReference<>(); // set by the ScreenCapture instance
+    private final AtomicReference<PositionMapper> positionMapper = new AtomicReference<>(); // set by the ScreenCapture instance
 
     public Point getPhysicalPoint(Position position) {
         // it hides the field on purpose, to read it from the atomic once
         @SuppressWarnings("checkstyle:HiddenField")
-        ScreenInfo screenInfo = this.screenInfo.get();
-        if (screenInfo == null) {
+        PositionMapper positionMapper = this.positionMapper.get();
+        if (positionMapper == null) {
             return null;
         }
 
-        // ignore the locked video orientation, the events will apply in coordinates considered in the physical device orientation
-        Size unlockedVideoSize = screenInfo.getUnlockedVideoSize();
-
-        int reverseVideoRotation = screenInfo.getReverseVideoRotation();
-        // reverse the video rotation to apply the events
-        Position devicePosition = position.rotate(reverseVideoRotation);
-
-        Size clientVideoSize = devicePosition.getScreenSize();
-        if (!unlockedVideoSize.equals(clientVideoSize)) {
-            // The client sends a click relative to a video with wrong dimensions,
-            // the device may have been rotated since the event was generated, so ignore the event
-            return null;
-        }
-        Rect contentRect = screenInfo.getContentRect();
-        Point point = devicePosition.getPoint();
-        int convertedX = contentRect.left + point.getX() * contentRect.width() / unlockedVideoSize.getWidth();
-        int convertedY = contentRect.top + point.getY() * contentRect.height() / unlockedVideoSize.getHeight();
-        return new Point(convertedX, convertedY);
+        return positionMapper.map(position);
     }
 
     public static String getDeviceName() {
@@ -71,8 +53,8 @@ public final class Device {
         return displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
     }
 
-    public void setScreenInfo(ScreenInfo screenInfo) {
-        this.screenInfo.set(screenInfo);
+    public void setPositionMapper(PositionMapper positionMapper) {
+        this.positionMapper.set(positionMapper);
     }
 
     public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
