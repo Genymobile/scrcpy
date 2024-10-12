@@ -6,15 +6,17 @@ public final class DisplayInfo {
     private final int rotation;
     private final int layerStack;
     private final int flags;
+    private final int dpi;
 
     public static final int FLAG_SUPPORTS_PROTECTED_BUFFERS = 0x00000001;
 
-    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags) {
+    public DisplayInfo(int displayId, Size size, int rotation, int layerStack, int flags, int dpi) {
         this.displayId = displayId;
         this.size = size;
         this.rotation = rotation;
         this.layerStack = layerStack;
         this.flags = flags;
+        this.dpi = dpi;
     }
 
     public int getDisplayId() {
@@ -35,6 +37,10 @@ public final class DisplayInfo {
 
     public int getFlags() {
         return flags;
+    }
+
+    public int getDpi() {
+        return dpi;
     }
 }
 
