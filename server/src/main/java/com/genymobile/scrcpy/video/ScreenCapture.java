@@ -116,12 +116,6 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void start(Surface surface) {
-        Rect contentRect = screenInfo.getContentRect();
-
-        // does not include the locked video orientation
-        Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
-        int videoRotation = screenInfo.getVideoRotation();
-
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
             display = null;
@@ -139,6 +133,13 @@ public class ScreenCapture extends SurfaceCapture {
         } catch (Exception displayManagerException) {
             try {
                 display = createDisplay();
+
+                Rect contentRect = screenInfo.getContentRect();
+
+                // does not include the locked video orientation
+                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
+                int videoRotation = screenInfo.getVideoRotation();
+
                 setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
