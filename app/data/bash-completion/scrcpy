@@ -46,6 +46,8 @@ _scrcpy() {
         --mouse-bind=
         -n --no-control
         -N --no-playback
+        --new-display
+        --new-display=
         --no-audio
         --no-audio-playback
         --no-cleanup

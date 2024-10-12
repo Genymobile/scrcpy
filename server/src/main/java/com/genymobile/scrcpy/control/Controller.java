@@ -6,9 +6,12 @@ import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.video.VirtualDisplayListener;
+import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.IOnPrimaryClipChangedListener;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
@@ -21,8 +24,35 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class Controller implements AsyncProcessor {
+public class Controller implements AsyncProcessor, VirtualDisplayListener {
+
+    /*
+     * For event injection, there are two display ids:
+     *  - the displayId passed to the constructor (which comes from --display-id passed by the client, 0 for the main display);
+     *  - the virtualDisplayId used for mirroring, notified by the capture instance via the VirtualDisplayListener interface.
+     *
+     * (In case the ScreenCapture uses the "SurfaceControl API", then both ids are equals, but this is an implementation detail.)
+     *
+     * In order to make events work correctly in all cases:
+     *  - virtualDisplayId must be used for events relative to the display (mouse and touch events with coordinates);
+     *  - displayId must be used for other events (like key events).
+     *
+     * If a new separate virtual display is created (using --new-display), then displayId == Device.DISPLAY_ID_NONE. In that case, all events are
+     * sent to the virtual display id.
+     */
+
+    private static final class DisplayData {
+        private final int virtualDisplayId;
+        private final PositionMapper positionMapper;
+
+        private DisplayData(int virtualDisplayId, PositionMapper positionMapper) {
+            this.virtualDisplayId = virtualDisplayId;
+            this.positionMapper = positionMapper;
+        }
+    }
 
     private static final int DEFAULT_DEVICE_ID = 0;
 
@@ -35,7 +65,8 @@ public class Controller implements AsyncProcessor {
 
     private UhidManager uhidManager;
 
-    private final Device device;
+    private final int displayId;
+    private final boolean supportsInputEvents;
     private final ControlChannel controlChannel;
     private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
@@ -44,6 +75,10 @@ public class Controller implements AsyncProcessor {
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
+    private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
+
+    private final AtomicReference<DisplayData> displayData = new AtomicReference<>();
+
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
@@ -51,14 +86,49 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
-        this.device = device;
+    public Controller(int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
+        this.displayId = displayId;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
+
+        // main display or any display on Android >= Q
+        supportsInputEvents = Device.supportsInputEvents(displayId);
+        if (!supportsInputEvents) {
+            Ln.w("Input events are not supported for secondary displays before Android 10");
+        }
+
+        if (clipboardAutosync) {
+            // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
+            ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
+            if (clipboardManager != null) {
+                clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
+                    @Override
+                    public void dispatchPrimaryClipChanged() {
+                        if (isSettingClipboard.get()) {
+                            // This is a notification for the change we are currently applying, ignore it
+                            return;
+                        }
+                        String text = Device.getClipboardText();
+                        if (text != null) {
+                            DeviceMessage msg = DeviceMessage.createClipboard(text);
+                            sender.send(msg);
+                        }
+                    }
+                });
+            } else {
+                Ln.w("No clipboard manager, copy-paste between device and computer will not work");
+            }
+        }
+    }
+
+    @Override
+    public void onNewVirtualDisplay(int virtualDisplayId, PositionMapper positionMapper) {
+        DisplayData data = new DisplayData(virtualDisplayId, positionMapper);
+        this.displayData.set(data);
     }
 
     private UhidManager getUhidManager() {
@@ -84,8 +154,8 @@ public class Controller implements AsyncProcessor {
 
     private void control() throws IOException {
         // on start, power on the device
-        if (powerOn && !Device.isScreenOn()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+        if (powerOn && displayId != Device.DISPLAY_ID_NONE && !Device.isScreenOn()) {
+            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -138,10 +208,6 @@ public class Controller implements AsyncProcessor {
         sender.join();
     }
 
-    public DeviceMessageSender getSender() {
-        return sender;
-    }
-
     private boolean handleEvent() throws IOException {
         ControlMessage msg;
         try {
@@ -153,27 +219,27 @@ public class Controller implements AsyncProcessor {
 
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectKeycode(msg.getAction(), msg.getKeycode(), msg.getRepeat(), msg.getMetaState());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectText(msg.getText());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), msg.getActionButton(), msg.getButtons());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll(), msg.getButtons());
                 }
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     pressBackOrTurnScreenOn(msg.getAction());
                 }
                 break;
@@ -193,7 +259,7 @@ public class Controller implements AsyncProcessor {
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     int mode = msg.getAction();
                     boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
@@ -207,7 +273,7 @@ public class Controller implements AsyncProcessor {
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
-                device.rotateDevice();
+                Device.rotateDevice(getActionDisplayId());
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
                 getUhidManager().open(msg.getId(), msg.getText(), msg.getData());
@@ -232,7 +298,7 @@ public class Controller implements AsyncProcessor {
         if (keepPowerModeOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
             schedulePowerModeOff();
         }
-        return device.injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
+        return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectChar(char c) {
@@ -242,8 +308,10 @@ public class Controller implements AsyncProcessor {
         if (events == null) {
             return false;
         }
+
+        int actionDisplayId = getActionDisplayId();
         for (KeyEvent event : events) {
-            if (!device.injectEvent(event, Device.INJECT_MODE_ASYNC)) {
+            if (!Device.injectEvent(event, actionDisplayId, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -265,7 +333,12 @@ public class Controller implements AsyncProcessor {
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
         long now = SystemClock.uptimeMillis();
 
-        Point point = device.getPhysicalPoint(position);
+        // it hides the field on purpose, to read it from the atomic once
+        @SuppressWarnings("checkstyle:HiddenField")
+        DisplayData displayData = this.displayData.get();
+        assert displayData != null : "Cannot receive a touch event without a display";
+
+        Point point = displayData.positionMapper.map(position);
         if (point == null) {
             Ln.w("Ignore touch event, it was generated for a different device size");
             return false;
@@ -324,7 +397,7 @@ public class Controller implements AsyncProcessor {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(downEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -335,7 +408,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(pressEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -349,7 +422,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(releaseEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -357,7 +430,7 @@ public class Controller implements AsyncProcessor {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(upEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -368,14 +441,20 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
         long now = SystemClock.uptimeMillis();
-        Point point = device.getPhysicalPoint(position);
+
+        // it hides the field on purpose, to read it from the atomic once
+        @SuppressWarnings("checkstyle:HiddenField")
+        DisplayData displayData = this.displayData.get();
+        assert displayData != null : "Cannot receive a scroll event without a display";
+
+        Point point = displayData.positionMapper.map(position);
         if (point == null) {
-            // ignore event
+            Ln.w("Ignore scroll event, it was generated for a different device size");
             return false;
         }
 
@@ -390,7 +469,7 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     /**
@@ -405,7 +484,7 @@ public class Controller implements AsyncProcessor {
 
     private boolean pressBackOrTurnScreenOn(int action) {
         if (Device.isScreenOn()) {
-            return device.injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
+            return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
         // Screen is off
@@ -418,15 +497,15 @@ public class Controller implements AsyncProcessor {
         if (keepPowerModeOff) {
             schedulePowerModeOff();
         }
-        return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
     }
 
     private void getClipboard(int copyKey) {
         // On Android >= 7, press the COPY or CUT key if requested
-        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && supportsInputEvents) {
             int key = copyKey == ControlMessage.COPY_KEY_COPY ? KeyEvent.KEYCODE_COPY : KeyEvent.KEYCODE_CUT;
             // Wait until the event is finished, to ensure that the clipboard text we read just after is the correct one
-            device.pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
+            pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
         }
 
         // If clipboard autosync is enabled, then the device clipboard is synchronized to the computer clipboard whenever it changes, in
@@ -442,14 +521,16 @@ public class Controller implements AsyncProcessor {
     }
 
     private boolean setClipboard(String text, boolean paste, long sequence) {
-        boolean ok = device.setClipboardText(text);
+        isSettingClipboard.set(true);
+        boolean ok = Device.setClipboardText(text);
+        isSettingClipboard.set(false);
         if (ok) {
             Ln.i("Device clipboard set");
         }
 
         // On Android >= 7, also press the PASTE key if requested
-        if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
+        if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && supportsInputEvents) {
+            pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
         }
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
@@ -464,5 +545,29 @@ public class Controller implements AsyncProcessor {
     private void openHardKeyboardSettings() {
         Intent intent = new Intent("android.settings.HARD_KEYBOARD_SETTINGS");
         ServiceManager.getActivityManager().startActivity(intent);
+    }
+
+    private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
+        return Device.injectKeyEvent(action, keyCode, repeat, metaState, getActionDisplayId(), injectMode);
+    }
+
+    private boolean pressReleaseKeycode(int keyCode, int injectMode) {
+        return Device.pressReleaseKeycode(keyCode, getActionDisplayId(), injectMode);
+    }
+
+    private int getActionDisplayId() {
+        if (displayId != Device.DISPLAY_ID_NONE) {
+            // Real screen mirrored, use the source display id
+            return displayId;
+        }
+
+        // Virtual display created by --new-display, use the virtualDisplayId
+        DisplayData data = displayData.get();
+        if (data == null) {
+            // If no virtual display id is initialized yet, use the main display id
+            return 0;
+        }
+
+        return data.virtualDisplayId;
     }
 }

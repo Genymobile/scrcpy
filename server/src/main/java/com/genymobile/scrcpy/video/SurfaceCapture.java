@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Size;
 
 import android.view.Surface;
@@ -32,14 +33,21 @@ public abstract class SurfaceCapture {
     }
 
     /**
-     * Called once before the capture starts.
+     * Called once before the first capture starts.
      */
-    public abstract void init() throws IOException;
+    public abstract void init() throws ConfigurationException, IOException;
 
     /**
-     * Called after the capture ends (if and only if {@link #init()} has been called).
+     * Called after the last capture ends (if and only if {@link #init()} has been called).
      */
     public abstract void release();
+
+    /**
+     * Called once before each capture starts, before {@link #getSize()}.
+     */
+    public void prepare() {
+        // empty by default
+    }
 
     /**
      * Start the capture to the target surface.
