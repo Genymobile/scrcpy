@@ -75,8 +75,17 @@ public class ScreenCapture extends SurfaceCapture {
 
         if (Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10) {
             displayFoldListener = new IDisplayFoldListener.Stub() {
+
+                private boolean first = true;
+
                 @Override
                 public void onDisplayFoldChanged(int displayId, boolean folded) {
+                    if (first) {
+                        // An event is posted on registration to signal the initial state. Ignore it to avoid restarting encoding.
+                        first = false;
+                        return;
+                    }
+
                     if (ScreenCapture.this.displayId != displayId) {
                         // Ignore events related to other display ids
                         return;
