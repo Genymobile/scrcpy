@@ -43,18 +43,9 @@ public final class Device {
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
-    /**
-     * Logical display identifier
-     */
-    private final int displayId;
-
-    private final boolean supportsInputEvents;
-
     private final AtomicReference<ScreenInfo> screenInfo = new AtomicReference<>(); // set by the ScreenCapture instance
 
     public Device(Options options) {
-        displayId = options.getDisplayId();
-
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
             ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
@@ -79,12 +70,6 @@ public final class Device {
             } else {
                 Ln.w("No clipboard manager, copy-paste between device and computer will not work");
             }
-        }
-
-        // main display or any display on Android >= 10
-        supportsInputEvents = options.getDisplayId() == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
-        if (!supportsInputEvents) {
-            Ln.w("Input events are not supported for secondary displays before Android 10");
         }
     }
 
@@ -124,10 +109,6 @@ public final class Device {
         return displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
     }
 
-    public boolean supportsInputEvents() {
-        return supportsInputEvents;
-    }
-
     public void setScreenInfo(ScreenInfo screenInfo) {
         this.screenInfo.set(screenInfo);
     }
@@ -144,10 +125,6 @@ public final class Device {
         return ServiceManager.getInputManager().injectInputEvent(inputEvent, injectMode);
     }
 
-    public boolean injectEvent(InputEvent event, int injectMode) {
-        return injectEvent(event, displayId, injectMode);
-    }
-
     public static boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int displayId, int injectMode) {
         long now = SystemClock.uptimeMillis();
         KeyEvent event = new KeyEvent(now, now, action, keyCode, repeat, metaState, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, 0,
@@ -155,17 +132,9 @@ public final class Device {
         return injectEvent(event, displayId, injectMode);
     }
 
-    public boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
-        return injectKeyEvent(action, keyCode, repeat, metaState, displayId, injectMode);
-    }
-
     public static boolean pressReleaseKeycode(int keyCode, int displayId, int injectMode) {
         return injectKeyEvent(KeyEvent.ACTION_DOWN, keyCode, 0, 0, displayId, injectMode)
                 && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0, displayId, injectMode);
-    }
-
-    public boolean pressReleaseKeycode(int keyCode, int injectMode) {
-        return pressReleaseKeycode(keyCode, displayId, injectMode);
     }
 
     public static boolean isScreenOn() {
@@ -277,7 +246,7 @@ public final class Device {
     /**
      * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
      */
-    public void rotateDevice() {
+    public static void rotateDevice(int displayId) {
         WindowManager wm = ServiceManager.getWindowManager();
 
         boolean accelerometerRotation = !wm.isRotationFrozen(displayId);

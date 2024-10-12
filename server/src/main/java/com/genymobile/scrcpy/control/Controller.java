@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
+import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -37,6 +38,8 @@ public class Controller implements AsyncProcessor {
     private UhidManager uhidManager;
 
     private final Device device;
+    private final int displayId;
+    private final boolean supportsInputEvents;
     private final ControlChannel controlChannel;
     private final CleanUp cleanUp;
     private final DeviceMessageSender sender;
@@ -52,14 +55,21 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
+    public Controller(Device device, int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.device = device;
+        this.displayId = displayId;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
         this.clipboardAutosync = clipboardAutosync;
         this.powerOn = powerOn;
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
+
+        // main display or any display on Android >= Q
+        supportsInputEvents = Device.supportsInputEvents(displayId);
+        if (!supportsInputEvents) {
+            Ln.w("Input events are not supported for secondary displays before Android 10");
+        }
     }
 
     private UhidManager getUhidManager() {
@@ -86,7 +96,7 @@ public class Controller implements AsyncProcessor {
     private void control() throws IOException {
         // on start, power on the device
         if (powerOn && !Device.isScreenOn()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -154,27 +164,27 @@ public class Controller implements AsyncProcessor {
 
         switch (msg.getType()) {
             case ControlMessage.TYPE_INJECT_KEYCODE:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectKeycode(msg.getAction(), msg.getKeycode(), msg.getRepeat(), msg.getMetaState());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TEXT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectText(msg.getText());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_TOUCH_EVENT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectTouch(msg.getAction(), msg.getPointerId(), msg.getPosition(), msg.getPressure(), msg.getActionButton(), msg.getButtons());
                 }
                 break;
             case ControlMessage.TYPE_INJECT_SCROLL_EVENT:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     injectScroll(msg.getPosition(), msg.getHScroll(), msg.getVScroll(), msg.getButtons());
                 }
                 break;
             case ControlMessage.TYPE_BACK_OR_SCREEN_ON:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     pressBackOrTurnScreenOn(msg.getAction());
                 }
                 break;
@@ -194,7 +204,7 @@ public class Controller implements AsyncProcessor {
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
             case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
-                if (device.supportsInputEvents()) {
+                if (supportsInputEvents) {
                     int mode = msg.getAction();
                     boolean setPowerModeOk = Device.setScreenPowerMode(mode);
                     if (setPowerModeOk) {
@@ -208,7 +218,7 @@ public class Controller implements AsyncProcessor {
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
-                device.rotateDevice();
+                Device.rotateDevice(displayId);
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
                 getUhidManager().open(msg.getId(), msg.getText(), msg.getData());
@@ -233,7 +243,7 @@ public class Controller implements AsyncProcessor {
         if (keepPowerModeOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
             schedulePowerModeOff();
         }
-        return device.injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
+        return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectChar(char c) {
@@ -244,7 +254,7 @@ public class Controller implements AsyncProcessor {
             return false;
         }
         for (KeyEvent event : events) {
-            if (!device.injectEvent(event, Device.INJECT_MODE_ASYNC)) {
+            if (!injectEvent(event, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -325,7 +335,7 @@ public class Controller implements AsyncProcessor {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!injectEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -336,7 +346,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!injectEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -350,7 +360,7 @@ public class Controller implements AsyncProcessor {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!device.injectEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!injectEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -358,7 +368,7 @@ public class Controller implements AsyncProcessor {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!device.injectEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!injectEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -369,7 +379,7 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
@@ -391,7 +401,7 @@ public class Controller implements AsyncProcessor {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return device.injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return injectEvent(event, Device.INJECT_MODE_ASYNC);
     }
 
     /**
@@ -406,7 +416,7 @@ public class Controller implements AsyncProcessor {
 
     private boolean pressBackOrTurnScreenOn(int action) {
         if (Device.isScreenOn()) {
-            return device.injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
+            return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
         // Screen is off
@@ -419,15 +429,15 @@ public class Controller implements AsyncProcessor {
         if (keepPowerModeOff) {
             schedulePowerModeOff();
         }
-        return device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
     }
 
     private void getClipboard(int copyKey) {
         // On Android >= 7, press the COPY or CUT key if requested
-        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && device.supportsInputEvents()) {
+        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && supportsInputEvents) {
             int key = copyKey == ControlMessage.COPY_KEY_COPY ? KeyEvent.KEYCODE_COPY : KeyEvent.KEYCODE_CUT;
             // Wait until the event is finished, to ensure that the clipboard text we read just after is the correct one
-            device.pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
+            pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
         }
 
         // If clipboard autosync is enabled, then the device clipboard is synchronized to the computer clipboard whenever it changes, in
@@ -449,8 +459,8 @@ public class Controller implements AsyncProcessor {
         }
 
         // On Android >= 7, also press the PASTE key if requested
-        if (paste && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && device.supportsInputEvents()) {
-            device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
+        if (paste && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && supportsInputEvents) {
+            pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
         }
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
@@ -465,5 +475,17 @@ public class Controller implements AsyncProcessor {
     private void openHardKeyboardSettings() {
         Intent intent = new Intent("android.settings.HARD_KEYBOARD_SETTINGS");
         ServiceManager.getActivityManager().startActivity(intent);
+    }
+
+    private boolean injectEvent(InputEvent event, int injectMode) {
+        return Device.injectEvent(event, displayId, injectMode);
+    }
+
+    private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
+        return Device.injectKeyEvent(action, keyCode, repeat, metaState, displayId, injectMode);
+    }
+
+    private boolean pressReleaseKeycode(int keyCode, int injectMode) {
+        return Device.pressReleaseKeycode(keyCode, displayId, injectMode);
     }
 }
