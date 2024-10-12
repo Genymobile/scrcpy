@@ -52,6 +52,7 @@ arguments=(
     '--mouse-bind=[Configure bindings of secondary clicks]'
     {-n,--no-control}'[Disable device control \(mirror the device in read only\)]'
     {-N,--no-playback}'[Disable video and audio playback]'
+    '--new-display=[Create a new display]'
     '--no-audio[Disable audio forwarding]'
     '--no-audio-playback[Disable audio playback]'
     '--no-cleanup[Disable device cleanup actions on exit]'

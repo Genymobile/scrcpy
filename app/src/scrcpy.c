@@ -431,6 +431,7 @@ scrcpy(struct scrcpy_options *options) {
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
         .display_id = options->display_id,
+        .new_display = options->new_display,
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,
