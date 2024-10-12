@@ -12,12 +12,14 @@ import com.genymobile.scrcpy.control.Controller;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.NewDisplayCapture;
 import com.genymobile.scrcpy.video.ScreenCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
@@ -128,8 +130,11 @@ public final class Server {
         CleanUp cleanUp = null;
         Thread initThread = null;
 
+        NewDisplay newDisplay = options.getNewDisplay();
+        int displayId = newDisplay == null ? options.getDisplayId() : Device.DISPLAY_ID_NONE;
+
         if (options.getCleanup()) {
-            cleanUp = CleanUp.configure(options.getDisplayId());
+            cleanUp = CleanUp.configure(displayId);
             initThread = startInitThread(options, cleanUp);
         }
 
@@ -154,7 +159,7 @@ public final class Server {
 
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                controller = new Controller(options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                controller = new Controller(displayId, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 asyncProcessors.add(controller);
             }
 
@@ -184,8 +189,13 @@ public final class Server {
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
-                    surfaceCapture = new ScreenCapture(controller, options.getDisplayId(), options.getMaxSize(), options.getCrop(),
-                            options.getLockVideoOrientation());
+                    if (newDisplay != null) {
+                        surfaceCapture = new NewDisplayCapture(controller, newDisplay, options.getMaxSize());
+                    } else {
+                        assert displayId != Device.DISPLAY_ID_NONE;
+                        surfaceCapture = new ScreenCapture(controller, displayId, options.getMaxSize(), options.getCrop(),
+                                options.getLockVideoOrientation());
+                    }
                 } else {
                     surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraFacing(), options.getCameraSize(),
                             options.getMaxSize(), options.getCameraAspectRatio(), options.getCameraFps(), options.getCameraHighSpeed());

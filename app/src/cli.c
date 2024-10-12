@@ -102,6 +102,7 @@ enum {
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
+    OPT_NEW_DISPLAY,
 };
 
 struct sc_option {
@@ -556,6 +557,21 @@ static const struct sc_option options[] = {
         .longopt = "no-playback",
         .text = "Disable video and audio playback on the computer (equivalent "
                 "to --no-video-playback --no-audio-playback).",
+    },
+    {
+        .longopt_id = OPT_NEW_DISPLAY,
+        .longopt = "new-display",
+        .argdesc = "[<width>x<height>][/<dpi>]",
+        .optional_arg = true,
+        .text = "Create a new display with the specified resolution and "
+                "density. If not provided, they default to the main display "
+                "dimensions and DPI, and --max-size is considered.\n"
+                "Examples:\n"
+                "    --new-display=1920x1080\n"
+                "    --new-display=1920x1080/420  # force 420 dpi\n"
+                "    --new-display         # main display size and density\n"
+                "    --new-display -m1920  # scaled to fit a max size of 1920\n"
+                "    --new-display=/240    # main display size and 240 dpi",
     },
     {
         .longopt_id = OPT_NO_AUDIO,
@@ -2668,6 +2684,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                     return false;
                 }
                 break;
+            case OPT_NEW_DISPLAY:
+                opts->new_display = optarg ? optarg : "";
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2848,6 +2867,25 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->new_display) {
+        if (opts->video_source != SC_VIDEO_SOURCE_DISPLAY) {
+            LOGE("--new-display is only available with --video-source=display");
+            return false;
+        }
+
+        if (!opts->video) {
+            LOGE("--new-display is incompatible with --no-video");
+            return false;
+        }
+
+        if (opts->max_size && opts->new_display[0] != '\0'
+                           && opts->new_display[0] != '/') {
+            // An explicit size is defined (not "" nor "/<dpi>")
+            LOGE("Cannot specify both --new-display size and -m/--max-size");
+            return false;
+        }
+    }
+
     if (otg) {
         if (!opts->control) {
             LOGE("--no-control is not allowed in OTG mode");
@@ -2951,6 +2989,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             || opts->camera_high_speed
             || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
+        return false;
+    }
+
+    if (opts->display_id != 0 && opts->new_display) {
+        LOGE("Cannot specify both --display-id and --new-display");
         return false;
     }
 

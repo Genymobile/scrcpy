@@ -139,8 +139,10 @@ public final class CleanUp {
 
         if (Device.isScreenOn()) {
             if (powerOffScreen) {
-                Ln.i("Power off screen");
-                Device.powerOffScreen(displayId);
+                if (displayId != Device.DISPLAY_ID_NONE) {
+                    Ln.i("Power off screen");
+                    Device.powerOffScreen(displayId);
+                }
             } else if (restoreNormalPowerMode) {
                 Ln.i("Restoring normal power mode");
                 Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);

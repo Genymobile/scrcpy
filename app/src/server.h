@@ -48,6 +48,7 @@ struct sc_server_params {
     int8_t lock_video_orientation;
     bool control;
     uint32_t display_id;
+    const char *new_display;
     bool video;
     bool audio;
     bool audio_dup;

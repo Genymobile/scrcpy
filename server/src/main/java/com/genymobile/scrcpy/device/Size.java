@@ -21,6 +21,10 @@ public final class Size {
         return height;
     }
 
+    public int getMax() {
+        return Math.max(width, height);
+    }
+
     public Size rotate() {
         return new Size(height, width);
     }

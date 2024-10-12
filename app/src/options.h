@@ -308,6 +308,7 @@ struct scrcpy_options {
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
 };
 
 extern const struct scrcpy_options scrcpy_options_default;
