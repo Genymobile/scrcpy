@@ -63,28 +63,6 @@ public final class ScreenInfo {
         return unlockedVideoSize.rotate();
     }
 
-    public int getDeviceRotation() {
-        return deviceRotation;
-    }
-
-    public ScreenInfo withDeviceRotation(int newDeviceRotation) {
-        if (newDeviceRotation == deviceRotation) {
-            return this;
-        }
-        // true if changed between portrait and landscape
-        boolean orientationChanged = (deviceRotation + newDeviceRotation) % 2 != 0;
-        Rect newContentRect;
-        Size newUnlockedVideoSize;
-        if (orientationChanged) {
-            newContentRect = flipRect(contentRect);
-            newUnlockedVideoSize = unlockedVideoSize.rotate();
-        } else {
-            newContentRect = contentRect;
-            newUnlockedVideoSize = unlockedVideoSize;
-        }
-        return new ScreenInfo(newContentRect, newUnlockedVideoSize, newDeviceRotation, lockedVideoOrientation);
-    }
-
     public static ScreenInfo computeScreenInfo(int rotation, Size deviceSize, Rect crop, int maxSize, int lockedVideoOrientation) {
         if (lockedVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL) {
             // The user requested to lock the video orientation to the current orientation
