@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
@@ -132,7 +133,8 @@ public class ScreenCapture extends SurfaceCapture {
             }
         }
 
-        device.setScreenInfo(screenInfo);
+        PositionMapper positionMapper = PositionMapper.from(screenInfo);
+        device.setPositionMapper(positionMapper);
     }
 
     @Override
