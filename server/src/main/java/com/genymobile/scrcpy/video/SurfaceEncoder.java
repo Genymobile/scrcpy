@@ -68,12 +68,16 @@ public class SurfaceEncoder implements AsyncProcessor {
         capture.init();
 
         try {
-            streamer.writeVideoHeader(capture.getSize());
-
             boolean alive;
+            boolean headerWritten = false;
 
             do {
                 Size size = capture.getSize();
+                if (!headerWritten) {
+                    streamer.writeVideoHeader(size);
+                    headerWritten = true;
+                }
+
                 format.setInteger(MediaFormat.KEY_WIDTH, size.getWidth());
                 format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
 
