@@ -106,10 +106,16 @@ public class ScreenCapture extends SurfaceCapture {
             virtualDisplay = null;
         }
 
+        int virtualDisplayId;
+        PositionMapper positionMapper;
         try {
             Size videoSize = screenInfo.getVideoSize();
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
+            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+            Rect contentRect = new Rect(0, 0, videoSize.getWidth(), videoSize.getHeight());
+            // The position are relative to the virtual display, not the original display
+            positionMapper = new PositionMapper(videoSize, contentRect, 0);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
@@ -123,6 +129,8 @@ public class ScreenCapture extends SurfaceCapture {
                 int layerStack = displayInfo.getLayerStack();
 
                 setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                virtualDisplayId = displayId;
+                positionMapper = PositionMapper.from(screenInfo);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
@@ -132,8 +140,7 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
-            PositionMapper positionMapper = PositionMapper.from(screenInfo);
-            vdListener.onNewVirtualDisplay(positionMapper);
+            vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
         }
     }
 
