@@ -7,9 +7,11 @@ import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.IOnPrimaryClipChangedListener;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
@@ -23,6 +25,7 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Controller implements AsyncProcessor {
 
@@ -48,6 +51,8 @@ public class Controller implements AsyncProcessor {
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
+    private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
+
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
@@ -69,6 +74,29 @@ public class Controller implements AsyncProcessor {
         supportsInputEvents = Device.supportsInputEvents(displayId);
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
+        }
+
+        if (clipboardAutosync) {
+            // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
+            ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
+            if (clipboardManager != null) {
+                clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
+                    @Override
+                    public void dispatchPrimaryClipChanged() {
+                        if (isSettingClipboard.get()) {
+                            // This is a notification for the change we are currently applying, ignore it
+                            return;
+                        }
+                        String text = Device.getClipboardText();
+                        if (text != null) {
+                            DeviceMessage msg = DeviceMessage.createClipboard(text);
+                            sender.send(msg);
+                        }
+                    }
+                });
+            } else {
+                Ln.w("No clipboard manager, copy-paste between device and computer will not work");
+            }
         }
     }
 
@@ -147,10 +175,6 @@ public class Controller implements AsyncProcessor {
             thread.join();
         }
         sender.join();
-    }
-
-    public DeviceMessageSender getSender() {
-        return sender;
     }
 
     private boolean handleEvent() throws IOException {
@@ -453,7 +477,9 @@ public class Controller implements AsyncProcessor {
     }
 
     private boolean setClipboard(String text, boolean paste, long sequence) {
-        boolean ok = device.setClipboardText(text);
+        isSettingClipboard.set(true);
+        boolean ok = Device.setClipboardText(text);
+        isSettingClipboard.set(false);
         if (ok) {
             Ln.i("Device clipboard set");
         }

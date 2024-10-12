@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy.device;
 
 import com.genymobile.scrcpy.AndroidVersions;
-import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.video.ScreenInfo;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
@@ -11,7 +10,6 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
-import android.content.IOnPrimaryClipChangedListener;
 import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
@@ -21,7 +19,6 @@ import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class Device {
@@ -36,42 +33,7 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    public interface ClipboardListener {
-        void onClipboardTextChanged(String text);
-    }
-
-    private ClipboardListener clipboardListener;
-    private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
-
     private final AtomicReference<ScreenInfo> screenInfo = new AtomicReference<>(); // set by the ScreenCapture instance
-
-    public Device(Options options) {
-        if (options.getControl() && options.getClipboardAutosync()) {
-            // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
-            ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
-            if (clipboardManager != null) {
-                clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
-                    @Override
-                    public void dispatchPrimaryClipChanged() {
-                        if (isSettingClipboard.get()) {
-                            // This is a notification for the change we are currently applying, ignore it
-                            return;
-                        }
-                        synchronized (Device.this) {
-                            if (clipboardListener != null) {
-                                String text = getClipboardText();
-                                if (text != null) {
-                                    clipboardListener.onClipboardTextChanged(text);
-                                }
-                            }
-                        }
-                    }
-                });
-            } else {
-                Ln.w("No clipboard manager, copy-paste between device and computer will not work");
-            }
-        }
-    }
 
     public Point getPhysicalPoint(Position position) {
         // it hides the field on purpose, to read it from the atomic once
@@ -141,10 +103,6 @@ public final class Device {
         return ServiceManager.getPowerManager().isScreenOn();
     }
 
-    public synchronized void setClipboardListener(ClipboardListener clipboardListener) {
-        this.clipboardListener = clipboardListener;
-    }
-
     public static void expandNotificationPanel() {
         ServiceManager.getStatusBarManager().expandNotificationsPanel();
     }
@@ -169,7 +127,7 @@ public final class Device {
         return s.toString();
     }
 
-    public boolean setClipboardText(String text) {
+    public static boolean setClipboardText(String text) {
         ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
         if (clipboardManager == null) {
             return false;
@@ -184,10 +142,7 @@ public final class Device {
             return false;
         }
 
-        isSettingClipboard.set(true);
-        boolean ok = clipboardManager.setText(text);
-        isSettingClipboard.set(false);
-        return ok;
+        return clipboardManager.setText(text);
     }
 
     /**

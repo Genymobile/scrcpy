@@ -9,7 +9,6 @@ import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.control.Controller;
-import com.genymobile.scrcpy.control.DeviceMessage;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
@@ -142,7 +141,7 @@ public final class Server {
         boolean sendDummyByte = options.getSendDummyByte();
         boolean camera = video && options.getVideoSource() == VideoSource.CAMERA;
 
-        final Device device = camera ? null : new Device(options);
+        final Device device = camera ? null : new Device();
 
         Workarounds.apply();
 
@@ -158,10 +157,6 @@ public final class Server {
                 ControlChannel controlChannel = connection.getControlChannel();
                 Controller controller = new Controller(
                         device, options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
-                device.setClipboardListener(text -> {
-                    DeviceMessage msg = DeviceMessage.createClipboard(text);
-                    controller.getSender().send(msg);
-                });
                 asyncProcessors.add(controller);
             }
 
