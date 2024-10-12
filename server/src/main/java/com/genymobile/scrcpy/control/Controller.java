@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
@@ -26,8 +27,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
-public class Controller implements AsyncProcessor {
+public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private static final int DEFAULT_DEVICE_ID = 0;
 
@@ -40,7 +42,6 @@ public class Controller implements AsyncProcessor {
 
     private UhidManager uhidManager;
 
-    private final Device device;
     private final int displayId;
     private final boolean supportsInputEvents;
     private final ControlChannel controlChannel;
@@ -53,6 +54,8 @@ public class Controller implements AsyncProcessor {
 
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
+    private final AtomicReference<PositionMapper> positionMapper = new AtomicReference<>();
+
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
@@ -60,8 +63,7 @@ public class Controller implements AsyncProcessor {
 
     private boolean keepPowerModeOff;
 
-    public Controller(Device device, int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
-        this.device = device;
+    public Controller(int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.displayId = displayId;
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
@@ -98,6 +100,11 @@ public class Controller implements AsyncProcessor {
                 Ln.w("No clipboard manager, copy-paste between device and computer will not work");
             }
         }
+    }
+
+    @Override
+    public void onNewVirtualDisplay(PositionMapper positionMapper) {
+        this.positionMapper.set(positionMapper);
     }
 
     private UhidManager getUhidManager() {
@@ -300,7 +307,7 @@ public class Controller implements AsyncProcessor {
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
         long now = SystemClock.uptimeMillis();
 
-        Point point = device.getPhysicalPoint(position);
+        Point point = getPhysicalPoint(position);
         if (point == null) {
             Ln.w("Ignore touch event, it was generated for a different device size");
             return false;
@@ -408,9 +415,9 @@ public class Controller implements AsyncProcessor {
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
         long now = SystemClock.uptimeMillis();
-        Point point = device.getPhysicalPoint(position);
+        Point point = getPhysicalPoint(position);
         if (point == null) {
-            // ignore event
+            Ln.w("Ignore scroll event, it was generated for a different device size");
             return false;
         }
 
@@ -426,6 +433,17 @@ public class Controller implements AsyncProcessor {
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
         return injectEvent(event, Device.INJECT_MODE_ASYNC);
+    }
+
+    private Point getPhysicalPoint(Position position) {
+        // it hides the field on purpose, to read it from the atomic once
+        @SuppressWarnings("checkstyle:HiddenField")
+        PositionMapper positionMapper = this.positionMapper.get();
+        if (positionMapper == null) {
+            return null;
+        }
+
+        return positionMapper.map(position);
     }
 
     /**

@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy.device;
 
 import com.genymobile.scrcpy.AndroidVersions;
-import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
@@ -18,8 +17,6 @@ import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public final class Device {
 
     public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
@@ -32,17 +29,8 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    private final AtomicReference<PositionMapper> positionMapper = new AtomicReference<>(); // set by the ScreenCapture instance
-
-    public Point getPhysicalPoint(Position position) {
-        // it hides the field on purpose, to read it from the atomic once
-        @SuppressWarnings("checkstyle:HiddenField")
-        PositionMapper positionMapper = this.positionMapper.get();
-        if (positionMapper == null) {
-            return null;
-        }
-
-        return positionMapper.map(position);
+    private Device() {
+        // not instantiable
     }
 
     public static String getDeviceName() {
@@ -51,10 +39,6 @@ public final class Device {
 
     public static boolean supportsInputEvents(int displayId) {
         return displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
-    }
-
-    public void setPositionMapper(PositionMapper positionMapper) {
-        this.positionMapper.set(positionMapper);
     }
 
     public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
