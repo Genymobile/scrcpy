@@ -17,7 +17,6 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
 import android.view.InputDevice;
-import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
@@ -30,6 +29,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Controller implements AsyncProcessor, VirtualDisplayListener {
+
+    /*
+     * For event injection, there are two display ids:
+     *  - the displayId passed to the constructor (which comes from --display-id passed by the client, 0 for the main display);
+     *  - the virtualDisplayId used for mirroring, notified by the capture instance via the VirtualDisplayListener interface.
+     *
+     * (In case the ScreenCapture uses the "SurfaceControl API", then both ids are equals, but this is an implementation detail.)
+     *
+     * In order to make events work correctly in all cases:
+     *  - virtualDisplayId must be used for events relative to the display (mouse and touch events with coordinates);
+     *  - displayId must be used for other events (like key events).
+     */
+
+    private static final class DisplayData {
+        private final int virtualDisplayId;
+        private final PositionMapper positionMapper;
+
+        private DisplayData(int virtualDisplayId, PositionMapper positionMapper) {
+            this.virtualDisplayId = virtualDisplayId;
+            this.positionMapper = positionMapper;
+        }
+    }
 
     private static final int DEFAULT_DEVICE_ID = 0;
 
@@ -54,7 +75,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
-    private final AtomicReference<PositionMapper> positionMapper = new AtomicReference<>();
+    private final AtomicReference<DisplayData> displayData = new AtomicReference<>();
 
     private long lastTouchDown;
     private final PointersState pointersState = new PointersState();
@@ -103,8 +124,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     @Override
-    public void onNewVirtualDisplay(PositionMapper positionMapper) {
-        this.positionMapper.set(positionMapper);
+    public void onNewVirtualDisplay(int virtualDisplayId, PositionMapper positionMapper) {
+        DisplayData data = new DisplayData(virtualDisplayId, positionMapper);
+        this.displayData.set(data);
     }
 
     private UhidManager getUhidManager() {
@@ -285,7 +307,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             return false;
         }
         for (KeyEvent event : events) {
-            if (!injectEvent(event, Device.INJECT_MODE_ASYNC)) {
+            if (!Device.injectEvent(event, displayId, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -307,7 +329,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
         long now = SystemClock.uptimeMillis();
 
-        Point point = getPhysicalPoint(position);
+        // it hides the field on purpose, to read it from the atomic once
+        @SuppressWarnings("checkstyle:HiddenField")
+        DisplayData displayData = this.displayData.get();
+        assert displayData != null : "Cannot receive a touch event without a display";
+
+        Point point = displayData.positionMapper.map(position);
         if (point == null) {
             Ln.w("Ignore touch event, it was generated for a different device size");
             return false;
@@ -366,7 +393,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!injectEvent(downEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(downEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -377,7 +404,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!injectEvent(pressEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(pressEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -391,7 +418,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!injectEvent(releaseEvent, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(releaseEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -399,7 +426,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!injectEvent(upEvent, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(upEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -410,12 +437,18 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return injectEvent(event, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
         long now = SystemClock.uptimeMillis();
-        Point point = getPhysicalPoint(position);
+
+        // it hides the field on purpose, to read it from the atomic once
+        @SuppressWarnings("checkstyle:HiddenField")
+        DisplayData displayData = this.displayData.get();
+        assert displayData != null : "Cannot receive a scroll event without a display";
+
+        Point point = displayData.positionMapper.map(position);
         if (point == null) {
             Ln.w("Ignore scroll event, it was generated for a different device size");
             return false;
@@ -432,18 +465,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return injectEvent(event, Device.INJECT_MODE_ASYNC);
-    }
-
-    private Point getPhysicalPoint(Position position) {
-        // it hides the field on purpose, to read it from the atomic once
-        @SuppressWarnings("checkstyle:HiddenField")
-        PositionMapper positionMapper = this.positionMapper.get();
-        if (positionMapper == null) {
-            return null;
-        }
-
-        return positionMapper.map(position);
+        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     /**
@@ -519,10 +541,6 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void openHardKeyboardSettings() {
         Intent intent = new Intent("android.settings.HARD_KEYBOARD_SETTINGS");
         ServiceManager.getActivityManager().startActivity(intent);
-    }
-
-    private boolean injectEvent(InputEvent event, int injectMode) {
-        return Device.injectEvent(event, displayId, injectMode);
     }
 
     private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
