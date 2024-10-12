@@ -3,7 +3,6 @@ package com.genymobile.scrcpy.device;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.util.Ln;
-import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.ScreenInfo;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
@@ -17,14 +16,13 @@ import android.graphics.Rect;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.SystemClock;
-import android.view.IDisplayFoldListener;
-import android.view.IRotationWatcher;
 import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class Device {
 
@@ -38,26 +36,10 @@ public final class Device {
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
 
-    public interface RotationListener {
-        void onRotationChanged(int rotation);
-    }
-
-    public interface FoldListener {
-        void onFoldChanged(int displayId, boolean folded);
-    }
-
     public interface ClipboardListener {
         void onClipboardTextChanged(String text);
     }
 
-    private final Rect crop;
-    private int maxSize;
-    private final int lockVideoOrientation;
-
-    private Size deviceSize;
-    private ScreenInfo screenInfo;
-    private RotationListener rotationListener;
-    private FoldListener foldListener;
     private ClipboardListener clipboardListener;
     private final AtomicBoolean isSettingClipboard = new AtomicBoolean();
 
@@ -66,71 +48,12 @@ public final class Device {
      */
     private final int displayId;
 
-    /**
-     * The surface flinger layer stack associated with this logical display
-     */
-    private final int layerStack;
-
     private final boolean supportsInputEvents;
 
-    public Device(Options options) throws ConfigurationException {
+    private final AtomicReference<ScreenInfo> screenInfo = new AtomicReference<>(); // set by the ScreenCapture instance
+
+    public Device(Options options) {
         displayId = options.getDisplayId();
-        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-        if (displayInfo == null) {
-            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-            throw new ConfigurationException("Unknown display id: " + displayId);
-        }
-
-        int displayInfoFlags = displayInfo.getFlags();
-
-        deviceSize = displayInfo.getSize();
-        crop = options.getCrop();
-        maxSize = options.getMaxSize();
-        lockVideoOrientation = options.getLockVideoOrientation();
-
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-        layerStack = displayInfo.getLayerStack();
-
-        ServiceManager.getWindowManager().registerRotationWatcher(new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                synchronized (Device.this) {
-                    screenInfo = screenInfo.withDeviceRotation(rotation);
-
-                    // notify
-                    if (rotationListener != null) {
-                        rotationListener.onRotationChanged(rotation);
-                    }
-                }
-            }
-        }, displayId);
-
-        if (Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10) {
-            ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
-                @Override
-                public void onDisplayFoldChanged(int displayId, boolean folded) {
-                    if (Device.this.displayId != displayId) {
-                        // Ignore events related to other display ids
-                        return;
-                    }
-
-                    synchronized (Device.this) {
-                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                        if (displayInfo == null) {
-                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-                            return;
-                        }
-
-                        deviceSize = displayInfo.getSize();
-                        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-                        // notify
-                        if (foldListener != null) {
-                            foldListener.onFoldChanged(displayId, folded);
-                        }
-                    }
-                }
-            });
-        }
 
         if (options.getControl() && options.getClipboardAutosync()) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
@@ -158,38 +81,20 @@ public final class Device {
             }
         }
 
-        if ((displayInfoFlags & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
-            Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
-        }
-
         // main display or any display on Android >= 10
-        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
+        supportsInputEvents = options.getDisplayId() == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
     }
 
-    public int getDisplayId() {
-        return displayId;
-    }
-
-    public synchronized void setMaxSize(int newMaxSize) {
-        maxSize = newMaxSize;
-        screenInfo = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
-    }
-
-    public synchronized ScreenInfo getScreenInfo() {
-        return screenInfo;
-    }
-
-    public int getLayerStack() {
-        return layerStack;
-    }
-
     public Point getPhysicalPoint(Position position) {
-        // it hides the field on purpose, to read it with a lock
+        // it hides the field on purpose, to read it from the atomic once
         @SuppressWarnings("checkstyle:HiddenField")
-        ScreenInfo screenInfo = getScreenInfo(); // read with synchronization
+        ScreenInfo screenInfo = this.screenInfo.get();
+        if (screenInfo == null) {
+            return null;
+        }
 
         // ignore the locked video orientation, the events will apply in coordinates considered in the physical device orientation
         Size unlockedVideoSize = screenInfo.getUnlockedVideoSize();
@@ -221,6 +126,10 @@ public final class Device {
 
     public boolean supportsInputEvents() {
         return supportsInputEvents;
+    }
+
+    public void setScreenInfo(ScreenInfo screenInfo) {
+        this.screenInfo.set(screenInfo);
     }
 
     public static boolean injectEvent(InputEvent inputEvent, int displayId, int injectMode) {
@@ -261,14 +170,6 @@ public final class Device {
 
     public static boolean isScreenOn() {
         return ServiceManager.getPowerManager().isScreenOn();
-    }
-
-    public synchronized void setRotationListener(RotationListener rotationListener) {
-        this.rotationListener = rotationListener;
-    }
-
-    public synchronized void setFoldListener(FoldListener foldlistener) {
-        this.foldListener = foldlistener;
     }
 
     public synchronized void setClipboardListener(ClipboardListener clipboardListener) {
