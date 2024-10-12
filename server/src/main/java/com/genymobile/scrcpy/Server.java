@@ -156,7 +156,8 @@ public final class Server {
 
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                Controller controller = new Controller(device, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                Controller controller = new Controller(
+                        device, options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 device.setClipboardListener(text -> {
                     DeviceMessage msg = DeviceMessage.createClipboard(text);
                     controller.getSender().send(msg);
