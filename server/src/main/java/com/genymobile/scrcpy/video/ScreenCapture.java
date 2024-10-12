@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
-import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
@@ -26,9 +25,8 @@ public class ScreenCapture extends SurfaceCapture {
     private int maxSize;
     private final Rect crop;
     private final int lockVideoOrientation;
-    private int layerStack;
 
-    private Size deviceSize;
+    private DisplayInfo displayInfo;
     private ScreenInfo screenInfo;
 
     private IBinder display;
@@ -46,27 +44,11 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
-    public void init() throws ConfigurationException {
-        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-        if (displayInfo == null) {
-            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-            throw new ConfigurationException("Unknown display id: " + displayId);
-        }
-
-        deviceSize = displayInfo.getSize();
-        ScreenInfo si = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-        setScreenInfo(si);
-        layerStack = displayInfo.getLayerStack();
-
+    public void init() {
         if (displayId == 0) {
             rotationWatcher = new IRotationWatcher.Stub() {
                 @Override
                 public void onRotationChanged(int rotation) {
-                    synchronized (ScreenCapture.this) {
-                        ScreenInfo si = screenInfo.withDeviceRotation(rotation);
-                        setScreenInfo(si);
-                    }
-
                     requestReset();
                 }
             };
@@ -82,37 +64,30 @@ public class ScreenCapture extends SurfaceCapture {
                         return;
                     }
 
-                    synchronized (ScreenCapture.this) {
-                        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                        if (displayInfo == null) {
-                            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
-                            return;
-                        }
-
-                        deviceSize = displayInfo.getSize();
-                        ScreenInfo si = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), deviceSize, crop, maxSize, lockVideoOrientation);
-                        setScreenInfo(si);
-                    }
-
                     requestReset();
                 }
             };
             ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);
         }
+    }
+
+    @Override
+    public void prepare() {
+        displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+        if (displayInfo == null) {
+            Ln.e("Display " + displayId + " not found\n" + LogUtils.buildDisplayListMessage());
+            throw new AssertionError("Display " + display + " not found");
+        }
 
         if ((displayInfo.getFlags() & DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS) == 0) {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
         }
+
+        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), crop, maxSize, lockVideoOrientation);
     }
 
     @Override
     public void start(Surface surface) {
-        Rect contentRect = screenInfo.getContentRect();
-
-        // does not include the locked video orientation
-        Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
-        int videoRotation = screenInfo.getVideoRotation();
-
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
             display = null;
@@ -122,14 +97,23 @@ public class ScreenCapture extends SurfaceCapture {
             virtualDisplay = null;
         }
 
+        Size displaySize = screenInfo.getVideoSize();
+
         try {
-            Rect videoRect = screenInfo.getVideoSize().toRect();
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), displayId, surface);
+                    .createVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
                 display = createDisplay();
+
+                Rect contentRect = screenInfo.getContentRect();
+
+                // does not include the locked video orientation
+                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
+                int videoRotation = screenInfo.getVideoRotation();
+                int layerStack = displayInfo.getLayerStack();
+
                 setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
@@ -138,6 +122,8 @@ public class ScreenCapture extends SurfaceCapture {
                 throw new AssertionError("Could not create display");
             }
         }
+
+        device.setScreenInfo(screenInfo);
     }
 
     @Override
@@ -159,15 +145,13 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     @Override
-    public synchronized Size getSize() {
+    public Size getSize() {
         return screenInfo.getVideoSize();
     }
 
     @Override
-    public synchronized boolean setMaxSize(int newMaxSize) {
+    public boolean setMaxSize(int newMaxSize) {
         maxSize = newMaxSize;
-        ScreenInfo si = ScreenInfo.computeScreenInfo(screenInfo.getReverseVideoRotation(), deviceSize, crop, newMaxSize, lockVideoOrientation);
-        setScreenInfo(si);
         return true;
     }
 
@@ -188,10 +172,5 @@ public class ScreenCapture extends SurfaceCapture {
         } finally {
             SurfaceControl.closeTransaction();
         }
-    }
-
-    private void setScreenInfo(ScreenInfo si) {
-        screenInfo = si;
-        device.setScreenInfo(si);
     }
 }
