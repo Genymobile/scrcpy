@@ -139,9 +139,6 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-        boolean camera = video && options.getVideoSource() == VideoSource.CAMERA;
-
-        final Device device = camera ? null : new Device();
 
         Workarounds.apply();
 
@@ -153,10 +150,11 @@ public final class Server {
                 connection.sendDeviceMeta(Device.getDeviceName());
             }
 
+            Controller controller = null;
+
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                Controller controller = new Controller(
-                        device, options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                controller = new Controller(options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 asyncProcessors.add(controller);
             }
 
@@ -186,7 +184,7 @@ public final class Server {
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
-                    surfaceCapture = new ScreenCapture(device, options.getDisplayId(), options.getMaxSize(), options.getCrop(),
+                    surfaceCapture = new ScreenCapture(controller, options.getDisplayId(), options.getMaxSize(), options.getCrop(),
                             options.getLockVideoOrientation());
                 } else {
                     surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraFacing(), options.getCameraSize(),
