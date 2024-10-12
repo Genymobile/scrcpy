@@ -315,6 +315,17 @@ Disable device control (mirror the device in read\-only).
 Disable video and audio playback on the computer (equivalent to \fB\-\-no\-video\-playback \-\-no\-audio\-playback\fR).
 
 .TP
+\fB\-\-new\-display\fR[=[\fIwidth\fRx\fIheight\fR][/\fIdpi\fR]]
+Create a new display with the specified resolution and density. If not provided, they default to the main display dimensions and DPI, and \fB\-\-max\-size\fR is considered.
+
+Examples:
+
+    \-\-new\-display=1920x1080
+    \-\-new\-display=1920x1080/420
+    \-\-new\-display       # default screen size and density
+    \-\-new\-display=240   # default screen size and 240 dpi
+
+.TP
 .B \-\-no\-audio
 Disable audio forwarding.
 

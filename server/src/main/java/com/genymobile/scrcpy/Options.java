@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.CodecOption;
 import com.genymobile.scrcpy.util.Ln;
@@ -53,6 +54,8 @@ public class Options {
     private boolean downsizeOnError = true;
     private boolean cleanup = true;
     private boolean powerOn = true;
+
+    private NewDisplay newDisplay;
 
     private boolean listEncoders;
     private boolean listDisplays;
@@ -203,6 +206,10 @@ public class Options {
 
     public boolean getPowerOn() {
         return powerOn;
+    }
+
+    public NewDisplay getNewDisplay() {
+        return newDisplay;
     }
 
     public boolean getList() {
@@ -418,6 +425,9 @@ public class Options {
                 case "camera_high_speed":
                     options.cameraHighSpeed = Boolean.parseBoolean(value);
                     break;
+                case "new_display":
+                    options.newDisplay = parseNewDisplay(value);
+                    break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
                     break;
@@ -503,5 +513,33 @@ public class Options {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid float value for " + key + ": \"" + value + "\"");
         }
+    }
+
+    private static NewDisplay parseNewDisplay(String newDisplay) {
+        // input format: "auto", or "<width>x<height>", or "<width>x<height>:<dpi>"
+        if ("auto".equals(newDisplay)) {
+            return new NewDisplay();
+        }
+
+        String[] tokens = newDisplay.split("/");
+
+        Size size;
+        if (!tokens[0].isEmpty()) {
+            size = parseSize(tokens[0]);
+        } else {
+            size = null;
+        }
+
+        int dpi;
+        if (tokens.length >= 2) {
+            dpi = Integer.parseInt(tokens[1]);
+            if (dpi <= 0) {
+                throw new IllegalArgumentException("Invalid non-positive dpi: " + tokens[1]);
+            }
+        } else {
+            dpi = 0;
+        }
+
+        return new NewDisplay(size, dpi);
     }
 }

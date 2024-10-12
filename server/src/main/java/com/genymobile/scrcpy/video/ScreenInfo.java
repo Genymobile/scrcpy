@@ -112,7 +112,7 @@ public final class ScreenInfo {
         return rect.width() + ":" + rect.height() + ":" + rect.left + ":" + rect.top;
     }
 
-    private static Size computeVideoSize(int w, int h, int maxSize) {
+    public static Size computeVideoSize(int w, int h, int maxSize) {
         // Compute the video size and the padding of the content inside this video.
         // Principle:
         // - scale down the great side of the screen to maxSize (if necessary);

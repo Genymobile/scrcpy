@@ -40,6 +40,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
      * In order to make events work correctly in all cases:
      *  - virtualDisplayId must be used for events relative to the display (mouse and touch events with coordinates);
      *  - displayId must be used for other events (like key events).
+     *
+     * If a new separate virtual display is created (using --new-display), then displayId == Device.DISPLAY_ID_NONE. In that case, all events are
+     * sent to the virtual display id.
      */
 
     private static final class DisplayData {
@@ -152,7 +155,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private void control() throws IOException {
         // on start, power on the device
-        if (powerOn && !Device.isScreenOn()) {
+        if (powerOn && displayId != Device.DISPLAY_ID_NONE && !Device.isScreenOn()) {
             Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
@@ -271,7 +274,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
-                Device.rotateDevice(displayId);
+                Device.rotateDevice(getActionDisplayId());
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
                 getUhidManager().open(msg.getId(), msg.getText(), msg.getData());
@@ -306,8 +309,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (events == null) {
             return false;
         }
+
+        int actionDisplayId = getActionDisplayId();
         for (KeyEvent event : events) {
-            if (!Device.injectEvent(event, displayId, Device.INJECT_MODE_ASYNC)) {
+            if (!Device.injectEvent(event, actionDisplayId, Device.INJECT_MODE_ASYNC)) {
                 return false;
             }
         }
@@ -544,10 +549,26 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
-        return Device.injectKeyEvent(action, keyCode, repeat, metaState, displayId, injectMode);
+        return Device.injectKeyEvent(action, keyCode, repeat, metaState, getActionDisplayId(), injectMode);
     }
 
     private boolean pressReleaseKeycode(int keyCode, int injectMode) {
-        return Device.pressReleaseKeycode(keyCode, displayId, injectMode);
+        return Device.pressReleaseKeycode(keyCode, getActionDisplayId(), injectMode);
+    }
+
+    private int getActionDisplayId() {
+        if (displayId != Device.DISPLAY_ID_NONE) {
+            // Real screen mirrored, use the source display id
+            return displayId;
+        }
+
+        // Virtual display created by --new-display, use the virtualDisplayId
+        DisplayData data = displayData.get();
+        if (data == null) {
+            // If no virtual display id is initialized yet, use the main display id
+            return 0;
+        }
+
+        return data.virtualDisplayId;
     }
 }

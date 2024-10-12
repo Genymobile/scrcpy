@@ -19,6 +19,8 @@ import android.view.KeyEvent;
 
 public final class Device {
 
+    public static final int DISPLAY_ID_NONE = -1;
+
     public static final int POWER_MODE_OFF = SurfaceControl.POWER_MODE_OFF;
     public static final int POWER_MODE_NORMAL = SurfaceControl.POWER_MODE_NORMAL;
 
@@ -158,6 +160,8 @@ public final class Device {
     }
 
     public static boolean powerOffScreen(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+
         if (!isScreenOn()) {
             return true;
         }
@@ -168,6 +172,8 @@ public final class Device {
      * Disable auto-rotation (if enabled), set the screen rotation and re-enable auto-rotation (if it was enabled).
      */
     public static void rotateDevice(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+
         WindowManager wm = ServiceManager.getWindowManager();
 
         boolean accelerometerRotation = !wm.isRotationFrozen(displayId);
@@ -186,6 +192,8 @@ public final class Device {
     }
 
     private static int getCurrentRotation(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+
         if (displayId == 0) {
             return ServiceManager.getWindowManager().getRotation();
         }
