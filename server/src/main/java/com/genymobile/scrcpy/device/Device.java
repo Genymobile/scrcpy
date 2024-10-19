@@ -263,7 +263,7 @@ public final class Device {
         return null;
     }
 
-    public static void startApp(String packageName, int displayId) {
+    public static void startApp(String packageName, int displayId, boolean forceStop) {
         PackageManager pm = FakeContext.get().getPackageManager();
 
         Intent launchIntent = getLaunchIntent(pm, packageName);
@@ -282,6 +282,9 @@ public final class Device {
         }
 
         ActivityManager am = ServiceManager.getActivityManager();
+        if (forceStop) {
+            am.forceStopPackage(packageName);
+        }
         am.startActivity(launchIntent, options);
     }
 }

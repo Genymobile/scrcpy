@@ -497,6 +497,10 @@ Default is "lalt,lsuper" (left-Alt or left-Super).
 .BI "\-\-start\-app " name
 Start an Android app, by its exact package name.
 
+Add a '+' prefix to force-stop before starting the app:
+
+    scrcpy --new-display --start-app=+org.mozilla.firefox
+
 .TP
 .B \-t, \-\-show\-touches
 Enable "show touches" on start, restore the initial value on exit.

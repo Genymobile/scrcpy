@@ -594,6 +594,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private void startApp(String name) {
+        boolean forceStopBeforeStart = name.startsWith("+");
+        if (forceStopBeforeStart) {
+            name = name.substring(1);
+        }
+
         DeviceApp app = Device.findByPackageName(name);
         if (app == null) {
             Ln.w("No app found for package \"" + name + "\"");
@@ -607,7 +612,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
 
         Ln.i("Starting app \"" + app.getName() + "\" [" + app.getPackageName() + "] on display " + startAppDisplayId + "...");
-        Device.startApp(app.getPackageName(), startAppDisplayId);
+        Device.startApp(app.getPackageName(), startAppDisplayId, forceStopBeforeStart);
     }
 
     private int getStartAppDisplayId() {
