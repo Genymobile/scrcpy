@@ -82,6 +82,7 @@ arguments=(
     {-s,--serial=}'[The device serial number \(mandatory for multiple devices only\)]:serial:($("${ADB-adb}" devices | awk '\''$2 == "device" {print $1}'\''))'
     {-S,--turn-screen-off}'[Turn the device screen off immediately]'
     '--shortcut-mod=[\[key1,key2+key3,...\] Specify the modifiers to use for scrcpy shortcuts]:shortcut mod:(lctrl rctrl lalt ralt lsuper rsuper)'
+    '--start-app=[Start an Android app]'
     {-t,--show-touches}'[Show physical touches]'
     '--tcpip[\(optional \[ip\:port\]\) Configure and connect the device over TCP/IP]'
     '--time-limit=[Set the maximum mirroring time, in seconds]'

@@ -160,11 +160,15 @@ public final class LogUtils {
         return set;
     }
 
-    @SuppressLint("QueryPermissionsNeeded")
-    public static String buildAppListMessage() {
-        StringBuilder builder = new StringBuilder("List of apps:");
 
+    public static String buildAppListMessage() {
         List<DeviceApp> apps = Device.listApps();
+        return buildAppListMessage("List of apps:", apps);
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    public static String buildAppListMessage(String title, List<DeviceApp> apps) {
+        StringBuilder builder = new StringBuilder(title);
 
         // Sort by:
         //  1. system flag (system apps are before non-system apps)

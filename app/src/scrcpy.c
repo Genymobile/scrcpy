@@ -907,6 +907,25 @@ aoa_complete:
         init_sdl_gamepads();
     }
 
+    if (options->control && options->start_app) {
+        assert(controller);
+
+        char *name = strdup(options->start_app);
+        if (!name) {
+            LOG_OOM();
+            goto end;
+        }
+
+        struct sc_control_msg msg;
+        msg.type = SC_CONTROL_MSG_TYPE_START_APP;
+        msg.start_app.name = name;
+
+        if (!sc_controller_push_msg(controller, &msg)) {
+            LOGW("Could not request start app '%s'", name);
+            free(name);
+        }
+    }
+
     ret = event_loop(s);
     terminate_event_loop();
     LOGD("quit...");

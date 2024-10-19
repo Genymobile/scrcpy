@@ -41,6 +41,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
     SC_CONTROL_MSG_TYPE_UHID_DESTROY,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    SC_CONTROL_MSG_TYPE_START_APP,
 };
 
 enum sc_screen_power_mode {
@@ -110,6 +111,9 @@ struct sc_control_msg {
         struct {
             uint16_t id;
         } uhid_destroy;
+        struct {
+            char *name;
+        } start_app;
     };
 };
 

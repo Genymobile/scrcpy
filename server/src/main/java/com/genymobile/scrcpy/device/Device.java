@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.device;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.wrappers.ActivityManager;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.DisplayControl;
 import com.genymobile.scrcpy.wrappers.InputManager;
@@ -12,9 +13,11 @@ import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.app.ActivityOptions;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.view.InputDevice;
@@ -215,9 +218,7 @@ public final class Device {
         List<DeviceApp> apps = new ArrayList<>();
         PackageManager pm = FakeContext.get().getPackageManager();
         for (ApplicationInfo appInfo : getLaunchableApps(pm)) {
-            String name = pm.getApplicationLabel(appInfo).toString();
-            boolean system = (appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
-            apps.add(new DeviceApp(appInfo.packageName, name, system));
+            apps.add(toApp(pm, appInfo));
         }
 
         return apps;
@@ -242,5 +243,46 @@ public final class Device {
         }
 
         return pm.getLeanbackLaunchIntentForPackage(packageName);
+    }
+
+    private static DeviceApp toApp(PackageManager pm, ApplicationInfo appInfo) {
+        String name = pm.getApplicationLabel(appInfo).toString();
+        boolean system = (appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+        return new DeviceApp(appInfo.packageName, name, system);
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    public static DeviceApp findByPackageName(String packageName) {
+        PackageManager pm = FakeContext.get().getPackageManager();
+        // No need to filter by "launchable" apps, an error will be reported on start if the app is not launchable
+        for (ApplicationInfo appInfo : pm.getInstalledApplications(PackageManager.GET_META_DATA)) {
+            if (packageName.equals(appInfo.packageName)) {
+                return toApp(pm, appInfo);
+            }
+        }
+
+        return null;
+    }
+
+    public static void startApp(String packageName, int displayId) {
+        PackageManager pm = FakeContext.get().getPackageManager();
+
+        Intent launchIntent = getLaunchIntent(pm, packageName);
+        if (launchIntent == null) {
+            Ln.w("Cannot create launch intent for app " + packageName);
+            return;
+        }
+
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+        Bundle options = null;
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_26_ANDROID_8_0) {
+            ActivityOptions launchOptions = ActivityOptions.makeBasic();
+            launchOptions.setLaunchDisplayId(displayId);
+            options = launchOptions.toBundle();
+        }
+
+        ActivityManager am = ServiceManager.getActivityManager();
+        am.startActivity(launchIntent, options);
     }
 }
