@@ -79,6 +79,7 @@ _scrcpy() {
         -s --serial=
         -S --turn-screen-off
         --shortcut-mod=
+        --start-app=
         -t --show-touches
         --tcpip
         --tcpip=

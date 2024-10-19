@@ -23,6 +23,7 @@ public final class ControlMessage {
     public static final int TYPE_UHID_INPUT = 13;
     public static final int TYPE_UHID_DESTROY = 14;
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
+    public static final int TYPE_START_APP = 16;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -152,6 +153,13 @@ public final class ControlMessage {
         ControlMessage msg = new ControlMessage();
         msg.type = TYPE_UHID_DESTROY;
         msg.id = id;
+        return msg;
+    }
+
+    public static ControlMessage createStartApp(String name) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_START_APP;
+        msg.text = name;
         return msg;
     }
 

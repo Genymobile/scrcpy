@@ -400,6 +400,27 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseStartApp() throws IOException {
+        byte[] name = "firefox".getBytes(StandardCharsets.UTF_8);
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_START_APP);
+        dos.writeByte(name.length);
+        dos.write(name);
+        byte[] packet = bos.toByteArray();
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
+
+        ControlMessage event = reader.read();
+        Assert.assertEquals(ControlMessage.TYPE_START_APP, event.getType());
+        Assert.assertEquals("firefox", event.getText());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);

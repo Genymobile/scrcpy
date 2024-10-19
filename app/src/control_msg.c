@@ -183,6 +183,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_UHID_DESTROY:
             sc_write16be(&buf[1], msg->uhid_destroy.id);
             return 3;
+        case SC_CONTROL_MSG_TYPE_START_APP: {
+            size_t len = write_string_tiny(&buf[1], msg->start_app.name, 255);
+            return 1 + len;
+        }
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
         case SC_CONTROL_MSG_TYPE_EXPAND_SETTINGS_PANEL:
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
@@ -308,6 +312,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
         case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
             LOG_CMSG("open hard keyboard settings");
             break;
+        case SC_CONTROL_MSG_TYPE_START_APP:
+            LOG_CMSG("start app \"%s\"", msg->start_app.name);
+            break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);
             break;
@@ -332,6 +339,9 @@ sc_control_msg_destroy(struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_SET_CLIPBOARD:
             free(msg->set_clipboard.text);
+            break;
+        case SC_CONTROL_MSG_TYPE_START_APP:
+            free(msg->start_app.name);
             break;
         default:
             // do nothing
