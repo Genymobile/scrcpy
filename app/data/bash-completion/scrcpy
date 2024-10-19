@@ -33,6 +33,7 @@ _scrcpy() {
         --keyboard=
         --kill-adb-on-close
         --legacy-paste
+        --list-apps
         --list-camera-sizes
         --list-cameras
         --list-displays

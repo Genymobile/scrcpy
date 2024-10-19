@@ -103,6 +103,7 @@ enum {
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
+    OPT_LIST_APPS,
 };
 
 struct sc_option {
@@ -442,6 +443,11 @@ static const struct sc_option options[] = {
                 "on Ctrl+v (like MOD+Shift+v).\n"
                 "This is a workaround for some devices not behaving as "
                 "expected when setting the device clipboard programmatically.",
+    },
+    {
+        .longopt_id = OPT_LIST_APPS,
+        .longopt = "list-apps",
+        .text = "List Android apps installed on the device.",
     },
     {
         .longopt_id = OPT_LIST_CAMERAS,
@@ -2609,6 +2615,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_LIST_CAMERA_SIZES:
                 opts->list |= SC_OPTION_LIST_CAMERA_SIZES;
+                break;
+            case OPT_LIST_APPS:
+                opts->list |= SC_OPTION_LIST_APPS;
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;

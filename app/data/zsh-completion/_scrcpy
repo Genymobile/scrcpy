@@ -40,6 +40,7 @@ arguments=(
     '--keyboard=[Set the keyboard input mode]:mode:(disabled sdk uhid aoa)'
     '--kill-adb-on-close[Kill adb when scrcpy terminates]'
     '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
+    '--list-apps[List Android apps installed on the device]'
     '--list-camera-sizes[List the valid camera capture sizes]'
     '--list-cameras[List cameras available on the device]'
     '--list-displays[List displays available on the device]'
