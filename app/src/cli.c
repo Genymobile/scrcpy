@@ -104,6 +104,7 @@ enum {
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
+    OPT_START_APP,
 };
 
 struct sc_option {
@@ -804,6 +805,12 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .longopt_id = OPT_START_APP,
+        .longopt = "start-app",
+        .argdesc = "name",
+        .text = "Start an Android app, by its exact package name.",
     },
     {
         .shortopt = 't',
@@ -2695,6 +2702,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NEW_DISPLAY:
                 opts->new_display = optarg ? optarg : "auto";
                 break;
+            case OPT_START_APP:
+                opts->start_app = optarg;
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -3121,6 +3131,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (opts->power_off_on_close) {
             LOGE("Cannot request power off on close if control is disabled");
+            return false;
+        }
+        if (opts->start_app) {
+            LOGE("Cannot start an Android app if control is disabled");
             return false;
         }
     }
