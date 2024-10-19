@@ -287,6 +287,11 @@ public final class Server {
                 Workarounds.apply();
                 Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
             }
+            if (options.getListApps()) {
+                Workarounds.apply();
+                Ln.i("Processing Android apps... (this may take some time)");
+                Ln.i(LogUtils.buildAppListMessage());
+            }
             // Just print the requested data, do not mirror
             return;
         }

@@ -1,10 +1,13 @@
 package com.genymobile.scrcpy.util;
 
+import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
@@ -13,7 +16,9 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
 import android.util.Range;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -153,5 +158,56 @@ public final class LogUtils {
             set.add(range.getUpper());
         }
         return set;
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    public static String buildAppListMessage() {
+        StringBuilder builder = new StringBuilder("List of apps:");
+
+        List<DeviceApp> apps = Device.listApps();
+
+        // Sort by:
+        //  1. system flag (system apps are before non-system apps)
+        //  2. name
+        //  3. package name
+        Collections.sort(apps, (thisApp, otherApp) -> {
+            // System apps first
+            int cmp = -Boolean.compare(thisApp.isSystem(), otherApp.isSystem());
+            if (cmp != 0) {
+                return cmp;
+            }
+
+            cmp = Objects.compare(thisApp.getName(), otherApp.getName(), String::compareTo);
+            if (cmp != 0) {
+                return cmp;
+            }
+
+            return Objects.compare(thisApp.getPackageName(), otherApp.getPackageName(), String::compareTo);
+        });
+
+        final int column = 30;
+        for (DeviceApp app : apps) {
+            String name = app.getName();
+            int padding = column - name.length();
+            builder.append("\n ");
+            if (app.isSystem()) {
+                builder.append("* ");
+            } else {
+                builder.append("- ");
+
+            }
+            builder.append(name);
+            if (padding > 0) {
+                builder.append(String.format("%" + padding + "s", " "));
+            } else {
+                builder.append("\n   ").append(String.format("%" + column + "s", " "));
+            }
+            builder.append(" [").append(app.getPackageName()).append(']');
+            if (!app.isEnabled()) {
+                builder.append(" (disabled)");
+            }
+        }
+
+        return builder.toString();
     }
 }
