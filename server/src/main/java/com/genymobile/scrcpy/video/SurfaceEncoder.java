@@ -88,6 +88,9 @@ public class SurfaceEncoder implements AsyncProcessor {
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
 
+                    VideoFilter filter = new VideoFilter(surface);
+                    surface = filter.getInputSurface();
+
                     capture.start(surface);
 
                     mediaCodec.start();
@@ -95,6 +98,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     alive = encode(mediaCodec, streamer);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     mediaCodec.stop();
+                    filter.release();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareRetry(size)) {
