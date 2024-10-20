@@ -8,6 +8,7 @@ import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
@@ -23,6 +24,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -599,10 +601,31 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             name = name.substring(1);
         }
 
-        DeviceApp app = Device.findByPackageName(name);
-        if (app == null) {
-            Ln.w("No app found for package \"" + name + "\"");
-            return;
+        DeviceApp app;
+        boolean searchByName = name.startsWith("?");
+        if (searchByName) {
+            name = name.substring(1);
+
+            Ln.i("Processing Android apps... (this may take some time)");
+            List<DeviceApp> apps = Device.findByName(name);
+            if (apps.isEmpty()) {
+                Ln.w("No app found for name \"" + name + "\"");
+                return;
+            }
+
+            if (apps.size() > 1) {
+                String title = "No unique app found for name \"" + name + "\":";
+                Ln.w(LogUtils.buildAppListMessage(title, apps));
+                return;
+            }
+
+            app = apps.get(0);
+        } else {
+            app = Device.findByPackageName(name);
+            if (app == null) {
+                Ln.w("No app found for package \"" + name + "\"");
+                return;
+            }
         }
 
         int startAppDisplayId = getStartAppDisplayId();
