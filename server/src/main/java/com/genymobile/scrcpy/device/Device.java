@@ -27,6 +27,7 @@ import android.view.KeyEvent;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public final class Device {
 
@@ -261,6 +262,25 @@ public final class Device {
         }
 
         return null;
+    }
+
+    @SuppressLint("QueryPermissionsNeeded")
+    public static List<DeviceApp> findByName(String searchName) {
+        List<DeviceApp> result = new ArrayList<>();
+        searchName = searchName.toLowerCase(Locale.getDefault());
+
+        PackageManager pm = FakeContext.get().getPackageManager();
+        for (ApplicationInfo appInfo : getLaunchableApps(pm)) {
+            if (appInfo.enabled) {
+                String name = pm.getApplicationLabel(appInfo).toString();
+                if (name.toLowerCase(Locale.getDefault()).startsWith(searchName)) {
+                    boolean system = (appInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+                    result.add(new DeviceApp(appInfo.packageName, name, system, appInfo.enabled));
+                }
+            }
+        }
+
+        return result;
     }
 
     public static void startApp(String packageName, int displayId, boolean forceStop) {

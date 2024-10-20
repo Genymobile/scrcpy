@@ -497,9 +497,17 @@ Default is "lalt,lsuper" (left-Alt or left-Super).
 .BI "\-\-start\-app " name
 Start an Android app, by its exact package name.
 
+Add a '?' prefix to select an app whose name starts with the given name, case-insensitive (it may take some time to retrieve the app names on the device):
+
+    scrcpy --start-app=?firefox
+
 Add a '+' prefix to force-stop before starting the app:
 
     scrcpy --new-display --start-app=+org.mozilla.firefox
+
+Both prefixes can be used, in that order:
+
+    scrcpy --start-app=+?firefox
 
 .TP
 .B \-t, \-\-show\-touches

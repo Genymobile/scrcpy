@@ -811,8 +811,14 @@ static const struct sc_option options[] = {
         .longopt = "start-app",
         .argdesc = "name",
         .text = "Start an Android app, by its exact package name.\n"
+                "Add a '?' prefix to select an app whose name starts with the "
+                "given name, case-insensitive (it may take some time to "
+                "retrieve the app names on the device):\n"
+                "    scrcpy --start-app=?firefox\n"
                 "Add a '+' prefix to force-stop before starting the app:\n"
-                "    scrcpy --new-display --start-app=+org.mozilla.firefox",
+                "    scrcpy --new-display --start-app=+org.mozilla.firefox\n"
+                "Both prefixes can be used, in that order:\n"
+                "    scrcpy --start-app=+?firefox",
     },
     {
         .shortopt = 't',
