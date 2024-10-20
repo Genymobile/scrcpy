@@ -14,6 +14,7 @@ import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Streamer;
+import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.CameraCapture;
@@ -191,6 +192,8 @@ public final class Server {
                 asyncProcessor.stop();
             }
 
+            OpenGLRunner.quit(); // quit the OpenGL thread, if any
+
             connection.shutdown();
 
             try {
@@ -200,6 +203,7 @@ public final class Server {
                 for (AsyncProcessor asyncProcessor : asyncProcessors) {
                     asyncProcessor.join();
                 }
+                OpenGLRunner.join();
             } catch (InterruptedException e) {
                 // ignore
             }
