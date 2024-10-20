@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.audio;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.IO;
@@ -24,7 +25,7 @@ public final class AudioRawRecorder implements AsyncProcessor {
     }
 
     private void record() throws IOException, AudioCaptureException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
             return;

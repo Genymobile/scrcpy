@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.util;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.BuildConfig;
 
 import android.os.Build;
@@ -31,7 +32,7 @@ public final class IO {
     }
 
     public static void writeFully(FileDescriptor fd, ByteBuffer from) throws IOException {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
             while (from.hasRemaining()) {
                 write(fd, from);
             }

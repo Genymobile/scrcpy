@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.control;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
 import com.genymobile.scrcpy.device.Device;
@@ -318,7 +319,7 @@ public class Controller implements AsyncProcessor {
          *
          * Otherwise, Chrome does not work properly: <https://github.com/Genymobile/scrcpy/issues/3635>
          */
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && source == InputDevice.SOURCE_MOUSE) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0 && source == InputDevice.SOURCE_MOUSE) {
             if (action == MotionEvent.ACTION_DOWN) {
                 if (actionButton == buttons) {
                     // First button pressed: ACTION_DOWN
@@ -423,7 +424,7 @@ public class Controller implements AsyncProcessor {
 
     private void getClipboard(int copyKey) {
         // On Android >= 7, press the COPY or CUT key if requested
-        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+        if (copyKey != ControlMessage.COPY_KEY_NONE && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && device.supportsInputEvents()) {
             int key = copyKey == ControlMessage.COPY_KEY_COPY ? KeyEvent.KEYCODE_COPY : KeyEvent.KEYCODE_CUT;
             // Wait until the event is finished, to ensure that the clipboard text we read just after is the correct one
             device.pressReleaseKeycode(key, Device.INJECT_MODE_WAIT_FOR_FINISH);
@@ -448,7 +449,7 @@ public class Controller implements AsyncProcessor {
         }
 
         // On Android >= 7, also press the PASTE key if requested
-        if (paste && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && device.supportsInputEvents()) {
+        if (paste && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && device.supportsInputEvents()) {
             device.pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
         }
 

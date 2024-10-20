@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.audio;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
@@ -108,7 +109,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
 
     @Override
     public void checkCompatibility() throws AudioCaptureException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_33_ANDROID_13) {
             Ln.w("Audio disabled: audio playback capture source not supported before Android 13");
             throw new AudioCaptureException();
         }
@@ -130,7 +131,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
     }
 
     @Override
-    @TargetApi(Build.VERSION_CODES.N)
+    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
         return reader.read(outDirectBuffer, outBufferInfo);
     }

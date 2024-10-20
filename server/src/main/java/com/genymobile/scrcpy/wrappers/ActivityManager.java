@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
@@ -7,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.IInterface;
@@ -63,7 +63,7 @@ public final class ActivityManager {
         return removeContentProviderExternalMethod;
     }
 
-    @TargetApi(Build.VERSION_CODES.Q)
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
     private ContentProvider getContentProviderExternal(String name, IBinder token) {
         try {
             Method method = getGetContentProviderExternalMethod();

@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.audio;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Streamer;
@@ -93,7 +94,7 @@ public final class AudioEncoder implements AsyncProcessor {
         return format;
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
+    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     private void inputThread(MediaCodec mediaCodec, AudioCapture capture) throws IOException, InterruptedException {
         final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
@@ -175,9 +176,9 @@ public final class AudioEncoder implements AsyncProcessor {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.M)
+    @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
     private void encode() throws IOException, ConfigurationException, AudioCaptureException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11) {
             Ln.w("Audio disabled: it is not supported before Android 11");
             streamer.writeDisableStream(false);
             return;
@@ -314,7 +315,7 @@ public final class AudioEncoder implements AsyncProcessor {
     }
 
     private final class EncoderCallback extends MediaCodec.Callback {
-        @TargetApi(Build.VERSION_CODES.N)
+        @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
         @Override
         public void onInputBufferAvailable(MediaCodec codec, int index) {
             try {

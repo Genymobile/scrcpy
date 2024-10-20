@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.SettingsException;
@@ -51,7 +52,7 @@ public final class ContentProvider implements Closeable {
     @SuppressLint("PrivateApi")
     private Method getCallMethod() throws NoSuchMethodException {
         if (callMethod == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
                 callMethod = provider.getClass().getMethod("call", AttributionSource.class, String.class, String.class, String.class, Bundle.class);
                 callMethodVersion = 0;
             } else {
@@ -79,7 +80,7 @@ public final class ContentProvider implements Closeable {
             Method method = getCallMethod();
             Object[] args;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callMethodVersion == 0) {
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12 && callMethodVersion == 0) {
                 args = new Object[]{FakeContext.get().getAttributionSource(), "settings", callMethod, arg, extras};
             } else {
                 switch (callMethodVersion) {

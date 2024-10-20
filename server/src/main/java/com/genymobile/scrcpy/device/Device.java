@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.device;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
@@ -104,7 +105,7 @@ public final class Device {
             }
         }, displayId);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10) {
             ServiceManager.getWindowManager().registerDisplayFoldListener(new IDisplayFoldListener.Stub() {
                 @Override
                 public void onDisplayFoldChanged(int displayId, boolean folded) {
@@ -161,8 +162,8 @@ public final class Device {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
         }
 
-        // main display or any display on Android >= Q
-        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        // main display or any display on Android >= 10
+        supportsInputEvents = displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
         if (!supportsInputEvents) {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
@@ -215,7 +216,7 @@ public final class Device {
     }
 
     public static boolean supportsInputEvents(int displayId) {
-        return displayId == 0 || Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        return displayId == 0 || Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
     }
 
     public boolean supportsInputEvents() {
@@ -323,10 +324,10 @@ public final class Device {
      * @param mode one of the {@code POWER_MODE_*} constants
      */
     public static boolean setScreenPowerMode(int mode) {
-        boolean applyToMultiPhysicalDisplays = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q;
+        boolean applyToMultiPhysicalDisplays = Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
 
         if (applyToMultiPhysicalDisplays
-                && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                && Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14
                 && Build.BRAND.equalsIgnoreCase("honor")
                 && SurfaceControl.hasGetBuildInDisplayMethod()) {
             // Workaround for Honor devices with Android 14:
@@ -338,7 +339,7 @@ public final class Device {
         if (applyToMultiPhysicalDisplays) {
             // On Android 14, these internal methods have been moved to DisplayControl
             boolean useDisplayControl =
-                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !SurfaceControl.hasGetPhysicalDisplayIdsMethod();
+                    Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14 && !SurfaceControl.hasGetPhysicalDisplayIdsMethod();
 
             // Change the power mode for all physical displays
             long[] physicalDisplayIds = useDisplayControl ? DisplayControl.getPhysicalDisplayIds() : SurfaceControl.getPhysicalDisplayIds();

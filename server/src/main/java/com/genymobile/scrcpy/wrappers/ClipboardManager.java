@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
@@ -36,7 +37,7 @@ public final class ClipboardManager {
 
     private Method getGetPrimaryClipMethod() throws NoSuchMethodException {
         if (getPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
                 getPrimaryClipMethod = manager.getClass().getMethod("getPrimaryClip", String.class);
                 return getPrimaryClipMethod;
             }
@@ -99,7 +100,7 @@ public final class ClipboardManager {
 
     private Method getSetPrimaryClipMethod() throws NoSuchMethodException {
         if (setPrimaryClipMethod == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
                 setPrimaryClipMethod = manager.getClass().getMethod("setPrimaryClip", ClipData.class, String.class);
                 return setPrimaryClipMethod;
             }
@@ -137,7 +138,7 @@ public final class ClipboardManager {
     }
 
     private static ClipData getPrimaryClip(Method method, int methodVersion, IInterface manager) throws ReflectiveOperationException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
             return (ClipData) method.invoke(manager, FakeContext.PACKAGE_NAME);
         }
 
@@ -161,7 +162,7 @@ public final class ClipboardManager {
     }
 
     private static void setPrimaryClip(Method method, int methodVersion, IInterface manager, ClipData clipData) throws ReflectiveOperationException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
             method.invoke(manager, clipData, FakeContext.PACKAGE_NAME);
             return;
         }
@@ -210,7 +211,7 @@ public final class ClipboardManager {
 
     private static void addPrimaryClipChangedListener(Method method, int methodVersion, IInterface manager, IOnPrimaryClipChangedListener listener)
             throws ReflectiveOperationException {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
             method.invoke(manager, listener, FakeContext.PACKAGE_NAME);
             return;
         }
@@ -230,7 +231,7 @@ public final class ClipboardManager {
 
     private Method getAddPrimaryClipChangedListener() throws NoSuchMethodException {
         if (addPrimaryClipChangedListener == null) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
                 addPrimaryClipChangedListener = manager.getClass()
                         .getMethod("addPrimaryClipChangedListener", IOnPrimaryClipChangedListener.class, String.class);
             } else {

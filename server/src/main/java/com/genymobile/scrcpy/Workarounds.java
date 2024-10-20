@@ -52,7 +52,7 @@ public final class Workarounds {
     }
 
     public static void apply() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
             // On some Samsung devices, DisplayManagerGlobal.getDisplayInfoLocked() calls ActivityThread.currentActivityThread().getConfiguration(),
             // which requires a non-null ConfigurationController.
             // ConfigurationController was introduced in Android 12, so do not attempt to set it on lower versions.
@@ -155,7 +155,7 @@ public final class Workarounds {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.R)
+    @TargetApi(AndroidVersions.API_30_ANDROID_11)
     @SuppressLint("WrongConstant,MissingPermission")
     public static AudioRecord createAudioRecord(int source, int sampleRate, int channelConfig, int channels, int channelMask, int encoding) throws
             AudioCaptureException {
@@ -226,7 +226,7 @@ public final class Workarounds {
             int[] session = new int[]{AudioManager.AUDIO_SESSION_ID_GENERATE};
 
             int initResult;
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12) {
                 // private native final int native_setup(Object audiorecord_this,
                 // Object /*AudioAttributes*/ attributes,
                 // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
@@ -252,7 +252,7 @@ public final class Workarounds {
                     Method getParcelMethod = attributionSourceState.getClass().getDeclaredMethod("getParcel");
                     Parcel attributionSourceParcel = (Parcel) getParcelMethod.invoke(attributionSourceState);
 
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    if (Build.VERSION.SDK_INT < AndroidVersions.API_34_ANDROID_14) {
                         // private native int native_setup(Object audiorecordThis,
                         // Object /*AudioAttributes*/ attributes,
                         // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,

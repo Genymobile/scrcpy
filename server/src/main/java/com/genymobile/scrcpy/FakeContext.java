@@ -4,7 +4,6 @@ import android.annotation.TargetApi;
 import android.content.AttributionSource;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.os.Build;
 import android.os.Process;
 
 public final class FakeContext extends ContextWrapper {
@@ -32,7 +31,7 @@ public final class FakeContext extends ContextWrapper {
         return PACKAGE_NAME;
     }
 
-    @TargetApi(Build.VERSION_CODES.S)
+    @TargetApi(AndroidVersions.API_31_ANDROID_12)
     @Override
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);

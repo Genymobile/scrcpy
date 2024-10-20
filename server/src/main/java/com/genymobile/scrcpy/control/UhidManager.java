@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.control;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.StringUtils;
 
@@ -38,7 +39,7 @@ public final class UhidManager {
 
     public UhidManager(DeviceMessageSender sender) {
         this.sender = sender;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
             HandlerThread thread = new HandlerThread("UHidManager");
             thread.start();
             queue = thread.getLooper().getQueue();
@@ -71,7 +72,7 @@ public final class UhidManager {
     }
 
     private void registerUhidListener(int id, FileDescriptor fd) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
             queue.addOnFileDescriptorEventListener(fd, MessageQueue.OnFileDescriptorEventListener.EVENT_INPUT, (fd2, events) -> {
                 try {
                     buffer.clear();
@@ -97,7 +98,7 @@ public final class UhidManager {
     }
 
     private void unregisterUhidListener(FileDescriptor fd) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
             queue.removeOnFileDescriptorEventListener(fd);
         }
     }

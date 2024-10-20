@@ -1,16 +1,16 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
-import android.os.Build;
 import android.os.IBinder;
 
 import java.lang.reflect.Method;
 
 @SuppressLint({"PrivateApi", "SoonBlockedPrivateApi", "BlockedPrivateApi"})
-@TargetApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+@TargetApi(AndroidVersions.API_34_ANDROID_14)
 public final class DisplayControl {
 
     private static final Class<?> CLASS;

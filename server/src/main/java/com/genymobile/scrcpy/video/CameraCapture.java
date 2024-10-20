@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.HandlerExecutor;
 import com.genymobile.scrcpy.util.Ln;
@@ -20,7 +21,6 @@ import android.hardware.camera2.params.OutputConfiguration;
 import android.hardware.camera2.params.SessionConfiguration;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
-import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Range;
@@ -118,7 +118,7 @@ public class CameraCapture extends SurfaceCapture {
         return null;
     }
 
-    @TargetApi(Build.VERSION_CODES.N)
+    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     private static Size selectSize(String cameraId, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio, boolean highSpeed)
             throws CameraAccessException {
         if (explicitSize != null) {
@@ -242,7 +242,7 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     @SuppressLint("MissingPermission")
-    @TargetApi(Build.VERSION_CODES.S)
+    @TargetApi(AndroidVersions.API_31_ANDROID_12)
     private CameraDevice openCamera(String id) throws CameraAccessException, InterruptedException {
         CompletableFuture<CameraDevice> future = new CompletableFuture<>();
         ServiceManager.getCameraManager().openCamera(id, new CameraDevice.StateCallback() {
@@ -289,7 +289,7 @@ public class CameraCapture extends SurfaceCapture {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.S)
+    @TargetApi(AndroidVersions.API_31_ANDROID_12)
     private CameraCaptureSession createCaptureSession(CameraDevice camera, Surface surface) throws CameraAccessException, InterruptedException {
         CompletableFuture<CameraCaptureSession> future = new CompletableFuture<>();
         OutputConfiguration outputConfig = new OutputConfiguration(surface);
@@ -328,7 +328,7 @@ public class CameraCapture extends SurfaceCapture {
         return requestBuilder.build();
     }
 
-    @TargetApi(Build.VERSION_CODES.S)
+    @TargetApi(AndroidVersions.API_31_ANDROID_12)
     private void setRepeatingRequest(CameraCaptureSession session, CaptureRequest request) throws CameraAccessException, InterruptedException {
         CameraCaptureSession.CaptureCallback callback = new CameraCaptureSession.CaptureCallback() {
             @Override
