@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.TargetApi;
@@ -200,7 +201,7 @@ public final class WindowManager {
         }
     }
 
-    @TargetApi(29)
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
     public void registerDisplayFoldListener(IDisplayFoldListener foldListener) {
         try {
             Class<?> cls = manager.getClass();
