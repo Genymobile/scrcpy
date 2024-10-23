@@ -31,6 +31,7 @@ It focuses on:
 Its features include:
  - [audio forwarding](doc/audio.md) (Android 11+)
  - [recording](doc/recording.md)
+ - [virtual display](doc/virtual_display.md)
  - mirroring with [Android device screen off](doc/device.md#turn-screen-off)
  - [copy-paste](doc/control.md#copy-paste) in both directions
  - [configurable quality](doc/video.md)
@@ -91,6 +92,12 @@ Here are just some common examples.
     scrcpy --video-codec=h265 -m1920 --max-fps=60 --no-audio -K  # short version
     ```
 
+ - Start VLC in a new virtual display (separate from the device display):
+
+    ```bash
+    scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
+    ```
+
  - Record the device camera in H.265 at 1920x1080 (and microphone) to an MP4
    file:
 
@@ -134,6 +141,7 @@ documented in the following pages:
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
+ - [Virtual display](doc/virtual_displays.md)
  - [Tunnels](doc/tunnels.md)
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
