@@ -53,6 +53,8 @@ public class ControlMessageReader {
                 return parseUhidInput();
             case ControlMessage.TYPE_UHID_DESTROY:
                 return parseUhidDestroy();
+            case ControlMessage.TYPE_START_APP:
+                return parseStartApp();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -153,6 +155,11 @@ public class ControlMessageReader {
     private ControlMessage parseUhidDestroy() throws IOException {
         int id = dis.readUnsignedShort();
         return ControlMessage.createUhidDestroy(id);
+    }
+
+    private ControlMessage parseStartApp() throws IOException {
+        String name = parseString(1);
+        return ControlMessage.createStartApp(name);
     }
 
     private Position parsePosition() throws IOException {

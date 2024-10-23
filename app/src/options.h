@@ -304,10 +304,13 @@ struct scrcpy_options {
 #define SC_OPTION_LIST_DISPLAYS 0x2
 #define SC_OPTION_LIST_CAMERAS 0x4
 #define SC_OPTION_LIST_CAMERA_SIZES 0x8
+#define SC_OPTION_LIST_APPS 0x10
     uint8_t list;
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
+    const char *start_app;
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

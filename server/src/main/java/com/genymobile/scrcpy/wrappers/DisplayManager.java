@@ -1,15 +1,18 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Command;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.view.Display;
 import android.view.Surface;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.regex.Matcher;
@@ -39,7 +42,7 @@ public final class DisplayManager {
     public static DisplayInfo parseDisplayInfo(String dumpsysDisplayOutput, int displayId) {
         Pattern regex = Pattern.compile(
                 "^    mOverrideDisplayInfo=DisplayInfo\\{\".*?, displayId " + displayId + ".*?(, FLAG_.*)?, real ([0-9]+) x ([0-9]+).*?, "
-                        + "rotation ([0-9]+).*?, layerStack ([0-9]+)",
+                        + "rotation ([0-9]+).*?, density ([0-9]+).*?, layerStack ([0-9]+)",
                 Pattern.MULTILINE);
         Matcher m = regex.matcher(dumpsysDisplayOutput);
         if (!m.find()) {
@@ -49,9 +52,10 @@ public final class DisplayManager {
         int width = Integer.parseInt(m.group(2));
         int height = Integer.parseInt(m.group(3));
         int rotation = Integer.parseInt(m.group(4));
-        int layerStack = Integer.parseInt(m.group(5));
+        int density = Integer.parseInt(m.group(5));
+        int layerStack = Integer.parseInt(m.group(6));
 
-        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags);
+        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density);
     }
 
     private static DisplayInfo getDisplayInfoFromDumpsysDisplay(int displayId) {
@@ -98,7 +102,8 @@ public final class DisplayManager {
             int rotation = cls.getDeclaredField("rotation").getInt(displayInfo);
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
-            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags);
+            int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
@@ -123,5 +128,13 @@ public final class DisplayManager {
     public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
         Method method = getCreateVirtualDisplayMethod();
         return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
+    }
+
+    public VirtualDisplay createNewVirtualDisplay(String name, int width, int height, int dpi, Surface surface, int flags) throws Exception {
+        Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
+                Context.class);
+        ctor.setAccessible(true);
+        android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
+        return dm.createVirtualDisplay(name, width, height, dpi, surface, flags);
     }
 }

@@ -33,6 +33,7 @@ _scrcpy() {
         --keyboard=
         --kill-adb-on-close
         --legacy-paste
+        --list-apps
         --list-camera-sizes
         --list-cameras
         --list-displays
@@ -46,6 +47,8 @@ _scrcpy() {
         --mouse-bind=
         -n --no-control
         -N --no-playback
+        --new-display
+        --new-display=
         --no-audio
         --no-audio-playback
         --no-cleanup
@@ -76,6 +79,7 @@ _scrcpy() {
         -s --serial=
         -S --turn-screen-off
         --shortcut-mod=
+        --start-app=
         -t --show-touches
         --tcpip
         --tcpip=

@@ -102,6 +102,9 @@ enum {
     OPT_NO_MOUSE_HOVER,
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
+    OPT_NEW_DISPLAY,
+    OPT_LIST_APPS,
+    OPT_START_APP,
 };
 
 struct sc_option {
@@ -443,6 +446,11 @@ static const struct sc_option options[] = {
                 "expected when setting the device clipboard programmatically.",
     },
     {
+        .longopt_id = OPT_LIST_APPS,
+        .longopt = "list-apps",
+        .text = "List Android apps installed on the device.",
+    },
+    {
         .longopt_id = OPT_LIST_CAMERAS,
         .longopt = "list-cameras",
         .text = "List device cameras.",
@@ -556,6 +564,20 @@ static const struct sc_option options[] = {
         .longopt = "no-playback",
         .text = "Disable video and audio playback on the computer (equivalent "
                 "to --no-video-playback --no-audio-playback).",
+    },
+    {
+        .longopt_id = OPT_NEW_DISPLAY,
+        .longopt = "new-display",
+        .argdesc = "[<width>x<height>][/<dpi>]",
+        .optional_arg = true,
+        .text = "Create a new display with the specified resolution and "
+                "density. If not provided, they default to the main display "
+                "dimensions and DPI, and --max-size is considered.\n"
+                "Examples:\n"
+                "    --new-display=1920x1080\n"
+                "    --new-display=1920x1080/420  # force 420 dpi\n"
+                "    --new-display       # default screen size and density\n"
+                "    --new-display=240   # default screen size and 240 dpi",
     },
     {
         .longopt_id = OPT_NO_AUDIO,
@@ -783,6 +805,20 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .longopt_id = OPT_START_APP,
+        .longopt = "start-app",
+        .argdesc = "name",
+        .text = "Start an Android app, by its exact package name.\n"
+                "Add a '?' prefix to select an app whose name starts with the "
+                "given name, case-insensitive (retrieving app names on the "
+                "device may take some time):\n"
+                "    scrcpy --start-app=?firefox\n"
+                "Add a '+' prefix to force-stop before starting the app:\n"
+                "    scrcpy --new-display --start-app=+org.mozilla.firefox\n"
+                "Both prefixes can be used, in that order:\n"
+                "    scrcpy --start-app=+?firefox",
     },
     {
         .shortopt = 't',
@@ -2595,6 +2631,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_LIST_CAMERA_SIZES:
                 opts->list |= SC_OPTION_LIST_CAMERA_SIZES;
                 break;
+            case OPT_LIST_APPS:
+                opts->list |= SC_OPTION_LIST_APPS;
+                break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
                 break;
@@ -2667,6 +2706,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_gamepad(optarg, &opts->gamepad_input_mode)) {
                     return false;
                 }
+                break;
+            case OPT_NEW_DISPLAY:
+                opts->new_display = optarg ? optarg : "auto";
+                break;
+            case OPT_START_APP:
+                opts->start_app = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -2848,6 +2893,28 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->new_display) {
+        if (opts->video_source != SC_VIDEO_SOURCE_DISPLAY) {
+            LOGE("--new-display is only available with --video-source=display");
+            return false;
+        }
+
+        if (!opts->video) {
+            LOGE("--new-display is incompatible with --no-video");
+            return false;
+        }
+
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
+            LOGE("--mouse=uhid not supported with --new-display");
+            return false;
+        }
+
+        if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA) {
+            LOGE("--mouse=aoa not supported with --new-display");
+            return false;
+        }
+    }
+
     if (otg) {
         if (!opts->control) {
             LOGE("--no-control is not allowed in OTG mode");
@@ -2951,6 +3018,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             || opts->camera_high_speed
             || opts->camera_size) {
         LOGE("Camera options are only available with --video-source=camera");
+        return false;
+    }
+
+    if (opts->display_id != 0 && opts->new_display) {
+        LOGE("Cannot specify both --display-id and --new-display");
         return false;
     }
 
@@ -3084,6 +3156,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (opts->power_off_on_close) {
             LOGE("Cannot request power off on close if control is disabled");
+            return false;
+        }
+        if (opts->start_app) {
+            LOGE("Cannot start an Android app if control is disabled");
             return false;
         }
     }

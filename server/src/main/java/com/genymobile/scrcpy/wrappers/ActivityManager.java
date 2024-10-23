@@ -118,8 +118,12 @@ public final class ActivityManager {
         return startActivityAsUserMethod;
     }
 
-    @SuppressWarnings("ConstantConditions")
     public int startActivity(Intent intent) {
+        return startActivity(intent, null);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    public int startActivity(Intent intent, Bundle options) {
         try {
             Method method = getStartActivityAsUserMethod();
             return (int) method.invoke(
@@ -133,7 +137,7 @@ public final class ActivityManager {
                     /* requestCode */ 0,
                     /* startFlags */ 0,
                     /* profilerInfo */ null,
-                    /* bOptions */ null,
+                    /* bOptions */ options,
                     /* userId */ /* UserHandle.USER_CURRENT */ -2);
         } catch (Throwable e) {
             Ln.e("Could not invoke method", e);

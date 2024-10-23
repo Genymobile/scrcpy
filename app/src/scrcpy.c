@@ -431,6 +431,7 @@ scrcpy(struct scrcpy_options *options) {
         .lock_video_orientation = options->lock_video_orientation,
         .control = options->control,
         .display_id = options->display_id,
+        .new_display = options->new_display,
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,
@@ -904,6 +905,25 @@ aoa_complete:
     if (options->control
             && options->gamepad_input_mode != SC_GAMEPAD_INPUT_MODE_DISABLED) {
         init_sdl_gamepads();
+    }
+
+    if (options->control && options->start_app) {
+        assert(controller);
+
+        char *name = strdup(options->start_app);
+        if (!name) {
+            LOG_OOM();
+            goto end;
+        }
+
+        struct sc_control_msg msg;
+        msg.type = SC_CONTROL_MSG_TYPE_START_APP;
+        msg.start_app.name = name;
+
+        if (!sc_controller_push_msg(controller, &msg)) {
+            LOGW("Could not request start app '%s'", name);
+            free(name);
+        }
     }
 
     ret = event_loop(s);

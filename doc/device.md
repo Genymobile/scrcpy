@@ -78,3 +78,48 @@ By default, on start, the device is powered on. To prevent this behavior:
 ```bash
 scrcpy --no-power-on
 ```
+
+
+## Start Android app
+
+To list the Android apps installed on the device:
+
+```bash
+scrcpy --list-apps
+```
+
+An app, selected by its package name, can be launched on start:
+
+```
+scrcpy --start-app=org.mozilla.firefox
+```
+
+This feature can be used to run an app in a [virtual
+display](virtual_display.md):
+
+```
+scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
+```
+
+The app can be optionally forced-stop before being started, by adding a `+`
+prefix:
+
+```
+scrcpy --start-app=+org.mozilla.firefox
+```
+
+For convenience, it is also possible to select an app by its name, by adding a
+`?` prefix:
+
+```
+scrcpy --start-app=?firefox
+```
+
+But retrieving app names may take some time (sometimes several seconds), so
+passing the package name is recommended.
+
+The `+` and `?` prefixes can be combined (in that order):
+
+```
+scrcpy --start-app=+?firefox
+```

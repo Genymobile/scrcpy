@@ -228,6 +228,10 @@ Inject computer clipboard text as a sequence of key events on Ctrl+v (like MOD+S
 This is a workaround for some devices not behaving as expected when setting the device clipboard programmatically.
 
 .TP
+.B \-\-list\-apps
+List Android apps installed on the device.
+
+.TP
 .B \-\-list\-camera\-sizes
 List the valid camera capture sizes.
 
@@ -313,6 +317,17 @@ Disable device control (mirror the device in read\-only).
 .TP
 .B \-N, \-\-no\-playback
 Disable video and audio playback on the computer (equivalent to \fB\-\-no\-video\-playback \-\-no\-audio\-playback\fR).
+
+.TP
+\fB\-\-new\-display\fR[=[\fIwidth\fRx\fIheight\fR][/\fIdpi\fR]]
+Create a new display with the specified resolution and density. If not provided, they default to the main display dimensions and DPI, and \fB\-\-max\-size\fR is considered.
+
+Examples:
+
+    \-\-new\-display=1920x1080
+    \-\-new\-display=1920x1080/420
+    \-\-new\-display       # default screen size and density
+    \-\-new\-display=240   # default screen size and 240 dpi
 
 .TP
 .B \-\-no\-audio
@@ -477,6 +492,22 @@ Several shortcut modifiers can be specified, separated by ','.
 For example, to use either LCtrl or LSuper for scrcpy shortcuts, pass "lctrl,lsuper".
 
 Default is "lalt,lsuper" (left-Alt or left-Super).
+
+.TP
+.BI "\-\-start\-app " name
+Start an Android app, by its exact package name.
+
+Add a '?' prefix to select an app whose name starts with the given name, case-insensitive (retrieving app names on the device may take some time):
+
+    scrcpy --start-app=?firefox
+
+Add a '+' prefix to force-stop before starting the app:
+
+    scrcpy --new-display --start-app=+org.mozilla.firefox
+
+Both prefixes can be used, in that order:
+
+    scrcpy --start-app=+?firefox
 
 .TP
 .B \-t, \-\-show\-touches

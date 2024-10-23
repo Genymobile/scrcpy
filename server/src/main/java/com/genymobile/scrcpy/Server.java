@@ -9,16 +9,17 @@ import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.control.Controller;
-import com.genymobile.scrcpy.control.DeviceMessage;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.DesktopConnection;
 import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.video.CameraCapture;
+import com.genymobile.scrcpy.video.NewDisplayCapture;
 import com.genymobile.scrcpy.video.ScreenCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
@@ -126,11 +127,19 @@ public final class Server {
             throw new ConfigurationException("Camera mirroring is not supported");
         }
 
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10 && options.getNewDisplay() != null) {
+            Ln.e("New virtual display is not supported before Android 10");
+            throw new ConfigurationException("New virtual display is not supported");
+        }
+
         CleanUp cleanUp = null;
         Thread initThread = null;
 
+        NewDisplay newDisplay = options.getNewDisplay();
+        int displayId = newDisplay == null ? options.getDisplayId() : Device.DISPLAY_ID_NONE;
+
         if (options.getCleanup()) {
-            cleanUp = CleanUp.configure(options.getDisplayId());
+            cleanUp = CleanUp.configure(displayId);
             initThread = startInitThread(options, cleanUp);
         }
 
@@ -140,9 +149,6 @@ public final class Server {
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-        boolean camera = video && options.getVideoSource() == VideoSource.CAMERA;
-
-        final Device device = camera ? null : new Device(options);
 
         Workarounds.apply();
 
@@ -154,13 +160,11 @@ public final class Server {
                 connection.sendDeviceMeta(Device.getDeviceName());
             }
 
+            Controller controller = null;
+
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                Controller controller = new Controller(device, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
-                device.setClipboardListener(text -> {
-                    DeviceMessage msg = DeviceMessage.createClipboard(text);
-                    controller.getSender().send(msg);
-                });
+                controller = new Controller(displayId, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 asyncProcessors.add(controller);
             }
 
@@ -190,7 +194,13 @@ public final class Server {
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
-                    surfaceCapture = new ScreenCapture(device);
+                    if (newDisplay != null) {
+                        surfaceCapture = new NewDisplayCapture(controller, newDisplay, options.getMaxSize());
+                    } else {
+                        assert displayId != Device.DISPLAY_ID_NONE;
+                        surfaceCapture = new ScreenCapture(controller, displayId, options.getMaxSize(), options.getCrop(),
+                                options.getLockVideoOrientation());
+                    }
                 } else {
                     surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraFacing(), options.getCameraSize(),
                             options.getMaxSize(), options.getCameraAspectRatio(), options.getCameraFps(), options.getCameraHighSpeed());
@@ -281,6 +291,11 @@ public final class Server {
             if (options.getListCameras() || options.getListCameraSizes()) {
                 Workarounds.apply();
                 Ln.i(LogUtils.buildCameraListMessage(options.getListCameraSizes()));
+            }
+            if (options.getListApps()) {
+                Workarounds.apply();
+                Ln.i("Processing Android apps... (this may take some time)");
+                Ln.i(LogUtils.buildAppListMessage());
             }
             // Just print the requested data, do not mirror
             return;
