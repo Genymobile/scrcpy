@@ -1,9 +1,11 @@
 package com.genymobile.scrcpy.util;
 
+import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.video.VideoCodec;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
@@ -14,6 +16,8 @@ import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.util.Range;
 
 import java.util.Collections;
@@ -28,32 +32,26 @@ public final class LogUtils {
         // not instantiable
     }
 
-    public static String buildVideoEncoderListMessage() {
-        StringBuilder builder = new StringBuilder("List of video encoders:");
-        List<CodecUtils.DeviceEncoder> videoEncoders = CodecUtils.listVideoEncoders();
-        if (videoEncoders.isEmpty()) {
-            builder.append("\n    (none)");
-        } else {
-            for (CodecUtils.DeviceEncoder encoder : videoEncoders) {
-                builder.append("\n    --video-codec=").append(encoder.getCodec().getName());
-                builder.append(" --video-encoder=").append(encoder.getInfo().getName());
+    private static String buildEncoderListMessage(String type, Codec[] codecs) {
+        StringBuilder builder = new StringBuilder("List of ").append(type).append(" encoders:");
+        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        for (Codec codec : codecs) {
+            MediaCodecInfo[] encoders = CodecUtils.getEncoders(codecList, codec.getMimeType());
+            for (MediaCodecInfo info : encoders) {
+                builder.append("\n    --").append(type).append("-codec=").append(codec.getName());
+                builder.append(" --").append(type).append("-encoder=").append(info.getName());
             }
         }
+
         return builder.toString();
     }
 
+    public static String buildVideoEncoderListMessage() {
+        return buildEncoderListMessage("video", VideoCodec.values());
+    }
+
     public static String buildAudioEncoderListMessage() {
-        StringBuilder builder = new StringBuilder("List of audio encoders:");
-        List<CodecUtils.DeviceEncoder> audioEncoders = CodecUtils.listAudioEncoders();
-        if (audioEncoders.isEmpty()) {
-            builder.append("\n    (none)");
-        } else {
-            for (CodecUtils.DeviceEncoder encoder : audioEncoders) {
-                builder.append("\n    --audio-codec=").append(encoder.getCodec().getName());
-                builder.append(" --audio-encoder=").append(encoder.getInfo().getName());
-            }
-        }
-        return builder.toString();
+        return buildEncoderListMessage("audio", AudioCodec.values());
     }
 
     public static String buildDisplayListMessage() {
