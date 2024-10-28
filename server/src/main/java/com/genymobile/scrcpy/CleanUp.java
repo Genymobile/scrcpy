@@ -137,12 +137,10 @@ public final class CleanUp {
             }
         }
 
-        if (Device.isScreenOn()) {
+        if (Device.isScreenOn() && displayId != Device.DISPLAY_ID_NONE) {
             if (powerOffScreen) {
-                if (displayId != Device.DISPLAY_ID_NONE) {
-                    Ln.i("Power off screen");
-                    Device.powerOffScreen(displayId);
-                }
+                Ln.i("Power off screen");
+                Device.powerOffScreen(displayId);
             } else if (restoreDisplayPower) {
                 Ln.i("Restoring display power");
                 Device.setDisplayPower(true);

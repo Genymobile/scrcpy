@@ -271,7 +271,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
             case ControlMessage.TYPE_SET_DISPLAY_POWER:
-                if (supportsInputEvents) {
+                if (supportsInputEvents && displayId != Device.DISPLAY_ID_NONE) {
                     boolean on = msg.getOn();
                     boolean setDisplayPowerOk = Device.setDisplayPower(on);
                     if (setDisplayPowerOk) {
@@ -311,6 +311,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
         if (keepDisplayPowerOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
+            assert displayId != Device.DISPLAY_ID_NONE;
             scheduleDisplayPowerOff();
         }
         return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
@@ -510,6 +511,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
 
         if (keepDisplayPowerOff) {
+            assert displayId != Device.DISPLAY_ID_NONE;
             scheduleDisplayPowerOff();
         }
         return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
