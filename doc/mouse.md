@@ -34,9 +34,9 @@ Two modes allow to simulate a physical HID mouse on the device.
 In these modes, the computer mouse is "captured": the mouse pointer disappears
 from the computer and appears on the Android device instead.
 
-Special capture keys, either <kbd>Alt</kbd> or <kbd>Super</kbd>, toggle
-(disable or enable) the mouse capture. Use one of them to give the control of
-the mouse back to the computer.
+The [shortcut mod](shortcuts.md) (either <kbd>Alt</kbd> or <kbd>Super</kbd> by
+default) toggle (disable or enable) the mouse capture. Use one of them to give
+the control of the mouse back to the computer.
 
 
 ### UHID
