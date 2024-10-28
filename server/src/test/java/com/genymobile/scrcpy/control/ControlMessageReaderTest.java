@@ -1,7 +1,5 @@
 package com.genymobile.scrcpy.control;
 
-import com.genymobile.scrcpy.device.Device;
-
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import org.junit.Assert;
@@ -285,19 +283,19 @@ public class ControlMessageReaderTest {
     }
 
     @Test
-    public void testParseSetScreenPowerMode() throws IOException {
+    public void testParseSetDisplayPower() throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
-        dos.writeByte(ControlMessage.TYPE_SET_SCREEN_POWER_MODE);
-        dos.writeByte(Device.POWER_MODE_NORMAL);
+        dos.writeByte(ControlMessage.TYPE_SET_DISPLAY_POWER);
+        dos.writeBoolean(true);
         byte[] packet = bos.toByteArray();
 
         ByteArrayInputStream bis = new ByteArrayInputStream(packet);
         ControlMessageReader reader = new ControlMessageReader(bis);
 
         ControlMessage event = reader.read();
-        Assert.assertEquals(ControlMessage.TYPE_SET_SCREEN_POWER_MODE, event.getType());
-        Assert.assertEquals(Device.POWER_MODE_NORMAL, event.getAction());
+        Assert.assertEquals(ControlMessage.TYPE_SET_DISPLAY_POWER, event.getType());
+        Assert.assertTrue(event.getOn());
 
         Assert.assertEquals(-1, bis.read()); // EOS
     }

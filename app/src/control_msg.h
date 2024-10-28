@@ -35,19 +35,13 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS,
     SC_CONTROL_MSG_TYPE_GET_CLIPBOARD,
     SC_CONTROL_MSG_TYPE_SET_CLIPBOARD,
-    SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
+    SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER,
     SC_CONTROL_MSG_TYPE_ROTATE_DEVICE,
     SC_CONTROL_MSG_TYPE_UHID_CREATE,
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
     SC_CONTROL_MSG_TYPE_UHID_DESTROY,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
     SC_CONTROL_MSG_TYPE_START_APP,
-};
-
-enum sc_screen_power_mode {
-    // see <https://android.googlesource.com/platform/frameworks/base.git/+/pie-release-2/core/java/android/view/SurfaceControl.java#305>
-    SC_SCREEN_POWER_MODE_OFF = 0,
-    SC_SCREEN_POWER_MODE_NORMAL = 2,
 };
 
 enum sc_copy_key {
@@ -95,8 +89,8 @@ struct sc_control_msg {
             bool paste;
         } set_clipboard;
         struct {
-            enum sc_screen_power_mode mode;
-        } set_screen_power_mode;
+            bool on;
+        } set_display_power;
         struct {
             uint16_t id;
             const char *name; // pointer to static data

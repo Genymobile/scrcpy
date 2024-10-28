@@ -22,9 +22,6 @@
 #define MOTIONEVENT_ACTION_LABEL(value) \
     ENUM_TO_LABEL(android_motionevent_action_labels, value)
 
-#define SCREEN_POWER_MODE_LABEL(value) \
-    ENUM_TO_LABEL(screen_power_mode_labels, value)
-
 static const char *const android_keyevent_action_labels[] = {
     "down",
     "up",
@@ -45,14 +42,6 @@ static const char *const android_motionevent_action_labels[] = {
     "hover-exit",
     "btn-press",
     "btn-release",
-};
-
-static const char *const screen_power_mode_labels[] = {
-    "off",
-    "doze",
-    "normal",
-    "doze-suspend",
-    "suspend",
 };
 
 static const char *const copy_key_labels[] = {
@@ -158,8 +147,8 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             size_t len = write_string(&buf[10], msg->set_clipboard.text,
                                       SC_CONTROL_MSG_CLIPBOARD_TEXT_MAX_LENGTH);
             return 10 + len;
-        case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
-            buf[1] = msg->set_screen_power_mode.mode;
+        case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
+            buf[1] = msg->set_display_power.on;
             return 2;
         case SC_CONTROL_MSG_TYPE_UHID_CREATE:
             sc_write16be(&buf[1], msg->uhid_create.id);
@@ -268,9 +257,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
                      msg->set_clipboard.paste ? "paste" : "nopaste",
                      msg->set_clipboard.text);
             break;
-        case SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE:
-            LOG_CMSG("power mode %s",
-                     SCREEN_POWER_MODE_LABEL(msg->set_screen_power_mode.mode));
+        case SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER:
+            LOG_CMSG("display power %s",
+                     msg->set_display_power.on ? "on" : "off");
             break;
         case SC_CONTROL_MSG_TYPE_EXPAND_NOTIFICATION_PANEL:
             LOG_CMSG("expand notification panel");

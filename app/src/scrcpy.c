@@ -873,11 +873,11 @@ aoa_complete:
     // everything is set up
     if (options->control && options->turn_screen_off) {
         struct sc_control_msg msg;
-        msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-        msg.set_screen_power_mode.mode = SC_SCREEN_POWER_MODE_OFF;
+        msg.type = SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER;
+        msg.set_display_power.on = false;
 
         if (!sc_controller_push_msg(&s->controller, &msg)) {
-            LOGW("Could not request 'set screen power mode'");
+            LOGW("Could not request 'set display power'");
         }
     }
 

@@ -126,10 +126,7 @@ public final class Device {
         return clipboardManager.setText(text);
     }
 
-    /**
-     * @param mode one of the {@code POWER_MODE_*} constants
-     */
-    public static boolean setScreenPowerMode(int mode) {
+    public static boolean setDisplayPower(boolean on) {
         boolean applyToMultiPhysicalDisplays = Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
 
         if (applyToMultiPhysicalDisplays
@@ -142,6 +139,7 @@ public final class Device {
             applyToMultiPhysicalDisplays = false;
         }
 
+        int mode = on ? POWER_MODE_NORMAL : POWER_MODE_OFF;
         if (applyToMultiPhysicalDisplays) {
             // On Android 14, these internal methods have been moved to DisplayControl
             boolean useDisplayControl =

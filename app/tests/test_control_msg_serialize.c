@@ -289,11 +289,11 @@ static void test_serialize_set_clipboard_long(void) {
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
 
-static void test_serialize_set_screen_power_mode(void) {
+static void test_serialize_set_display_power(void) {
     struct sc_control_msg msg = {
-        .type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
-        .set_screen_power_mode = {
-            .mode = SC_SCREEN_POWER_MODE_NORMAL,
+        .type = SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER,
+        .set_display_power = {
+            .on = true,
         },
     };
 
@@ -302,8 +302,8 @@ static void test_serialize_set_screen_power_mode(void) {
     assert(size == 2);
 
     const uint8_t expected[] = {
-        SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE,
-        0x02, // SC_SCREEN_POWER_MODE_NORMAL
+        SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER,
+        0x01, // true
     };
     assert(!memcmp(buf, expected, sizeof(expected)));
 }
@@ -423,7 +423,7 @@ int main(int argc, char *argv[]) {
     test_serialize_get_clipboard();
     test_serialize_set_clipboard();
     test_serialize_set_clipboard_long();
-    test_serialize_set_screen_power_mode();
+    test_serialize_set_display_power();
     test_serialize_rotate_device();
     test_serialize_uhid_create();
     test_serialize_uhid_input();

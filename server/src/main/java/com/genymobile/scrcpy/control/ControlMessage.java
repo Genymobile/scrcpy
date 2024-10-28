@@ -17,7 +17,7 @@ public final class ControlMessage {
     public static final int TYPE_COLLAPSE_PANELS = 7;
     public static final int TYPE_GET_CLIPBOARD = 8;
     public static final int TYPE_SET_CLIPBOARD = 9;
-    public static final int TYPE_SET_SCREEN_POWER_MODE = 10;
+    public static final int TYPE_SET_DISPLAY_POWER = 10;
     public static final int TYPE_ROTATE_DEVICE = 11;
     public static final int TYPE_UHID_CREATE = 12;
     public static final int TYPE_UHID_INPUT = 13;
@@ -34,7 +34,7 @@ public final class ControlMessage {
     private int type;
     private String text;
     private int metaState; // KeyEvent.META_*
-    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_* or POWER_MODE_*
+    private int action; // KeyEvent.ACTION_* or MotionEvent.ACTION_*
     private int keycode; // KeyEvent.KEYCODE_*
     private int actionButton; // MotionEvent.BUTTON_*
     private int buttons; // MotionEvent.BUTTON_*
@@ -49,6 +49,7 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+    private boolean on;
 
     private ControlMessage() {
     }
@@ -116,13 +117,10 @@ public final class ControlMessage {
         return msg;
     }
 
-    /**
-     * @param mode one of the {@code Device.SCREEN_POWER_MODE_*} constants
-     */
-    public static ControlMessage createSetScreenPowerMode(int mode) {
+    public static ControlMessage createSetDisplayPower(boolean on) {
         ControlMessage msg = new ControlMessage();
-        msg.type = TYPE_SET_SCREEN_POWER_MODE;
-        msg.action = mode;
+        msg.type = TYPE_SET_DISPLAY_POWER;
+        msg.on = on;
         return msg;
     }
 
@@ -233,5 +231,9 @@ public final class ControlMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public boolean getOn() {
+        return on;
     }
 }

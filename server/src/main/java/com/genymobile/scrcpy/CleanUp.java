@@ -19,7 +19,7 @@ public final class CleanUp {
     private static final int MSG_TYPE_MASK = 0b11;
     private static final int MSG_TYPE_RESTORE_STAY_ON = 0;
     private static final int MSG_TYPE_DISABLE_SHOW_TOUCHES = 1;
-    private static final int MSG_TYPE_RESTORE_NORMAL_POWER_MODE = 2;
+    private static final int MSG_TYPE_RESTORE_DISPLAY_POWER = 2;
     private static final int MSG_TYPE_POWER_OFF_SCREEN = 3;
 
     private static final int MSG_PARAM_SHIFT = 2;
@@ -63,8 +63,8 @@ public final class CleanUp {
         return sendMessage(MSG_TYPE_DISABLE_SHOW_TOUCHES, disableOnExit ? 1 : 0);
     }
 
-    public boolean setRestoreNormalPowerMode(boolean restoreOnExit) {
-        return sendMessage(MSG_TYPE_RESTORE_NORMAL_POWER_MODE, restoreOnExit ? 1 : 0);
+    public boolean setRestoreDisplayPower(boolean restoreOnExit) {
+        return sendMessage(MSG_TYPE_RESTORE_DISPLAY_POWER, restoreOnExit ? 1 : 0);
     }
 
     public boolean setPowerOffScreen(boolean powerOffScreenOnExit) {
@@ -86,7 +86,7 @@ public final class CleanUp {
 
         int restoreStayOn = -1;
         boolean disableShowTouches = false;
-        boolean restoreNormalPowerMode = false;
+        boolean restoreDisplayPower = false;
         boolean powerOffScreen = false;
 
         try {
@@ -102,8 +102,8 @@ public final class CleanUp {
                     case MSG_TYPE_DISABLE_SHOW_TOUCHES:
                         disableShowTouches = param != 0;
                         break;
-                    case MSG_TYPE_RESTORE_NORMAL_POWER_MODE:
-                        restoreNormalPowerMode = param != 0;
+                    case MSG_TYPE_RESTORE_DISPLAY_POWER:
+                        restoreDisplayPower = param != 0;
                         break;
                     case MSG_TYPE_POWER_OFF_SCREEN:
                         powerOffScreen = param != 0;
@@ -143,9 +143,9 @@ public final class CleanUp {
                     Ln.i("Power off screen");
                     Device.powerOffScreen(displayId);
                 }
-            } else if (restoreNormalPowerMode) {
-                Ln.i("Restoring normal power mode");
-                Device.setScreenPowerMode(Device.POWER_MODE_NORMAL);
+            } else if (restoreDisplayPower) {
+                Ln.i("Restoring display power");
+                Device.setDisplayPower(true);
             }
         }
 

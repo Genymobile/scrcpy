@@ -91,7 +91,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final MotionEvent.PointerProperties[] pointerProperties = new MotionEvent.PointerProperties[PointersState.MAX_POINTERS];
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
-    private boolean keepPowerModeOff;
+    private boolean keepDisplayPowerOff;
 
     public Controller(int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.displayId = displayId;
@@ -270,16 +270,16 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_SET_CLIPBOARD:
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
-            case ControlMessage.TYPE_SET_SCREEN_POWER_MODE:
+            case ControlMessage.TYPE_SET_DISPLAY_POWER:
                 if (supportsInputEvents) {
-                    int mode = msg.getAction();
-                    boolean setPowerModeOk = Device.setScreenPowerMode(mode);
-                    if (setPowerModeOk) {
-                        keepPowerModeOff = mode == Device.POWER_MODE_OFF;
-                        Ln.i("Device screen turned " + (mode == Device.POWER_MODE_OFF ? "off" : "on"));
+                    boolean on = msg.getOn();
+                    boolean setDisplayPowerOk = Device.setDisplayPower(on);
+                    if (setDisplayPowerOk) {
+                        keepDisplayPowerOff = !on;
+                        Ln.i("Device display turned " + (on ? "on" : "off"));
                         if (cleanUp != null) {
-                            boolean mustRestoreOnExit = mode != Device.POWER_MODE_NORMAL;
-                            cleanUp.setRestoreNormalPowerMode(mustRestoreOnExit);
+                            boolean mustRestoreOnExit = !on;
+                            cleanUp.setRestoreDisplayPower(mustRestoreOnExit);
                         }
                     }
                 }
@@ -310,8 +310,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
-        if (keepPowerModeOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
-            schedulePowerModeOff();
+        if (keepDisplayPowerOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
+            scheduleDisplayPowerOff();
         }
         return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
     }
@@ -488,12 +488,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     /**
-     * Schedule a call to set power mode to off after a small delay.
+     * Schedule a call to set display power to off after a small delay.
      */
-    private static void schedulePowerModeOff() {
+    private static void scheduleDisplayPowerOff() {
         EXECUTOR.schedule(() -> {
-            Ln.i("Forcing screen off");
-            Device.setScreenPowerMode(Device.POWER_MODE_OFF);
+            Ln.i("Forcing display off");
+            Device.setDisplayPower(false);
         }, 200, TimeUnit.MILLISECONDS);
     }
 
@@ -509,8 +509,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             return true;
         }
 
-        if (keepPowerModeOff) {
-            schedulePowerModeOff();
+        if (keepDisplayPowerOff) {
+            scheduleDisplayPowerOff();
         }
         return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
     }
