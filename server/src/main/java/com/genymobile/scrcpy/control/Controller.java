@@ -273,7 +273,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             case ControlMessage.TYPE_SET_DISPLAY_POWER:
                 if (supportsInputEvents && displayId != Device.DISPLAY_ID_NONE) {
                     boolean on = msg.getOn();
-                    boolean setDisplayPowerOk = Device.setDisplayPower(on);
+                    boolean setDisplayPowerOk = Device.setDisplayPower(displayId, on);
                     if (setDisplayPowerOk) {
                         keepDisplayPowerOff = !on;
                         Ln.i("Device display turned " + (on ? "on" : "off"));
@@ -312,7 +312,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {
         if (keepDisplayPowerOff && action == KeyEvent.ACTION_UP && (keycode == KeyEvent.KEYCODE_POWER || keycode == KeyEvent.KEYCODE_WAKEUP)) {
             assert displayId != Device.DISPLAY_ID_NONE;
-            scheduleDisplayPowerOff();
+            scheduleDisplayPowerOff(displayId);
         }
         return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
     }
@@ -491,10 +491,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     /**
      * Schedule a call to set display power to off after a small delay.
      */
-    private static void scheduleDisplayPowerOff() {
+    private static void scheduleDisplayPowerOff(int displayId) {
         EXECUTOR.schedule(() -> {
             Ln.i("Forcing display off");
-            Device.setDisplayPower(false);
+            Device.setDisplayPower(displayId, false);
         }, 200, TimeUnit.MILLISECONDS);
     }
 
@@ -512,7 +512,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         if (keepDisplayPowerOff) {
             assert displayId != Device.DISPLAY_ID_NONE;
-            scheduleDisplayPowerOff();
+            scheduleDisplayPowerOff(displayId);
         }
         return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
     }

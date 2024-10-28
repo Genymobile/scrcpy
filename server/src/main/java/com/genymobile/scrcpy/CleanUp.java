@@ -143,7 +143,7 @@ public final class CleanUp {
                 Device.powerOffScreen(displayId);
             } else if (restoreDisplayPower) {
                 Ln.i("Restoring display power");
-                Device.setDisplayPower(true);
+                Device.setDisplayPower(displayId, true);
             }
         }
 

@@ -126,7 +126,13 @@ public final class Device {
         return clipboardManager.setText(text);
     }
 
-    public static boolean setDisplayPower(boolean on) {
+    public static boolean setDisplayPower(int displayId, boolean on) {
+        assert displayId != Device.DISPLAY_ID_NONE;
+
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15) {
+            return ServiceManager.getDisplayManager().requestDisplayPower(displayId, on);
+        }
+
         boolean applyToMultiPhysicalDisplays = Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10;
 
         if (applyToMultiPhysicalDisplays
