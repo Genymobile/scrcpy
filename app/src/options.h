@@ -134,6 +134,8 @@ enum sc_lock_video_orientation {
     SC_LOCK_VIDEO_ORIENTATION_UNLOCKED = -1,
     // lock the current orientation when scrcpy starts
     SC_LOCK_VIDEO_ORIENTATION_INITIAL = -2,
+    // like SC_LOCK_VIDEO_ORIENTATION_INITIAL, but set automatically
+    SC_LOCK_VIDEO_ORIENTATION_INITIAL_AUTO = -3,
     SC_LOCK_VIDEO_ORIENTATION_0 = 0,
     SC_LOCK_VIDEO_ORIENTATION_90 = 3,
     SC_LOCK_VIDEO_ORIENTATION_180 = 2,

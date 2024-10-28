@@ -132,6 +132,23 @@ public final class Server {
             throw new ConfigurationException("New virtual display is not supported");
         }
 
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+            int lockVideoOrientation = options.getLockVideoOrientation();
+            if (lockVideoOrientation != Device.LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+                if (lockVideoOrientation != Device.LOCK_VIDEO_ORIENTATION_INITIAL_AUTO) {
+                    Ln.e("--lock-video-orientation is broken on Android >= 14: <https://github.com/Genymobile/scrcpy/issues/4011>");
+                    throw new ConfigurationException("--lock-video-orientation is broken on Android >= 14");
+                } else {
+                    // If the flag has been set automatically (because v4l2 sink is enabled), do not fail
+                    Ln.w("--lock-video-orientation is ignored on Android >= 14: <https://github.com/Genymobile/scrcpy/issues/4011>");
+                }
+            }
+            if (options.getCrop() != null) {
+                Ln.e("--crop is broken on Android >= 14: <https://github.com/Genymobile/scrcpy/issues/4162>");
+                throw new ConfigurationException("Crop is not broken on Android >= 14");
+            }
+        }
+
         CleanUp cleanUp = null;
         Thread initThread = null;
 

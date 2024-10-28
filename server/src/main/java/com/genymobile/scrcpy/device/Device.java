@@ -42,6 +42,8 @@ public final class Device {
 
     public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
     public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
+    // like SC_LOCK_VIDEO_ORIENTATION_INITIAL, but set automatically
+    public static final int LOCK_VIDEO_ORIENTATION_INITIAL_AUTO = -3;
 
     private Device() {
         // not instantiable

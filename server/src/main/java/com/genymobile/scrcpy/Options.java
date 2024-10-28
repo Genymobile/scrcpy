@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
+import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.CodecOption;
@@ -31,7 +32,7 @@ public class Options {
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
-    private int lockVideoOrientation = -1;
+    private int lockVideoOrientation = Device.LOCK_VIDEO_ORIENTATION_UNLOCKED;
     private boolean tunnelForward;
     private Rect crop;
     private boolean control = true;
@@ -251,6 +252,10 @@ public class Options {
 
     public boolean getSendCodecMeta() {
         return sendCodecMeta;
+    }
+
+    public void resetLockVideoOrientation() {
+        this.lockVideoOrientation = Device.LOCK_VIDEO_ORIENTATION_UNLOCKED;
     }
 
     @SuppressWarnings("MethodLength")
