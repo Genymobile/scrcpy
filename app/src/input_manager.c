@@ -203,13 +203,12 @@ set_device_clipboard(struct sc_input_manager *im, bool paste,
 }
 
 static void
-set_screen_power_mode(struct sc_input_manager *im,
-                      enum sc_screen_power_mode mode) {
+set_display_power(struct sc_input_manager *im, bool on) {
     assert(im->controller);
 
     struct sc_control_msg msg;
-    msg.type = SC_CONTROL_MSG_TYPE_SET_SCREEN_POWER_MODE;
-    msg.set_screen_power_mode.mode = mode;
+    msg.type = SC_CONTROL_MSG_TYPE_SET_DISPLAY_POWER;
+    msg.set_display_power.on = on;
 
     if (!sc_controller_push_msg(im->controller, &msg)) {
         LOGW("Could not request 'set screen power mode'");
@@ -415,10 +414,8 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 return;
             case SDLK_o:
                 if (control && !repeat && down && !paused) {
-                    enum sc_screen_power_mode mode = shift
-                                                   ? SC_SCREEN_POWER_MODE_NORMAL
-                                                   : SC_SCREEN_POWER_MODE_OFF;
-                    set_screen_power_mode(im, mode);
+                    bool on = shift;
+                    set_display_power(im, on);
                 }
                 return;
             case SDLK_z:
