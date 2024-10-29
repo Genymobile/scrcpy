@@ -2822,7 +2822,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->v4l2_buffer && !opts->v4l2_device) {
-        LOGE("V4L2 buffer value without V4L2 sink\n");
+        LOGE("V4L2 buffer value without V4L2 sink");
         return false;
     }
 #endif
