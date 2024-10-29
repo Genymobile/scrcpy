@@ -140,12 +140,6 @@ Also see \fB\-e\fR (\fB\-\-select\-tcpip\fR).
 Disable screensaver while scrcpy is running.
 
 .TP
-.BI "\-\-display\-buffer " ms
-Add a buffering delay (in milliseconds) before displaying. This increases latency to compensate for jitter.
-
-Default is 0 (no buffering).
-
-.TP
 .BI "\-\-display\-id " id
 Specify the device display id to mirror.
 
@@ -560,7 +554,15 @@ It requires to lock the video orientation (see \fB\-\-lock\-video\-orientation\f
 .BI "\-\-v4l2-buffer " ms
 Add a buffering delay (in milliseconds) before pushing frames. This increases latency to compensate for jitter.
 
-This option is similar to \fB\-\-display\-buffer\fR, but specific to V4L2 sink.
+This option is similar to \fB\-\-video\-buffer\fR, but specific to V4L2 sink.
+
+Default is 0 (no buffering).
+
+.TP
+.BI "\-\-video\-buffer " ms
+Add a buffering delay (in milliseconds) before displaying video frames.
+
+This increases latency to compensate for jitter.
 
 Default is 0 (no buffering).
 

@@ -20,7 +20,6 @@ _scrcpy() {
         --crop=
         -d --select-usb
         --disable-screensaver
-        --display-buffer=
         --display-id=
         --display-orientation=
         -e --select-tcpip
@@ -90,6 +89,7 @@ _scrcpy() {
         --v4l2-sink=
         -v --version
         -V --verbosity=
+        --video-buffer=
         --video-codec=
         --video-codec-options=
         --video-encoder=
@@ -191,7 +191,6 @@ _scrcpy() {
         |--camera-size \
         |--crop \
         |--display-id \
-        |--display-buffer \
         |--max-fps \
         |-m|--max-size \
         |-p|--port \
@@ -201,6 +200,7 @@ _scrcpy() {
         |--tunnel-port \
         |--v4l2-buffer \
         |--v4l2-sink \
+        |--video-buffer \
         |--video-codec-options \
         |--video-encoder \
         |--tcpip \

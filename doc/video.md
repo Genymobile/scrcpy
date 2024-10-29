@@ -189,15 +189,15 @@ The configuration is available independently for the display,
 [v4l2 sinks](video.md#video4linux) and [audio](audio.md#buffering) playback.
 
 ```bash
-scrcpy --display-buffer=50   # add 50ms buffering for display
-scrcpy --v4l2-buffer=300     # add 300ms buffering for v4l2 sink
+scrcpy --video-buffer=50     # add 50ms buffering for video playback
 scrcpy --audio-buffer=200    # set 200ms buffering for audio playback
+scrcpy --v4l2-buffer=300     # add 300ms buffering for v4l2 sink
 ```
 
 They can be applied simultaneously:
 
 ```bash
-scrcpy --display-buffer=50 --v4l2-buffer=300
+scrcpy --video-buffer=50 --v4l2-buffer=300
 ```
 
 

@@ -50,6 +50,7 @@ enum {
     OPT_POWER_OFF_ON_CLOSE,
     OPT_V4L2_SINK,
     OPT_DISPLAY_BUFFER,
+    OPT_VIDEO_BUFFER,
     OPT_V4L2_BUFFER,
     OPT_TUNNEL_HOST,
     OPT_TUNNEL_PORT,
@@ -321,12 +322,10 @@ static const struct sc_option options[] = {
         .argdesc = "id",
     },
     {
+        // deprecated
         .longopt_id = OPT_DISPLAY_BUFFER,
         .longopt = "display-buffer",
         .argdesc = "ms",
-        .text = "Add a buffering delay (in milliseconds) before displaying. "
-                "This increases latency to compensate for jitter.\n"
-                "Default is 0 (no buffering).",
     },
     {
         .longopt_id = OPT_DISPLAY_ID,
@@ -898,10 +897,19 @@ static const struct sc_option options[] = {
         .argdesc = "ms",
         .text = "Add a buffering delay (in milliseconds) before pushing "
                 "frames. This increases latency to compensate for jitter.\n"
-                "This option is similar to --display-buffer, but specific to "
+                "This option is similar to --video-buffer, but specific to "
                 "V4L2 sink.\n"
                 "Default is 0 (no buffering).\n"
                 "This option is only available on Linux.",
+    },
+    {
+        .longopt_id = OPT_VIDEO_BUFFER,
+        .longopt = "video-buffer",
+        .argdesc = "ms",
+        .text = "Add a buffering delay (in milliseconds) before displaying "
+                "video frames.\n"
+                "This increases latency to compensate for jitter.\n"
+                "Default is 0 (no buffering).",
     },
     {
         .longopt_id = OPT_VIDEO_CODEC,
@@ -2549,7 +2557,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->power_off_on_close = true;
                 break;
             case OPT_DISPLAY_BUFFER:
-                if (!parse_buffering_time(optarg, &opts->display_buffer)) {
+                LOGW("--display-buffer is deprecated, use --video-buffer "
+                     "instead.");
+                // fall through
+            case OPT_VIDEO_BUFFER:
+                if (!parse_buffering_time(optarg, &opts->video_buffer)) {
                     return false;
                 }
                 break;

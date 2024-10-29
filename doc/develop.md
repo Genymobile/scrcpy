@@ -21,9 +21,9 @@ the client and on the server.
 If video is enabled, then the server sends a raw video stream (H.264 by default)
 of the device screen, with some additional headers for each packet. The client
 decodes the video frames, and displays them as soon as possible, without
-buffering (unless `--display-buffer=delay` is specified) to minimize latency.
-The client is not aware of the device rotation (which is handled by the server),
-it just knows the dimensions of the video frames it receives.
+buffering (unless `--video-buffer=delay` is specified) to minimize latency. The
+client is not aware of the device rotation (which is handled by the server), it
+just knows the dimensions of the video frames it receives.
 
 Similarly, if audio is enabled, then the server sends a raw audio stream (OPUS
 by default) of the device audio output (or the microphone if

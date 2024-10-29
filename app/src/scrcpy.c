@@ -53,7 +53,7 @@ struct scrcpy {
     struct sc_decoder video_decoder;
     struct sc_decoder audio_decoder;
     struct sc_recorder recorder;
-    struct sc_delay_buffer display_buffer;
+    struct sc_delay_buffer video_buffer;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
     struct sc_delay_buffer v4l2_buffer;
@@ -815,11 +815,11 @@ aoa_complete:
 
         if (options->video_playback) {
             struct sc_frame_source *src = &s->video_decoder.frame_source;
-            if (options->display_buffer) {
-                sc_delay_buffer_init(&s->display_buffer,
-                                     options->display_buffer, true);
-                sc_frame_source_add_sink(src, &s->display_buffer.frame_sink);
-                src = &s->display_buffer.frame_source;
+            if (options->video_buffer) {
+                sc_delay_buffer_init(&s->video_buffer,
+                                     options->video_buffer, true);
+                sc_frame_source_add_sink(src, &s->video_buffer.frame_sink);
+                src = &s->video_buffer.frame_source;
             }
 
             sc_frame_source_add_sink(src, &s->screen.frame_sink);

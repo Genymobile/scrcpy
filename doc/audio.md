@@ -170,7 +170,7 @@ latency (for both [video](video.md#buffering) and audio) might be preferable to
 avoid glitches and smooth the playback:
 
 ```
-scrcpy --display-buffer=200 --audio-buffer=200
+scrcpy --video-buffer=200 --audio-buffer=200
 ```
 
 It is also possible to configure another audio buffer (the audio output buffer),
