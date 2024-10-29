@@ -2841,8 +2841,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             if (otg) {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_AOA;
             } else if (!opts->video_playback) {
-                LOGI("No video mirroring, mouse mode switched to UHID");
-                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+                LOGI("No video mirroring, SDK mouse disabled");
+                opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_DISABLED;
             } else {
                 opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_SDK;
             }
