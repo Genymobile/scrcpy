@@ -18,6 +18,21 @@ The initial state is restored when _scrcpy_ is closed.
 If the device is not plugged in (i.e. only connected over TCP/IP),
 `--stay-awake` has no effect (this is the Android behavior).
 
+This changes the value of [`stay_on_while_plugged_in`], setting which can be
+changed manually:
+
+[`stay_on_while_plugged_in`]: https://developer.android.com/reference/android/provider/Settings.Global#STAY_ON_WHILE_PLUGGED_IN
+
+
+```bash
+# get the current show_touches value
+adb shell settings get global stay_on_while_plugged_in
+# enable for AC/USB/wireless chargers
+adb shell settings put global stay_on_while_plugged_in 7
+# disable
+adb shell settings put global stay_on_while_plugged_in 0
+```
+
 
 ## Turn screen off
 
@@ -46,6 +61,15 @@ scrcpy --turn-screen-off --stay-awake
 scrcpy -Sw   # short version
 ```
 
+Since Android 15, it is possible to change this setting manually:
+
+```
+# turn screen off (0 for main display)
+adb shell cmd display power-off 0
+# turn screen on
+adb shell cmd display power-on 0
+```
+
 
 ## Show touches
 
@@ -62,6 +86,16 @@ scrcpy -t   # short version
 
 Note that it only shows _physical_ touches (by a finger on the device).
 
+It is possible to change this setting manually:
+
+```bash
+# get the current show_touches value
+adb shell settings get system show_touches
+# enable show_touches
+adb shell settings put system show_touches 1
+# disable show_touches
+adb shell settings put system show_touches 0
+```
 
 ## Power off on close
 
