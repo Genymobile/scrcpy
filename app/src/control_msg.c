@@ -181,6 +181,7 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
         case SC_CONTROL_MSG_TYPE_COLLAPSE_PANELS:
         case SC_CONTROL_MSG_TYPE_ROTATE_DEVICE:
         case SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
+        case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
             // no additional data
             return 1;
         default:
@@ -303,6 +304,9 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             break;
         case SC_CONTROL_MSG_TYPE_START_APP:
             LOG_CMSG("start app \"%s\"", msg->start_app.name);
+            break;
+        case SC_CONTROL_MSG_TYPE_RESET_VIDEO:
+            LOG_CMSG("reset video");
             break;
         default:
             LOG_CMSG("unknown type: %u", (unsigned) msg->type);

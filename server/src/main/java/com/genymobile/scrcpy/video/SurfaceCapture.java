@@ -79,4 +79,11 @@ public abstract class SurfaceCapture {
     public boolean isClosed() {
         return false;
     }
+
+    /**
+     * Manually request to invalidate (typically a user request).
+     * <p>
+     * The capture implementation is free to ignore the request and do nothing.
+     */
+    public abstract void requestInvalidate();
 }

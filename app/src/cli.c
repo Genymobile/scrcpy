@@ -1023,6 +1023,10 @@ static const struct sc_shortcut shortcuts[] = {
         .text = "Unpause display",
     },
     {
+        .shortcuts = { "MOD+Shift+r" },
+        .text = "Reset video capture/encoding",
+    },
+    {
         .shortcuts = { "MOD+g" },
         .text = "Resize window to 1:1 (pixel-perfect)",
     },

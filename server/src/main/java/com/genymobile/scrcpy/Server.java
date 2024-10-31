@@ -225,6 +225,10 @@ public final class Server {
                 SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
                         options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
                 asyncProcessors.add(surfaceEncoder);
+
+                if (controller != null) {
+                    controller.setSurfaceCapture(surfaceCapture);
+                }
             }
 
             Completion completion = new Completion(asyncProcessors.size());

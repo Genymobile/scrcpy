@@ -285,6 +285,18 @@ open_hard_keyboard_settings(struct sc_input_manager *im) {
 }
 
 static void
+reset_video(struct sc_input_manager *im) {
+    assert(im->controller);
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_RESET_VIDEO;
+
+    if (!sc_controller_push_msg(im->controller, &msg)) {
+        LOGW("Could not request reset video");
+    }
+}
+
+static void
 apply_orientation_transform(struct sc_input_manager *im,
                             enum sc_orientation transform) {
     struct sc_screen *screen = im->screen;
@@ -521,8 +533,12 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_r:
-                if (control && !shift && !repeat && down && !paused) {
-                    rotate_device(im);
+                if (control && !repeat && down && !paused) {
+                    if (shift) {
+                        reset_video(im);
+                    } else {
+                        rotate_device(im);
+                    }
                 }
                 return;
             case SDLK_k:

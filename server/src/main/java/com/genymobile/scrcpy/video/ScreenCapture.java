@@ -291,4 +291,9 @@ public class ScreenCapture extends SurfaceCapture {
             }
         }
     }
+
+    @Override
+    public void requestInvalidate() {
+        invalidate();
+    }
 }

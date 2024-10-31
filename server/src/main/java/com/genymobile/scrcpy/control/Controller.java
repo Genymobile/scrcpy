@@ -9,6 +9,7 @@ import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
 import com.genymobile.scrcpy.wrappers.InputManager;
@@ -93,6 +94,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private boolean keepDisplayPowerOff;
 
+    // Used for resetting video encoding on RESET_VIDEO message
+    private SurfaceCapture surfaceCapture;
+
     public Controller(int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
         this.displayId = displayId;
         this.controlChannel = controlChannel;
@@ -141,6 +145,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 displayDataAvailable.notify();
             }
         }
+    }
+
+    public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
+        this.surfaceCapture = surfaceCapture;
     }
 
     private UhidManager getUhidManager() {
@@ -292,6 +300,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_START_APP:
                 startAppAsync(msg.getText());
+                break;
+            case ControlMessage.TYPE_RESET_VIDEO:
+                resetVideo();
                 break;
             default:
                 // do nothing
@@ -678,6 +689,13 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 boolean mustRestoreOnExit = !on;
                 cleanUp.setRestoreDisplayPower(mustRestoreOnExit);
             }
+        }
+    }
+
+    private void resetVideo() {
+        if (surfaceCapture != null) {
+            Ln.i("Video capture reset");
+            surfaceCapture.requestInvalidate();
         }
     }
 }

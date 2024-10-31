@@ -14,6 +14,8 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.view.Surface;
 
+import java.io.IOException;
+
 public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
@@ -72,13 +74,8 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
     }
 
-    @Override
-    public void start(Surface surface) {
-        if (virtualDisplay != null) {
-            virtualDisplay.release();
-            virtualDisplay = null;
-        }
 
+    public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
             int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
@@ -114,6 +111,15 @@ public class NewDisplayCapture extends SurfaceCapture {
     }
 
     @Override
+    public void start(Surface surface) throws IOException {
+        if (virtualDisplay == null) {
+            startNew(surface);
+        } else {
+            virtualDisplay.setSurface(surface);
+        }
+    }
+
+    @Override
     public void release() {
         if (virtualDisplay != null) {
             virtualDisplay.release();
@@ -141,5 +147,10 @@ public class NewDisplayCapture extends SurfaceCapture {
         int den = initialSize.getMax();
         int num = size.getMax();
         return initialDpi * num / den;
+    }
+
+    @Override
+    public void requestInvalidate() {
+        invalidate();
     }
 }
