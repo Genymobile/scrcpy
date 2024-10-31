@@ -272,16 +272,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_SET_DISPLAY_POWER:
                 if (supportsInputEvents && displayId != Device.DISPLAY_ID_NONE) {
-                    boolean on = msg.getOn();
-                    boolean setDisplayPowerOk = Device.setDisplayPower(displayId, on);
-                    if (setDisplayPowerOk) {
-                        keepDisplayPowerOff = !on;
-                        Ln.i("Device display turned " + (on ? "on" : "off"));
-                        if (cleanUp != null) {
-                            boolean mustRestoreOnExit = !on;
-                            cleanUp.setRestoreDisplayPower(mustRestoreOnExit);
-                        }
-                    }
+                    setDisplayPower(msg.getOn());
                 }
                 break;
             case ControlMessage.TYPE_ROTATE_DEVICE:
@@ -675,6 +666,18 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             }
 
             return data;
+        }
+    }
+
+    private void setDisplayPower(boolean on) {
+        boolean setDisplayPowerOk = Device.setDisplayPower(displayId, on);
+        if (setDisplayPowerOk) {
+            keepDisplayPowerOff = !on;
+            Ln.i("Device display turned " + (on ? "on" : "off"));
+            if (cleanUp != null) {
+                boolean mustRestoreOnExit = !on;
+                cleanUp.setRestoreDisplayPower(mustRestoreOnExit);
+            }
         }
     }
 }
