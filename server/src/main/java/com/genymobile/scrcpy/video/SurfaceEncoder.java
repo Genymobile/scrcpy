@@ -94,7 +94,21 @@ public class SurfaceEncoder implements AsyncProcessor {
 
                     mediaCodec.start();
 
-                    alive = encode(mediaCodec, streamer);
+                    // Set the MediaCodec instance to "interrupt" (by signaling an EOS) on reset
+                    reset.setRunningMediaCodec(mediaCodec);
+
+                    if (stopped.get()) {
+                        alive = false;
+                    } else {
+                        boolean resetRequested = reset.consumeReset();
+                        if (!resetRequested) {
+                            // If a reset is requested during encode(), it will interrupt the encoding by an EOS
+                            encode(mediaCodec, streamer);
+                        }
+                        // The capture might have been closed internally (for example if the camera is disconnected)
+                        alive = !stopped.get() && !capture.isClosed();
+                    }
+
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     mediaCodec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
@@ -105,6 +119,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     Ln.i("Retrying...");
                     alive = true;
                 } finally {
+                    reset.setRunningMediaCodec(null);
                     mediaCodec.reset();
                     if (surface != null) {
                         surface.release();
@@ -165,25 +180,16 @@ public class SurfaceEncoder implements AsyncProcessor {
         return 0;
     }
 
-    private boolean encode(MediaCodec codec, Streamer streamer) throws IOException {
-        boolean eof = false;
-        boolean alive = true;
+    private void encode(MediaCodec codec, Streamer streamer) throws IOException {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
-        while (!reset.consumeReset() && !eof) {
-            if (stopped.get()) {
-                alive = false;
-                break;
-            }
+        boolean eos;
+        do {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
-                if (reset.consumeReset()) {
-                    // must restart encoding with new size
-                    break;
-                }
-
-                eof = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
-                if (outputBufferId >= 0) {
+                eos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+                // On EOS, there might be data or not, depending on bufferInfo.size
+                if (outputBufferId >= 0 && bufferInfo.size > 0) {
                     ByteBuffer codecBuffer = codec.getOutputBuffer(outputBufferId);
 
                     boolean isConfig = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
@@ -200,14 +206,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     codec.releaseOutputBuffer(outputBufferId, false);
                 }
             }
-        }
-
-        if (capture.isClosed()) {
-            // The capture might have been closed internally (for example if the camera is disconnected)
-            alive = false;
-        }
-
-        return !eof && alive;
+        } while (!eos);
     }
 
     private static MediaCodec createMediaCodec(Codec codec, String encoderName) throws IOException, ConfigurationException {
@@ -300,6 +299,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     public void stop() {
         if (thread != null) {
             stopped.set(true);
+            reset.reset();
         }
     }
 
