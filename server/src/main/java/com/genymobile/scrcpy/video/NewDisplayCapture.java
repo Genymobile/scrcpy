@@ -46,7 +46,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     }
 
     @Override
-    public void init() {
+    protected void init() {
         size = newDisplay.getSize();
         dpi = newDisplay.getDpi();
         if (size == null || dpi == 0) {

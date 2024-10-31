@@ -6,36 +6,37 @@ import com.genymobile.scrcpy.device.Size;
 import android.view.Surface;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A video source which can be rendered on a Surface for encoding.
  */
 public abstract class SurfaceCapture {
 
-    private final AtomicBoolean resetCapture = new AtomicBoolean();
-
-    /**
-     * Request the encoding session to be restarted, for example if the capture implementation detects that the video source size has changed (on
-     * device rotation for example).
-     */
-    protected void requestReset() {
-        resetCapture.set(true);
+    public interface CaptureListener {
+        void onInvalidated();
     }
 
+    private CaptureListener listener;
+
     /**
-     * Consume the reset request (intended to be called by the encoder).
-     *
-     * @return {@code true} if a reset request was pending, {@code false} otherwise.
+     * Notify the listener that the capture has been invalidated (for example, because its size changed).
      */
-    public boolean consumeReset() {
-        return resetCapture.getAndSet(false);
+    protected void invalidate() {
+        listener.onInvalidated();
     }
 
     /**
      * Called once before the first capture starts.
      */
-    public abstract void init() throws ConfigurationException, IOException;
+    public final void init(CaptureListener listener) throws ConfigurationException, IOException {
+        this.listener = listener;
+        init();
+    }
+
+    /**
+     * Called once before the first capture starts.
+     */
+    protected abstract void init() throws ConfigurationException, IOException;
 
     /**
      * Called after the last capture ends (if and only if {@link #init()} has been called).

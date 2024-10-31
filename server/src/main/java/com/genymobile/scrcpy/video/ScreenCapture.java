@@ -85,7 +85,7 @@ public class ScreenCapture extends SurfaceCapture {
                         Ln.v("ScreenCapture: requestReset(): " + getSessionDisplaySize() + " -> (unknown)");
                     }
                     setSessionDisplaySize(null);
-                    requestReset();
+                    invalidate();
                 } else {
                     Size size = di.getSize();
 
@@ -102,7 +102,7 @@ public class ScreenCapture extends SurfaceCapture {
                         // Set the new size immediately, so that a future onDisplayChanged() event called before the asynchronous prepare()
                         // considers that the current size is the requested size (to avoid a duplicate requestReset())
                         setSessionDisplaySize(size);
-                        requestReset();
+                        invalidate();
                     } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
                         Ln.v("ScreenCapture: Size not changed (" + size + "): do not requestReset()");
                     }
@@ -246,7 +246,7 @@ public class ScreenCapture extends SurfaceCapture {
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
                     Ln.v("ScreenCapture: onRotationChanged(" + rotation + ")");
                 }
-                requestReset();
+                invalidate();
             }
         };
         ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
@@ -272,7 +272,7 @@ public class ScreenCapture extends SurfaceCapture {
                     // Ignore events related to other display ids
                     return;
                 }
-                requestReset();
+                invalidate();
             }
         };
         ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);

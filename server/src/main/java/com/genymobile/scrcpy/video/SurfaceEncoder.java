@@ -49,6 +49,8 @@ public class SurfaceEncoder implements AsyncProcessor {
     private Thread thread;
     private final AtomicBoolean stopped = new AtomicBoolean();
 
+    private final CaptureReset reset = new CaptureReset();
+
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, int videoBitRate, float maxFps, List<CodecOption> codecOptions,
             String encoderName, boolean downsizeOnError) {
         this.capture = capture;
@@ -65,14 +67,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
-        capture.init();
+        capture.init(reset);
 
         try {
             boolean alive;
             boolean headerWritten = false;
 
             do {
-                capture.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
+                reset.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
                 capture.prepare();
                 Size size = capture.getSize();
                 if (!headerWritten) {
@@ -168,14 +170,14 @@ public class SurfaceEncoder implements AsyncProcessor {
         boolean alive = true;
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
-        while (!capture.consumeReset() && !eof) {
+        while (!reset.consumeReset() && !eof) {
             if (stopped.get()) {
                 alive = false;
                 break;
             }
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
-                if (capture.consumeReset()) {
+                if (reset.consumeReset()) {
                     // must restart encoding with new size
                     break;
                 }
