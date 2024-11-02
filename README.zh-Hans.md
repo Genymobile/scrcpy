@@ -25,6 +25,7 @@ _发音为 "**scr**een **c**o**py**"_
 [lowlatency]: https://github.com/Genymobile/scrcpy/pull/646
 
 功能：
+ - [音频转发（安卓11+）]
  - [屏幕录制](#屏幕录制)
  - 镜像时[关闭设备屏幕](#关闭设备屏幕)
  - 双向[复制粘贴](#复制粘贴)
