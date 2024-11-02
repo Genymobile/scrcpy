@@ -1,5 +1,3 @@
-> edit from [@msraj1584's fork](https://github.com/msraj1584/scrcpy)
-
 [f4c7044]: https://github.com/Genymobile/scrcpy/blob/f4c7044b46ae28eb64cb5e1a15c9649a44023c70/README.md
 
 # scrcpy (v1.22)
@@ -39,15 +37,7 @@ _发音为 "**scr**een **c**o**py**"_
 ## 系统要求
 
 安卓设备最低需要支持 API 21 (Android 5.0)。
-
-确保设备已[开启 adb 调试][enable-adb]。
-
-[enable-adb]: https://developer.android.com/studio/command-line/adb.html#Enabling
-
-在某些设备上，还需要开启[额外的选项][control]以使用鼠标和键盘进行控制。
-
-[control]: https://github.com/Genymobile/scrcpy/issues/70#issuecomment-373286323
-
+使用[音频转发]()，需要API>=30（Android 11+）。
 
 ## 获取本程序
 
