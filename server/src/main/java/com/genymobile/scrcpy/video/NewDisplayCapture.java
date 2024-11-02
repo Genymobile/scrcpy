@@ -12,6 +12,8 @@ import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.view.Surface;
 
 public class NewDisplayCapture extends SurfaceCapture {
@@ -60,54 +62,66 @@ public class NewDisplayCapture extends SurfaceCapture {
                 mainDisplayDpi = 240;
             }
         }
+
+        HandlerThread handlerThread = new HandlerThread("DisplayListener");
+        handlerThread.start();
+        Handler handler = new Handler(handlerThread.getLooper());
+        ServiceManager.getDisplayManager().registerDisplayListener(displayId -> {
+            // racy, but just for a quick&dirty test
+            if (virtualDisplay != null && displayId == virtualDisplay.getDisplay().getDisplayId()) {
+                requestReset();
+            }
+        }, handler);
     }
+    int r;
 
     @Override
     public void prepare() {
-        if (!newDisplay.hasExplicitSize()) {
-            size = ScreenInfo.computeVideoSize(mainDisplaySize.getWidth(), mainDisplaySize.getHeight(), maxSize);
-        }
-        if (!newDisplay.hasExplicitDpi()) {
-            dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
+        if (virtualDisplay == null) {
+            if (!newDisplay.hasExplicitSize()) {
+                size = ScreenInfo.computeVideoSize(mainDisplaySize.getWidth(), mainDisplaySize.getHeight(), maxSize);
+            }
+            if (!newDisplay.hasExplicitDpi()) {
+                dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
+            }
+        } else {
+            DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
+            size = displayInfo.getSize();
+            dpi = displayInfo.getDpi();
         }
     }
 
     @Override
     public void start(Surface surface) {
-        if (virtualDisplay != null) {
-            virtualDisplay.release();
-            virtualDisplay = null;
-        }
-
-        int virtualDisplayId;
-        try {
-            int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                    | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
-                    | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
-                    | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
-                    | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL
-                    | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
-            if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
-                flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
-                        | VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP
-                        | VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED
-                        | VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED;
-                if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
-                     flags |= VIRTUAL_DISPLAY_FLAG_OWN_FOCUS
-                             | VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP;
+        if (virtualDisplay == null) {
+            try {
+                int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+                        | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+                        | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
+                    flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED | VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP | VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED
+                            | VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED;
+                    if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                        flags |= VIRTUAL_DISPLAY_FLAG_OWN_FOCUS | VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP;
+                    }
                 }
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createNewVirtualDisplay("scrcpy", size.getWidth(), size.getHeight(), dpi, surface, flags);
+                int virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+                Ln.i("New display: " + size.getWidth() + "x" + size.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+            } catch (Exception e) {
+                Ln.e("Could not create display", e);
+
+                throw new AssertionError("Could not create display");
             }
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createNewVirtualDisplay("scrcpy", size.getWidth(), size.getHeight(), dpi, surface, flags);
-            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-            Ln.i("New display: " + size.getWidth() + "x" + size.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
-        } catch (Exception e) {
-            Ln.e("Could not create display", e);
-            throw new AssertionError("Could not create display");
+        } else {
+            Ln.i("Display resized: " + size);
+
+            virtualDisplay.setSurface(surface);
         }
 
         if (vdListener != null) {
-            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+            int virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Rect contentRect = new Rect(0, 0, size.getWidth(), size.getHeight());
             PositionMapper positionMapper = new PositionMapper(size, contentRect, 0);
             vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
