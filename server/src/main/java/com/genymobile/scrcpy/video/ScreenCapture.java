@@ -240,18 +240,16 @@ public class ScreenCapture extends SurfaceCapture {
     }
 
     private void registerDisplayListenerFallbacks() {
-        if (displayId == 0) {
-            rotationWatcher = new IRotationWatcher.Stub() {
-                @Override
-                public void onRotationChanged(int rotation) {
-                    if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                        Ln.v("ScreenCapture: onRotationChanged(" + rotation + ")");
-                    }
-                    requestReset();
+        rotationWatcher = new IRotationWatcher.Stub() {
+            @Override
+            public void onRotationChanged(int rotation) {
+                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                    Ln.v("ScreenCapture: onRotationChanged(" + rotation + ")");
                 }
-            };
-            ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
-        }
+                requestReset();
+            }
+        };
+        ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
 
         // Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10 (but implied by == API_34_ANDROID 14)
         displayFoldListener = new IDisplayFoldListener.Stub() {
