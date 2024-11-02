@@ -2,7 +2,7 @@
 
 # scrcpy (v1.22)
 
-<img src="data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _发音为 "**scr**een **c**o**py**"_
 
