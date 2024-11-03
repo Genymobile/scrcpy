@@ -73,10 +73,29 @@ public final class CleanUp {
             }
         }
 
+        int restoreScreenOffTimeout = -1;
+        int screenOffTimeout = options.getScreenOffTimeout();
+        if (screenOffTimeout != -1) {
+            try {
+                String oldValue = Settings.getAndPutValue(Settings.TABLE_SYSTEM, "screen_off_timeout", String.valueOf(screenOffTimeout));
+                try {
+                    int currentScreenOffTimeout = Integer.parseInt(oldValue);
+                    // Restore only if the current value is different
+                    if (currentScreenOffTimeout != screenOffTimeout) {
+                        restoreScreenOffTimeout = currentScreenOffTimeout;
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore
+                }
+            } catch (SettingsException e) {
+                Ln.e("Could not change \"screen_off_timeout\"", e);
+            }
+        }
+
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
 
         try {
-            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen);
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout);
         } catch (InterruptedException e) {
             // ignore
         } catch (IOException e) {
@@ -84,7 +103,8 @@ public final class CleanUp {
         }
     }
 
-    private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen) throws IOException, InterruptedException {
+    private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout)
+            throws IOException, InterruptedException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -93,6 +113,7 @@ public final class CleanUp {
                 String.valueOf(restoreStayOn),
                 String.valueOf(disableShowTouches),
                 String.valueOf(powerOffScreen),
+                String.valueOf(restoreScreenOffTimeout),
         };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -139,6 +160,7 @@ public final class CleanUp {
         int restoreStayOn = Integer.parseInt(args[1]);
         boolean disableShowTouches = Boolean.parseBoolean(args[2]);
         boolean powerOffScreen = Boolean.parseBoolean(args[3]);
+        int restoreScreenOffTimeout = Integer.parseInt(args[4]);
 
         // Dynamic option
         boolean restoreDisplayPower = false;
@@ -172,6 +194,15 @@ public final class CleanUp {
                 Settings.putValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(restoreStayOn));
             } catch (SettingsException e) {
                 Ln.e("Could not restore \"stay_on_while_plugged_in\"", e);
+            }
+        }
+
+        if (restoreScreenOffTimeout != -1) {
+            Ln.i("Restoring \"screen off timeout\"");
+            try {
+                Settings.putValue(Settings.TABLE_SYSTEM, "screen_off_timeout", String.valueOf(restoreScreenOffTimeout));
+            } catch (SettingsException e) {
+                Ln.e("Could not restore \"screen_off_timeout\"", e);
             }
         }
 

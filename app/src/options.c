@@ -62,6 +62,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_buffer = -1, // depends on the audio format,
     .audio_output_buffer = SC_TICK_FROM_MS(5),
     .time_limit = 0,
+    .screen_off_timeout = -1,
 #ifdef HAVE_V4L2
     .v4l2_device = NULL,
     .v4l2_buffer = 0,

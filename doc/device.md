@@ -71,6 +71,31 @@ adb shell cmd display power-on 0
 ```
 
 
+## Screen off timeout
+
+The Android screen automatically turns off after some delay.
+
+To change this delay while scrcpy is running:
+
+```bash
+scrcpy --screen-off-timeout=300  # 300 seconds (5 minutes)
+```
+
+The initial value is restored on exit.
+
+It is possible to change this setting manually:
+
+```bash
+# get the current screen_off_timeout value
+adb shell settings get system screen_off_timeout
+# set a new value (in milliseconds)
+adb shell settings put system screen_off_timeout 30000
+```
+
+Note that the Android value is in milliseconds, but the scrcpy command line
+argument is in seconds.
+
+
 ## Show touches
 
 For presentations, it may be useful to show physical touches (on the physical

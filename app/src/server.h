@@ -45,6 +45,7 @@ struct sc_server_params {
     uint32_t video_bit_rate;
     uint32_t audio_bit_rate;
     const char *max_fps; // float to be parsed by the server
+    sc_tick screen_off_timeout;
     int8_t lock_video_orientation;
     bool control;
     uint32_t display_id;
