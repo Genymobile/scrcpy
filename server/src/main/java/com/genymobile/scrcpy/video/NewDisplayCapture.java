@@ -107,7 +107,6 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
-            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Rect contentRect = new Rect(0, 0, size.getWidth(), size.getHeight());
             PositionMapper positionMapper = new PositionMapper(size, contentRect, 0);
             vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
