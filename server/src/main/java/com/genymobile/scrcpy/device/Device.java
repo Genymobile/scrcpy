@@ -82,8 +82,9 @@ public final class Device {
                 && injectKeyEvent(KeyEvent.ACTION_UP, keyCode, 0, 0, displayId, injectMode);
     }
 
-    public static boolean isScreenOn() {
-        return ServiceManager.getPowerManager().isScreenOn();
+    public static boolean isScreenOn(int displayId) {
+        assert displayId != DISPLAY_ID_NONE;
+        return ServiceManager.getPowerManager().isScreenOn(displayId);
     }
 
     public static void expandNotificationPanel() {
@@ -181,7 +182,7 @@ public final class Device {
     public static boolean powerOffScreen(int displayId) {
         assert displayId != DISPLAY_ID_NONE;
 
-        if (!isScreenOn()) {
+        if (!isScreenOn(displayId)) {
             return true;
         }
         return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);

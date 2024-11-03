@@ -137,7 +137,7 @@ public final class CleanUp {
             }
         }
 
-        if (Device.isScreenOn() && displayId != Device.DISPLAY_ID_NONE) {
+        if (displayId != Device.DISPLAY_ID_NONE && Device.isScreenOn(displayId)) {
             if (powerOffScreen) {
                 Ln.i("Power off screen");
                 Device.powerOffScreen(displayId);

@@ -166,7 +166,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private void control() throws IOException {
         // on start, power on the device
-        if (powerOn && displayId == 0 && !Device.isScreenOn()) {
+        if (powerOn && displayId == 0 && !Device.isScreenOn(displayId)) {
             Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
 
             // dirty hack
@@ -490,7 +490,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean pressBackOrTurnScreenOn(int action) {
-        if (Device.isScreenOn()) {
+        if (displayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(displayId)) {
             return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
         }
 
