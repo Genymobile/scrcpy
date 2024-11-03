@@ -5,6 +5,8 @@ import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
 
+import android.os.BatteryManager;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,59 +18,110 @@ import java.io.OutputStream;
  */
 public final class CleanUp {
 
-    private static final int MSG_TYPE_MASK = 0b11;
-    private static final int MSG_TYPE_RESTORE_STAY_ON = 0;
-    private static final int MSG_TYPE_DISABLE_SHOW_TOUCHES = 1;
-    private static final int MSG_TYPE_RESTORE_DISPLAY_POWER = 2;
-    private static final int MSG_TYPE_POWER_OFF_SCREEN = 3;
+    // Dynamic options
+    private static final int PENDING_CHANGE_DISPLAY_POWER = 1 << 0;
+    private int pendingChanges;
+    private boolean pendingRestoreDisplayPower;
 
-    private static final int MSG_PARAM_SHIFT = 2;
+    private Thread thread;
 
-    private final OutputStream out;
-
-    public CleanUp(OutputStream out) {
-        this.out = out;
+    private CleanUp(int displayId, Options options) {
+        thread = new Thread(() -> runCleanUp(displayId, options), "cleanup");
+        thread.start();
     }
 
-    public static CleanUp configure(int displayId) throws IOException {
-        String[] cmd = {"app_process", "/", CleanUp.class.getName(), String.valueOf(displayId)};
+    public static CleanUp start(int displayId, Options options) {
+        return new CleanUp(displayId, options);
+    }
+
+    public void interrupt() {
+        thread.interrupt();
+    }
+
+    public void join() throws InterruptedException {
+        thread.join();
+    }
+
+    private void runCleanUp(int displayId, Options options) {
+        boolean disableShowTouches = false;
+        if (options.getShowTouches()) {
+            try {
+                String oldValue = Settings.getAndPutValue(Settings.TABLE_SYSTEM, "show_touches", "1");
+                // If "show touches" was disabled, it must be disabled back on clean up
+                disableShowTouches = !"1".equals(oldValue);
+            } catch (SettingsException e) {
+                Ln.e("Could not change \"show_touches\"", e);
+            }
+        }
+
+        int restoreStayOn = -1;
+        if (options.getStayAwake()) {
+            int stayOn = BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB | BatteryManager.BATTERY_PLUGGED_WIRELESS;
+            try {
+                String oldValue = Settings.getAndPutValue(Settings.TABLE_GLOBAL, "stay_on_while_plugged_in", String.valueOf(stayOn));
+                try {
+                    int currentStayOn = Integer.parseInt(oldValue);
+                    // Restore only if the current value is different
+                    if (currentStayOn != stayOn) {
+                        restoreStayOn = currentStayOn;
+                    }
+                } catch (NumberFormatException e) {
+                    // ignore
+                }
+            } catch (SettingsException e) {
+                Ln.e("Could not change \"stay_on_while_plugged_in\"", e);
+            }
+        }
+
+        boolean powerOffScreen = options.getPowerOffScreenOnClose();
+
+        try {
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen);
+        } catch (InterruptedException e) {
+            // ignore
+        } catch (IOException e) {
+            Ln.e("Clean up I/O exception", e);
+        }
+    }
+
+    private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen) throws IOException, InterruptedException {
+        String[] cmd = {
+                "app_process",
+                "/",
+                CleanUp.class.getName(),
+                String.valueOf(displayId),
+                String.valueOf(restoreStayOn),
+                String.valueOf(disableShowTouches),
+                String.valueOf(powerOffScreen),
+        };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", Server.SERVER_PATH);
         Process process = builder.start();
-        return new CleanUp(process.getOutputStream());
-    }
+        OutputStream out = process.getOutputStream();
 
-    private boolean sendMessage(int type, int param) {
-        assert (type & ~MSG_TYPE_MASK) == 0;
-        int msg = type | param << MSG_PARAM_SHIFT;
-        try {
-            out.write(msg);
-            out.flush();
-            return true;
-        } catch (IOException e) {
-            Ln.w("Could not configure cleanup (type=" + type + ", param=" + param + ")", e);
-            return false;
+        while (true) {
+            int localPendingChanges;
+            boolean localPendingRestoreDisplayPower;
+            synchronized (this) {
+                while (pendingChanges == 0) {
+                    wait();
+                }
+                localPendingChanges = pendingChanges;
+                localPendingRestoreDisplayPower = pendingRestoreDisplayPower;
+                pendingChanges = 0;
+            }
+            if ((localPendingChanges & PENDING_CHANGE_DISPLAY_POWER) != 0) {
+                out.write(localPendingRestoreDisplayPower ? 1 : 0);
+                out.flush();
+            }
         }
     }
 
-    public boolean setRestoreStayOn(int restoreValue) {
-        // Restore the value (between 0 and 7), -1 to not restore
-        // <https://developer.android.com/reference/android/provider/Settings.Global#STAY_ON_WHILE_PLUGGED_IN>
-        assert restoreValue >= -1 && restoreValue <= 7;
-        return sendMessage(MSG_TYPE_RESTORE_STAY_ON, restoreValue & 0b1111);
-    }
-
-    public boolean setDisableShowTouches(boolean disableOnExit) {
-        return sendMessage(MSG_TYPE_DISABLE_SHOW_TOUCHES, disableOnExit ? 1 : 0);
-    }
-
-    public boolean setRestoreDisplayPower(boolean restoreOnExit) {
-        return sendMessage(MSG_TYPE_RESTORE_DISPLAY_POWER, restoreOnExit ? 1 : 0);
-    }
-
-    public boolean setPowerOffScreen(boolean powerOffScreenOnExit) {
-        return sendMessage(MSG_TYPE_POWER_OFF_SCREEN, powerOffScreenOnExit ? 1 : 0);
+    public synchronized void setRestoreDisplayPower(boolean restoreDisplayPower) {
+        pendingRestoreDisplayPower = restoreDisplayPower;
+        pendingChanges |= PENDING_CHANGE_DISPLAY_POWER;
+        notify();
     }
 
     public static void unlinkSelf() {
@@ -83,35 +136,20 @@ public final class CleanUp {
         unlinkSelf();
 
         int displayId = Integer.parseInt(args[0]);
+        int restoreStayOn = Integer.parseInt(args[1]);
+        boolean disableShowTouches = Boolean.parseBoolean(args[2]);
+        boolean powerOffScreen = Boolean.parseBoolean(args[3]);
 
-        int restoreStayOn = -1;
-        boolean disableShowTouches = false;
+        // Dynamic option
         boolean restoreDisplayPower = false;
-        boolean powerOffScreen = false;
 
         try {
             // Wait for the server to die
             int msg;
             while ((msg = System.in.read()) != -1) {
-                int type = msg & MSG_TYPE_MASK;
-                int param = msg >> MSG_PARAM_SHIFT;
-                switch (type) {
-                    case MSG_TYPE_RESTORE_STAY_ON:
-                        restoreStayOn = param > 7 ? -1 : param;
-                        break;
-                    case MSG_TYPE_DISABLE_SHOW_TOUCHES:
-                        disableShowTouches = param != 0;
-                        break;
-                    case MSG_TYPE_RESTORE_DISPLAY_POWER:
-                        restoreDisplayPower = param != 0;
-                        break;
-                    case MSG_TYPE_POWER_OFF_SCREEN:
-                        powerOffScreen = param != 0;
-                        break;
-                    default:
-                        Ln.w("Unexpected msg type: " + type);
-                        break;
-                }
+                // Only restore display power
+                assert msg == 0 || msg == 1;
+                restoreDisplayPower = msg != 0;
             }
         } catch (IOException e) {
             // Expected when the server is dead
