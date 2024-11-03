@@ -129,21 +129,18 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public void start(Surface surface) {
-        if (display != null) {
-            SurfaceControl.destroyDisplay(display);
-            display = null;
-        }
-        if (virtualDisplay != null) {
-            virtualDisplay.release();
-            virtualDisplay = null;
-        }
-
         int virtualDisplayId;
         PositionMapper positionMapper;
         try {
             Size videoSize = screenInfo.getVideoSize();
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
+            if (virtualDisplay == null) {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
+            } else {
+                // density doesn't matter since this virtual display is only used for mirroring
+                virtualDisplay.resize(videoSize.getWidth(), videoSize.getHeight(), 1);
+                virtualDisplay.setSurface(surface);
+            }
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Rect contentRect = new Rect(0, 0, videoSize.getWidth(), videoSize.getHeight());
             // The position are relative to the virtual display, not the original display
@@ -151,7 +148,9 @@ public class ScreenCapture extends SurfaceCapture {
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
-                display = createDisplay();
+                if (display == null) {
+                    display = createDisplay();
+                }
 
                 Rect contentRect = screenInfo.getContentRect();
 
