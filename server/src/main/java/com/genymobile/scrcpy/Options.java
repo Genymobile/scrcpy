@@ -45,6 +45,7 @@ public class Options {
     private boolean cameraHighSpeed;
     private boolean showTouches;
     private boolean stayAwake;
+    private int screenOffTimeout = -1;
     private List<CodecOption> videoCodecOptions;
     private List<CodecOption> audioCodecOptions;
 
@@ -172,6 +173,10 @@ public class Options {
 
     public boolean getStayAwake() {
         return stayAwake;
+    }
+
+    public int getScreenOffTimeout() {
+        return screenOffTimeout;
     }
 
     public List<CodecOption> getVideoCodecOptions() {
@@ -362,6 +367,12 @@ public class Options {
                     break;
                 case "stay_awake":
                     options.stayAwake = Boolean.parseBoolean(value);
+                    break;
+                case "screen_off_timeout":
+                    options.screenOffTimeout = Integer.parseInt(value);
+                    if (options.screenOffTimeout < -1) {
+                        throw new IllegalArgumentException("Invalid screen off timeout: " + options.screenOffTimeout);
+                    }
                     break;
                 case "video_codec_options":
                     options.videoCodecOptions = CodecOption.parse(value);

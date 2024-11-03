@@ -77,6 +77,7 @@ _scrcpy() {
         --rotation=
         -s --serial=
         -S --turn-screen-off
+        --screen-off-timeout=
         --shortcut-mod=
         --start-app=
         -t --show-touches

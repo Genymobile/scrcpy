@@ -320,6 +320,11 @@ execute_server(struct sc_server *server,
     if (params->stay_awake) {
         ADD_PARAM("stay_awake=true");
     }
+    if (params->screen_off_timeout != -1) {
+        assert(params->screen_off_timeout >= 0);
+        uint64_t ms = SC_TICK_TO_MS(params->screen_off_timeout);
+        ADD_PARAM("screen_off_timeout=%" PRIu64, ms);
+    }
     if (params->video_codec_options) {
         VALIDATE_STRING(params->video_codec_options);
         ADD_PARAM("video_codec_options=%s", params->video_codec_options);

@@ -106,6 +106,7 @@ enum {
     OPT_NEW_DISPLAY,
     OPT_LIST_APPS,
     OPT_START_APP,
+    OPT_SCREEN_OFF_TIMEOUT,
 };
 
 struct sc_option {
@@ -792,6 +793,13 @@ static const struct sc_option options[] = {
         .shortopt = 'S',
         .longopt = "turn-screen-off",
         .text = "Turn the device screen off immediately.",
+    },
+    {
+        .longopt_id = OPT_SCREEN_OFF_TIMEOUT,
+        .longopt = "screen-off-timeout",
+        .argdesc = "seconds",
+        .text = "Set the screen off timeout while scrcpy is running (restore "
+                "the initial value on exit).",
     },
     {
         .longopt_id = OPT_SHORTCUT_MOD,
@@ -2156,6 +2164,20 @@ parse_time_limit(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_screen_off_timeout(const char *s, sc_tick *tick) {
+    long value;
+    // value in seconds, but must fit in 31 bits in milliseconds
+    bool ok = parse_integer_arg(s, &value, false, 0, 0x7FFFFFFF / 1000,
+                                "screen off timeout");
+    if (!ok) {
+        return false;
+    }
+
+    *tick = SC_TICK_FROM_SEC(value);
+    return true;
+}
+
+static bool
 parse_pause_on_exit(const char *s, enum sc_pause_on_exit *pause_on_exit) {
     if (!s || !strcmp(s, "true")) {
         *pause_on_exit = SC_PAUSE_ON_EXIT_TRUE;
@@ -2729,6 +2751,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_START_APP:
                 opts->start_app = optarg;
+                break;
+            case OPT_SCREEN_OFF_TIMEOUT:
+                if (!parse_screen_off_timeout(optarg,
+                                              &opts->screen_off_timeout)) {
+                    return false;
+                }
                 break;
             default:
                 // getopt prints the error message on stderr
