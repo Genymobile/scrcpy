@@ -44,8 +44,8 @@ struct sc_audio_regulator {
     // Number of silence samples inserted since the last received packet
     atomic_uint_least32_t underflow;
 
-    // Current applied compensation value (only used by the receiver thread)
-    int compensation;
+    // Non-zero compensation applied (only used by the receiver thread)
+    bool compensation_active;
 
     // Set to true the first time a sample is received
     atomic_bool received;

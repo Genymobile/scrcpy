@@ -288,7 +288,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
 
         // Enable compensation when the difference exceeds +/- 4ms.
         // Disable compensation when the difference is lower than +/- 1ms.
-        int threshold = ar->compensation != 0
+        int threshold = ar->compensation_active
                       ? ar->sample_rate     / 1000  /* 1ms */
                       : ar->sample_rate * 4 / 1000; /* 4ms */
 
@@ -314,7 +314,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
             LOGW("Resampling compensation failed: %d", ret);
             // not fatal
         } else {
-            ar->compensation = diff;
+            ar->compensation_active = diff != 0;
         }
     }
 
@@ -390,7 +390,7 @@ sc_audio_regulator_init(struct sc_audio_regulator *ar, size_t sample_size,
     atomic_init(&ar->played, false);
     atomic_init(&ar->received, false);
     atomic_init(&ar->underflow, 0);
-    ar->compensation = 0;
+    ar->compensation_active = false;
 
     return true;
 
