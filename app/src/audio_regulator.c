@@ -309,14 +309,12 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
         LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
              " compensation=%d", ar->target_buffering, avg, can_read, diff);
 
-        if (diff != ar->compensation) {
-            int ret = swr_set_compensation(swr_ctx, diff, distance);
-            if (ret < 0) {
-                LOGW("Resampling compensation failed: %d", ret);
-                // not fatal
-            } else {
-                ar->compensation = diff;
-            }
+        int ret = swr_set_compensation(swr_ctx, diff, distance);
+        if (ret < 0) {
+            LOGW("Resampling compensation failed: %d", ret);
+            // not fatal
+        } else {
+            ar->compensation = diff;
         }
     }
 
