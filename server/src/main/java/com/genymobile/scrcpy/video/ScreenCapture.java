@@ -7,6 +7,9 @@ import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
@@ -24,11 +27,14 @@ import android.view.IDisplayFoldListener;
 import android.view.IRotationWatcher;
 import android.view.Surface;
 
+import java.io.IOException;
+
 public class ScreenCapture extends SurfaceCapture {
 
     private final VirtualDisplayListener vdListener;
     private final int displayId;
     private int maxSize;
+    private final Rect crop;
 
     private DisplayInfo displayInfo;
     private Size videoSize;
@@ -38,6 +44,9 @@ public class ScreenCapture extends SurfaceCapture {
 
     private IBinder display;
     private VirtualDisplay virtualDisplay;
+
+    private AffineMatrix transform;
+    private OpenGLRunner glRunner;
 
     private DisplayManager.DisplayListenerHandle displayListenerHandle;
     private HandlerThread handlerThread;
@@ -54,6 +63,7 @@ public class ScreenCapture extends SurfaceCapture {
         this.displayId = options.getDisplayId();
         assert displayId != Device.DISPLAY_ID_NONE;
         this.maxSize = options.getMaxSize();
+        this.crop = options.getCrop();
     }
 
     @Override
@@ -125,11 +135,20 @@ public class ScreenCapture extends SurfaceCapture {
 
         Size displaySize = displayInfo.getSize();
         setSessionDisplaySize(displaySize);
-        videoSize = displaySize.limit(maxSize).round8();
+
+        VideoFilter filter = new VideoFilter(displaySize);
+
+        if (crop != null) {
+            boolean transposed = (displayInfo.getRotation() % 2) != 0;
+            filter.addCrop(crop, transposed);
+        }
+
+        transform = filter.getInverseTransform();
+        videoSize = filter.getOutputSize().limit(maxSize).round8();
     }
 
     @Override
-    public void start(Surface surface) {
+    public void start(Surface surface) throws IOException {
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
             display = null;
@@ -139,14 +158,28 @@ public class ScreenCapture extends SurfaceCapture {
             virtualDisplay = null;
         }
 
+        Size inputSize;
+        if (transform != null) {
+            // If there is a filter, it must receive the full display content
+            inputSize = displayInfo.getSize();
+            assert glRunner == null;
+            OpenGLFilter glFilter = new AffineOpenGLFilter(transform);
+            glRunner = new OpenGLRunner(glFilter);
+            surface = glRunner.start(inputSize, videoSize, surface);
+        } else {
+            // If there is no filter, the display must be rendered at target video size directly
+            inputSize = videoSize;
+        }
+
         int virtualDisplayId;
         PositionMapper positionMapper;
         try {
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
+                    .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-            // The position are relative to the virtual display, not the original display
-            positionMapper = new PositionMapper(videoSize, null);
+
+            // The positions are relative to the virtual display, not the original display (so use inputSize, not deviceSize!)
+            positionMapper = PositionMapper.create(videoSize, transform, inputSize);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
@@ -155,11 +188,10 @@ public class ScreenCapture extends SurfaceCapture {
                 Size deviceSize = displayInfo.getSize();
                 int layerStack = displayInfo.getLayerStack();
 
-                setDisplaySurface(display, surface, deviceSize.toRect(), videoSize.toRect(), layerStack);
+                setDisplaySurface(display, surface, deviceSize.toRect(), inputSize.toRect(), layerStack);
                 virtualDisplayId = displayId;
 
-                AffineMatrix videoToDeviceMatrix = videoSize.equals(deviceSize) ? null : AffineMatrix.scale(videoSize, deviceSize);
-                positionMapper = new PositionMapper(videoSize, videoToDeviceMatrix);
+                positionMapper = PositionMapper.create(videoSize, transform, deviceSize);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
@@ -170,6 +202,14 @@ public class ScreenCapture extends SurfaceCapture {
 
         if (vdListener != null) {
             vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (glRunner != null) {
+            glRunner.stopAndRelease();
+            glRunner = null;
         }
     }
 

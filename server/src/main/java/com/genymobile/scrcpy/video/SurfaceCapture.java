@@ -58,6 +58,13 @@ public abstract class SurfaceCapture {
     public abstract void start(Surface surface) throws IOException;
 
     /**
+     * Stop the capture.
+     */
+    public void stop() {
+        // Do nothing by default
+    }
+
+    /**
      * Return the video size
      *
      * @return the video size
