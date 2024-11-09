@@ -87,11 +87,13 @@ public class SurfaceEncoder implements AsyncProcessor {
 
                 Surface surface = null;
                 boolean mediaCodecStarted = false;
+                boolean captureStarted = false;
                 try {
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
 
                     capture.start(surface);
+                    captureStarted = true;
 
                     mediaCodec.start();
                     mediaCodecStarted = true;
@@ -118,6 +120,9 @@ public class SurfaceEncoder implements AsyncProcessor {
                     alive = true;
                 } finally {
                     reset.setRunningMediaCodec(null);
+                    if (captureStarted) {
+                        capture.stop();
+                    }
                     if (mediaCodecStarted) {
                         try {
                             mediaCodec.stop();
