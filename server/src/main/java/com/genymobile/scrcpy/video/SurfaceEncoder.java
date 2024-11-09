@@ -117,6 +117,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     alive = true;
                 } finally {
                     reset.setRunningMediaCodec(null);
+                    capture.stop();
                     try {
                         mediaCodec.stop();
                     } catch (IllegalStateException e) {
