@@ -50,6 +50,11 @@ cd "$SERVER_DIR/src/main/aidl"
     android/content/IOnPrimaryClipChangedListener.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. android/view/IDisplayFoldListener.aidl
 
+# Fake sources to expose hidden Android types to the project
+FAKE_SRC=( \
+    android/content/*java \
+)
+
 SRC=( \
     com/genymobile/scrcpy/*.java \
     com/genymobile/scrcpy/audio/*.java \
@@ -72,6 +77,7 @@ javac -encoding UTF-8 -bootclasspath "$ANDROID_JAR" \
     -cp "$LAMBDA_JAR:$GEN_DIR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
+    ${FAKE_SRC[@]} \
     ${SRC[@]}
 
 echo "Dexing..."
