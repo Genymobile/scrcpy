@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
@@ -145,7 +146,7 @@ public class ScreenCapture extends SurfaceCapture {
                     .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             // The position are relative to the virtual display, not the original display
-            positionMapper = new PositionMapper(videoSize, videoSize);
+            positionMapper = new PositionMapper(videoSize, null);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
@@ -156,7 +157,9 @@ public class ScreenCapture extends SurfaceCapture {
 
                 setDisplaySurface(display, surface, deviceSize.toRect(), videoSize.toRect(), layerStack);
                 virtualDisplayId = displayId;
-                positionMapper = new PositionMapper(deviceSize, videoSize);
+
+                AffineMatrix videoToDeviceMatrix = videoSize.equals(deviceSize) ? null : AffineMatrix.scale(videoSize, deviceSize);
+                positionMapper = new PositionMapper(videoSize, videoToDeviceMatrix);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
