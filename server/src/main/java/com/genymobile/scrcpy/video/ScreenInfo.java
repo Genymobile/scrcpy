@@ -64,7 +64,7 @@ public final class ScreenInfo {
     }
 
     public static ScreenInfo computeScreenInfo(int rotation, Size deviceSize, Rect crop, int maxSize, int lockedVideoOrientation) {
-        if (lockedVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL || lockedVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL_AUTO) {
+        if (lockedVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL) {
             // The user requested to lock the video orientation to the current orientation
             lockedVideoOrientation = rotation;
         }
