@@ -80,14 +80,21 @@ public class CameraCapture extends SurfaceCapture {
                 throw new IOException("No matching camera found");
             }
 
+            Ln.i("Using camera '" + cameraId + "'");
+            cameraDevice = openCamera(cameraId);
+        } catch (CameraAccessException | InterruptedException e) {
+            throw new IOException(e);
+        }
+    }
+
+    @Override
+    public void prepare() throws IOException {
+        try {
             size = selectSize(cameraId, explicitSize, maxSize, aspectRatio, highSpeed);
             if (size == null) {
                 throw new IOException("Could not select camera size");
             }
-
-            Ln.i("Using camera '" + cameraId + "'");
-            cameraDevice = openCamera(cameraId);
-        } catch (CameraAccessException | InterruptedException e) {
+        } catch (CameraAccessException e) {
             throw new IOException(e);
         }
     }
@@ -232,13 +239,7 @@ public class CameraCapture extends SurfaceCapture {
         }
 
         this.maxSize = maxSize;
-        try {
-            size = selectSize(cameraId, null, maxSize, aspectRatio, highSpeed);
-            return size != null;
-        } catch (CameraAccessException e) {
-            Ln.w("Could not select camera size", e);
-            return false;
-        }
+        return true;
     }
 
     @SuppressLint("MissingPermission")

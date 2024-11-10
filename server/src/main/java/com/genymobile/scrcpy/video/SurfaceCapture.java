@@ -46,7 +46,7 @@ public abstract class SurfaceCapture {
     /**
      * Called once before each capture starts, before {@link #getSize()}.
      */
-    public void prepare() throws ConfigurationException {
+    public void prepare() throws ConfigurationException, IOException {
         // empty by default
     }
 
