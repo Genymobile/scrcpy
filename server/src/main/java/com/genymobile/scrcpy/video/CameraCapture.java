@@ -1,9 +1,11 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.HandlerExecutor;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
@@ -68,7 +70,7 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     @Override
-    protected void init() throws IOException {
+    protected void init() throws ConfigurationException, IOException {
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
         cameraHandler = new Handler(cameraThread.getLooper());
@@ -77,7 +79,7 @@ public class CameraCapture extends SurfaceCapture {
         try {
             cameraId = selectCamera(explicitCameraId, cameraFacing);
             if (cameraId == null) {
-                throw new IOException("No matching camera found");
+                throw new ConfigurationException("No matching camera found");
             }
 
             Ln.i("Using camera '" + cameraId + "'");
@@ -99,14 +101,18 @@ public class CameraCapture extends SurfaceCapture {
         }
     }
 
-    private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException {
-        if (explicitCameraId != null) {
-            return explicitCameraId;
-        }
-
+    private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {
         CameraManager cameraManager = ServiceManager.getCameraManager();
 
         String[] cameraIds = cameraManager.getCameraIdList();
+        if (explicitCameraId != null) {
+            if (!Arrays.asList(cameraIds).contains(explicitCameraId)) {
+                Ln.e("Camera with id " + explicitCameraId + " not found\n" + LogUtils.buildCameraListMessage(false));
+                throw new ConfigurationException("Camera id not found");
+            }
+            return explicitCameraId;
+        }
+
         if (cameraFacing == null) {
             // Use the first one
             return cameraIds.length > 0 ? cameraIds[0] : null;
