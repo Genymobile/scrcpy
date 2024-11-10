@@ -29,7 +29,7 @@ import android.view.Surface;
 
 import java.io.IOException;
 
-public class ScreenCapture extends SurfaceCapture {
+public class ScreenCapture extends DisplayCapture {
 
     private final VirtualDisplayListener vdListener;
     private final int displayId;
@@ -39,9 +39,6 @@ public class ScreenCapture extends SurfaceCapture {
 
     private DisplayInfo displayInfo;
     private Size videoSize;
-
-    // Source display size (before resizing/crop) for the current session
-    private Size sessionDisplaySize;
 
     private IBinder display;
     private VirtualDisplay virtualDisplay;
@@ -89,36 +86,7 @@ public class ScreenCapture extends SurfaceCapture {
                 }
             }
             if (this.displayId == displayId) {
-                DisplayInfo di = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
-                if (di == null) {
-                    Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
-                    // We can't compare with the current size, so reset unconditionally
-                    if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                        Ln.v("ScreenCapture: requestReset(): " + getSessionDisplaySize() + " -> (unknown)");
-                    }
-                    setSessionDisplaySize(null);
-                    invalidate();
-                } else {
-                    Size size = di.getSize();
-
-                    // The field is hidden on purpose, to read it with synchronization
-                    @SuppressWarnings("checkstyle:HiddenField")
-                    Size sessionDisplaySize = getSessionDisplaySize(); // synchronized
-
-                    // .equals() also works if sessionDisplaySize == null
-                    if (!size.equals(sessionDisplaySize)) {
-                        // Reset only if the size is different
-                        if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                            Ln.v("ScreenCapture: requestReset(): " + sessionDisplaySize + " -> " + size);
-                        }
-                        // Set the new size immediately, so that a future onDisplayChanged() event called before the asynchronous prepare()
-                        // considers that the current size is the requested size (to avoid a duplicate requestReset())
-                        setSessionDisplaySize(size);
-                        invalidate();
-                    } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                        Ln.v("ScreenCapture: Size not changed (" + size + "): do not requestReset()");
-                    }
-                }
+                handleDisplayChanged(displayId);
             }
         }, handler);
     }
@@ -277,14 +245,6 @@ public class ScreenCapture extends SurfaceCapture {
         } finally {
             SurfaceControl.closeTransaction();
         }
-    }
-
-    private synchronized Size getSessionDisplaySize() {
-        return sessionDisplaySize;
-    }
-
-    private synchronized void setSessionDisplaySize(Size sessionDisplaySize) {
-        this.sessionDisplaySize = sessionDisplaySize;
     }
 
     private void registerDisplayListenerFallbacks() {
