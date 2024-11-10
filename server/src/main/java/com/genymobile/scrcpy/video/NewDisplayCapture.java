@@ -9,7 +9,6 @@ import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
-import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
@@ -107,8 +106,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
-            Rect contentRect = new Rect(0, 0, size.getWidth(), size.getHeight());
-            PositionMapper positionMapper = new PositionMapper(size, contentRect, 0);
+            PositionMapper positionMapper = new PositionMapper(size, size);
             vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
         }
     }
