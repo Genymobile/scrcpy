@@ -6,21 +6,27 @@ import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.NewDisplay;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLRunner;
+import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
-import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.view.Surface;
 
 import java.io.IOException;
 
-public class NewDisplayCapture extends SurfaceCapture {
+public class NewDisplayCapture extends DisplayCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
-    private static final int VIRTUAL_DISPLAY_FLAG_PUBLIC = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
-    private static final int VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
+    private static final int VIRTUAL_DISPLAY_FLAG_PUBLIC = android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
+    private static final int VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY = android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
     private static final int VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 1 << 6;
     private static final int VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 << 7;
     private static final int VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL = 1 << 8;
@@ -35,12 +41,19 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final VirtualDisplayListener vdListener;
     private final NewDisplay newDisplay;
 
+    private DisplayManager.DisplayListenerHandle displayListenerHandle;
+    private HandlerThread handlerThread;
+
+    private AffineMatrix displayTransform;
+    private OpenGLRunner glRunner;
+
     private Size mainDisplaySize;
     private int mainDisplayDpi;
     private int maxSize; // only used if newDisplay.getSize() != null
 
     private VirtualDisplay virtualDisplay;
-    private Size size;
+    private Size size; // the logical size of the display (including rotation)
+    private Size physicalSize; // the physical size of the display (without rotation)
     private int dpi;
 
     public NewDisplayCapture(VirtualDisplayListener vdListener, Options options) {
@@ -69,11 +82,27 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void prepare() {
-        if (!newDisplay.hasExplicitSize()) {
-            size = mainDisplaySize.limit(maxSize).round8();
-        }
-        if (!newDisplay.hasExplicitDpi()) {
-            dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
+        if (virtualDisplay == null) {
+            if (!newDisplay.hasExplicitSize()) {
+                size = mainDisplaySize.limit(maxSize).round8();
+            }
+            if (!newDisplay.hasExplicitDpi()) {
+                dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
+            }
+
+            physicalSize = size;
+            // Set the current display size to avoid an unnecessary call to invalidate()
+            setSessionDisplaySize(size);
+        } else {
+            DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
+            size = displayInfo.getSize();
+            dpi = displayInfo.getDpi();
+
+            VideoFilter displayFilter = new VideoFilter(size);
+            displayFilter.addRotation(displayInfo.getRotation());
+            // The display info gives the oriented size, but the virtual display video always remains in the origin orientation
+            displayTransform = displayFilter.getInverseTransform();
+            physicalSize = displayFilter.getOutputSize();
         }
     }
 
@@ -100,28 +129,66 @@ public class NewDisplayCapture extends SurfaceCapture {
                     .createNewVirtualDisplay("scrcpy", size.getWidth(), size.getHeight(), dpi, surface, flags);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Ln.i("New display: " + size.getWidth() + "x" + size.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+
+            handlerThread = new HandlerThread("DisplayListener");
+            handlerThread.start();
+            Handler handler = new Handler(handlerThread.getLooper());
+            displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(displayId -> {
+                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                    Ln.v("NewDisplayCapture: onDisplayChanged(" + displayId + ")");
+                }
+                if (displayId == virtualDisplayId) {
+                    handleDisplayChanged(displayId);
+                }
+            }, handler);
+
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
-        }
-
-        if (vdListener != null) {
-            PositionMapper positionMapper = new PositionMapper(size, null);
-            vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
         }
     }
 
     @Override
     public void start(Surface surface) throws IOException {
+        if (displayTransform != null) {
+            assert glRunner == null;
+            OpenGLFilter glFilter = new AffineOpenGLFilter(displayTransform);
+            glRunner = new OpenGLRunner(glFilter);
+            surface = glRunner.start(physicalSize, size, surface);
+        }
+
         if (virtualDisplay == null) {
             startNew(surface);
         } else {
             virtualDisplay.setSurface(surface);
         }
+
+        if (vdListener != null) {
+            // The virtual display rotation must only be applied to video, it is already taken into account when injecting events!
+            PositionMapper positionMapper = PositionMapper.create(size, null, size);
+            vdListener.onNewVirtualDisplay(virtualDisplay.getDisplay().getDisplayId(), positionMapper);
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (glRunner != null) {
+            glRunner.stopAndRelease();
+            glRunner = null;
+        }
     }
 
     @Override
     public void release() {
+        handlerThread.quitSafely();
+        handlerThread = null;
+
+        // displayListenerHandle may be null if registration failed
+        if (displayListenerHandle != null) {
+            ServiceManager.getDisplayManager().unregisterDisplayListener(displayListenerHandle);
+            displayListenerHandle = null;
+        }
+
         if (virtualDisplay != null) {
             virtualDisplay.release();
             virtualDisplay = null;
