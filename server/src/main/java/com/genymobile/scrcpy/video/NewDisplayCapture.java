@@ -71,7 +71,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     @Override
     public void prepare() {
         if (!newDisplay.hasExplicitSize()) {
-            size = ScreenInfo.computeVideoSize(mainDisplaySize.getWidth(), mainDisplaySize.getHeight(), maxSize);
+            size = mainDisplaySize.limit(maxSize).round8();
         }
         if (!newDisplay.hasExplicitDpi()) {
             dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
