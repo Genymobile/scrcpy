@@ -470,13 +470,32 @@ meson setup x -Dserver_debugger=true -Dserver_debugger_method=old
 meson configure x -Dserver_debugger=true -Dserver_debugger_method=old
 ```
 
+If your device runs Android 11 or below, set the `server_debugger_method` to 
+`new` in addition:
+
+```bash
+meson setup x -Dserver_debugger=true -Dserver_debugger_method=new
+# or, if x is already configured
+meson configure x -Dserver_debugger=true -Dserver_debugger_method=new
+```
+
 Then recompile.
 
 When you start scrcpy, it will start a debugger on port 5005 on the device.
 Redirect that port to the computer:
 
+for the `old` and `new` methods:
+
 ```bash
 adb forward tcp:5005 tcp:5005
+```
+
+Otherwise, for the default method:
+
+```bash
+adb jdwp
+# note the returned PID. The adb command won't return until you press Ctrl+C
+adb forward tcp:5005 jdwp:<PID>
 ```
 
 In Android Studio, _Run_ > _Debug_ > _Edit configurations..._ On the left, click on

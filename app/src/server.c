@@ -253,15 +253,18 @@ execute_server(struct sc_server *server,
 #ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
     cmd[count++] =
-# ifdef SERVER_DEBUGGER_METHOD_NEW
+# if defined(SERVER_DEBUGGER_METHOD_ADBCONNECTION)
+        "-XjdwpProvider:adbconnection";
+# elif defined(SERVER_DEBUGGER_METHOD_NEW)
         /* Android 9 and above */
         "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,"
         "server=y,address="
+            SERVER_DEBUGGER_PORT;
 # else
         /* Android 8 and below */
         "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
-# endif
             SERVER_DEBUGGER_PORT;
+# endif
 #endif
     cmd[count++] = "/"; // unused
     cmd[count++] = "com.genymobile.scrcpy.Server";
