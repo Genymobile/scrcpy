@@ -3,15 +3,16 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.util.AffineMatrix;
 
 public final class PositionMapper {
 
-    private final Size sourceSize;
     private final Size videoSize;
+    private final AffineMatrix videoToDeviceMatrix;
 
-    public PositionMapper(Size sourceSize, Size videoSize) {
-        this.sourceSize = sourceSize;
+    public PositionMapper(Size videoSize, AffineMatrix videoToDeviceMatrix) {
         this.videoSize = videoSize;
+        this.videoToDeviceMatrix = videoToDeviceMatrix;
     }
 
     public Point map(Position position) {
@@ -23,8 +24,9 @@ public final class PositionMapper {
         }
 
         Point point = position.getPoint();
-        int convertedX = point.getX() * sourceSize.getWidth() / videoSize.getWidth();
-        int convertedY = point.getY() * sourceSize.getHeight() / videoSize.getHeight();
-        return new Point(convertedX, convertedY);
+        if (videoToDeviceMatrix != null) {
+            point = videoToDeviceMatrix.apply(point);
+        }
+        return point;
     }
 }
