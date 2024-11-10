@@ -32,7 +32,7 @@ public class Options {
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
-    private int lockVideoOrientation = Device.LOCK_VIDEO_ORIENTATION_UNLOCKED;
+    private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
     private boolean control = true;
@@ -257,10 +257,6 @@ public class Options {
 
     public boolean getSendCodecMeta() {
         return sendCodecMeta;
-    }
-
-    public void resetLockVideoOrientation() {
-        this.lockVideoOrientation = Device.LOCK_VIDEO_ORIENTATION_UNLOCKED;
     }
 
     @SuppressWarnings("MethodLength")

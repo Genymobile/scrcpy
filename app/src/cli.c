@@ -2856,8 +2856,7 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
             LOGI("Video orientation is locked for v4l2 sink. "
                  "See --lock-video-orientation.");
-            opts->lock_video_orientation =
-                SC_LOCK_VIDEO_ORIENTATION_INITIAL_AUTO;
+            opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
         }
 
         // V4L2 could not handle size change.
