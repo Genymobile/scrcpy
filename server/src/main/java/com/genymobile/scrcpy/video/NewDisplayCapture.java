@@ -19,6 +19,8 @@ import java.io.IOException;
 public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
+    private static final int VIRTUAL_DISPLAY_FLAG_PUBLIC = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
+    private static final int VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
     private static final int VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 1 << 6;
     private static final int VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 << 7;
     private static final int VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL = 1 << 8;
@@ -74,12 +76,11 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
     }
 
-
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
-            int flags = DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
-                    | DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+            int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
                     | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL
