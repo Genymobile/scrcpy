@@ -106,7 +106,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
-            PositionMapper positionMapper = new PositionMapper(size, size);
+            PositionMapper positionMapper = new PositionMapper(size, null);
             vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
         }
     }
