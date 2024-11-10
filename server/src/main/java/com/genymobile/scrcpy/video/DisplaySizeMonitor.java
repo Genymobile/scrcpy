@@ -11,6 +11,7 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.view.IDisplayFoldListener;
 import android.view.IRotationWatcher;
 
@@ -27,6 +28,7 @@ public class DisplaySizeMonitor {
     // detect it directly, so register a RotationWatcher and a DisplayFoldListener as a fallback, until we receive the first event from
     // DisplayListener (which proves that it works).
     private boolean displayListenerWorks; // only accessed from the display listener thread
+    private boolean fallbacksUnregistered; // a register call after an unregister must be ignored (protected by this)
     private IRotationWatcher rotationWatcher;
     private IDisplayFoldListener displayFoldListener;
 
@@ -37,6 +39,11 @@ public class DisplaySizeMonitor {
     private Listener listener;
 
     public void start(int displayId, Listener listener) {
+        start(displayId, listener, true, true, false);
+    }
+
+    public void start(int displayId, Listener listener, boolean useRotationWatcherFallback, boolean useFoldListenerFallback,
+            boolean delayRotationWatcherFallback) {
         // Once started, the listener and the displayId must never change
         assert listener != null;
         this.listener = listener;
@@ -48,10 +55,10 @@ public class DisplaySizeMonitor {
         handlerThread.start();
         Handler handler = new Handler(handlerThread.getLooper());
 
-        if (Build.VERSION.SDK_INT == AndroidVersions.API_34_ANDROID_14) {
-            registerDisplayListenerFallbacks();
-        }
         displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(this::handleDisplayChanged, handler);
+        if (Build.VERSION.SDK_INT == AndroidVersions.API_34_ANDROID_14) {
+            registerDisplayListenerFallbacks(useRotationWatcherFallback, useFoldListenerFallback, delayRotationWatcherFallback);
+        }
     }
 
     /**
@@ -129,48 +136,64 @@ public class DisplaySizeMonitor {
         }
     }
 
-    private void registerDisplayListenerFallbacks() {
-        rotationWatcher = new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onRotationChanged(" + rotation + ")");
-                }
+    private synchronized void registerDisplayListenerFallbacks(boolean useRotationWatcherFallback, boolean useFoldListenerFallback,
+            boolean delayRotationWatcherFallback) {
+        if (fallbacksUnregistered) {
+            return;
+        }
 
-                handleDisplayChanged(displayId);
+        if (useRotationWatcherFallback) {
+            if (delayRotationWatcherFallback) {
+                // Hack: If the virtual display was just created, registering a rotation watcher immediately fails with an error because the
+                // display id does not exist yet.
+                SystemClock.sleep(50);
             }
-        };
-        ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
+            rotationWatcher = new IRotationWatcher.Stub() {
+                @Override
+                public void onRotationChanged(int rotation) {
+                    if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                        Ln.v("DisplaySizeMonitor: onRotationChanged(" + rotation + ")");
+                    }
 
-        // Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10 (but implied by == API_34_ANDROID 14)
-        displayFoldListener = new IDisplayFoldListener.Stub() {
-
-            private boolean first = true;
-
-            @Override
-            public void onDisplayFoldChanged(int displayId, boolean folded) {
-                if (first) {
-                    // An event is posted on registration to signal the initial state. Ignore it to avoid restarting encoding.
-                    first = false;
-                    return;
+                    handleDisplayChanged(displayId);
                 }
+            };
+            ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
+        }
 
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onDisplayFoldChanged(" + displayId + ", " + folded + ")");
+        if (useFoldListenerFallback) {
+            // Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10 (but implied by == API_34_ANDROID 14)
+            displayFoldListener = new IDisplayFoldListener.Stub() {
+
+                private boolean first = true;
+
+                @Override
+                public void onDisplayFoldChanged(int displayId, boolean folded) {
+                    if (first) {
+                        // An event is posted on registration to signal the initial state. Ignore it to avoid restarting encoding.
+                        first = false;
+                        return;
+                    }
+
+                    if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                        Ln.v("DisplaySizeMonitor: onDisplayFoldChanged(" + displayId + ", " + folded + ")");
+                    }
+
+                    if (DisplaySizeMonitor.this.displayId != displayId) {
+                        // Ignore events related to other display ids
+                        return;
+                    }
+
+                    handleDisplayChanged(displayId);
                 }
-
-                if (DisplaySizeMonitor.this.displayId != displayId) {
-                    // Ignore events related to other display ids
-                    return;
-                }
-
-                handleDisplayChanged(displayId);
-            }
-        };
-        ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);
+            };
+            ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);
+        }
     }
 
     private synchronized void unregisterDisplayListenerFallbacks() {
+        fallbacksUnregistered = true;
+
         if (rotationWatcher != null) {
             ServiceManager.getWindowManager().unregisterRotationWatcher(rotationWatcher);
             rotationWatcher = null;
