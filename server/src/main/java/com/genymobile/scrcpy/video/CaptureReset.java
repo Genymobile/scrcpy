@@ -18,7 +18,11 @@ public class CaptureReset implements SurfaceCapture.CaptureListener {
     public synchronized void reset() {
         reset.set(true);
         if (runningMediaCodec != null) {
-            runningMediaCodec.signalEndOfInputStream();
+            try {
+                runningMediaCodec.signalEndOfInputStream();
+            } catch (IllegalStateException e) {
+                // ignore
+            }
         }
     }
 
