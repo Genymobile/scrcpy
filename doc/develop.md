@@ -461,17 +461,29 @@ meson setup x -Dserver_debugger=true
 meson configure x -Dserver_debugger=true
 ```
 
-Then recompile.
+Then recompile, and run scrcpy.
 
-When you start scrcpy, it will start a debugger on port 5005 on the device.
+For Android < 11, it will start a debugger on port 5005 on the device and wait:
 Redirect that port to the computer:
 
 ```bash
 adb forward tcp:5005 tcp:5005
 ```
 
-In Android Studio, _Run_ > _Debug_ > _Edit configurations..._ On the left, click on
-`+`, _Remote_, and fill the form:
+For Android >= 11, first find the listening port:
+
+```bash
+adb jdwp
+```
+
+Then redirect that port:
+
+```bash
+adb forward tcp:5005 jdwp:XXXX  # replace XXXX
+```
+
+In Android Studio, _Run_ > _Debug_ > _Edit configurations..._ On the left, click
+on `+`, _Remote_, and fill the form:
 
  - Host: `localhost`
  - Port: `5005`
