@@ -35,6 +35,7 @@ public class ScreenCapture extends SurfaceCapture {
     private final int displayId;
     private int maxSize;
     private final Rect crop;
+    private int lockVideoOrientation;
 
     private DisplayInfo displayInfo;
     private Size videoSize;
@@ -64,6 +65,7 @@ public class ScreenCapture extends SurfaceCapture {
         assert displayId != Device.DISPLAY_ID_NONE;
         this.maxSize = options.getMaxSize();
         this.crop = options.getCrop();
+        this.lockVideoOrientation = options.getLockVideoOrientation();
     }
 
     @Override
@@ -136,11 +138,20 @@ public class ScreenCapture extends SurfaceCapture {
         Size displaySize = displayInfo.getSize();
         setSessionDisplaySize(displaySize);
 
+        if (lockVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL) {
+            // The user requested to lock the video orientation to the current orientation
+            lockVideoOrientation = displayInfo.getRotation();
+        }
+
         VideoFilter filter = new VideoFilter(displaySize);
 
         if (crop != null) {
             boolean transposed = (displayInfo.getRotation() % 2) != 0;
             filter.addCrop(crop, transposed);
+        }
+
+        if (lockVideoOrientation != Device.LOCK_VIDEO_ORIENTATION_UNLOCKED) {
+            filter.addLockVideoOrientation(lockVideoOrientation, displayInfo.getRotation());
         }
 
         transform = filter.getInverseTransform();

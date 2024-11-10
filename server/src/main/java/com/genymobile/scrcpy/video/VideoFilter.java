@@ -66,4 +66,20 @@ public class VideoFilter {
         transform = AffineMatrix.reframe(x, y, w, h).multiply(transform);
         size = new Size(crop.width(), crop.height());
     }
+
+    public void addRotation(int ccwRotation) {
+        if (ccwRotation == 0) {
+            return;
+        }
+
+        transform = AffineMatrix.rotateOrtho(ccwRotation).multiply(transform);
+        if (ccwRotation % 2 != 0) {
+            size = size.rotate();
+        }
+    }
+
+    public void addLockVideoOrientation(int lockVideoOrientation, int displayRotation) {
+        int ccwRotation = (4 + lockVideoOrientation - displayRotation) % 4;
+        addRotation(ccwRotation);
+    }
 }
