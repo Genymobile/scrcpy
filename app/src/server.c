@@ -213,10 +213,15 @@ execute_server(struct sc_server *server,
         // Android < 9
         dbg = "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
               SERVER_DEBUGGER_PORT;
-    } else {
-        // Android >= 9
+    } else if (sdk_version < 30) {
+        // Android >= 9 && Android < 11
         dbg = "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,"
               "suspend=y,server=y,address=" SERVER_DEBUGGER_PORT;
+    } else {
+        // Android >= 11
+        // Contrary to the other methods, this does not suspend on start.
+        // <https://github.com/Genymobile/scrcpy/pull/5466>
+        dbg = "-XjdwpProvider:adbconnection";
     }
     cmd[count++] = dbg;
 #endif
@@ -408,10 +413,14 @@ execute_server(struct sc_server *server,
     cmd[count++] = NULL;
 
 #ifdef SERVER_DEBUGGER
-    LOGI("Server debugger waiting for a client on device port "
-         SERVER_DEBUGGER_PORT "...");
-    // From the computer, run
-    //     adb forward tcp:5005 tcp:5005
+    LOGI("Server debugger listening%s...",
+         sdk_version < 30 ? " on port " SERVER_DEBUGGER_PORT : "");
+    // For Android < 11, from the computer:
+    //     - run `adb forward tcp:5005 tcp:5005`
+    // For Android >= 11:
+    //     - execute `adb jdwp` to get the jdwp port
+    //     - run `adb forward tcp:5005 jdwp:XXXX` (replace XXXX)
+    //
     // Then, from Android Studio: Run > Debug > Edit configurations...
     // On the left, click on '+', "Remote", with:
     //     Host: localhost
