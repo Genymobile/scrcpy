@@ -86,6 +86,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                 format.setInteger(MediaFormat.KEY_HEIGHT, size.getHeight());
 
                 Surface surface = null;
+                boolean mediaCodecStarted = false;
                 try {
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
@@ -93,6 +94,7 @@ public class SurfaceEncoder implements AsyncProcessor {
                     capture.start(surface);
 
                     mediaCodec.start();
+                    mediaCodecStarted = true;
 
                     // Set the MediaCodec instance to "interrupt" (by signaling an EOS) on reset
                     reset.setRunningMediaCodec(mediaCodec);
@@ -108,9 +110,6 @@ public class SurfaceEncoder implements AsyncProcessor {
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
-
-                    // do not call stop() on exception, it would trigger an IllegalStateException
-                    mediaCodec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareRetry(size)) {
@@ -119,6 +118,13 @@ public class SurfaceEncoder implements AsyncProcessor {
                     alive = true;
                 } finally {
                     reset.setRunningMediaCodec(null);
+                    if (mediaCodecStarted) {
+                        try {
+                            mediaCodec.stop();
+                        } catch (IllegalStateException e) {
+                            // ignore (just in case)
+                        }
+                    }
                     mediaCodec.reset();
                     if (surface != null) {
                         surface.release();
