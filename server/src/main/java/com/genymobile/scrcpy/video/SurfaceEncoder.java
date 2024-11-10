@@ -108,9 +108,6 @@ public class SurfaceEncoder implements AsyncProcessor {
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
-
-                    // do not call stop() on exception, it would trigger an IllegalStateException
-                    mediaCodec.stop();
                 } catch (IllegalStateException | IllegalArgumentException e) {
                     Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareRetry(size)) {
@@ -120,6 +117,11 @@ public class SurfaceEncoder implements AsyncProcessor {
                     alive = true;
                 } finally {
                     reset.setRunningMediaCodec(null);
+                    try {
+                        mediaCodec.stop();
+                    } catch (IllegalStateException e) {
+                        // ignore
+                    }
                     mediaCodec.reset();
                     if (surface != null) {
                         surface.release();
