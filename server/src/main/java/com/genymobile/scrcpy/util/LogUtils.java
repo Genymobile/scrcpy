@@ -236,7 +236,7 @@ public final class LogUtils {
             } else {
                 builder.append("\n   ").append(String.format("%" + column + "s", " "));
             }
-            builder.append(" [").append(app.getPackageName()).append(']');
+            builder.append(" ").append(app.getPackageName());
         }
 
         return builder.toString();
