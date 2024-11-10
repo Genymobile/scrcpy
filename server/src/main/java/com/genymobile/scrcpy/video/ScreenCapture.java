@@ -28,11 +28,9 @@ public class ScreenCapture extends SurfaceCapture {
     private final VirtualDisplayListener vdListener;
     private final int displayId;
     private int maxSize;
-    private final Rect crop;
-    private final int lockVideoOrientation;
 
     private DisplayInfo displayInfo;
-    private ScreenInfo screenInfo;
+    private Size videoSize;
 
     // Source display size (before resizing/crop) for the current session
     private Size sessionDisplaySize;
@@ -55,8 +53,6 @@ public class ScreenCapture extends SurfaceCapture {
         this.displayId = options.getDisplayId();
         assert displayId != Device.DISPLAY_ID_NONE;
         this.maxSize = options.getMaxSize();
-        this.crop = options.getCrop();
-        this.lockVideoOrientation = options.getLockVideoOrientation();
     }
 
     @Override
@@ -126,8 +122,9 @@ public class ScreenCapture extends SurfaceCapture {
             Ln.w("Display doesn't have FLAG_SUPPORTS_PROTECTED_BUFFERS flag, mirroring can be restricted");
         }
 
-        setSessionDisplaySize(displayInfo.getSize());
-        screenInfo = ScreenInfo.computeScreenInfo(displayInfo.getRotation(), displayInfo.getSize(), crop, maxSize, lockVideoOrientation);
+        Size displaySize = displayInfo.getSize();
+        setSessionDisplaySize(displaySize);
+        videoSize = displaySize.limit(maxSize).round8();
     }
 
     @Override
@@ -144,28 +141,22 @@ public class ScreenCapture extends SurfaceCapture {
         int virtualDisplayId;
         PositionMapper positionMapper;
         try {
-            Size videoSize = screenInfo.getVideoSize();
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-            Rect contentRect = new Rect(0, 0, videoSize.getWidth(), videoSize.getHeight());
             // The position are relative to the virtual display, not the original display
-            positionMapper = new PositionMapper(videoSize, contentRect, 0);
+            positionMapper = new PositionMapper(videoSize, videoSize);
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
                 display = createDisplay();
 
-                Rect contentRect = screenInfo.getContentRect();
-
-                // does not include the locked video orientation
-                Rect unlockedVideoRect = screenInfo.getUnlockedVideoSize().toRect();
-                int videoRotation = screenInfo.getVideoRotation();
+                Size deviceSize = displayInfo.getSize();
                 int layerStack = displayInfo.getLayerStack();
 
-                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                setDisplaySurface(display, surface, deviceSize.toRect(), videoSize.toRect(), layerStack);
                 virtualDisplayId = displayId;
-                positionMapper = PositionMapper.from(screenInfo);
+                positionMapper = new PositionMapper(deviceSize, videoSize);
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
@@ -206,7 +197,7 @@ public class ScreenCapture extends SurfaceCapture {
 
     @Override
     public Size getSize() {
-        return screenInfo.getVideoSize();
+        return videoSize;
     }
 
     @Override
@@ -223,11 +214,11 @@ public class ScreenCapture extends SurfaceCapture {
         return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, int orientation, Rect deviceRect, Rect displayRect, int layerStack) {
+    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect, int layerStack) {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
-            SurfaceControl.setDisplayProjection(display, orientation, deviceRect, displayRect);
+            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
             SurfaceControl.setDisplayLayerStack(display, layerStack);
         } finally {
             SurfaceControl.closeTransaction();
