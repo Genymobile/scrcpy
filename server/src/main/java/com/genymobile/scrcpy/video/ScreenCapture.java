@@ -138,8 +138,9 @@ public class ScreenCapture extends SurfaceCapture {
                         .createVirtualDisplay("scrcpy", videoSize.getWidth(), videoSize.getHeight(), displayId, surface);
             } else {
                 // density doesn't matter since this virtual display is only used for mirroring
-                virtualDisplay.resize(videoSize.getWidth(), videoSize.getHeight(), 1);
                 virtualDisplay.setSurface(surface);
+                virtualDisplay.resize(videoSize.getWidth(), videoSize.getHeight(), 1);
+
             }
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Rect contentRect = new Rect(0, 0, videoSize.getWidth(), videoSize.getHeight());
