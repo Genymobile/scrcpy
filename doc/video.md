@@ -93,7 +93,7 @@ Sometimes, the default encoder may have issues or even crash, so it is useful to
 try another one:
 
 ```bash
-scrcpy --video-codec=h264 --video-encoder='OMX.qcom.video.encoder.avc'
+scrcpy --video-codec=h264 --video-encoder=OMX.qcom.video.encoder.avc
 ```
 
 
