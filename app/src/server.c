@@ -274,9 +274,17 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->max_fps);
         ADD_PARAM("max_fps=%s", params->max_fps);
     }
-    if (params->lock_video_orientation != SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
-        ADD_PARAM("lock_video_orientation=%" PRIi8,
-                  params->lock_video_orientation);
+    if (params->capture_orientation_lock != SC_ORIENTATION_UNLOCKED
+            || params->capture_orientation != SC_ORIENTATION_0) {
+        if (params->capture_orientation_lock == SC_ORIENTATION_LOCKED_INITIAL) {
+            ADD_PARAM("capture_orientation=@");
+        } else {
+            const char *orient =
+                sc_orientation_get_name(params->capture_orientation);
+            bool locked =
+                params->capture_orientation_lock != SC_ORIENTATION_UNLOCKED;
+            ADD_PARAM("capture_orientation=%s%s", locked ? "@" : "", orient);
+        }
     }
     if (server->tunnel.forward) {
         ADD_PARAM("tunnel_forward=true");
