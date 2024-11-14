@@ -17,6 +17,7 @@ _scrcpy() {
         --camera-fps=
         --camera-high-speed
         --camera-size=
+        --capture-orientation=
         --crop=
         -d --select-usb
         --disable-screensaver
@@ -37,8 +38,6 @@ _scrcpy() {
         --list-cameras
         --list-displays
         --list-encoders
-        --lock-video-orientation
-        --lock-video-orientation=
         -m --max-size=
         -M
         --max-fps=
