@@ -11,6 +11,7 @@ import android.opengl.EGLExt;
 import android.opengl.EGLSurface;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
+import android.opengl.Matrix;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.Surface;
@@ -28,6 +29,7 @@ public final class OpenGLRunner {
     private EGLSurface eglSurface;
 
     private final OpenGLFilter filter;
+    private final boolean ignoreTransformMatrix;
 
     private SurfaceTexture surfaceTexture;
     private Surface inputSurface;
@@ -35,8 +37,13 @@ public final class OpenGLRunner {
 
     private boolean stopped;
 
-    public OpenGLRunner(OpenGLFilter filter) {
+    public OpenGLRunner(OpenGLFilter filter, boolean ignoreTransformMatrix) {
         this.filter = filter;
+        this.ignoreTransformMatrix = ignoreTransformMatrix;
+    }
+
+    public OpenGLRunner(OpenGLFilter filter) {
+        this(filter, false);
     }
 
     public static synchronized void initOnce() {
@@ -195,7 +202,11 @@ public final class OpenGLRunner {
 
         surfaceTexture.updateTexImage();
         float[] matrix = new float[16];
-        surfaceTexture.getTransformMatrix(matrix);
+        if (ignoreTransformMatrix) {
+            Matrix.setIdentityM(matrix, 0);
+        } else {
+            surfaceTexture.getTransformMatrix(matrix);
+        }
 
         filter.draw(textureId, matrix);
 
