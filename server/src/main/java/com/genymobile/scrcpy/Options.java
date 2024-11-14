@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.NewDisplay;
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.CodecOption;
 import com.genymobile.scrcpy.util.Ln;
@@ -13,6 +14,7 @@ import com.genymobile.scrcpy.video.VideoCodec;
 import com.genymobile.scrcpy.video.VideoSource;
 
 import android.graphics.Rect;
+import android.util.Pair;
 
 import java.util.List;
 import java.util.Locale;
@@ -32,7 +34,6 @@ public class Options {
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
-    private int lockVideoOrientation = -1;
     private boolean tunnelForward;
     private Rect crop;
     private boolean control = true;
@@ -58,6 +59,9 @@ public class Options {
     private boolean powerOn = true;
 
     private NewDisplay newDisplay;
+
+    private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
+    private Orientation captureOrientation = Orientation.Orient0;
 
     private boolean listEncoders;
     private boolean listDisplays;
@@ -121,10 +125,6 @@ public class Options {
 
     public float getMaxFps() {
         return maxFps;
-    }
-
-    public int getLockVideoOrientation() {
-        return lockVideoOrientation;
     }
 
     public boolean isTunnelForward() {
@@ -217,6 +217,14 @@ public class Options {
 
     public NewDisplay getNewDisplay() {
         return newDisplay;
+    }
+
+    public Orientation getCaptureOrientation() {
+        return captureOrientation;
+    }
+
+    public Orientation.Lock getCaptureOrientationLock() {
+        return captureOrientationLock;
     }
 
     public boolean getList() {
@@ -341,9 +349,6 @@ public class Options {
                 case "max_fps":
                     options.maxFps = parseFloat("max_fps", value);
                     break;
-                case "lock_video_orientation":
-                    options.lockVideoOrientation = Integer.parseInt(value);
-                    break;
                 case "tunnel_forward":
                     options.tunnelForward = Boolean.parseBoolean(value);
                     break;
@@ -447,6 +452,11 @@ public class Options {
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);
+                    break;
+                case "capture_orientation":
+                    Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
+                    options.captureOrientationLock = pair.first;
+                    options.captureOrientation = pair.second;
                     break;
                 case "send_device_meta":
                     options.sendDeviceMeta = Boolean.parseBoolean(value);
@@ -570,5 +580,26 @@ public class Options {
         }
 
         return new NewDisplay(size, dpi);
+    }
+
+    private static Pair<Orientation.Lock, Orientation> parseCaptureOrientation(String value) {
+        if (value.isEmpty()) {
+            throw new IllegalArgumentException("Empty capture orientation string");
+        }
+
+        Orientation.Lock lock;
+        if (value.charAt(0) == '@') {
+            // Consume '@'
+            value = value.substring(1);
+            if (value.isEmpty()) {
+                // Only '@': lock to the initial orientation (orientation is unused)
+                return Pair.create(Orientation.Lock.LockedInitial, Orientation.Orient0);
+            }
+            lock = Orientation.Lock.LockedValue;
+        } else {
+            lock = Orientation.Lock.Unlocked;
+        }
+
+        return Pair.create(lock, Orientation.getByName(value));
     }
 }

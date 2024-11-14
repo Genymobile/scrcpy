@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.video;
 
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.AffineMatrix;
 
@@ -78,8 +79,20 @@ public class VideoFilter {
         }
     }
 
-    public void addLockVideoOrientation(int lockVideoOrientation, int displayRotation) {
-        int ccwRotation = (4 + lockVideoOrientation - displayRotation) % 4;
+    public void addOrientation(Orientation captureOrientation) {
+        if (captureOrientation.isFlipped()) {
+            transform = AffineMatrix.hflip().multiply(transform);
+        }
+        int ccwRotation = (4 - captureOrientation.getRotation()) % 4;
         addRotation(ccwRotation);
+    }
+
+    public void addOrientation(int displayRotation, boolean locked, Orientation captureOrientation) {
+        if (locked) {
+            // flip/rotate the current display from the natural device orientation (i.e. where display rotation is 0)
+            int reverseDisplayRotation = (4 - displayRotation) % 4;
+            addRotation(reverseDisplayRotation);
+        }
+        addOrientation(captureOrientation);
     }
 }

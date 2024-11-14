@@ -122,6 +122,18 @@ If not specified, Android's default frame rate (30 fps) is used.
 Specify an explicit camera capture size.
 
 .TP
+.BI "\-\-capture\-orientation " value
+Possible values are 0, 90, 180, 270, flip0, flip90, flip180 and flip270, possibly prefixed by '@'.
+
+The number represents the clockwise rotation in degrees; the "flip" keyword applies a horizontal flip before the rotation.
+
+If a leading '@' is passed (@90) for display capture, then the rotation is locked, and is relative to the natural device orientation.
+
+If '@' is passed alone, then the rotation is locked to the initial device orientation.
+
+Default is 0.
+
+.TP
 .BI "\-\-crop " width\fR:\fIheight\fR:\fIx\fR:\fIy
 Crop the device screen on the server.
 
@@ -240,16 +252,6 @@ List video and audio encoders available on the device.
 .TP
 .B \-\-list\-displays
 List displays available on the device.
-
-.TP
-\fB\-\-lock\-video\-orientation\fR[=\fIvalue\fR]
-Lock capture video orientation to \fIvalue\fR.
-
-Possible values are "unlocked", "initial" (locked to the initial orientation), 0, 90, 180, and 270. The values represent the clockwise rotation from the natural device orientation, in degrees.
-
-Default is "unlocked".
-
-Passing the option without argument is equivalent to passing "initial".
 
 .TP
 .BI "\-m, \-\-max\-size " value
@@ -547,8 +549,6 @@ Default is "info" for release builds, "debug" for debug builds.
 .TP
 .BI "\-\-v4l2-sink " /dev/videoN
 Output to v4l2loopback device.
-
-It requires to lock the video orientation (see \fB\-\-lock\-video\-orientation\fR).
 
 .TP
 .BI "\-\-v4l2-buffer " ms

@@ -103,21 +103,39 @@ The orientation may be applied at 3 different levels:
  - The [shortcut](shortcuts.md) <kbd>MOD</kbd>+<kbd>r</kbd> requests the
    device to switch between portrait and landscape (the current running app may
    refuse, if it does not support the requested orientation).
- - `--lock-video-orientation` changes the mirroring orientation (the orientation
+ - `--capture-orientation` changes the mirroring orientation (the orientation
    of the video sent from the device to the computer). This affects the
    recording.
  - `--orientation` is applied on the client side, and affects display and
    recording. For the display, it can be changed dynamically using
    [shortcuts](shortcuts.md).
 
-To lock the mirroring orientation (on the capture side):
+To capture the video with a specific orientation:
 
 ```bash
-scrcpy --lock-video-orientation      # initial (current) orientation
-scrcpy --lock-video-orientation=0    # natural orientation
-scrcpy --lock-video-orientation=90   # 90° clockwise
-scrcpy --lock-video-orientation=180  # 180°
-scrcpy --lock-video-orientation=270  # 270° clockwise
+scrcpy --capture-orientation=0
+scrcpy --capture-orientation=90       # 90° clockwise
+scrcpy --capture-orientation=180      # 180°
+scrcpy --capture-orientation=270      # 270° clockwise
+scrcpy --capture-orientation=flip0    # hflip
+scrcpy --capture-orientation=flip90   # hflip + 90° clockwise
+scrcpy --capture-orientation=flip180  # hflip + 180°
+scrcpy --capture-orientation=flip270  # hflip + 270° clockwise
+```
+
+The capture orientation can be locked by using `@`, so that a physical device
+rotation does not change the captured video orientation:
+
+```bash
+scrcpy --capture-orientation=@         # locked to the initial orientation
+scrcpy --capture-orientation=@0        # locked to 0°
+scrcpy --capture-orientation=@90       # locked to 90° clockwise
+scrcpy --capture-orientation=@180      # locked to 180°
+scrcpy --capture-orientation=@270      # locked to 270° clockwise
+scrcpy --capture-orientation=@flip0    # locked to hflip
+scrcpy --capture-orientation=@flip90   # locked to hflip + 90° clockwise
+scrcpy --capture-orientation=@flip180  # locked to hflip + 180°
+scrcpy --capture-orientation=@flip270  # locked to hflip + 270° clockwise
 ```
 
 To orient the video (on the rendering side):
