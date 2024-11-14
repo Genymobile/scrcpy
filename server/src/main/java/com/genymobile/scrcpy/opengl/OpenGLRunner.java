@@ -28,6 +28,7 @@ public final class OpenGLRunner {
     private EGLSurface eglSurface;
 
     private final OpenGLFilter filter;
+    private final float[] overrideTransformMatrix;
 
     private SurfaceTexture surfaceTexture;
     private Surface inputSurface;
@@ -35,8 +36,13 @@ public final class OpenGLRunner {
 
     private boolean stopped;
 
-    public OpenGLRunner(OpenGLFilter filter) {
+    public OpenGLRunner(OpenGLFilter filter, float[] overrideTransformMatrix) {
         this.filter = filter;
+        this.overrideTransformMatrix = overrideTransformMatrix;
+    }
+
+    public OpenGLRunner(OpenGLFilter filter) {
+        this(filter, null);
     }
 
     public static synchronized void initOnce() {
@@ -202,8 +208,14 @@ public final class OpenGLRunner {
         GLUtils.checkGlError();
 
         surfaceTexture.updateTexImage();
-        float[] matrix = new float[16];
-        surfaceTexture.getTransformMatrix(matrix);
+
+        float[] matrix;
+        if (overrideTransformMatrix != null) {
+            matrix = overrideTransformMatrix;
+        } else {
+            matrix = new float[16];
+            surfaceTexture.getTransformMatrix(matrix);
+        }
 
         filter.draw(textureId, matrix);
 
