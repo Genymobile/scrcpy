@@ -107,6 +107,7 @@ enum {
     OPT_LIST_APPS,
     OPT_START_APP,
     OPT_SCREEN_OFF_TIMEOUT,
+    OPT_CAPTURE_ORIENTATION,
 };
 
 struct sc_option {
@@ -471,18 +472,27 @@ static const struct sc_option options[] = {
         .text = "List video and audio encoders available on the device.",
     },
     {
+        .longopt_id = OPT_CAPTURE_ORIENTATION,
+        .longopt = "capture-orientation",
+        .argdesc = "value",
+        .text = "Set the capture video orientation.\n"
+                "Possible values are 0, 90, 180, 270, flip0, flip90, flip180 "
+                "and flip270, possibly prefixed by '@'.\n"
+                "The number represents the clockwise rotation in degrees; the "
+                "flip\" keyword applies a horizontal flip before the "
+                "rotation.\n"
+                "If a leading '@' is passed (@90) for display capture, then "
+                "the rotation is locked, and is relative to the natural device "
+                "orientation.\n"
+                "If '@' is passed alone, then the rotation is locked to the "
+                "initial device orientation.\n"
+                "Default is 0.",
+    },
+    {
+        // deprecated
         .longopt_id = OPT_LOCK_VIDEO_ORIENTATION,
         .longopt = "lock-video-orientation",
         .argdesc = "value",
-        .optional_arg = true,
-        .text = "Lock capture video orientation to value.\n"
-                "Possible values are \"unlocked\", \"initial\" (locked to the "
-                "initial orientation), 0, 90, 180 and 270. The values "
-                "represent the clockwise rotation from the natural device "
-                "orientation, in degrees.\n"
-                "Default is \"unlocked\".\n"
-                "Passing the option without argument is equivalent to passing "
-                "\"initial\".",
     },
     {
         .shortopt = 'm',
@@ -895,8 +905,6 @@ static const struct sc_option options[] = {
         .longopt = "v4l2-sink",
         .argdesc = "/dev/videoN",
         .text = "Output to v4l2loopback device.\n"
-                "It requires to lock the video orientation (see "
-                "--lock-video-orientation).\n"
                 "This feature is only available on Linux.",
     },
     {
@@ -1583,66 +1591,6 @@ parse_audio_output_buffer(const char *s, sc_tick *tick) {
 }
 
 static bool
-parse_lock_video_orientation(const char *s,
-                             enum sc_lock_video_orientation *lock_mode) {
-    if (!s || !strcmp(s, "initial")) {
-        // Without argument, lock the initial orientation
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
-        return true;
-    }
-
-    if (!strcmp(s, "unlocked")) {
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_UNLOCKED;
-        return true;
-    }
-
-    if (!strcmp(s, "0")) {
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_0;
-        return true;
-    }
-
-    if (!strcmp(s, "90")) {
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
-        return true;
-    }
-
-    if (!strcmp(s, "180")) {
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
-        return true;
-    }
-
-    if (!strcmp(s, "270")) {
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
-        return true;
-    }
-
-    if (!strcmp(s, "1")) {
-        LOGW("--lock-video-orientation=1 is deprecated, use "
-             "--lock-video-orientation=270 instead.");
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_270;
-        return true;
-    }
-
-    if (!strcmp(s, "2")) {
-        LOGW("--lock-video-orientation=2 is deprecated, use "
-             "--lock-video-orientation=180 instead.");
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_180;
-        return true;
-    }
-
-    if (!strcmp(s, "3")) {
-        LOGW("--lock-video-orientation=3 is deprecated, use "
-             "--lock-video-orientation=90 instead.");
-        *lock_mode = SC_LOCK_VIDEO_ORIENTATION_90;
-        return true;
-    }
-
-    LOGE("Unsupported --lock-video-orientation value: %s (expected initial, "
-         "unlocked, 0, 90, 180 or 270).", s);
-    return false;
-}
-
-static bool
 parse_rotation(const char *s, uint8_t *rotation) {
     long value;
     bool ok = parse_integer_arg(s, &value, false, 0, 3, "rotation");
@@ -1691,6 +1639,32 @@ parse_orientation(const char *s, enum sc_orientation *orientation) {
     LOGE("Unsupported orientation: %s (expected 0, 90, 180, 270, flip0, "
          "flip90, flip180 or flip270)", optarg);
     return false;
+}
+
+static bool
+parse_capture_orientation(const char *s, enum sc_orientation *orientation,
+                          enum sc_orientation_lock *lock) {
+    if (*s == '\0') {
+        LOGE("Capture orientation may not be empty (expected 0, 90, 180, 270, "
+             "flip0, flip90, flip180 or flip270, possibly prefixed by '@')");
+        return false;
+    }
+
+    // Lock the orientation by a leading '@'
+    if (s[0] == '@') {
+        // Consume '@'
+        ++s;
+        if (*s == '\0') {
+            // Only '@': lock to the initial orientation (orientation is unused)
+            *lock = SC_ORIENTATION_LOCKED_INITIAL;
+            return true;
+        }
+        *lock = SC_ORIENTATION_LOCKED_VALUE;
+    } else {
+        *lock = SC_ORIENTATION_UNLOCKED;
+    }
+
+    return parse_orientation(s, orientation);
 }
 
 static bool
@@ -2367,8 +2341,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                      "--mouse=uhid instead.");
                 return false;
             case OPT_LOCK_VIDEO_ORIENTATION:
-                if (!parse_lock_video_orientation(optarg,
-                        &opts->lock_video_orientation)) {
+                LOGE("--lock-video-orientation has been removed, use "
+                     "--capture-orientation instead.");
+                return false;
+            case OPT_CAPTURE_ORIENTATION:
+                if (!parse_capture_orientation(optarg,
+                                          &opts->capture_orientation,
+                                          &opts->capture_orientation_lock)) {
                     return false;
                 }
                 break;
@@ -2850,13 +2829,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (!opts->video) {
             LOGE("V4L2 sink requires video capture, but --no-video was set.");
             return false;
-        }
-
-        if (opts->lock_video_orientation ==
-                SC_LOCK_VIDEO_ORIENTATION_UNLOCKED) {
-            LOGI("Video orientation is locked for v4l2 sink. "
-                 "See --lock-video-orientation.");
-            opts->lock_video_orientation = SC_LOCK_VIDEO_ORIENTATION_INITIAL;
         }
 
         // V4L2 could not handle size change.
