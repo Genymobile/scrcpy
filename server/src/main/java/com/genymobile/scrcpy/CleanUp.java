@@ -25,13 +25,13 @@ public final class CleanUp {
 
     private Thread thread;
 
-    private CleanUp(int displayId, Options options) {
-        thread = new Thread(() -> runCleanUp(displayId, options), "cleanup");
+    private CleanUp(Options options) {
+        thread = new Thread(() -> runCleanUp(options), "cleanup");
         thread.start();
     }
 
-    public static CleanUp start(int displayId, Options options) {
-        return new CleanUp(displayId, options);
+    public static CleanUp start(Options options) {
+        return new CleanUp(options);
     }
 
     public void interrupt() {
@@ -42,7 +42,7 @@ public final class CleanUp {
         thread.join();
     }
 
-    private void runCleanUp(int displayId, Options options) {
+    private void runCleanUp(Options options) {
         boolean disableShowTouches = false;
         if (options.getShowTouches()) {
             try {
@@ -93,6 +93,7 @@ public final class CleanUp {
         }
 
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
+        int displayId = options.getDisplayId();
 
         try {
             run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout);

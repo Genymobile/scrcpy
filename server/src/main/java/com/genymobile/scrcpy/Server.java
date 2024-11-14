@@ -103,11 +103,8 @@ public final class Server {
 
         CleanUp cleanUp = null;
 
-        NewDisplay newDisplay = options.getNewDisplay();
-        int displayId = newDisplay == null ? options.getDisplayId() : Device.DISPLAY_ID_NONE;
-
         if (options.getCleanup()) {
-            cleanUp = CleanUp.start(displayId, options);
+            cleanUp = CleanUp.start(options);
         }
 
         int scid = options.getScid();
@@ -131,7 +128,7 @@ public final class Server {
 
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                controller = new Controller(displayId, controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                controller = new Controller(options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
                 asyncProcessors.add(controller);
             }
 
@@ -161,11 +158,12 @@ public final class Server {
                         options.getSendFrameMeta());
                 SurfaceCapture surfaceCapture;
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
+                    NewDisplay newDisplay = options.getNewDisplay();
                     if (newDisplay != null) {
                         surfaceCapture = new NewDisplayCapture(controller, newDisplay, options.getMaxSize());
                     } else {
-                        assert displayId != Device.DISPLAY_ID_NONE;
-                        surfaceCapture = new ScreenCapture(controller, displayId, options.getMaxSize(), options.getCrop(),
+                        assert options.getDisplayId() != Device.DISPLAY_ID_NONE;
+                        surfaceCapture = new ScreenCapture(controller, options.getDisplayId(), options.getMaxSize(), options.getCrop(),
                                 options.getLockVideoOrientation());
                     }
                 } else {

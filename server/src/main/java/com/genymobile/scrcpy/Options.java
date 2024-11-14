@@ -479,6 +479,11 @@ public class Options {
             }
         }
 
+        if (options.newDisplay != null) {
+            assert options.displayId == 0 : "Must not set both displayId and newDisplay";
+            options.displayId = Device.DISPLAY_ID_NONE;
+        }
+
         return options;
     }
 
