@@ -3,7 +3,12 @@ package com.genymobile.scrcpy.video;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.ConfigurationException;
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.device.Size;
+import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLFilter;
+import com.genymobile.scrcpy.opengl.OpenGLRunner;
+import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.HandlerExecutor;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
@@ -41,6 +46,13 @@ import java.util.stream.Stream;
 
 public class CameraCapture extends SurfaceCapture {
 
+    public static final float[] VFLIP_MATRIX = {
+            1, 0, 0, 0, // column 1
+            0, -1, 0, 0, // column 2
+            0, 0, 1, 0, // column 3
+            0, 1, 0, 1, // column 4
+    };
+
     private final String explicitCameraId;
     private final CameraFacing cameraFacing;
     private final Size explicitSize;
@@ -48,9 +60,15 @@ public class CameraCapture extends SurfaceCapture {
     private final CameraAspectRatio aspectRatio;
     private final int fps;
     private final boolean highSpeed;
+    private final Rect crop;
+    private final Orientation captureOrientation;
 
     private String cameraId;
-    private Size size;
+    private Size captureSize;
+    private Size videoSize; // after OpenGL transforms
+
+    private AffineMatrix transform;
+    private OpenGLRunner glRunner;
 
     private HandlerThread cameraThread;
     private Handler cameraHandler;
@@ -67,6 +85,9 @@ public class CameraCapture extends SurfaceCapture {
         this.aspectRatio = options.getCameraAspectRatio();
         this.fps = options.getCameraFps();
         this.highSpeed = options.getCameraHighSpeed();
+        this.crop = options.getCrop();
+        this.captureOrientation = options.getCaptureOrientation();
+        assert captureOrientation != null;
     }
 
     @Override
@@ -92,13 +113,26 @@ public class CameraCapture extends SurfaceCapture {
     @Override
     public void prepare() throws IOException {
         try {
-            size = selectSize(cameraId, explicitSize, maxSize, aspectRatio, highSpeed);
-            if (size == null) {
+            captureSize = selectSize(cameraId, explicitSize, maxSize, aspectRatio, highSpeed);
+            if (captureSize == null) {
                 throw new IOException("Could not select camera size");
             }
         } catch (CameraAccessException e) {
             throw new IOException(e);
         }
+
+        VideoFilter filter = new VideoFilter(captureSize);
+
+        if (crop != null) {
+            filter.addCrop(crop, false);
+        }
+
+        if (captureOrientation != Orientation.Orient0) {
+            filter.addOrientation(captureOrientation);
+        }
+
+        transform = filter.getInverseTransform();
+        videoSize = filter.getOutputSize().limit(maxSize).round8();
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {
@@ -214,12 +248,30 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public void start(Surface surface) throws IOException {
+        if (transform != null) {
+            assert glRunner == null;
+            OpenGLFilter glFilter = new AffineOpenGLFilter(transform);
+            // The transform matrix returned by SurfaceTexture is incorrect for camera capture (it often contains an additional unexpected 90°
+            // rotation). Use a vertical flip transform matrix instead.
+            glRunner = new OpenGLRunner(glFilter, VFLIP_MATRIX);
+            surface = glRunner.start(captureSize, videoSize, surface);
+        }
+
         try {
             CameraCaptureSession session = createCaptureSession(cameraDevice, surface);
             CaptureRequest request = createCaptureRequest(surface);
             setRepeatingRequest(session, request);
         } catch (CameraAccessException | InterruptedException e) {
+            stop();
             throw new IOException(e);
+        }
+    }
+
+    @Override
+    public void stop() {
+        if (glRunner != null) {
+            glRunner.stopAndRelease();
+            glRunner = null;
         }
     }
 
@@ -235,7 +287,7 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public Size getSize() {
-        return size;
+        return videoSize;
     }
 
     @Override
