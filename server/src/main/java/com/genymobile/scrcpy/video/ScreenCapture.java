@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
@@ -30,7 +31,8 @@ public class ScreenCapture extends SurfaceCapture {
     private final int displayId;
     private int maxSize;
     private final Rect crop;
-    private int lockVideoOrientation;
+    private Orientation.Lock captureOrientationLock;
+    private Orientation captureOrientation;
 
     private DisplayInfo displayInfo;
     private Size videoSize;
@@ -49,7 +51,10 @@ public class ScreenCapture extends SurfaceCapture {
         assert displayId != Device.DISPLAY_ID_NONE;
         this.maxSize = options.getMaxSize();
         this.crop = options.getCrop();
-        this.lockVideoOrientation = options.getLockVideoOrientation();
+        this.captureOrientationLock = options.getCaptureOrientationLock();
+        this.captureOrientation = options.getCaptureOrientation();
+        assert captureOrientationLock != null;
+        assert captureOrientation != null;
     }
 
     @Override
@@ -72,9 +77,10 @@ public class ScreenCapture extends SurfaceCapture {
         Size displaySize = displayInfo.getSize();
         displaySizeMonitor.setSessionDisplaySize(displaySize);
 
-        if (lockVideoOrientation == Device.LOCK_VIDEO_ORIENTATION_INITIAL) {
+        if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation
-            lockVideoOrientation = displayInfo.getRotation();
+            captureOrientationLock = Orientation.Lock.LockedValue;
+            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
@@ -84,9 +90,8 @@ public class ScreenCapture extends SurfaceCapture {
             filter.addCrop(crop, transposed);
         }
 
-        if (lockVideoOrientation != Device.LOCK_VIDEO_ORIENTATION_UNLOCKED) {
-            filter.addLockVideoOrientation(lockVideoOrientation, displayInfo.getRotation());
-        }
+        boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
+        filter.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
 
         transform = filter.getInverseTransform();
         videoSize = filter.getOutputSize().limit(maxSize).round8();
