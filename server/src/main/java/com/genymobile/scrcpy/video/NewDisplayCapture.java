@@ -5,6 +5,7 @@ import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.NewDisplay;
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
@@ -13,6 +14,7 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.view.Surface;
@@ -41,15 +43,21 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
 
     private AffineMatrix displayTransform;
+    private AffineMatrix eventTransform;
     private OpenGLRunner glRunner;
 
     private Size mainDisplaySize;
     private int mainDisplayDpi;
     private int maxSize; // only used if newDisplay.getSize() != null
+    private final Rect crop;
+    private final boolean captureOrientationLocked;
+    private final Orientation captureOrientation;
 
     private VirtualDisplay virtualDisplay;
-    private Size size; // the logical size of the display (including rotation)
+    private Size videoSize;
+    private Size displaySize; // the logical size of the display (including rotation)
     private Size physicalSize; // the physical size of the display (without rotation)
+
     private int dpi;
 
     public NewDisplayCapture(VirtualDisplayListener vdListener, Options options) {
@@ -57,13 +65,18 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.newDisplay = options.getNewDisplay();
         assert newDisplay != null;
         this.maxSize = options.getMaxSize();
+        this.crop = options.getCrop();
+        assert options.getCaptureOrientationLock() != null;
+        this.captureOrientationLocked = options.getCaptureOrientationLock() != Orientation.Lock.Unlocked;
+        this.captureOrientation = options.getCaptureOrientation();
+        assert captureOrientation != null;
     }
 
     @Override
     protected void init() {
-        size = newDisplay.getSize();
+        displaySize = newDisplay.getSize();
         dpi = newDisplay.getDpi();
-        if (size == null || dpi == 0) {
+        if (displaySize == null || dpi == 0) {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(0);
             if (displayInfo != null) {
                 mainDisplaySize = displayInfo.getSize();
@@ -78,28 +91,57 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void prepare() {
+        int displayRotation;
         if (virtualDisplay == null) {
             if (!newDisplay.hasExplicitSize()) {
-                size = mainDisplaySize.limit(maxSize).round8();
+                displaySize = mainDisplaySize.limit(maxSize).round8();
             }
             if (!newDisplay.hasExplicitDpi()) {
-                dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, size);
+                dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
             }
 
-            physicalSize = size;
+            videoSize = displaySize;
+            displayRotation = 0;
             // Set the current display size to avoid an unnecessary call to invalidate()
-            displaySizeMonitor.setSessionDisplaySize(size);
+            displaySizeMonitor.setSessionDisplaySize(displaySize);
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
-            size = displayInfo.getSize();
+            displaySize = displayInfo.getSize();
             dpi = displayInfo.getDpi();
-
-            VideoFilter displayFilter = new VideoFilter(size);
-            displayFilter.addRotation(displayInfo.getRotation());
-            // The display info gives the oriented size, but the virtual display video always remains in the origin orientation
-            displayTransform = displayFilter.getInverseTransform();
-            physicalSize = displayFilter.getOutputSize();
+            displayRotation = displayInfo.getRotation();
         }
+
+        VideoFilter filter = new VideoFilter(displaySize);
+
+        if (crop != null) {
+            boolean transposed = (displayRotation % 2) != 0;
+            filter.addCrop(crop, transposed);
+        }
+
+        filter.addOrientation(displayRotation, captureOrientationLocked, captureOrientation);
+
+        eventTransform = filter.getInverseTransform();
+
+        // DisplayInfo gives the oriented size (so videoSize includes the display rotation)
+        videoSize = filter.getOutputSize().limit(maxSize).round8();
+
+        // But the virtual display video always remains in the origin orientation (the video itself is not rotated, so it must rotated manually).
+        // This additional display rotation must not be included in the input events transform (the expected coordinates are already in the
+        // physical display size)
+        if ((displayRotation % 2) == 0) {
+            physicalSize = displaySize;
+        } else {
+            physicalSize = displaySize.rotate();
+        }
+        VideoFilter displayFilter = new VideoFilter(physicalSize);
+        displayFilter.addRotation(displayRotation);
+        AffineMatrix displayRotationMatrix = displayFilter.getInverseTransform();
+
+        // Take care of multiplication order:
+        //   displayTransform = (FILTER_MATRIX * DISPLAY_FILTER_MATRIX)⁻¹
+        //                    = DISPLAY_FILTER_MATRIX⁻¹ * FILTER_MATRIX⁻¹
+        //                    = displayRotationMatrix * eventTransform
+        displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
     public void startNew(Surface surface) {
@@ -122,9 +164,9 @@ public class NewDisplayCapture extends SurfaceCapture {
                 }
             }
             virtualDisplay = ServiceManager.getDisplayManager()
-                    .createNewVirtualDisplay("scrcpy", size.getWidth(), size.getHeight(), dpi, surface, flags);
+                    .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-            Ln.i("New display: " + size.getWidth() + "x" + size.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+            Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {
@@ -139,7 +181,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             assert glRunner == null;
             OpenGLFilter glFilter = new AffineOpenGLFilter(displayTransform);
             glRunner = new OpenGLRunner(glFilter);
-            surface = glRunner.start(physicalSize, size, surface);
+            surface = glRunner.start(physicalSize, videoSize, surface);
         }
 
         if (virtualDisplay == null) {
@@ -149,8 +191,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
-            // The virtual display rotation must only be applied to video, it is already taken into account when injecting events!
-            PositionMapper positionMapper = PositionMapper.create(size, null, size);
+            PositionMapper positionMapper = PositionMapper.create(videoSize, eventTransform, displaySize);
             vdListener.onNewVirtualDisplay(virtualDisplay.getDisplay().getDisplayId(), positionMapper);
         }
     }
@@ -175,7 +216,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public synchronized Size getSize() {
-        return size;
+        return videoSize;
     }
 
     @Override
