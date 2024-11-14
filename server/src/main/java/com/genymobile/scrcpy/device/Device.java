@@ -40,9 +40,6 @@ public final class Device {
     public static final int INJECT_MODE_WAIT_FOR_RESULT = InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT;
     public static final int INJECT_MODE_WAIT_FOR_FINISH = InputManager.INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH;
 
-    public static final int LOCK_VIDEO_ORIENTATION_UNLOCKED = -1;
-    public static final int LOCK_VIDEO_ORIENTATION_INITIAL = -2;
-
     private Device() {
         // not instantiable
     }
