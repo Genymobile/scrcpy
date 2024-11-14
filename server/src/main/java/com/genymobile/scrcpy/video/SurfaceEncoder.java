@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.device.Streamer;
@@ -51,15 +52,14 @@ public class SurfaceEncoder implements AsyncProcessor {
 
     private final CaptureReset reset = new CaptureReset();
 
-    public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, int videoBitRate, float maxFps, List<CodecOption> codecOptions,
-            String encoderName, boolean downsizeOnError) {
+    public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
         this.streamer = streamer;
-        this.videoBitRate = videoBitRate;
-        this.maxFps = maxFps;
-        this.codecOptions = codecOptions;
-        this.encoderName = encoderName;
-        this.downsizeOnError = downsizeOnError;
+        this.videoBitRate = options.getVideoBitRate();
+        this.maxFps = options.getMaxFps();
+        this.codecOptions = options.getVideoCodecOptions();
+        this.encoderName = options.getVideoEncoder();
+        this.downsizeOnError = options.getDownsizeOnError();
     }
 
     private void streamCapture() throws IOException, ConfigurationException {

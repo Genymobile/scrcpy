@@ -128,7 +128,7 @@ public final class Server {
 
             if (control) {
                 ControlChannel controlChannel = connection.getControlChannel();
-                controller = new Controller(options.getDisplayId(), controlChannel, cleanUp, options.getClipboardAutosync(), options.getPowerOn());
+                controller = new Controller(controlChannel, cleanUp, options);
                 asyncProcessors.add(controller);
             }
 
@@ -147,8 +147,7 @@ public final class Server {
                 if (audioCodec == AudioCodec.RAW) {
                     audioRecorder = new AudioRawRecorder(audioCapture, audioStreamer);
                 } else {
-                    audioRecorder = new AudioEncoder(audioCapture, audioStreamer, options.getAudioBitRate(), options.getAudioCodecOptions(),
-                            options.getAudioEncoder());
+                    audioRecorder = new AudioEncoder(audioCapture, audioStreamer, options);
                 }
                 asyncProcessors.add(audioRecorder);
             }
@@ -160,18 +159,15 @@ public final class Server {
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
                     NewDisplay newDisplay = options.getNewDisplay();
                     if (newDisplay != null) {
-                        surfaceCapture = new NewDisplayCapture(controller, newDisplay, options.getMaxSize());
+                        surfaceCapture = new NewDisplayCapture(controller, options);
                     } else {
                         assert options.getDisplayId() != Device.DISPLAY_ID_NONE;
-                        surfaceCapture = new ScreenCapture(controller, options.getDisplayId(), options.getMaxSize(), options.getCrop(),
-                                options.getLockVideoOrientation());
+                        surfaceCapture = new ScreenCapture(controller, options);
                     }
                 } else {
-                    surfaceCapture = new CameraCapture(options.getCameraId(), options.getCameraFacing(), options.getCameraSize(),
-                            options.getMaxSize(), options.getCameraAspectRatio(), options.getCameraFps(), options.getCameraHighSpeed());
+                    surfaceCapture = new CameraCapture(options);
                 }
-                SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options.getVideoBitRate(), options.getMaxFps(),
-                        options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
+                SurfaceEncoder surfaceEncoder = new SurfaceEncoder(surfaceCapture, videoStreamer, options);
                 asyncProcessors.add(surfaceEncoder);
 
                 if (controller != null) {

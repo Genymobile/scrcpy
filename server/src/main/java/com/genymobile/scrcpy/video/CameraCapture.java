@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.HandlerExecutor;
@@ -58,15 +59,14 @@ public class CameraCapture extends SurfaceCapture {
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
-    public CameraCapture(String explicitCameraId, CameraFacing cameraFacing, Size explicitSize, int maxSize, CameraAspectRatio aspectRatio, int fps,
-            boolean highSpeed) {
-        this.explicitCameraId = explicitCameraId;
-        this.cameraFacing = cameraFacing;
-        this.explicitSize = explicitSize;
-        this.maxSize = maxSize;
-        this.aspectRatio = aspectRatio;
-        this.fps = fps;
-        this.highSpeed = highSpeed;
+    public CameraCapture(Options options) {
+        this.explicitCameraId = options.getCameraId();
+        this.cameraFacing = options.getCameraFacing();
+        this.explicitSize = options.getCameraSize();
+        this.maxSize = options.getMaxSize();
+        this.aspectRatio = options.getCameraAspectRatio();
+        this.fps = options.getCameraFps();
+        this.highSpeed = options.getCameraHighSpeed();
     }
 
     @Override

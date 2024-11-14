@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.NewDisplay;
@@ -43,10 +44,11 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size size;
     private int dpi;
 
-    public NewDisplayCapture(VirtualDisplayListener vdListener, NewDisplay newDisplay, int maxSize) {
+    public NewDisplayCapture(VirtualDisplayListener vdListener, Options options) {
         this.vdListener = vdListener;
-        this.newDisplay = newDisplay;
-        this.maxSize = maxSize;
+        this.newDisplay = options.getNewDisplay();
+        assert newDisplay != null;
+        this.maxSize = options.getMaxSize();
     }
 
     @Override

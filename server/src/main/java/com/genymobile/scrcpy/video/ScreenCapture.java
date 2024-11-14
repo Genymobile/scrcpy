@@ -1,8 +1,10 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.ConfigurationException;
+import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
@@ -48,12 +50,13 @@ public class ScreenCapture extends SurfaceCapture {
     private IRotationWatcher rotationWatcher;
     private IDisplayFoldListener displayFoldListener;
 
-    public ScreenCapture(VirtualDisplayListener vdListener, int displayId, int maxSize, Rect crop, int lockVideoOrientation) {
+    public ScreenCapture(VirtualDisplayListener vdListener, Options options) {
         this.vdListener = vdListener;
-        this.displayId = displayId;
-        this.maxSize = maxSize;
-        this.crop = crop;
-        this.lockVideoOrientation = lockVideoOrientation;
+        this.displayId = options.getDisplayId();
+        assert displayId != Device.DISPLAY_ID_NONE;
+        this.maxSize = options.getMaxSize();
+        this.crop = options.getCrop();
+        this.lockVideoOrientation = options.getLockVideoOrientation();
     }
 
     @Override

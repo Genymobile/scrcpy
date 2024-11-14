@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.audio;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.util.Codec;
@@ -67,12 +68,12 @@ public final class AudioEncoder implements AsyncProcessor {
 
     private boolean ended;
 
-    public AudioEncoder(AudioCapture capture, Streamer streamer, int bitRate, List<CodecOption> codecOptions, String encoderName) {
+    public AudioEncoder(AudioCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
         this.streamer = streamer;
-        this.bitRate = bitRate;
-        this.codecOptions = codecOptions;
-        this.encoderName = encoderName;
+        this.bitRate = options.getAudioBitRate();
+        this.codecOptions = options.getAudioCodecOptions();
+        this.encoderName = options.getAudioEncoder();
     }
 
     private static MediaFormat createFormat(String mimeType, int bitRate, List<CodecOption> codecOptions) {

@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.control;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.CleanUp;
+import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.Point;
@@ -97,12 +98,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     // Used for resetting video encoding on RESET_VIDEO message
     private SurfaceCapture surfaceCapture;
 
-    public Controller(int displayId, ControlChannel controlChannel, CleanUp cleanUp, boolean clipboardAutosync, boolean powerOn) {
-        this.displayId = displayId;
+    public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
+        this.displayId = options.getDisplayId();
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
-        this.clipboardAutosync = clipboardAutosync;
-        this.powerOn = powerOn;
+        this.clipboardAutosync = options.getClipboardAutosync();
+        this.powerOn = options.getPowerOn();
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
 
