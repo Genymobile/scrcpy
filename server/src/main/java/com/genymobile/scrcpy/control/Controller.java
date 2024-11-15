@@ -8,6 +8,7 @@ import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
+import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.video.SurfaceCapture;
@@ -359,7 +360,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Point point = displayData.positionMapper.map(position);
         if (point == null) {
-            Ln.w("Ignore touch event, it was generated for a different device size");
+            Size eventSize = position.getScreenSize();
+            Size currentSize = displayData.positionMapper.getVideoSize();
+            Ln.w("Ignore touch event generated for size " + eventSize + " (current size is " + currentSize + ")");
             return false;
         }
 
@@ -473,7 +476,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Point point = displayData.positionMapper.map(position);
         if (point == null) {
-            Ln.w("Ignore scroll event, it was generated for a different device size");
+            Size eventSize = position.getScreenSize();
+            Size currentSize = displayData.positionMapper.getVideoSize();
+            Ln.w("Ignore scroll event generated for size " + eventSize + " (current size is " + currentSize + ")");
             return false;
         }
 
