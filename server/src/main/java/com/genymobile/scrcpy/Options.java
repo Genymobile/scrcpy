@@ -34,6 +34,7 @@ public class Options {
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
+    private float angle;
     private boolean tunnelForward;
     private Rect crop;
     private boolean control = true;
@@ -125,6 +126,10 @@ public class Options {
 
     public float getMaxFps() {
         return maxFps;
+    }
+
+    public float getAngle() {
+        return angle;
     }
 
     public boolean isTunnelForward() {
@@ -348,6 +353,9 @@ public class Options {
                     break;
                 case "max_fps":
                     options.maxFps = parseFloat("max_fps", value);
+                    break;
+                case "angle":
+                    options.angle = parseFloat("angle", value);
                     break;
                 case "tunnel_forward":
                     options.tunnelForward = Boolean.parseBoolean(value);
