@@ -80,6 +80,9 @@ public class NewDisplayCapture extends SurfaceCapture {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(0);
             if (displayInfo != null) {
                 mainDisplaySize = displayInfo.getSize();
+                if ((displayInfo.getRotation() % 2) != 0) {
+                    mainDisplaySize = mainDisplaySize.rotate(); // Use the natural device orientation (at rotation 0), not the current one
+                }
                 mainDisplayDpi = displayInfo.getDpi();
             } else {
                 Ln.w("Main display not found, fallback to 1920x1080 240dpi");
