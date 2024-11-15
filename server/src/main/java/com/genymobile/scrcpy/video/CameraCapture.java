@@ -62,6 +62,7 @@ public class CameraCapture extends SurfaceCapture {
     private final boolean highSpeed;
     private final Rect crop;
     private final Orientation captureOrientation;
+    private final float angle;
 
     private String cameraId;
     private Size captureSize;
@@ -88,6 +89,7 @@ public class CameraCapture extends SurfaceCapture {
         this.crop = options.getCrop();
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientation != null;
+        this.angle = options.getAngle();
     }
 
     @Override
@@ -130,6 +132,8 @@ public class CameraCapture extends SurfaceCapture {
         if (captureOrientation != Orientation.Orient0) {
             filter.addOrientation(captureOrientation);
         }
+
+        filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
         videoSize = filter.getOutputSize().limit(maxSize).round8();

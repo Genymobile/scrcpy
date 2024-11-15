@@ -108,6 +108,7 @@ enum {
     OPT_START_APP,
     OPT_SCREEN_OFF_TIMEOUT,
     OPT_CAPTURE_ORIENTATION,
+    OPT_ANGLE,
 };
 
 struct sc_option {
@@ -148,6 +149,13 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ALWAYS_ON_TOP,
         .longopt = "always-on-top",
         .text = "Make scrcpy window always on top (above other windows).",
+    },
+    {
+        .longopt_id = OPT_ANGLE,
+        .longopt = "angle",
+        .argdesc = "degrees",
+        .text = "Rotate the video content by a custom angle, in degrees "
+                "(clockwise).",
     },
     {
         .longopt_id = OPT_AUDIO_BIT_RATE,
@@ -2688,6 +2696,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                                               &opts->screen_off_timeout)) {
                     return false;
                 }
+                break;
+            case OPT_ANGLE:
+                opts->angle = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr

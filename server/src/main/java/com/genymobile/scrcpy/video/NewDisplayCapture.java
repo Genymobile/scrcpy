@@ -52,6 +52,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final Rect crop;
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
+    private final float angle;
 
     private VirtualDisplay virtualDisplay;
     private Size videoSize;
@@ -70,6 +71,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.captureOrientationLocked = options.getCaptureOrientationLock() != Orientation.Lock.Unlocked;
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientation != null;
+        this.angle = options.getAngle();
     }
 
     @Override
@@ -122,6 +124,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         filter.addOrientation(displayRotation, captureOrientationLocked, captureOrientation);
+        filter.addAngle(angle);
 
         eventTransform = filter.getInverseTransform();
 
