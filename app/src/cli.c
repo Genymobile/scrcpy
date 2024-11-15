@@ -1591,18 +1591,6 @@ parse_audio_output_buffer(const char *s, sc_tick *tick) {
 }
 
 static bool
-parse_rotation(const char *s, uint8_t *rotation) {
-    long value;
-    bool ok = parse_integer_arg(s, &value, false, 0, 3, "rotation");
-    if (!ok) {
-        return false;
-    }
-
-    *rotation = (uint8_t) value;
-    return true;
-}
-
-static bool
 parse_orientation(const char *s, enum sc_orientation *orientation) {
     if (!strcmp(s, "0")) {
         *orientation = SC_ORIENTATION_0;
@@ -2276,8 +2264,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->crop = optarg;
                 break;
             case OPT_DISPLAY:
-                LOGW("--display is deprecated, use --display-id instead.");
-                // fall through
+                LOGE("--display has been removed, use --display-id instead.");
+                return false;
             case OPT_DISPLAY_ID:
                 if (!parse_display_id(optarg, &opts->display_id)) {
                     return false;
@@ -2365,8 +2353,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->control = false;
                 break;
             case OPT_NO_DISPLAY:
-                LOGW("--no-display is deprecated, use --no-playback instead.");
-                // fall through
+                LOGE("--no-display has been removed, use --no-playback "
+                     "instead.");
+                return false;
             case 'N':
                 opts->video_playback = false;
                 opts->audio_playback = false;
@@ -2452,32 +2441,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->key_inject_mode = SC_KEY_INJECT_MODE_RAW;
                 break;
             case OPT_ROTATION:
-                LOGW("--rotation is deprecated, use --display-orientation "
-                     "instead.");
-                uint8_t rotation;
-                if (!parse_rotation(optarg, &rotation)) {
-                    return false;
-                }
-                assert(rotation <= 3);
-                switch (rotation) {
-                    case 0:
-                        opts->display_orientation = SC_ORIENTATION_0;
-                        break;
-                    case 1:
-                        // rotation 1 was 90° counterclockwise, but orientation
-                        // is expressed clockwise
-                        opts->display_orientation = SC_ORIENTATION_270;
-                        break;
-                    case 2:
-                        opts->display_orientation = SC_ORIENTATION_180;
-                        break;
-                    case 3:
-                        // rotation 3 was 270° counterclockwise, but orientation
-                        // is expressed clockwise
-                        opts->display_orientation = SC_ORIENTATION_90;
-                        break;
-                }
-                break;
+                LOGE("--rotation has been removed, use --orientation or "
+                     "--capture-orientation instead.");
+                return false;
             case OPT_DISPLAY_ORIENTATION:
                 if (!parse_orientation(optarg, &opts->display_orientation)) {
                     return false;
@@ -2538,23 +2504,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 }
                 break;
             case OPT_FORWARD_ALL_CLICKS:
-                LOGW("--forward-all-clicks is deprecated, "
+                LOGE("--forward-all-clicks has been removed, "
                      "use --mouse-bind=++++ instead.");
-                opts->mouse_bindings = (struct sc_mouse_bindings) {
-                    .pri = {
-                        .right_click = SC_MOUSE_BINDING_CLICK,
-                        .middle_click = SC_MOUSE_BINDING_CLICK,
-                        .click4 = SC_MOUSE_BINDING_CLICK,
-                        .click5 = SC_MOUSE_BINDING_CLICK,
-                    },
-                    .sec = {
-                        .right_click = SC_MOUSE_BINDING_CLICK,
-                        .middle_click = SC_MOUSE_BINDING_CLICK,
-                        .click4 = SC_MOUSE_BINDING_CLICK,
-                        .click5 = SC_MOUSE_BINDING_CLICK,
-                    },
-                };
-                break;
+                return false;
             case OPT_LEGACY_PASTE:
                 opts->legacy_paste = true;
                 break;
@@ -2562,9 +2514,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->power_off_on_close = true;
                 break;
             case OPT_DISPLAY_BUFFER:
-                LOGW("--display-buffer is deprecated, use --video-buffer "
+                LOGE("--display-buffer has been removed, use --video-buffer "
                      "instead.");
-                // fall through
+                return false;
             case OPT_VIDEO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->video_buffer)) {
                     return false;
