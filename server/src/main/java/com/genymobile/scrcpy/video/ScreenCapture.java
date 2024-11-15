@@ -133,15 +133,6 @@ public class ScreenCapture extends DisplayCapture {
 
     @Override
     public void start(Surface surface) throws IOException {
-        if (display != null) {
-            SurfaceControl.destroyDisplay(display);
-            display = null;
-        }
-        if (virtualDisplay != null) {
-            virtualDisplay.release();
-            virtualDisplay = null;
-        }
-
         Size inputSize;
         if (transform != null) {
             // If there is a filter, it must receive the full display content
@@ -158,8 +149,13 @@ public class ScreenCapture extends DisplayCapture {
         int virtualDisplayId;
         PositionMapper positionMapper;
         try {
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
+            if (virtualDisplay == null) {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
+            } else {
+                virtualDisplay.setSurface(surface);
+                virtualDisplay.resize(videoSize.getWidth(), videoSize.getHeight(), displayInfo.getDpi());
+            }
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
 
             // The positions are relative to the virtual display, not the original display (so use inputSize, not deviceSize!)
@@ -167,7 +163,9 @@ public class ScreenCapture extends DisplayCapture {
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
-                display = createDisplay();
+                if (display == null) {
+                    display = createDisplay();
+                }
 
                 Size deviceSize = displayInfo.getSize();
                 int layerStack = displayInfo.getLayerStack();
