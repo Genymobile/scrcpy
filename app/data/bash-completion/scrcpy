@@ -2,6 +2,7 @@ _scrcpy() {
     local cur prev words cword
     local opts="
         --always-on-top
+        --angle
         --audio-bit-rate=
         --audio-buffer=
         --audio-codec=
