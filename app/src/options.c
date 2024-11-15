@@ -107,6 +107,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_dup = false,
     .new_display = NULL,
     .start_app = NULL,
+    .angle = NULL,
 };
 
 enum sc_orientation
