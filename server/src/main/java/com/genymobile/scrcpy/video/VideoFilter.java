@@ -89,4 +89,11 @@ public class VideoFilter {
         }
         addOrientation(captureOrientation);
     }
+
+    public void addAngle(double ccwAngle) {
+        if (ccwAngle == 0) {
+            return;
+        }
+        transform = AffineMatrix.rotate(ccwAngle).withAspectRatio(size).fromCenter().multiply(transform);
+    }
 }

@@ -158,6 +158,17 @@ to the MP4 or MKV target file. Flipping is not supported, so only the 4 first
 values are allowed when recording.
 
 
+## Angle
+
+To rotate the video content by a custom angle (in degrees, counter-clockwise):
+
+```
+scrcpy --angle=23
+```
+
+The center of rotation is the center of the visible area (after cropping).
+
+
 ## Crop
 
 The device screen may be cropped to mirror only part of the screen.
