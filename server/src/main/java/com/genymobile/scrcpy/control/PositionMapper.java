@@ -27,6 +27,10 @@ public final class PositionMapper {
         return new PositionMapper(videoSize, transform);
     }
 
+    public Size getVideoSize() {
+        return videoSize;
+    }
+
     public Point map(Position position) {
         Size clientVideoSize = position.getScreenSize();
         if (!videoSize.equals(clientVideoSize)) {
