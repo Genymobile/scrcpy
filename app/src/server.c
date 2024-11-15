@@ -274,6 +274,10 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->max_fps);
         ADD_PARAM("max_fps=%s", params->max_fps);
     }
+    if (params->angle) {
+        VALIDATE_STRING(params->angle);
+        ADD_PARAM("angle=%s", params->angle);
+    }
     if (params->capture_orientation_lock != SC_ORIENTATION_UNLOCKED
             || params->capture_orientation != SC_ORIENTATION_0) {
         if (params->capture_orientation_lock == SC_ORIENTATION_LOCKED_INITIAL) {

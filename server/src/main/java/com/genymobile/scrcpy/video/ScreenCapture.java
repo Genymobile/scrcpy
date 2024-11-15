@@ -33,6 +33,7 @@ public class ScreenCapture extends SurfaceCapture {
     private final Rect crop;
     private Orientation.Lock captureOrientationLock;
     private Orientation captureOrientation;
+    private final float angle;
 
     private DisplayInfo displayInfo;
     private Size videoSize;
@@ -55,6 +56,7 @@ public class ScreenCapture extends SurfaceCapture {
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientationLock != null;
         assert captureOrientation != null;
+        this.angle = options.getAngle();
     }
 
     @Override
@@ -92,6 +94,7 @@ public class ScreenCapture extends SurfaceCapture {
 
         boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
         filter.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
+        filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
         videoSize = filter.getOutputSize().limit(maxSize).round8();

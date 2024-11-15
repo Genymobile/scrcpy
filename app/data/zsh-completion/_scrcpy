@@ -9,6 +9,7 @@ local arguments
 
 arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
+    '--angle=[Rotate the video content by a custom angle, in degrees]'
     '--audio-bit-rate=[Encode the audio at the given bit-rate]'
     '--audio-buffer=[Configure the audio buffering delay (in milliseconds)]'
     '--audio-codec=[Select the audio codec]:codec:(opus aac flac raw)'
