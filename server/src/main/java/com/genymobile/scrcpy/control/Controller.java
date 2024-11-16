@@ -360,9 +360,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Point point = displayData.positionMapper.map(position);
         if (point == null) {
-            Size eventSize = position.getScreenSize();
-            Size currentSize = displayData.positionMapper.getVideoSize();
-            Ln.w("Ignore touch event generated for size " + eventSize + " (current size is " + currentSize + ")");
+            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                Size eventSize = position.getScreenSize();
+                Size currentSize = displayData.positionMapper.getVideoSize();
+                Ln.v("Ignore touch event generated for size " + eventSize + " (current size is " + currentSize + ")");
+            }
             return false;
         }
 
@@ -476,9 +478,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Point point = displayData.positionMapper.map(position);
         if (point == null) {
-            Size eventSize = position.getScreenSize();
-            Size currentSize = displayData.positionMapper.getVideoSize();
-            Ln.w("Ignore scroll event generated for size " + eventSize + " (current size is " + currentSize + ")");
+            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                Size eventSize = position.getScreenSize();
+                Size currentSize = displayData.positionMapper.getVideoSize();
+                Ln.v("Ignore scroll event generated for size " + eventSize + " (current size is " + currentSize + ")");
+            }
             return false;
         }
 
