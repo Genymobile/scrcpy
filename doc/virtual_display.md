@@ -24,3 +24,13 @@ For example:
 ```bash
 scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
 ```
+
+## System decorations
+
+By default, virtual display system decorations are enabled. But some devices
+might display a broken UI;
+
+Use `--no-vd-system-decorations` to disable it.
+
+Note that if no app is started, no content will be rendered, so no video frame
+will be produced at all.
