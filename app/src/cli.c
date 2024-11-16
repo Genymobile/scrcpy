@@ -109,6 +109,7 @@ enum {
     OPT_SCREEN_OFF_TIMEOUT,
     OPT_CAPTURE_ORIENTATION,
     OPT_ANGLE,
+    OPT_NO_VD_SYSTEM_DECORATIONS,
 };
 
 struct sc_option {
@@ -658,6 +659,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_VD_SYSTEM_DECORATIONS,
+        .longopt = "no-vd-system-decorations",
+        .text = "Disable virtual display system decorations flag.",
     },
     {
         .longopt_id = OPT_NO_VIDEO,
@@ -2698,6 +2704,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_ANGLE:
                 opts->angle = optarg;
+                break;
+            case OPT_NO_VD_SYSTEM_DECORATIONS:
+                opts->vd_system_decorations = optarg;
                 break;
             default:
                 // getopt prints the error message on stderr

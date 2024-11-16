@@ -53,6 +53,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
     private final float angle;
+    private final boolean vdSystemDecorations;
 
     private VirtualDisplay virtualDisplay;
     private Size videoSize;
@@ -72,6 +73,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        this.vdSystemDecorations = options.getVDSystemDecorations();
     }
 
     @Override
@@ -157,8 +159,10 @@ public class NewDisplayCapture extends SurfaceCapture {
                     | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
-                    | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL
-                    | VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+                    | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
+            if (vdSystemDecorations) {
+                flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
+            }
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
                 flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP

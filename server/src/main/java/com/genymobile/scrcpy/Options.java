@@ -60,6 +60,7 @@ public class Options {
     private boolean powerOn = true;
 
     private NewDisplay newDisplay;
+    private boolean vdSystemDecorations = true;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
     private Orientation captureOrientation = Orientation.Orient0;
@@ -230,6 +231,10 @@ public class Options {
 
     public Orientation.Lock getCaptureOrientationLock() {
         return captureOrientationLock;
+    }
+
+    public boolean getVDSystemDecorations() {
+        return vdSystemDecorations;
     }
 
     public boolean getList() {
@@ -460,6 +465,9 @@ public class Options {
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);
+                    break;
+                case "vd_system_decorations":
+                    options.vdSystemDecorations = Boolean.parseBoolean(value);
                     break;
                 case "capture_orientation":
                     Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
