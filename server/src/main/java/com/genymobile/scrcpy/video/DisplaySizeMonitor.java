@@ -6,13 +6,14 @@ import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
+import com.genymobile.scrcpy.wrappers.DisplayWindowListener;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.view.IDisplayFoldListener;
-import android.view.IRotationWatcher;
+import android.view.IDisplayWindowListener;
 
 public class DisplaySizeMonitor {
 
@@ -20,15 +21,14 @@ public class DisplaySizeMonitor {
         void onDisplaySizeChanged();
     }
 
+    // On Android 14, DisplayListener may be broken (it never sends events). This is fixed in recent Android 14 upgrades, but we can't really
+    // detect it directly, so register a DisplayWindowListener (introduced in Android 11) to listen to configuration changes instead.
+    private static final boolean USE_DEFAULT_METHOD = Build.VERSION.SDK_INT != AndroidVersions.API_34_ANDROID_14;
+
     private DisplayManager.DisplayListenerHandle displayListenerHandle;
     private HandlerThread handlerThread;
 
-    // On Android 14, DisplayListener may be broken (it never sends events). This is fixed in recent Android 14 upgrades, but we can't really
-    // detect it directly, so register a RotationWatcher and a DisplayFoldListener as a fallback, until we receive the first event from
-    // DisplayListener (which proves that it works).
-    private boolean displayListenerWorks; // only accessed from the display listener thread
-    private IRotationWatcher rotationWatcher;
-    private IDisplayFoldListener displayFoldListener;
+    private IDisplayWindowListener displayWindowListener;
 
     private int displayId = Device.DISPLAY_ID_NONE;
 
@@ -44,31 +44,34 @@ public class DisplaySizeMonitor {
         assert this.displayId == Device.DISPLAY_ID_NONE;
         this.displayId = displayId;
 
-        handlerThread = new HandlerThread("DisplayListener");
-        handlerThread.start();
-        Handler handler = new Handler(handlerThread.getLooper());
-
-        if (Build.VERSION.SDK_INT == AndroidVersions.API_34_ANDROID_14) {
-            registerDisplayListenerFallbacks();
-        }
-
-        displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(eventDisplayId -> {
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: onDisplayChanged(" + eventDisplayId + ")");
-            }
-
-            if (Build.VERSION.SDK_INT == AndroidVersions.API_34_ANDROID_14) {
-                if (!displayListenerWorks) {
-                    // On the first display listener event, we know it works, we can unregister the fallbacks
-                    displayListenerWorks = true;
-                    unregisterDisplayListenerFallbacks();
+        if (USE_DEFAULT_METHOD) {
+            handlerThread = new HandlerThread("DisplayListener");
+            handlerThread.start();
+            Handler handler = new Handler(handlerThread.getLooper());
+            displayListenerHandle = ServiceManager.getDisplayManager().registerDisplayListener(eventDisplayId -> {
+                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                    Ln.v("DisplaySizeMonitor: onDisplayChanged(" + eventDisplayId + ")");
                 }
-            }
 
-            if (eventDisplayId == displayId) {
-                checkDisplaySizeChanged();
-            }
-        }, handler);
+                if (eventDisplayId == displayId) {
+                    checkDisplaySizeChanged();
+                }
+            }, handler);
+        } else {
+            displayWindowListener = new DisplayWindowListener() {
+                @Override
+                public void onDisplayConfigurationChanged(int eventDisplayId, Configuration newConfig) {
+                    if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                        Ln.v("DisplaySizeMonitor: onDisplayConfigurationChanged(" + eventDisplayId + ")");
+                    }
+
+                    if (eventDisplayId == displayId) {
+                        checkDisplaySizeChanged();
+                    }
+                }
+            };
+            ServiceManager.getWindowManager().registerDisplayWindowListener(displayWindowListener);
+        }
     }
 
     /**
@@ -78,18 +81,18 @@ public class DisplaySizeMonitor {
      * It is ok to call this method even if {@link #start(int, Listener)} was not called.
      */
     public void stopAndRelease() {
-        if (Build.VERSION.SDK_INT == AndroidVersions.API_34_ANDROID_14) {
-            unregisterDisplayListenerFallbacks();
-        }
+        if (USE_DEFAULT_METHOD) {
+            // displayListenerHandle may be null if registration failed
+            if (displayListenerHandle != null) {
+                ServiceManager.getDisplayManager().unregisterDisplayListener(displayListenerHandle);
+                displayListenerHandle = null;
+            }
 
-        // displayListenerHandle may be null if registration failed
-        if (displayListenerHandle != null) {
-            ServiceManager.getDisplayManager().unregisterDisplayListener(displayListenerHandle);
-            displayListenerHandle = null;
-        }
-
-        if (handlerThread != null) {
-            handlerThread.quitSafely();
+            if (handlerThread != null) {
+                handlerThread.quitSafely();
+            }
+        } else if (displayWindowListener != null) {
+            ServiceManager.getWindowManager().unregisterDisplayWindowListener(displayWindowListener);
         }
     }
 
@@ -131,59 +134,6 @@ public class DisplaySizeMonitor {
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
                 Ln.v("DisplaySizeMonitor: Size not changed (" + size + "): do not requestReset()");
             }
-        }
-    }
-
-    private void registerDisplayListenerFallbacks() {
-        rotationWatcher = new IRotationWatcher.Stub() {
-            @Override
-            public void onRotationChanged(int rotation) {
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onRotationChanged(" + rotation + ")");
-                }
-
-                checkDisplaySizeChanged();
-            }
-        };
-        ServiceManager.getWindowManager().registerRotationWatcher(rotationWatcher, displayId);
-
-        // Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10 (but implied by == API_34_ANDROID 14)
-        displayFoldListener = new IDisplayFoldListener.Stub() {
-
-            private boolean first = true;
-
-            @Override
-            public void onDisplayFoldChanged(int displayId, boolean folded) {
-                if (first) {
-                    // An event is posted on registration to signal the initial state. Ignore it to avoid restarting encoding.
-                    first = false;
-                    return;
-                }
-
-                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: onDisplayFoldChanged(" + displayId + ", " + folded + ")");
-                }
-
-                if (DisplaySizeMonitor.this.displayId != displayId) {
-                    // Ignore events related to other display ids
-                    return;
-                }
-
-                checkDisplaySizeChanged();
-            }
-        };
-        ServiceManager.getWindowManager().registerDisplayFoldListener(displayFoldListener);
-    }
-
-    private synchronized void unregisterDisplayListenerFallbacks() {
-        if (rotationWatcher != null) {
-            ServiceManager.getWindowManager().unregisterRotationWatcher(rotationWatcher);
-            rotationWatcher = null;
-        }
-        if (displayFoldListener != null) {
-            // Build.VERSION.SDK_INT >= AndroidVersions.API_29_ANDROID_10 (but implied by == API_34_ANDROID 14)
-            ServiceManager.getWindowManager().unregisterDisplayFoldListener(displayFoldListener);
-            displayFoldListener = null;
         }
     }
 }
