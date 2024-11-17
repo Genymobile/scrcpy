@@ -461,15 +461,6 @@ meson setup x -Dserver_debugger=true
 meson configure x -Dserver_debugger=true
 ```
 
-If your device runs Android 8 or below, set the `server_debugger_method` to
-`old` in addition:
-
-```bash
-meson setup x -Dserver_debugger=true -Dserver_debugger_method=old
-# or, if x is already configured
-meson configure x -Dserver_debugger=true -Dserver_debugger_method=old
-```
-
 Then recompile.
 
 When you start scrcpy, it will start a debugger on port 5005 on the device.

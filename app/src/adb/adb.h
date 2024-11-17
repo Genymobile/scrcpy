@@ -114,4 +114,10 @@ sc_adb_getprop(struct sc_intr *intr, const char *serial, const char *prop,
 char *
 sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags);
 
+/**
+ * Return the device SDK version.
+ */
+uint16_t
+sc_adb_get_device_sdk_version(struct sc_intr *intr, const char *serial);
+
 #endif

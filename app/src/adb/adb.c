@@ -739,3 +739,21 @@ sc_adb_get_device_ip(struct sc_intr *intr, const char *serial, unsigned flags) {
 
     return sc_adb_parse_device_ip(buf);
 }
+
+uint16_t
+sc_adb_get_device_sdk_version(struct sc_intr *intr, const char *serial) {
+    char *sdk_version =
+        sc_adb_getprop(intr, serial, "ro.build.version.sdk", SC_ADB_SILENT);
+    if (!sdk_version) {
+        return 0;
+    }
+
+    long value;
+    bool ok = sc_str_parse_integer(sdk_version, &value);
+    free(sdk_version);
+    if (!ok || value < 0 || value > 0xFFFF) {
+        return 0;
+    }
+
+    return value;
+}

@@ -201,18 +201,26 @@ execute_server(struct sc_server *server,
     cmd[count++] = "app_process";
 
 #ifdef SERVER_DEBUGGER
+    uint16_t sdk_version = sc_adb_get_device_sdk_version(&server->intr, serial);
+    if (!sdk_version) {
+        LOGE("Could not determine SDK version");
+        return 0;
+    }
+
 # define SERVER_DEBUGGER_PORT "5005"
-    cmd[count++] =
-# ifdef SERVER_DEBUGGER_METHOD_NEW
-        /* Android 9 and above */
-        "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,suspend=y,"
-        "server=y,address="
-# else
-        /* Android 8 and below */
-        "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
-# endif
-            SERVER_DEBUGGER_PORT;
+    const char *dbg;
+    if (sdk_version < 28) {
+        // Android < 9
+        dbg = "-agentlib:jdwp=transport=dt_socket,suspend=y,server=y,address="
+              SERVER_DEBUGGER_PORT;
+    } else {
+        // Android >= 9
+        dbg = "-XjdwpProvider:internal -XjdwpOptions:transport=dt_socket,"
+              "suspend=y,server=y,address=" SERVER_DEBUGGER_PORT;
+    }
+    cmd[count++] = dbg;
 #endif
+
     cmd[count++] = "/"; // unused
     cmd[count++] = "com.genymobile.scrcpy.Server";
     cmd[count++] = SCRCPY_VERSION;
