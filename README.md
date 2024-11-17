@@ -77,6 +77,27 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [Windows](doc/windows.md)
  - [macOS](doc/macos.md)
 
+## What's new
+
+Here are the main features introduced in the recent releases:
+
+ - [scrcpy 2.7](https://github.com/Genymobile/scrcpy/releases/tag/v2.7):
+   gamepad support
+ - [scrcpy 2.6](https://github.com/Genymobile/scrcpy/releases/tag/v2.6):
+   audio duplication
+ - [scrcpy 2.5](https://github.com/Genymobile/scrcpy/releases/tag/v2.5):
+   control-only & mouse improvements
+ - [scrcpy 2.4](https://github.com/Genymobile/scrcpy/releases/tag/v2.4):
+   UHID keyboard and mouse
+ - [scrcpy 2.3](https://github.com/Genymobile/scrcpy/releases/tag/v2.3):
+   camera support improvements
+ - [scrcpy 2.2](https://github.com/Genymobile/scrcpy/releases/tag/v2.2):
+   camera capture
+ - [scrcpy 2.1](https://github.com/Genymobile/scrcpy/releases/tag/v2.1):
+   microphone capture
+ - [scrcpy 2.0](https://github.com/Genymobile/scrcpy/releases/tag/v2.0):
+   audio forwarding
+ - …
 
 ## Usage examples
 
