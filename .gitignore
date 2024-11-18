@@ -4,6 +4,7 @@ build/
 /build_*/
 /release-*/
 .idea/
+.vscode/
 .gradle/
 /x/
 local.properties

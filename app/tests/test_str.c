@@ -141,6 +141,16 @@ static void test_quote(void) {
     free(out);
 }
 
+static void test_prepend(void) {
+    const char *s = "2024:11";
+    char *out = sc_str_prepend(s, "my-prefix:");
+
+    // prefix with 'my-prefix:'
+    assert(!strcmp("my-prefix:2024:11", out));
+
+    free(out);
+}
+
 static void test_utf8_truncate(void) {
     const char *s = "aÉbÔc";
     assert(strlen(s) == 7); // É and Ô are 2 bytes-wide
@@ -389,6 +399,7 @@ int main(int argc, char *argv[]) {
     test_join_truncated_before_sep();
     test_join_truncated_after_sep();
     test_quote();
+    test_prepend();
     test_utf8_truncate();
     test_parse_integer();
     test_parse_integers();

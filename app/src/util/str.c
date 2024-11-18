@@ -64,6 +64,27 @@ sc_str_quote(const char *src) {
     return quoted;
 }
 
+char *
+sc_str_prepend(const char *src, const char *prefix) {
+    assert(src);
+    assert(prefix);
+
+    size_t prefix_len = strlen(prefix);
+    size_t src_len = strlen(src);
+
+    size_t new_len = prefix_len + src_len + 1;
+    char *result = malloc(new_len);
+    if (!result) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    memcpy(result, prefix, prefix_len);
+    memcpy(result + prefix_len, src, src_len + 1);
+
+    return result;
+}
+
 bool
 sc_str_parse_integer(const char *s, long *out) {
     char *endptr;

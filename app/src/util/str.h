@@ -39,6 +39,14 @@ char *
 sc_str_quote(const char *src);
 
 /**
+ * Prefix a string
+ *
+ * Return a new allocated prefixed string.
+ */
+char *
+sc_str_prepend(const char *src, const char *prefix);
+
+/**
  * Parse `s` as an integer into `out`
  *
  * Return true if the conversion succeeded, false otherwise.
