@@ -116,7 +116,6 @@ public class SurfaceEncoder implements AsyncProcessor {
                     if (!prepareRetry(size)) {
                         throw e;
                     }
-                    Ln.i("Retrying...");
                     alive = true;
                 } finally {
                     reset.setRunningMediaCodec(null);
