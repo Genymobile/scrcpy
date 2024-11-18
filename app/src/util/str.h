@@ -39,6 +39,15 @@ char *
 sc_str_quote(const char *src);
 
 /**
+ * Concat two strings
+ *
+ * Return a new allocated string, contanining the concatenation of the two
+ * input strings.
+ */
+char *
+sc_str_concat(const char *start, const char *end);
+
+/**
  * Parse `s` as an integer into `out`
  *
  * Return true if the conversion succeeded, false otherwise.

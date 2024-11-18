@@ -64,6 +64,26 @@ sc_str_quote(const char *src) {
     return quoted;
 }
 
+char *
+sc_str_concat(const char *start, const char *end) {
+    assert(start);
+    assert(end);
+
+    size_t start_len = strlen(start);
+    size_t end_len = strlen(end);
+
+    char *result = malloc(start_len + end_len + 1);
+    if (!result) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    memcpy(result, start, start_len);
+    memcpy(result + start_len, end, end_len + 1);
+
+    return result;
+}
+
 bool
 sc_str_parse_integer(const char *s, long *out) {
     char *endptr;
