@@ -27,6 +27,9 @@ preserved. That way, a device in 1920×1080 will be mirrored at 1024×576.
 If encoding fails, scrcpy automatically tries again with a lower definition
 (unless `--no-downsize-on-error` is enabled).
 
+For camera mirroring, the `--max-size` value is used to select the camera source
+size instead (among the available resolutions).
+
 
 ## Bit rate
 
@@ -138,7 +141,10 @@ scrcpy --capture-orientation=@flip180  # locked to hflip + 180°
 scrcpy --capture-orientation=@flip270  # locked to hflip + 270° clockwise
 ```
 
-To orient the video (on the rendering side):
+The capture orientation transform is applied after `--crop`, but before
+`--angle`.
+
+To orient the video (on the client side):
 
 ```bash
 scrcpy --orientation=0
@@ -167,7 +173,9 @@ To rotate the video content by a custom angle (in degrees, clockwise):
 scrcpy --angle=23
 ```
 
-The center of rotation is the center of the visible area (after cropping).
+The center of rotation is the center of the visible area.
+
+This transformation is applied after `--crop` and `--capture-orientation`.
 
 
 ## Crop
@@ -183,7 +191,11 @@ scrcpy --crop=1224:1440:0:0   # 1224x1440 at offset (0,0)
 The values are expressed in the device natural orientation (portrait for a
 phone, landscape for a tablet).
 
-If `--max-size` is also specified, resizing is applied after cropping.
+Cropping is performed before `--capture-orientation` and `--angle`.
+
+For screen mirroring, `--max-size` is applied after cropping. For camera and
+virtual display mirroring, `--max-size` is applied first (because it selects the
+source size rather than resizing it).
 
 
 ## Display
