@@ -566,36 +566,68 @@ public class Options {
         }
     }
 
-    private static NewDisplay parseNewDisplay(String newDisplay) {
-        // Possible inputs:
-        //  - "" (empty string)
-        //  - "<width>x<height>/<dpi>"
-        //  - "<width>x<height>"
-        //  - "/<dpi>"
+    static NewDisplay parseNewDisplay(String newDisplay) {
+        // Input in the form "[<width>x<height>][/<dpi>][@<fps>]" (each [] block is optional)
+        // For convenience, the order of dpi and fps does not matter.
         if (newDisplay.isEmpty()) {
             return new NewDisplay();
         }
 
-        String[] tokens = newDisplay.split("/");
+        String sizeString = null;
+        String dpiString = null;
+        String fpsString = null;
 
-        Size size;
-        if (!tokens[0].isEmpty()) {
-            size = parseSize(tokens[0]);
-        } else {
-            size = null;
-        }
-
-        int dpi;
-        if (tokens.length >= 2) {
-            dpi = Integer.parseInt(tokens[1]);
-            if (dpi <= 0) {
-                throw new IllegalArgumentException("Invalid non-positive dpi: " + tokens[1]);
+        String s = newDisplay;
+        while (true) {
+            int slashIndex = s.indexOf('/');
+            int atIndex = s.indexOf('@');
+            int lastSepIndex = Math.max(slashIndex, atIndex);
+            if (lastSepIndex == -1) {
+                if (!s.isEmpty()) {
+                    sizeString = s;
+                }
+                break;
+            } else {
+                char lastSep = newDisplay.charAt(lastSepIndex);
+                if (lastSep == '@') {
+                    if (fpsString != null) {
+                        throw new IllegalArgumentException("Invalid new display format: '@' may not appear twice");
+                    }
+                    fpsString = s.substring(lastSepIndex + 1);
+                } else {
+                    assert lastSep == '/';
+                    if (dpiString != null) {
+                        throw new IllegalArgumentException("Invalid new display format: '/' may not appear twice");
+                    }
+                    dpiString = s.substring(lastSepIndex + 1);
+                }
+                s = s.substring(0, lastSepIndex);
             }
-        } else {
-            dpi = 0;
         }
 
-        return new NewDisplay(size, dpi);
+        Size size = null;
+        int dpi = 0;
+        float fps = 0;
+
+        if (sizeString != null) {
+            size = parseSize(sizeString);
+        }
+
+        if (dpiString != null) {
+            dpi = Integer.parseInt(dpiString);
+            if (dpi <= 0) {
+                throw new IllegalArgumentException("Invalid non-positive dpi: " + dpiString);
+            }
+        }
+
+        if (fpsString != null) {
+            fps = Float.parseFloat(fpsString);
+            if (fps < 0) {
+                throw new IllegalArgumentException("Invalid negative fps: " + fpsString);
+            }
+        }
+
+        return new NewDisplay(size, dpi, fps);
     }
 
     private static Pair<Orientation.Lock, Orientation> parseCaptureOrientation(String value) {

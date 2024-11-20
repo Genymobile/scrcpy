@@ -7,6 +7,7 @@ To mirror a new virtual display instead of the device screen:
 ```bash
 scrcpy --new-display=1920x1080
 scrcpy --new-display=1920x1080/420  # force 420 dpi
+scrcpy --new-display=1920x1080@24   # 24 fps (Android >= 14)
 scrcpy --new-display         # use the main display size and density
 scrcpy --new-display=/240    # use the main display size and 240 dpi
 ```

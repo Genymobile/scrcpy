@@ -14,8 +14,10 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.os.Build;
 import android.view.Surface;
 
@@ -161,6 +163,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
+    @SuppressLint("WrongConstant")
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
@@ -182,10 +185,30 @@ public class NewDisplayCapture extends SurfaceCapture {
                             | VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP;
                 }
             }
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
+
+            // Since Android 14, it is possible to request a display frame rate:
+            // <https://android.googlesource.com/platform/frameworks/base/+/6c57176e9a2882eff03c5b3f3cccfd988d38488d>
+            // It defaults to 60 fps:
+            // <https://android.googlesource.com/platform/frameworks/base/+/6c57176e9a2882eff03c5b3f3cccfd988d38488d/services/core/java/com/android/server/display/VirtualDisplayAdapter.java#562>
+            float fps = newDisplay.getFps();
+            if (fps > 0) {
+                if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                    VirtualDisplayConfig.Builder builder = new VirtualDisplayConfig.Builder(
+                            "scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi);
+                    builder.setFlags(flags);
+                    builder.setSurface(surface);
+                    builder.setRequestedRefreshRate(fps);
+                    virtualDisplay = ServiceManager.getDisplayManager().createNewVirtualDisplay(builder.build());
+                } else {
+                    throw new UnsupportedOperationException("Setting the virtual display frame rate (@" + fps + ") requires Android >= 14");
+                }
+            } else {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
+            }
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
-            Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+            String fpsString = fps > 0 ? "@" + fps : "";
+            Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + fpsString + " (id=" + virtualDisplayId + ")");
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {

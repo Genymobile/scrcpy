@@ -586,14 +586,17 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_NEW_DISPLAY,
         .longopt = "new-display",
-        .argdesc = "[<width>x<height>][/<dpi>]",
+        .argdesc = "[<width>x<height>][/<dpi>][@<fps>]",
         .optional_arg = true,
         .text = "Create a new display with the specified resolution and "
                 "density. If not provided, they default to the main display "
                 "dimensions and DPI.\n"
+                "From Android 14, it is also possible to request a frame rate. "
+                "If not provided, it defaults to 60 fps.\n"
                 "Examples:\n"
                 "    --new-display=1920x1080\n"
                 "    --new-display=1920x1080/420  # force 420 dpi\n"
+                "    --new-display=1920x1080@24   # 24 fps (Android >= 14)\n"
                 "    --new-display         # main display size and density\n"
                 "    --new-display=/240    # main display size and 240 dpi",
     },
