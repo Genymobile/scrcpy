@@ -8,7 +8,6 @@ To mirror a new virtual display instead of the device screen:
 scrcpy --new-display=1920x1080
 scrcpy --new-display=1920x1080/420  # force 420 dpi
 scrcpy --new-display         # use the main display size and density
-scrcpy --new-display -m1920  # ... scaled to fit a max size of 1920
 scrcpy --new-display=/240    # use the main display size and 240 dpi
 ```
 

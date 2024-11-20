@@ -590,12 +590,11 @@ static const struct sc_option options[] = {
         .optional_arg = true,
         .text = "Create a new display with the specified resolution and "
                 "density. If not provided, they default to the main display "
-                "dimensions and DPI, and --max-size is considered.\n"
+                "dimensions and DPI.\n"
                 "Examples:\n"
                 "    --new-display=1920x1080\n"
                 "    --new-display=1920x1080/420  # force 420 dpi\n"
                 "    --new-display         # main display size and density\n"
-                "    --new-display -m1920  # scaled to fit a max size of 1920\n"
                 "    --new-display=/240    # main display size and 240 dpi",
     },
     {
@@ -2889,13 +2888,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (!opts->video) {
             LOGE("--new-display is incompatible with --no-video");
-            return false;
-        }
-
-        if (opts->max_size && opts->new_display[0] != '\0'
-                           && opts->new_display[0] != '/') {
-            // An explicit size is defined (not "" nor "/<dpi>")
-            LOGE("Cannot specify both --new-display size and -m/--max-size");
             return false;
         }
     }

@@ -48,7 +48,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     private Size mainDisplaySize;
     private int mainDisplayDpi;
-    private int maxSize; // only used if newDisplay.getSize() != null
+    private int maxSize;
     private final Rect crop;
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
@@ -101,7 +101,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         int displayRotation;
         if (virtualDisplay == null) {
             if (!newDisplay.hasExplicitSize()) {
-                displaySize = mainDisplaySize.limit(maxSize).round8();
+                displaySize = mainDisplaySize;
             }
             if (!newDisplay.hasExplicitDpi()) {
                 dpi = scaleDpi(mainDisplaySize, mainDisplayDpi, displaySize);
@@ -128,10 +128,19 @@ public class NewDisplayCapture extends SurfaceCapture {
         filter.addOrientation(displayRotation, captureOrientationLocked, captureOrientation);
         filter.addAngle(angle);
 
+        Size filteredSize = filter.getOutputSize();
+        if (!filteredSize.isMultipleOf8() || (maxSize != 0 && filteredSize.getMax() > maxSize)) {
+            if (maxSize != 0) {
+                filteredSize = filteredSize.limit(maxSize);
+            }
+            filteredSize = filteredSize.round8();
+            filter.addResize(filteredSize);
+        }
+
         eventTransform = filter.getInverseTransform();
 
         // DisplayInfo gives the oriented size (so videoSize includes the display rotation)
-        videoSize = filter.getOutputSize().limit(maxSize).round8();
+        videoSize = filter.getOutputSize();
 
         // But the virtual display video always remains in the origin orientation (the video itself is not rotated, so it must rotated manually).
         // This additional display rotation must not be included in the input events transform (the expected coordinates are already in the
@@ -231,11 +240,6 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public synchronized boolean setMaxSize(int newMaxSize) {
-        if (newDisplay.hasExplicitSize()) {
-            // Cannot retry with a different size if the display size was explicitly provided
-            return false;
-        }
-
         maxSize = newMaxSize;
         return true;
     }

@@ -60,7 +60,7 @@ public final class Size {
      * @return The current size rounded.
      */
     public Size round8() {
-        if ((width & 7) == 0 && (height & 7) == 0) {
+        if (isMultipleOf8()) {
             // Already a multiple of 8
             return this;
         }
@@ -78,6 +78,10 @@ public final class Size {
         int w = portrait ? minor : major;
         int h = portrait ? major : minor;
         return new Size(w, h);
+    }
+
+    public boolean isMultipleOf8() {
+        return (width & 7) == 0 && (height & 7) == 0;
     }
 
     public Rect toRect() {
