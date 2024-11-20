@@ -11,6 +11,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.os.Handler;
 import android.view.Display;
 import android.view.Surface;
@@ -162,6 +163,15 @@ public final class DisplayManager {
         ctor.setAccessible(true);
         android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
         return dm.createVirtualDisplay(name, width, height, dpi, surface, flags);
+    }
+
+    @TargetApi(AndroidVersions.API_34_ANDROID_14)
+    public VirtualDisplay createNewVirtualDisplay(VirtualDisplayConfig config) throws Exception {
+        Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
+                Context.class);
+        ctor.setAccessible(true);
+        android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
+        return dm.createVirtualDisplay(config);
     }
 
     private Method getRequestDisplayPowerMethod() throws NoSuchMethodException {

@@ -14,8 +14,10 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
+import android.hardware.display.VirtualDisplayConfig;
 import android.os.Build;
 import android.view.Surface;
 
@@ -59,6 +61,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size videoSize;
     private Size displaySize; // the logical size of the display (including rotation)
     private Size physicalSize; // the physical size of the display (without rotation)
+    private final float maxFps;
 
     private int dpi;
 
@@ -67,6 +70,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.newDisplay = options.getNewDisplay();
         assert newDisplay != null;
         this.maxSize = options.getMaxSize();
+        this.maxFps = options.getMaxFps();
         this.crop = options.getCrop();
         assert options.getCaptureOrientationLock() != null;
         this.captureOrientationLocked = options.getCaptureOrientationLock() != Orientation.Lock.Unlocked;
@@ -152,6 +156,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
+    @SuppressLint("WrongConstant")
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
@@ -173,8 +178,21 @@ public class NewDisplayCapture extends SurfaceCapture {
                             | VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP;
                 }
             }
-            virtualDisplay = ServiceManager.getDisplayManager()
-                    .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
+            // When maxFps is greater than 60,
+            // use the setRequestedRefreshRate method to set the refresh rate.
+            // If not do so, the refresh rate of the virtual display will be limited to 60.
+            // https://android.googlesource.com/platform/frameworks/base/+/6c57176e9a2882eff03c5b3f3cccfd988d38488d
+            // https://android.googlesource.com/platform/frameworks/base/+/6c57176e9a2882eff03c5b3f3cccfd988d38488d/services/core/java/com/android/server/display/VirtualDisplayAdapter.java#562
+            if (maxFps > 60 && Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
+                VirtualDisplayConfig.Builder builder = new VirtualDisplayConfig.Builder("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi);
+                builder.setFlags(flags);
+                builder.setSurface(surface);
+                builder.setRequestedRefreshRate(maxFps);
+                virtualDisplay = ServiceManager.getDisplayManager().createNewVirtualDisplay(builder.build());
+            } else {
+                virtualDisplay = ServiceManager.getDisplayManager()
+                        .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
+            }
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
