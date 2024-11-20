@@ -103,4 +103,17 @@ public class VideoFilter {
         double ccwAngle = -cwAngle;
         transform = AffineMatrix.rotate(ccwAngle).withAspectRatio(size).fromCenter().multiply(transform);
     }
+
+    public void addResize(Size targetSize) {
+        if (size.equals(targetSize)) {
+            return;
+        }
+
+        if (transform == null) {
+            // The requested scaling is performed by the viewport (by changing the output size), but the OpenGL filter must still run, even if
+            // resizing is not performed by the shader. So transform MUST NOT be null.
+            transform = AffineMatrix.IDENTITY;
+        }
+        size = targetSize;
+    }
 }

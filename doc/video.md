@@ -193,9 +193,9 @@ phone, landscape for a tablet).
 
 Cropping is performed before `--capture-orientation` and `--angle`.
 
-For screen mirroring, `--max-size` is applied after cropping. For camera and
-virtual display mirroring, `--max-size` is applied first (because it selects the
-source size rather than resizing it).
+For display mirroring, `--max-size` is applied after cropping. For camera,
+`--max-size` is applied first (because it selects the source size rather than
+resizing the content).
 
 
 ## Display
