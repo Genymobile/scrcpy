@@ -23,6 +23,8 @@ public final class ControlMessage {
     public static final int TYPE_UHID_INPUT = 13;
     public static final int TYPE_UHID_DESTROY = 14;
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
+    public static final int TYPE_MEDIA_STATE = 16;
+    public static final int TYPE_MEDIA_SEEK = 17;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -48,6 +50,9 @@ public final class ControlMessage {
     private long sequence;
     private int id;
     private byte[] data;
+    private int mediaState;
+    private long mediaSeek;
+
 
     private ControlMessage() {
     }
@@ -155,6 +160,22 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createMediaState(int receiverId, byte state) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_STATE;
+        msg.id = receiverId;
+        msg.mediaState = state;
+        return msg;
+    }
+
+    public static ControlMessage createMediaSeek(int receiverId, long position) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_MEDIA_STATE;
+        msg.id = receiverId;
+        msg.mediaSeek = position;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -225,5 +246,13 @@ public final class ControlMessage {
 
     public byte[] getData() {
         return data;
+    }
+
+    public long getMediaSeek() {
+        return mediaSeek;
+    }
+
+    public int getMediaState() {
+        return mediaState;
     }
 }

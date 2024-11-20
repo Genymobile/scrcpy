@@ -221,11 +221,25 @@ public class Controller implements AsyncProcessor {
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
                 openHardKeyboardSettings();
                 break;
+            case ControlMessage.TYPE_MEDIA_STATE:
+                mediaUpdateState(msg.getId(), msg.getMediaState());
+                break;
+            case ControlMessage.TYPE_MEDIA_SEEK:
+                mediaSeek(msg.getId(), msg.getMediaSeek());
+                break;
             default:
                 // do nothing
         }
 
         return true;
+    }
+
+    private void mediaUpdateState(int id, int mediaState) {
+        // TODO
+    }
+
+    private void mediaSeek(int id, long mediaSeek) {
+        // TODO
     }
 
     private boolean injectKeycode(int action, int keycode, int repeat, int metaState) {

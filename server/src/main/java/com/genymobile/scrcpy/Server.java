@@ -23,7 +23,10 @@ import com.genymobile.scrcpy.video.ScreenCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
+import com.genymobile.scrcpy.wrappers.MediaManager;
 
+import android.media.MediaMetadata;
+import android.media.session.PlaybackState;
 import android.os.BatteryManager;
 import android.os.Build;
 
@@ -139,6 +142,7 @@ public final class Server {
         boolean control = options.getControl();
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
+        boolean media = options.getMediaControls();
         boolean sendDummyByte = options.getSendDummyByte();
         boolean camera = video && options.getVideoSource() == VideoSource.CAMERA;
 
@@ -162,6 +166,40 @@ public final class Server {
                     controller.getSender().send(msg);
                 });
                 asyncProcessors.add(controller);
+
+                if (media) {
+                    MediaManager mediaManager = MediaManager.create();
+
+                    mediaManager.setMediaChangeListener(new MediaManager.MediaChange() {
+                        @Override
+                        public void onMetadataChange(int id, MediaMetadata metadata) {
+                            Ln.i("onMetadataChange " + id);
+                            byte[] data = MediaManager.mediaMetadataSerialize(metadata);
+                            DeviceMessage msg = DeviceMessage.createMediaUpdate(id, data);
+                            controller.getSender().send(msg);
+                        }
+
+                        @Override
+                        public void onPlaybackStateChange(int id, PlaybackState playbackState) {
+                            Ln.i("onPlaybackStateChange " + id);
+                            int state = MediaManager.create().playbackStateSerialize(playbackState);
+                            if(state < 0) {
+                                return;
+                            }
+                            DeviceMessage msg = DeviceMessage.createMediaState(id, state);
+                            controller.getSender().send(msg);
+                        }
+
+                        @Override
+                        public void onRemove(int id) {
+                            Ln.i("onRemove " + id);
+                            DeviceMessage msg = DeviceMessage.createMediaRemove(id);
+                            controller.getSender().send(msg);
+                        }
+                    });
+
+                    mediaManager.start();
+                }
             }
 
             if (audio) {
@@ -199,6 +237,9 @@ public final class Server {
                         options.getVideoCodecOptions(), options.getVideoEncoder(), options.getDownsizeOnError());
                 asyncProcessors.add(surfaceEncoder);
             }
+
+
+
 
             Completion completion = new Completion(asyncProcessors.size());
             for (AsyncProcessor asyncProcessor : asyncProcessors) {

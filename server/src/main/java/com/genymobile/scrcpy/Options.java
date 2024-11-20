@@ -21,6 +21,7 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean video = true;
     private boolean audio = true;
+    private boolean mediaControl = true;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
@@ -79,6 +80,10 @@ public class Options {
 
     public boolean getAudio() {
         return audio;
+    }
+
+    public boolean getMediaControls() {
+        return mediaControl;
     }
 
     public int getMaxSize() {

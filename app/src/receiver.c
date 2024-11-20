@@ -75,6 +75,22 @@ task_uhid_output(void *userdata) {
 }
 
 static void
+dump_media_update(const struct sc_device_msg* msg) {
+    uint8_t msg_type = 0;
+    uint8_t *msg_ptr = NULL;
+    for (int i = 0; i < msg->media_update.size; i++) {
+        if (msg_ptr == NULL) {
+            msg_type = msg->media_update.data[i];
+            msg_ptr = &msg->media_update.data[i + 1];
+        } else if (msg->media_update.data[i] == 0) {
+            LOGI("Media update: %i, %s", (int)msg_type, msg_ptr);
+            msg_ptr = NULL;
+            msg_type = 0;
+        }
+    }
+}
+
+static void
 process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
     switch (msg->type) {
         case DEVICE_MSG_TYPE_CLIPBOARD: {
@@ -150,6 +166,12 @@ process_msg(struct sc_receiver *receiver, struct sc_device_msg *msg) {
                 return;
             }
 
+            break;
+        case DEVICE_MSG_TYPE_MEDIA_UPDATE:
+            dump_media_update(msg);
+            break;
+        case DEVICE_MSG_TYPE_MEDIA_REMOVE:
+            LOGI("Media remove: %i", msg->media_remove.id);
             break;
     }
 }

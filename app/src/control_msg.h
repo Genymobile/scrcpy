@@ -41,6 +41,8 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_UHID_INPUT,
     SC_CONTROL_MSG_TYPE_UHID_DESTROY,
     SC_CONTROL_MSG_TYPE_OPEN_HARD_KEYBOARD_SETTINGS,
+    SC_CONTROL_MSG_TYPE_MEDIA_STATE,
+    SC_CONTROL_MSG_TYPE_MEDIA_SEEK,
 };
 
 enum sc_screen_power_mode {
@@ -110,6 +112,14 @@ struct sc_control_msg {
         struct {
             uint16_t id;
         } uhid_destroy;
+        struct {
+            uint16_t player_id;
+            uint64_t position;
+        } media_seek;
+        struct {
+            uint16_t player_id;
+            uint8_t state;
+        } media_state;
     };
 };
 
