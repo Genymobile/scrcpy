@@ -116,7 +116,12 @@ public final class DisplayManager {
 
     public DisplayInfo getDisplayInfo(int displayId) {
         try {
-            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
+            Object displayInfo = null;
+            try {
+                displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
+            } catch (Exception e) {
+                // do nothing and continue to the fallback
+            }
             if (displayInfo == null) {
                 // fallback when displayInfo is null
                 return getDisplayInfoFromDumpsysDisplay(displayId);
