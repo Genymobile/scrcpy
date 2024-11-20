@@ -46,6 +46,7 @@ public final class DisplayManager {
     }
 
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
+    private android.hardware.display.DisplayManager displayManager;
     private Method createVirtualDisplayMethod;
     private Method requestDisplayPowerMethod;
 
@@ -151,17 +152,26 @@ public final class DisplayManager {
         return createVirtualDisplayMethod;
     }
 
-    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+    public VirtualDisplay createVirtualDisplay(String name, int width, int height, int displayIdToMirror, Surface surface)
+            throws ReflectiveOperationException {
         Method method = getCreateVirtualDisplayMethod();
         return (VirtualDisplay) method.invoke(null, name, width, height, displayIdToMirror, surface);
     }
 
-    public VirtualDisplay createNewVirtualDisplay(String name, int width, int height, int dpi, Surface surface, int flags) throws Exception {
-        Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
-                Context.class);
-        ctor.setAccessible(true);
-        android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
-        return dm.createVirtualDisplay(name, width, height, dpi, surface, flags);
+    private android.hardware.display.DisplayManager getAndroidDisplayManager() throws ReflectiveOperationException {
+        if (displayManager == null) {
+            Constructor<android.hardware.display.DisplayManager> ctor = android.hardware.display.DisplayManager.class.getDeclaredConstructor(
+                    Context.class);
+            ctor.setAccessible(true);
+            displayManager = ctor.newInstance(FakeContext.get());
+        }
+
+        return displayManager;
+    }
+
+    public VirtualDisplay createNewVirtualDisplay(String name, int width, int height, int dpi, Surface surface, int flags)
+            throws ReflectiveOperationException {
+        return getAndroidDisplayManager().createVirtualDisplay(name, width, height, dpi, surface, flags);
     }
 
     private Method getRequestDisplayPowerMethod() throws NoSuchMethodException {
