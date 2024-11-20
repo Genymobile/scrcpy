@@ -194,6 +194,7 @@ _scrcpy() {
         |--display-id \
         |--max-fps \
         |-m|--max-size \
+        |--new-display \
         |-p|--port \
         |--push-target \
         |--rotation \
