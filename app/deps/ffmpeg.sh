@@ -23,41 +23,26 @@ fi
 mkdir -p "$BUILD_DIR/$PROJECT_DIR"
 cd "$BUILD_DIR/$PROJECT_DIR"
 
-if [[ "$HOST" = win32 ]]
+if [[ -d "$DIRNAME" ]]
 then
-    ARCH=x86
-elif [[ "$HOST" = win64 ]]
-then
-    ARCH=x86_64
+    echo "'$PWD/$DIRNAME' already exists, not reconfigured"
+    cd "$DIRNAME"
 else
-    echo "Unsupported host: $HOST" >&2
-    exit 1
-fi
+    mkdir "$DIRNAME"
+    cd "$DIRNAME"
 
-# -static-libgcc to avoid missing libgcc_s_dw2-1.dll
-# -static to avoid dynamic dependency to zlib
-export CFLAGS='-static-libgcc -static'
-export CXXFLAGS="$CFLAGS"
-export LDFLAGS='-static-libgcc -static'
-
-if [[ -d "$HOST" ]]
-then
-    echo "'$PWD/$HOST' already exists, not reconfigured"
-    cd "$HOST"
-else
-    mkdir "$HOST"
-    cd "$HOST"
+    if [[ "$HOST" == win* ]]
+    then
+        # -static-libgcc to avoid missing libgcc_s_dw2-1.dll
+        # -static to avoid dynamic dependency to zlib
+        export CFLAGS='-static-libgcc -static'
+        export CXXFLAGS="$CFLAGS"
+        export LDFLAGS='-static-libgcc -static'
+    fi
 
     conf=(
-        --prefix="$INSTALL_DIR/$HOST"
-        --enable-cross-compile
-        --target-os=mingw32
-        --arch="$ARCH"
-        --cross-prefix="${HOST_TRIPLET}-"
-        --cc="${HOST_TRIPLET}-gcc"
+        --prefix="$INSTALL_DIR/$DIRNAME"
         --extra-cflags="-O2 -fPIC"
-        --enable-shared
-        --disable-static
         --disable-programs
         --disable-doc
         --disable-swscale
@@ -88,6 +73,48 @@ else
         --enable-muxer=flac
         --enable-muxer=wav
     )
+
+    if [[ "$LINK_TYPE" == static ]]
+    then
+        conf+=(
+            --enable-static
+            --disable-shared
+        )
+    else
+        conf+=(
+            --disable-static
+            --enable-shared
+        )
+    fi
+
+    if [[ "$BUILD_TYPE" == cross ]]
+    then
+        conf+=(
+            --enable-cross-compile
+            --cross-prefix="${HOST_TRIPLET}-"
+            --cc="${HOST_TRIPLET}-gcc"
+        )
+
+        case "$HOST" in
+            win32)
+                conf+=(
+                    --target-os=mingw32
+                    --arch=x86
+                )
+                ;;
+
+            win64)
+                conf+=(
+                    --target-os=mingw32
+                    --arch=x86_64
+                )
+                ;;
+
+            *)
+                echo "Unsupported host: $HOST" >&2
+                exit 1
+        esac
+    fi
 
     "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
 fi

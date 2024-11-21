@@ -2,24 +2,44 @@
 # This file is intended to be sourced by other scripts, not executed
 
 process_args() {
-    if [[ $# != 1 ]]
+    if [[ $# != 3 ]]
     then
         # <host>: win32 or win64
-        echo "Syntax: $0 <host>" >&2
+        # <build_type>: native or cross
+        # <link_type>: static or shared
+        echo "Syntax: $0 <host> <build_type> <link_type>" >&2
         exit 1
     fi
 
     HOST="$1"
+    BUILD_TYPE="$2" # native or cross
+    LINK_TYPE="$3" # static or shared
+    DIRNAME="$HOST-$BUILD_TYPE-$LINK_TYPE"
 
-    if [[ "$HOST" = win32 ]]
+    if [[ "$BUILD_TYPE" != native && "$BUILD_TYPE" != cross ]]
     then
-        HOST_TRIPLET=i686-w64-mingw32
-    elif [[ "$HOST" = win64 ]]
-    then
-        HOST_TRIPLET=x86_64-w64-mingw32
-    else
-        echo "Unsupported host: $HOST" >&2
+        echo "Unsupported build type (expected native or cross): $BUILD_TYPE" >&2
         exit 1
+    fi
+
+    if [[ "$LINK_TYPE" != static && "$LINK_TYPE" != shared ]]
+    then
+        echo "Unsupported link type (expected static or shared): $LINK_TYPE" >&2
+        exit 1
+    fi
+
+    if [[ "$BUILD_TYPE" == cross ]]
+    then
+        if [[ "$HOST" = win32 ]]
+        then
+            HOST_TRIPLET=i686-w64-mingw32
+        elif [[ "$HOST" = win64 ]]
+        then
+            HOST_TRIPLET=x86_64-w64-mingw32
+        else
+            echo "Unsupported cross-build to host: $HOST" >&2
+            exit 1
+        fi
     fi
 }
 

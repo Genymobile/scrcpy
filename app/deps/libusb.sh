@@ -26,20 +26,37 @@ cd "$BUILD_DIR/$PROJECT_DIR"
 export CFLAGS='-O2'
 export CXXFLAGS="$CFLAGS"
 
-if [[ -d "$HOST" ]]
+if [[ -d "$DIRNAME" ]]
 then
-    echo "'$PWD/$HOST' already exists, not reconfigured"
-    cd "$HOST"
+    echo "'$PWD/$DIRNAME' already exists, not reconfigured"
+    cd "$DIRNAME"
 else
-    mkdir "$HOST"
-    cd "$HOST"
+    mkdir "$DIRNAME"
+    cd "$DIRNAME"
 
     conf=(
-        --prefix="$INSTALL_DIR/$HOST"
-        --host="$HOST_TRIPLET"
-        --enable-shared
-        --disable-static
+        --prefix="$INSTALL_DIR/$DIRNAME"
     )
+
+    if [[ "$LINK_TYPE" == static ]]
+    then
+        conf+=(
+            --enable-static
+            --disable-shared
+        )
+    else
+        conf+=(
+            --disable-static
+            --enable-shared
+        )
+    fi
+
+    if [[ "$BUILD_TYPE" == cross ]]
+    then
+        conf+=(
+            --host="$HOST_TRIPLET"
+        )
+    fi
 
     "$SOURCES_DIR/$PROJECT_DIR"/bootstrap.sh
     "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"

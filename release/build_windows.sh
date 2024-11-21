@@ -21,11 +21,11 @@ cd .. # root project dir
 WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 
 app/deps/adb_windows.sh
-app/deps/sdl.sh $WINXX
-app/deps/ffmpeg.sh $WINXX
-app/deps/libusb.sh $WINXX
+app/deps/sdl.sh $WINXX cross shared
+app/deps/ffmpeg.sh $WINXX cross shared
+app/deps/libusb.sh $WINXX cross shared
 
-DEPS_INSTALL_DIR="$PWD/app/deps/work/install/$WINXX"
+DEPS_INSTALL_DIR="$PWD/app/deps/work/install/$WINXX-cross-shared"
 ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-windows"
 
 rm -rf "$WINXX_BUILD_DIR"
