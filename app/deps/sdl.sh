@@ -33,11 +33,14 @@ else
     mkdir "$HOST"
     cd "$HOST"
 
-    "$SOURCES_DIR/$PROJECT_DIR"/configure \
-        --prefix="$INSTALL_DIR/$HOST" \
-        --host="$HOST_TRIPLET" \
-        --enable-shared \
+    conf=(
+        --prefix="$INSTALL_DIR/$HOST"
+        --host="$HOST_TRIPLET"
+        --enable-shared
         --disable-static
+    )
+
+    "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
 fi
 
 make -j

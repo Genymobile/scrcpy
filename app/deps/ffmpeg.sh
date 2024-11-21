@@ -47,45 +47,48 @@ else
     mkdir "$HOST"
     cd "$HOST"
 
-    "$SOURCES_DIR/$PROJECT_DIR"/configure \
-        --prefix="$INSTALL_DIR/$HOST" \
-        --enable-cross-compile \
-        --target-os=mingw32 \
-        --arch="$ARCH" \
-        --cross-prefix="${HOST_TRIPLET}-" \
-        --cc="${HOST_TRIPLET}-gcc" \
-        --extra-cflags="-O2 -fPIC" \
-        --enable-shared \
-        --disable-static \
-        --disable-programs \
-        --disable-doc \
-        --disable-swscale \
-        --disable-postproc \
-        --disable-avfilter \
-        --disable-avdevice \
-        --disable-network \
-        --disable-everything \
-        --disable-vulkan \
-        --disable-vaapi \
-        --disable-vdpau \
-        --enable-swresample \
-        --enable-decoder=h264 \
-        --enable-decoder=hevc \
-        --enable-decoder=av1 \
-        --enable-decoder=pcm_s16le \
-        --enable-decoder=opus \
-        --enable-decoder=aac \
-        --enable-decoder=flac \
-        --enable-decoder=png \
-        --enable-protocol=file \
-        --enable-demuxer=image2 \
-        --enable-parser=png \
-        --enable-zlib \
-        --enable-muxer=matroska \
-        --enable-muxer=mp4 \
-        --enable-muxer=opus \
-        --enable-muxer=flac \
-        --enable-muxer=wav \
+    conf=(
+        --prefix="$INSTALL_DIR/$HOST"
+        --enable-cross-compile
+        --target-os=mingw32
+        --arch="$ARCH"
+        --cross-prefix="${HOST_TRIPLET}-"
+        --cc="${HOST_TRIPLET}-gcc"
+        --extra-cflags="-O2 -fPIC"
+        --enable-shared
+        --disable-static
+        --disable-programs
+        --disable-doc
+        --disable-swscale
+        --disable-postproc
+        --disable-avfilter
+        --disable-avdevice
+        --disable-network
+        --disable-everything
+        --disable-vulkan
+        --disable-vaapi
+        --disable-vdpau
+        --enable-swresample
+        --enable-decoder=h264
+        --enable-decoder=hevc
+        --enable-decoder=av1
+        --enable-decoder=pcm_s16le
+        --enable-decoder=opus
+        --enable-decoder=aac
+        --enable-decoder=flac
+        --enable-decoder=png
+        --enable-protocol=file
+        --enable-demuxer=image2
+        --enable-parser=png
+        --enable-zlib
+        --enable-muxer=matroska
+        --enable-muxer=mp4
+        --enable-muxer=opus
+        --enable-muxer=flac
+        --enable-muxer=wav
+    )
+
+    "$SOURCES_DIR/$PROJECT_DIR"/configure "${conf[@]}"
 fi
 
 make -j
