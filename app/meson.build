@@ -109,20 +109,22 @@ endif
 
 cc = meson.get_compiler('c')
 
+static = get_option('static')
+
 dependencies = [
-    dependency('libavformat', version: '>= 57.33'),
-    dependency('libavcodec', version: '>= 57.37'),
-    dependency('libavutil'),
-    dependency('libswresample'),
-    dependency('sdl2', version: '>= 2.0.5'),
+    dependency('libavformat', version: '>= 57.33', static: static),
+    dependency('libavcodec', version: '>= 57.37', static: static),
+    dependency('libavutil', static: static),
+    dependency('libswresample', static: static),
+    dependency('sdl2', version: '>= 2.0.5', static: static),
 ]
 
 if v4l2_support
-    dependencies += dependency('libavdevice')
+    dependencies += dependency('libavdevice', static: static)
 endif
 
 if usb_support
-    dependencies += dependency('libusb-1.0')
+    dependencies += dependency('libusb-1.0', static: static)
 endif
 
 if host_machine.system() == 'windows'
