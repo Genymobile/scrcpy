@@ -165,6 +165,34 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+            brew install meson ninja nasm libiconv zlib automake autoconf \
+                libtool
+
+      - name: Build macOS
+        run: release/build_macos.sh
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-macos
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload build-macos artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-macos-intermediate
+          path: release/work/build-macos/dist-tar/
+
   package-linux:
     needs:
       - build-scrcpy-server
@@ -273,12 +301,49 @@ jobs:
           name: release-win64
           path: release/output
 
+  package-macos:
+    needs:
+      - build-scrcpy-server
+      - build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-macos
+        uses: actions/download-artifact@v4
+        with:
+          name: build-macos-intermediate
+          path: release/work/build-macos/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-macos
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package macos
+        run: release/package_client.sh macos tar.gz
+
+      - name: Upload macos release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: release/output/
+
   release:
     needs:
       - build-scrcpy-server
       - package-linux
       - package-win32
       - package-win64
+      - package-macos
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -306,6 +371,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-win64
+          path: release/output/
+
+      - name: Download release-macos
+        uses: actions/download-artifact@v4
+        with:
+          name: release-macos
           path: release/output/
 
       - name: Package server
