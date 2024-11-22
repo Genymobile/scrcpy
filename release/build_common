@@ -1,0 +1,5 @@
+# This file must be sourced from the release scripts directory
+WORK_DIR="$PWD/work"
+OUTPUT_DIR="$PWD/output"
+
+VERSION="${VERSION:-$(git describe --tags --always)}"
