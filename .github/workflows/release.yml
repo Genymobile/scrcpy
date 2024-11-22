@@ -87,11 +87,19 @@ jobs:
       - name: Build win32
         run: release/build_windows.sh 32
 
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-win32
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
       - name: Upload build-win32 artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-win32-intermediate
-          path: release/work/build-win32/dist/
+          path: release/work/build-win32/dist-tar/
 
   build-win64:
     runs-on: ubuntu-latest
@@ -113,11 +121,19 @@ jobs:
       - name: Build win64
         run: release/build_windows.sh 64
 
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-win64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
       - name: Upload build-win64 artifact
         uses: actions/upload-artifact@v4
         with:
           name: build-win64-intermediate
-          path: release/work/build-win64/dist/
+          path: release/work/build-win64/dist-tar/
 
   package-win32:
     needs:
@@ -138,7 +154,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-win32-intermediate
-          path: release/work/build-win32/dist/
+          path: release/work/build-win32/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-win32
+            tar xf dist-tar/dist.tar.gz
 
       - name: Package win32
         run: release/package_client.sh win32
@@ -168,7 +190,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-win64-intermediate
-          path: release/work/build-win64/dist/
+          path: release/work/build-win64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-win64
+            tar xf dist-tar/dist.tar.gz
 
       - name: Package win64
         run: release/package_client.sh win64
