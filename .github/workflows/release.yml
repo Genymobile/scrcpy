@@ -11,7 +11,7 @@ env:
   VERSION: ${{ github.event.inputs.name || github.ref_name }}
 
 jobs:
-  build-scrcpy-server:
+  test-scrcpy-server:
     runs-on: ubuntu-latest
     env:
       GRADLE: gradle  # use native gradle instead of ./gradlew in scripts
@@ -27,6 +27,20 @@ jobs:
 
       - name: Test scrcpy-server
         run: release/test_server.sh
+
+  build-scrcpy-server:
+    runs-on: ubuntu-latest
+    env:
+      GRADLE: gradle  # use native gradle instead of ./gradlew in scripts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
       - name: Build scrcpy-server
         run: release/build_server.sh
