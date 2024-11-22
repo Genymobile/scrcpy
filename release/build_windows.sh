@@ -20,12 +20,13 @@ cd .. # root project dir
 
 WINXX_BUILD_DIR="$WORK_DIR/build-$WINXX"
 
-app/deps/adb.sh $WINXX
+app/deps/adb_windows.sh
 app/deps/sdl.sh $WINXX
 app/deps/ffmpeg.sh $WINXX
 app/deps/libusb.sh $WINXX
 
 DEPS_INSTALL_DIR="$PWD/app/deps/work/install/$WINXX"
+ADB_INSTALL_DIR="$PWD/app/deps/work/install/adb-windows"
 
 rm -rf "$WINXX_BUILD_DIR"
 meson setup "$WINXX_BUILD_DIR" \
@@ -48,4 +49,4 @@ cp app/data/scrcpy-noconsole.vbs "$WINXX_BUILD_DIR/dist/"
 cp app/data/icon.png "$WINXX_BUILD_DIR/dist/"
 cp app/data/open_a_terminal_here.bat "$WINXX_BUILD_DIR/dist/"
 cp "$DEPS_INSTALL_DIR"/bin/*.dll "$WINXX_BUILD_DIR/dist/"
-cp "$DEPS_INSTALL_DIR"/bin/adb.exe "$WINXX_BUILD_DIR/dist/"
+cp -r "$ADB_INSTALL_DIR"/. "$WINXX_BUILD_DIR/dist/"
