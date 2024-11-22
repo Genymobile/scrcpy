@@ -14,8 +14,8 @@ rm -rf output
 ./build_windows.sh 64
 
 ./package_server.sh
-./package_client.sh win32
-./package_client.sh win64
+./package_client.sh win32 zip
+./package_client.sh win64 zip
 
 ./generate_checksums.sh
 

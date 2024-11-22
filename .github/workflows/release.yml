@@ -163,7 +163,7 @@ jobs:
             tar xf dist-tar/dist.tar.gz
 
       - name: Package win32
-        run: release/package_client.sh win32
+        run: release/package_client.sh win32 zip
 
       - name: Upload win32 release
         uses: actions/upload-artifact@v4
@@ -199,7 +199,7 @@ jobs:
             tar xf dist-tar/dist.tar.gz
 
       - name: Package win64
-        run: release/package_client.sh win64
+        run: release/package_client.sh win64 zip
 
       - name: Upload win64 release
         uses: actions/upload-artifact@v4
