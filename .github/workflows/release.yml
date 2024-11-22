@@ -67,6 +67,36 @@ jobs:
       - name: Test
         run: release/test_client.sh
 
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+             libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+             libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev
+
+      - name: Build linux
+        run: release/build_linux.sh
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-linux
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload build-linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-linux-intermediate
+          path: release/work/build-linux/dist-tar/
+
   build-win32:
     runs-on: ubuntu-latest
     steps:
@@ -134,6 +164,42 @@ jobs:
         with:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
+
+  package-linux:
+    needs:
+      - build-scrcpy-server
+      - build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-linux
+        uses: actions/download-artifact@v4
+        with:
+          name: build-linux-intermediate
+          path: release/work/build-linux/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-linux
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package linux
+        run: release/package_client.sh linux tar.gz
+
+      - name: Upload linux release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: release/output/
 
   package-win32:
     needs:
@@ -210,6 +276,7 @@ jobs:
   release:
     needs:
       - build-scrcpy-server
+      - package-linux
       - package-win32
       - package-win64
     runs-on: ubuntu-latest
@@ -222,6 +289,12 @@ jobs:
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
+
+      - name: Download release-linux
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux
+          path: release/output/
 
       - name: Download release-win32
         uses: actions/download-artifact@v4

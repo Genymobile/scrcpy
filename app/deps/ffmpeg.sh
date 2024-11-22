@@ -48,7 +48,6 @@ else
         --disable-swscale
         --disable-postproc
         --disable-avfilter
-        --disable-avdevice
         --disable-network
         --disable-everything
         --disable-vulkan
@@ -73,6 +72,14 @@ else
         --enable-muxer=flac
         --enable-muxer=wav
     )
+
+    if [[ "$HOST" != linux ]]
+    then
+        # libavdevice is only used for V4L2 on Linux
+        conf+=(
+            --disable-avdevice
+        )
+    fi
 
     if [[ "$LINK_TYPE" == static ]]
     then
