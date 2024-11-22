@@ -16,6 +16,7 @@ SCRCPY_VERSION_NAME=2.7
 
 PLATFORM=${ANDROID_PLATFORM:-35}
 BUILD_TOOLS=${ANDROID_BUILD_TOOLS:-35.0.0}
+PLATFORM_TOOLS="$ANDROID_HOME/platforms/android-$PLATFORM"
 BUILD_TOOLS_DIR="$ANDROID_HOME/build-tools/$BUILD_TOOLS"
 
 BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
@@ -23,7 +24,7 @@ CLASSES_DIR="$BUILD_DIR/classes"
 GEN_DIR="$BUILD_DIR/gen"
 SERVER_DIR=$(dirname "$0")
 SERVER_BINARY=scrcpy-server
-ANDROID_JAR="$ANDROID_HOME/platforms/android-$PLATFORM/android.jar"
+ANDROID_JAR="$PLATFORM_TOOLS/android.jar"
 LAMBDA_JAR="$BUILD_TOOLS_DIR/core-lambda-stubs.jar"
 
 echo "Platform: android-$PLATFORM"
