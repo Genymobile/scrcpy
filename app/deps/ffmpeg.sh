@@ -66,6 +66,8 @@ else
         --disable-network \
         --disable-everything \
         --disable-vulkan \
+        --disable-vaapi \
+        --disable-vdpau \
         --enable-swresample \
         --enable-decoder=h264 \
         --enable-decoder=hevc \
