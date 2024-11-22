@@ -65,6 +65,7 @@ else
         --disable-avdevice \
         --disable-network \
         --disable-everything \
+        --disable-vulkan \
         --enable-swresample \
         --enable-decoder=h264 \
         --enable-decoder=hevc \
@@ -83,7 +84,6 @@ else
         --enable-muxer=opus \
         --enable-muxer=flac \
         --enable-muxer=wav \
-        --disable-vulkan
 fi
 
 make -j
