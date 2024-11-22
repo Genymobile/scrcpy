@@ -119,11 +119,10 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist/
 
-  package:
+  package-win32:
     needs:
       - build-scrcpy-server
       - build-win32
-      - build-win64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -141,20 +140,75 @@ jobs:
           name: build-win32-intermediate
           path: release/work/build-win32/dist/
 
+      - name: Package win32
+        run: release/package_client.sh win32
+
+      - name: Upload win32 release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-win32
+          path: release/output/
+
+  package-win64:
+    needs:
+      - build-scrcpy-server
+      - build-win64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
       - name: Download build-win64
         uses: actions/download-artifact@v4
         with:
           name: build-win64-intermediate
           path: release/work/build-win64/dist/
 
-      - name: Package server
-        run: release/package_server.sh
-
-      - name: Package win32
-        run: release/package_client.sh win32
-
       - name: Package win64
         run: release/package_client.sh win64
+
+      - name: Upload win64 release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-win64
+          path: release/output
+
+  release:
+    needs:
+      - build-scrcpy-server
+      - package-win32
+      - package-win64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download release-win32
+        uses: actions/download-artifact@v4
+        with:
+          name: release-win32
+          path: release/output/
+
+      - name: Download release-win64
+        uses: actions/download-artifact@v4
+        with:
+          name: release-win64
+          path: release/output/
+
+      - name: Package server
+        run: release/package_server.sh
 
       - name: Generate checksums
         run: release/generate_checksums.sh
