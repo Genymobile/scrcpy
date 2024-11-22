@@ -5,6 +5,7 @@ cd "$(dirname ${BASH_SOURCE[0]})"
 
 cd "$OUTPUT_DIR"
 sha256sum "scrcpy-server-$VERSION" \
+    "scrcpy-linux-$VERSION.zip" \
     "scrcpy-win32-$VERSION.zip" \
     "scrcpy-win64-$VERSION.zip" \
         | tee SHA256SUMS.txt
