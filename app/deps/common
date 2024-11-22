@@ -1,25 +1,27 @@
 #!/usr/bin/env bash
 # This file is intended to be sourced by other scripts, not executed
 
-if [[ $# != 1 ]]
-then
-    # <host>: win32 or win64
-    echo "Syntax: $0 <host>" >&2
-    exit 1
-fi
+process_args() {
+    if [[ $# != 1 ]]
+    then
+        # <host>: win32 or win64
+        echo "Syntax: $0 <host>" >&2
+        exit 1
+    fi
 
-HOST="$1"
+    HOST="$1"
 
-if [[ "$HOST" = win32 ]]
-then
-    HOST_TRIPLET=i686-w64-mingw32
-elif [[ "$HOST" = win64 ]]
-then
-    HOST_TRIPLET=x86_64-w64-mingw32
-else
-    echo "Unsupported host: $HOST" >&2
-    exit 1
-fi
+    if [[ "$HOST" = win32 ]]
+    then
+        HOST_TRIPLET=i686-w64-mingw32
+    elif [[ "$HOST" = win64 ]]
+    then
+        HOST_TRIPLET=x86_64-w64-mingw32
+    else
+        echo "Unsupported host: $HOST" >&2
+        exit 1
+    fi
+}
 
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"

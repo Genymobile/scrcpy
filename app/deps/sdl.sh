@@ -3,6 +3,7 @@ set -ex
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
+process_args "$@"
 
 VERSION=2.30.9
 FILENAME=SDL-$VERSION.tar.gz
