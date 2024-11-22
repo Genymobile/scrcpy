@@ -3,6 +3,7 @@ set -ex
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
+process_args "$@"
 
 VERSION=35.0.2
 FILENAME=platform-tools_r$VERSION-win.zip

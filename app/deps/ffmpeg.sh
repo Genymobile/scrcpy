@@ -3,6 +3,7 @@ set -ex
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
+process_args "$@"
 
 VERSION=7.1
 FILENAME=ffmpeg-$VERSION.tar.xz

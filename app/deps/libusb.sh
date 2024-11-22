@@ -3,6 +3,7 @@ set -ex
 DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
+process_args "$@"
 
 VERSION=1.0.27
 FILENAME=libusb-$VERSION.tar.gz
