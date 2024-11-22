@@ -25,6 +25,7 @@ GEN_DIR="$BUILD_DIR/gen"
 SERVER_DIR=$(dirname "$0")
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$PLATFORM_TOOLS/android.jar"
+ANDROID_AIDL="$PLATFORM_TOOLS/framework.aidl"
 LAMBDA_JAR="$BUILD_TOOLS_DIR/core-lambda-stubs.jar"
 
 echo "Platform: android-$PLATFORM"
@@ -50,6 +51,8 @@ cd "$SERVER_DIR/src/main/aidl"
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. \
     android/content/IOnPrimaryClipChangedListener.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. android/view/IDisplayFoldListener.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. -p "$ANDROID_AIDL" \
+    android/view/IDisplayWindowListener.aidl
 
 # Fake sources to expose hidden Android types to the project
 FAKE_SRC=( \
