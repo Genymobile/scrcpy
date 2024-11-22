@@ -38,6 +38,14 @@ else
         --prefix="$INSTALL_DIR/$DIRNAME"
     )
 
+    if [[ "$HOST" == linux ]]
+    then
+        conf+=(
+            --enable-video-wayland
+            --enable-video-x11
+        )
+    fi
+
     if [[ "$LINK_TYPE" == static ]]
     then
         conf+=(
