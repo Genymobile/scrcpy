@@ -59,7 +59,13 @@ checksum() {
     local file="$1"
     local sum="$2"
     echo "$file: verifying checksum..."
-    echo "$sum  $file" | sha256sum -c
+    if [[ "$OSTYPE" == darwin* ]]
+    then
+        # macOS does not have sha256sum
+        echo "$sum  $file" | shasum -a 256 -c
+    else
+        echo "$sum  $file" | sha256sum -c
+    fi
 }
 
 get_file() {

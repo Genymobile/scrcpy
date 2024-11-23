@@ -173,7 +173,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-            echo TODO
+            brew install meson ninja automake
 
       - name: Build macOS
         run: release/build_macos.sh
