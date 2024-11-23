@@ -59,7 +59,7 @@ checksum() {
     local file="$1"
     local sum="$2"
     echo "$file: verifying checksum..."
-    echo "$sum  $file" | sha256sum -c
+    echo "$sum  $file" | shasum -a256 -c
 }
 
 get_file() {
