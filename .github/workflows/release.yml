@@ -206,6 +206,33 @@ jobs:
           name: build-macos-aarch64-intermediate
           path: release/work/build-macos-aarch64/dist-tar/
 
+  build-macos-x86_64:
+    runs-on: macos-13
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: brew install meson ninja nasm libiconv zlib automake
+             # autoconf and libtool are already installed on macos-13
+
+      - name: Build
+        run: release/build_macos.sh x86_64
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-macos-x86_64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-macos-x86_64-intermediate
+          path: release/work/build-macos-x86_64/dist-tar/
+
   package-linux-x86_64:
     needs:
       - build-scrcpy-server
@@ -350,6 +377,42 @@ jobs:
           name: release-macos-aarch64
           path: release/output/
 
+  package-macos-x86_64:
+    needs:
+      - build-scrcpy-server
+      - build-macos-x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-macos
+        uses: actions/download-artifact@v4
+        with:
+          name: build-macos-x86_64-intermediate
+          path: release/work/build-macos-x86_64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-macos-x86_64
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package
+        run: release/package_client.sh macos-x86_64 tar.gz
+
+      - name: Upload release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-x86_64
+          path: release/output/
+
   release:
     needs:
       - build-scrcpy-server
@@ -357,6 +420,7 @@ jobs:
       - package-win32
       - package-win64
       - package-macos-aarch64
+      - package-macos-x86_64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -390,6 +454,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-macos-aarch64
+          path: release/output/
+
+      - name: Download release-macos-x86_64
+        uses: actions/download-artifact@v4
+        with:
+          name: release-macos-x86_64
           path: release/output/
 
       - name: Package server
