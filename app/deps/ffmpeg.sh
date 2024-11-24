@@ -81,8 +81,14 @@ else
         --enable-muxer=wav
     )
 
-    if [[ "$HOST" != linux ]]
+    if [[ "$HOST" == linux ]]
     then
+        conf+=(
+            --enable-libv4l2
+            --enable-outdev=v4l2
+            --enable-encoder=rawvideo
+        )
+    else
         # libavdevice is only used for V4L2 on Linux
         conf+=(
             --disable-avdevice
