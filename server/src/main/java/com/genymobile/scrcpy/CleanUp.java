@@ -207,13 +207,15 @@ public final class CleanUp {
             }
         }
 
-        if (displayId != Device.DISPLAY_ID_NONE && Device.isScreenOn(displayId)) {
+        // Change the power of the main display when mirroring a virtual display
+        int targetDisplayId = displayId != Device.DISPLAY_ID_NONE ? displayId : 0;
+        if (Device.isScreenOn(targetDisplayId)) {
             if (powerOffScreen) {
                 Ln.i("Power off screen");
-                Device.powerOffScreen(displayId);
+                Device.powerOffScreen(targetDisplayId);
             } else if (restoreDisplayPower) {
                 Ln.i("Restoring display power");
-                Device.setDisplayPower(displayId, true);
+                Device.setDisplayPower(targetDisplayId, true);
             }
         }
 

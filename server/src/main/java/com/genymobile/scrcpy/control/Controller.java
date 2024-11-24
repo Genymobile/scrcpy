@@ -281,7 +281,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 setClipboard(msg.getText(), msg.getPaste(), msg.getSequence());
                 break;
             case ControlMessage.TYPE_SET_DISPLAY_POWER:
-                if (supportsInputEvents && displayId != Device.DISPLAY_ID_NONE) {
+                if (supportsInputEvents) {
                     setDisplayPower(msg.getOn());
                 }
                 break;
@@ -691,9 +691,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private void setDisplayPower(boolean on) {
-        boolean setDisplayPowerOk = Device.setDisplayPower(displayId, on);
+        // Change the power of the main display when mirroring a virtual display
+        int targetDisplayId = displayId != Device.DISPLAY_ID_NONE ? displayId : 0;
+        boolean setDisplayPowerOk = Device.setDisplayPower(targetDisplayId, on);
         if (setDisplayPowerOk) {
-            keepDisplayPowerOff = !on;
+            // Do not keep display power off for virtual displays: MOD+p must wake up the physical device
+            keepDisplayPowerOff = displayId != Device.DISPLAY_ID_NONE && !on;
             Ln.i("Device display turned " + (on ? "on" : "off"));
             if (cleanUp != null) {
                 boolean mustRestoreOnExit = !on;
