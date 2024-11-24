@@ -183,7 +183,7 @@ jobs:
           path: release/work/build-win64/dist-tar/
 
   build-macos:
-    runs-on: macos-latest
+    runs-on: macos-13
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
