@@ -141,7 +141,7 @@ documented in the following pages:
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
- - [Virtual display](doc/virtual_displays.md)
+ - [Virtual display](doc/virtual_display.md)
  - [Tunnels](doc/tunnels.md)
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
