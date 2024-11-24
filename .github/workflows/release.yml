@@ -182,7 +182,35 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
-  build-macos:
+  build-macos-aarch64:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+            brew install meson ninja nasm libiconv zlib automake autoconf \
+                libtool
+
+      - name: Build macOS-aarch64
+        run: release/build_macos-aarch64.sh
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-macos-aarch64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload build-macos-aarch64 artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-macos-aarch64-intermediate
+          path: release/work/build-macos-aarch64/dist-tar/
+
+  build-macos-intel:
     runs-on: macos-13
     steps:
       - name: Checkout code
@@ -193,22 +221,22 @@ jobs:
             brew install meson ninja nasm libiconv zlib automake autoconf \
                 libtool
 
-      - name: Build macOS
-        run: release/build_macos.sh
+      - name: Build macOS-intel
+        run: release/build_macos-intel.sh
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-macos
+            cd release/work/build-macos-intel
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
 
-      - name: Upload build-macos artifact
+      - name: Upload build-macos-intel artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-macos-intermediate
-          path: release/work/build-macos/dist-tar/
+          name: build-macos-intel-intermediate
+          path: release/work/build-macos-intel/dist-tar/
 
   package-linux:
     needs:
@@ -318,10 +346,10 @@ jobs:
           name: release-win64
           path: release/output
 
-  package-macos:
+  package-macos-aarch64:
     needs:
       - build-scrcpy-server
-      - build-macos
+      - build-macos-aarch64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -333,25 +361,61 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/
 
-      - name: Download build-macos
+      - name: Download build-macos-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: build-macos-intermediate
-          path: release/work/build-macos/dist-tar/
+          name: build-macos-aarch64-intermediate
+          path: release/work/build-macos-aarch64/dist-tar/
 
       # upload-artifact does not preserve permissions
       - name: Detar
         run: |
-            cd release/work/build-macos
+            cd release/work/build-macos-aarch64
             tar xf dist-tar/dist.tar.gz
 
-      - name: Package macos
-        run: release/package_client.sh macos tar.gz
+      - name: Package macos-aarch64
+        run: release/package_client.sh macos-aarch64 tar.gz
 
-      - name: Upload macos release
+      - name: Upload macos-aarch64 release
         uses: actions/upload-artifact@v4
         with:
-          name: release-macos
+          name: release-macos-aarch64
+          path: release/output/
+  
+  package-macos-intel:
+    needs:
+      - build-scrcpy-server
+      - build-macos-intel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-macos-intel
+        uses: actions/download-artifact@v4
+        with:
+          name: build-macos-intel-intermediate
+          path: release/work/build-macos-intel/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-macos-intel
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package macos-intel
+        run: release/package_client.sh macos-intel tar.gz
+
+      - name: Upload macos-intel release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-macos-intel
           path: release/output/
 
   release:
@@ -360,7 +424,8 @@ jobs:
       - package-linux
       - package-win32
       - package-win64
-      - package-macos
+      - package-macos-aarch64
+      - package-macos-intel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -390,10 +455,16 @@ jobs:
           name: release-win64
           path: release/output/
 
-      - name: Download release-macos
+      - name: Download release-macos-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: release-macos
+          name: release-macos-aarch64
+          path: release/output/
+
+      - name: Download release-macos-intel
+        uses: actions/download-artifact@v4
+        with:
+          name: release-macos-intel
           path: release/output/
 
       - name: Package server

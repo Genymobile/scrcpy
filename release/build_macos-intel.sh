@@ -4,7 +4,7 @@ cd "$(dirname ${BASH_SOURCE[0]})"
 . build_common
 cd .. # root project dir
 
-MACOS_BUILD_DIR="$WORK_DIR/build-macos"
+MACOS_BUILD_DIR="$WORK_DIR/build-macos-intel"
 
 app/deps/adb_macos.sh
 app/deps/sdl.sh macos native static
