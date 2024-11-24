@@ -98,18 +98,6 @@ Select the camera size by its aspect ratio (+/- 10%).
 Possible values are "sensor" (use the camera sensor aspect ratio), "\fInum\fR:\fIden\fR" (e.g. "4:3") and "\fIvalue\fR" (e.g. "1.6").
 
 .TP
-.B \-\-camera\-high\-speed
-Enable high-speed camera capture mode.
-
-This mode is restricted to specific resolutions and frame rates, listed by \fB\-\-list\-camera\-sizes\fR.
-
-.TP
-.BI "\-\-camera\-id " id
-Specify the device camera id to mirror.
-
-The available camera ids can be listed by \fB\-\-list\-cameras\fR.
-
-.TP
 .BI "\-\-camera\-facing " facing
 Select the device camera by its facing direction.
 
@@ -120,6 +108,18 @@ Possible values are "front", "back" and "external".
 Specify the camera capture frame rate.
 
 If not specified, Android's default frame rate (30 fps) is used.
+
+.TP
+.B \-\-camera\-high\-speed
+Enable high-speed camera capture mode.
+
+This mode is restricted to specific resolutions and frame rates, listed by \fB\-\-list\-camera\-sizes\fR.
+
+.TP
+.BI "\-\-camera\-id " id
+Specify the device camera id to mirror.
+
+The available camera ids can be listed by \fB\-\-list\-cameras\fR.
 
 .TP
 .BI "\-\-camera\-size " width\fRx\fIheight

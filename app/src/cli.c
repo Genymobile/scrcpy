@@ -256,19 +256,19 @@ static const struct sc_option options[] = {
                 "\"1.6\")."
     },
     {
-        .longopt_id = OPT_CAMERA_ID,
-        .longopt = "camera-id",
-        .argdesc = "id",
-        .text = "Specify the device camera id to mirror.\n"
-                "The available camera ids can be listed by:\n"
-                "    scrcpy --list-cameras",
-    },
-    {
         .longopt_id = OPT_CAMERA_FACING,
         .longopt = "camera-facing",
         .argdesc = "facing",
         .text = "Select the device camera by its facing direction.\n"
                 "Possible values are \"front\", \"back\" and \"external\".",
+    },
+    {
+        .longopt_id = OPT_CAMERA_FPS,
+        .longopt = "camera-fps",
+        .argdesc = "value",
+        .text = "Specify the camera capture frame rate.\n"
+                "If not specified, Android's default frame rate (30 fps) is "
+                "used.",
     },
     {
         .longopt_id = OPT_CAMERA_HIGH_SPEED,
@@ -278,18 +278,35 @@ static const struct sc_option options[] = {
                 "rates, listed by --list-camera-sizes.",
     },
     {
+        .longopt_id = OPT_CAMERA_ID,
+        .longopt = "camera-id",
+        .argdesc = "id",
+        .text = "Specify the device camera id to mirror.\n"
+                "The available camera ids can be listed by:\n"
+                "    scrcpy --list-cameras",
+    },
+    {
         .longopt_id = OPT_CAMERA_SIZE,
         .longopt = "camera-size",
         .argdesc = "<width>x<height>",
         .text = "Specify an explicit camera capture size.",
     },
     {
-        .longopt_id = OPT_CAMERA_FPS,
-        .longopt = "camera-fps",
+        .longopt_id = OPT_CAPTURE_ORIENTATION,
+        .longopt = "capture-orientation",
         .argdesc = "value",
-        .text = "Specify the camera capture frame rate.\n"
-                "If not specified, Android's default frame rate (30 fps) is "
-                "used.",
+        .text = "Set the capture video orientation.\n"
+                "Possible values are 0, 90, 180, 270, flip0, flip90, flip180 "
+                "and flip270, possibly prefixed by '@'.\n"
+                "The number represents the clockwise rotation in degrees; the "
+                "flip\" keyword applies a horizontal flip before the "
+                "rotation.\n"
+                "If a leading '@' is passed (@90) for display capture, then "
+                "the rotation is locked, and is relative to the natural device "
+                "orientation.\n"
+                "If '@' is passed alone, then the rotation is locked to the "
+                "initial device orientation.\n"
+                "Default is 0.",
     },
     {
         // Not really deprecated (--codec has never been released), but without
@@ -478,23 +495,6 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_ENCODERS,
         .longopt = "list-encoders",
         .text = "List video and audio encoders available on the device.",
-    },
-    {
-        .longopt_id = OPT_CAPTURE_ORIENTATION,
-        .longopt = "capture-orientation",
-        .argdesc = "value",
-        .text = "Set the capture video orientation.\n"
-                "Possible values are 0, 90, 180, 270, flip0, flip90, flip180 "
-                "and flip270, possibly prefixed by '@'.\n"
-                "The number represents the clockwise rotation in degrees; the "
-                "flip\" keyword applies a horizontal flip before the "
-                "rotation.\n"
-                "If a leading '@' is passed (@90) for display capture, then "
-                "the rotation is locked, and is relative to the natural device "
-                "orientation.\n"
-                "If '@' is passed alone, then the rotation is locked to the "
-                "initial device orientation.\n"
-                "Default is 0.",
     },
     {
         // deprecated
