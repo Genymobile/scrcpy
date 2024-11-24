@@ -51,6 +51,21 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/scrcpy-server
 
+  test-build-scrcpy-server-without-gradle:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Build scrcpy-server without gradle
+        run: server/build_without_gradle.sh
+
   test-client:
     runs-on: ubuntu-latest
     steps:
