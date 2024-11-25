@@ -6,6 +6,9 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#ifdef __APPLE__
+# include <mach-o/dyld.h> // for _NSGetExecutablePath()
+#endif
 
 #include "util/log.h"
 
@@ -60,11 +63,22 @@ sc_file_get_executable_path(void) {
     }
     buf[len] = '\0';
     return strdup(buf);
+#elif defined(__APPLE__)
+    char buf[PATH_MAX];
+    uint32_t bufsize = PATH_MAX;
+    if (_NSGetExecutablePath(buf, &bufsize) != 0) {
+        LOGE("Executable path buffer too small; need %u bytes", bufsize);
+        return NULL;
+    }
+    return realpath(buf, NULL);
 #else
-    // in practice, we only need this feature for portable builds, only used on
-    // Windows, so we don't care implementing it for every platform
-    // (it's useful to have a working version on Linux for debugging though)
-    return NULL;
+    // "_" is often used to store the full path of the command being executed
+    char *path = getenv("_");
+    if (!path) {
+        LOGE("Could not determine executable path");
+        return NULL;
+    }
+    return strdup(path);
 #endif
 }
 
