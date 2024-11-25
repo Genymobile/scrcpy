@@ -181,6 +181,7 @@ to your problem immediately.
 You can also use:
 
  - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - BlueSky: [`@scrcpy.bsky.social`](https://bsky.app/profile/scrcpy.bsky.social)
  - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
 
 
