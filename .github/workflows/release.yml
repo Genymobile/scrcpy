@@ -82,7 +82,7 @@ jobs:
       - name: Test
         run: release/test_client.sh
 
-  build-linux:
+  build-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -96,12 +96,12 @@ jobs:
              libv4l-dev
 
       - name: Build
-        run: release/build_linux.sh
+        run: release/build_linux.sh x86_64
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-linux
+            cd release/work/build-linux-x86_64
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -109,8 +109,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-linux-intermediate
-          path: release/work/build-linux/dist-tar/
+          name: build-linux-x86_64-intermediate
+          path: release/work/build-linux-x86_64/dist-tar/
 
   build-win32:
     runs-on: ubuntu-latest
@@ -178,7 +178,7 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
-  build-macos:
+  build-macos-aarch64:
     runs-on: macos-latest
     steps:
       - name: Checkout code
@@ -190,12 +190,12 @@ jobs:
                 libtool
 
       - name: Build
-        run: release/build_macos.sh
+        run: release/build_macos.sh aarch64
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-macos
+            cd release/work/build-macos-aarch64
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -203,13 +203,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-macos-intermediate
-          path: release/work/build-macos/dist-tar/
+          name: build-macos-aarch64-intermediate
+          path: release/work/build-macos-aarch64/dist-tar/
 
-  package-linux:
+  package-linux-x86_64:
     needs:
       - build-scrcpy-server
-      - build-linux
+      - build-linux-x86_64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -221,25 +221,25 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/
 
-      - name: Download build-linux
+      - name: Download build-linux-x86_64
         uses: actions/download-artifact@v4
         with:
-          name: build-linux-intermediate
-          path: release/work/build-linux/dist-tar/
+          name: build-linux-x86_64-intermediate
+          path: release/work/build-linux-x86_64/dist-tar/
 
       # upload-artifact does not preserve permissions
       - name: Detar
         run: |
-            cd release/work/build-linux
+            cd release/work/build-linux-x86_64
             tar xf dist-tar/dist.tar.gz
 
       - name: Package
-        run: release/package_client.sh linux tar.gz
+        run: release/package_client.sh linux-x86_64 tar.gz
 
       - name: Upload release
         uses: actions/upload-artifact@v4
         with:
-          name: release-linux
+          name: release-linux-x86_64
           path: release/output/
 
   package-win32:
@@ -314,10 +314,10 @@ jobs:
           name: release-win64
           path: release/output
 
-  package-macos:
+  package-macos-aarch64:
     needs:
       - build-scrcpy-server
-      - build-macos
+      - build-macos-aarch64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -329,34 +329,34 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/
 
-      - name: Download build-macos
+      - name: Download build-macos-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: build-macos-intermediate
-          path: release/work/build-macos/dist-tar/
+          name: build-macos-aarch64-intermediate
+          path: release/work/build-macos-aarch64/dist-tar/
 
       # upload-artifact does not preserve permissions
       - name: Detar
         run: |
-            cd release/work/build-macos
+            cd release/work/build-macos-aarch64
             tar xf dist-tar/dist.tar.gz
 
       - name: Package
-        run: release/package_client.sh macos tar.gz
+        run: release/package_client.sh macos-aarch64 tar.gz
 
       - name: Upload release
         uses: actions/upload-artifact@v4
         with:
-          name: release-macos
+          name: release-macos-aarch64
           path: release/output/
 
   release:
     needs:
       - build-scrcpy-server
-      - package-linux
+      - package-linux-x86_64
       - package-win32
       - package-win64
-      - package-macos
+      - package-macos-aarch64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -368,10 +368,10 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/
 
-      - name: Download release-linux
+      - name: Download release-linux-x86_64
         uses: actions/download-artifact@v4
         with:
-          name: release-linux
+          name: release-linux-x86_64
           path: release/output/
 
       - name: Download release-win32
@@ -386,10 +386,10 @@ jobs:
           name: release-win64
           path: release/output/
 
-      - name: Download release-macos
+      - name: Download release-macos-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: release-macos
+          name: release-macos-aarch64
           path: release/output/
 
       - name: Package server

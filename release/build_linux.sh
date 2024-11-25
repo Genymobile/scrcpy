@@ -4,7 +4,14 @@ cd "$(dirname ${BASH_SOURCE[0]})"
 . build_common
 cd .. # root project dir
 
-LINUX_BUILD_DIR="$WORK_DIR/build-linux"
+if [[ $# != 1 ]]
+then
+    echo "Syntax: $0 <arch>" >&2
+    exit 1
+fi
+
+ARCH="$1"
+LINUX_BUILD_DIR="$WORK_DIR/build-linux-$ARCH"
 
 app/deps/adb_linux.sh
 app/deps/sdl.sh linux native static

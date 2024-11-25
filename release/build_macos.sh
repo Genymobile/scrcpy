@@ -4,7 +4,14 @@ cd "$(dirname ${BASH_SOURCE[0]})"
 . build_common
 cd .. # root project dir
 
-MACOS_BUILD_DIR="$WORK_DIR/build-macos"
+if [[ $# != 1 ]]
+then
+    echo "Syntax: $0 <arch>" >&2
+    exit 1
+fi
+
+ARCH="$1"
+MACOS_BUILD_DIR="$WORK_DIR/build-macos-$ARCH"
 
 app/deps/adb_macos.sh
 app/deps/sdl.sh macos native static

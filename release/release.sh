@@ -12,12 +12,12 @@ rm -rf output
 ./build_server.sh
 ./build_windows.sh 32
 ./build_windows.sh 64
-./build_linux.sh
+./build_linux.sh x86_64
 
 ./package_server.sh
 ./package_client.sh win32 zip
 ./package_client.sh win64 zip
-./package_client.sh linux tar.gz
+./package_client.sh linux-x86_64 tar.gz
 
 ./generate_checksums.sh
 
