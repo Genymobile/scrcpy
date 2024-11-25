@@ -14,9 +14,9 @@ fi
 
 FORMAT=$2
 
-if [[ "$2" != zip && "$2" != tar.gz ]]
+if [[ "$FORMAT" != zip && "$FORMAT" != tar.gz ]]
 then
-    echo "Invalid format (expected zip or tar.gz): $2" >&2
+    echo "Invalid format (expected zip or tar.gz): $FORMAT" >&2
     exit 1
 fi
 
