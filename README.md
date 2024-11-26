@@ -141,7 +141,7 @@ documented in the following pages:
  - [Device](doc/device.md)
  - [Window](doc/window.md)
  - [Recording](doc/recording.md)
- - [Virtual display](doc/virtual_displays.md)
+ - [Virtual display](doc/virtual_display.md)
  - [Tunnels](doc/tunnels.md)
  - [OTG](doc/otg.md)
  - [Camera](doc/camera.md)
@@ -181,6 +181,7 @@ to your problem immediately.
 You can also use:
 
  - Reddit: [`r/scrcpy`](https://www.reddit.com/r/scrcpy)
+ - BlueSky: [`@scrcpy.bsky.social`](https://bsky.app/profile/scrcpy.bsky.social)
  - Twitter: [`@scrcpy_app`](https://twitter.com/scrcpy_app)
 
 

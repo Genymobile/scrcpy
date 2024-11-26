@@ -23,14 +23,20 @@ To control the device without mirroring:
 scrcpy --no-video --no-audio
 ```
 
-By default, mouse mode is switched to UHID if video mirroring is disabled (a
-relative mouse mode is required).
+By default, the mouse is disabled when video playback is turned off.
+
+To control the device using a relative mouse, enable UHID mouse mode:
+
+```bash
+scrcpy --no-video --no-audio --mouse=uhid
+scrcpy --no-video --no-audio -M  # short version
+```
 
 To also use a UHID keyboard, set it explicitly:
 
 ```bash
-scrcpy --no-video --no-audio --keyboard=uhid
-scrcpy --no-video --no-audio -K  # short version
+scrcpy --no-video --no-audio --mouse=uhid --keyboard=uhid
+scrcpy --no-video --no-audio -MK  # short version
 ```
 
 To use AOA instead (over USB only):
