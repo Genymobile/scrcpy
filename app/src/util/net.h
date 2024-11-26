@@ -7,21 +7,36 @@
 #include <stdint.h>
 
 #ifdef _WIN32
-
 # include <winsock2.h>
+  typedef SOCKET sc_raw_socket;
+# define SC_RAW_SOCKET_NONE INVALID_SOCKET
+#else // not _WIN32
+# include <sys/socket.h>
+  typedef int sc_raw_socket;
+# define SC_RAW_SOCKET_NONE -1
+#endif
+
+#ifdef _WIN32
+// On Windows, shutdown() does not interrupt accept() or read() calls, so
+// net_interrupt() must call close() instead, and net_close() must behave
+// accordingly.
+// This causes a small race condition (once the socket is closed, its
+// handle becomes invalid and may in theory be reassigned before another
+// thread calls accept() or read()), but it is deemed acceptable as a
+// workaround.
+# define SC_SOCKET_CLOSE_ON_INTERRUPT
+#endif
+
+#ifdef SC_SOCKET_CLOSE_ON_INTERRUPT
 # include <stdatomic.h>
 # define SC_SOCKET_NONE NULL
-  typedef struct sc_socket_windows {
-      SOCKET socket;
+  typedef struct sc_socket_wrapper {
+      sc_raw_socket socket;
       atomic_flag closed;
   } *sc_socket;
-
-#else // not _WIN32
-
-# include <sys/socket.h>
+#else
 # define SC_SOCKET_NONE -1
-  typedef int sc_socket;
-
+  typedef sc_raw_socket sc_socket;
 #endif
 
 #define IPV4_LOCALHOST 0x7F000001
