@@ -192,6 +192,9 @@ public final class DisplayManager {
                         if ("onDisplayChanged".equals(method.getName())) {
                             listener.onDisplayChanged((int) args[0]);
                         }
+                        if ("toString".equals(method.getName())) {
+                            return "DisplayListener";
+                        }
                         return null;
                     });
             try {
