@@ -16,10 +16,10 @@
 # define SC_RAW_SOCKET_NONE -1
 #endif
 
-#ifdef _WIN32
-// On Windows, shutdown() does not interrupt accept() or read() calls, so
-// net_interrupt() must call close() instead, and net_close() must behave
-// accordingly.
+#if defined(_WIN32) || defined(__APPLE__)
+// On Windows and macOS, shutdown() does not interrupt accept() or read()
+// calls, so net_interrupt() must call close() instead, and net_close() must
+// behave accordingly.
 // This causes a small race condition (once the socket is closed, its
 // handle becomes invalid and may in theory be reassigned before another
 // thread calls accept() or read()), but it is deemed acceptable as a
