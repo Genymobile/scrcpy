@@ -21,6 +21,7 @@ import android.content.IOnPrimaryClipChangedListener;
 import android.content.Intent;
 import android.os.Build;
 import android.os.SystemClock;
+import android.util.Pair;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
@@ -350,23 +351,35 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         return successCount;
     }
 
-    private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
-        long now = SystemClock.uptimeMillis();
-
+    private Pair<Point, Integer> getEventPointAndDisplayId(Position position) {
         // it hides the field on purpose, to read it with atomic access
         @SuppressWarnings("checkstyle:HiddenField")
         DisplayData displayData = this.displayData.get();
-        assert displayData != null : "Cannot receive a touch event without a display";
+        assert displayData != null : "Cannot receive a positional event without a display";
 
         Point point = displayData.positionMapper.map(position);
         if (point == null) {
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
                 Size eventSize = position.getScreenSize();
                 Size currentSize = displayData.positionMapper.getVideoSize();
-                Ln.v("Ignore touch event generated for size " + eventSize + " (current size is " + currentSize + ")");
+                Ln.v("Ignore positional event generated for size " + eventSize + " (current size is " + currentSize + ")");
             }
+            return null;
+        }
+
+        return Pair.create(point, displayData.virtualDisplayId);
+    }
+
+    private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
+        long now = SystemClock.uptimeMillis();
+
+        Pair<Point, Integer> pair = getEventPointAndDisplayId(position);
+        if (pair == null) {
             return false;
         }
+
+        Point point = pair.first;
+        int targetDisplayId = pair.second;
 
         int pointerIndex = pointersState.getPointerIndex(pointerId);
         if (pointerIndex == -1) {
@@ -421,7 +434,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!Device.injectEvent(downEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(downEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -432,7 +445,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!Device.injectEvent(pressEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(pressEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -446,7 +459,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!Device.injectEvent(releaseEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(releaseEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
                     return false;
                 }
 
@@ -454,7 +467,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!Device.injectEvent(upEvent, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(upEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
                         return false;
                     }
                 }
@@ -465,26 +478,19 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, targetDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
         long now = SystemClock.uptimeMillis();
 
-        // it hides the field on purpose, to read it with atomic access
-        @SuppressWarnings("checkstyle:HiddenField")
-        DisplayData displayData = this.displayData.get();
-        assert displayData != null : "Cannot receive a scroll event without a display";
-
-        Point point = displayData.positionMapper.map(position);
-        if (point == null) {
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Size eventSize = position.getScreenSize();
-                Size currentSize = displayData.positionMapper.getVideoSize();
-                Ln.v("Ignore scroll event generated for size " + eventSize + " (current size is " + currentSize + ")");
-            }
+        Pair<Point, Integer> pair = getEventPointAndDisplayId(position);
+        if (pair == null) {
             return false;
         }
+
+        Point point = pair.first;
+        int targetDisplayId = pair.second;
 
         MotionEvent.PointerProperties props = pointerProperties[0];
         props.id = 0;
@@ -497,7 +503,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return Device.injectEvent(event, displayData.virtualDisplayId, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, targetDisplayId, Device.INJECT_MODE_ASYNC);
     }
 
     /**
