@@ -85,6 +85,15 @@ jobs:
   build-linux-x86_64:
     runs-on: ubuntu-latest
     steps:
+      - name: Check architecture
+        run: |
+            arch=$(uname -m)
+            if [[ "$arch" != x86_64 ]]
+            then
+                echo "Unexpected architecture: $arch" >&2
+                exit 1
+            fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -181,6 +190,15 @@ jobs:
   build-macos-aarch64:
     runs-on: macos-latest
     steps:
+      - name: Check architecture
+        run: |
+            arch=$(uname -m)
+            if [[ "$arch" != arm64 ]]
+            then
+                echo "Unexpected architecture: $arch" >&2
+                exit 1
+            fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -209,6 +227,15 @@ jobs:
   build-macos-x86_64:
     runs-on: macos-13
     steps:
+      - name: Check architecture
+        run: |
+            arch=$(uname -m)
+            if [[ "$arch" != x86_64 ]]
+            then
+                echo "Unexpected architecture: $arch" >&2
+                exit 1
+            fi
+
       - name: Checkout code
         uses: actions/checkout@v4
 
