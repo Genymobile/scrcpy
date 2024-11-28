@@ -355,19 +355,30 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         // it hides the field on purpose, to read it with atomic access
         @SuppressWarnings("checkstyle:HiddenField")
         DisplayData displayData = this.displayData.get();
-        assert displayData != null : "Cannot receive a positional event without a display";
+        // In scrcpy, displayData should never be null (a touch event can only be generated from the client when a video frame is present).
+        // However, it is possible to send events without video playback when using scrcpy-server alone (except for virtual displays).
+        assert displayData != null || displayId != Device.DISPLAY_ID_NONE : "Cannot receive a positional event without a display";
 
-        Point point = displayData.positionMapper.map(position);
-        if (point == null) {
-            if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Size eventSize = position.getScreenSize();
-                Size currentSize = displayData.positionMapper.getVideoSize();
-                Ln.v("Ignore positional event generated for size " + eventSize + " (current size is " + currentSize + ")");
+        Point point;
+        int targetDisplayId;
+        if (displayData != null) {
+            point = displayData.positionMapper.map(position);
+            if (point == null) {
+                if (Ln.isEnabled(Ln.Level.VERBOSE)) {
+                    Size eventSize = position.getScreenSize();
+                    Size currentSize = displayData.positionMapper.getVideoSize();
+                    Ln.v("Ignore positional event generated for size " + eventSize + " (current size is " + currentSize + ")");
+                }
+                return null;
             }
-            return null;
+            targetDisplayId = displayData.virtualDisplayId;
+        } else {
+            // No display, use the raw coordinates
+            point = position.getPoint();
+            targetDisplayId = displayId;
         }
 
-        return Pair.create(point, displayData.virtualDisplayId);
+        return Pair.create(point, targetDisplayId);
     }
 
     private boolean injectTouch(int action, long pointerId, Position position, float pressure, int actionButton, int buttons) {
