@@ -46,6 +46,7 @@ src = [
     'src/util/acksync.c',
     'src/util/audiobuf.c',
     'src/util/average.c',
+    'src/util/env.c',
     'src/util/file.c',
     'src/util/intmap.c',
     'src/util/intr.c',

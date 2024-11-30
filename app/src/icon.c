@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "compat.h"
+#include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/str.h"
@@ -19,35 +20,22 @@
 
 static char *
 get_icon_path(void) {
-#ifdef __WINDOWS__
-    const wchar_t *icon_path_env = _wgetenv(L"SCRCPY_ICON_PATH");
-#else
-    const char *icon_path_env = getenv("SCRCPY_ICON_PATH");
-#endif
-    if (icon_path_env) {
+    char *icon_path = sc_get_env("SCRCPY_ICON_PATH");
+    if (icon_path) {
         // if the envvar is set, use it
-#ifdef __WINDOWS__
-        char *icon_path = sc_str_from_wchars(icon_path_env);
-#else
-        char *icon_path = strdup(icon_path_env);
-#endif
-        if (!icon_path) {
-            LOG_OOM();
-            return NULL;
-        }
         LOGD("Using SCRCPY_ICON_PATH: %s", icon_path);
         return icon_path;
     }
 
 #ifndef PORTABLE
     LOGD("Using icon: " SCRCPY_DEFAULT_ICON_PATH);
-    char *icon_path = strdup(SCRCPY_DEFAULT_ICON_PATH);
+    icon_path = strdup(SCRCPY_DEFAULT_ICON_PATH);
     if (!icon_path) {
         LOG_OOM();
         return NULL;
     }
 #else
-    char *icon_path = sc_file_get_local_path(SCRCPY_PORTABLE_ICON_FILENAME);
+    icon_path = sc_file_get_local_path(SCRCPY_PORTABLE_ICON_FILENAME);
     if (!icon_path) {
         LOGE("Could not get icon path");
         return NULL;

@@ -9,6 +9,7 @@
 
 #include "adb/adb.h"
 #include "util/binary.h"
+#include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/net_intr.h"
@@ -25,35 +26,22 @@
 
 static char *
 get_server_path(void) {
-#ifdef __WINDOWS__
-    const wchar_t *server_path_env = _wgetenv(L"SCRCPY_SERVER_PATH");
-#else
-    const char *server_path_env = getenv("SCRCPY_SERVER_PATH");
-#endif
-    if (server_path_env) {
+    char *server_path = sc_get_env("SCRCPY_SERVER_PATH");
+    if (server_path) {
         // if the envvar is set, use it
-#ifdef __WINDOWS__
-        char *server_path = sc_str_from_wchars(server_path_env);
-#else
-        char *server_path = strdup(server_path_env);
-#endif
-        if (!server_path) {
-            LOG_OOM();
-            return NULL;
-        }
         LOGD("Using SCRCPY_SERVER_PATH: %s", server_path);
         return server_path;
     }
 
 #ifndef PORTABLE
     LOGD("Using server: " SC_SERVER_PATH_DEFAULT);
-    char *server_path = strdup(SC_SERVER_PATH_DEFAULT);
+    server_path = strdup(SC_SERVER_PATH_DEFAULT);
     if (!server_path) {
         LOG_OOM();
         return NULL;
     }
 #else
-    char *server_path = sc_file_get_local_path(SC_SERVER_FILENAME);
+    server_path = sc_file_get_local_path(SC_SERVER_FILENAME);
     if (!server_path) {
         LOGE("Could not get local file path, "
              "using " SC_SERVER_FILENAME " from current directory");
