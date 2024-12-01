@@ -34,11 +34,22 @@ sc_adb_init(void) {
         return true;
     }
 
+#if !defined(PORTABLE) || defined(_WIN32)
     adb_executable = strdup("adb");
     if (!adb_executable) {
         LOG_OOM();
         return false;
     }
+#else
+    // For portable builds, use the absolute path to the adb executable
+    // in the same directory as scrcpy (except on Windows, where "adb"
+    // is sufficient)
+    adb_executable = sc_file_get_local_path("adb");
+    if (!adb_executable) {
+        // Error already logged
+        return false;
+    }
+#endif
 
     return true;
 }
