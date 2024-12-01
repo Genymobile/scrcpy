@@ -7,6 +7,7 @@
 
 #include "adb_device.h"
 #include "adb_parser.h"
+#include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/process_intr.h"
@@ -24,15 +25,31 @@
  */
 #define SC_ADB_COMMAND(...) { sc_adb_get_executable(), __VA_ARGS__, NULL }
 
-static const char *adb_executable;
+static char *adb_executable;
+
+bool
+sc_adb_init(void) {
+    adb_executable = sc_get_env("ADB");
+    if (adb_executable) {
+        return true;
+    }
+
+    adb_executable = strdup("adb");
+    if (!adb_executable) {
+        LOG_OOM();
+        return false;
+    }
+
+    return true;
+}
+
+void
+sc_adb_destroy(void) {
+    free(adb_executable);
+}
 
 const char *
 sc_adb_get_executable(void) {
-    if (!adb_executable) {
-        adb_executable = getenv("ADB");
-        if (!adb_executable)
-            adb_executable = "adb";
-    }
     return adb_executable;
 }
 

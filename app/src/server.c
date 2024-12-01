@@ -485,14 +485,21 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     // end of the program
     server->params = *params;
 
-    bool ok = sc_mutex_init(&server->mutex);
+    bool ok = sc_adb_init();
     if (!ok) {
+        return false;
+    }
+
+    ok = sc_mutex_init(&server->mutex);
+    if (!ok) {
+        sc_adb_destroy();
         return false;
     }
 
     ok = sc_cond_init(&server->cond_stopped);
     if (!ok) {
         sc_mutex_destroy(&server->mutex);
+        sc_adb_destroy();
         return false;
     }
 
@@ -500,6 +507,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     if (!ok) {
         sc_cond_destroy(&server->cond_stopped);
         sc_mutex_destroy(&server->mutex);
+        sc_adb_destroy();
         return false;
     }
 
@@ -1141,4 +1149,6 @@ sc_server_destroy(struct sc_server *server) {
     sc_intr_destroy(&server->intr);
     sc_cond_destroy(&server->cond_stopped);
     sc_mutex_destroy(&server->mutex);
+
+    sc_adb_destroy();
 }

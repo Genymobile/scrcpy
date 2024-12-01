@@ -15,6 +15,12 @@
 
 #define SC_ADB_SILENT (SC_ADB_NO_STDOUT | SC_ADB_NO_STDERR | SC_ADB_NO_LOGERR)
 
+bool
+sc_adb_init(void);
+
+void
+sc_adb_destroy(void);
+
 const char *
 sc_adb_get_executable(void);
 
