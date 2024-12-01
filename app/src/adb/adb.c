@@ -31,6 +31,7 @@ bool
 sc_adb_init(void) {
     adb_executable = sc_get_env("ADB");
     if (adb_executable) {
+        LOGD("Using adb: %s", adb_executable);
         return true;
     }
 
@@ -49,6 +50,8 @@ sc_adb_init(void) {
         // Error already logged
         return false;
     }
+
+    LOGD("Using adb (portable): %s", adb_executable);
 #endif
 
     return true;
