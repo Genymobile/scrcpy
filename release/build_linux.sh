@@ -36,8 +36,7 @@ ninja -C "$LINUX_BUILD_DIR"
 
 # Group intermediate outputs into a 'dist' directory
 mkdir -p "$LINUX_BUILD_DIR/dist"
-cp "$LINUX_BUILD_DIR"/app/scrcpy "$LINUX_BUILD_DIR/dist/scrcpy_bin"
+cp "$LINUX_BUILD_DIR"/app/scrcpy "$LINUX_BUILD_DIR/dist/"
 cp app/data/icon.png "$LINUX_BUILD_DIR/dist/"
-cp app/data/scrcpy_static_wrapper.sh "$LINUX_BUILD_DIR/dist/scrcpy"
 cp app/scrcpy.1 "$LINUX_BUILD_DIR/dist/"
 cp -r "$ADB_INSTALL_DIR"/. "$LINUX_BUILD_DIR/dist/"
