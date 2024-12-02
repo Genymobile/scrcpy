@@ -40,7 +40,7 @@ case "$FORMAT" in
         zip -r "$OUTPUT_DIR/$TARGET_DIRNAME.zip" "$TARGET_DIRNAME"
         ;;
     tar.gz)
-        tar cvf "$OUTPUT_DIR/$TARGET_DIRNAME.tar.gz" "$TARGET_DIRNAME"
+        tar cvzf "$OUTPUT_DIR/$TARGET_DIRNAME.tar.gz" "$TARGET_DIRNAME"
         ;;
     *)
         echo "Invalid format (expected zip or tar.gz): $FORMAT" >&2
