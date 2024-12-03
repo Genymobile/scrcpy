@@ -112,8 +112,8 @@ public class SurfaceEncoder implements AsyncProcessor {
                         // The capture might have been closed internally (for example if the camera is disconnected)
                         alive = !stopped.get() && !capture.isClosed();
                     }
-                } catch (IllegalStateException | IllegalArgumentException e) {
-                    Ln.e("Encoding error: " + e.getClass().getName() + ": " + e.getMessage());
+                } catch (IllegalStateException | IllegalArgumentException | IOException e) {
+                    Ln.e("Capture/encoding error: " + e.getClass().getName() + ": " + e.getMessage());
                     if (!prepareRetry(size)) {
                         throw e;
                     }
