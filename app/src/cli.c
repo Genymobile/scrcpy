@@ -860,16 +860,17 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_TCPIP,
         .longopt = "tcpip",
-        .argdesc = "ip[:port]",
+        .argdesc = "[+]ip[:port]",
         .optional_arg = true,
-        .text = "Configure and reconnect the device over TCP/IP.\n"
+        .text = "Configure and connect the device over TCP/IP.\n"
                 "If a destination address is provided, then scrcpy connects to "
                 "this address before starting. The device must listen on the "
                 "given TCP port (default is 5555).\n"
                 "If no destination address is provided, then scrcpy attempts "
                 "to find the IP address of the current device (typically "
                 "connected over USB), enables TCP/IP mode, then connects to "
-                "this address before starting.",
+                "this address before starting.\n"
+                "Prefix the address with a '+' to force a reconnection.",
     },
     {
         .longopt_id = OPT_TIME_LIMIT,

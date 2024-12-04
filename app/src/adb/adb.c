@@ -412,7 +412,7 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
 
     // "adb connect" always returns successfully (with exit code 0), even in
     // case of failure. As a workaround, check if its output starts with
-    // "connected".
+    // "connected" or "already connected".
     char buf[128];
     ssize_t r = sc_pipe_read_all_intr(intr, pid, pout, buf, sizeof(buf) - 1);
     sc_pipe_close(pout);
@@ -429,7 +429,8 @@ sc_adb_connect(struct sc_intr *intr, const char *ip_port, unsigned flags) {
     assert((size_t) r < sizeof(buf));
     buf[r] = '\0';
 
-    ok = !strncmp("connected", buf, sizeof("connected") - 1);
+    ok = !strncmp("connected", buf, sizeof("connected") - 1)
+        || !strncmp("already connected", buf, sizeof("already connected") - 1);
     if (!ok && !(flags & SC_ADB_NO_STDERR)) {
         // "adb connect" also prints errors to stdout. Since we capture it,
         // re-print the error to stderr.
