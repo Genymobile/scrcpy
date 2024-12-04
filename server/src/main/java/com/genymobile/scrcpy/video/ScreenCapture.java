@@ -129,10 +129,18 @@ public class ScreenCapture extends SurfaceCapture {
         try {
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
-            virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
 
-            // The positions are relative to the virtual display, not the original display (so use inputSize, not deviceSize!)
-            positionMapper = PositionMapper.create(videoSize, transform, inputSize);
+
+            if (displayId == 0) {
+                // Main display: send all events to the original display, relative to the device size
+                Size deviceSize = displayInfo.getSize();
+                positionMapper = PositionMapper.create(videoSize, transform, deviceSize);
+                virtualDisplayId = 0;
+            } else {
+                // The positions are relative to the virtual display, not the original display (so use inputSize, not deviceSize!)
+                positionMapper = PositionMapper.create(videoSize, transform, inputSize);
+                virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
+            }
             Ln.d("Display: using DisplayManager API");
         } catch (Exception displayManagerException) {
             try {
