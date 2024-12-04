@@ -72,4 +72,8 @@ public final class IO {
         Throwable cause = e.getCause();
         return cause instanceof ErrnoException && ((ErrnoException) cause).errno == OsConstants.EPIPE;
     }
+
+    public static boolean isBrokenPipe(Exception e) {
+        return e instanceof IOException && isBrokenPipe((IOException) e);
+    }
 }
