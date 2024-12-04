@@ -85,6 +85,12 @@ scrcpy --tcpip=192.168.1.1       # default port is 5555
 scrcpy --tcpip=192.168.1.1:5555
 ```
 
+Prefix the address with a '+' to force a reconnection:
+
+```bash
+scrcpy --tcpip=+192.168.1.1
+```
+
 
 ### Manual
 

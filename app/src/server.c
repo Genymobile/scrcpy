@@ -829,11 +829,14 @@ sc_server_switch_to_tcpip(struct sc_server *server, const char *serial) {
 }
 
 static bool
-sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
+sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port,
+                           bool disconnect) {
     struct sc_intr *intr = &server->intr;
 
-    // Error expected if not connected, do not report any error
-    sc_adb_disconnect(intr, ip_port, SC_ADB_SILENT);
+    if (disconnect) {
+        // Error expected if not connected, do not report any error
+        sc_adb_disconnect(intr, ip_port, SC_ADB_SILENT);
+    }
 
     LOGI("Connecting to %s...", ip_port);
 
@@ -849,7 +852,7 @@ sc_server_connect_to_tcpip(struct sc_server *server, const char *ip_port) {
 
 static bool
 sc_server_configure_tcpip_known_address(struct sc_server *server,
-                                        const char *addr) {
+                                        const char *addr, bool disconnect) {
     // Append ":5555" if no port is present
     bool contains_port = strchr(addr, ':');
     char *ip_port = contains_port ? strdup(addr)
@@ -860,7 +863,7 @@ sc_server_configure_tcpip_known_address(struct sc_server *server,
     }
 
     server->serial = ip_port;
-    return sc_server_connect_to_tcpip(server, ip_port);
+    return sc_server_connect_to_tcpip(server, ip_port, disconnect);
 }
 
 static bool
@@ -885,7 +888,7 @@ sc_server_configure_tcpip_unknown_address(struct sc_server *server,
     }
 
     server->serial = ip_port;
-    return sc_server_connect_to_tcpip(server, ip_port);
+    return sc_server_connect_to_tcpip(server, ip_port, false);
 }
 
 static void
@@ -972,7 +975,13 @@ run_server(void *data) {
             sc_adb_device_destroy(&device);
         }
     } else {
-        ok = sc_server_configure_tcpip_known_address(server, params->tcpip_dst);
+        // If the user passed a '+' (--tcpip=+ip), then disconnect first
+        const char *tcpip_dst = params->tcpip_dst;
+        bool plus = tcpip_dst[0] == '+';
+        if (plus) {
+            ++tcpip_dst;
+        }
+        ok = sc_server_configure_tcpip_known_address(server, tcpip_dst, plus);
         if (!ok) {
             goto error_connection_failed;
         }

@@ -518,12 +518,14 @@ Enable "show touches" on start, restore the initial value on exit.
 It only shows physical touches (not clicks from scrcpy).
 
 .TP
-.BI "\-\-tcpip\fR[=\fIip\fR[:\fIport\fR]]
-Configure and reconnect the device over TCP/IP.
+.BI "\-\-tcpip\fR[=[+]\fIip\fR[:\fIport\fR]]
+Configure and connect the device over TCP/IP.
 
 If a destination address is provided, then scrcpy connects to this address before starting. The device must listen on the given TCP port (default is 5555).
 
 If no destination address is provided, then scrcpy attempts to find the IP address and adb port of the current device (typically connected over USB), enables TCP/IP mode if necessary, then connects to this address before starting.
+
+Prefix the address with a '+' to force a reconnection.
 
 .TP
 .BI "\-\-time\-limit " seconds
