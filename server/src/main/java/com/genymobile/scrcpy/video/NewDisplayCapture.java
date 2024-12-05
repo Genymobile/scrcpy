@@ -53,6 +53,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
     private final float angle;
+    private final boolean vdDestroyContent;
     private final boolean vdSystemDecorations;
 
     private VirtualDisplay virtualDisplay;
@@ -73,6 +74,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
     }
 
@@ -167,8 +169,10 @@ public class NewDisplayCapture extends SurfaceCapture {
             int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
                     | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
-                    | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
-                    | VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
+                    | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
+            if (vdDestroyContent) {
+                flags |= VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
+            }
             if (vdSystemDecorations) {
                 flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
             }

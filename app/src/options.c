@@ -108,6 +108,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .new_display = NULL,
     .start_app = NULL,
     .angle = NULL,
+    .vd_destroy_content = true,
     .vd_system_decorations = true,
 };
 

@@ -50,3 +50,14 @@ any default launcher UI available in virtual displays.
 
 Note that if no app is started, no content will be rendered, so no video frame
 will be produced at all.
+
+
+## Destroy on close
+
+By default, when the virtual display is closed, the running apps are destroyed.
+
+To move them to the main display instead, use:
+
+```
+scrcpy --new-display --no-vd-destroy-content
+```

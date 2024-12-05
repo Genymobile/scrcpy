@@ -377,6 +377,9 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->new_display);
         ADD_PARAM("new_display=%s", params->new_display);
     }
+    if (!params->vd_destroy_content) {
+        ADD_PARAM("vd_destroy_content=false");
+    }
     if (!params->vd_system_decorations) {
         ADD_PARAM("vd_system_decorations=false");
     }

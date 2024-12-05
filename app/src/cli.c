@@ -110,6 +110,7 @@ enum {
     OPT_CAPTURE_ORIENTATION,
     OPT_ANGLE,
     OPT_NO_VD_SYSTEM_DECORATIONS,
+    OPT_NO_VD_DESTROY_CONTENT,
 };
 
 struct sc_option {
@@ -658,6 +659,15 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_NO_POWER_ON,
         .longopt = "no-power-on",
         .text = "Do not power on the device on start.",
+    },
+    {
+        .longopt_id = OPT_NO_VD_DESTROY_CONTENT,
+        .longopt = "no-vd-destroy-content",
+        .text = "Disable virtual display \"destroy content on removal\" "
+                "flag.\n"
+                "With this option, when the virtual display is closed, the "
+                "running apps are moved to the main display rather than being "
+                "destroyed.",
     },
     {
         .longopt_id = OPT_NO_VD_SYSTEM_DECORATIONS,
@@ -2704,6 +2714,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_ANGLE:
                 opts->angle = optarg;
+                break;
+            case OPT_NO_VD_DESTROY_CONTENT:
+                opts->vd_destroy_content = false;
                 break;
             case OPT_NO_VD_SYSTEM_DECORATIONS:
                 opts->vd_system_decorations = false;

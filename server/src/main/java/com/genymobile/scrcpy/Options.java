@@ -60,6 +60,7 @@ public class Options {
     private boolean powerOn = true;
 
     private NewDisplay newDisplay;
+    private boolean vdDestroyContent = true;
     private boolean vdSystemDecorations = true;
 
     private Orientation.Lock captureOrientationLock = Orientation.Lock.Unlocked;
@@ -231,6 +232,10 @@ public class Options {
 
     public Orientation.Lock getCaptureOrientationLock() {
         return captureOrientationLock;
+    }
+
+    public boolean getVDDestroyContent() {
+        return vdDestroyContent;
     }
 
     public boolean getVDSystemDecorations() {
@@ -465,6 +470,9 @@ public class Options {
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);
+                    break;
+                case "vd_destroy_content":
+                    options.vdDestroyContent = Boolean.parseBoolean(value);
                     break;
                 case "vd_system_decorations":
                     options.vdSystemDecorations = Boolean.parseBoolean(value);
