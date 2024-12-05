@@ -24,6 +24,7 @@ public final class CleanUp {
     private boolean pendingRestoreDisplayPower;
 
     private Thread thread;
+    private boolean interrupted;
 
     private CleanUp(Options options) {
         thread = new Thread(() -> runCleanUp(options), "cleanup");
@@ -34,8 +35,10 @@ public final class CleanUp {
         return new CleanUp(options);
     }
 
-    public void interrupt() {
-        thread.interrupt();
+    public synchronized void interrupt() {
+        // Do not use thread.interrupt() because only the wait() call must be interrupted, not Command.exec()
+        interrupted = true;
+        notify();
     }
 
     public void join() throws InterruptedException {
@@ -97,15 +100,13 @@ public final class CleanUp {
 
         try {
             run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout);
-        } catch (InterruptedException e) {
-            // ignore
         } catch (IOException e) {
             Ln.e("Clean up I/O exception", e);
         }
     }
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout)
-            throws IOException, InterruptedException {
+            throws IOException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -126,8 +127,15 @@ public final class CleanUp {
             int localPendingChanges;
             boolean localPendingRestoreDisplayPower;
             synchronized (this) {
-                while (pendingChanges == 0) {
-                    wait();
+                while (!interrupted && pendingChanges == 0) {
+                    try {
+                        wait();
+                    } catch (InterruptedException e) {
+                        throw new AssertionError("Clean up thread MUST NOT be interrupted");
+                    }
+                }
+                if (interrupted) {
+                    break;
                 }
                 localPendingChanges = pendingChanges;
                 localPendingRestoreDisplayPower = pendingRestoreDisplayPower;
