@@ -10,6 +10,8 @@ import android.os.BatteryManager;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Handle the cleanup of scrcpy, even if the main process is killed.
@@ -107,16 +109,22 @@ public final class CleanUp {
 
     private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout)
             throws IOException {
-        String[] cmd = {
-                "app_process",
-                "/",
-                CleanUp.class.getName(),
-                String.valueOf(displayId),
-                String.valueOf(restoreStayOn),
-                String.valueOf(disableShowTouches),
-                String.valueOf(powerOffScreen),
-                String.valueOf(restoreScreenOffTimeout),
-        };
+
+        List<String> cmd = new ArrayList<>();
+        if (new File("/system/bin/setsid").exists()) {
+            cmd.add("/system/bin/setsid");
+        } else if (new File("/system/bin/nohup").exists()) {
+            cmd.add("/system/bin/nohup");
+        }
+
+        cmd.add("app_process");
+        cmd.add("/");
+        cmd.add(CleanUp.class.getName());
+        cmd.add(String.valueOf(displayId));
+        cmd.add(String.valueOf(restoreStayOn));
+        cmd.add(String.valueOf(disableShowTouches));
+        cmd.add(String.valueOf(powerOffScreen));
+        cmd.add(String.valueOf(restoreScreenOffTimeout));
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
         builder.environment().put("CLASSPATH", Server.SERVER_PATH);
