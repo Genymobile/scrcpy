@@ -52,10 +52,10 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
     0x09, 0x30,
     // Usage (Y)   Left stick y
     0x09, 0x31,
-    // Usage (Z)   Right stick x
-    0x09, 0x32,
-    // Usage (Rz)  Right stick y
-    0x09, 0x35,
+    // Usage (Rx)  Right stick x
+    0x09, 0x33,
+    // Usage (Ry)  Right stick y
+    0x09, 0x34,
     // Logical Minimum (0)
     0x15, 0x00,
     // Logical Maximum (65535)
@@ -68,12 +68,12 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
     // Input (Data, Variable, Absolute): 4x2 bytes (X, Y, Z, Rz)
     0x81, 0x02,
 
-    // Usage Page (Simulation Controls)
-    0x05, 0x02,
-    // Usage (Brake)
-    0x09, 0xC5,
-    // Usage (Accelerator)
-    0x09, 0xC4,
+    // Usage Page (Generic Desktop)
+    0x05, 0x01,
+    // Usage (Z)
+    0x09, 0x32,
+    // Usage (Rz)
+    0x09, 0x35,
     // Logical Minimum (0)
     0x15, 0x00,
     // Logical Maximum (32767)
