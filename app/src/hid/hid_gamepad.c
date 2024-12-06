@@ -65,7 +65,7 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
     0x75, 0x10,
     // Report Count (4)
     0x95, 0x04,
-    // Input (Data, Variable, Absolute): 4 bytes (X, Y, Z, Rz)
+    // Input (Data, Variable, Absolute): 4x2 bytes (X, Y, Z, Rz)
     0x81, 0x02,
 
     // Usage Page (Simulation Controls)
@@ -82,7 +82,7 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
     0x75, 0x10,
     // Report Count (2)
     0x95, 0x02,
-    // Input (Data, Variable, Absolute): 2 bytes (L2, R2)
+    // Input (Data, Variable, Absolute): 2x2 bytes (L2, R2)
     0x81, 0x02,
 
     // Usage Page (Buttons)
@@ -182,7 +182,7 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
  *                     `------------- SC_GAMEPAD_BUTTON_RIGHT_STICK
  *
  *                  +---------------+
- *        byte 14:  |0 0 0 . . . . .| hat switch (dpad) position (0-8)
+ *        byte 14:  |0 0 0 0 . . . .| hat switch (dpad) position (0-8)
  *                  +---------------+
  *                     9 possible positions and their values:
  *                             8 1 2
