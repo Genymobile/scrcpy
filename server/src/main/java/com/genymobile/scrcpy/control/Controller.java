@@ -290,7 +290,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 Device.rotateDevice(getActionDisplayId());
                 break;
             case ControlMessage.TYPE_UHID_CREATE:
-                getUhidManager().open(msg.getId(), msg.getText(), msg.getData());
+                getUhidManager().open(msg.getId(), msg.getVendorId(), msg.getProductId(), msg.getText(), msg.getData());
                 break;
             case ControlMessage.TYPE_UHID_INPUT:
                 getUhidManager().writeInput(msg.getId(), msg.getData());
