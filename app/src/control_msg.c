@@ -152,8 +152,10 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             return 2;
         case SC_CONTROL_MSG_TYPE_UHID_CREATE:
             sc_write16be(&buf[1], msg->uhid_create.id);
+            sc_write16be(&buf[3], msg->uhid_create.vendor_id);
+            sc_write16be(&buf[5], msg->uhid_create.product_id);
 
-            size_t index = 3;
+            size_t index = 7;
             index += write_string_tiny(&buf[index], msg->uhid_create.name, 127);
 
             sc_write16be(&buf[index], msg->uhid_create.report_desc_size);
@@ -278,9 +280,13 @@ sc_control_msg_log(const struct sc_control_msg *msg) {
             // Quote only if name is not null
             const char *name = msg->uhid_create.name;
             const char *quote = name ? "\"" : "";
-            LOG_CMSG("UHID create [%" PRIu16 "] name=%s%s%s "
-                     "report_desc_size=%" PRIu16, msg->uhid_create.id,
-                     quote, name, quote, msg->uhid_create.report_desc_size);
+            LOG_CMSG("UHID create [%" PRIu16 "] %04" PRIx16 ":%04" PRIx16
+                     " name=%s%s%s report_desc_size=%" PRIu16,
+                     msg->uhid_create.id,
+                     msg->uhid_create.vendor_id,
+                     msg->uhid_create.product_id,
+                     quote, name, quote,
+                     msg->uhid_create.report_desc_size);
             break;
         }
         case SC_CONTROL_MSG_TYPE_UHID_INPUT: {

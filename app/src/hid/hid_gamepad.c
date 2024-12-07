@@ -236,7 +236,9 @@ sc_hid_gamepad_slot_get_id(size_t slot_idx) {
 bool
 sc_hid_gamepad_generate_open(struct sc_hid_gamepad *hid,
                              struct sc_hid_open *hid_open,
-                             uint32_t gamepad_id) {
+                             uint32_t gamepad_id,
+                             uint16_t vendor_id,
+                             uint16_t product_id) {
     assert(gamepad_id != SC_GAMEPAD_ID_INVALID);
     ssize_t slot_idx = sc_hid_gamepad_slot_find(hid, SC_GAMEPAD_ID_INVALID);
     if (slot_idx == -1) {
@@ -253,6 +255,8 @@ sc_hid_gamepad_generate_open(struct sc_hid_gamepad *hid,
 
     uint16_t hid_id = sc_hid_gamepad_slot_get_id(slot_idx);
     hid_open->hid_id = hid_id;
+    hid_open->vendor_id = vendor_id;
+    hid_open->product_id = product_id;
     hid_open->name = name;
     hid_open->report_desc = SC_HID_GAMEPAD_REPORT_DESC;
     hid_open->report_desc_size = sizeof(SC_HID_GAMEPAD_REPORT_DESC);

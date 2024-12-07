@@ -7,6 +7,9 @@
 /** Downcast gamepad processor to sc_gamepad_uhid */
 #define DOWNCAST(GP) container_of(GP, struct sc_gamepad_uhid, gamepad_processor)
 
+#define SC_GAMEPAD_UHID_VENDOR_ID 0
+#define SC_GAMEPAD_UHID_PRODUCT_ID 0
+
 static void
 sc_gamepad_uhid_send_input(struct sc_gamepad_uhid *gamepad,
                            const struct sc_hid_input *hid_input,
@@ -30,6 +33,8 @@ sc_gamepad_uhid_send_open(struct sc_gamepad_uhid *gamepad,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
     msg.uhid_create.id = hid_open->hid_id;
+    msg.uhid_create.vendor_id = hid_open->vendor_id;
+    msg.uhid_create.product_id = hid_open->product_id;
     msg.uhid_create.name = hid_open->name;
     msg.uhid_create.report_desc = hid_open->report_desc;
     msg.uhid_create.report_desc_size = hid_open->report_desc_size;
@@ -58,7 +63,9 @@ sc_gamepad_processor_process_gamepad_added(struct sc_gamepad_processor *gp,
 
     struct sc_hid_open hid_open;
     if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                      event->gamepad_id)) {
+                                      event->gamepad_id,
+                                      SC_GAMEPAD_UHID_VENDOR_ID,
+                                      SC_GAMEPAD_UHID_PRODUCT_ID)) {
         return;
     }
 

@@ -141,6 +141,8 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     struct sc_control_msg msg;
     msg.type = SC_CONTROL_MSG_TYPE_UHID_CREATE;
     msg.uhid_create.id = SC_HID_ID_KEYBOARD;
+    msg.uhid_create.vendor_id = hid_open.vendor_id;
+    msg.uhid_create.product_id = hid_open.product_id;
     msg.uhid_create.name = hid_open.name;
     msg.uhid_create.report_desc = hid_open.report_desc;
     msg.uhid_create.report_desc_size = hid_open.report_desc_size;

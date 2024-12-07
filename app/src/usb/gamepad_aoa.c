@@ -13,7 +13,7 @@ sc_gamepad_processor_process_gamepad_added(struct sc_gamepad_processor *gp,
 
     struct sc_hid_open hid_open;
     if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                      event->gamepad_id)) {
+                                      event->gamepad_id, 0, 0)) {
         return;
     }
 
