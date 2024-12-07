@@ -94,6 +94,8 @@ struct sc_control_msg {
         } set_display_power;
         struct {
             uint16_t id;
+            uint16_t vendor_id;
+            uint16_t product_id;
             const char *name; // pointer to static data
             uint16_t report_desc_size;
             const uint8_t *report_desc; // pointer to static data

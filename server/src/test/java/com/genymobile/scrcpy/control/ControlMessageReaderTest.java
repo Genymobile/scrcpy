@@ -322,6 +322,8 @@ public class ControlMessageReaderTest {
         DataOutputStream dos = new DataOutputStream(bos);
         dos.writeByte(ControlMessage.TYPE_UHID_CREATE);
         dos.writeShort(42); // id
+        dos.writeShort(0x1234); // vendorId
+        dos.writeShort(0x5678); // productId
         dos.writeByte(3); // name size
         dos.write("ABC".getBytes(StandardCharsets.US_ASCII));
         byte[] data = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
@@ -335,6 +337,8 @@ public class ControlMessageReaderTest {
         ControlMessage event = reader.read();
         Assert.assertEquals(ControlMessage.TYPE_UHID_CREATE, event.getType());
         Assert.assertEquals(42, event.getId());
+        Assert.assertEquals(0x1234, event.getVendorId());
+        Assert.assertEquals(0x5678, event.getProductId());
         Assert.assertEquals("ABC", event.getText());
         Assert.assertArrayEquals(data, event.getData());
 
