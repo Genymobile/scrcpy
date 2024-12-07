@@ -175,7 +175,6 @@ sc_screen_otg_process_gamepad_device(struct sc_screen_otg *screen,
     assert(screen->gamepad);
     struct sc_gamepad_processor *gp = &screen->gamepad->gamepad_processor;
 
-    SDL_JoystickID id;
     if (event->type == SDL_CONTROLLERDEVICEADDED) {
         SDL_GameController *gc = SDL_GameControllerOpen(event->which);
         if (!gc) {
@@ -190,9 +189,12 @@ sc_screen_otg_process_gamepad_device(struct sc_screen_otg *screen,
             return;
         }
 
-        id = SDL_JoystickInstanceID(joystick);
+        struct sc_gamepad_device_event evt = {
+            .gamepad_id = SDL_JoystickInstanceID(joystick),
+        };
+        gp->ops->process_gamepad_added(gp, &evt);
     } else if (event->type == SDL_CONTROLLERDEVICEREMOVED) {
-        id = event->which;
+        SDL_JoystickID id = event->which;
 
         SDL_GameController *gc = SDL_GameControllerFromInstanceID(id);
         if (gc) {
@@ -200,16 +202,12 @@ sc_screen_otg_process_gamepad_device(struct sc_screen_otg *screen,
         } else {
             LOGW("Unknown gamepad device removed");
         }
-    } else {
-        // Nothing to do
-        return;
-    }
 
-    struct sc_gamepad_device_event evt = {
-        .type = sc_gamepad_device_event_type_from_sdl_type(event->type),
-        .gamepad_id = id,
-    };
-    gp->ops->process_gamepad_device(gp, &evt);
+        struct sc_gamepad_device_event evt = {
+            .gamepad_id = id,
+        };
+        gp->ops->process_gamepad_removed(gp, &evt);
+    }
 }
 
 static void

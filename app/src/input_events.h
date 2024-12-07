@@ -412,18 +412,12 @@ struct sc_touch_event {
     float pressure;
 };
 
-enum sc_gamepad_device_event_type {
-    SC_GAMEPAD_DEVICE_ADDED,
-    SC_GAMEPAD_DEVICE_REMOVED,
-};
-
 // As documented in <https://wiki.libsdl.org/SDL2/SDL_JoystickID>:
 // The ID value starts at 0 and increments from there. The value -1 is an
 // invalid ID.
 #define SC_GAMEPAD_ID_INVALID UINT32_C(-1)
 
 struct sc_gamepad_device_event {
-    enum sc_gamepad_device_event_type type;
     uint32_t gamepad_id;
 };
 
@@ -501,16 +495,6 @@ sc_mouse_buttons_state_from_sdl(uint32_t buttons_state) {
 
     // SC_MOUSE_BUTTON_* constants are initialized from SDL_BUTTON(index)
     return buttons_state;
-}
-
-static inline enum sc_gamepad_device_event_type
-sc_gamepad_device_event_type_from_sdl_type(uint32_t type) {
-    assert(type == SDL_CONTROLLERDEVICEADDED
-        || type == SDL_CONTROLLERDEVICEREMOVED);
-    if (type == SDL_CONTROLLERDEVICEADDED) {
-        return SC_GAMEPAD_DEVICE_ADDED;
-    }
-    return SC_GAMEPAD_DEVICE_REMOVED;
 }
 
 static inline enum sc_gamepad_axis

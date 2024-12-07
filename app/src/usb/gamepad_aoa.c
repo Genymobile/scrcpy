@@ -7,33 +7,35 @@
 #define DOWNCAST(GP) container_of(GP, struct sc_gamepad_aoa, gamepad_processor)
 
 static void
-sc_gamepad_processor_process_gamepad_device(struct sc_gamepad_processor *gp,
+sc_gamepad_processor_process_gamepad_added(struct sc_gamepad_processor *gp,
                                 const struct sc_gamepad_device_event *event) {
     struct sc_gamepad_aoa *gamepad = DOWNCAST(gp);
 
-    if (event->type == SC_GAMEPAD_DEVICE_ADDED) {
-        struct sc_hid_open hid_open;
-        if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                          event->gamepad_id)) {
-            return;
-        }
+    struct sc_hid_open hid_open;
+    if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
+                                      event->gamepad_id)) {
+        return;
+    }
 
-        // exit_on_error: false (a gamepad open failure should not exit scrcpy)
-        if (!sc_aoa_push_open(gamepad->aoa, &hid_open, false)) {
-            LOGW("Could not push AOA HID open (gamepad)");
-        }
-    } else {
-        assert(event->type == SC_GAMEPAD_DEVICE_REMOVED);
+    // exit_on_error: false (a gamepad open failure should not exit scrcpy)
+    if (!sc_aoa_push_open(gamepad->aoa, &hid_open, false)) {
+        LOGW("Could not push AOA HID open (gamepad)");
+    }
+}
 
-        struct sc_hid_close hid_close;
-        if (!sc_hid_gamepad_generate_close(&gamepad->hid, &hid_close,
-                                           event->gamepad_id)) {
-            return;
-        }
+static void
+sc_gamepad_processor_process_gamepad_removed(struct sc_gamepad_processor *gp,
+                                const struct sc_gamepad_device_event *event) {
+    struct sc_gamepad_aoa *gamepad = DOWNCAST(gp);
 
-        if (!sc_aoa_push_close(gamepad->aoa, &hid_close)) {
-            LOGW("Could not push AOA HID close (gamepad)");
-        }
+    struct sc_hid_close hid_close;
+    if (!sc_hid_gamepad_generate_close(&gamepad->hid, &hid_close,
+                                       event->gamepad_id)) {
+        return;
+    }
+
+    if (!sc_aoa_push_close(gamepad->aoa, &hid_close)) {
+        LOGW("Could not push AOA HID close (gamepad)");
     }
 }
 
@@ -76,7 +78,8 @@ sc_gamepad_aoa_init(struct sc_gamepad_aoa *gamepad, struct sc_aoa *aoa) {
     sc_hid_gamepad_init(&gamepad->hid);
 
     static const struct sc_gamepad_processor_ops ops = {
-        .process_gamepad_device = sc_gamepad_processor_process_gamepad_device,
+        .process_gamepad_added = sc_gamepad_processor_process_gamepad_added,
+        .process_gamepad_removed = sc_gamepad_processor_process_gamepad_removed,
         .process_gamepad_axis = sc_gamepad_processor_process_gamepad_axis,
         .process_gamepad_button = sc_gamepad_processor_process_gamepad_button,
     };

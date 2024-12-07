@@ -52,29 +52,31 @@ sc_gamepad_uhid_send_close(struct sc_gamepad_uhid *gamepad,
 }
 
 static void
-sc_gamepad_processor_process_gamepad_device(struct sc_gamepad_processor *gp,
+sc_gamepad_processor_process_gamepad_added(struct sc_gamepad_processor *gp,
                                 const struct sc_gamepad_device_event *event) {
     struct sc_gamepad_uhid *gamepad = DOWNCAST(gp);
 
-    if (event->type == SC_GAMEPAD_DEVICE_ADDED) {
-        struct sc_hid_open hid_open;
-        if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
-                                          event->gamepad_id)) {
-            return;
-        }
-
-        sc_gamepad_uhid_send_open(gamepad, &hid_open);
-    } else {
-        assert(event->type == SC_GAMEPAD_DEVICE_REMOVED);
-
-        struct sc_hid_close hid_close;
-        if (!sc_hid_gamepad_generate_close(&gamepad->hid, &hid_close,
-                                           event->gamepad_id)) {
-            return;
-        }
-
-        sc_gamepad_uhid_send_close(gamepad, &hid_close);
+    struct sc_hid_open hid_open;
+    if (!sc_hid_gamepad_generate_open(&gamepad->hid, &hid_open,
+                                      event->gamepad_id)) {
+        return;
     }
+
+    sc_gamepad_uhid_send_open(gamepad, &hid_open);
+}
+
+static void
+sc_gamepad_processor_process_gamepad_removed(struct sc_gamepad_processor *gp,
+                                const struct sc_gamepad_device_event *event) {
+    struct sc_gamepad_uhid *gamepad = DOWNCAST(gp);
+
+    struct sc_hid_close hid_close;
+    if (!sc_hid_gamepad_generate_close(&gamepad->hid, &hid_close,
+                                       event->gamepad_id)) {
+        return;
+    }
+
+    sc_gamepad_uhid_send_close(gamepad, &hid_close);
 }
 
 static void
@@ -114,7 +116,8 @@ sc_gamepad_uhid_init(struct sc_gamepad_uhid *gamepad,
     gamepad->controller = controller;
 
     static const struct sc_gamepad_processor_ops ops = {
-        .process_gamepad_device = sc_gamepad_processor_process_gamepad_device,
+        .process_gamepad_added = sc_gamepad_processor_process_gamepad_added,
+        .process_gamepad_removed = sc_gamepad_processor_process_gamepad_removed,
         .process_gamepad_axis = sc_gamepad_processor_process_gamepad_axis,
         .process_gamepad_button = sc_gamepad_processor_process_gamepad_button,
     };
