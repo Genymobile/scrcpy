@@ -7,8 +7,9 @@
 /** Downcast gamepad processor to sc_gamepad_uhid */
 #define DOWNCAST(GP) container_of(GP, struct sc_gamepad_uhid, gamepad_processor)
 
-#define SC_GAMEPAD_UHID_VENDOR_ID 0
-#define SC_GAMEPAD_UHID_PRODUCT_ID 0
+// Xbox 360
+#define SC_GAMEPAD_UHID_VENDOR_ID UINT16_C(0x045e)
+#define SC_GAMEPAD_UHID_PRODUCT_ID UINT16_C(0x028e)
 
 static void
 sc_gamepad_uhid_send_input(struct sc_gamepad_uhid *gamepad,
