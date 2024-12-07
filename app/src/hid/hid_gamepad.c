@@ -191,16 +191,19 @@ static const uint8_t SC_HID_GAMEPAD_REPORT_DESC[] = {
  *                     (8 is top-left, 1 is top, 2 is top-right, etc.)
  */
 
+// [-32768 to 32767] -> [0 to 65535]
+#define AXIS_RESCALE(V) (uint16_t) (((int32_t) V) + 0x8000)
+
 static void
 sc_hid_gamepad_slot_init(struct sc_hid_gamepad_slot *slot,
                          uint32_t gamepad_id) {
     assert(gamepad_id != SC_GAMEPAD_ID_INVALID);
     slot->gamepad_id = gamepad_id;
     slot->buttons = 0;
-    slot->axis_left_x = 0;
-    slot->axis_left_y = 0;
-    slot->axis_right_x = 0;
-    slot->axis_right_y = 0;
+    slot->axis_left_x = AXIS_RESCALE(0);
+    slot->axis_left_y = AXIS_RESCALE(0);
+    slot->axis_right_x = AXIS_RESCALE(0);
+    slot->axis_right_y = AXIS_RESCALE(0);
     slot->axis_left_trigger = 0;
     slot->axis_right_trigger = 0;
 }
@@ -423,8 +426,6 @@ sc_hid_gamepad_generate_input_from_axis(struct sc_hid_gamepad *hid,
 
     struct sc_hid_gamepad_slot *slot = &hid->slots[slot_idx];
 
-// [-32768 to 32767] -> [0 to 65535]
-#define AXIS_RESCALE(V) (uint16_t) (((int32_t) V) + 0x8000)
     switch (event->axis) {
         case SC_GAMEPAD_AXIS_LEFTX:
             slot->axis_left_x = AXIS_RESCALE(event->value);
