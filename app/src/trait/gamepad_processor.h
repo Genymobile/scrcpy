@@ -20,13 +20,22 @@ struct sc_gamepad_processor {
 struct sc_gamepad_processor_ops {
 
     /**
-     * Process a gamepad device added or removed
+     * Process a gamepad device added event
      *
      * This function is mandatory.
      */
     void
-    (*process_gamepad_device)(struct sc_gamepad_processor *gp,
-                              const struct sc_gamepad_device_event *event);
+    (*process_gamepad_added)(struct sc_gamepad_processor *gp,
+                             const struct sc_gamepad_device_event *event);
+
+    /**
+     * Process a gamepad device removed event
+     *
+     * This function is mandatory.
+     */
+    void
+    (*process_gamepad_removed)(struct sc_gamepad_processor *gp,
+                               const struct sc_gamepad_device_event *event);
 
     /**
      * Process a gamepad axis event
