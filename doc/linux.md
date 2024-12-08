@@ -6,11 +6,11 @@
 
 Download a static build of the [latest release]:
 
- - [`scrcpy-linux-x86_64-v3.0.2.tar.gz`][direct-linux-x86_64] (x86_64)  
-   <sub>SHA-256: `20b69dcd379bb7d7208bf1e4858cf04162fc856697be0e6c03863d7b3c1e734a`</sub>
+ - [`scrcpy-linux-x86_64-v3.1.tar.gz`][direct-linux-x86_64] (x86_64)  
+   <sub>SHA-256: `765e089f517795b3b08e3248ac9d7dc72cde9fa7ce432826b3064ffbbc6a8a1d`</sub>
 
 [latest release]: https://github.com/Genymobile/scrcpy/releases/latest
-[direct-linux-x86_64]: https://github.com/Genymobile/scrcpy/releases/download/v3.0.2/scrcpy-linux-x86_64-v3.0.2.tar.gz
+[direct-linux-x86_64]: https://github.com/Genymobile/scrcpy/releases/download/v3.1/scrcpy-linux-x86_64-v3.1.tar.gz
 
 and extract it.
 
