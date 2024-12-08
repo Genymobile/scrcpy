@@ -10,6 +10,7 @@
 // Xbox 360
 #define SC_GAMEPAD_UHID_VENDOR_ID UINT16_C(0x045e)
 #define SC_GAMEPAD_UHID_PRODUCT_ID UINT16_C(0x028e)
+#define SC_GAMEPAD_UHID_NAME "Microsoft X-Box 360 Pad"
 
 static void
 sc_gamepad_uhid_send_input(struct sc_gamepad_uhid *gamepad,
@@ -36,7 +37,7 @@ sc_gamepad_uhid_send_open(struct sc_gamepad_uhid *gamepad,
     msg.uhid_create.id = hid_open->hid_id;
     msg.uhid_create.vendor_id = SC_GAMEPAD_UHID_VENDOR_ID;
     msg.uhid_create.product_id = SC_GAMEPAD_UHID_PRODUCT_ID;
-    msg.uhid_create.name = hid_open->name;
+    msg.uhid_create.name = SC_GAMEPAD_UHID_NAME;
     msg.uhid_create.report_desc = hid_open->report_desc;
     msg.uhid_create.report_desc_size = hid_open->report_desc_size;
 

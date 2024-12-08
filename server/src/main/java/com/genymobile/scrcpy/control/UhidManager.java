@@ -174,7 +174,7 @@ public final class UhidManager {
         ByteBuffer buf = ByteBuffer.allocate(280 + reportDesc.length).order(ByteOrder.nativeOrder());
         buf.putInt(UHID_CREATE2);
 
-        String actualName = name.isEmpty() ? "scrcpy" : "scrcpy: " + name;
+        String actualName = name.isEmpty() ? "scrcpy" : name;
         byte[] utf8Name = actualName.getBytes(StandardCharsets.UTF_8);
         int len = StringUtils.getUtf8TruncationIndex(utf8Name, 127);
         assert len <= 127;

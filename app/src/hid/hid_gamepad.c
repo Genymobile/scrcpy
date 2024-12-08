@@ -246,14 +246,8 @@ sc_hid_gamepad_generate_open(struct sc_hid_gamepad *hid,
 
     sc_hid_gamepad_slot_init(&hid->slots[slot_idx], gamepad_id);
 
-    SDL_GameController* game_controller =
-        SDL_GameControllerFromInstanceID(gamepad_id);
-    assert(game_controller);
-    const char *name = SDL_GameControllerName(game_controller);
-
     uint16_t hid_id = sc_hid_gamepad_slot_get_id(slot_idx);
     hid_open->hid_id = hid_id;
-    hid_open->name = name;
     hid_open->report_desc = SC_HID_GAMEPAD_REPORT_DESC;
     hid_open->report_desc_size = sizeof(SC_HID_GAMEPAD_REPORT_DESC);
 

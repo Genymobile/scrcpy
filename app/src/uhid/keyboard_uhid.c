@@ -143,7 +143,7 @@ sc_keyboard_uhid_init(struct sc_keyboard_uhid *kb,
     msg.uhid_create.id = SC_HID_ID_KEYBOARD;
     msg.uhid_create.vendor_id = 0;
     msg.uhid_create.product_id = 0;
-    msg.uhid_create.name = hid_open.name;
+    msg.uhid_create.name = NULL;
     msg.uhid_create.report_desc = hid_open.report_desc;
     msg.uhid_create.report_desc_size = hid_open.report_desc_size;
     if (!sc_controller_push_msg(controller, &msg)) {
