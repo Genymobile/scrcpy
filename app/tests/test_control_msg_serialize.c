@@ -329,6 +329,8 @@ static void test_serialize_uhid_create(void) {
         .type = SC_CONTROL_MSG_TYPE_UHID_CREATE,
         .uhid_create = {
             .id = 42,
+            .vendor_id = 0x1234,
+            .product_id = 0x5678,
             .name = "ABC",
             .report_desc_size = sizeof(report_desc),
             .report_desc = report_desc,
@@ -337,11 +339,13 @@ static void test_serialize_uhid_create(void) {
 
     uint8_t buf[SC_CONTROL_MSG_MAX_SIZE];
     size_t size = sc_control_msg_serialize(&msg, buf);
-    assert(size == 20);
+    assert(size == 24);
 
     const uint8_t expected[] = {
         SC_CONTROL_MSG_TYPE_UHID_CREATE,
         0, 42, // id
+        0x12, 0x34, // vendor id
+        0x56, 0x78, // product id
         3, // name size
         65, 66, 67, // "ABC"
         0, 11, // report desc size

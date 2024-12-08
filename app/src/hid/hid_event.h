@@ -15,7 +15,6 @@ struct sc_hid_input {
 
 struct sc_hid_open {
     uint16_t hid_id;
-    const char *name; // pointer to static memory
     const uint8_t *report_desc; // pointer to static memory
     size_t report_desc_size;
 };

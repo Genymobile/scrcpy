@@ -48,7 +48,7 @@ public final class UhidManager {
         }
     }
 
-    public void open(int id, String name, byte[] reportDesc) throws IOException {
+    public void open(int id, int vendorId, int productId, String name, byte[] reportDesc) throws IOException {
         try {
             FileDescriptor fd = Os.open("/dev/uhid", OsConstants.O_RDWR, 0);
             try {
@@ -58,7 +58,7 @@ public final class UhidManager {
                     close(old);
                 }
 
-                byte[] req = buildUhidCreate2Req(name, reportDesc);
+                byte[] req = buildUhidCreate2Req(vendorId, productId, name, reportDesc);
                 Os.write(fd, req, 0, req.length);
 
                 registerUhidListener(id, fd);
@@ -148,7 +148,7 @@ public final class UhidManager {
         }
     }
 
-    private static byte[] buildUhidCreate2Req(String name, byte[] reportDesc) {
+    private static byte[] buildUhidCreate2Req(int vendorId, int productId, String name, byte[] reportDesc) {
         /*
          * struct uhid_event {
          *     uint32_t type;
@@ -174,7 +174,7 @@ public final class UhidManager {
         ByteBuffer buf = ByteBuffer.allocate(280 + reportDesc.length).order(ByteOrder.nativeOrder());
         buf.putInt(UHID_CREATE2);
 
-        String actualName = name.isEmpty() ? "scrcpy" : "scrcpy: " + name;
+        String actualName = name.isEmpty() ? "scrcpy" : name;
         byte[] utf8Name = actualName.getBytes(StandardCharsets.UTF_8);
         int len = StringUtils.getUtf8TruncationIndex(utf8Name, 127);
         assert len <= 127;
@@ -183,8 +183,8 @@ public final class UhidManager {
 
         buf.putShort((short) reportDesc.length);
         buf.putShort(BUS_VIRTUAL);
-        buf.putInt(0); // vendor id
-        buf.putInt(0); // product id
+        buf.putInt(vendorId);
+        buf.putInt(productId);
         buf.putInt(0); // version
         buf.putInt(0); // country;
         buf.put(reportDesc);
