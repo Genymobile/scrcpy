@@ -69,6 +69,12 @@ sc_gamepad_processor_process_gamepad_added(struct sc_gamepad_processor *gp,
         return;
     }
 
+    SDL_GameController* game_controller =
+        SDL_GameControllerFromInstanceID(event->gamepad_id);
+    assert(game_controller);
+    const char *name = SDL_GameControllerName(game_controller);
+    LOGI("Gamepad added: [%" PRIu32 "] %s", event->gamepad_id, name);
+
     sc_gamepad_uhid_send_open(gamepad, &hid_open);
 }
 
@@ -82,6 +88,8 @@ sc_gamepad_processor_process_gamepad_removed(struct sc_gamepad_processor *gp,
                                        event->gamepad_id)) {
         return;
     }
+
+    LOGI("Gamepad removed: [%" PRIu32 "]", event->gamepad_id);
 
     sc_gamepad_uhid_send_close(gamepad, &hid_close);
 }
