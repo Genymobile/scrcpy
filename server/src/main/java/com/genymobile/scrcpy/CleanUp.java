@@ -6,6 +6,8 @@ import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
 
 import android.os.BatteryManager;
+import android.system.ErrnoException;
+import android.system.Os;
 
 import java.io.File;
 import java.io.IOException;
@@ -163,6 +165,12 @@ public final class CleanUp {
     }
 
     public static void main(String... args) {
+        try {
+            // Start a new session to avoid being terminated along with the server process on some devices
+            Os.setsid();
+        } catch (ErrnoException e) {
+            Ln.e("setsid() failed", e);
+        }
         unlinkSelf();
 
         int displayId = Integer.parseInt(args[0]);
