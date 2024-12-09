@@ -40,11 +40,6 @@ else
         export LDFLAGS='-static-libgcc -static'
     elif [[ "$HOST" == "macos" ]]
     then
-        export LDFLAGS="$LDFLAGS -L/opt/homebrew/opt/zlib/lib"
-        export CPPFLAGS="$CPPFLAGS -I/opt/homebrew/opt/zlib/include"
-
-        export LDFLAGS="$LDFLAGS-L/opt/homebrew/opt/libiconv/lib"
-        export CPPFLAGS="$CPPFLAGS -I/opt/homebrew/opt/libiconv/include"
         export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig"
     fi
 
