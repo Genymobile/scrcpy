@@ -15,6 +15,7 @@ LINUX_BUILD_DIR="$WORK_DIR/build-linux-$ARCH"
 
 app/deps/adb_linux.sh
 app/deps/sdl.sh linux native static
+app/deps/dav1d.sh linux native static
 app/deps/ffmpeg.sh linux native static
 app/deps/libusb.sh linux native static
 

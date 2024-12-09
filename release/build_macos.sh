@@ -15,6 +15,7 @@ MACOS_BUILD_DIR="$WORK_DIR/build-macos-$ARCH"
 
 app/deps/adb_macos.sh
 app/deps/sdl.sh macos native static
+app/deps/dav1d.sh macos native static
 app/deps/ffmpeg.sh macos native static
 app/deps/libusb.sh macos native static
 

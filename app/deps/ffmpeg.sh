@@ -43,8 +43,11 @@ else
         export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig"
     fi
 
+    export PKG_CONFIG_PATH="$INSTALL_DIR/$DIRNAME/lib/pkgconfig:$PKG_CONFIG_PATH"
+
     conf=(
         --prefix="$INSTALL_DIR/$DIRNAME"
+        --pkg-config-flags="--static"
         --extra-cflags="-O2 -fPIC"
         --disable-programs
         --disable-doc
@@ -57,9 +60,11 @@ else
         --disable-vaapi
         --disable-vdpau
         --enable-swresample
+        --enable-libdav1d
         --enable-decoder=h264
         --enable-decoder=hevc
         --enable-decoder=av1
+        --enable-decoder=libdav1d
         --enable-decoder=pcm_s16le
         --enable-decoder=opus
         --enable-decoder=aac
