@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.util.Ln;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.os.IBinder;
+import android.system.Os;
 
 import java.lang.reflect.Method;
 
@@ -21,7 +22,9 @@ public final class DisplayControl {
             Class<?> classLoaderFactoryClass = Class.forName("com.android.internal.os.ClassLoaderFactory");
             Method createClassLoaderMethod = classLoaderFactoryClass.getDeclaredMethod("createClassLoader", String.class, String.class, String.class,
                     ClassLoader.class, int.class, boolean.class, String.class);
-            ClassLoader classLoader = (ClassLoader) createClassLoaderMethod.invoke(null, "/system/framework/services.jar", null, null,
+
+            String systemServerClasspath = Os.getenv("SYSTEMSERVERCLASSPATH");
+            ClassLoader classLoader = (ClassLoader) createClassLoaderMethod.invoke(null, systemServerClasspath, null, null,
                     ClassLoader.getSystemClassLoader(), 0, true, null);
 
             displayControlClass = classLoader.loadClass("com.android.server.display.DisplayControl");
