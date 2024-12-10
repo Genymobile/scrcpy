@@ -206,6 +206,10 @@ public final class Device {
 
         // restore auto-rotate if necessary
         if (accelerometerRotation) {
+            if (displayId == 0) {
+                // HACK: rotation on the main display often fail on recent Android devices if thawRotation() is called immediately
+                SystemClock.sleep(10);
+            }
             wm.thawRotation(displayId);
         }
     }
