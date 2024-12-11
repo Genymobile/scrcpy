@@ -68,3 +68,7 @@ Documentation for command line arguments is available:
  - `man scrcpy`
  - `scrcpy --help`
  - on [github](/README.md)
+
+
+Record VR with Screen Crop for Quest/Quest2
+- `scrcpy --crop 1730:974:1934:450 --max-fps 30`
