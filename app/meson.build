@@ -279,3 +279,9 @@ if get_option('buildtype') == 'debug'
         test(t[0], exe)
     endforeach
 endif
+
+if meson.version().version_compare('>= 0.58.0')
+       devenv = environment()
+       devenv.set('SCRCPY_ICON_PATH', join_paths(meson.current_source_dir(), 'data/icon.png'))
+       meson.add_devenv(devenv)
+endif
