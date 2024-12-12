@@ -192,19 +192,19 @@ datadir = get_option('datadir') # by default 'share'
 install_man('scrcpy.1')
 install_data('data/icon.png',
              rename: 'scrcpy.png',
-             install_dir: join_paths(datadir, 'icons/hicolor/256x256/apps'))
+             install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/zsh-completion/_scrcpy',
-             install_dir: join_paths(datadir, 'zsh/site-functions'))
+             install_dir: datadir / 'zsh/site-functions')
 install_data('data/bash-completion/scrcpy',
-             install_dir: join_paths(datadir, 'bash-completion/completions'))
+             install_dir: datadir / 'bash-completion/completions')
 
 # Desktop entry file for application launchers
 if host_machine.system() == 'linux'
     # Install a launcher (ex: /usr/local/share/applications/scrcpy.desktop)
     install_data('data/scrcpy.desktop',
-                 install_dir: join_paths(datadir, 'applications'))
+                 install_dir: datadir / 'applications')
     install_data('data/scrcpy-console.desktop',
-                 install_dir: join_paths(datadir, 'applications'))
+                 install_dir: datadir / 'applications')
 endif
 
 
