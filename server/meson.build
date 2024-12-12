@@ -23,3 +23,9 @@ else
                   install: true,
                   install_dir: 'share/scrcpy')
 endif
+
+if meson.version().version_compare('>= 0.58.0')
+       devenv = environment()
+       devenv.set('SCRCPY_SERVER_PATH', meson.current_build_dir() / 'scrcpy-server')
+       meson.add_devenv(devenv)
+endif
