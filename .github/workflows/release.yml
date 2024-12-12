@@ -137,9 +137,6 @@ jobs:
              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
              mingw-w64 mingw-w64-tools libz-mingw-w64-dev
 
-      - name: Workaround for old meson version run by Github Actions
-        run: sed -i 's/^pkg-config/pkgconfig/' cross_win32.txt
-
       - name: Build
         run: release/build_windows.sh 32
 
@@ -170,9 +167,6 @@ jobs:
              libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
              mingw-w64 mingw-w64-tools libz-mingw-w64-dev
-
-      - name: Workaround for old meson version run by Github Actions
-        run: sed -i 's/^pkg-config/pkgconfig/' cross_win64.txt
 
       - name: Build
         run: release/build_windows.sh 64
