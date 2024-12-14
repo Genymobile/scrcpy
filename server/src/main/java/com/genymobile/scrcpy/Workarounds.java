@@ -42,6 +42,11 @@ public final class Workarounds {
             Field sCurrentActivityThreadField = ACTIVITY_THREAD_CLASS.getDeclaredField("sCurrentActivityThread");
             sCurrentActivityThreadField.setAccessible(true);
             sCurrentActivityThreadField.set(null, ACTIVITY_THREAD);
+
+            // activityThread.mSystemThread = true;
+            Field mSystemThreadField = ACTIVITY_THREAD_CLASS.getDeclaredField("mSystemThread");
+            mSystemThreadField.setAccessible(true);
+            mSystemThreadField.setBoolean(ACTIVITY_THREAD, true);
         } catch (Exception e) {
             throw new AssertionError(e);
         }
