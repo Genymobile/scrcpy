@@ -120,6 +120,21 @@ public final class LogUtils {
         }
     }
 
+    private static boolean isCameraBackwardCompatible(CameraCharacteristics characteristics) {
+        int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+        if (capabilities == null) {
+            return false;
+        }
+
+        for (int capability : capabilities) {
+            if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
@@ -129,8 +144,15 @@ public final class LogUtils {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
-                    builder.append("\n    --camera-id=").append(id);
                     CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
+
+                    if (!isCameraBackwardCompatible(characteristics)) {
+                        // Ignore depth cameras as suggested by official documentation
+                        // <https://developer.android.com/media/camera/camera2/camera-enumeration>
+                        continue;
+                    }
+
+                    builder.append("\n    --camera-id=").append(id);
 
                     int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
                     builder.append("    (").append(getCameraFacingName(facing)).append(", ");
