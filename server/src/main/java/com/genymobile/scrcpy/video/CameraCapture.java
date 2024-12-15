@@ -12,6 +12,7 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.HandlerExecutor;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.wrappers.CameraService;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
@@ -140,9 +141,10 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     private static String selectCamera(String explicitCameraId, CameraFacing cameraFacing) throws CameraAccessException, ConfigurationException {
+        CameraService cameraService = ServiceManager.getCameraService();
         CameraManager cameraManager = ServiceManager.getCameraManager();
 
-        String[] cameraIds = cameraManager.getCameraIdList();
+        String[] cameraIds = cameraService.getCameraIdList();
         if (explicitCameraId != null) {
             if (!Arrays.asList(cameraIds).contains(explicitCameraId)) {
                 Ln.e("Camera with id " + explicitCameraId + " not found\n" + LogUtils.buildCameraListMessage(false));
@@ -157,11 +159,16 @@ public class CameraCapture extends SurfaceCapture {
         }
 
         for (String cameraId : cameraIds) {
-            CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+            try {
+                CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
 
-            int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-            if (cameraFacing.value() == facing) {
-                return cameraId;
+                int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                if (cameraFacing.value() == facing) {
+                    return cameraId;
+                }
+            } catch (IllegalArgumentException ignore) {
+                // Samsung devices might throw an IllegalArgumentException
+                // when getting camera characteristics for hidden cameras
             }
         }
 

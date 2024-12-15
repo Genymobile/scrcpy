@@ -31,6 +31,7 @@ public final class ServiceManager {
     private static StatusBarManager statusBarManager;
     private static ClipboardManager clipboardManager;
     private static ActivityManager activityManager;
+    private static CameraService cameraService;
     private static CameraManager cameraManager;
 
     private ServiceManager() {
@@ -95,6 +96,18 @@ public final class ServiceManager {
             activityManager = ActivityManager.create();
         }
         return activityManager;
+    }
+
+    public static CameraService getCameraService() {
+        if (cameraService == null) {
+            try {
+                IInterface camera = getService("media.camera", "android.hardware.ICameraService");
+                cameraService = new CameraService(camera);
+            } catch (Exception e) {
+                throw new AssertionError(e);
+            }
+        }
+        return cameraService;
     }
 
     public static CameraManager getCameraManager() {
