@@ -78,6 +78,16 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [macOS](doc/macos.md)
 
 
+## Must-know tips
+
+ - [Reducing resolution](doc/video.md#size) may greatly improve performance
+   (`scrcpy -m1024`)
+ - [_Right-click_](doc/mouse.md#mouse-bindings) triggers `BACK`
+ - [_Middle-click_](doc/mouse.md#mouse-bindings) triggers `HOME`
+ - <kbd>Alt</kbd>+<kbd>f</kbd> toggles [fullscreen](doc/window.md#fullscreen)
+ - There are many other [shortcuts](doc/shortcuts.md)
+
+
 ## Usage examples
 
 There are a lot of options, [documented](#user-documentation) in separate pages.
