@@ -20,6 +20,12 @@ and extract it.
 
 ### From a package manager
 
+From [WinGet] (ADB and other dependencies will be installed alongside scrcpy):
+
+```bash
+winget install --exact Genymobile.scrcpy
+```
+
 From [Chocolatey]:
 
 ```bash
@@ -29,12 +35,12 @@ choco install adb    # if you don't have it yet
 
 From [Scoop]:
 
-
 ```bash
 scoop install scrcpy
 scoop install adb    # if you don't have it yet
 ```
 
+[WinGet]: https://github.com/microsoft/winget-cli
 [Chocolatey]: https://chocolatey.org/
 [Scoop]: https://scoop.sh
 
