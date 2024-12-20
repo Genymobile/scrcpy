@@ -1,8 +1,6 @@
 #include "process.h"
 
 #include <assert.h>
-#include <libgen.h>
-#include "log.h"
 
 enum sc_process_result
 sc_process_execute(const char *const argv[], sc_pid *pid, unsigned flags) {

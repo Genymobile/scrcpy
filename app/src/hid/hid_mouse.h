@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#include <stdbool.h>
-
 #include "hid/hid_event.h"
 #include "input_events.h"
 

@@ -1,7 +1,6 @@
 #include "acksync.h"
 
 #include <assert.h>
-#include "util/log.h"
 
 bool
 sc_acksync_init(struct sc_acksync *as) {

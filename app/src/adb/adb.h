@@ -6,7 +6,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 
-#include "adb_device.h"
+#include "adb/adb_device.h"
 #include "util/intr.h"
 
 #define SC_ADB_NO_STDOUT (1 << 0)

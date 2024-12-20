@@ -4,12 +4,8 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include <stdint.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
 
 #include "trait/packet_source.h"
-#include "trait/packet_sink.h"
 #include "util/net.h"
 #include "util/thread.h"
 

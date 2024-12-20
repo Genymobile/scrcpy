@@ -1,19 +1,17 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef SC_SERVER_H
+#define SC_SERVER_H
 
 #include "common.h"
 
-#include <stdatomic.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "adb/adb_tunnel.h"
-#include "coords.h"
 #include "options.h"
 #include "util/intr.h"
-#include "util/log.h"
 #include "util/net.h"
 #include "util/thread.h"
+#include "util/tick.h"
 
 #define SC_DEVICE_NAME_FIELD_LENGTH 64
 struct sc_server_info {

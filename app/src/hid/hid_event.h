@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define SC_HID_MAX_SIZE 15

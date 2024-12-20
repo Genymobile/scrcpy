@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-#include "intr.h"
-#include "process.h"
+#include "util/intr.h"
+#include "util/process.h"
 
 ssize_t
 sc_pipe_read_intr(struct sc_intr *intr, sc_pid pid, sc_pipe pipe, char *data,

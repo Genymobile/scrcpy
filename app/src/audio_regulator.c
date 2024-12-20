@@ -1,5 +1,9 @@
 #include "audio_regulator.h"
 
+#include <assert.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
 

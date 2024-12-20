@@ -1,11 +1,10 @@
 #include "strbuf.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "log.h"
+#include "util/log.h"
 
 bool
 sc_strbuf_init(struct sc_strbuf *buf, size_t init_cap) {

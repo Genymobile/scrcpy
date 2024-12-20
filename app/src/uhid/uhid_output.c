@@ -1,6 +1,5 @@
 #include "uhid_output.h"
 
-#include <assert.h>
 #include <inttypes.h>
 
 #include "uhid/keyboard_uhid.h"

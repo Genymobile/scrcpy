@@ -4,7 +4,8 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include <libavformat/avformat.h>
+#include <stdint.h>
+#include <libavutil/frame.h>
 #include <SDL2/SDL.h>
 
 #include "coords.h"

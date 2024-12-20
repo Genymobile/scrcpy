@@ -9,7 +9,6 @@
 #include <SDL2/SDL_events.h>
 
 #include "coords.h"
-#include "options.h"
 
 /* The representation of input events in scrcpy is very close to the SDL API,
  * for simplicity.

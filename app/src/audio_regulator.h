@@ -5,6 +5,8 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <libavcodec/avcodec.h>
 #include <libswresample/swresample.h>
 #include "util/audiobuf.h"

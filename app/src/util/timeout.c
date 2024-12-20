@@ -1,8 +1,9 @@
 #include "timeout.h"
 
 #include <assert.h>
+#include <stddef.h>
 
-#include "log.h"
+#include "util/log.h"
 
 bool
 sc_timeout_init(struct sc_timeout *timeout) {

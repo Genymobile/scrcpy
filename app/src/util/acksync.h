@@ -3,7 +3,10 @@
 
 #include "common.h"
 
-#include "thread.h"
+#include <stdbool.h>
+#include <stdint.h>
+#include "util/thread.h"
+#include "util/tick.h"
 
 #define SC_SEQUENCE_INVALID 0
 

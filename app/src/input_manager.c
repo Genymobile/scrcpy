@@ -1,8 +1,12 @@
 #include "input_manager.h"
 
 #include <assert.h>
-#include <SDL2/SDL_keycode.h>
+#include <stdlib.h>
+#include <string.h>
+#include <SDL2/SDL.h>
 
+#include "android/input.h"
+#include "android/keycodes.h"
 #include "input_events.h"
 #include "screen.h"
 #include "shortcut_mod.h"

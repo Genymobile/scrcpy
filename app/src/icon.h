@@ -3,9 +3,7 @@
 
 #include "common.h"
 
-#include <stdbool.h>
-#include <SDL2/SDL.h>
-#include <libavformat/avformat.h>
+#include <SDL2/SDL_surface.h>
 
 SDL_Surface *
 scrcpy_icon_load(void);

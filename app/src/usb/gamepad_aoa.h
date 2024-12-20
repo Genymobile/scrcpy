@@ -3,10 +3,8 @@
 
 #include "common.h"
 
-#include <stdbool.h>
-
-#include "aoa_hid.h"
 #include "hid/hid_gamepad.h"
+#include "usb/aoa_hid.h"
 #include "trait/gamepad_processor.h"
 
 struct sc_gamepad_aoa {

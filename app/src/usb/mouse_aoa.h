@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 
-#include "aoa_hid.h"
+#include "usb/aoa_hid.h"
 #include "trait/mouse_processor.h"
 
 struct sc_mouse_aoa {

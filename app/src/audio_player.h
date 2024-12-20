@@ -3,9 +3,7 @@
 
 #include "common.h"
 
-#include <stdatomic.h>
-#include <stdbool.h>
-#include <SDL2/SDL.h>
+#include <SDL2/SDL_audio.h>
 
 #include "audio_regulator.h"
 #include "trait/frame_sink.h"

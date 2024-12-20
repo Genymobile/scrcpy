@@ -1,5 +1,9 @@
 #include "packet_merger.h"
 
+#include <stdlib.h>
+#include <string.h>
+#include <libavutil/avutil.h>
+
 #include "util/log.h"
 
 void

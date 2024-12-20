@@ -1,6 +1,12 @@
 #include "keyboard_uhid.h"
 
+#include <assert.h>
+#include <string.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_keycode.h>
+
 #include "util/log.h"
+#include "util/thread.h"
 
 /** Downcast key processor to keyboard_uhid */
 #define DOWNCAST(KP) container_of(KP, struct sc_keyboard_uhid, key_processor)

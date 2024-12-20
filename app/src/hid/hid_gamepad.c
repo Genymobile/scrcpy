@@ -2,6 +2,8 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <stddef.h>
+#include <sys/types.h>
 
 #include "util/binary.h"
 #include "util/log.h"

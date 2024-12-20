@@ -1,6 +1,9 @@
 #include "recorder.h"
 
 #include <assert.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <string.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>

@@ -1,13 +1,16 @@
-#include "util/log.h"
+#include "aoa_hid.h"
 
 #include <assert.h>
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <libusb-1.0/libusb.h>
 
-#include "aoa_hid.h"
 #include "events.h"
 #include "util/log.h"
 #include "util/str.h"
+#include "util/tick.h"
 #include "util/vector.h"
 
 // See <https://source.android.com/devices/accessories/aoa2#hid-support>.

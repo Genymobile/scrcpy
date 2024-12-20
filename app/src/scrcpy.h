@@ -3,7 +3,6 @@
 
 #include "common.h"
 
-#include <stdbool.h>
 #include "options.h"
 
 enum scrcpy_exit_code {

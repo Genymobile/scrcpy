@@ -5,6 +5,8 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
 
 /* Stringify a numeric value  */
 #define SC_STR(s) SC_XSTR(s)

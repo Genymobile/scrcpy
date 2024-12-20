@@ -1,8 +1,8 @@
 #include "intr.h"
 
-#include "util/log.h"
-
 #include <assert.h>
+
+#include "util/log.h"
 
 bool
 sc_intr_init(struct sc_intr *intr) {

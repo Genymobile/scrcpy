@@ -1,8 +1,6 @@
 #include "frame_buffer.h"
 
 #include <assert.h>
-#include <libavutil/avutil.h>
-#include <libavformat/avformat.h>
 
 #include "util/log.h"
 

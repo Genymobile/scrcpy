@@ -4,12 +4,13 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL.h>
 
-#include "keyboard_aoa.h"
-#include "mouse_aoa.h"
 #include "mouse_capture.h"
-#include "gamepad_aoa.h"
+#include "usb/gamepad_aoa.h"
+#include "usb/keyboard_aoa.h"
+#include "usb/mouse_aoa.h"
 
 struct sc_screen_otg {
     struct sc_keyboard_aoa *keyboard;

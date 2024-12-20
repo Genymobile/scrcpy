@@ -1,12 +1,12 @@
 #include "mouse_sdk.h"
 
 #include <assert.h>
+#include <stdint.h>
 
 #include "android/input.h"
 #include "control_msg.h"
 #include "controller.h"
 #include "input_events.h"
-#include "util/intmap.h"
 #include "util/log.h"
 
 /** Downcast mouse processor to sc_mouse_sdk */

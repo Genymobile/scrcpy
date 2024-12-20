@@ -3,8 +3,6 @@
 
 #include "common.h"
 
-#include <stdbool.h>
-
 #include "controller.h"
 #include "hid/hid_gamepad.h"
 #include "trait/gamepad_processor.h"

@@ -4,12 +4,12 @@
 #include "common.h"
 
 #include <stdbool.h>
-
-#include <SDL2/SDL.h>
+#include <stdint.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keycode.h>
 
 #include "controller.h"
 #include "file_pusher.h"
-#include "fps_counter.h"
 #include "options.h"
 #include "trait/gamepad_processor.h"
 #include "trait/key_processor.h"

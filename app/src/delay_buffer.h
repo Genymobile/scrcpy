@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <libavutil/frame.h>
 
 #include "clock.h"
 #include "trait/frame_source.h"

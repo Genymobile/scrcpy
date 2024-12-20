@@ -1,5 +1,10 @@
 #include "gamepad_uhid.h"
 
+#include <assert.h>
+#include <inttypes.h>
+#include <string.h>
+#include <SDL2/SDL_gamecontroller.h>
+
 #include "hid/hid_gamepad.h"
 #include "input_events.h"
 #include "util/log.h"

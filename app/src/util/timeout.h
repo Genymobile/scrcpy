@@ -5,8 +5,8 @@
 
 #include <stdbool.h>
 
-#include "thread.h"
-#include "tick.h"
+#include "util/thread.h"
+#include "util/tick.h"
 
 struct sc_timeout {
     sc_thread thread;

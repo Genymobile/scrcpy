@@ -1,27 +1,26 @@
 #include "net.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <stdio.h>
-
-#include "log.h"
 
 #ifdef _WIN32
 # include <ws2tcpip.h>
   typedef int socklen_t;
 #else
-# include <sys/types.h>
-# include <sys/socket.h>
+# include <arpa/inet.h>
+# include <fcntl.h>
 # include <netinet/in.h>
 # include <netinet/tcp.h>
-# include <arpa/inet.h>
 # include <unistd.h>
-# include <fcntl.h>
+# include <sys/socket.h>
+# include <sys/types.h>
 # define SOCKET_ERROR -1
   typedef struct sockaddr_in SOCKADDR_IN;
   typedef struct sockaddr SOCKADDR;
   typedef struct in_addr IN_ADDR;
 #endif
+
+#include "util/log.h"
 
 bool
 net_init(void) {

@@ -1,5 +1,6 @@
 #include "version.h"
 
+#include <stdio.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avutil.h>
@@ -9,6 +10,7 @@
 #ifdef HAVE_USB
 # include <libusb-1.0/libusb.h>
 #endif
+#include <SDL2/SDL_version.h>
 
 void
 scrcpy_print_version(void) {

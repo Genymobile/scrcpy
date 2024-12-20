@@ -4,9 +4,10 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdint.h>
+#include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 
-#include "coords.h"
 #include "options.h"
 #include "trait/packet_sink.h"
 #include "util/thread.h"

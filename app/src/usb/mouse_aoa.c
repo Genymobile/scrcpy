@@ -1,6 +1,7 @@
 #include "mouse_aoa.h"
 
 #include <assert.h>
+#include <stddef.h>
 
 #include "hid/hid_mouse.h"
 #include "input_events.h"

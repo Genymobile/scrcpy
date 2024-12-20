@@ -3,7 +3,9 @@
 
 #include "common.h"
 
-#include "frame_sink.h"
+#include <stdbool.h>
+
+#include "trait/frame_sink.h"
 
 #define SC_FRAME_SOURCE_MAX_SINKS 2
 

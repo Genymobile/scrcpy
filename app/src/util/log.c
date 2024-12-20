@@ -4,7 +4,10 @@
 # include <windows.h>
 #endif
 #include <assert.h>
-#include <libavformat/avformat.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <libavutil/log.h>
 
 static SDL_LogPriority
 log_level_sc_to_sdl(enum sc_log_level level) {

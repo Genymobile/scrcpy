@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 #include "controller.h"
-#include "screen.h"
 #include "trait/mouse_processor.h"
 
 struct sc_mouse_sdk {

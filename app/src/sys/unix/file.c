@@ -1,10 +1,11 @@
 #include "util/file.h"
 
 #include <limits.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
 #ifdef __APPLE__
 # include <mach-o/dyld.h> // for _NSGetExecutablePath()

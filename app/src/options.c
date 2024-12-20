@@ -1,5 +1,7 @@
 #include "options.h"
 
+#include <stddef.h>
+
 const struct scrcpy_options scrcpy_options_default = {
     .serial = NULL,
     .crop = NULL,

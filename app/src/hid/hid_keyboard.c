@@ -1,5 +1,6 @@
 #include "hid_keyboard.h"
 
+#include <assert.h>
 #include <string.h>
 
 #include "util/log.h"

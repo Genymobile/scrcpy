@@ -1,6 +1,8 @@
 #include "display.h"
 
 #include <assert.h>
+#include <inttypes.h>
+#include <string.h>
 #include <libavutil/pixfmt.h>
 
 #include "util/log.h"

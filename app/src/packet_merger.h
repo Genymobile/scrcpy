@@ -5,7 +5,7 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <libavcodec/avcodec.h>
+#include <libavcodec/packet.h>
 
 /**
  * Config packets (containing the SPS/PPS) are sent in-band. A new config

@@ -6,9 +6,9 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 
-#include "net.h"
-#include "process.h"
-#include "thread.h"
+#include "util/net.h"
+#include "util/process.h"
+#include "util/thread.h"
 
 /**
  * Interruptor to wake up a blocking call from another thread
