@@ -1,19 +1,18 @@
 #include "server.h"
 
 #include <assert.h>
-#include <errno.h>
 #include <inttypes.h>
 #include <stdio.h>
-#include <SDL2/SDL_timer.h>
-#include <SDL2/SDL_platform.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
 
 #include "adb/adb.h"
-#include "util/binary.h"
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
 #include "util/net_intr.h"
-#include "util/process_intr.h"
+#include "util/process.h"
 #include "util/str.h"
 
 #define SC_SERVER_FILENAME "scrcpy-server"

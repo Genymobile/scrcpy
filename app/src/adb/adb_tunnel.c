@@ -1,11 +1,11 @@
 #include "adb_tunnel.h"
 
 #include <assert.h>
+#include <inttypes.h>
 
-#include "adb.h"
+#include "adb/adb.h"
 #include "util/log.h"
 #include "util/net_intr.h"
-#include "util/process_intr.h"
 
 static bool
 listen_on_port(struct sc_intr *intr, sc_socket socket, uint16_t port) {

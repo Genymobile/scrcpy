@@ -3,8 +3,13 @@
 
 #include "common.h"
 
-#include "intr.h"
-#include "net.h"
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/types.h>
+
+#include "util/intr.h"
+#include "util/net.h"
 
 bool
 net_connect_intr(struct sc_intr *intr, sc_socket socket, uint32_t addr,

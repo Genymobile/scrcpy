@@ -3,7 +3,6 @@
 
 #include "common.h"
 
-#include <assert.h>
 #include <stdbool.h>
 #include <libavcodec/avcodec.h>
 

@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-#include <stddef.h>
+#include <stdbool.h>
 
-#include "adb_device.h"
+#include "adb/adb_device.h"
 
 /**
  * Parse the available devices from the output of `adb devices`

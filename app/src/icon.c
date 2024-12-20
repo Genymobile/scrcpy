@@ -2,17 +2,22 @@
 
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+#include <libavutil/avutil.h>
 #include <libavutil/pixdesc.h>
 #include <libavutil/pixfmt.h>
+#include <SDL2/SDL.h>
 
 #include "config.h"
-#include "compat.h"
 #include "util/env.h"
-#include "util/file.h"
+#ifdef PORTABLE
+# include "util/file.h"
+#endif
 #include "util/log.h"
-#include "util/str.h"
 
 #define SCRCPY_PORTABLE_ICON_FILENAME "icon.png"
 #define SCRCPY_DEFAULT_ICON_PATH \

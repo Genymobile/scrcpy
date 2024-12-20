@@ -1,8 +1,13 @@
 #include "keyboard_sdk.h"
 
 #include <assert.h>
+#include <ctype.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "android/input.h"
+#include "android/keycodes.h"
 #include "control_msg.h"
 #include "controller.h"
 #include "input_events.h"

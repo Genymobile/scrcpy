@@ -1,6 +1,7 @@
 #include "fps_counter.h"
 
 #include <assert.h>
+#include <stdint.h>
 
 #include "util/log.h"
 

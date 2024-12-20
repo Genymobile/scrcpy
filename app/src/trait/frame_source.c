@@ -1,5 +1,7 @@
 #include "frame_source.h"
 
+#include <assert.h>
+
 void
 sc_frame_source_init(struct sc_frame_source *source) {
     source->sink_count = 0;

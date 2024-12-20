@@ -1,5 +1,7 @@
 #include "hid_mouse.h"
 
+#include <stdint.h>
+
 // 1 byte for buttons + padding, 1 byte for X position, 1 byte for Y position,
 // 1 byte for wheel motion
 #define SC_HID_MOUSE_INPUT_SIZE 4

@@ -4,14 +4,15 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 
 #ifdef _WIN32
 # include <winsock2.h>
   typedef SOCKET sc_raw_socket;
 # define SC_RAW_SOCKET_NONE INVALID_SOCKET
 #else // not _WIN32
-# include <sys/socket.h>
   typedef int sc_raw_socket;
 # define SC_RAW_SOCKET_NONE -1
 #endif

@@ -1,11 +1,14 @@
-#ifndef SCREEN_H
-#define SCREEN_H
+#ifndef SC_SCREEN_H
+#define SC_SCREEN_H
 
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <SDL2/SDL.h>
-#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libavutil/frame.h>
+#include <libavutil/pixfmt.h>
 
 #include "controller.h"
 #include "coords.h"
@@ -14,7 +17,6 @@
 #include "frame_buffer.h"
 #include "input_manager.h"
 #include "mouse_capture.h"
-#include "opengl.h"
 #include "options.h"
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"

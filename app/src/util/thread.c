@@ -1,10 +1,12 @@
 #include "thread.h"
 
 #include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <SDL2/SDL_thread.h>
 
-#include "log.h"
+#include "util/log.h"
 
 sc_thread_id SC_MAIN_THREAD_ID;
 

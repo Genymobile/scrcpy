@@ -3,12 +3,10 @@
 
 #include "common.h"
 
+#include <libavcodec/avcodec.h>
+
 #include "trait/frame_source.h"
 #include "trait/packet_sink.h"
-
-#include <stdbool.h>
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
 
 struct sc_decoder {
     struct sc_packet_sink packet_sink; // packet sink trait

@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
-#include "adb_device.h"
-#include "adb_parser.h"
+#include "adb/adb_device.h"
+#include "adb/adb_parser.h"
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"

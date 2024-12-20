@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <libavutil/frame.h>
 
 #include "util/thread.h"
 

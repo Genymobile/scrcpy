@@ -1,5 +1,7 @@
 #include "packet_source.h"
 
+#include <assert.h>
+
 void
 sc_packet_source_init(struct sc_packet_source *source) {
     source->sink_count = 0;

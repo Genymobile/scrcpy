@@ -2,7 +2,9 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "util/str.h"
+#ifdef _WIN32
+# include "util/str.h"
+#endif
 
 char *
 sc_get_env(const char *varname) {

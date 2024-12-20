@@ -1,5 +1,7 @@
 #include "gamepad_aoa.h"
 
+#include <stdbool.h>
+
 #include "input_events.h"
 #include "util/log.h"
 

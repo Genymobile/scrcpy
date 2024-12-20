@@ -1,5 +1,7 @@
 #include "events.h"
 
+#include <assert.h>
+
 #include "util/log.h"
 #include "util/thread.h"
 

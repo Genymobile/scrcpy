@@ -1,5 +1,8 @@
 #include "mouse_uhid.h"
 
+#include <assert.h>
+#include <string.h>
+
 #include "hid/hid_mouse.h"
 #include "input_events.h"
 #include "util/log.h"
