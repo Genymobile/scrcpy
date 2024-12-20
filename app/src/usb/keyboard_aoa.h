@@ -5,8 +5,8 @@
 
 #include <stdbool.h>
 
-#include "aoa_hid.h"
 #include "hid/hid_keyboard.h"
+#include "usb/aoa_hid.h"
 #include "trait/key_processor.h"
 
 struct sc_keyboard_aoa {

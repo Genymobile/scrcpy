@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+#include <stddef.h>
 #include <stdint.h>
 
 struct sc_intmap_entry {

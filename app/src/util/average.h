@@ -3,9 +3,6 @@
 
 #include "common.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-
 struct sc_average {
     // Current average value
     float avg;

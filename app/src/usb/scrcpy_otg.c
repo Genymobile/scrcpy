@@ -1,10 +1,19 @@
 #include "scrcpy_otg.h"
 
+#include <assert.h>
+#include <stdbool.h>
+#include <stdlib.h>
 #include <SDL2/SDL.h>
 
-#include "adb/adb.h"
+#ifdef _WIN32
+# include "adb/adb.h"
+#endif
 #include "events.h"
-#include "screen_otg.h"
+#include "usb/screen_otg.h"
+#include "usb/aoa_hid.h"
+#include "usb/gamepad_aoa.h"
+#include "usb/keyboard_aoa.h"
+#include "usb/mouse_aoa.h"
 #include "util/log.h"
 
 struct scrcpy_otg {

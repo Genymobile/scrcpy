@@ -4,7 +4,9 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stddef.h>
 #include "util/thread.h"
+#include "util/tick.h"
 
 #ifdef _WIN32
 

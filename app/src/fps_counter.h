@@ -5,9 +5,9 @@
 
 #include <stdatomic.h>
 #include <stdbool.h>
-#include <stdint.h>
 
 #include "util/thread.h"
+#include "util/tick.h"
 
 struct sc_fps_counter {
     sc_thread thread;

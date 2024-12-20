@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "options.h"
@@ -13,6 +14,7 @@
 #include "util/str.h"
 #include "util/strbuf.h"
 #include "util/term.h"
+#include "util/tick.h"
 
 #define STR_IMPL_(x) #x
 #define STR(x) STR_IMPL_(x)

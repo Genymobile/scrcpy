@@ -12,8 +12,8 @@
 # include <tchar.h>
 #endif
 
-#include "log.h"
-#include "strbuf.h"
+#include "util/log.h"
+#include "util/strbuf.h"
 
 size_t
 sc_strncpy(char *dest, const char *src, size_t n) {

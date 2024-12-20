@@ -1,14 +1,11 @@
 #include "demuxer.h"
 
 #include <assert.h>
+#include <inttypes.h>
+#include <libavcodec/avcodec.h>
 #include <libavutil/channel_layout.h>
-#include <libavutil/time.h>
-#include <unistd.h>
 
-#include "decoder.h"
-#include "events.h"
 #include "packet_merger.h"
-#include "recorder.h"
 #include "util/binary.h"
 #include "util/log.h"
 

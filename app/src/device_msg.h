@@ -3,9 +3,9 @@
 
 #include "common.h"
 
-#include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <unistd.h>
+#include <sys/types.h>
 
 #define DEVICE_MSG_MAX_SIZE (1 << 18) // 256k
 // type: 1 byte; length: 4 bytes

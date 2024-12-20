@@ -1,10 +1,11 @@
 #include "scrcpy.h"
 
+#include <assert.h>
+#include <inttypes.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <libavformat/avformat.h>
-#include <sys/time.h>
 #include <SDL2/SDL.h>
 
 #ifdef _WIN32
@@ -37,9 +38,9 @@
 #endif
 #include "util/acksync.h"
 #include "util/log.h"
-#include "util/net.h"
 #include "util/rand.h"
 #include "util/timeout.h"
+#include "util/tick.h"
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif

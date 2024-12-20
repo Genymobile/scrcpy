@@ -1,11 +1,9 @@
 #include "decoder.h"
 
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libavutil/channel_layout.h>
+#include <errno.h>
+#include <libavcodec/packet.h>
+#include <libavutil/avutil.h>
 
-#include "events.h"
-#include "trait/frame_sink.h"
 #include "util/log.h"
 
 /** Downcast packet_sink to decoder */

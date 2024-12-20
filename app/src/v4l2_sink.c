@@ -1,5 +1,9 @@
 #include "v4l2_sink.h"
 
+#include <assert.h>
+#include <errno.h>
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "util/log.h"

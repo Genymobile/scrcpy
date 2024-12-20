@@ -1,11 +1,11 @@
 #include "file_pusher.h"
 
 #include <assert.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "adb/adb.h"
 #include "util/log.h"
-#include "util/process_intr.h"
 
 #define DEFAULT_PUSH_TARGET "/sdcard/Download/"
 

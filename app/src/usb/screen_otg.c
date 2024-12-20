@@ -1,7 +1,11 @@
 #include "screen_otg.h"
 
+#include <assert.h>
+#include <stddef.h>
+
 #include "icon.h"
 #include "options.h"
+#include "util/acksync.h"
 #include "util/log.h"
 
 static void
