@@ -57,6 +57,7 @@ cd "$SERVER_DIR/src/main/aidl"
 # Fake sources to expose hidden Android types to the project
 FAKE_SRC=( \
     android/content/*java \
+    android/hardware/*java \
 )
 
 SRC=( \

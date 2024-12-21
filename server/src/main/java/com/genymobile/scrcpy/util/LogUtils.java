@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.device.DeviceApp;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.video.VideoCodec;
+import com.genymobile.scrcpy.wrappers.CameraService;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
@@ -23,6 +24,7 @@ import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -122,56 +124,80 @@ public final class LogUtils {
 
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
+        CameraService cameraService = ServiceManager.getCameraService();
         CameraManager cameraManager = ServiceManager.getCameraManager();
         try {
-            String[] cameraIds = cameraManager.getCameraIdList();
+            String[] cameraIds = cameraService.getCameraIdList();
             if (cameraIds == null || cameraIds.length == 0) {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
-                    builder.append("\n    --camera-id=").append(id);
-                    CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-
-                    int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
-                    builder.append("    (").append(getCameraFacingName(facing)).append(", ");
-
-                    Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-                    builder.append(activeSize.width()).append("x").append(activeSize.height());
-
                     try {
-                        // Capture frame rates for low-FPS mode are the same for every resolution
-                        Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-                        SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
-                        builder.append(", fps=").append(uniqueLowFps);
-                    } catch (Exception e) {
-                        // Some devices may provide invalid ranges, causing an IllegalArgumentException "lower must be less than or equal to upper"
-                        Ln.w("Could not get available frame rates for camera " + id, e);
-                    }
+                        CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
 
-                    builder.append(')');
-
-                    if (includeSizes) {
-                        StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-
-                        android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
-                        if (sizes == null || sizes.length == 0) {
-                            builder.append("\n        (none)");
-                        } else {
-                            for (android.util.Size size : sizes) {
-                                builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                        int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
+                        if (capabilities == null) {
+                            continue;
+                        }
+                        // Ignore depth cameras as suggested by official documentation
+                        // <https://developer.android.com/media/camera/camera2/camera-enumeration>
+                        boolean isBackwardCompatible = false;
+                        for (int capability : capabilities) {
+                            if (capability == CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_BACKWARD_COMPATIBLE) {
+                                isBackwardCompatible = true;
+                                break;
                             }
                         }
+                        if (!isBackwardCompatible) {
+                            continue;
+                        }
 
-                        android.util.Size[] highSpeedSizes = configs.getHighSpeedVideoSizes();
-                        if (highSpeedSizes != null && highSpeedSizes.length > 0) {
-                            builder.append("\n      High speed capture (--camera-high-speed):");
-                            for (android.util.Size size : highSpeedSizes) {
-                                Range<Integer>[] highFpsRanges = configs.getHighSpeedVideoFpsRanges();
-                                SortedSet<Integer> uniqueHighFps = getUniqueSet(highFpsRanges);
-                                builder.append("\n        - ").append(size.getWidth()).append("x").append(size.getHeight());
-                                builder.append(" (fps=").append(uniqueHighFps).append(')');
+                        builder.append("\n    --camera-id=").append(id);
+
+                        int facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+                        builder.append("    (").append(getCameraFacingName(facing)).append(", ");
+
+                        Rect activeSize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+                        builder.append(activeSize.width()).append("x").append(activeSize.height());
+
+                        try {
+                            // Capture frame rates for low-FPS mode are the same for every resolution
+                            Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                            SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
+                            builder.append(", fps=").append(uniqueLowFps);
+                        } catch (Exception e) {
+                            // Some devices may provide invalid ranges, causing an IllegalArgumentException "lower must be less than or equal to upper"
+                            Ln.w("Could not get available frame rates for camera " + id, e);
+                        }
+
+                        builder.append(')');
+
+                        if (includeSizes) {
+                            StreamConfigurationMap configs = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+
+                            android.util.Size[] sizes = configs.getOutputSizes(MediaCodec.class);
+                            if (sizes == null || sizes.length == 0) {
+                                builder.append("\n        (none)");
+                            } else {
+                                for (android.util.Size size : sizes) {
+                                    builder.append("\n        - ").append(size.getWidth()).append('x').append(size.getHeight());
+                                }
+                            }
+
+                            android.util.Size[] highSpeedSizes = configs.getHighSpeedVideoSizes();
+                            if (highSpeedSizes != null && highSpeedSizes.length > 0) {
+                                builder.append("\n      High speed capture (--camera-high-speed):");
+                                for (android.util.Size size : highSpeedSizes) {
+                                    Range<Integer>[] highFpsRanges = configs.getHighSpeedVideoFpsRanges();
+                                    SortedSet<Integer> uniqueHighFps = getUniqueSet(highFpsRanges);
+                                    builder.append("\n        - ").append(size.getWidth()).append("x").append(size.getHeight());
+                                    builder.append(" (fps=").append(uniqueHighFps).append(')');
+                                }
                             }
                         }
+                    } catch (IllegalArgumentException ignore) {
+                        // Samsung devices might throw an IllegalArgumentException
+                        // when getting camera characteristics for hidden cameras
                     }
                 }
             }
