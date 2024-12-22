@@ -163,8 +163,10 @@ public final class LogUtils {
                     try {
                         // Capture frame rates for low-FPS mode are the same for every resolution
                         Range<Integer>[] lowFpsRanges = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
-                        SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
-                        builder.append(", fps=").append(uniqueLowFps);
+                        if (lowFpsRanges != null) {
+                            SortedSet<Integer> uniqueLowFps = getUniqueSet(lowFpsRanges);
+                            builder.append(", fps=").append(uniqueLowFps);
+                        }
                     } catch (Exception e) {
                         // Some devices may provide invalid ranges, causing an IllegalArgumentException "lower must be less than or equal to upper"
                         Ln.w("Could not get available frame rates for camera " + id, e);
