@@ -206,6 +206,13 @@ jobs:
                 libtool
 
       - name: Build
+        env:
+          # the default Xcode (and macOS SDK) version can be found at
+          # <https://github.com/actions/runner-images/blob/main/images/macos/macos-15-Readme.md#xcode>
+          #
+          # then the minimal supported deployment target of that macOS SDK can be found at
+          # <https://developer.apple.com/support/xcode/#minimum-requirements>
+          MACOSX_DEPLOYMENT_TARGET: 10.13
         run: release/build_macos.sh aarch64
 
       # upload-artifact does not preserve permissions
@@ -242,6 +249,13 @@ jobs:
              # autoconf and libtool are already installed on macos-13
 
       - name: Build
+        env:
+          # the default Xcode (and macOS SDK) version can be found at
+          # <https://github.com/actions/runner-images/blob/main/images/macos/macos-13-Readme.md#xcode>
+          #
+          # then the minimal supported deployment target of that macOS SDK can be found at
+          # <https://developer.apple.com/support/xcode/#minimum-requirements>
+          MACOSX_DEPLOYMENT_TARGET: 10.13
         run: release/build_macos.sh x86_64
 
       # upload-artifact does not preserve permissions
