@@ -140,7 +140,7 @@ public final class LogUtils {
         CameraManager cameraManager = ServiceManager.getCameraManager();
         try {
             String[] cameraIds = cameraManager.getCameraIdList();
-            if (cameraIds == null || cameraIds.length == 0) {
+            if (cameraIds.length == 0) {
                 builder.append("\n    (none)");
             } else {
                 for (String id : cameraIds) {
