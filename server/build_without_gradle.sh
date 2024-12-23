@@ -47,10 +47,8 @@ EOF
 
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
-"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. android/view/IRotationWatcher.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. \
     android/content/IOnPrimaryClipChangedListener.aidl
-"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. android/view/IDisplayFoldListener.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. -p "$ANDROID_AIDL" \
     android/view/IDisplayWindowListener.aidl
 

@@ -5,9 +5,7 @@ import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.TargetApi;
 import android.os.IInterface;
-import android.view.IDisplayFoldListener;
 import android.view.IDisplayWindowListener;
-import android.view.IRotationWatcher;
 
 import java.lang.reflect.Method;
 
@@ -179,52 +177,6 @@ public final class WindowManager {
             }
         } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
-        }
-    }
-
-    public void registerRotationWatcher(IRotationWatcher rotationWatcher, int displayId) {
-        try {
-            Class<?> cls = manager.getClass();
-            try {
-                // display parameter added since this commit:
-                // https://android.googlesource.com/platform/frameworks/base/+/35fa3c26adcb5f6577849fd0df5228b1f67cf2c6%5E%21/#F1
-                cls.getMethod("watchRotation", IRotationWatcher.class, int.class).invoke(manager, rotationWatcher, displayId);
-            } catch (NoSuchMethodException e) {
-                // old version
-                if (displayId != 0) {
-                    Ln.e("Secondary display rotation not supported on this device");
-                    return;
-                }
-                cls.getMethod("watchRotation", IRotationWatcher.class).invoke(manager, rotationWatcher);
-            }
-        } catch (Exception e) {
-            Ln.e("Could not register rotation watcher", e);
-        }
-    }
-
-    public void unregisterRotationWatcher(IRotationWatcher rotationWatcher) {
-        try {
-            manager.getClass().getMethod("removeRotationWatcher", IRotationWatcher.class).invoke(manager, rotationWatcher);
-        } catch (Exception e) {
-            Ln.e("Could not unregister rotation watcher", e);
-        }
-    }
-
-    @TargetApi(AndroidVersions.API_29_ANDROID_10)
-    public void registerDisplayFoldListener(IDisplayFoldListener foldListener) {
-        try {
-            manager.getClass().getMethod("registerDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
-        } catch (Exception e) {
-            Ln.e("Could not register display fold listener", e);
-        }
-    }
-
-    @TargetApi(AndroidVersions.API_29_ANDROID_10)
-    public void unregisterDisplayFoldListener(IDisplayFoldListener foldListener) {
-        try {
-            manager.getClass().getMethod("unregisterDisplayFoldListener", IDisplayFoldListener.class).invoke(manager, foldListener);
-        } catch (Exception e) {
-            Ln.e("Could not unregister display fold listener", e);
         }
     }
 
