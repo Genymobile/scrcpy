@@ -113,6 +113,7 @@ enum {
     OPT_ANGLE,
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
+    OPT_DISPLAY_IME_POLICY,
 };
 
 struct sc_option {
@@ -365,6 +366,19 @@ static const struct sc_option options[] = {
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
                 "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_DISPLAY_IME_POLICY,
+        .longopt = "display-ime-policy",
+        .argdesc = "value",
+        .text = "Set the policy for selecting where the IME should be "
+                "displayed.\n"
+                "Possible values are \"local\", \"fallback\" and \"hide\".\n"
+                "\"local\" means that the IME should appear on the local "
+                "display.\n"
+                "\"fallback\" means that the IME should appear on a fallback "
+                "display (the default display).\n"
+                "\"hide\" means that the IME should be hidden.\n",
     },
     {
         .longopt_id = OPT_DISPLAY_ORIENTATION,
@@ -1615,6 +1629,25 @@ parse_audio_output_buffer(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_display_ime_policy(const char *s, enum sc_display_ime_policy *policy) {
+    if (!strcmp(s, "local")) {
+        *policy = SC_DISPLAY_IME_POLICY_LOCAL;
+        return true;
+    }
+    if (!strcmp(s, "fallback")) {
+        *policy = SC_DISPLAY_IME_POLICY_FALLBACK;
+        return true;
+    }
+    if (!strcmp(s, "hide")) {
+        *policy = SC_DISPLAY_IME_POLICY_HIDE;
+        return true;
+    }
+    LOGE("Unsupported display IME policy: %s (expected local, fallback or "
+         "hide)", s);
+    return false;
+}
+
+static bool
 parse_orientation(const char *s, enum sc_orientation *orientation) {
     if (!strcmp(s, "0")) {
         *orientation = SC_ORIENTATION_0;
@@ -2722,6 +2755,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_VD_SYSTEM_DECORATIONS:
                 opts->vd_system_decorations = false;
                 break;
+            case OPT_DISPLAY_IME_POLICY:
+                if (!parse_display_ime_policy(optarg,
+                                              &opts->display_ime_policy)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2978,6 +3017,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
+            LOGE("--display-ime-policy is only available with "
+                 "--video-source=display");
+            return false;
+        }
+
         if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
             LOGE("Cannot specify both --camera-id and --camera-facing");
             return false;
@@ -3016,6 +3061,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->display_id != 0 && opts->new_display) {
         LOGE("Cannot specify both --display-id and --new-display");
+        return false;
+    }
+
+    if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED
+            && opts->display_id == 0 && !opts->new_display) {
+        LOGE("--display-ime-policy is only supported on a secondary display");
         return false;
     }
 

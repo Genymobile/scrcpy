@@ -89,6 +89,13 @@ enum sc_orientation_lock {
     SC_ORIENTATION_LOCKED_INITIAL, // lock to initial device orientation
 };
 
+enum sc_display_ime_policy {
+    SC_DISPLAY_IME_POLICY_UNDEFINED,
+    SC_DISPLAY_IME_POLICY_LOCAL,
+    SC_DISPLAY_IME_POLICY_FALLBACK,
+    SC_DISPLAY_IME_POLICY_HIDE,
+};
+
 static inline bool
 sc_orientation_is_mirror(enum sc_orientation orientation) {
     assert(!(orientation & ~7));
@@ -251,6 +258,7 @@ struct scrcpy_options {
     enum sc_orientation_lock capture_orientation_lock;
     enum sc_orientation display_orientation;
     enum sc_orientation record_orientation;
+    enum sc_display_ime_policy display_ime_policy;
     int16_t window_x; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     int16_t window_y; // SC_WINDOW_POSITION_UNDEFINED for "auto"
     uint16_t window_width;

@@ -162,6 +162,19 @@ The available display ids can be listed by \fB\-\-list\-displays\fR.
 Default is 0.
 
 .TP
+.BI "\-\-display\-ime\-policy " value
+Set the policy for selecting where the IME should be displayed.
+
+Possible values are "local", "fallback" and "hide":
+
+ - "local" means that the IME should appear on the local display.
+ - "fallback" means that the IME should appear on a fallback display (the default display).
+ - "hide" means that the IME should be hidden.
+
+By default, the IME policy is left unchanged.
+
+
+.TP
 .BI "\-\-display\-orientation " value
 Set the initial display orientation.
 
