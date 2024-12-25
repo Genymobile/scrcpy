@@ -109,6 +109,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .audio_dup = false,
     .new_display = NULL,
     .start_app = NULL,
+    .display_ime_policy = SC_DISPLAY_IME_POLICY_UNDEFINDED,
     .angle = NULL,
     .vd_destroy_content = true,
     .vd_system_decorations = true,

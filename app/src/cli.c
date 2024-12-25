@@ -94,6 +94,7 @@ enum {
     OPT_CAMERA_FPS,
     OPT_CAMERA_HIGH_SPEED,
     OPT_DISPLAY_ORIENTATION,
+    OPT_DISPLAY_IME_POLICY,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
     OPT_KEYBOARD,
@@ -365,6 +366,20 @@ static const struct sc_option options[] = {
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
                 "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_DISPLAY_IME_POLICY,
+        .longopt = "display-ime-policy",
+        .argdesc = "value",
+        .text = "Sets the policy for how the display should show IME.\n"
+                "Possible values are \"local\", \"fallback_display\" and "
+                "\"hide\".\n"
+                "The \"local\" policy means that the IME should appear on the "
+                "local display.\n"
+                "The \"fallback_display\" policy means that the IME should "
+                "appear on a fallback display. The fallback display is always "
+                "DEFAULT DISPLAY.\n"
+                "The \"hide\" policy means that the IME should be hidden.\n",
     },
     {
         .longopt_id = OPT_DISPLAY_ORIENTATION,
@@ -1616,6 +1631,24 @@ parse_audio_output_buffer(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_display_ime_policy(const char *optarg, enum sc_display_ime_policy *policy) {
+    if (!strcmp(optarg, "local")) {
+        *policy = SC_DISPLAY_IME_POLICY_LOCAL;
+        return true;
+    }
+    if (!strcmp(optarg, "fallback_display")) {
+        *policy = SC_DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+        return true;
+    }
+    if (!strcmp(optarg, "hide")) {
+        *policy = SC_DISPLAY_IME_POLICY_HIDE;
+        return true;
+    }
+    LOGE("Unsupported display IME policy: %s (expected local, fallback_display, hide)", optarg);
+    return false;
+}
+
+static bool
 parse_orientation(const char *s, enum sc_orientation *orientation) {
     if (!strcmp(s, "0")) {
         *orientation = SC_ORIENTATION_0;
@@ -2723,6 +2756,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_VD_SYSTEM_DECORATIONS:
                 opts->vd_system_decorations = false;
                 break;
+            case OPT_DISPLAY_IME_POLICY:
+                if (!parse_display_ime_policy(optarg, &opts->display_ime_policy)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2978,6 +3016,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINDED) {
+            LOGE("--display-ime_policy is only available with --video-source=display");
+            return false;
+        }
+
         if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
             LOGE("Cannot specify both --camera-id and --camera-facing");
             return false;
@@ -3014,9 +3057,17 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         return false;
     }
 
-    if (opts->display_id != 0 && opts->new_display) {
-        LOGE("Cannot specify both --display-id and --new-display");
-        return false;
+    if (opts->display_id != 0) {
+        if (opts->new_display) {
+            LOGE("Cannot specify both --display-id and --new-display");
+            return false;
+        }
+    } else {
+        if (!opts->new_display
+             && opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINDED) {
+            LOGE("--display-ime-policy not supported if display_id == 0 and new_display == NULL");
+            return false;
+        }
     }
 
     if (opts->audio && opts->audio_source == SC_AUDIO_SOURCE_AUTO) {
@@ -3198,6 +3249,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
         if (opts->display_id) {
             LOGE("OTG mode: could not select display");
+            return false;
+        }
+        if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINDED) {
+            LOGE("OTG mode: could not set the policy for how the display should show IME.");
             return false;
         }
         if (v4l2) {

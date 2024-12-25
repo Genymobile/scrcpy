@@ -436,6 +436,7 @@ scrcpy(struct scrcpy_options *options) {
         .control = options->control,
         .display_id = options->display_id,
         .new_display = options->new_display,
+        .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,

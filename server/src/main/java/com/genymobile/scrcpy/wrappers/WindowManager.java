@@ -10,6 +10,11 @@ import android.view.IDisplayWindowListener;
 import java.lang.reflect.Method;
 
 public final class WindowManager {
+    // see https://android.googlesource.com/platform/frameworks/base.git/+/refs/heads/main/core/java/android/view/WindowManager.java#692
+    public static final int DISPLAY_IME_POLICY_LOCAL = 0;
+    public static final int DISPLAY_IME_POLICY_FALLBACK_DISPLAY = 1;
+    public static final int DISPLAY_IME_POLICY_HIDE = 2;
+
     private final IInterface manager;
     private Method getRotationMethod;
 
@@ -21,6 +26,13 @@ public final class WindowManager {
 
     private Method thawDisplayRotationMethod;
     private int thawDisplayRotationMethodVersion;
+
+    private Method getDisplayImePolicyMethod;
+    private boolean getDisplayImePolicyMethodNewVersion = true;
+
+    private Method setDisplayImePolicyMethod;
+    private boolean setDisplayImePolicyMethodNewVersion = true;
+
 
     static WindowManager create() {
         IInterface manager = ServiceManager.getService("window", "android.view.IWindowManager");
@@ -196,6 +208,66 @@ public final class WindowManager {
             manager.getClass().getMethod("unregisterDisplayWindowListener", IDisplayWindowListener.class).invoke(manager, listener);
         } catch (Exception e) {
             Ln.e("Could not unregister display window listener", e);
+        }
+    }
+
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
+    private Method getGetDisplayImePolicyMethod() throws NoSuchMethodException {
+        if (getDisplayImePolicyMethod == null) {
+            try {
+                getDisplayImePolicyMethod = manager.getClass().getMethod("getDisplayImePolicy", int.class);
+            } catch (NoSuchMethodException e) {
+                getDisplayImePolicyMethod = manager.getClass().getMethod("shouldShowIme", int.class);
+                getDisplayImePolicyMethodNewVersion = false;
+            }
+        }
+        return getDisplayImePolicyMethod;
+    }
+
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
+    public int getDisplayImePolicy(int displayId) {
+        try {
+            Method method = getGetDisplayImePolicyMethod();
+            if (getDisplayImePolicyMethodNewVersion) {
+                    return (int) method.invoke(manager, displayId);
+            } else {
+                boolean shouldShow = (boolean) method.invoke(manager, displayId);
+                return shouldShow ? DISPLAY_IME_POLICY_LOCAL : DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+            }
+        } catch (ReflectiveOperationException e) {
+            Ln.e("Could not invoke method", e);
+            return DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+        }
+    }
+
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
+    private Method getSetDisplayImePolicyMethod() throws NoSuchMethodException {
+        if (setDisplayImePolicyMethod == null) {
+            try {
+                setDisplayImePolicyMethod = manager.getClass().getMethod("setDisplayImePolicy", int.class, int.class);
+            } catch (NoSuchMethodException e) {
+                setDisplayImePolicyMethod = manager.getClass().getMethod("setShouldShowIme", int.class, boolean.class);
+                setDisplayImePolicyMethodNewVersion = false;
+            }
+        }
+        return setDisplayImePolicyMethod;
+    }
+
+    @TargetApi(AndroidVersions.API_29_ANDROID_10)
+    public void setDisplayImePolicy(int displayId, int imePolicy) {
+        try {
+            Method method = getSetDisplayImePolicyMethod();
+            if (setDisplayImePolicyMethodNewVersion) {
+                method.invoke(manager, displayId, imePolicy);
+            } else {
+                if (imePolicy != DISPLAY_IME_POLICY_HIDE) {
+                    method.invoke(manager, displayId, imePolicy == DISPLAY_IME_POLICY_LOCAL);
+                } else {
+                    Ln.w("DISPLAY_IME_POLICY_HIDE not supported on this device");
+                }
+            }
+        } catch (ReflectiveOperationException e) {
+            Ln.e("Could not invoke method", e);
         }
     }
 }

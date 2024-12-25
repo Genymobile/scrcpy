@@ -61,3 +61,14 @@ To move them to the main display instead, use:
 ```
 scrcpy --new-display --no-vd-destroy-content
 ```
+
+## Display IME policy
+
+By default, virtual display's IME appears on the DEFAULT display.
+
+TO appears on the LOCAL display, use `--display-ime-policy=local`:
+
+```bash
+scrcpy --display-id=1 --display-ime-policy=local
+scrcpy --new-display --display-ime-policy=local
+```

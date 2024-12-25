@@ -48,6 +48,7 @@ public class Options {
     private boolean showTouches;
     private boolean stayAwake;
     private int screenOffTimeout = -1;
+    private int displayImePolicy = -1;
     private List<CodecOption> videoCodecOptions;
     private List<CodecOption> audioCodecOptions;
 
@@ -192,6 +193,10 @@ public class Options {
 
     public List<CodecOption> getAudioCodecOptions() {
         return audioCodecOptions;
+    }
+
+    public int getDisplayImePolicy() {
+        return displayImePolicy;
     }
 
     public String getVideoEncoder() {
@@ -380,6 +385,14 @@ public class Options {
                     break;
                 case "display_id":
                     options.displayId = Integer.parseInt(value);
+                    break;
+                case "display_ime_policy":
+                    if (!value.isEmpty()) {
+                        options.displayImePolicy = Integer.parseInt(value);
+                        if (options.displayImePolicy == -1) {
+                            throw new IllegalArgumentException("Invalid display IME policy: " + options.displayImePolicy);
+                        }
+                    }
                     break;
                 case "show_touches":
                     options.showTouches = Boolean.parseBoolean(value);
