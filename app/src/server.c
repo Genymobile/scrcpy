@@ -155,6 +155,21 @@ sc_server_get_audio_source_name(enum sc_audio_source audio_source) {
     }
 }
 
+static const char *
+sc_server_get_display_ime_policy_name(enum sc_display_ime_policy policy) {
+    switch (policy) {
+        case SC_DISPLAY_IME_POLICY_LOCAL:
+            return "local";
+        case SC_DISPLAY_IME_POLICY_FALLBACK:
+            return "fallback";
+        case SC_DISPLAY_IME_POLICY_HIDE:
+            return "hide";
+        default:
+            assert(!"unexpected display IME policy");
+            return NULL;
+    }
+}
+
 static bool
 validate_string(const char *s) {
     // The parameters values are passed as command line arguments to adb, so
@@ -375,6 +390,10 @@ execute_server(struct sc_server *server,
     if (params->new_display) {
         VALIDATE_STRING(params->new_display);
         ADD_PARAM("new_display=%s", params->new_display);
+    }
+    if (params->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
+        ADD_PARAM("display_ime_policy=%s",
+            sc_server_get_display_ime_policy_name(params->display_ime_policy));
     }
     if (!params->vd_destroy_content) {
         ADD_PARAM("vd_destroy_content=false");
