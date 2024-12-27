@@ -80,9 +80,15 @@ public final class Server {
             throw new ConfigurationException("Camera mirroring is not supported");
         }
 
-        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10 && options.getNewDisplay() != null) {
-            Ln.e("New virtual display is not supported before Android 10");
-            throw new ConfigurationException("New virtual display is not supported");
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
+            if (options.getNewDisplay() != null) {
+                Ln.e("New virtual display is not supported before Android 10");
+                throw new ConfigurationException("New virtual display is not supported");
+            }
+            if (options.getDisplayImePolicy() != -1) {
+                Ln.e("Display IME policy is not supported before Android 10");
+                throw new ConfigurationException("Display IME policy is not supported");
+            }
         }
 
         CleanUp cleanUp = null;

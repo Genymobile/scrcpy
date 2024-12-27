@@ -170,6 +170,16 @@ Possible values are 0, 90, 180, 270, flip0, flip90, flip180 and flip270. The num
 Default is 0.
 
 .TP
+.BI "\-\-display\-ime-policy " value
+Sets the policy for how the display should show IME.
+
+Possible values are "local", "fallback_display" and "hide".
+
+ - The "local" policy means that the IME should appear on the local display.
+ - The "fallback_display" policy means that the IME should appear on a fallback display. The fallback display is always DEFAULT DISPLAY.
+ - The "hide" policy means that the IME should be hidden.
+
+.TP
 .B \-e, \-\-select\-tcpip
 Use TCP/IP device (if there is exactly one, like adb -e).
 
