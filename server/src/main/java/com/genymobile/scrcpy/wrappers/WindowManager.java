@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.TargetApi;
+import android.os.Build;
 import android.os.IInterface;
 import android.view.IDisplayWindowListener;
 
@@ -28,11 +29,8 @@ public final class WindowManager {
     private int thawDisplayRotationMethodVersion;
 
     private Method getDisplayImePolicyMethod;
-    private boolean getDisplayImePolicyMethodNewVersion = true;
 
     private Method setDisplayImePolicyMethod;
-    private boolean setDisplayImePolicyMethodNewVersion = true;
-
 
     static WindowManager create() {
         IInterface manager = ServiceManager.getService("window", "android.view.IWindowManager");
@@ -214,11 +212,10 @@ public final class WindowManager {
     @TargetApi(AndroidVersions.API_29_ANDROID_10)
     private Method getGetDisplayImePolicyMethod() throws NoSuchMethodException {
         if (getDisplayImePolicyMethod == null) {
-            try {
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
                 getDisplayImePolicyMethod = manager.getClass().getMethod("getDisplayImePolicy", int.class);
-            } catch (NoSuchMethodException e) {
+            } else {
                 getDisplayImePolicyMethod = manager.getClass().getMethod("shouldShowIme", int.class);
-                getDisplayImePolicyMethodNewVersion = false;
             }
         }
         return getDisplayImePolicyMethod;
@@ -228,26 +225,25 @@ public final class WindowManager {
     public int getDisplayImePolicy(int displayId) {
         try {
             Method method = getGetDisplayImePolicyMethod();
-            if (getDisplayImePolicyMethodNewVersion) {
-                    return (int) method.invoke(manager, displayId);
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
+                return (int) method.invoke(manager, displayId);
             } else {
                 boolean shouldShow = (boolean) method.invoke(manager, displayId);
                 return shouldShow ? DISPLAY_IME_POLICY_LOCAL : DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
             }
         } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
-            return DISPLAY_IME_POLICY_FALLBACK_DISPLAY;
+            return -1;
         }
     }
 
     @TargetApi(AndroidVersions.API_29_ANDROID_10)
     private Method getSetDisplayImePolicyMethod() throws NoSuchMethodException {
         if (setDisplayImePolicyMethod == null) {
-            try {
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
                 setDisplayImePolicyMethod = manager.getClass().getMethod("setDisplayImePolicy", int.class, int.class);
-            } catch (NoSuchMethodException e) {
+            } else {
                 setDisplayImePolicyMethod = manager.getClass().getMethod("setShouldShowIme", int.class, boolean.class);
-                setDisplayImePolicyMethodNewVersion = false;
             }
         }
         return setDisplayImePolicyMethod;
@@ -257,13 +253,13 @@ public final class WindowManager {
     public void setDisplayImePolicy(int displayId, int imePolicy) {
         try {
             Method method = getSetDisplayImePolicyMethod();
-            if (setDisplayImePolicyMethodNewVersion) {
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_31_ANDROID_12) {
                 method.invoke(manager, displayId, imePolicy);
             } else {
                 if (imePolicy != DISPLAY_IME_POLICY_HIDE) {
                     method.invoke(manager, displayId, imePolicy == DISPLAY_IME_POLICY_LOCAL);
                 } else {
-                    Ln.w("DISPLAY_IME_POLICY_HIDE not supported on this device");
+                    Ln.w("DISPLAY_IME_POLICY_HIDE is not supported on this device");
                 }
             }
         } catch (ReflectiveOperationException e) {
