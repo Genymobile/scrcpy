@@ -34,7 +34,7 @@ brew install scrcpy
 You need `adb`, accessible from your `PATH`. If you don't have it yet:
 
 ```bash
-brew install --cask android-platform-tools
+brew install android-platform-tools --cask 
 ```
 
 Alternatively, Scrcpy is also available in [MacPorts], which sets up `adb` for you:
