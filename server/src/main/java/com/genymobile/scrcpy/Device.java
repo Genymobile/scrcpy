@@ -124,6 +124,10 @@ public final class Device {
         }
     }
 
+    public int getDisplayId() {
+        return displayId;
+    }
+
     public synchronized ScreenInfo getScreenInfo() {
         return screenInfo;
     }

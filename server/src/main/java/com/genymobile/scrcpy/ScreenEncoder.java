@@ -1,7 +1,9 @@
 package com.genymobile.scrcpy;
 
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
+import android.hardware.display.VirtualDisplay;
 import android.graphics.Rect;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -36,6 +38,9 @@ public class ScreenEncoder implements Connection.StreamInvalidateListener, Runna
     private VideoSettings videoSettings;
     private MediaFormat format;
     private int timeout = -1;
+
+    private IBinder display;
+    private VirtualDisplay virtualDisplay;
 
     public ScreenEncoder(VideoSettings videoSettings) {
         this.videoSettings = videoSettings;
@@ -97,7 +102,15 @@ public class ScreenEncoder implements Connection.StreamInvalidateListener, Runna
         try {
             do {
                 MediaCodec codec = createCodec(videoSettings.getEncoderName());
-                IBinder display = createDisplay();
+                if (display != null) {
+                    destroyDisplay(display);
+                    display = null;
+                }
+                if (virtualDisplay != null) {
+                    virtualDisplay.release();
+                    virtualDisplay = null;
+                }
+
                 ScreenInfo screenInfo = device.getScreenInfo();
                 Rect contentRect = screenInfo.getContentRect();
                 // include the locked video orientation
@@ -110,14 +123,36 @@ public class ScreenEncoder implements Connection.StreamInvalidateListener, Runna
                 setSize(format, videoRect.width(), videoRect.height());
                 configure(codec, format);
                 Surface surface = codec.createInputSurface();
-                setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                try {
+                    ServiceManager serviceManager = new ServiceManager();
+                    virtualDisplay = serviceManager.getDisplayManager()
+                            .createVirtualDisplay("scrcpy", videoRect.width(), videoRect.height(), device.getDisplayId(), surface);
+                    Ln.d("Display: using DisplayManager API");
+                } catch (Exception displayManagerException) {
+                    try {
+                        display = createDisplay();
+                        setDisplaySurface(display, surface, videoRotation, contentRect, unlockedVideoRect, layerStack);
+                        Ln.d("Display: using SurfaceControl API");
+                    } catch (Exception surfaceControlException) {
+                        Ln.e("Could not create display using DisplayManager", displayManagerException);
+                        Ln.e("Could not create display using SurfaceControl", surfaceControlException);
+                        throw new AssertionError("Could not create display");
+                    }
+                }
                 codec.start();
                 try {
                     alive = encode(codec);
                     // do not call stop() on exception, it would trigger an IllegalStateException
                     codec.stop();
                 } finally {
-                    destroyDisplay(display);
+                    if (display != null) {
+                        destroyDisplay(display);
+                        display = null;
+                    }
+                    if (virtualDisplay != null) {
+                        virtualDisplay.release();
+                        virtualDisplay = null;
+                    }
                     codec.release();
                     surface.release();
                 }
@@ -250,7 +285,7 @@ public class ScreenEncoder implements Connection.StreamInvalidateListener, Runna
         return format;
     }
 
-    private static IBinder createDisplay() {
+    private static IBinder createDisplay() throws Exception {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
         boolean secure = Build.VERSION.SDK_INT < Build.VERSION_CODES.R || (Build.VERSION.SDK_INT == Build.VERSION_CODES.R && !"S"
