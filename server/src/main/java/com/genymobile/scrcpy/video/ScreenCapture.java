@@ -111,6 +111,10 @@ public class ScreenCapture extends SurfaceCapture {
             virtualDisplay = null;
         }
 
+        if (transform == null) {
+            transform = AffineMatrix.IDENTITY;
+        }
+
         Size inputSize;
         if (transform != null) {
             // If there is a filter, it must receive the full display content

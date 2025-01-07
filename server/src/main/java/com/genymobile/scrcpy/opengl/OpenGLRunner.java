@@ -193,14 +193,20 @@ public final class OpenGLRunner {
 
         filter.init();
 
-        surfaceTexture.setOnFrameAvailableListener(surfaceTexture -> {
-            if (stopped) {
-                // Make sure to never render after resources have been released
-                return;
-            }
+        Runnable runnable = new Runnable() {
+            @Override public void run() {
+                if (stopped) {
+                    // Make sure to never render after resources have been released
+                    return;
+                }
 
-            render(outputSize);
-        }, handler);
+                render(outputSize);
+
+                handler.postDelayed(this, 15);
+            }
+        };
+
+        handler.post(runnable);
     }
 
     private void render(Size outputSize) {
@@ -219,7 +225,7 @@ public final class OpenGLRunner {
 
         filter.draw(textureId, matrix);
 
-        EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, surfaceTexture.getTimestamp());
+        //EGLExt.eglPresentationTimeANDROID(eglDisplay, eglSurface, surfaceTexture.getTimestamp());
         EGL14.eglSwapBuffers(eglDisplay, eglSurface);
     }
 
