@@ -11,6 +11,8 @@ scrcpy --new-display         # use the main display size and density
 scrcpy --new-display=/240    # use the main display size and 240 dpi
 ```
 
+The new virtual display is destroyed on exit.
+
 ## Start app
 
 On some devices, a launcher is available in the virtual display.
