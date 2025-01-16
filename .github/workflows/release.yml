@@ -187,13 +187,19 @@ jobs:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
 
-  build-macos-aarch64:
-    runs-on: macos-latest
+  build-macos:
+    strategy:
+      matrix:
+        include:
+          - { os: macos-latest, arch: aarch64, uname: arm64 }
+          - { os: macos-13, arch: x86_64, uname: x86_64 }
+    name: build-macos-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
     steps:
       - name: Check architecture
         run: |
             arch=$(uname -m)
-            if [[ "$arch" != arm64 ]]
+            if [[ "$arch" != ${{ matrix.uname }} ]]
             then
                 echo "Unexpected architecture: $arch" >&2
                 exit 1
@@ -208,12 +214,12 @@ jobs:
                 libtool
 
       - name: Build
-        run: release/build_macos.sh aarch64
+        run: release/build_macos.sh ${{ matrix.arch }}
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-macos-aarch64
+            cd release/work/build-macos-${{ matrix.arch }}
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -221,44 +227,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-macos-aarch64-intermediate
-          path: release/work/build-macos-aarch64/dist-tar/
-
-  build-macos-x86_64:
-    runs-on: macos-13
-    steps:
-      - name: Check architecture
-        run: |
-            arch=$(uname -m)
-            if [[ "$arch" != x86_64 ]]
-            then
-                echo "Unexpected architecture: $arch" >&2
-                exit 1
-            fi
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: brew install meson ninja nasm libiconv zlib automake
-             # autoconf and libtool are already installed on macos-13
-
-      - name: Build
-        run: release/build_macos.sh x86_64
-
-      # upload-artifact does not preserve permissions
-      - name: Tar
-        run: |
-            cd release/work/build-macos-x86_64
-            mkdir dist-tar
-            cd dist-tar
-            tar -C .. -cvf dist.tar.gz dist/
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-macos-x86_64-intermediate
-          path: release/work/build-macos-x86_64/dist-tar/
+          name: build-macos-${{ matrix.arch }}-intermediate
+          path: release/work/build-macos-${{ matrix.arch }}/dist-tar/
 
   package-linux-x86_64:
     needs:
@@ -371,7 +341,7 @@ jobs:
   package-macos-aarch64:
     needs:
       - build-scrcpy-server
-      - build-macos-aarch64
+      - build-macos
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -407,7 +377,7 @@ jobs:
   package-macos-x86_64:
     needs:
       - build-scrcpy-server
-      - build-macos-x86_64
+      - build-macos
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
