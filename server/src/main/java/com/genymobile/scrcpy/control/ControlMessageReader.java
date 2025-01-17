@@ -56,6 +56,8 @@ public class ControlMessageReader {
                 return parseUhidDestroy();
             case ControlMessage.TYPE_START_APP:
                 return parseStartApp();
+            case ControlMessage.TYPE_REQUEST_IDR:
+                return ControlMessage.createEmpty(type);
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
