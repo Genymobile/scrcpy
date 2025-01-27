@@ -52,8 +52,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final AtomicBoolean stopped = new AtomicBoolean();
 
     private final CaptureReset reset = new CaptureReset();
-
-    private final AtomicBoolean idrRequested = new AtomicBoolean();
+    private final CaptureIdr requestIdr = new CaptureIdr();
 
     public SurfaceEncoder(SurfaceCapture capture, Streamer streamer, Options options) {
         this.capture = capture;
@@ -71,6 +70,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
         capture.init(reset);
+        requestIdr.setRunningMediaCodec(mediaCodec);
 
         try {
             boolean alive;
@@ -202,13 +202,6 @@ public class SurfaceEncoder implements AsyncProcessor {
 
         boolean eos;
         do {
-            if (idrRequested.get()) {
-                Bundle bundle = new Bundle();
-                bundle.putInt(MediaCodec.PARAMETER_KEY_REQUEST_SYNC_FRAME, 0);
-                codec.setParameters(bundle);
-                idrRequested.set(false);
-            }
-
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
                 eos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
@@ -335,6 +328,6 @@ public class SurfaceEncoder implements AsyncProcessor {
     }
 
     public void requestIdr() {
-        idrRequested.set(true);
+        requestIdr.requestIdr();
     }
 }
