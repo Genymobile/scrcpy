@@ -83,6 +83,13 @@ enum sc_orientation {         // v v v
     SC_ORIENTATION_FLIP_270,  // 1 1 1
 };
 
+enum sc_display_ime_policy {
+    SC_DISPLAY_IME_POLICY_UNDEFINDED = -1,
+    SC_DISPLAY_IME_POLICY_LOCAL,
+    SC_DISPLAY_IME_POLICY_FALLBACK_DISPLAY,
+    SC_DISPLAY_IME_POLICY_HIDE,
+};
+
 enum sc_orientation_lock {
     SC_ORIENTATION_UNLOCKED,
     SC_ORIENTATION_LOCKED_VALUE,   // lock to specified orientation
@@ -309,6 +316,7 @@ struct scrcpy_options {
     bool audio_dup;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
+    enum sc_display_ime_policy display_ime_policy;
     bool vd_destroy_content;
     bool vd_system_decorations;
 };

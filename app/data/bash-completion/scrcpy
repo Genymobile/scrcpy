@@ -23,6 +23,7 @@ _scrcpy() {
         -d --select-usb
         --disable-screensaver
         --display-id=
+        --display-ime-policy=
         --display-orientation=
         -e --select-tcpip
         -f --fullscreen
@@ -146,6 +147,10 @@ _scrcpy() {
             ;;
         --orientation|--display-orientation)
             COMPREPLY=($(compgen -W '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
+        --display-ime-policy)
+            COMPREPLY=($(compgen -W 'local fallback_display hide' -- "$cur"))
             return
             ;;
         --record-orientation)

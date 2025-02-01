@@ -4,6 +4,7 @@ import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.BatteryManager;
 import android.system.ErrnoException;
@@ -100,15 +101,27 @@ public final class CleanUp {
         boolean powerOffScreen = options.getPowerOffScreenOnClose();
         int displayId = options.getDisplayId();
 
+        int restoreDisplayImePolicy = -1;
+        if (displayId > 0) {
+            int displayImePolicy = options.getDisplayImePolicy();
+            if (displayImePolicy != -1) {
+                int currentValue = ServiceManager.getWindowManager().getDisplayImePolicy(displayId);
+                if (currentValue != displayImePolicy) {
+                    ServiceManager.getWindowManager().setDisplayImePolicy(displayId, displayImePolicy);
+                    restoreDisplayImePolicy = currentValue;
+                }
+            }
+        }
+
         try {
-            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout);
+            run(displayId, restoreStayOn, disableShowTouches, powerOffScreen, restoreScreenOffTimeout, restoreDisplayImePolicy);
         } catch (IOException e) {
             Ln.e("Clean up I/O exception", e);
         }
     }
 
-    private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout)
-            throws IOException {
+    private void run(int displayId, int restoreStayOn, boolean disableShowTouches, boolean powerOffScreen, int restoreScreenOffTimeout,
+            int restoreDisplayImePolicy) throws IOException {
         String[] cmd = {
                 "app_process",
                 "/",
@@ -118,6 +131,7 @@ public final class CleanUp {
                 String.valueOf(disableShowTouches),
                 String.valueOf(powerOffScreen),
                 String.valueOf(restoreScreenOffTimeout),
+                String.valueOf(restoreDisplayImePolicy),
         };
 
         ProcessBuilder builder = new ProcessBuilder(cmd);
@@ -178,6 +192,7 @@ public final class CleanUp {
         boolean disableShowTouches = Boolean.parseBoolean(args[2]);
         boolean powerOffScreen = Boolean.parseBoolean(args[3]);
         int restoreScreenOffTimeout = Integer.parseInt(args[4]);
+        int restoreDisplayImePolicy = Integer.parseInt(args[5]);
 
         // Dynamic option
         boolean restoreDisplayPower = false;
@@ -221,6 +236,11 @@ public final class CleanUp {
             } catch (SettingsException e) {
                 Ln.e("Could not restore \"screen_off_timeout\"", e);
             }
+        }
+
+        if (restoreDisplayImePolicy != -1) {
+            Ln.i("Restoring \"display IME policy\"");
+            ServiceManager.getWindowManager().setDisplayImePolicy(displayId, restoreDisplayImePolicy);
         }
 
         // Change the power of the main display when mirroring a virtual display
