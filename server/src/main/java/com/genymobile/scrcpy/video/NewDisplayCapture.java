@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.DisplayInfo;
@@ -14,6 +15,10 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.app.ActivityOptions;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
@@ -166,8 +171,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
-            int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
-                    | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+            int flags = VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
             if (vdDestroyContent) {
@@ -177,7 +181,8 @@ public class NewDisplayCapture extends SurfaceCapture {
                 flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
             }
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
-                flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
+                flags |= VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP
                         | VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED
                         | VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED;
@@ -190,6 +195,10 @@ public class NewDisplayCapture extends SurfaceCapture {
                     .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_33_ANDROID_13) {
+                displayLauncher(virtualDisplayId);
+            }
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {
@@ -257,5 +266,28 @@ public class NewDisplayCapture extends SurfaceCapture {
     @Override
     public void requestInvalidate() {
         invalidate();
+    }
+
+    private void displayLauncher(int virtualDisplayId) {
+        PackageManager pm = FakeContext.get().getPackageManager();
+
+        Intent homeIntent = new Intent(Intent.ACTION_MAIN);
+        homeIntent.addCategory(Intent.CATEGORY_HOME);
+        ResolveInfo homeResolveInfo = (ResolveInfo) pm.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        
+        Intent secondaryHomeIntent = new Intent(Intent.ACTION_MAIN);
+        secondaryHomeIntent.addCategory(Intent.CATEGORY_SECONDARY_HOME);
+        ResolveInfo secondaryHomeResolveInfo = (ResolveInfo) pm.resolveActivity(secondaryHomeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        if (secondaryHomeResolveInfo.activityInfo.packageName.equals(homeResolveInfo.activityInfo.packageName)) {
+            Intent launcherIntent = new Intent();
+            launcherIntent.setClassName(secondaryHomeResolveInfo.activityInfo.packageName, secondaryHomeResolveInfo.activityInfo.name);
+            launcherIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK
+                                    | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
+
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(virtualDisplayId);
+
+            ServiceManager.getActivityManager().startActivity(launcherIntent, options.toBundle());
+        }
     }
 }
