@@ -704,8 +704,7 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_NO_WINDOW,
         .longopt = "no-window",
-        .text = "Disable scrcpy window. Implies --no-video-playback and "
-                "--no-control.",
+        .text = "Disable scrcpy window. Implies --no-video-playback.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -2799,9 +2798,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 #endif
 
     if (!opts->window) {
-        // Without window, there cannot be any video playback or control
+        // Without window, there cannot be any video playback
         opts->video_playback = false;
-        opts->control = false;
+        // Controls are still possible, allowing for options like
+        // --turn-screen-off
     }
 
     if (!opts->video) {
