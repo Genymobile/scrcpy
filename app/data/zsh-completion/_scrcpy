@@ -30,6 +30,7 @@ arguments=(
     {-d,--select-usb}'[Use USB device]'
     '--disable-screensaver[Disable screensaver while scrcpy is running]'
     '--display-id=[Specify the display id to mirror]'
+    '--display-ime-policy=[Sets the policy for how the display should show IME]'
     '--display-orientation=[Set the initial display orientation]:orientation values:(0 90 180 270 flip0 flip90 flip180 flip270)'
     {-e,--select-tcpip}'[Use TCP/IP device]'
     {-f,--fullscreen}'[Start in fullscreen]'
