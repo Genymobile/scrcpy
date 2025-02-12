@@ -15,6 +15,7 @@ import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -25,7 +26,9 @@ import android.os.Build;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
+@SuppressLint({"PrivateApi", "SoonBlockedPrivateApi", "BlockedPrivateApi"})
 public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
@@ -281,11 +284,15 @@ public class NewDisplayCapture extends SurfaceCapture {
         if (secondaryHomeResolveInfo.activityInfo.packageName.equals(homeResolveInfo.activityInfo.packageName)) {
             Intent launcherIntent = new Intent();
             launcherIntent.setClassName(secondaryHomeResolveInfo.activityInfo.packageName, secondaryHomeResolveInfo.activityInfo.name);
-            launcherIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_MULTIPLE_TASK
-                                    | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
-
+            
             ActivityOptions options = ActivityOptions.makeBasic();
             options.setLaunchDisplayId(virtualDisplayId);
+            try {
+                Method method = ActivityOptions.class.getDeclaredMethod("setLaunchActivityType", int.class);
+                method.invoke(options, /* ACTIVITY_TYPE_HOME */ 2);
+            } catch(Exception e) {
+                Ln.e("Could not invoke method", e);
+            }
 
             ServiceManager.getActivityManager().startActivity(launcherIntent, options.toBundle());
         }
