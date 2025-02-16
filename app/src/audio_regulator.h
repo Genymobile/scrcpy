@@ -57,6 +57,9 @@ struct sc_audio_regulator {
 
     // Set to true the first time samples are pulled by the player
     atomic_bool played;
+
+    // PTS of the next expected packet (useful to detect discontinuities)
+    int64_t next_expected_pts;
 };
 
 bool
