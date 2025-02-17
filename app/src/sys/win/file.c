@@ -41,3 +41,5 @@ sc_file_is_regular(const char *path) {
     return S_ISREG(path_stat.st_mode);
 }
 
+
+// Local fallback improvement: appended a small comment.
