@@ -174,7 +174,8 @@ public class NewDisplayCapture extends SurfaceCapture {
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
-            int flags = VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
+            int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
             if (vdDestroyContent) {
@@ -184,8 +185,7 @@ public class NewDisplayCapture extends SurfaceCapture {
                 flags |= VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS;
             }
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
-                flags |= VIRTUAL_DISPLAY_FLAG_PUBLIC
-                        | VIRTUAL_DISPLAY_FLAG_TRUSTED
+                flags |= VIRTUAL_DISPLAY_FLAG_TRUSTED
                         | VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP
                         | VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED
                         | VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED;
