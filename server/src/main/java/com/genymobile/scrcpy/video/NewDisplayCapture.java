@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy.video;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.control.PositionMapper;
 import com.genymobile.scrcpy.device.DisplayInfo;
@@ -13,14 +14,23 @@ import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.TaskStackListener;
 
+import android.annotation.SuppressLint;
+import android.app.ActivityOptions;
+import android.app.ITaskStackListener;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.view.Surface;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 
+@SuppressLint({"PrivateApi", "SoonBlockedPrivateApi", "BlockedPrivateApi"})
 public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
@@ -38,6 +48,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private static final int VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
 
     private final VirtualDisplayListener vdListener;
+    private ITaskStackListener taskStackListener;
     private final NewDisplay newDisplay;
 
     private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
@@ -191,6 +202,10 @@ public class NewDisplayCapture extends SurfaceCapture {
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_33_ANDROID_13) {
+                displayLauncher(virtualDisplayId);
+            }
+
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {
             Ln.e("Could not create display", e);
@@ -235,6 +250,11 @@ public class NewDisplayCapture extends SurfaceCapture {
             virtualDisplay.release();
             virtualDisplay = null;
         }
+
+        if (taskStackListener != null) {
+            ServiceManager.getActivityManager().unregisterTaskStackListener(taskStackListener);
+            taskStackListener = null;
+        }
     }
 
     @Override
@@ -257,5 +277,51 @@ public class NewDisplayCapture extends SurfaceCapture {
     @Override
     public void requestInvalidate() {
         invalidate();
+    }
+
+    private void displayLauncher(int virtualDisplayId) {
+        PackageManager pm = FakeContext.get().getPackageManager();
+
+        Intent homeIntent = new Intent(Intent.ACTION_MAIN);
+        homeIntent.addCategory(Intent.CATEGORY_HOME);
+        ResolveInfo homeResolveInfo = (ResolveInfo) pm.resolveActivity(homeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        
+        Intent secondaryHomeIntent = new Intent(Intent.ACTION_MAIN);
+        secondaryHomeIntent.addCategory(Intent.CATEGORY_SECONDARY_HOME);
+        secondaryHomeIntent.addCategory(Intent.CATEGORY_DEFAULT);
+        ResolveInfo secondaryHomeResolveInfo = (ResolveInfo) pm.resolveActivity(secondaryHomeIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        if (secondaryHomeResolveInfo.activityInfo.packageName.equals(homeResolveInfo.activityInfo.packageName)) {            
+            ActivityOptions options = ActivityOptions.makeBasic();
+            options.setLaunchDisplayId(virtualDisplayId);
+            try {
+                Method method = ActivityOptions.class.getDeclaredMethod("setLaunchActivityType", int.class);
+                method.invoke(options, /* ACTIVITY_TYPE_HOME */ 2);
+            } catch(Exception e) {
+                Ln.e("Could not invoke method", e);
+            }
+
+            ServiceManager.getActivityManager().startActivity(secondaryHomeIntent, options.toBundle());
+
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12) {
+                taskStackListener = new TaskStackListener() {
+                    @Override
+                    public void onActivityLaunchOnSecondaryDisplayFailed(android.app.ActivityManager.RunningTaskInfo taskInfo,
+                            int requestedDisplayId) {
+                        if (requestedDisplayId == virtualDisplayId) {    
+                            String packageName = taskInfo.baseIntent.getComponent().getPackageName();
+                            String className = taskInfo.baseIntent.getComponent().getClassName();
+        
+                            Intent launcherIntent = new Intent();
+                            launcherIntent.setClassName(packageName, className);
+                            ActivityOptions options = ActivityOptions.makeBasic();
+                            options.setLaunchDisplayId(virtualDisplayId);
+                            ServiceManager.getActivityManager().startActivity(launcherIntent, options.toBundle());
+                        }
+                    }
+                };
+
+                ServiceManager.getActivityManager().registerTaskStackListener(taskStackListener);
+            }
+        }
     }
 }

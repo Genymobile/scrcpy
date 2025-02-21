@@ -48,12 +48,17 @@ EOF
 echo "Generating java from aidl..."
 cd "$SERVER_DIR/src/main/aidl"
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. \
+    android/app/ActivityManager.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. -p "$ANDROID_AIDL" \
+    android/app/ITaskStackListener.aidl
+"$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. \
     android/content/IOnPrimaryClipChangedListener.aidl
 "$BUILD_TOOLS_DIR/aidl" -o"$GEN_DIR" -I. -p "$ANDROID_AIDL" \
     android/view/IDisplayWindowListener.aidl
 
 # Fake sources to expose hidden Android types to the project
 FAKE_SRC=( \
+    android/app/*java \
     android/content/*java \
 )
 
@@ -90,6 +95,7 @@ if [[ $PLATFORM -lt 31 ]]
 then
     # use dx
     "$BUILD_TOOLS_DIR/dx" --dex --output "$BUILD_DIR/classes.dex" \
+        android/app/*.class \
         android/view/*.class \
         android/content/*.class \
         ${CLASSES[@]}
@@ -102,6 +108,7 @@ else
     # use d8
     "$BUILD_TOOLS_DIR/d8" --classpath "$ANDROID_JAR" \
         --output "$BUILD_DIR/classes.zip" \
+        android/app/*.class \
         android/view/*.class \
         android/content/*.class \
         ${CLASSES[@]}
