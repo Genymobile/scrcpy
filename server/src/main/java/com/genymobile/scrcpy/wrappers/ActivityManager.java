@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.ITaskStackListener;
 import android.content.IContentProvider;
 import android.content.Intent;
 import android.os.Binder;
@@ -160,6 +161,21 @@ public final class ActivityManager {
             method.invoke(manager, packageName, /* userId */ /* UserHandle.USER_CURRENT */ -2);
         } catch (Throwable e) {
             Ln.e("Could not invoke method", e);
+        }
+    }
+
+    public void registerTaskStackListener(ITaskStackListener listener) {
+        try {
+            manager.getClass().getMethod("registerTaskStackListener", ITaskStackListener.class).invoke(manager, listener);
+        } catch (Exception e) {
+            Ln.e("Could not register task stack listener", e);
+        }
+    }
+    public void unregisterTaskStackListener(ITaskStackListener listener) {
+        try {
+            manager.getClass().getMethod("unregisterTaskStackListener", ITaskStackListener.class).invoke(manager, listener);
+        } catch (Exception e) {
+            Ln.e("Could not register task stack listener", e);
         }
     }
 }

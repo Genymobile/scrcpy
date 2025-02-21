@@ -14,9 +14,11 @@ import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.wrappers.TaskStackListener;
 
 import android.annotation.SuppressLint;
 import android.app.ActivityOptions;
+import android.app.ITaskStackListener;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -46,6 +48,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private static final int VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
 
     private final VirtualDisplayListener vdListener;
+    private ITaskStackListener taskStackListener;
     private final NewDisplay newDisplay;
 
     private final DisplaySizeMonitor displaySizeMonitor = new DisplaySizeMonitor();
@@ -247,6 +250,11 @@ public class NewDisplayCapture extends SurfaceCapture {
             virtualDisplay.release();
             virtualDisplay = null;
         }
+
+        if (taskStackListener != null) {
+            ServiceManager.getActivityManager().unregisterTaskStackListener(taskStackListener);
+            taskStackListener = null;
+        }
     }
 
     @Override
@@ -280,11 +288,9 @@ public class NewDisplayCapture extends SurfaceCapture {
         
         Intent secondaryHomeIntent = new Intent(Intent.ACTION_MAIN);
         secondaryHomeIntent.addCategory(Intent.CATEGORY_SECONDARY_HOME);
+        secondaryHomeIntent.addCategory(Intent.CATEGORY_DEFAULT);
         ResolveInfo secondaryHomeResolveInfo = (ResolveInfo) pm.resolveActivity(secondaryHomeIntent, PackageManager.MATCH_DEFAULT_ONLY);
-        if (secondaryHomeResolveInfo.activityInfo.packageName.equals(homeResolveInfo.activityInfo.packageName)) {
-            Intent launcherIntent = new Intent();
-            launcherIntent.setClassName(secondaryHomeResolveInfo.activityInfo.packageName, secondaryHomeResolveInfo.activityInfo.name);
-            
+        if (secondaryHomeResolveInfo.activityInfo.packageName.equals(homeResolveInfo.activityInfo.packageName)) {            
             ActivityOptions options = ActivityOptions.makeBasic();
             options.setLaunchDisplayId(virtualDisplayId);
             try {
@@ -294,7 +300,28 @@ public class NewDisplayCapture extends SurfaceCapture {
                 Ln.e("Could not invoke method", e);
             }
 
-            ServiceManager.getActivityManager().startActivity(launcherIntent, options.toBundle());
+            ServiceManager.getActivityManager().startActivity(secondaryHomeIntent, options.toBundle());
+
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12) {
+                taskStackListener = new TaskStackListener() {
+                    @Override
+                    public void onActivityLaunchOnSecondaryDisplayFailed(android.app.ActivityManager.RunningTaskInfo taskInfo,
+                            int requestedDisplayId) {
+                        if (requestedDisplayId == virtualDisplayId) {    
+                            String packageName = taskInfo.baseIntent.getComponent().getPackageName();
+                            String className = taskInfo.baseIntent.getComponent().getClassName();
+        
+                            Intent launcherIntent = new Intent();
+                            launcherIntent.setClassName(packageName, className);
+                            ActivityOptions options = ActivityOptions.makeBasic();
+                            options.setLaunchDisplayId(virtualDisplayId);
+                            ServiceManager.getActivityManager().startActivity(launcherIntent, options.toBundle());
+                        }
+                    }
+                };
+
+                ServiceManager.getActivityManager().registerTaskStackListener(taskStackListener);
+            }
         }
     }
 }
