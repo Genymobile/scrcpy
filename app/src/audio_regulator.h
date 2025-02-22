@@ -46,6 +46,9 @@ struct sc_audio_regulator {
     // Number of silence samples inserted since the last received packet
     atomic_uint_least32_t underflow;
 
+    // Number of silence samples inserted since the last log
+    uint32_t underflow_report;
+
     // Non-zero compensation applied (only used by the receiver thread)
     bool compensation_active;
 

@@ -213,6 +213,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
     if (played) {
         underflow = atomic_exchange_explicit(&ar->underflow, 0,
                                              memory_order_relaxed);
+        ar->underflow_report += underflow;
 
         max_buffered_samples = ar->target_buffering * 11 / 10
                              + 60 * ar->sample_rate / 1000 /* 60 ms */;
@@ -315,7 +316,9 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
         int abs_max_diff = distance / 50;
         diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
         LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
-             " compensation=%d", ar->target_buffering, avg, can_read, diff);
+             " compensation=%d (underflow=%" PRIu32 ")",
+             ar->target_buffering, avg, can_read, diff, ar->underflow_report);
+        ar->underflow_report = 0;
 
         int ret = swr_set_compensation(swr_ctx, diff, distance);
         if (ret < 0) {
@@ -398,6 +401,7 @@ sc_audio_regulator_init(struct sc_audio_regulator *ar, size_t sample_size,
     atomic_init(&ar->played, false);
     atomic_init(&ar->received, false);
     atomic_init(&ar->underflow, 0);
+    ar->underflow_report = 0;
     ar->compensation_active = false;
 
     return true;
