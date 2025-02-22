@@ -76,8 +76,10 @@ sc_audio_regulator_pull(struct sc_audio_regulator *ar, uint8_t *out,
         // Wait until the buffer is filled up to at least target_buffering
         // before playing
         if (buffered_samples < ar->target_buffering) {
-            LOGV("[Audio] Inserting initial buffering silence: %" PRIu32
+#ifdef SC_AUDIO_REGULATOR_DEBUG
+            LOGD("[Audio] Inserting initial buffering silence: %" PRIu32
                  " samples", out_samples);
+#endif
             // Delay playback starting to reach the target buffering. Fill the
             // whole buffer with silence (len is small compared to the
             // arbitrary margin value).
@@ -98,8 +100,10 @@ sc_audio_regulator_pull(struct sc_audio_regulator *ar, uint8_t *out,
         // dropped to keep the latency minimal. However, this would cause very
         // audible glitches, so let the clock compensation restore the target
         // latency.
+#ifdef SC_AUDIO_REGULATOR_DEBUG
         LOGD("[Audio] Buffer underflow, inserting silence: %" PRIu32 " samples",
              silence);
+#endif
         memset(out + TO_BYTES(read), 0, TO_BYTES(silence));
 
         bool received = atomic_load_explicit(&ar->received,
