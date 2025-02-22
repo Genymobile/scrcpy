@@ -116,3 +116,38 @@ sc_audiobuf_write(struct sc_audiobuf *buf, const void *from_,
 
     return samples_count;
 }
+
+uint32_t
+sc_audiobuf_write_silence(struct sc_audiobuf *buf, uint32_t samples_count) {
+    // Only the writer thread can write head, so memory_order_relaxed is
+    // sufficient
+    uint32_t head = atomic_load_explicit(&buf->head, memory_order_relaxed);
+
+    // The tail cursor is updated after the data is consumed by the reader
+    uint32_t tail = atomic_load_explicit(&buf->tail, memory_order_acquire);
+
+    uint32_t can_write = (buf->alloc_size + tail - head - 1) % buf->alloc_size;
+    if (!can_write) {
+        return 0;
+    }
+    if (samples_count > can_write) {
+        samples_count = can_write;
+    }
+
+    uint32_t right_count = buf->alloc_size - head;
+    if (right_count > samples_count) {
+        right_count = samples_count;
+    }
+    memset(buf->data + (head * buf->sample_size), 0,
+           right_count * buf->sample_size);
+
+    if (samples_count > right_count) {
+        uint32_t left_count = samples_count - right_count;
+        memset(buf->data, 0, left_count * buf->sample_size);
+    }
+
+    uint32_t new_head = (head + samples_count) % buf->alloc_size;
+    atomic_store_explicit(&buf->head, new_head, memory_order_release);
+
+    return samples_count;
+}

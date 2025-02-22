@@ -113,6 +113,14 @@ static void test_audiobuf_partial_read_write(void) {
     uint32_t expected2[] = {4, 5, 6, 1, 2, 3, 4, 1, 2, 3};
     assert(!memcmp(data, expected2, 12));
 
+    w = sc_audiobuf_write_silence(&buf, 4);
+    assert(w == 4);
+
+    r = sc_audiobuf_read(&buf, data, 4);
+    assert(r == 4);
+    uint32_t expected3[] = {0, 0, 0, 0};
+    assert(!memcmp(data, expected3, 4));
+
     sc_audiobuf_destroy(&buf);
 }
 
