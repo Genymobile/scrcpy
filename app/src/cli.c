@@ -217,13 +217,31 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_SOURCE,
         .longopt = "audio-source",
         .argdesc = "source",
-        .text = "Select the audio source (output, mic or playback).\n"
-                "The \"output\" source forwards the whole audio output, and "
-                "disables playback on the device.\n"
-                "The \"playback\" source captures the audio playback (Android "
-                "apps can opt-out, so the whole output is not necessarily "
+        .text = "Select the audio source. Possible values are:\n"
+                " - \"output\": forwards the whole audio output, and disables "
+                "playback on the device.\n"
+                " - \"playback\": captures the audio playback (Android apps "
+                "can opt-out, so the whole output is not necessarily "
                 "captured).\n"
-                "The \"mic\" source captures the microphone.\n"
+                " - \"mic\": captures the microphone.\n"
+                " - \"mic-unprocessed\": captures the microphone unprocessed "
+                "(raw) sound.\n"
+                " - \"mic-camcorder\": captures the microphone tuned for video "
+                "recording, with the same orientation as the camera if "
+                "available.\n"
+                " - \"mic-voice-recognition\": captures the microphone tuned "
+                "for voice recognition.\n"
+                " - \"mic-voice-communication\": captures the microphone tuned "
+                "for voice communications (it will for instance take advantage "
+                "of echo cancellation or automatic gain control if "
+                "available).\n"
+                " - \"voice-call\": captures voice call.\n"
+                " - \"voice-call-uplink\": captures voice call uplink only.\n"
+                " - \"voice-call-downlink\": captures voice call downlink "
+                "only.\n"
+                " - \"voice-performance\": captures audio meant to be "
+                "processed for live performance (karaoke), includes both the "
+                "microphone and the device playback.\n"
                 "Default is output.",
     },
     {
@@ -2036,8 +2054,50 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
         return true;
     }
 
-    LOGE("Unsupported audio source: %s (expected output, mic or playback)",
-         optarg);
+    if (!strcmp(optarg, "mic-unprocessed")) {
+        *source = SC_AUDIO_SOURCE_MIC_UNPROCESSED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-camcorder")) {
+        *source = SC_AUDIO_SOURCE_MIC_CAMCORDER;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-voice-recognition")) {
+        *source = SC_AUDIO_SOURCE_MIC_VOICE_RECOGNITION;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-voice-communication")) {
+        *source = SC_AUDIO_SOURCE_MIC_VOICE_COMMUNICATION;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call-uplink")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL_UPLINK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call-downlink")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL_DOWNLINK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-performance")) {
+        *source = SC_AUDIO_SOURCE_VOICE_PERFORMANCE;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output, mic, playback, "
+         "mic-unprocessed, mic-camcorder, mic-voice-recognition, "
+         "mic-voice-communication, voice-call, voice-call-uplink, "
+         "voice-call-downlink, voice-performance)", optarg);
     return false;
 }
 
