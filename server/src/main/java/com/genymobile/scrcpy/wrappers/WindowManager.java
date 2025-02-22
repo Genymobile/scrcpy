@@ -12,6 +12,7 @@ import java.lang.reflect.Method;
 
 public final class WindowManager {
 
+    @SuppressWarnings("checkstyle:LineLength")
     // <https://android.googlesource.com/platform/frameworks/base.git/+/2103ff441c66772c80c8560e322dcd9a45be7dcd/core/java/android/view/WindowManager.java#692>
     public static final int DISPLAY_IME_POLICY_LOCAL = 0;
     public static final int DISPLAY_IME_POLICY_FALLBACK_DISPLAY = 1;
