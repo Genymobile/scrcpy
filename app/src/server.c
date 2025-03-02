@@ -149,6 +149,22 @@ sc_server_get_audio_source_name(enum sc_audio_source audio_source) {
             return "mic";
         case SC_AUDIO_SOURCE_PLAYBACK:
             return "playback";
+        case SC_AUDIO_SOURCE_MIC_UNPROCESSED:
+            return "mic-unprocessed";
+        case SC_AUDIO_SOURCE_MIC_CAMCORDER:
+            return "mic-camcorder";
+        case SC_AUDIO_SOURCE_MIC_VOICE_RECOGNITION:
+            return "mic-voice-recognition";
+        case SC_AUDIO_SOURCE_MIC_VOICE_COMMUNICATION:
+            return "mic-voice-communication";
+        case SC_AUDIO_SOURCE_VOICE_CALL:
+            return "voice-call";
+        case SC_AUDIO_SOURCE_VOICE_CALL_UPLINK:
+            return "voice-call-uplink";
+        case SC_AUDIO_SOURCE_VOICE_CALL_DOWNLINK:
+            return "voice-call-downlink";
+        case SC_AUDIO_SOURCE_VOICE_PERFORMANCE:
+            return "voice-performance";
         default:
             assert(!"unexpected audio source");
             return NULL;

@@ -67,13 +67,19 @@ The available encoders can be listed by \fB\-\-list\-encoders\fR.
 
 .TP
 .BI "\-\-audio\-source " source
-Select the audio source (output, mic or playback).
+Select the audio source. Possible values are:
 
-The "output" source forwards the whole audio output, and disables playback on the device.
-
-The "playback" source captures the audio playback (Android apps can opt-out, so the whole output is not necessarily captured).
-
-The "mic" source captures the microphone.
+ - "output": forwards the whole audio output, and disables playback on the device.
+ - "playback": captures the audio playback (Android apps can opt-out, so the whole output is not necessarily captured).
+ - "mic": captures the microphone.
+ - "mic-unprocessed": captures the microphone unprocessed (raw) sound.
+ - "mic-camcorder": captures the microphone tuned for video recording, with the same orientation as the camera if available.
+ - "mic-voice-recognition": captures the microphone tuned for voice recognition.
+ - "mic-voice-communication": captures the microphone tuned for voice communications (it will for instance take advantage of echo cancellation or automatic gain control if available).
+ - "voice-call": captures voice call.
+ - "voice-call-uplink": captures voice call uplink only.
+ - "voice-call-downlink": captures voice call downlink only.
+ - "voice-performance": captures audio meant to be processed for live performance (karaoke), includes both the microphone and the device playback.
 
 Default is output.
 

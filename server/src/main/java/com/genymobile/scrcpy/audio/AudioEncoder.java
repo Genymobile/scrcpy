@@ -55,6 +55,9 @@ public final class AudioEncoder implements AsyncProcessor {
     private final List<CodecOption> codecOptions;
     private final String encoderName;
 
+    private final boolean recreatePts;
+    private long previousPts;
+
     // Capacity of 64 is in practice "infinite" (it is limited by the number of available MediaCodec buffers, typically 4).
     // So many pending tasks would lead to an unacceptable delay anyway.
     private final BlockingQueue<InputTask> inputTasks = new ArrayBlockingQueue<>(64);
@@ -74,6 +77,10 @@ public final class AudioEncoder implements AsyncProcessor {
         this.bitRate = options.getAudioBitRate();
         this.codecOptions = options.getAudioCodecOptions();
         this.encoderName = options.getAudioEncoder();
+
+        // The OPUS encoder generates its own input PTS which matches the number of samples. This is not the behavior we want: it ignores any clock
+        // drift and hard silences (packets not produced on silence). To fix this behavior, regenerate PTS based on the current time.
+        recreatePts = streamer.getCodec() == AudioCodec.OPUS;
     }
 
     private static MediaFormat createFormat(String mimeType, int bitRate, List<CodecOption> codecOptions) {
@@ -118,11 +125,32 @@ public final class AudioEncoder implements AsyncProcessor {
             OutputTask task = outputTasks.take();
             ByteBuffer buffer = mediaCodec.getOutputBuffer(task.index);
             try {
+                if (recreatePts) {
+                    fixTimestamp(task.bufferInfo);
+                }
                 streamer.writePacket(buffer, task.bufferInfo);
             } finally {
                 mediaCodec.releaseOutputBuffer(task.index, false);
             }
         }
+    }
+
+    private void fixTimestamp(MediaCodec.BufferInfo bufferInfo) {
+        assert recreatePts;
+
+        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+            // Config packet, nothing to fix
+            return;
+        }
+
+        long pts = bufferInfo.presentationTimeUs;
+        if (previousPts != 0) {
+            long now = System.nanoTime() / 1000;
+            long duration = pts - previousPts;
+            bufferInfo.presentationTimeUs = now - duration;
+        }
+
+        previousPts = pts;
     }
 
     @Override
