@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import com.genymobile.scrcpy.util.Ln;
 
 public final class Streamer {
 
@@ -21,14 +22,16 @@ public final class Streamer {
     private final Codec codec;
     private final boolean sendCodecMeta;
     private final boolean sendFrameMeta;
+    private final int displayId;
 
-    private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
+    private final ByteBuffer headerBuffer = ByteBuffer.allocate(16);
 
-    public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
+    public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta, int displayId) {
         this.fd = fd;
         this.codec = codec;
         this.sendCodecMeta = sendCodecMeta;
         this.sendFrameMeta = sendFrameMeta;
+        this.displayId = displayId;
     }
 
     public Codec getCodec() {
@@ -76,10 +79,14 @@ public final class Streamer {
         }
 
         if (sendFrameMeta) {
-            writeFrameMeta(fd, buffer.remaining(), pts, config, keyFrame);
+            int screenOrientation = getScreenOrientation();
+            writeFrameMeta(fd, buffer.remaining(), pts, config, keyFrame, screenOrientation);
         }
 
         IO.writeFully(fd, buffer);
+    }
+    private int getScreenOrientation() {
+        return Device.getCurrentRotation(this.displayId);
     }
 
     public void writePacket(ByteBuffer codecBuffer, MediaCodec.BufferInfo bufferInfo) throws IOException {
@@ -89,7 +96,7 @@ public final class Streamer {
         writePacket(codecBuffer, pts, config, keyFrame);
     }
 
-    private void writeFrameMeta(FileDescriptor fd, int packetSize, long pts, boolean config, boolean keyFrame) throws IOException {
+    private void writeFrameMeta(FileDescriptor fd, int packetSize, long pts, boolean config, boolean keyFrame, int screenOrientation) throws IOException {
         headerBuffer.clear();
 
         long ptsAndFlags;
@@ -104,6 +111,7 @@ public final class Streamer {
 
         headerBuffer.putLong(ptsAndFlags);
         headerBuffer.putInt(packetSize);
+        headerBuffer.putInt(screenOrientation);
         headerBuffer.flip();
         IO.writeFully(fd, headerBuffer);
     }
