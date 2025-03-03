@@ -210,7 +210,7 @@ public final class Device {
         }
     }
 
-    private static int getCurrentRotation(int displayId) {
+    public static int getCurrentRotation(int displayId) {
         assert displayId != DISPLAY_ID_NONE;
 
         if (displayId == 0) {

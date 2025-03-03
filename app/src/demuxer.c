@@ -9,7 +9,7 @@
 #include "util/binary.h"
 #include "util/log.h"
 
-#define SC_PACKET_HEADER_SIZE 12
+#define SC_PACKET_HEADER_SIZE 16
 
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
 #define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 62)
@@ -77,16 +77,18 @@ sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
     return true;
 }
 
+uint32_t last_screen_orientation = -1;
+
 static bool
 sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     // The video and audio streams contain a sequence of raw packets (as
     // provided by MediaCodec), each prefixed with a "meta" header.
     //
-    // The "meta" header length is 12 bytes:
-    // [. . . . . . . .|. . . .]. . . . . . . . . . . . . . . ...
-    //  <-------------> <-----> <-----------------------------...
-    //        PTS        packet        raw packet
-    //                    size
+    // The "meta" header length is 16 bytes:
+    // [. . . . . . . .|. . . .][. . . .]. . . . . . . . . . . . . . . ...
+    //  <-------------> <------> <------> <-----------------------------...
+    //        PTS        packet   screen    raw packet
+    //                    size  orientation
     //
     // It is followed by <packet_size> bytes containing the packet/frame.
     //
@@ -107,6 +109,11 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
 
     uint64_t pts_flags = sc_read64be(header);
     uint32_t len = sc_read32be(&header[8]);
+    uint32_t screen_orientation = sc_read32be(&header[12]);
+    if(last_screen_orientation != screen_orientation){
+        last_screen_orientation = screen_orientation;
+        LOGD("Screen Orientation: %u", last_screen_orientation);
+    };
     assert(len);
 
     if (av_new_packet(packet, len)) {
@@ -131,6 +138,7 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     }
 
     packet->dts = packet->pts;
+
     return true;
 }
 
