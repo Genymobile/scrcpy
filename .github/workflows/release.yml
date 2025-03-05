@@ -122,7 +122,7 @@ jobs:
           path: release/work/build-linux-x86_64/dist-tar/
 
   build-linux-aarch64:
-    runs-on: ubuntu-22.04-arm
+    runs-on: ubuntu-24.04-arm
     steps:
       - name: Check architecture
         run: |
@@ -136,9 +136,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Update sources list
-        run: |
-          sudo sed -i 's|http://ports.ubuntu.com/ubuntu-ports|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+      # - name: Update sources list
+      #   run: |
+      #     sudo sed -i 's|http://ports.ubuntu.com/ubuntu-ports|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
 
       - name: Install dependencies
         run: |
