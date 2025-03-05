@@ -121,13 +121,13 @@ jobs:
           name: build-linux-x86_64-intermediate
           path: release/work/build-linux-x86_64/dist-tar/
 
-  build-linux-arm64:
+  build-linux-aarch64:
     runs-on: ubuntu-22.04-arm
     steps:
       - name: Check architecture
         run: |
             arch=$(uname -m)
-            if [[ "$arch" != arm64 ]]
+            if [[ "$arch" != aarch64 ]]
             then
                 echo "Unexpected architecture: $arch" >&2
                 exit 1
@@ -144,12 +144,12 @@ jobs:
              libv4l-dev
 
       - name: Build
-        run: release/build_linux.sh arm64
+        run: release/build_linux.sh aarch64
 
       # upload-artifact does not preserve permissions
       - name: Tar
         run: |
-            cd release/work/build-linux-arm64
+            cd release/work/build-linux-aarch64
             mkdir dist-tar
             cd dist-tar
             tar -C .. -cvf dist.tar.gz dist/
@@ -157,8 +157,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: build-linux-arm64-intermediate
-          path: release/work/build-linux-arm64/dist-tar/
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
 
   build-win32:
     runs-on: ubuntu-latest
@@ -232,7 +232,7 @@ jobs:
       - name: Check architecture
         run: |
             arch=$(uname -m)
-            if [[ "$arch" != arm64 ]]
+            if [[ "$arch" != aarch64 ]]
             then
                 echo "Unexpected architecture: $arch" >&2
                 exit 1
@@ -335,10 +335,10 @@ jobs:
           name: release-linux-x86_64
           path: release/output/
 
-  package-linux-arm64:
+  package-linux-aarch64:
     needs:
       - build-scrcpy-server
-      - build-linux-arm64
+      - build-linux-aarch64
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -350,25 +350,25 @@ jobs:
           name: scrcpy-server
           path: release/work/build-server/server/
 
-      - name: Download build-linux-arm64
+      - name: Download build-linux-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: build-linux-arm64-intermediate
-          path: release/work/build-linux-arm64/dist-tar/
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
 
       # upload-artifact does not preserve permissions
       - name: Detar
         run: |
-            cd release/work/build-linux-arm64
+            cd release/work/build-linux-aarch64
             tar xf dist-tar/dist.tar.gz
 
       - name: Package
-        run: release/package_client.sh linux-arm64 tar.gz
+        run: release/package_client.sh linux-aarch64 tar.gz
 
       - name: Upload release
         uses: actions/upload-artifact@v4
         with:
-          name: release-linux-arm64
+          name: release-linux-aarch64
           path: release/output/
 
   package-win32:
@@ -519,7 +519,7 @@ jobs:
     needs:
       - build-scrcpy-server
       - package-linux-x86_64
-      - package-linux-arm64
+      - package-linux-aarch64
       - package-win32
       - package-win64
       - package-macos-aarch64
@@ -541,10 +541,10 @@ jobs:
           name: release-linux-x86_64
           path: release/output/
 
-      - name: Download release-linux-arm64
+      - name: Download release-linux-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: release-linux-arm64
+          name: release-linux-aarch64
           path: release/output/
 
       - name: Download release-win32
