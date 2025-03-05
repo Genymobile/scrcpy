@@ -232,7 +232,7 @@ jobs:
       - name: Check architecture
         run: |
             arch=$(uname -m)
-            if [[ "$arch" != aarch64 ]]
+            if [[ "$arch" != arm64 ]]
             then
                 echo "Unexpected architecture: $arch" >&2
                 exit 1
