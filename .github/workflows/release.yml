@@ -135,13 +135,18 @@ jobs:
 
       - name: Checkout code
         uses: actions/checkout@v4
+      
+      - name: Update sources list
+        run: |
+          sudo sed -i 's|http://ports.ubuntu.com/ubuntu-ports|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
 
       - name: Install dependencies
         run: |
-          sudo apt install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
-             libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
-             libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
-             libv4l-dev
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+              libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
+              libv4l-dev --fix-missing
 
       - name: Build
         run: release/build_linux.sh aarch64
