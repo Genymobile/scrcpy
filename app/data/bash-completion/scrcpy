@@ -122,7 +122,7 @@ _scrcpy() {
             return
             ;;
         --audio-source)
-            COMPREPLY=($(compgen -W 'output mic playback' -- "$cur"))
+            COMPREPLY=($(compgen -W 'output playback mic mic-unprocessed mic-camcorder mic-voice-recognition mic-voice-communication voice-call voice-call-uplink voice-call-downlink voice-performance' -- "$cur"))
             return
             ;;
         --camera-facing)

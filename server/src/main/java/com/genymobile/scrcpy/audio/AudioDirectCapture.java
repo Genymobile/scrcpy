@@ -12,7 +12,6 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.media.AudioRecord;
 import android.media.MediaCodec;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.SystemClock;
 
@@ -32,18 +31,7 @@ public class AudioDirectCapture implements AudioCapture {
     private AudioRecordReader reader;
 
     public AudioDirectCapture(AudioSource audioSource) {
-        this.audioSource = getAudioSourceValue(audioSource);
-    }
-
-    private static int getAudioSourceValue(AudioSource audioSource) {
-        switch (audioSource) {
-            case OUTPUT:
-                return MediaRecorder.AudioSource.REMOTE_SUBMIX;
-            case MIC:
-                return MediaRecorder.AudioSource.MIC;
-            default:
-                throw new IllegalArgumentException("Unsupported audio source: " + audioSource);
-        }
+        this.audioSource = audioSource.getDirectAudioSource();
     }
 
     @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
