@@ -8,10 +8,10 @@ their name contains `scrcpy`.**
 
 _pronounced "**scr**een **c**o**py**"_
 
-This application mirrors Android devices (video and audio) connected via
-USB or [over TCP/IP](doc/connection.md#tcpip-wireless), and allows to control the
-device with the keyboard and the mouse of the computer. It does not require any
-_root_ access. It works on _Linux_, _Windows_ and _macOS_.
+This application mirrors Android devices (video and audio) connected via USB or
+[TCP/IP](doc/connection.md#tcpip-wireless) and allows control using the
+computer's keyboard and mouse. It does not require _root_ access. It works on
+_Linux_, _Windows_, and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
