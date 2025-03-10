@@ -13,6 +13,7 @@
 
 #define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
 #define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 62)
+#define PACKET_FLAG_VIDEO_SESSION (UINT64_C(1) << 61)
 
 #define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_KEY_FRAME - 1)
 
@@ -76,6 +77,18 @@ sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
     *height = sc_read32be(data + 4);
     return true;
 }
+static void
+handle_video_session_packet(AVPacket *packet) {
+    if (!packet || !packet->data || packet->size < 12) {
+        LOGE("Invalid packet data");
+        return;
+    }
+    const uint8_t *data = packet->data;
+    int width = sc_read32be(data);
+    int height = sc_read32be(data + 4);
+    int orientation = sc_read32be(data + 8);
+    LOGD("Orientation=%d, Width=%d, Height=%d, Size=%d", orientation, width, height, packet->size);
+}
 
 uint32_t last_screen_orientation = -1;
 
@@ -125,6 +138,11 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     if (r < 0 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
+    }
+
+    if (pts_flags & PACKET_FLAG_VIDEO_SESSION) {
+        handle_video_session_packet(packet);
+        return true;
     }
 
     if (pts_flags & SC_PACKET_FLAG_CONFIG) {
