@@ -24,6 +24,7 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.graphics.Point;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -210,7 +211,7 @@ public final class Device {
         }
     }
 
-    private static int getCurrentRotation(int displayId) {
+    public static int getCurrentRotation(int displayId) {
         assert displayId != DISPLAY_ID_NONE;
 
         if (displayId == 0) {
@@ -219,6 +220,14 @@ public final class Device {
 
         DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
         return displayInfo.getRotation();
+    }
+    public static Size getSize(int displayId){
+        assert displayId != DISPLAY_ID_NONE;
+        if (displayId == 0) {
+            return ServiceManager.getWindowManager().getSize(displayId);
+        }
+        DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+        return displayInfo.getSize();
     }
 
     public static List<DeviceApp> listApps() {
