@@ -2,12 +2,15 @@ package com.genymobile.scrcpy.wrappers;
 
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.device.Size;
 
 import android.annotation.TargetApi;
+import android.graphics.Point;
 import android.os.Build;
 import android.os.IInterface;
 import android.view.IDisplayWindowListener;
 
+// import java.awt.Point;
 import java.lang.reflect.Method;
 
 public final class WindowManager {
@@ -40,6 +43,26 @@ public final class WindowManager {
 
     private WindowManager(IInterface manager) {
         this.manager = manager;
+    }
+
+    private Method getGetSizeMethod;
+    private Method getGetSizeMethod() throws NoSuchMethodException {
+        if (getGetSizeMethod == null) {
+            Class<?> cls = manager.getClass();
+            getGetSizeMethod = cls.getMethod("getInitialDisplaySize",int.class, Point.class);
+        }
+        return getGetSizeMethod;
+    }
+    public Size getSize(int displayId) {
+        try {
+            Method method = getGetSizeMethod();
+            Point size = new Point();
+            method.invoke(manager, displayId, size);
+            return new Size(size.x, size.y);
+        } catch (ReflectiveOperationException e) {
+            Ln.e("Could not invoke method", e);
+            return new Size(0,0);
+        }
     }
 
     private Method getGetRotationMethod() throws NoSuchMethodException {

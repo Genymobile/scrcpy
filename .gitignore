@@ -8,3 +8,4 @@ build/
 /x/
 local.properties
 /scrcpy-server
+.DS_Store

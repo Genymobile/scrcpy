@@ -3,9 +3,11 @@ package com.genymobile.scrcpy.video;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.AsyncProcessor;
 import com.genymobile.scrcpy.Options;
+import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.device.Streamer;
+import com.genymobile.scrcpy.device.Orientation;
 import com.genymobile.scrcpy.util.Codec;
 import com.genymobile.scrcpy.util.CodecOption;
 import com.genymobile.scrcpy.util.CodecUtils;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class SurfaceEncoder implements AsyncProcessor {
 
@@ -44,6 +47,16 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final float maxFps;
     private final boolean downsizeOnError;
 
+    private int orientation = -100;
+    private final int displayId;
+    private boolean sendCodeMeta;
+    private boolean sendFrameMeta;
+    private int maxSize;
+    private Size originalSize;
+    private Size displaySize;
+    private Orientation captureOrientation;
+    private Orientation.Lock captureOrientationLock;
+
     private boolean firstFrameSent;
     private int consecutiveErrors;
 
@@ -60,13 +73,22 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.codecOptions = options.getVideoCodecOptions();
         this.encoderName = options.getVideoEncoder();
         this.downsizeOnError = options.getDownsizeOnError();
+
+        this.displayId = options.getDisplayId();
+        this.sendCodeMeta = options.getSendCodecMeta();
+        this.sendFrameMeta = options.getSendFrameMeta();
+        this.originalSize = Device.getSize(this.displayId);
+        int maxSize = options.getMaxSize();
+        int max = maxSize == 0 ? chooseMaxSizeFallback(this.originalSize) : maxSize;
+        this.displaySize = this.originalSize.limit(max).round8();
+        this.captureOrientation = options.getCaptureOrientation();
+        this.captureOrientationLock = options.getCaptureOrientationLock();
     }
 
     private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
         MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
-
         capture.init(reset);
 
         try {
@@ -182,7 +204,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         return true;
     }
 
-    private static int chooseMaxSizeFallback(Size failedSize) {
+    public static int chooseMaxSizeFallback(Size failedSize) {
         int currentMaxSize = Math.max(failedSize.getWidth(), failedSize.getHeight());
         for (int value : MAX_SIZE_FALLBACK) {
             if (value < currentMaxSize) {
@@ -194,6 +216,28 @@ public class SurfaceEncoder implements AsyncProcessor {
         return 0;
     }
 
+    private Size getSize(int orientation){
+        switch (orientation) {
+            case 0:
+            case 4:
+                return this.displaySize;
+            case 1:
+            case 3:
+                return new Size(this.displaySize.getHeight(),this.displaySize.getWidth());
+        }
+        return new Size(0,0);
+    }
+    private ByteBuffer getCurrentVideoSession(int orientation){
+        ByteBuffer buffer = ByteBuffer.allocate(20);
+        Size size = getSize(orientation);
+        int width = size.getWidth();
+        int height = size.getHeight();
+        buffer.putInt(width);
+        buffer.putInt(height);
+        buffer.putInt(orientation);
+        buffer.flip();
+        return buffer;
+    }
     private void encode(MediaCodec codec, Streamer streamer) throws IOException {
         MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
@@ -201,6 +245,16 @@ public class SurfaceEncoder implements AsyncProcessor {
         do {
             int outputBufferId = codec.dequeueOutputBuffer(bufferInfo, -1);
             try {
+                // If the frame width and height do not change, it will not be re-encoded
+                // Therefore, it is necessary to monitor each frame.
+                // For example: horizontal (1->3), vertical (0->4)
+                int orientation = Device.getCurrentRotation(displayId);
+                if(this.orientation != orientation){
+                    this.orientation = orientation;
+                    ByteBuffer videoSession = getCurrentVideoSession(orientation);
+                    streamer.writePacket(videoSession,Streamer.PACKET_FLAG_VIDEO_SESSION,false,false);
+                }
+
                 eos = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
                 // On EOS, there might be data or not, depending on bufferInfo.size
                 if (outputBufferId >= 0 && bufferInfo.size > 0) {
@@ -212,7 +266,6 @@ public class SurfaceEncoder implements AsyncProcessor {
                         firstFrameSent = true;
                         consecutiveErrors = 0;
                     }
-
                     streamer.writePacket(codecBuffer, bufferInfo);
                 }
             } finally {

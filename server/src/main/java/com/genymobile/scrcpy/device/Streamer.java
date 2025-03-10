@@ -13,16 +13,17 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 
 public final class Streamer {
-
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
+    public static final long PACKET_FLAG_VIDEO_SESSION = 1L << 61;
 
     private final FileDescriptor fd;
     private final Codec codec;
     private final boolean sendCodecMeta;
     private final boolean sendFrameMeta;
 
-    private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
+    private final int HEADER_PACKET_SIZE = 12;
+    private final ByteBuffer headerBuffer = ByteBuffer.allocate(HEADER_PACKET_SIZE);
 
     public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
         this.fd = fd;
@@ -46,7 +47,7 @@ public final class Streamer {
 
     public void writeVideoHeader(Size videoSize) throws IOException {
         if (sendCodecMeta) {
-            ByteBuffer buffer = ByteBuffer.allocate(12);
+            ByteBuffer buffer = ByteBuffer.allocate(HEADER_PACKET_SIZE);
             buffer.putInt(codec.getId());
             buffer.putInt(videoSize.getWidth());
             buffer.putInt(videoSize.getHeight());
