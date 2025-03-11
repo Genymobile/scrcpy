@@ -209,7 +209,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         return true;
     }
 
-    public static int chooseMaxSizeFallback(Size failedSize) {
+    private static int chooseMaxSizeFallback(Size failedSize) {
         int currentMaxSize = Math.max(failedSize.getWidth(), failedSize.getHeight());
         for (int value : MAX_SIZE_FALLBACK) {
             if (value < currentMaxSize) {
