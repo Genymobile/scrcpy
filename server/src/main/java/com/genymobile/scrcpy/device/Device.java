@@ -24,7 +24,6 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
-import android.graphics.Point;
 
 import java.util.ArrayList;
 import java.util.List;

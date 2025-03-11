@@ -79,7 +79,7 @@ sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
 }
 static void
 handle_video_session_packet(AVPacket *packet) {
-    if (!packet || !packet->data || packet->size < 12) {
+    if (!packet || !packet->data || packet->size < 16) {
         LOGE("Invalid packet data");
         return;
     }
@@ -87,7 +87,8 @@ handle_video_session_packet(AVPacket *packet) {
     int width = sc_read32be(data);
     int height = sc_read32be(data + 4);
     int orientation = sc_read32be(data + 8);
-    LOGD("Orientation=%d, Width=%d, Height=%d, Size=%d", orientation, width, height, packet->size);
+    bool is_flip = sc_read32be(data + 12) == 1;
+    LOGD("Orientation=%d, Width=%d, Height=%d, Flip=%s, DataSize=%d", orientation, width, height, is_flip ? "True" : "False", packet->size);
 }
 
 static bool

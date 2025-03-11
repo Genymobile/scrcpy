@@ -14,6 +14,7 @@ import com.genymobile.scrcpy.util.CodecUtils;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.util.AffineMatrix;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -51,9 +52,12 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final int displayId;
     private boolean sendCodeMeta;
     private boolean sendFrameMeta;
+    private boolean writeFirstOrientation = true;
+    private int firstOrientation;
     private int maxSize;
     private Size originalSize;
     private Size displaySize;
+    private Size firstSize;
     private Orientation captureOrientation;
     private Orientation.Lock captureOrientationLock;
 
@@ -81,6 +85,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         int maxSize = options.getMaxSize();
         int max = maxSize == 0 ? chooseMaxSizeFallback(this.originalSize) : maxSize;
         this.displaySize = this.originalSize.limit(max).round8();
+        this.firstSize = new Size(this.displaySize.getWidth(),this.displaySize.getHeight());
         this.captureOrientation = options.getCaptureOrientation();
         this.captureOrientationLock = options.getCaptureOrientationLock();
     }
@@ -216,16 +221,48 @@ public class SurfaceEncoder implements AsyncProcessor {
         return 0;
     }
 
+
     private Size getSize(int orientation){
-        switch (orientation) {
-            case 0:
-            case 4:
-                return this.displaySize;
-            case 1:
-            case 3:
-                return new Size(this.displaySize.getHeight(),this.displaySize.getWidth());
+        int rotation = captureOrientation.getRotation();
+        boolean isVertical = (rotation == 0 || rotation == 2);
+        // Ln.i("====================================");
+        // boolean isFlipped = captureOrientation.isFlipped();
+        // Ln.i("--------------Rotation："+rotation+"，Flipped："+isFlipped);
+        // Ln.i("--------------A:"+(captureOrientationLock == Orientation.Lock.LockedInitial));
+        // Ln.i("--------------B:"+(captureOrientationLock == Orientation.Lock.LockedValue));
+        // Ln.i("--------------C:"+(captureOrientationLock == Orientation.Lock.Unlocked));
+        // Ln.i("--------------D:"+firstOrientation);
+        
+        // --capture-orientation=@x
+        if(captureOrientationLock == Orientation.Lock.LockedValue){
+            if(isVertical){                                                                         // --capture-orientation=@0/@180
+                return firstSize;
+            }
+            return new Size(firstSize.getHeight(),firstSize.getWidth());                            // --capture-orientation=@90/@270
         }
-        return new Size(0,0);
+        
+        // --capture-orientation=@
+        if(captureOrientationLock == Orientation.Lock.LockedInitial && rotation == 0){
+            if(firstOrientation == 0 || firstOrientation == 2){                                     // Initial vertical
+                return firstSize;
+            };
+            return new Size(firstSize.getHeight(),firstSize.getWidth());                            // Initial horizontal
+        }
+        
+        // --capture-orientation=0/180/flip0/flip180
+        if(isVertical){
+            if(orientation == 0 || orientation == 2){                                               // Device vertical
+                return firstSize;
+            }
+            return new Size(firstSize.getHeight(),firstSize.getWidth());                            // Device horizontal
+        }
+        
+        // --capture-orientation=90/270/flip90/flip270
+        boolean isDeviceVertical = (orientation == 0 || orientation == 2);
+        if(isDeviceVertical){                                                                       // Device vertical
+            return new Size(firstSize.getHeight(),firstSize.getWidth());
+        }
+        return firstSize;                                                                           // Device horizontal
     }
     private ByteBuffer getCurrentVideoSession(int orientation){
         ByteBuffer buffer = ByteBuffer.allocate(20);
@@ -235,6 +272,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         buffer.putInt(width);
         buffer.putInt(height);
         buffer.putInt(orientation);
+        buffer.putInt(captureOrientation.isFlipped() ? 1 : 0);
         buffer.flip();
         return buffer;
     }
@@ -249,6 +287,10 @@ public class SurfaceEncoder implements AsyncProcessor {
                 // Therefore, it is necessary to monitor each frame.
                 // For example: horizontal (1->3), vertical (0->4)
                 int orientation = Device.getCurrentRotation(displayId);
+                if(writeFirstOrientation){
+                    this.firstOrientation = orientation;
+                    this.writeFirstOrientation = false;
+                }
                 if(this.orientation != orientation){
                     this.orientation = orientation;
                     ByteBuffer videoSession = getCurrentVideoSession(orientation);
