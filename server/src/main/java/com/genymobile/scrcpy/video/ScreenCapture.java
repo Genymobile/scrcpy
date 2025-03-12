@@ -77,7 +77,7 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         Size displaySize = displayInfo.getSize();
-        displaySizeMonitor.setSessionDisplaySize(displaySize);
+        displaySizeMonitor.setSessionInfo(displaySize, displayInfo.getRotation());
 
         if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation
