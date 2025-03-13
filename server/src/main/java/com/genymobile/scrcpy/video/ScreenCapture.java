@@ -107,11 +107,8 @@ public class ScreenCapture extends SurfaceCapture {
             boolean isFlipped = captureOrientation.isFlipped();
             streamer.writeVideoSession(videoSize, isFlipped, displayRotation);
         } catch (Exception e) {
+            Ln.e("Video Session failed to send", e);
         }
-        // Ln.i("@@@@@@@"+(transform != null ? transform.toString():"Null"));
-
-        // Ln.i("===="+captureOrientation.isFlipped()+"=="+captureOrientation.getRotation());
-        // Ln.i("===="+displayInfo.getRotation()+"=="+videoSize.getWidth()+"=="+videoSize.getHeight()+"=="+locked+"==============");
     }
 
     @Override
