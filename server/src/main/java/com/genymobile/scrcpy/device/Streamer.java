@@ -17,7 +17,6 @@ public final class Streamer {
 
     private static final long PACKET_FLAG_CONFIG = 1L << 63;
     private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
-    private static final long PACKET_FLAG_VIDEO_SESSION = 1L << 61;
 
     private final FileDescriptor fd;
     private final Codec codec;
@@ -54,6 +53,7 @@ public final class Streamer {
             IO.writeFully(fd, buffer);
         }
     }
+    
     public void writeVideoSession(Size videoSize, boolean isFlip, int rotation) throws IOException{
         if(sendCodecMeta){
             ByteBuffer buffer = ByteBuffer.allocate(12);
