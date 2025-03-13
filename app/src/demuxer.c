@@ -63,17 +63,26 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer, uint32_t *codec_id) {
     return true;
 }
 
+static void
+handle_video_session_packet(uint8_t *data){
+    int width = sc_read32be(data + 1);
+    int height = sc_read32be(data + 5);
+    bool isFlip = data[9] == 1;
+    int direction = (data[10] == (uint8_t)1 ? 2 : 0) + (data[11] == (uint8_t)1 ? 1 : 0);
+    LOGI("Width=%d, Height=%d, Flip=%s, Direction=%d", width, height, isFlip ? "True" : "False", direction);
+}
+
 static bool
 sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
                            uint32_t *height) {
-    uint8_t data[8];
-    ssize_t r = net_recv_all(demuxer->socket, data, 8);
-    if (r < 8) {
+    uint8_t data[12];
+    ssize_t r = net_recv_all(demuxer->socket, data, 12);
+    if (r < 12) {
         return false;
     }
-
-    *width = sc_read32be(data);
-    *height = sc_read32be(data + 4);
+    *width = sc_read32be(data + 1);
+    *height = sc_read32be(data + 5);
+    handle_video_session_packet(data);
     return true;
 }
 
@@ -104,6 +113,11 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
     if (r < SC_PACKET_HEADER_SIZE) {
         return false;
     }
+    if(header[0] == 0xff){
+        handle_video_session_packet(header);
+        return true;
+    }
+
 
     uint64_t pts_flags = sc_read64be(header);
     uint32_t len = sc_read32be(&header[8]);
@@ -218,11 +232,11 @@ run_demuxer(void *data) {
         LOGE("Demuxer '%s': could not open codec", demuxer->name);
         goto finally_free_context;
     }
-
+    
     if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec_ctx)) {
         goto finally_free_context;
     }
-
+    
     // Config packets must be merged with the next non-config packet only for
     // H.26x
     bool must_merge_config_packet = raw_codec_id == SC_CODEC_ID_H264
