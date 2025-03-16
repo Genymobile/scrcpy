@@ -23,3 +23,7 @@ fi
 SCRCPY_ICON_PATH="app/data/icon.png" \
 SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server" \
 "$BUILDDIR/app/scrcpy" "$@"
+adb tcpip 5555
+adb connect <Your Phone's IP>:5555
+scrcpy
+
