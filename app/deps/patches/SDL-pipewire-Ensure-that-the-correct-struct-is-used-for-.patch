@@ -1,0 +1,33 @@
+From 6be87ceb33a9aad3bf5204bb13b3a5e8b498fd26 Mon Sep 17 00:00:00 2001
+From: Neal Gompa <neal@gompa.dev>
+Date: Mon, 10 Feb 2025 05:00:56 -0500
+Subject: [PATCH] pipewire: Ensure that the correct struct is used for
+ enumeration APIs
+
+PipeWire now requires the correct struct type is used, otherwise
+it will fail to compile.
+
+Reference: https://gitlab.freedesktop.org/pipewire/pipewire/-/commit/188d920733f0791413d3386e5536ee7377f71b2f
+
+Fixes: https://github.com/libsdl-org/SDL/issues/12224
+(cherry picked from commit d35bef64e913dd7d5dd3153a4b61f10ef837dad6)
+---
+ src/audio/pipewire/SDL_pipewire.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/audio/pipewire/SDL_pipewire.c b/src/audio/pipewire/SDL_pipewire.c
+index 889e05decb..5d1bfc28de 100644
+--- a/src/audio/pipewire/SDL_pipewire.c
++++ b/src/audio/pipewire/SDL_pipewire.c
+@@ -590,7 +590,7 @@ static void node_event_info(void *object, const struct pw_node_info *info)
+ 
+         /* Need to parse the parameters to get the sample rate */
+         for (i = 0; i < info->n_params; ++i) {
+-            pw_node_enum_params(node->proxy, 0, info->params[i].id, 0, 0, NULL);
++            pw_node_enum_params((struct pw_node*)node->proxy, 0, info->params[i].id, 0, 0, NULL);
+         }
+ 
+         hotplug_core_sync(node);
+-- 
+2.49.0
+
