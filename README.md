@@ -8,10 +8,10 @@ their name contains `scrcpy`.**
 
 _pronounced "**scr**een **c**o**py**"_
 
-This application mirrors Android devices (video and audio) connected via
-USB or [over TCP/IP](doc/connection.md#tcpip-wireless), and allows to control the
-device with the keyboard and the mouse of the computer. It does not require any
-_root_ access. It works on _Linux_, _Windows_ and _macOS_.
+This application mirrors Android devices (video and audio) connected via USB or
+[TCP/IP](doc/connection.md#tcpip-wireless) and allows control using the
+computer's keyboard and mouse. It does not require _root_ access or an app
+installed on the device. It works on _Linux_, _Windows_, and _macOS_.
 
 ![screenshot](assets/screenshot-debian-600.jpg)
 
@@ -76,6 +76,16 @@ Note that USB debugging is not required to run scrcpy in [OTG mode](doc/otg.md).
  - [Linux](doc/linux.md)
  - [Windows](doc/windows.md) (read [how to run](doc/windows.md#run))
  - [macOS](doc/macos.md)
+
+
+## Must-know tips
+
+ - [Reducing resolution](doc/video.md#size) may greatly improve performance
+   (`scrcpy -m1024`)
+ - [_Right-click_](doc/mouse.md#mouse-bindings) triggers `BACK`
+ - [_Middle-click_](doc/mouse.md#mouse-bindings) triggers `HOME`
+ - <kbd>Alt</kbd>+<kbd>f</kbd> toggles [fullscreen](doc/window.md#fullscreen)
+ - There are many other [shortcuts](doc/shortcuts.md)
 
 
 ## Usage examples
@@ -200,7 +210,7 @@ work][donate]:
 ## Licence
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2024 Romain Vimont
+    Copyright (C) 2018-2025 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
