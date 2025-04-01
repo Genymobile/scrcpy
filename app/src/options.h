@@ -323,6 +323,7 @@ struct scrcpy_options {
     bool window;
     bool mouse_hover;
     bool audio_dup;
+    const char *audio_match_package_names;
     const char *new_display; // [<width>x<height>][/<dpi>] parsed by the server
     const char *start_app;
     bool vd_destroy_content;

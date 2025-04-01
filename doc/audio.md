@@ -69,7 +69,7 @@ scrcpy --audio-source=mic --no-video --no-playback --record=file.opus
 Many sources are available:
 
  - `output` (default): forwards the whole audio output, and disables playback on the device (mapped to [`REMOTE_SUBMIX`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#REMOTE_SUBMIX)).
- - `playback`: captures the audio playback (Android apps can opt-out, so the whole output is not necessarily captured).
+ - `playback`: captures the audio playback (only for Android 13 and above, Android apps can opt-out, so the whole output is not necessarily captured).
  - `mic`: captures the microphone (mapped to [`MIC`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#MIC)).
  - `mic-unprocessed`: captures the microphone unprocessed (raw) sound (mapped to [`UNPROCESSED`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#UNPROCESSED)).
  - `mic-camcorder`: captures the microphone tuned for video recording, with the same orientation as the camera if available (mapped to [`CAMCORDER`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#CAMCORDER)).
@@ -80,14 +80,24 @@ Many sources are available:
  - `voice-call-downlink`: captures voice call downlink only (mapped to [`VOICE_DOWNLINK`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#VOICE_DOWNLINK)).
  - `voice-performance`: captures audio meant to be processed for live performance (karaoke), includes both the microphone and the device playback (mapped to [`VOICE_PERFORMANCE`](https://developer.android.com/reference/android/media/MediaRecorder.AudioSource#VOICE_PERFORMANCE)).
 
-### Duplication
+### Playback source
 
-An alternative device audio capture method is also available (only for Android
-13 and above):
+`--audio-source=playback` uses an alternative device audio capture method:
 
 ```
 scrcpy --audio-source=playback
 ```
+
+See [#4380](https://github.com/Genymobile/scrcpy/issues/4380).
+
+It has two limitations comparing to the default `output` source:
+
+* Only Android 13 and above are supported.
+* Apps can opt-out being captured.
+
+But it also has two extra features:
+
+#### Duplication
 
 This audio source supports keeping the audio playing on the device while
 mirroring, with `--audio-dup`:
@@ -98,12 +108,22 @@ scrcpy --audio-source=playback --audio-dup
 scrcpy --audio-dup  # --audio-source=playback is implied
 ```
 
-However, it requires Android 13, and Android apps can opt-out (so they are not
-captured).
+#### Only capture some apps
 
+You can specify which apps you want to capture audio from with
+`--audio-match-package-names=`:
 
-See [#4380](https://github.com/Genymobile/scrcpy/issues/4380).
+```bash
+scrcpy --audio-match-package-names=com.package.a
+# multiple packages, separated by comma
+scrcpy --audio-match-package-names=com.package.a,com.package.b
+```
 
+To list the Android apps installed on the device:
+
+```bash
+scrcpy --list-apps
+```
 
 ## Codec
 
