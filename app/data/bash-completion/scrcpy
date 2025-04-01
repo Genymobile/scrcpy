@@ -9,6 +9,7 @@ _scrcpy() {
         --audio-codec-options=
         --audio-dup
         --audio-encoder=
+        --audio-match-package-names=
         --audio-source=
         --audio-output-buffer=
         -b --video-bit-rate=
@@ -192,6 +193,7 @@ _scrcpy() {
         |-b|--video-bit-rate \
         |--audio-codec-options \
         |--audio-encoder \
+        |--audio-match-package-names \
         |--audio-output-buffer \
         |--camera-ar \
         |--camera-id \

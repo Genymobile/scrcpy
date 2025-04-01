@@ -54,6 +54,7 @@ struct sc_server_params {
     bool video;
     bool audio;
     bool audio_dup;
+    const char* audio_match_package_names;
     bool show_touches;
     bool stay_awake;
     bool force_adb_forward;

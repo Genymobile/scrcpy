@@ -14,7 +14,9 @@ import com.genymobile.scrcpy.video.VideoCodec;
 import com.genymobile.scrcpy.video.VideoSource;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
+import android.content.pm.PackageManager;
 import android.graphics.Rect;
+import android.os.Build;
 import android.util.Pair;
 
 import java.util.List;
@@ -32,6 +34,7 @@ public class Options {
     private VideoSource videoSource = VideoSource.DISPLAY;
     private AudioSource audioSource = AudioSource.OUTPUT;
     private boolean audioDup;
+    private int[] audioMatchUids = new int[0];
     private int videoBitRate = 8000000;
     private int audioBitRate = 128000;
     private float maxFps;
@@ -118,6 +121,10 @@ public class Options {
 
     public boolean getAudioDup() {
         return audioDup;
+    }
+
+    public int[] getAudioMatchUids() {
+        return audioMatchUids;
     }
 
     public int getVideoBitRate() {
@@ -357,6 +364,21 @@ public class Options {
                     break;
                 case "audio_dup":
                     options.audioDup = Boolean.parseBoolean(value);
+                    break;
+                case "audio_match_package_names":
+                    if (Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0) {
+                        PackageManager pm = FakeContext.get().getPackageManager();
+                        String[] packageNames = value.split(",");
+                        int[] uids = new int[packageNames.length];
+                        for (int j = 0; j < packageNames.length; ++j) {
+                            try {
+                                uids[j] = pm.getPackageUid(packageNames[j].trim(), 0);
+                            } catch (PackageManager.NameNotFoundException e) {
+                                throw new IllegalArgumentException("Package name " + packageNames[j] + " not found");
+                            }
+                        }
+                        options.audioMatchUids = uids;
+                    }
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8

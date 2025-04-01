@@ -20,12 +20,14 @@ import java.nio.ByteBuffer;
 public final class AudioPlaybackCapture implements AudioCapture {
 
     private final boolean keepPlayingOnDevice;
+    private final int[] matchUids;
 
     private AudioRecord recorder;
     private AudioRecordReader reader;
 
-    public AudioPlaybackCapture(boolean keepPlayingOnDevice) {
+    public AudioPlaybackCapture(boolean keepPlayingOnDevice, int[] matchUids) {
         this.keepPlayingOnDevice = keepPlayingOnDevice;
+        this.matchUids = matchUids;
     }
 
     @SuppressLint("PrivateApi")
@@ -43,12 +45,19 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Method setTargetMixRoleMethod = audioMixingRuleBuilderClass.getMethod("setTargetMixRole", int.class);
             setTargetMixRoleMethod.invoke(audioMixingRuleBuilder, mixRolePlayersConstant);
 
-            AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
-
-            // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
-            int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
-            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            if (matchUids.length == 0) {
+                // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
+                int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
+                AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
+                addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+            } else {
+                // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_UID, uid);
+                int ruleMatchUidConstant = audioMixingRuleClass.getField("RULE_MATCH_UID").getInt(null);
+                for (int uid : matchUids) {
+                    addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchUidConstant, uid);
+                }
+            }
 
             // AudioMixingRule audioMixingRule = builder.build();
             Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
