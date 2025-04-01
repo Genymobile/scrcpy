@@ -27,7 +27,7 @@ Scrcpy is packaged in several distributions and package managers:
  - Arch Linux: `pacman -S scrcpy`
  - Fedora: `dnf copr enable zeno/scrcpy && dnf install scrcpy`
  - Gentoo: `emerge scrcpy`
- - Snap: `snap install scrcpy`
+ - Snap: ~~`snap install scrcpy`~~ _(obsolete version)_
  - … (see [repology](https://repology.org/project/scrcpy/versions))
 
 
