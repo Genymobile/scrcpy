@@ -165,7 +165,7 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s) {
+event_loop(struct scrcpy *s, bool has_screen) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -197,7 +197,7 @@ event_loop(struct scrcpy *s) {
                 break;
             }
             default:
-                if (!sc_screen_handle_event(&s->screen, &event)) {
+                if (has_screen && !sc_screen_handle_event(&s->screen, &event)) {
                     return SCRCPY_EXIT_FAILURE;
                 }
                 break;
@@ -933,7 +933,7 @@ aoa_complete:
         }
     }
 
-    ret = event_loop(s);
+    ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
 
