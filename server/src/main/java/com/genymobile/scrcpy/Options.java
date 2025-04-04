@@ -40,6 +40,7 @@ public class Options {
     private Rect crop;
     private boolean control = true;
     private int displayId;
+    private int injectMode = Device.INJECT_MODE_ASYNC;
     private String cameraId;
     private Size cameraSize;
     private CameraFacing cameraFacing;
@@ -150,6 +151,10 @@ public class Options {
 
     public int getDisplayId() {
         return displayId;
+    }
+
+    public int getInjectMode() {
+        return injectMode;
     }
 
     public String getCameraId() {
@@ -386,6 +391,9 @@ public class Options {
                     break;
                 case "display_id":
                     options.displayId = Integer.parseInt(value);
+                    break;
+                case "inject_mode":
+                    options.injectMode = Integer.parseInt(value);
                     break;
                 case "show_touches":
                     options.showTouches = Boolean.parseBoolean(value);
