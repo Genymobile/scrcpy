@@ -84,6 +84,27 @@ sudo dnf install java-devel
 ```
 
 
+#### Rocky Linux
+
+```bash
+# enable RPM fusion release, 8 for Rocky 8.x and 9 for Rocky 9.x
+sudo dnf install https://download1.rpmfusion.org/free/el/rpmfusion-free-release-8.noarch.rpm
+
+# enable extra packages with epel-release
+sudo dnf install epel-release
+
+# add repo for epel-multimedia
+sudo dnf config-manager --add-repo=https://negativo17.org/repos/epel-multimedia.repo
+
+# enable powertools
+sudo dnf config-manager --set-enabled powertools
+
+# install dependencies
+sudo dnf install ffmpeg adb android-tools wget gcc git pkg-config meson ninja-build \
+                 SDL2 SDL2-devel libavcodec-devel libavdevice-devel libavformat-devel \
+                 libavutil-devel libusb-devel libswresample-devel libusb-devel
+```
+
 
 ### Windows
 
