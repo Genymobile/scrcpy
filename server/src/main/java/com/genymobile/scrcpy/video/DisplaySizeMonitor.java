@@ -130,7 +130,6 @@ public class DisplaySizeMonitor {
     }
 
     private synchronized void setSessionInfo(SessionInfo sessionInfo) {
-        Ln.e("@@@@@@@@@@@@@@@@@@@@@@"+sessionInfo.rotation);
         this.sessionInfo = sessionInfo;
     }
 
