@@ -60,10 +60,12 @@ public final class Streamer {
             buffer.put((byte) 0xff);
             buffer.putInt(videoSize.getWidth());
             buffer.putInt(videoSize.getHeight());
-            rotation = rotation * 90;
             buffer.put((byte) (isFlip ? 1 : 0));
-            buffer.put((byte) (rotation >= 180 ? 1 : 0));
-            buffer.put((byte) (rotation >= 90 ? 1 : 0));
+
+            int[] vertical = {0, 0, 1, 1};
+            int[] horizontal = {0, 1, 0, 1};
+            buffer.put((byte) vertical[rotation]);
+            buffer.put((byte) horizontal[rotation]);
             buffer.flip();
             IO.writeFully(fd, buffer);
         }
