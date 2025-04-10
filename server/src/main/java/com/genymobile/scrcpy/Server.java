@@ -152,7 +152,7 @@ public final class Server {
                         surfaceCapture = new NewDisplayCapture(controller, options);
                     } else {
                         assert options.getDisplayId() != Device.DISPLAY_ID_NONE;
-                        surfaceCapture = new ScreenCapture(controller, options);
+                        surfaceCapture = new ScreenCapture(controller, videoStreamer, options);
                     }
                 } else {
                     surfaceCapture = new CameraCapture(options);

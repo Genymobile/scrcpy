@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.device.ConfigurationException;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Orientation;
+import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.opengl.AffineOpenGLFilter;
 import com.genymobile.scrcpy.opengl.OpenGLFilter;
@@ -34,6 +35,7 @@ public class ScreenCapture extends SurfaceCapture {
     private Orientation.Lock captureOrientationLock;
     private Orientation captureOrientation;
     private final float angle;
+    private final Streamer streamer;
 
     private DisplayInfo displayInfo;
     private Size videoSize;
@@ -46,7 +48,7 @@ public class ScreenCapture extends SurfaceCapture {
     private AffineMatrix transform;
     private OpenGLRunner glRunner;
 
-    public ScreenCapture(VirtualDisplayListener vdListener, Options options) {
+    public ScreenCapture(VirtualDisplayListener vdListener, Streamer streamer, Options options) {
         this.vdListener = vdListener;
         this.displayId = options.getDisplayId();
         assert displayId != Device.DISPLAY_ID_NONE;
@@ -57,6 +59,7 @@ public class ScreenCapture extends SurfaceCapture {
         assert captureOrientationLock != null;
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        this.streamer = streamer;
     }
 
     @Override
@@ -77,27 +80,35 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         Size displaySize = displayInfo.getSize();
-        displaySizeMonitor.setSessionDisplaySize(displaySize);
+        int displayRotation = displayInfo.getRotation();
+        displaySizeMonitor.setSessionInfo(displaySize, displayRotation);
 
         if (captureOrientationLock == Orientation.Lock.LockedInitial) {
             // The user requested to lock the video orientation to the current orientation
             captureOrientationLock = Orientation.Lock.LockedValue;
-            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
+            captureOrientation = Orientation.fromRotation(displayRotation);
         }
 
         VideoFilter filter = new VideoFilter(displaySize);
 
         if (crop != null) {
-            boolean transposed = (displayInfo.getRotation() % 2) != 0;
+            boolean transposed = (displayRotation % 2) != 0;
             filter.addCrop(crop, transposed);
         }
 
         boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
-        filter.addOrientation(displayInfo.getRotation(), locked, captureOrientation);
+        filter.addOrientation(displayRotation, locked, captureOrientation);
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
         videoSize = filter.getOutputSize().limit(maxSize).round8();
+
+        try {
+            boolean isFlipped = captureOrientation.isFlipped();
+            streamer.writeVideoSession(videoSize, isFlipped, displayRotation);
+        } catch (Exception e) {
+            Ln.e("Video Session failed to send", e);
+        }
     }
 
     @Override

@@ -258,8 +258,7 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
 
     struct sc_screen *screen = DOWNCAST(sink);
 
-    if (ctx->width <= 0 || ctx->width > 0xFFFF
-            || ctx->height <= 0 || ctx->height > 0xFFFF) {
+    if (ctx->width <= 0 || ctx->width > 0xFFFF || ctx->height <= 0 || ctx->height > 0xFFFF) {
         LOGE("Invalid video size: %dx%d", ctx->width, ctx->height);
         return false;
     }
