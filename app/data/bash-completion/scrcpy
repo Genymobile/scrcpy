@@ -205,6 +205,7 @@ _scrcpy() {
         |-p|--port \
         |--push-target \
         |--rotation \
+        |--screen-off-timeout \
         |--tunnel-host \
         |--tunnel-port \
         |--v4l2-buffer \
