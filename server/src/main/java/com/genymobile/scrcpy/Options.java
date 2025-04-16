@@ -79,6 +79,7 @@ public class Options {
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
     private boolean sendCodecMeta = true; // write the codec metadata before the stream
+    private boolean netArgs = false;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -288,6 +289,10 @@ public class Options {
         return sendCodecMeta;
     }
 
+    public boolean getEnableNetworkArgs() {
+        return netArgs;
+    }
+
     private void parseKeyValue(String key, String value) {
         switch (key) {
             case "scid":
@@ -491,6 +496,9 @@ public class Options {
                     this.sendDummyByte = false;
                     this.sendCodecMeta = false;
                 }
+                break;
+            case "net_args":
+                this.netArgs = Boolean.parseBoolean(value);
                 break;
             default:
                 Ln.w("Unknown server option: " + key);

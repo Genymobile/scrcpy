@@ -95,16 +95,18 @@ public final class Server {
 
         DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
         try {
-            Ln.d("Waiting for additional args (JSON) ...");
-            String additionalOptions = connection.receiveAdditionalOptions();
+            if (options.getEnableNetworkArgs()) {
+                Ln.d("Waiting for additional args (JSON) ...");
+                String additionalOptions = connection.receiveAdditionalOptions();
 
-            if (additionalOptions != null && !additionalOptions.isEmpty()) {
-                Ln.d("Received additional options: " + additionalOptions);
-                String args = StringUtils.jsonToArgs(additionalOptions);
-                Ln.d("Additional args: " + args);
-                options.parseAdditional(args.split(" "));
-            } else {
-                Ln.d("No additional args received.");
+                if (additionalOptions != null && !additionalOptions.isEmpty()) {
+                    Ln.d("Received additional options: " + additionalOptions);
+                    String args = StringUtils.jsonToArgs(additionalOptions);
+                    Ln.d("Additional args: " + args);
+                    options.parseAdditional(args.split(" "));
+                } else {
+                    Ln.d("No additional args received.");
+                }
             }
 
             if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12 && options.getVideoSource() == VideoSource.CAMERA) {
