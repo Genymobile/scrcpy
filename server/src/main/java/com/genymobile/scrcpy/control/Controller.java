@@ -6,6 +6,7 @@ import com.genymobile.scrcpy.CleanUp;
 import com.genymobile.scrcpy.Options;
 import com.genymobile.scrcpy.device.Device;
 import com.genymobile.scrcpy.device.DeviceApp;
+import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.device.Point;
 import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.device.Size;
@@ -152,8 +153,34 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private UhidManager getUhidManager() {
         if (uhidManager == null) {
-            uhidManager = new UhidManager(sender);
+            int uhidDisplayId = displayId;
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15) {
+                if (displayId == Device.DISPLAY_ID_NONE) {
+                    // Mirroring a new virtual display id (using --new-display-id feature) on Android >= 15, where the UHID mouse pointer can be
+                    // associated to the virtual display
+                    try {
+                        // Wait for at most 1 second until a virtual display id is known
+                        DisplayData data = waitDisplayData(1000);
+                        if (data != null) {
+                            uhidDisplayId = data.virtualDisplayId;
+                        }
+                    } catch (InterruptedException e) {
+                        // do nothing
+                    }
+                }
+            }
+
+            String displayUniqueId = null;
+            if (uhidDisplayId > 0) {
+                // Ignore Device.DISPLAY_ID_NONE and 0 (main display)
+                DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(uhidDisplayId);
+                if (displayInfo != null) {
+                    displayUniqueId = displayInfo.getUniqueId();
+                }
+            }
+            uhidManager = new UhidManager(sender, displayUniqueId);
         }
+
         return uhidManager;
     }
 

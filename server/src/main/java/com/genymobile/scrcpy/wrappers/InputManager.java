@@ -1,9 +1,11 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
@@ -20,6 +22,8 @@ public final class InputManager {
     private static Method injectInputEventMethod;
     private static Method setDisplayIdMethod;
     private static Method setActionButtonMethod;
+    private static Method addUniqueIdAssociationByPortMethod;
+    private static Method removeUniqueIdAssociationByPortMethod;
 
     static InputManager create() {
         android.hardware.input.InputManager manager = (android.hardware.input.InputManager) FakeContext.get()
@@ -81,6 +85,42 @@ public final class InputManager {
         } catch (ReflectiveOperationException e) {
             Ln.e("Cannot set action button on MotionEvent", e);
             return false;
+        }
+    }
+
+    private static Method getAddUniqueIdAssociationByPortMethod() throws NoSuchMethodException {
+        if (addUniqueIdAssociationByPortMethod == null) {
+            addUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod(
+                    "addUniqueIdAssociationByPort", String.class, String.class);
+        }
+        return addUniqueIdAssociationByPortMethod;
+    }
+
+    @TargetApi(AndroidVersions.API_35_ANDROID_15)
+    public void addUniqueIdAssociationByPort(String inputPort, String uniqueId) {
+        try {
+            Method method = getAddUniqueIdAssociationByPortMethod();
+            method.invoke(manager, inputPort, uniqueId);
+        } catch (ReflectiveOperationException e) {
+            Ln.e("Cannot add unique id association by port", e);
+        }
+    }
+
+    private static Method getRemoveUniqueIdAssociationByPortMethod() throws NoSuchMethodException {
+        if (removeUniqueIdAssociationByPortMethod == null) {
+            removeUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod(
+                    "removeUniqueIdAssociationByPort", String.class);
+        }
+        return removeUniqueIdAssociationByPortMethod;
+    }
+
+    @TargetApi(AndroidVersions.API_35_ANDROID_15)
+    public void removeUniqueIdAssociationByPort(String inputPort) {
+        try {
+            Method method = getRemoveUniqueIdAssociationByPortMethod();
+            method.invoke(manager, inputPort);
+        } catch (ReflectiveOperationException e) {
+            Ln.e("Cannot remove unique id association by port", e);
         }
     }
 }
