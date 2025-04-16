@@ -25,6 +25,7 @@ android {
 
 dependencies {
     testImplementation 'junit:junit:4.13.2'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.19.0-rc2'
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"

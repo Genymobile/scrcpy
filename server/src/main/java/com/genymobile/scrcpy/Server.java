@@ -17,6 +17,7 @@ import com.genymobile.scrcpy.device.Streamer;
 import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.util.StringUtils;
 import com.genymobile.scrcpy.video.CameraCapture;
 import com.genymobile.scrcpy.video.NewDisplayCapture;
 import com.genymobile.scrcpy.video.ScreenCapture;
@@ -75,22 +76,6 @@ public final class Server {
     }
 
     private static void scrcpy(Options options) throws IOException, ConfigurationException {
-        if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12 && options.getVideoSource() == VideoSource.CAMERA) {
-            Ln.e("Camera mirroring is not supported before Android 12");
-            throw new ConfigurationException("Camera mirroring is not supported");
-        }
-
-        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
-            if (options.getNewDisplay() != null) {
-                Ln.e("New virtual display is not supported before Android 10");
-                throw new ConfigurationException("New virtual display is not supported");
-            }
-            if (options.getDisplayImePolicy() != -1) {
-                Ln.e("Display IME policy is not supported before Android 10");
-                throw new ConfigurationException("Display IME policy is not supported");
-            }
-        }
-
         CleanUp cleanUp = null;
 
         if (options.getCleanup()) {
@@ -110,6 +95,34 @@ public final class Server {
 
         DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, sendDummyByte);
         try {
+            Ln.d("Waiting for additional args (JSON) ...");
+            String additionalOptions = connection.receiveAdditionalOptions();
+
+            if (additionalOptions != null && !additionalOptions.isEmpty()) {
+                Ln.d("Received additional options: " + additionalOptions);
+                String args = StringUtils.jsonToArgs(additionalOptions);
+                Ln.d("Additional args: " + args);
+                options.parseAdditional(args.split(" "));
+            } else {
+                Ln.d("No additional args received.");
+            }
+
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12 && options.getVideoSource() == VideoSource.CAMERA) {
+                Ln.e("Camera mirroring is not supported before Android 12");
+                throw new ConfigurationException("Camera mirroring is not supported");
+            }
+
+            if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
+                if (options.getNewDisplay() != null) {
+                    Ln.e("New virtual display is not supported before Android 10");
+                    throw new ConfigurationException("New virtual display is not supported");
+                }
+                if (options.getDisplayImePolicy() != -1) {
+                    Ln.e("Display IME policy is not supported before Android 10");
+                    throw new ConfigurationException("Display IME policy is not supported");
+                }
+            }
+
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
             }

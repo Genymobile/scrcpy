@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.device;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.genymobile.scrcpy.control.ControlChannel;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.StringUtils;
@@ -9,9 +10,11 @@ import android.net.LocalSocket;
 import android.net.LocalSocketAddress;
 
 import java.io.Closeable;
+import java.io.DataInputStream;
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 public final class DesktopConnection implements Closeable {
 
@@ -162,6 +165,28 @@ public final class DesktopConnection implements Closeable {
 
         FileDescriptor fd = getFirstSocket().getFileDescriptor();
         IO.writeFully(fd, buffer, 0, buffer.length);
+    }
+
+    public String receiveAdditionalOptions() throws IOException {
+        LocalSocket socket = getFirstSocket(); // or choose a specific one
+        DataInputStream input = new DataInputStream(socket.getInputStream());
+
+        // Read length prefix (4 bytes, big-endian)
+        int length = input.readInt(); // throws if the socket closes or data is invalid
+
+        if (length == 0) {
+            return null; // No additional options sent
+        }
+
+        if (length < 0 || length > 10 * 1024 * 1024) { // Limit to 10MB to avoid OOM
+            throw new IOException("Invalid JSON message length: " + length);
+        }
+
+        // Read the JSON payload
+        byte[] jsonBytes = new byte[length];
+        input.readFully(jsonBytes);
+
+        return new String(jsonBytes, StandardCharsets.UTF_8);
     }
 
     public FileDescriptor getVideoFd() {
