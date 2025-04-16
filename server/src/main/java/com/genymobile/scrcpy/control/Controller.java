@@ -54,10 +54,12 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private static final class DisplayData {
         private final int virtualDisplayId;
+        private final String displayUniqueId;
         private final PositionMapper positionMapper;
 
-        private DisplayData(int virtualDisplayId, PositionMapper positionMapper) {
+        private DisplayData(int virtualDisplayId, String displayUniqueId, PositionMapper positionMapper) {
             this.virtualDisplayId = virtualDisplayId;
+            this.displayUniqueId = displayUniqueId;
             this.positionMapper = positionMapper;
         }
     }
@@ -135,8 +137,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     @Override
-    public void onNewVirtualDisplay(int virtualDisplayId, PositionMapper positionMapper) {
-        DisplayData data = new DisplayData(virtualDisplayId, positionMapper);
+    public void onNewVirtualDisplay(int virtualDisplayId, String displayUniqueId, PositionMapper positionMapper) {
+        DisplayData data = new DisplayData(virtualDisplayId, displayUniqueId, positionMapper);
         DisplayData old = this.displayData.getAndSet(data);
         if (old == null) {
             // The very first time the Controller is notified of a new virtual display
@@ -152,7 +154,21 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private UhidManager getUhidManager() {
         if (uhidManager == null) {
-            uhidManager = new UhidManager(sender);
+            String displayUniqueId = null;
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15 && displayId == Device.DISPLAY_ID_NONE) {
+                // Mirroring a new virtual display id (using --new-display-id feature) on Android >= 15, where the UHID mouse pointer can be
+                // associated to the virtual display
+                try {
+                    // Wait for at most 1 second until a virtual display id is known
+                    DisplayData data = waitDisplayData(1000);
+                    if (data != null) {
+                         displayUniqueId = data.displayUniqueId;
+                    }
+                } catch (InterruptedException e) {
+                    // do nothing
+                }
+            }
+            uhidManager = new UhidManager(sender, displayUniqueId);
         }
         return uhidManager;
     }

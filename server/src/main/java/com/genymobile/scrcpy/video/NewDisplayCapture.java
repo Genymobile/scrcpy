@@ -220,8 +220,17 @@ public class NewDisplayCapture extends SurfaceCapture {
         }
 
         if (vdListener != null) {
+            int displayId = virtualDisplay.getDisplay().getDisplayId();
+            String displayUniqueId = null;
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15) {
+                // The display unique id is not used before Android 15
+                DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                if (displayInfo != null) {
+                    displayUniqueId = displayInfo.getUniqueId();
+                }
+            }
             PositionMapper positionMapper = PositionMapper.create(videoSize, eventTransform, displaySize);
-            vdListener.onNewVirtualDisplay(virtualDisplay.getDisplay().getDisplayId(), positionMapper);
+            vdListener.onNewVirtualDisplay(displayId, displayUniqueId, positionMapper);
         }
     }
 

@@ -156,7 +156,7 @@ public class ScreenCapture extends SurfaceCapture {
                 positionMapper = PositionMapper.create(videoSize, transform, inputSize);
                 virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             }
-            vdListener.onNewVirtualDisplay(virtualDisplayId, positionMapper);
+            vdListener.onNewVirtualDisplay(virtualDisplayId, displayInfo.getUniqueId(), positionMapper);
         }
     }
 
