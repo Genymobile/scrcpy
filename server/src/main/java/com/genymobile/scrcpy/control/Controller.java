@@ -118,18 +118,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
             ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
             if (clipboardManager != null) {
-                clipboardManager.addPrimaryClipChangedListener(new IOnPrimaryClipChangedListener.Stub() {
-                    @Override
-                    public void dispatchPrimaryClipChanged() {
-                        if (isSettingClipboard.get()) {
-                            // This is a notification for the change we are currently applying, ignore it
-                            return;
-                        }
-                        String text = Device.getClipboardText();
-                        if (text != null) {
-                            DeviceMessage msg = DeviceMessage.createClipboard(text);
-                            sender.send(msg);
-                        }
+                clipboardManager.addPrimaryClipChangedListener(() -> {
+                    if (isSettingClipboard.get()) {
+                        // This is a notification for the change we are currently applying, ignore it
+                        return;
+                    }
+                    String text = Device.getClipboardText();
+                    if (text != null) {
+                        DeviceMessage msg = DeviceMessage.createClipboard(text);
+                        sender.send(msg);
                     }
                 });
             } else {
