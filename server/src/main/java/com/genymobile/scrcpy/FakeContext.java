@@ -72,7 +72,7 @@ public final class FakeContext extends ContextWrapper {
     @Override
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
-        builder.setPackageName("shell");
+        builder.setPackageName(PACKAGE_NAME);
         return builder.build();
     }
 
