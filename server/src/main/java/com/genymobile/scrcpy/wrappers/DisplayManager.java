@@ -81,7 +81,7 @@ public final class DisplayManager {
         int density = Integer.parseInt(m.group(5));
         int layerStack = Integer.parseInt(m.group(6));
 
-        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density);
+        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, "");
     }
 
     private static DisplayInfo getDisplayInfoFromDumpsysDisplay(int displayId) {
@@ -129,7 +129,8 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
-            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi);
+            String uniqueId = (String)cls.getDeclaredField("uniqueId").get(displayInfo);
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }

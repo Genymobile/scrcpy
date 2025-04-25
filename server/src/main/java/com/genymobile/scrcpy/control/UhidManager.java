@@ -1,8 +1,10 @@
 package com.genymobile.scrcpy.control;
 
 import com.genymobile.scrcpy.AndroidVersions;
+import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.StringUtils;
+import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.Build;
 import android.os.HandlerThread;
@@ -31,6 +33,8 @@ public final class UhidManager {
 
     private static final int SIZE_OF_UHID_EVENT = 4380; // sizeof(struct uhid_event)
 
+    private static final String inputPort = "scrcpy:" + Os.getpid();
+
     private final ArrayMap<Integer, FileDescriptor> fds = new ArrayMap<>();
     private final ByteBuffer buffer = ByteBuffer.allocate(SIZE_OF_UHID_EVENT).order(ByteOrder.nativeOrder());
 
@@ -45,6 +49,13 @@ public final class UhidManager {
             queue = thread.getLooper().getQueue();
         } else {
             queue = null;
+        }
+    }
+
+    public static void setDisplayId(int displayId) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14 && displayId != 0) {
+            DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+            ServiceManager.getInputManager().addUniqueIdAssociationByPort(inputPort, displayInfo.getUniqueId());
         }
     }
 
@@ -170,16 +181,21 @@ public final class UhidManager {
          * } __attribute__((__packed__));
          */
 
-        byte[] empty = new byte[256];
         ByteBuffer buf = ByteBuffer.allocate(280 + reportDesc.length).order(ByteOrder.nativeOrder());
         buf.putInt(UHID_CREATE2);
 
         String actualName = name.isEmpty() ? "scrcpy" : name;
-        byte[] utf8Name = actualName.getBytes(StandardCharsets.UTF_8);
-        int len = StringUtils.getUtf8TruncationIndex(utf8Name, 127);
-        assert len <= 127;
-        buf.put(utf8Name, 0, len);
-        buf.put(empty, 0, 256 - len);
+        byte[] nameBytes = actualName.getBytes(StandardCharsets.UTF_8);
+        int nameLen = StringUtils.getUtf8TruncationIndex(nameBytes, 127);
+        buf.put(nameBytes, 0, nameLen);
+        buf.position(buf.position() + 128 - nameLen);
+
+        byte[] physBytes = inputPort.getBytes(StandardCharsets.UTF_8);
+        int physLen = StringUtils.getUtf8TruncationIndex(physBytes, 63);
+        buf.put(physBytes, 0, physLen);
+        buf.position(buf.position() + 64 - physLen);
+
+        buf.position(buf.position() + 64); // uniq
 
         buf.putShort((short) reportDesc.length);
         buf.putShort(BUS_VIRTUAL);

@@ -148,6 +148,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 displayDataAvailable.notify();
             }
         }
+        UhidManager.setDisplayId(virtualDisplayId);
     }
 
     public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
