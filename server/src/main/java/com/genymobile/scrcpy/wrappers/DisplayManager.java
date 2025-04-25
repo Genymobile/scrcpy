@@ -95,12 +95,12 @@ public final class DisplayManager {
     }
 
     private static int parseDisplayFlags(String text) {
-        Pattern regex = Pattern.compile("FLAG_[A-Z_]+");
         if (text == null) {
             return 0;
         }
 
         int flags = 0;
+        Pattern regex = Pattern.compile("FLAG_[A-Z_]+");
         Matcher m = regex.matcher(text);
         while (m.find()) {
             String flagString = m.group();
