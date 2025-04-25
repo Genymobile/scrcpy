@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
@@ -16,40 +17,26 @@ public final class InputManager {
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_RESULT = 1;
     public static final int INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH = 2;
 
-    private final Object manager;
-    private Method injectInputEventMethod;
+    private final android.hardware.input.InputManager manager;
     private long lastPermissionLogDate;
 
+    private static Method injectInputEventMethod;
     private static Method setDisplayIdMethod;
     private static Method setActionButtonMethod;
 
     static InputManager create() {
-        try {
-            Class<?> inputManagerClass = getInputManagerClass();
-            Method getInstanceMethod = inputManagerClass.getDeclaredMethod("getInstance");
-            Object im = getInstanceMethod.invoke(null);
-            return new InputManager(im);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
-        }
+        android.hardware.input.InputManager manager = (android.hardware.input.InputManager) FakeContext.get()
+                .getSystemService(FakeContext.INPUT_SERVICE);
+        return new InputManager(manager);
     }
 
-    private static Class<?> getInputManagerClass() {
-        try {
-            // Parts of the InputManager class have been moved to a new InputManagerGlobal class in Android 14 preview
-            return Class.forName("android.hardware.input.InputManagerGlobal");
-        } catch (ClassNotFoundException e) {
-            return android.hardware.input.InputManager.class;
-        }
-    }
-
-    private InputManager(Object manager) {
+    private InputManager(android.hardware.input.InputManager manager) {
         this.manager = manager;
     }
 
-    private Method getInjectInputEventMethod() throws NoSuchMethodException {
+    private static Method getInjectInputEventMethod() throws NoSuchMethodException {
         if (injectInputEventMethod == null) {
-            injectInputEventMethod = manager.getClass().getMethod("injectInputEvent", InputEvent.class, int.class);
+            injectInputEventMethod = android.hardware.input.InputManager.class.getMethod("injectInputEvent", InputEvent.class, int.class);
         }
         return injectInputEventMethod;
     }
