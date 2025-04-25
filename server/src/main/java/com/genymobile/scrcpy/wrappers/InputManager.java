@@ -89,13 +89,7 @@ public final class InputManager {
 
     private static Method getAddUniqueIdAssociationByPortMethod() throws NoSuchMethodException {
         if (addUniqueIdAssociationByPortMethod == null) {
-            try {
-                // Android 15
-                addUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("addUniqueIdAssociationByPort", String.class, String.class);
-            } catch (NoSuchMethodException ignored) {
-                // Android 12 to 14
-                addUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("addUniqueIdAssociation", String.class, String.class);
-            }
+            addUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("addUniqueIdAssociationByPort", String.class, String.class);
         }
         return addUniqueIdAssociationByPortMethod;
     }
@@ -111,13 +105,7 @@ public final class InputManager {
 
     private static Method getRemoveUniqueIdAssociationByPortMethod() throws NoSuchMethodException {
         if (removeUniqueIdAssociationByPortMethod == null) {
-            try {
-                // Android 15
-                removeUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("removeUniqueIdAssociationByPort", String.class);
-            } catch (NoSuchMethodException ignored) {
-                // Android 12 to 14
-                removeUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("removeUniqueIdAssociation", String.class);
-            }
+            removeUniqueIdAssociationByPortMethod = android.hardware.input.InputManager.class.getMethod("removeUniqueIdAssociationByPort", String.class);
         }
         return removeUniqueIdAssociationByPortMethod;
     }

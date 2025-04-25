@@ -53,7 +53,7 @@ public final class UhidManager {
     }
 
     public static void setDisplayId(int displayId) {
-        if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14 && displayId != 0) {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15 && displayId != 0) {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
             ServiceManager.getInputManager().addUniqueIdAssociationByPort(inputPort, displayInfo.getUniqueId());
         }
@@ -241,6 +241,10 @@ public final class UhidManager {
     }
 
     public void closeAll() {
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_35_ANDROID_15) {
+            ServiceManager.getInputManager().removeUniqueIdAssociationByPort(inputPort);
+        }
+
         for (FileDescriptor fd : fds.values()) {
             close(fd);
         }
