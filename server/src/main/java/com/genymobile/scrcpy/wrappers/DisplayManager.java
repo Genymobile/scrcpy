@@ -46,6 +46,7 @@ public final class DisplayManager {
     }
 
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
+    private Method getDisplayInfoMethod;
     private Method createVirtualDisplayMethod;
     private Method requestDisplayPowerMethod;
 
@@ -114,9 +115,17 @@ public final class DisplayManager {
         return flags;
     }
 
+    private Method getGetDisplayInfoMethod() throws NoSuchMethodException {
+        if (getDisplayInfoMethod == null) {
+            getDisplayInfoMethod = manager.getClass().getMethod("getDisplayInfo", int.class);
+        }
+        return getDisplayInfoMethod;
+    }
+
     public DisplayInfo getDisplayInfo(int displayId) {
         try {
-            Object displayInfo = manager.getClass().getMethod("getDisplayInfo", int.class).invoke(manager, displayId);
+            Method method = getGetDisplayInfoMethod();
+            Object displayInfo = method.invoke(manager, displayId);
             if (displayInfo == null) {
                 // fallback when displayInfo is null
                 return getDisplayInfoFromDumpsysDisplay(displayId);
