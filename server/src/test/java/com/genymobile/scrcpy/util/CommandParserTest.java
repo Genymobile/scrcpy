@@ -3,7 +3,6 @@ package com.genymobile.scrcpy.util;
 import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.wrappers.DisplayManager;
 
-import android.view.Display;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -44,10 +43,10 @@ public class CommandParserTest {
         Assert.assertEquals(0, displayInfo.getDisplayId());
         Assert.assertEquals(0, displayInfo.getRotation());
         Assert.assertEquals(0, displayInfo.getLayerStack());
-        // FLAG_TRUSTED does not exist in Display (@TestApi), so it won't be reported
-        Assert.assertEquals(Display.FLAG_SECURE | Display.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
+        Assert.assertEquals(DisplayInfo.FLAG_TRUSTED | DisplayInfo.FLAG_SECURE | DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
         Assert.assertEquals(1440, displayInfo.getSize().getWidth());
         Assert.assertEquals(3120, displayInfo.getSize().getHeight());
+        Assert.assertEquals(1, displayInfo.getType());
     }
 
     @Test
@@ -86,10 +85,10 @@ public class CommandParserTest {
         Assert.assertEquals(0, displayInfo.getDisplayId());
         Assert.assertEquals(3, displayInfo.getRotation());
         Assert.assertEquals(0, displayInfo.getLayerStack());
-        // FLAG_TRUSTED does not exist in Display (@TestApi), so it won't be reported
-        Assert.assertEquals(Display.FLAG_SECURE | Display.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
+        Assert.assertEquals(DisplayInfo.FLAG_TRUSTED | DisplayInfo.FLAG_SECURE | DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
         Assert.assertEquals(3120, displayInfo.getSize().getWidth());
         Assert.assertEquals(1440, displayInfo.getSize().getHeight());
+        Assert.assertEquals(1, displayInfo.getType());
     }
 
     @Test
@@ -133,10 +132,10 @@ public class CommandParserTest {
         Assert.assertEquals(0, displayInfo.getDisplayId());
         Assert.assertEquals(0, displayInfo.getRotation());
         Assert.assertEquals(0, displayInfo.getLayerStack());
-        // FLAG_TRUSTED does not exist in Display (@TestApi), so it won't be reported
-        Assert.assertEquals(Display.FLAG_SECURE | Display.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
+        Assert.assertEquals(DisplayInfo.FLAG_TRUSTED | DisplayInfo.FLAG_SECURE | DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
         Assert.assertEquals(1080, displayInfo.getSize().getWidth());
         Assert.assertEquals(2280, displayInfo.getSize().getHeight());
+        Assert.assertEquals(1, displayInfo.getType());
     }
 
     @Test
@@ -183,10 +182,11 @@ public class CommandParserTest {
         Assert.assertEquals(0, displayInfo.getFlags());
         Assert.assertEquals(1080, displayInfo.getSize().getWidth());
         Assert.assertEquals(2280, displayInfo.getSize().getHeight());
+        Assert.assertEquals(1, displayInfo.getType());
     }
 
     @Test
-    public void testParseDisplayInfoFromDumpsysDisplayAPI29WithNoFlags() {
+    public void testParseDisplayInfoFromDumpsysDisplayAPI29() {
         /* @formatter:off */
         String partialOutput = "Logical Displays: size=2\n"
                 + "  Display 0:\n"
@@ -231,13 +231,26 @@ public class CommandParserTest {
                 + "110, mode 92, defaultMode 92, modes [{id=92, width=800, height=110, fps=60.0}], colorMode 0, supportedColorModes [0], "
                 + "hdrCapabilities null, rotation 0, density 200 (200.0 x 200.0) dpi, layerStack 31, appVsyncOff 0, presDeadline 16666666, "
                 + "type VIRTUAL, state OFF, owner com.test.system (uid 10040), FLAG_PRIVATE, removeMode 1}\n";
-        DisplayInfo displayInfo = DisplayManager.parseDisplayInfo(partialOutput, 31);
+        DisplayInfo displayInfo = DisplayManager.parseDisplayInfo(partialOutput, 0);
+        Assert.assertNotNull(displayInfo);
+        Assert.assertEquals(0, displayInfo.getDisplayId());
+        Assert.assertEquals(0, displayInfo.getRotation());
+        Assert.assertEquals(0, displayInfo.getLayerStack());
+        Assert.assertEquals(DisplayInfo.FLAG_SECURE | DisplayInfo.FLAG_SUPPORTS_PROTECTED_BUFFERS, displayInfo.getFlags());
+        Assert.assertEquals(3664, displayInfo.getSize().getWidth());
+        Assert.assertEquals(1920, displayInfo.getSize().getHeight());
+        Assert.assertEquals(1, displayInfo.getType());
+        Assert.assertEquals(0, displayInfo.getOwnerUid());
+
+        displayInfo = DisplayManager.parseDisplayInfo(partialOutput, 31);
         Assert.assertNotNull(displayInfo);
         Assert.assertEquals(31, displayInfo.getDisplayId());
         Assert.assertEquals(0, displayInfo.getRotation());
         Assert.assertEquals(31, displayInfo.getLayerStack());
-        Assert.assertEquals(0, displayInfo.getFlags());
+        Assert.assertEquals(DisplayInfo.FLAG_PRIVATE, displayInfo.getFlags());
         Assert.assertEquals(800, displayInfo.getSize().getWidth());
         Assert.assertEquals(110, displayInfo.getSize().getHeight());
+        Assert.assertEquals(5, displayInfo.getType());
+        Assert.assertEquals(10040, displayInfo.getOwnerUid());
     }
 }

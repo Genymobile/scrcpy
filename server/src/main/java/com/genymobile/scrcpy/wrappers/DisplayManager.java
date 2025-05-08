@@ -12,7 +12,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.hardware.display.VirtualDisplay;
 import android.os.Handler;
-import android.view.Display;
+import android.os.Process;
 import android.view.Surface;
 
 import java.lang.reflect.Constructor;
@@ -66,22 +66,27 @@ public final class DisplayManager {
 
     // public to call it from unit tests
     public static DisplayInfo parseDisplayInfo(String dumpsysDisplayOutput, int displayId) {
+        // Android 10 cannot get the FLAG_CAN_SHOW_WITH_INSECURE_KEYGUARD flag
+        // https://android.googlesource.com/platform/frameworks/base.git/+/refs/tags/android-10.0.0_r1/core/java/android/view/DisplayInfo.java#714
         Pattern regex = Pattern.compile(
                 "^    mOverrideDisplayInfo=DisplayInfo\\{\".*?, displayId " + displayId + ".*?(, FLAG_.*)?, real ([0-9]+) x ([0-9]+).*?, "
-                        + "rotation ([0-9]+).*?, density ([0-9]+).*?, layerStack ([0-9]+)",
+                        + "rotation ([0-9]+)(?:.*?, type ([A-Z_]+).*?)?, density ([0-9]+).*?, layerStack ([0-9]+)"
+                        + "(?:.*?, type ([A-Z_]+).*?)?(?:.*?uid ([0-9]+).*?)?.*?(, FLAG_.*)?, removeMode",
                 Pattern.MULTILINE);
         Matcher m = regex.matcher(dumpsysDisplayOutput);
         if (!m.find()) {
             return null;
         }
-        int flags = parseDisplayFlags(m.group(1));
+
+        int flags = parseDisplayFlags(m.group(1) != null ? m.group(1) : m.group(10));
         int width = Integer.parseInt(m.group(2));
         int height = Integer.parseInt(m.group(3));
         int rotation = Integer.parseInt(m.group(4));
-        int density = Integer.parseInt(m.group(5));
-        int layerStack = Integer.parseInt(m.group(6));
-
-        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density);
+        int type = parseDisplayType("TYPE_" + (m.group(5) != null ? m.group(5) : m.group(8)));
+        int density = Integer.parseInt(m.group(6));
+        int layerStack = Integer.parseInt(m.group(7));
+        int ownerUid = m.group(9) != null ? Integer.parseInt(m.group(9)) : Process.ROOT_UID;
+        return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, density, type, ownerUid);
     }
 
     private static DisplayInfo getDisplayInfoFromDumpsysDisplay(int displayId) {
@@ -105,13 +110,23 @@ public final class DisplayManager {
         while (m.find()) {
             String flagString = m.group();
             try {
-                Field filed = Display.class.getDeclaredField(flagString);
+                Field filed = DisplayInfo.class.getDeclaredField(flagString);
                 flags |= filed.getInt(null);
             } catch (ReflectiveOperationException e) {
-                // Silently ignore, some flags reported by "dumpsys display" are @TestApi
+                Ln.w("Could not parse display Flags", e);
             }
         }
         return flags;
+    }
+
+    private static int parseDisplayType(String type) {
+        try {
+            Field filed = DisplayInfo.class.getDeclaredField(type);
+            return filed.getInt(null);
+        } catch (ReflectiveOperationException e) {
+            Ln.w("Could not parse display type", e);
+        }
+        return DisplayInfo.TYPE_UNKNOWN;
     }
 
     public DisplayInfo getDisplayInfo(int displayId) {
@@ -129,7 +144,9 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
-            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi);
+            int type = cls.getDeclaredField("type").getInt(displayInfo);
+            int ownerUid = cls.getDeclaredField("ownerUid").getInt(displayInfo);
+            return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, type, ownerUid);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }
