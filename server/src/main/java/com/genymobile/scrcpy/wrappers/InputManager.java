@@ -6,6 +6,7 @@ import android.annotation.SuppressLint;
 import android.view.InputEvent;
 import android.view.MotionEvent;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,DiscouragedPrivateApi")
@@ -17,6 +18,7 @@ public final class InputManager {
 
     private final Object manager;
     private Method injectInputEventMethod;
+    private long lastPermissionLogDate;
 
     private static Method setDisplayIdMethod;
     private static Method setActionButtonMethod;
@@ -57,6 +59,23 @@ public final class InputManager {
             Method method = getInjectInputEventMethod();
             return (boolean) method.invoke(manager, inputEvent, mode);
         } catch (ReflectiveOperationException e) {
+            if (e instanceof InvocationTargetException) {
+                Throwable cause = e.getCause();
+                if (cause instanceof SecurityException) {
+                    String message = e.getCause().getMessage();
+                    if (message != null && message.contains("INJECT_EVENTS permission")) {
+                        // Do not flood the console, limit to one permission error log every 3 seconds
+                        long now = System.currentTimeMillis();
+                        if (lastPermissionLogDate <= now - 3000) {
+                            Ln.e(message);
+                            Ln.e("Make sure you have enabled \"USB debugging (Security Settings)\" and then rebooted your device.");
+                            lastPermissionLogDate = now;
+                        }
+                        // Do not print the stack trace
+                        return false;
+                    }
+                }
+            }
             Ln.e("Could not invoke method", e);
             return false;
         }
