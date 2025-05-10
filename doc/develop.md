@@ -409,12 +409,11 @@ with any client which uses the same protocol.
 
 For simplicity, some [server-specific options] have been added to produce raw
 streams easily:
- - `send_device_meta=false`: disable the device metata (in practice, the device
+ - `send_device_meta=false`: disable device metadata (in practice, the device
    name) sent on the _first_ socket
  - `send_frame_meta=false`: disable the 12-byte header for each packet
  - `send_dummy_byte`: disable the dummy byte sent on forward connections
- - `send_codec_meta`: disable the codec information (and initial device size for
-   video)
+ - `send_stream_meta`: disable codec and video size metadata
  - `raw_stream`: disable all the above
 
 [server-specific options]: https://github.com/Genymobile/scrcpy/blob/a3cdf1a6b86ea22786e1f7d09b9c202feabc6949/server/src/main/java/com/genymobile/scrcpy/Options.java#L309-L329

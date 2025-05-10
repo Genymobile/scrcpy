@@ -19,7 +19,7 @@ public final class Streamer {
 
     private final FileDescriptor fd;
     private final Codec codec;
-    private final boolean sendCodecMeta;
+    private final boolean sendStreamMeta;
     private final boolean sendFrameMeta;
 
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
@@ -27,7 +27,7 @@ public final class Streamer {
     public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
         this.fd = fd;
         this.codec = codec;
-        this.sendCodecMeta = sendCodecMeta;
+        this.sendStreamMeta = sendCodecMeta;
         this.sendFrameMeta = sendFrameMeta;
     }
 
@@ -36,7 +36,7 @@ public final class Streamer {
     }
 
     public void writeAudioHeader() throws IOException {
-        if (sendCodecMeta) {
+        if (sendStreamMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
             buffer.flip();
@@ -45,7 +45,7 @@ public final class Streamer {
     }
 
     public void writeVideoHeader(Size videoSize) throws IOException {
-        if (sendCodecMeta) {
+        if (sendStreamMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(12);
             buffer.putInt(codec.getId());
             buffer.putInt(videoSize.getWidth());
