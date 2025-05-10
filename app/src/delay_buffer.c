@@ -109,7 +109,8 @@ stopped:
 
 static bool
 sc_delay_buffer_frame_sink_open(struct sc_frame_sink *sink,
-                                const AVCodecContext *ctx) {
+                                const AVCodecContext *ctx,
+                                const struct sc_stream_session *session) {
     struct sc_delay_buffer *db = DOWNCAST(sink);
     (void) ctx;
 
@@ -132,7 +133,7 @@ sc_delay_buffer_frame_sink_open(struct sc_frame_sink *sink,
     sc_vecdeque_init(&db->queue);
     db->stopped = false;
 
-    if (!sc_frame_source_sinks_open(&db->frame_source, ctx)) {
+    if (!sc_frame_source_sinks_open(&db->frame_source, ctx, session)) {
         goto error_destroy_wait_cond;
     }
 

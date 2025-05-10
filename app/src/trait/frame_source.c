@@ -27,11 +27,12 @@ sc_frame_source_sinks_close_firsts(struct sc_frame_source *source,
 
 bool
 sc_frame_source_sinks_open(struct sc_frame_source *source,
-                           const AVCodecContext *ctx) {
+                           const AVCodecContext *ctx,
+                           const struct sc_stream_session *session) {
     assert(source->sink_count);
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_frame_sink *sink = source->sinks[i];
-        if (!sink->ops->open(sink, ctx)) {
+        if (!sink->ops->open(sink, ctx, session)) {
             sc_frame_source_sinks_close_firsts(source, i);
             return false;
         }
@@ -53,6 +54,21 @@ sc_frame_source_sinks_push(struct sc_frame_source *source,
     for (unsigned i = 0; i < source->sink_count; ++i) {
         struct sc_frame_sink *sink = source->sinks[i];
         if (!sink->ops->push(sink, frame)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+sc_frame_source_sinks_push_session(struct sc_frame_source *source,
+                                   const struct sc_stream_session *session) {
+    assert(source->sink_count);
+    for (unsigned i = 0; i < source->sink_count; ++i) {
+        struct sc_frame_sink *sink = source->sinks[i];
+        if (sink->ops->push_session &&
+                !sink->ops->push_session(sink, session)) {
             return false;
         }
     }

@@ -541,7 +541,10 @@ sc_recorder_set_orientation(AVStream *stream, enum sc_orientation orientation) {
 
 static bool
 sc_recorder_video_packet_sink_open(struct sc_packet_sink *sink,
-                                   AVCodecContext *ctx) {
+                                   AVCodecContext *ctx,
+                                   const struct sc_stream_session *session) {
+    (void) session;
+
     struct sc_recorder *recorder = DOWNCAST_VIDEO(sink);
     // only written from this thread, no need to lock
     assert(!recorder->video_init);
@@ -635,7 +638,10 @@ sc_recorder_video_packet_sink_push(struct sc_packet_sink *sink,
 
 static bool
 sc_recorder_audio_packet_sink_open(struct sc_packet_sink *sink,
-                                   AVCodecContext *ctx) {
+                                   AVCodecContext *ctx,
+                                   const struct sc_stream_session *session) {
+    (void) session;
+
     struct sc_recorder *recorder = DOWNCAST_AUDIO(sink);
     assert(recorder->audio);
     // only written from this thread, no need to lock
