@@ -107,6 +107,17 @@ sdl_set_hints(const char *render_driver) {
         LOGW("Could not set render driver");
     }
 
+    // App name for pulseaudio
+#if defined(SCRCPY_SDL_HAS_HINT_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "scrcpy")) {
+        LOGW("Could not set app name");
+    }
+#elif defined(SCRCPY_SDL_HAS_HINT_AUDIO_DEVICE_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "scrcpy")) {
+        LOGW("Could not set audio device app name");
+    }
+#endif
+
     // Linear filtering
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
         LOGW("Could not enable linear filtering");
