@@ -1,6 +1,7 @@
 package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.device.Device;
+import com.genymobile.scrcpy.device.DisplayInfo;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.Settings;
 import com.genymobile.scrcpy.util.SettingsException;
@@ -106,8 +107,17 @@ public final class CleanUp {
             if (displayImePolicy != -1) {
                 int currentDisplayImePolicy = ServiceManager.getWindowManager().getDisplayImePolicy(displayId);
                 if (currentDisplayImePolicy != displayImePolicy) {
-                    ServiceManager.getWindowManager().setDisplayImePolicy(displayId, displayImePolicy);
-                    restoreDisplayImePolicy = currentDisplayImePolicy;
+                    DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+                    if (displayInfo != null) {
+                        if ((displayInfo.isTrusted())) {
+                            ServiceManager.getWindowManager().setDisplayImePolicy(displayId, displayImePolicy);
+                            restoreDisplayImePolicy = currentDisplayImePolicy;
+                        } else {
+                            Ln.w("Display doesn't have FLAG_TRUSTED flag, display-ime-policy is not supported");
+                        }
+                    } else {
+                        Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
+                    }
                 }
             }
         }

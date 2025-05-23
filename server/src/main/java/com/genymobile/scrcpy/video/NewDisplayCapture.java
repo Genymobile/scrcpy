@@ -194,7 +194,11 @@ public class NewDisplayCapture extends SurfaceCapture {
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
 
             if (displayImePolicy != -1) {
-                ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
+                if (Build.VERSION.SDK_INT >= AndroidVersions.API_33_ANDROID_13) {
+                    ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
+                } else {
+                    Ln.w("Display doesn't have FLAG_TRUSTED flag, display-ime-policy is not supported");
+                }
             }
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
