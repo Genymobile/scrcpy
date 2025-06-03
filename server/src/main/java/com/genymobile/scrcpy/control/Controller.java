@@ -699,7 +699,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (timeout < 0) {
                     return null;
                 }
-                displayDataAvailable.wait(timeout);
+                if (timeout > 0) {
+                    displayDataAvailable.wait(timeout);
+                }
                 data = displayData.get();
             }
 
