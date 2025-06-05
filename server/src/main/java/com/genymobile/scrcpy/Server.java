@@ -25,9 +25,11 @@ import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
 import android.os.Build;
+import android.os.Looper;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,17 +57,7 @@ public final class Server {
                 this.fatalError = true;
             }
             if (running == 0 || this.fatalError) {
-                notify();
-            }
-        }
-
-        synchronized void await() {
-            try {
-                while (running > 0 && !fatalError) {
-                    wait();
-                }
-            } catch (InterruptedException e) {
-                // ignore
+                Looper.getMainLooper().quitSafely();
             }
         }
     }
@@ -104,6 +96,7 @@ public final class Server {
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
+        prepareMainLooper();
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
@@ -172,7 +165,7 @@ public final class Server {
                 });
             }
 
-            completion.await();
+            Looper.loop(); // interrupted by the Completion implementation
         } finally {
             if (cleanUp != null) {
                 cleanUp.interrupt();
@@ -198,6 +191,20 @@ public final class Server {
             }
 
             connection.close();
+        }
+    }
+
+    private static void prepareMainLooper() {
+        // Like Looper.prepareMainLooper(), but with quitAllowed set to true
+        Looper.prepare();
+        synchronized (Looper.class) {
+            try {
+                Field field = Looper.class.getDeclaredField("sMainLooper");
+                field.setAccessible(true);
+                field.set(null, Looper.myLooper());
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            }
         }
     }
 
