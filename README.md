@@ -207,7 +207,7 @@ work][donate]:
 
 [donate]: https://blog.rom1v.com/about/#support-my-open-source-work
 
-## Licence
+## License
 
     Copyright (C) 2018 Genymobile
     Copyright (C) 2018-2025 Romain Vimont

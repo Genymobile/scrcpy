@@ -166,14 +166,13 @@ Rebooting the device is necessary once this option is set.
 
 ### Special characters do not work
 
-The default text injection method is [limited to ASCII characters][text-input].
-A trick allows to also inject some [accented characters][accented-characters],
+The default text injection method is limited to ASCII characters. A trick allows
+to also inject some [accented characters][accented-characters],
 but that's all. See [#37].
 
 To avoid the problem, [change the keyboard mode to simulate a physical
 keyboard][hid].
 
-[text-input]: https://github.com/Genymobile/scrcpy/issues?q=is%3Aopen+is%3Aissue+label%3Aunicode
 [accented-characters]: https://blog.rom1v.com/2018/03/introducing-scrcpy/#handle-accented-characters
 [#37]: https://github.com/Genymobile/scrcpy/issues/37
 [hid]: doc/keyboard.md#physical-keyboard-simulation
