@@ -5,10 +5,10 @@ cd "$DEPS_DIR"
 . common
 process_args "$@"
 
-VERSION=2.32.2
+VERSION=2.32.8
 FILENAME=SDL-$VERSION.tar.gz
 PROJECT_DIR=SDL-release-$VERSION
-SHA256SUM=f2c7297ae7b3d3910a8b131e1e2a558fdd6d1a4443d5e345374d45cadfcb05a4
+SHA256SUM=dd35e05644ae527848d02433bec24dd0ea65db59faecf1a0e5d1880c533dac2c
 
 cd "$SOURCES_DIR"
 
@@ -18,7 +18,6 @@ then
 else
     get_file "https://github.com/libsdl-org/SDL/archive/refs/tags/release-$VERSION.tar.gz" "$FILENAME" "$SHA256SUM"
     tar xf "$FILENAME"  # First level directory is "$PROJECT_DIR"
-    patch -d "$PROJECT_DIR" -p1 < "$PATCHES_DIR"/SDL-pipewire-Ensure-that-the-correct-struct-is-used-for-.patch
 fi
 
 mkdir -p "$BUILD_DIR/$PROJECT_DIR"
