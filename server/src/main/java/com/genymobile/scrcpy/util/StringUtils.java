@@ -1,5 +1,10 @@
 package com.genymobile.scrcpy.util;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.util.Map;
+
 public final class StringUtils {
     private StringUtils() {
         // not instantiable
@@ -18,5 +23,23 @@ public final class StringUtils {
             len--;
         }
         return len;
+    }
+
+    public static String jsonToArgs(String json) throws IOException {
+        // Parse the JSON string into a map
+        ObjectMapper mapper = new ObjectMapper();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> map = mapper.readValue(json, Map.class);
+
+        // Convert to key=value arguments
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (sb.length() > 0) {
+                sb.append(' ');
+            }
+            sb.append(entry.getKey()).append('=').append(entry.getValue());
+        }
+
+        return sb.toString();
     }
 }

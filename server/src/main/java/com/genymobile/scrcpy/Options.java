@@ -79,6 +79,7 @@ public class Options {
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
     private boolean sendCodecMeta = true; // write the codec metadata before the stream
+    private boolean netArgs = false;
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -288,6 +289,223 @@ public class Options {
         return sendCodecMeta;
     }
 
+    public boolean getEnableNetworkArgs() {
+        return netArgs;
+    }
+
+    private void parseKeyValue(String key, String value) {
+        switch (key) {
+            case "scid":
+                int scid = Integer.parseInt(value, 0x10);
+                if (scid < -1) {
+                    throw new IllegalArgumentException("scid may not be negative (except -1 for 'none'): " + scid);
+                }
+                this.scid = scid;
+                break;
+            case "log_level":
+                this.logLevel = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
+                break;
+            case "video":
+                this.video = Boolean.parseBoolean(value);
+                break;
+            case "audio":
+                this.audio = Boolean.parseBoolean(value);
+                break;
+            case "video_codec":
+                VideoCodec videoCodec = VideoCodec.findByName(value);
+                if (videoCodec == null) {
+                    throw new IllegalArgumentException("Video codec " + value + " not supported");
+                }
+                this.videoCodec = videoCodec;
+                break;
+            case "audio_codec":
+                AudioCodec audioCodec = AudioCodec.findByName(value);
+                if (audioCodec == null) {
+                    throw new IllegalArgumentException("Audio codec " + value + " not supported");
+                }
+                this.audioCodec = audioCodec;
+                break;
+            case "video_source":
+                VideoSource videoSource = VideoSource.findByName(value);
+                if (videoSource == null) {
+                    throw new IllegalArgumentException("Video source " + value + " not supported");
+                }
+                this.videoSource = videoSource;
+                break;
+            case "audio_source":
+                AudioSource audioSource = AudioSource.findByName(value);
+                if (audioSource == null) {
+                    throw new IllegalArgumentException("Audio source " + value + " not supported");
+                }
+                this.audioSource = audioSource;
+                break;
+            case "audio_dup":
+                this.audioDup = Boolean.parseBoolean(value);
+                break;
+            case "max_size":
+                this.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
+                break;
+            case "video_bit_rate":
+                this.videoBitRate = Integer.parseInt(value);
+                break;
+            case "audio_bit_rate":
+                this.audioBitRate = Integer.parseInt(value);
+                break;
+            case "max_fps":
+                this.maxFps = parseFloat("max_fps", value);
+                break;
+            case "angle":
+                this.angle = parseFloat("angle", value);
+                break;
+            case "tunnel_forward":
+                this.tunnelForward = Boolean.parseBoolean(value);
+                break;
+            case "crop":
+                if (!value.isEmpty()) {
+                    this.crop = parseCrop(value);
+                }
+                break;
+            case "control":
+                this.control = Boolean.parseBoolean(value);
+                break;
+            case "display_id":
+                this.displayId = Integer.parseInt(value);
+                break;
+            case "show_touches":
+                this.showTouches = Boolean.parseBoolean(value);
+                break;
+            case "stay_awake":
+                this.stayAwake = Boolean.parseBoolean(value);
+                break;
+            case "screen_off_timeout":
+                this.screenOffTimeout = Integer.parseInt(value);
+                if (this.screenOffTimeout < -1) {
+                    throw new IllegalArgumentException("Invalid screen off timeout: " + this.screenOffTimeout);
+                }
+                break;
+            case "video_codec_options":
+                this.videoCodecOptions = CodecOption.parse(value);
+                break;
+            case "audio_codec_options":
+                this.audioCodecOptions = CodecOption.parse(value);
+                break;
+            case "video_encoder":
+                if (!value.isEmpty()) {
+                    this.videoEncoder = value;
+                }
+                break;
+            case "audio_encoder":
+                if (!value.isEmpty()) {
+                    this.audioEncoder = value;
+                }
+                break;
+            case "power_off_on_close":
+                this.powerOffScreenOnClose = Boolean.parseBoolean(value);
+                break;
+            case "clipboard_autosync":
+                this.clipboardAutosync = Boolean.parseBoolean(value);
+                break;
+            case "downsize_on_error":
+                this.downsizeOnError = Boolean.parseBoolean(value);
+                break;
+            case "cleanup":
+                this.cleanup = Boolean.parseBoolean(value);
+                break;
+            case "power_on":
+                this.powerOn = Boolean.parseBoolean(value);
+                break;
+            case "list_encoders":
+                this.listEncoders = Boolean.parseBoolean(value);
+                break;
+            case "list_displays":
+                this.listDisplays = Boolean.parseBoolean(value);
+                break;
+            case "list_cameras":
+                this.listCameras = Boolean.parseBoolean(value);
+                break;
+            case "list_camera_sizes":
+                this.listCameraSizes = Boolean.parseBoolean(value);
+                break;
+            case "list_apps":
+                this.listApps = Boolean.parseBoolean(value);
+                break;
+            case "camera_id":
+                if (!value.isEmpty()) {
+                    this.cameraId = value;
+                }
+                break;
+            case "camera_size":
+                if (!value.isEmpty()) {
+                    this.cameraSize = parseSize(value);
+                }
+                break;
+            case "camera_facing":
+                if (!value.isEmpty()) {
+                    CameraFacing facing = CameraFacing.findByName(value);
+                    if (facing == null) {
+                        throw new IllegalArgumentException("Camera facing " + value + " not supported");
+                    }
+                    this.cameraFacing = facing;
+                }
+                break;
+            case "camera_ar":
+                if (!value.isEmpty()) {
+                    this.cameraAspectRatio = parseCameraAspectRatio(value);
+                }
+                break;
+            case "camera_fps":
+                this.cameraFps = Integer.parseInt(value);
+                break;
+            case "camera_high_speed":
+                this.cameraHighSpeed = Boolean.parseBoolean(value);
+                break;
+            case "new_display":
+                this.newDisplay = parseNewDisplay(value);
+                break;
+            case "vd_destroy_content":
+                this.vdDestroyContent = Boolean.parseBoolean(value);
+                break;
+            case "vd_system_decorations":
+                this.vdSystemDecorations = Boolean.parseBoolean(value);
+                break;
+            case "capture_orientation":
+                Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
+                this.captureOrientationLock = pair.first;
+                this.captureOrientation = pair.second;
+                break;
+            case "display_ime_policy":
+                this.displayImePolicy = parseDisplayImePolicy(value);
+                break;
+            case "send_device_meta":
+                this.sendDeviceMeta = Boolean.parseBoolean(value);
+                break;
+            case "send_frame_meta":
+                this.sendFrameMeta = Boolean.parseBoolean(value);
+                break;
+            case "send_dummy_byte":
+                this.sendDummyByte = Boolean.parseBoolean(value);
+                break;
+            case "send_codec_meta":
+                this.sendCodecMeta = Boolean.parseBoolean(value);
+                break;
+            case "raw_stream":
+                boolean rawStream = Boolean.parseBoolean(value);
+                if (rawStream) {
+                    this.sendDeviceMeta = false;
+                    this.sendFrameMeta = false;
+                    this.sendDummyByte = false;
+                    this.sendCodecMeta = false;
+                }
+                break;
+            case "net_args":
+                this.netArgs = Boolean.parseBoolean(value);
+                break;
+            default:
+                Ln.w("Unknown server option: " + key);
+                break;
+        }
+    }
+
     @SuppressWarnings("MethodLength")
     public static Options parse(String... args) {
         if (args.length < 1) {
@@ -310,212 +528,7 @@ public class Options {
             }
             String key = arg.substring(0, equalIndex);
             String value = arg.substring(equalIndex + 1);
-            switch (key) {
-                case "scid":
-                    int scid = Integer.parseInt(value, 0x10);
-                    if (scid < -1) {
-                        throw new IllegalArgumentException("scid may not be negative (except -1 for 'none'): " + scid);
-                    }
-                    options.scid = scid;
-                    break;
-                case "log_level":
-                    options.logLevel = Ln.Level.valueOf(value.toUpperCase(Locale.ENGLISH));
-                    break;
-                case "video":
-                    options.video = Boolean.parseBoolean(value);
-                    break;
-                case "audio":
-                    options.audio = Boolean.parseBoolean(value);
-                    break;
-                case "video_codec":
-                    VideoCodec videoCodec = VideoCodec.findByName(value);
-                    if (videoCodec == null) {
-                        throw new IllegalArgumentException("Video codec " + value + " not supported");
-                    }
-                    options.videoCodec = videoCodec;
-                    break;
-                case "audio_codec":
-                    AudioCodec audioCodec = AudioCodec.findByName(value);
-                    if (audioCodec == null) {
-                        throw new IllegalArgumentException("Audio codec " + value + " not supported");
-                    }
-                    options.audioCodec = audioCodec;
-                    break;
-                case "video_source":
-                    VideoSource videoSource = VideoSource.findByName(value);
-                    if (videoSource == null) {
-                        throw new IllegalArgumentException("Video source " + value + " not supported");
-                    }
-                    options.videoSource = videoSource;
-                    break;
-                case "audio_source":
-                    AudioSource audioSource = AudioSource.findByName(value);
-                    if (audioSource == null) {
-                        throw new IllegalArgumentException("Audio source " + value + " not supported");
-                    }
-                    options.audioSource = audioSource;
-                    break;
-                case "audio_dup":
-                    options.audioDup = Boolean.parseBoolean(value);
-                    break;
-                case "max_size":
-                    options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
-                    break;
-                case "video_bit_rate":
-                    options.videoBitRate = Integer.parseInt(value);
-                    break;
-                case "audio_bit_rate":
-                    options.audioBitRate = Integer.parseInt(value);
-                    break;
-                case "max_fps":
-                    options.maxFps = parseFloat("max_fps", value);
-                    break;
-                case "angle":
-                    options.angle = parseFloat("angle", value);
-                    break;
-                case "tunnel_forward":
-                    options.tunnelForward = Boolean.parseBoolean(value);
-                    break;
-                case "crop":
-                    if (!value.isEmpty()) {
-                        options.crop = parseCrop(value);
-                    }
-                    break;
-                case "control":
-                    options.control = Boolean.parseBoolean(value);
-                    break;
-                case "display_id":
-                    options.displayId = Integer.parseInt(value);
-                    break;
-                case "show_touches":
-                    options.showTouches = Boolean.parseBoolean(value);
-                    break;
-                case "stay_awake":
-                    options.stayAwake = Boolean.parseBoolean(value);
-                    break;
-                case "screen_off_timeout":
-                    options.screenOffTimeout = Integer.parseInt(value);
-                    if (options.screenOffTimeout < -1) {
-                        throw new IllegalArgumentException("Invalid screen off timeout: " + options.screenOffTimeout);
-                    }
-                    break;
-                case "video_codec_options":
-                    options.videoCodecOptions = CodecOption.parse(value);
-                    break;
-                case "audio_codec_options":
-                    options.audioCodecOptions = CodecOption.parse(value);
-                    break;
-                case "video_encoder":
-                    if (!value.isEmpty()) {
-                        options.videoEncoder = value;
-                    }
-                    break;
-                case "audio_encoder":
-                    if (!value.isEmpty()) {
-                        options.audioEncoder = value;
-                    }
-                case "power_off_on_close":
-                    options.powerOffScreenOnClose = Boolean.parseBoolean(value);
-                    break;
-                case "clipboard_autosync":
-                    options.clipboardAutosync = Boolean.parseBoolean(value);
-                    break;
-                case "downsize_on_error":
-                    options.downsizeOnError = Boolean.parseBoolean(value);
-                    break;
-                case "cleanup":
-                    options.cleanup = Boolean.parseBoolean(value);
-                    break;
-                case "power_on":
-                    options.powerOn = Boolean.parseBoolean(value);
-                    break;
-                case "list_encoders":
-                    options.listEncoders = Boolean.parseBoolean(value);
-                    break;
-                case "list_displays":
-                    options.listDisplays = Boolean.parseBoolean(value);
-                    break;
-                case "list_cameras":
-                    options.listCameras = Boolean.parseBoolean(value);
-                    break;
-                case "list_camera_sizes":
-                    options.listCameraSizes = Boolean.parseBoolean(value);
-                    break;
-                case "list_apps":
-                    options.listApps = Boolean.parseBoolean(value);
-                    break;
-                case "camera_id":
-                    if (!value.isEmpty()) {
-                        options.cameraId = value;
-                    }
-                    break;
-                case "camera_size":
-                    if (!value.isEmpty()) {
-                        options.cameraSize = parseSize(value);
-                    }
-                    break;
-                case "camera_facing":
-                    if (!value.isEmpty()) {
-                        CameraFacing facing = CameraFacing.findByName(value);
-                        if (facing == null) {
-                            throw new IllegalArgumentException("Camera facing " + value + " not supported");
-                        }
-                        options.cameraFacing = facing;
-                    }
-                    break;
-                case "camera_ar":
-                    if (!value.isEmpty()) {
-                        options.cameraAspectRatio = parseCameraAspectRatio(value);
-                    }
-                    break;
-                case "camera_fps":
-                    options.cameraFps = Integer.parseInt(value);
-                    break;
-                case "camera_high_speed":
-                    options.cameraHighSpeed = Boolean.parseBoolean(value);
-                    break;
-                case "new_display":
-                    options.newDisplay = parseNewDisplay(value);
-                    break;
-                case "vd_destroy_content":
-                    options.vdDestroyContent = Boolean.parseBoolean(value);
-                    break;
-                case "vd_system_decorations":
-                    options.vdSystemDecorations = Boolean.parseBoolean(value);
-                    break;
-                case "capture_orientation":
-                    Pair<Orientation.Lock, Orientation> pair = parseCaptureOrientation(value);
-                    options.captureOrientationLock = pair.first;
-                    options.captureOrientation = pair.second;
-                    break;
-                case "display_ime_policy":
-                    options.displayImePolicy = parseDisplayImePolicy(value);
-                    break;
-                case "send_device_meta":
-                    options.sendDeviceMeta = Boolean.parseBoolean(value);
-                    break;
-                case "send_frame_meta":
-                    options.sendFrameMeta = Boolean.parseBoolean(value);
-                    break;
-                case "send_dummy_byte":
-                    options.sendDummyByte = Boolean.parseBoolean(value);
-                    break;
-                case "send_codec_meta":
-                    options.sendCodecMeta = Boolean.parseBoolean(value);
-                    break;
-                case "raw_stream":
-                    boolean rawStream = Boolean.parseBoolean(value);
-                    if (rawStream) {
-                        options.sendDeviceMeta = false;
-                        options.sendFrameMeta = false;
-                        options.sendDummyByte = false;
-                        options.sendCodecMeta = false;
-                    }
-                    break;
-                default:
-                    Ln.w("Unknown server option: " + key);
-                    break;
-            }
+            options.parseKeyValue(key, value);
         }
 
         if (options.newDisplay != null) {
@@ -524,6 +537,18 @@ public class Options {
         }
 
         return options;
+    }
+
+    public void parseAdditional(String... args) {
+        for (String arg : args) {
+            int equalIndex = arg.indexOf('=');
+            if (equalIndex == -1) {
+                throw new IllegalArgumentException("Invalid key=value pair: \"" + arg + "\"");
+            }
+            String key = arg.substring(0, equalIndex);
+            String value = arg.substring(equalIndex + 1);
+            parseKeyValue(key, value);
+        }
     }
 
     private static Rect parseCrop(String crop) {
