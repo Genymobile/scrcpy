@@ -4,7 +4,8 @@ their name contains `scrcpy`.**
 
 # scrcpy (v3.3)
 
-<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<!--<img src="./app/data/icon.svg?sanitize=true" width="128" height="128" alt="scrcpy" align="right" />-->
+ <img src="https://raw.github.com/Genymobile/scrcpy/master/app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _pronounced "**scr**een **c**o**py**"_
 
@@ -13,7 +14,7 @@ This application mirrors Android devices (video and audio) connected via USB or
 computer's keyboard and mouse. It does not require _root_ access or an app
 installed on the device. It works on _Linux_, _Windows_, and _macOS_.
 
-![screenshot](assets/screenshot-debian-600.jpg)
+![screenshot](https://raw.github.com/Genymobile/scrcpy/master/assets/screenshot-debian-600.jpg)
 
 It focuses on:
 
