@@ -9,6 +9,16 @@ FILENAME=platform-tools_r$VERSION-linux.zip
 PROJECT_DIR=platform-tools-$VERSION-linux
 SHA256SUM=0ead642c943ffe79701fccca8f5f1c69c4ce4f43df2eefee553f6ccb27cbfbe8
 
+# if [[ "$ARCH" == "aarch64" ]]; then
+#     FILENAME=platform-tools_r$VERSION-linux-arm.zip
+#     PROJECT_DIR=platform-tools-$VERSION-linux-arm
+#     SHA256SUM=<SHA256SUM_for_aarch64>
+# else
+#     FILENAME=platform-tools_r$VERSION-linux.zip
+#     PROJECT_DIR=platform-tools-$VERSION-linux
+#     SHA256SUM=acfdcccb123a8718c46c46c059b2f621140194e5ec1ac9d81715be3d6ab6cd0a
+# fi
+
 cd "$SOURCES_DIR"
 
 if [[ -d "$PROJECT_DIR" ]]

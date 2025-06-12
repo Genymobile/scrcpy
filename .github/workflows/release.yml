@@ -123,6 +123,50 @@ jobs:
           name: build-linux-x86_64-intermediate
           path: release/work/build-linux-x86_64/dist-tar/
 
+  build-linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Check architecture
+        run: |
+            arch=$(uname -m)
+            if [[ "$arch" != aarch64 ]]
+            then
+                echo "Unexpected architecture: $arch" >&2
+                exit 1
+            fi
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # - name: Update sources list
+      #   run: |
+      #     sudo sed -i 's|http://ports.ubuntu.com/ubuntu-ports|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build nasm ffmpeg libsdl2-2.0-0 \
+              libsdl2-dev libavcodec-dev libavdevice-dev libavformat-dev \
+              libavutil-dev libswresample-dev libusb-1.0-0 libusb-1.0-0-dev \
+              libv4l-dev --fix-missing
+
+      - name: Build
+        run: release/build_linux.sh aarch64
+
+      # upload-artifact does not preserve permissions
+      - name: Tar
+        run: |
+            cd release/work/build-linux-aarch64
+            mkdir dist-tar
+            cd dist-tar
+            tar -C .. -cvf dist.tar.gz dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
+
   build-win32:
     runs-on: ubuntu-latest
     steps:
@@ -308,6 +352,42 @@ jobs:
           name: release-linux-x86_64
           path: release/output/
 
+  package-linux-aarch64:
+    needs:
+      - build-scrcpy-server
+      - build-linux-aarch64
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download scrcpy-server
+        uses: actions/download-artifact@v4
+        with:
+          name: scrcpy-server
+          path: release/work/build-server/server/
+
+      - name: Download build-linux-aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: build-linux-aarch64-intermediate
+          path: release/work/build-linux-aarch64/dist-tar/
+
+      # upload-artifact does not preserve permissions
+      - name: Detar
+        run: |
+            cd release/work/build-linux-aarch64
+            tar xf dist-tar/dist.tar.gz
+
+      - name: Package
+        run: release/package_client.sh linux-aarch64 tar.gz
+
+      - name: Upload release
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux-aarch64
+          path: release/output/
+
   package-win32:
     needs:
       - build-scrcpy-server
@@ -456,6 +536,7 @@ jobs:
     needs:
       - build-scrcpy-server
       - package-linux-x86_64
+      - package-linux-aarch64
       - package-win32
       - package-win64
       - package-macos-aarch64
@@ -475,6 +556,12 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release-linux-x86_64
+          path: release/output/
+
+      - name: Download release-linux-aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux-aarch64
           path: release/output/
 
       - name: Download release-win32
