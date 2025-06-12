@@ -110,7 +110,7 @@ show_adb_installation_msg(void) {
     } pkg_managers[] = {
         {"apt", "apt install adb"},
         {"apt-get", "apt-get install adb"},
-        {"brew", "brew cask install android-platform-tools"},
+        {"brew", "brew install --cask android-platform-tools"},
         {"dnf", "dnf install android-tools"},
         {"emerge", "emerge dev-util/android-tools"},
         {"pacman", "pacman -S android-tools"},
