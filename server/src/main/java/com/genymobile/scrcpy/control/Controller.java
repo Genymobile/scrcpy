@@ -82,6 +82,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
+    private int injectMode = Device.INJECT_MODE_ASYNC;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -102,6 +103,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
         this.displayId = options.getDisplayId();
+        this.injectMode = options.getInjectMode();
         this.controlChannel = controlChannel;
         this.cleanUp = cleanUp;
         this.clipboardAutosync = options.getClipboardAutosync();
@@ -201,7 +203,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private void control() throws IOException {
         // on start, power on the device
         if (powerOn && displayId == 0 && !Device.isScreenOn(displayId)) {
-            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, Device.INJECT_MODE_ASYNC);
+            Device.pressReleaseKeycode(KeyEvent.KEYCODE_POWER, displayId, this.injectMode);
 
             // dirty hack
             // After POWER is injected, the device is powered on asynchronously.
@@ -342,7 +344,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             assert displayId != Device.DISPLAY_ID_NONE;
             scheduleDisplayPowerOff(displayId);
         }
-        return injectKeyEvent(action, keycode, repeat, metaState, Device.INJECT_MODE_ASYNC);
+        return injectKeyEvent(action, keycode, repeat, metaState, this.injectMode);
     }
 
     private boolean injectChar(char c) {
@@ -355,7 +357,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         int actionDisplayId = getActionDisplayId();
         for (KeyEvent event : events) {
-            if (!Device.injectEvent(event, actionDisplayId, Device.INJECT_MODE_ASYNC)) {
+            if (!Device.injectEvent(event, actionDisplayId, this.injectMode)) {
                 return false;
             }
         }
@@ -468,7 +470,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // First button pressed: ACTION_DOWN
                     MotionEvent downEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_DOWN, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!Device.injectEvent(downEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(downEvent, targetDisplayId, this.injectMode)) {
                         return false;
                     }
                 }
@@ -479,7 +481,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(pressEvent, actionButton)) {
                     return false;
                 }
-                if (!Device.injectEvent(pressEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(pressEvent, targetDisplayId, this.injectMode)) {
                     return false;
                 }
 
@@ -493,7 +495,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 if (!InputManager.setActionButton(releaseEvent, actionButton)) {
                     return false;
                 }
-                if (!Device.injectEvent(releaseEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
+                if (!Device.injectEvent(releaseEvent, targetDisplayId, this.injectMode)) {
                     return false;
                 }
 
@@ -501,7 +503,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     // Last button released: ACTION_UP
                     MotionEvent upEvent = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_UP, pointerCount, pointerProperties,
                             pointerCoords, 0, buttons, 1f, 1f, DEFAULT_DEVICE_ID, 0, source, 0);
-                    if (!Device.injectEvent(upEvent, targetDisplayId, Device.INJECT_MODE_ASYNC)) {
+                    if (!Device.injectEvent(upEvent, targetDisplayId, this.injectMode)) {
                         return false;
                     }
                 }
@@ -512,7 +514,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, action, pointerCount, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, source, 0);
-        return Device.injectEvent(event, targetDisplayId, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, targetDisplayId, this.injectMode);
     }
 
     private boolean injectScroll(Position position, float hScroll, float vScroll, int buttons) {
@@ -537,7 +539,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         MotionEvent event = MotionEvent.obtain(lastTouchDown, now, MotionEvent.ACTION_SCROLL, 1, pointerProperties, pointerCoords, 0, buttons, 1f, 1f,
                 DEFAULT_DEVICE_ID, 0, InputDevice.SOURCE_MOUSE, 0);
-        return Device.injectEvent(event, targetDisplayId, Device.INJECT_MODE_ASYNC);
+        return Device.injectEvent(event, targetDisplayId, this.injectMode);
     }
 
     /**
@@ -552,7 +554,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private boolean pressBackOrTurnScreenOn(int action) {
         if (displayId == Device.DISPLAY_ID_NONE || Device.isScreenOn(displayId)) {
-            return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, Device.INJECT_MODE_ASYNC);
+            return injectKeyEvent(action, KeyEvent.KEYCODE_BACK, 0, 0, this.injectMode);
         }
 
         // Screen is off
@@ -566,7 +568,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             assert displayId != Device.DISPLAY_ID_NONE;
             scheduleDisplayPowerOff(displayId);
         }
-        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, Device.INJECT_MODE_ASYNC);
+        return pressReleaseKeycode(KeyEvent.KEYCODE_POWER, this.injectMode);
     }
 
     private void getClipboard(int copyKey) {
@@ -599,7 +601,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         // On Android >= 7, also press the PASTE key if requested
         if (paste && Build.VERSION.SDK_INT >= AndroidVersions.API_24_ANDROID_7_0 && supportsInputEvents) {
-            pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, Device.INJECT_MODE_ASYNC);
+            pressReleaseKeycode(KeyEvent.KEYCODE_PASTE, this.injectMode);
         }
 
         if (sequence != ControlMessage.SEQUENCE_INVALID) {
