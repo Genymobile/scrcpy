@@ -7,6 +7,7 @@ import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.BatteryManager;
+import android.os.Looper;
 import android.system.ErrnoException;
 import android.system.Os;
 
@@ -179,6 +180,11 @@ public final class CleanUp {
         }
     }
 
+    @SuppressWarnings("deprecation")
+    private static void prepareMainLooper() {
+        Looper.prepareMainLooper();
+    }
+
     public static void main(String... args) {
         try {
             // Start a new session to avoid being terminated along with the server process on some devices
@@ -187,6 +193,9 @@ public final class CleanUp {
             Ln.e("setsid() failed", e);
         }
         unlinkSelf();
+
+        // Needed for workarounds
+        prepareMainLooper();
 
         int displayId = Integer.parseInt(args[0]);
         int restoreStayOn = Integer.parseInt(args[1]);
