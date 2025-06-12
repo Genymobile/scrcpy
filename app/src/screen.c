@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <string.h>
+#include <windowsx.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_syswm.h>
 
 #include "events.h"
 #include "icon.h"
@@ -325,6 +327,7 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
 bool
 sc_screen_init(struct sc_screen *screen,
                const struct sc_screen_params *params) {
+    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
     screen->resize_pending = false;
     screen->has_frame = false;
     screen->fullscreen = false;
@@ -857,6 +860,32 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     apply_pending_resize(screen);
                     sc_screen_render(screen, true);
                     break;
+            }
+            return true;
+        case SDL_SYSWMEVENT:
+            if (event -> syswm.msg) {
+                UINT msg = event -> syswm.msg -> msg.win.msg;
+                if (msg == WM_LBUTTONDOWN || msg == WM_LBUTTONUP) {
+                    LPARAM lParam = event -> syswm.msg -> msg.win.lParam;
+                    int32_t x = GET_X_LPARAM(lParam);
+                    int32_t y = GET_Y_LPARAM(lParam);
+                    SDL_Event sdlEvent;
+                    SDL_zero(sdlEvent);
+                    switch (msg) {
+                        case WM_LBUTTONDOWN:
+                            sdlEvent.type = SDL_MOUSEBUTTONDOWN;
+                            sdlEvent.button.state = SDL_PRESSED;
+                            break;
+                        case WM_LBUTTONUP:
+                            sdlEvent.type = SDL_MOUSEBUTTONUP;
+                            sdlEvent.button.state = SDL_RELEASED;
+                            break;
+                    }
+                    sdlEvent.button.button = SDL_BUTTON_LEFT;
+                    sdlEvent.button.x = x;
+                    sdlEvent.button.y = y;
+                    SDL_PushEvent(&sdlEvent);
+                }
             }
             return true;
     }
