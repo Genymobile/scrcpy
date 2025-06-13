@@ -24,6 +24,7 @@ import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
 import android.os.Looper;
 
@@ -199,6 +200,7 @@ public final class Server {
         Looper.prepare();
         synchronized (Looper.class) {
             try {
+                @SuppressLint("DiscouragedPrivateApi")
                 Field field = Looper.class.getDeclaredField("sMainLooper");
                 field.setAccessible(true);
                 field.set(null, Looper.myLooper());
