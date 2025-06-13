@@ -114,9 +114,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             Ln.w("Input events are not supported for secondary displays before Android 10");
         }
 
+        // Make sure the clipboard manager is always created from the main thread (even if clipboardAutosync is disabled)
+        ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
         if (clipboardAutosync) {
             // If control and autosync are enabled, synchronize Android clipboard to the computer automatically
-            ClipboardManager clipboardManager = ServiceManager.getClipboardManager();
             if (clipboardManager != null) {
                 clipboardManager.addPrimaryClipChangedListener(() -> {
                     if (isSettingClipboard.get()) {
