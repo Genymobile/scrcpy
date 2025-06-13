@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_AUDIO_MATCH_PACKAGE_NAMES,
 };
 
 struct sc_option {
@@ -204,6 +205,13 @@ static const struct sc_option options[] = {
         .text = "Duplicate audio (capture and keep playing on the device).\n"
                 "This feature is only available with --audio-source=playback."
 
+    },
+    {
+        .longopt_id = OPT_AUDIO_MATCH_PACKAGE_NAMES,
+        .longopt = "audio-match-package-names",
+        .argdesc = "package.name.a,package.name.b",
+        .text = "Only capture audio from apps with specified package names.\n"
+                "This feature is only available with --audio-source=playback."
     },
     {
         .longopt_id = OPT_AUDIO_ENCODER,
@@ -2786,6 +2794,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_AUDIO_DUP:
                 opts->audio_dup = true;
                 break;
+            case OPT_AUDIO_MATCH_PACKAGE_NAMES:
+                opts->audio_match_package_names = optarg;
+                break;
             case 'G':
                 opts->gamepad_input_mode = SC_GAMEPAD_INPUT_MODE_UHID_OR_AOA;
                 break;
@@ -3137,6 +3148,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGI("Audio duplication enabled: audio source switched to "
                      "\"playback\"");
                 opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
+            } else if (opts->audio_match_package_names) {
+                LOGI("Audio pacakage name matching enabled: audio source "
+                    "switched to \"playback\"");
+                opts->audio_source = SC_AUDIO_SOURCE_PLAYBACK;
             } else {
                 opts->audio_source = SC_AUDIO_SOURCE_OUTPUT;
             }
@@ -3154,6 +3169,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
         if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
             LOGE("--audio-dup is specific to --audio-source=playback");
+            return false;
+        }
+    }
+
+    if (opts->audio_match_package_names) {
+        if (!opts->audio) {
+            LOGE("--audio-match-package-names not supported if audio is "
+                "disabled");
+            return false;
+        }
+
+        if (opts->audio_source != SC_AUDIO_SOURCE_PLAYBACK) {
+            LOGE("--audio-match-package-names is specific to "
+                "--audio-source=playback");
             return false;
         }
     }
