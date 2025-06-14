@@ -8,6 +8,7 @@ import android.media.MediaCodec;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
@@ -44,12 +45,26 @@ public final class Streamer {
         }
     }
 
-    public void writeVideoHeader(Size videoSize) throws IOException {
+    public void writeVideoHeader() throws IOException {
         if (sendCodecMeta) {
-            ByteBuffer buffer = ByteBuffer.allocate(12);
+            ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
+            buffer.flip();
+            IO.writeFully(fd, buffer);
+        }
+    }
+    
+    public void writeVideoSession(Size videoSize, boolean isFlip, int rotation) throws IOException{
+        if(sendCodecMeta){
+            ByteBuffer buffer = ByteBuffer.allocate(12);
+            buffer.put((byte) 0xff);
             buffer.putInt(videoSize.getWidth());
             buffer.putInt(videoSize.getHeight());
+            buffer.put((byte) (isFlip ? 1 : 0));
+            int[] vertical = {0, 0, 1, 1};
+            int[] horizontal = {0, 1, 0, 1};
+            buffer.put((byte) vertical[rotation]);
+            buffer.put((byte) horizontal[rotation]);
             buffer.flip();
             IO.writeFully(fd, buffer);
         }
