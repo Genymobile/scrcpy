@@ -15,11 +15,27 @@ struct sc_packet_sink {
     const struct sc_packet_sink_ops *ops;
 };
 
+struct sc_stream_session_video {
+    uint32_t width;
+    uint32_t height;
+};
+
+struct sc_stream_session {
+    struct sc_stream_session_video video;
+};
+
 struct sc_packet_sink_ops {
     /* The codec context is valid until the sink is closed */
-    bool (*open)(struct sc_packet_sink *sink, AVCodecContext *ctx);
+    bool (*open)(struct sc_packet_sink *sink, AVCodecContext *ctx,
+                 const struct sc_stream_session *session);
     void (*close)(struct sc_packet_sink *sink);
     bool (*push)(struct sc_packet_sink *sink, const AVPacket *packet);
+
+    /**
+     * Optional callback to be notified of a new stream session.
+     */
+    bool (*push_session)(struct sc_packet_sink *sink,
+                         const struct sc_stream_session *session);
 
     /*/
      * Called when the input stream has been disabled at runtime.

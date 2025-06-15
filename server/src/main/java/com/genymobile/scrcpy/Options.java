@@ -78,7 +78,7 @@ public class Options {
     private boolean sendDeviceMeta = true; // send device name and size
     private boolean sendFrameMeta = true; // send PTS so that the client may record properly
     private boolean sendDummyByte = true; // write a byte on start to detect connection issues
-    private boolean sendCodecMeta = true; // write the codec metadata before the stream
+    private boolean sendStreamMeta = true; // write the stream metadata (codec and session)
 
     public Ln.Level getLogLevel() {
         return logLevel;
@@ -284,8 +284,8 @@ public class Options {
         return sendDummyByte;
     }
 
-    public boolean getSendCodecMeta() {
-        return sendCodecMeta;
+    public boolean getSendStreamMeta() {
+        return sendStreamMeta;
     }
 
     @SuppressWarnings("MethodLength")
@@ -500,8 +500,8 @@ public class Options {
                 case "send_dummy_byte":
                     options.sendDummyByte = Boolean.parseBoolean(value);
                     break;
-                case "send_codec_meta":
-                    options.sendCodecMeta = Boolean.parseBoolean(value);
+                case "send_stream_meta":
+                    options.sendStreamMeta = Boolean.parseBoolean(value);
                     break;
                 case "raw_stream":
                     boolean rawStream = Boolean.parseBoolean(value);
@@ -509,7 +509,7 @@ public class Options {
                         options.sendDeviceMeta = false;
                         options.sendFrameMeta = false;
                         options.sendDummyByte = false;
-                        options.sendCodecMeta = false;
+                        options.sendStreamMeta = false;
                     }
                     break;
                 default:

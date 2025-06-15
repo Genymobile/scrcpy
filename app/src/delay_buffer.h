@@ -18,14 +18,23 @@
 // forward declarations
 typedef struct AVFrame AVFrame;
 
-struct sc_delayed_frame {
-    AVFrame *frame;
+enum sc_delayed_packet_type {
+    SC_DELAYED_PACKET_TYPE_FRAME,
+    SC_DELAYED_PACKET_TYPE_SESSION,
+};
+
+struct sc_delayed_packet {
+    enum sc_delayed_packet_type type;
+    union {
+        AVFrame *frame;
+        struct sc_stream_session session;
+    };
 #ifdef SC_BUFFERING_DEBUG
     sc_tick push_date;
 #endif
 };
 
-struct sc_delayed_frame_queue SC_VECDEQUE(struct sc_delayed_frame);
+struct sc_delayed_packet_queue SC_VECDEQUE(struct sc_delayed_packet);
 
 struct sc_delay_buffer {
     struct sc_frame_source frame_source; // frame source trait
@@ -40,7 +49,7 @@ struct sc_delay_buffer {
     sc_cond wait_cond;
 
     struct sc_clock clock;
-    struct sc_delayed_frame_queue queue;
+    struct sc_delayed_packet_queue queue;
     bool stopped;
 };
 
