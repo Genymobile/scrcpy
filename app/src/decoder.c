@@ -25,6 +25,15 @@ sc_decoder_open(struct sc_decoder *decoder, AVCodecContext *ctx,
 
     decoder->ctx = ctx;
 
+    // A video stream must have a session
+    assert(session || ctx->codec_type != AVMEDIA_TYPE_VIDEO);
+
+    if (session) {
+        decoder->session = *session;
+    }
+
+    memset(&decoder->frame_size, 0, sizeof(decoder->frame_size));
+
     return true;
 }
 
@@ -62,6 +71,32 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         }
 
         // a frame was received
+
+        if (decoder->ctx->codec_type == AVMEDIA_TYPE_VIDEO) {
+            assert(decoder->frame->width >= 0);
+            assert(decoder->frame->height >= 0);
+            struct sc_size frame_size = {
+                .width = decoder->frame->width,
+                .height = decoder->frame->height,
+            };
+            if (decoder->frame_size.width != frame_size.width
+                    || decoder->frame_size.height != frame_size.height) {
+                // The frame size has changed, check if it matches the session
+                uint32_t sw = decoder->session.video.width;
+                uint32_t sh = decoder->session.video.height;
+                if (frame_size.width != sw || frame_size.height != sh) {
+                    LOGW("Unexpected video size: %" PRIu32 "x%" PRIu32
+                         " (expected %" PRIu32 "x%" PRIu32 ")",
+                         frame_size.width, frame_size.height, sw, sh);
+
+                    LOGW("The encoder did not respect the requested size, "
+                         "please retry with a lower resolution (-m/--max-size)");
+                }
+            }
+
+            decoder->frame_size = frame_size;
+        }
+
         bool ok = sc_frame_source_sinks_push(&decoder->frame_source,
                                              decoder->frame);
         av_frame_unref(decoder->frame);
@@ -77,6 +112,7 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
 static bool
 sc_decoder_push_session(struct sc_decoder *decoder,
                         const struct sc_stream_session *session) {
+    decoder->session = *session;
     return sc_frame_source_sinks_push_session(&decoder->frame_source, session);
 }
 
