@@ -272,6 +272,7 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     (void) res; // any error already logged
 
     sc_screen_draw_nav_buttons(screen);
+    SDL_RenderPresent(screen->display.renderer);
 }
 
 static void
@@ -279,6 +280,9 @@ sc_screen_render_novideo(struct sc_screen *screen) {
     enum sc_display_result res =
         sc_display_render(&screen->display, NULL, SC_ORIENTATION_0);
     (void) res; // any error already logged
+
+    sc_screen_draw_nav_buttons(screen);
+    SDL_RenderPresent(screen->display.renderer);
 }
 
 #if defined(__APPLE__) || defined(__WINDOWS__)
