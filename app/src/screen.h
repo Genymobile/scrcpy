@@ -60,6 +60,11 @@ struct sc_screen {
     enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
     struct SDL_Rect rect;
+    struct {
+        SDL_Rect back;
+        SDL_Rect home;
+        SDL_Rect app_switch;
+    } nav;
     bool has_frame;
     bool fullscreen;
     bool maximized;

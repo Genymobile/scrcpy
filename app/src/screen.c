@@ -7,9 +7,14 @@
 #include "events.h"
 #include "icon.h"
 #include "options.h"
+#include "android/keycodes.h"
+#include "controller.h"
 #include "util/log.h"
 
 #define DISPLAY_MARGINS 96
+#define NAV_BUTTON_SIZE 48
+#define NAV_BUTTON_PADDING 10
+#define NAV_BUTTON_SPACING 10
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
@@ -82,6 +87,26 @@ is_optimal_size(struct sc_size current_size, struct sc_size content_size) {
                                                      / content_size.width
         || current_size.width == current_size.height * content_size.width
                                                      / content_size.height;
+}
+
+static void
+send_nav_key(struct sc_screen *screen, enum android_keycode keycode,
+             enum sc_action action) {
+    if (!screen->im.controller || !screen->im.kp) {
+        return;
+    }
+
+    struct sc_control_msg msg;
+    msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
+    msg.inject_keycode.action =
+        action == SC_ACTION_DOWN ? AKEY_EVENT_ACTION_DOWN : AKEY_EVENT_ACTION_UP;
+    msg.inject_keycode.keycode = keycode;
+    msg.inject_keycode.metastate = 0;
+    msg.inject_keycode.repeat = 0;
+
+    if (!sc_controller_push_msg(screen->im.controller, &msg)) {
+        LOGW("Could not request 'inject key'");
+    }
 }
 
 // return the optimal size of the window, with the following constraints:
@@ -201,6 +226,35 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     }
 }
 
+static void
+sc_screen_draw_nav_buttons(struct sc_screen *screen) {
+    int ww, wh;
+    SDL_GetWindowSize(screen->window, &ww, &wh);
+    int size = NAV_BUTTON_SIZE;
+    int padding = NAV_BUTTON_PADDING;
+    int spacing = NAV_BUTTON_SPACING;
+
+    int y = wh - size - padding;
+    int total_w = 3 * size + 2 * spacing;
+    int x = (ww - total_w) / 2;
+
+    SDL_Renderer *renderer = screen->display.renderer;
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(renderer, 60, 60, 60, 160);
+
+    SDL_Rect rect = {x, y, size, size};
+    screen->nav.back = rect;
+    SDL_RenderFillRect(renderer, &rect);
+
+    rect.x += size + spacing;
+    screen->nav.home = rect;
+    SDL_RenderFillRect(renderer, &rect);
+
+    rect.x += size + spacing;
+    screen->nav.app_switch = rect;
+    SDL_RenderFillRect(renderer, &rect);
+}
+
 // render the texture to the renderer
 //
 // Set the update_content_rect flag if the window or content size may have
@@ -216,6 +270,8 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     enum sc_display_result res =
         sc_display_render(&screen->display, &screen->rect, screen->orientation);
     (void) res; // any error already logged
+
+    sc_screen_draw_nav_buttons(screen);
 }
 
 static void
@@ -859,6 +915,25 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     break;
             }
             return true;
+    }
+
+    if (event->type == SDL_MOUSEBUTTONDOWN || event->type == SDL_MOUSEBUTTONUP) {
+        SDL_Point p = {event->button.x, event->button.y};
+        enum sc_action action = event->type == SDL_MOUSEBUTTONDOWN
+                                  ? SC_ACTION_DOWN
+                                  : SC_ACTION_UP;
+        if (SDL_PointInRect(&p, &screen->nav.back)) {
+            send_nav_key(screen, AKEYCODE_BACK, action);
+            return true;
+        }
+        if (SDL_PointInRect(&p, &screen->nav.home)) {
+            send_nav_key(screen, AKEYCODE_HOME, action);
+            return true;
+        }
+        if (SDL_PointInRect(&p, &screen->nav.app_switch)) {
+            send_nav_key(screen, AKEYCODE_APP_SWITCH, action);
+            return true;
+        }
     }
 
     if (sc_screen_is_relative_mode(screen)
