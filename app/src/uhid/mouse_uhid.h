@@ -4,11 +4,13 @@
 #include <stdbool.h>
 
 #include "controller.h"
+#include "hid/hid_mouse.h"
 #include "trait/mouse_processor.h"
 
 struct sc_mouse_uhid {
     struct sc_mouse_processor mouse_processor; // mouse processor trait
 
+    struct sc_hid_mouse hid;
     struct sc_controller *controller;
 };
 

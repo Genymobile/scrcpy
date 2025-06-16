@@ -5,12 +5,14 @@
 
 #include <stdbool.h>
 
+#include "hid/hid_mouse.h"
 #include "usb/aoa_hid.h"
 #include "trait/mouse_processor.h"
 
 struct sc_mouse_aoa {
     struct sc_mouse_processor mouse_processor; // mouse processor trait
 
+    struct sc_hid_mouse hid;
     struct sc_aoa *aoa;
 };
 

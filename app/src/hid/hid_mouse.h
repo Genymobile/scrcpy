@@ -8,6 +8,13 @@
 
 #define SC_HID_ID_MOUSE 2
 
+struct sc_hid_mouse {
+    float acc_vscroll;
+};
+
+void
+sc_hid_mouse_init(struct sc_hid_mouse *hid);
+
 void
 sc_hid_mouse_generate_open(struct sc_hid_open *hid_open);
 
@@ -22,8 +29,9 @@ void
 sc_hid_mouse_generate_input_from_click(struct sc_hid_input *hid_input,
                                     const struct sc_mouse_click_event *event);
 
-void
-sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
+bool
+sc_hid_mouse_generate_input_from_scroll(struct sc_hid_mouse *hid,
+                                        struct sc_hid_input *hid_input,
                                     const struct sc_mouse_scroll_event *event);
 
 #endif
