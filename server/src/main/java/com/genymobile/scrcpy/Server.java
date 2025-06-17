@@ -97,7 +97,6 @@ public final class Server {
         boolean audio = options.getAudio();
         boolean sendDummyByte = options.getSendDummyByte();
 
-        prepareMainLooper();
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
@@ -229,6 +228,8 @@ public final class Server {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Ln.e("Exception on thread " + t, e);
         });
+
+        prepareMainLooper();
 
         Options options = Options.parse(args);
 
