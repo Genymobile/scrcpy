@@ -42,7 +42,9 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     struct sc_mouse_aoa *mouse = DOWNCAST(mp);
 
     struct sc_hid_input hid_input;
-    sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
+    if (!sc_hid_mouse_generate_input_from_scroll(&hid_input, event)) {
+        return;
+    }
 
     if (!sc_aoa_push_input(mouse->aoa, &hid_input)) {
         LOGW("Could not push AOA HID input (mouse scroll)");

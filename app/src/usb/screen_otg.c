@@ -164,8 +164,15 @@ sc_screen_otg_process_mouse_wheel(struct sc_screen_otg *screen,
 
     struct sc_mouse_scroll_event evt = {
         // .position not used for HID events
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+        .hscroll = event->preciseX,
+        .vscroll = event->preciseY,
+#else
         .hscroll = event->x,
         .vscroll = event->y,
+#endif
+        .hscroll_int = event->x,
+        .vscroll_int = event->y,
         .buttons_state = sc_mouse_buttons_state_from_sdl(sdl_buttons_state),
     };
 

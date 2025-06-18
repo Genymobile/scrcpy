@@ -903,6 +903,8 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         .hscroll = event->x,
         .vscroll = event->y,
 #endif
+        .hscroll_int = event->x,
+        .vscroll_int = event->y,
         .buttons_state = im->mouse_buttons_state,
     };
 
