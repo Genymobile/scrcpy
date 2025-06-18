@@ -393,6 +393,8 @@ struct sc_mouse_scroll_event {
     struct sc_position position;
     float hscroll;
     float vscroll;
+    int32_t hscroll_int;
+    int32_t vscroll_int;
     uint8_t buttons_state; // bitwise-OR of sc_mouse_button values
 };
 

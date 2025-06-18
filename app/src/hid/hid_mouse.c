@@ -175,19 +175,23 @@ sc_hid_mouse_generate_input_from_click(struct sc_hid_input *hid_input,
     data[3] = 0; // wheel coordinates only used for scrolling
 }
 
-void
+bool
 sc_hid_mouse_generate_input_from_scroll(struct sc_hid_input *hid_input,
                                     const struct sc_mouse_scroll_event *event) {
+    if (!event->vscroll_int) {
+        // Need a full integral value for HID
+        return false;
+    }
+
     sc_hid_mouse_input_init(hid_input);
 
     uint8_t *data = hid_input->data;
     data[0] = 0; // buttons state irrelevant (and unknown)
     data[1] = 0; // no x motion
     data[2] = 0; // no y motion
-    // In practice, vscroll is always -1, 0 or 1, but in theory other values
-    // are possible
-    data[3] = CLAMP(event->vscroll, -127, 127);
+    data[3] = CLAMP(event->vscroll_int, -127, 127);
     // Horizontal scrolling ignored
+    return true;
 }
 
 void sc_hid_mouse_generate_open(struct sc_hid_open *hid_open) {

@@ -55,7 +55,9 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
     struct sc_mouse_uhid *mouse = DOWNCAST(mp);
 
     struct sc_hid_input hid_input;
-    sc_hid_mouse_generate_input_from_scroll(&hid_input, event);
+    if (!sc_hid_mouse_generate_input_from_scroll(&hid_input, event)) {
+        return;
+    }
 
     sc_mouse_uhid_send_input(mouse, &hid_input, "mouse scroll");
 }
