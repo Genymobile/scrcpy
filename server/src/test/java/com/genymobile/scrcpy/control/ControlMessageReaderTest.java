@@ -125,7 +125,7 @@ public class ControlMessageReaderTest {
         dos.writeShort(1080);
         dos.writeShort(1920);
         dos.writeShort(0); // 0.0f encoded as i16
-        dos.writeShort(0x8000); // -1.0f encoded as i16
+        dos.writeShort(0x8000); // -16.0f encoded as i16 (the range is [-16, 16])
         dos.writeInt(1);
         byte[] packet = bos.toByteArray();
 
@@ -139,7 +139,7 @@ public class ControlMessageReaderTest {
         Assert.assertEquals(1080, event.getPosition().getScreenSize().getWidth());
         Assert.assertEquals(1920, event.getPosition().getScreenSize().getHeight());
         Assert.assertEquals(0f, event.getHScroll(), 0f);
-        Assert.assertEquals(-1f, event.getVScroll(), 0f);
+        Assert.assertEquals(-16f, event.getVScroll(), 0f);
         Assert.assertEquals(1, event.getButtons());
 
         Assert.assertEquals(-1, bis.read()); // EOS
