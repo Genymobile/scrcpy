@@ -112,8 +112,9 @@ public class ControlMessageReader {
 
     private ControlMessage parseInjectScrollEvent() throws IOException {
         Position position = parsePosition();
-        float hScroll = Binary.i16FixedPointToFloat(dis.readShort());
-        float vScroll = Binary.i16FixedPointToFloat(dis.readShort());
+        // Binary.i16FixedPointToFloat() decodes values assuming the full range is [-1, 1], but the actual range is [-16, 16].
+        float hScroll = Binary.i16FixedPointToFloat(dis.readShort()) * 16;
+        float vScroll = Binary.i16FixedPointToFloat(dis.readShort()) * 16;
         int buttons = dis.readInt();
         return ControlMessage.createInjectScrollEvent(position, hScroll, vScroll, buttons);
     }

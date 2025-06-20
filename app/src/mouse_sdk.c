@@ -113,8 +113,8 @@ sc_mouse_processor_process_mouse_scroll(struct sc_mouse_processor *mp,
         .type = SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         .inject_scroll_event = {
             .position = event->position,
-            .hscroll = CLAMP(event->hscroll, -1, 1),
-            .vscroll = CLAMP(event->vscroll, -1, 1),
+            .hscroll = event->hscroll,
+            .vscroll = event->vscroll,
             .buttons = convert_mouse_buttons(event->buttons_state),
         },
     };
