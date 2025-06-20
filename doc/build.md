@@ -233,10 +233,10 @@ install` must be run as root)._
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v3.3`][direct-scrcpy-server]  
-   <sub>SHA-256: `351cb2edc7e4c2c75f09a7933fdabcf137be52e2602df154f24ec02db46e9e51`</sub>
+ - [`scrcpy-server-v3.3.1`][direct-scrcpy-server]  
+   <sub>SHA-256: `a0f70b20aa4998fbf658c94118cd6c8dab6abbb0647a3bdab344d70bc1ebcbb8`</sub>
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v3.3/scrcpy-server-v3.3
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.1/scrcpy-server-v3.3.1
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
