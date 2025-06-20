@@ -15,7 +15,34 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.view.IDisplayWindowListener;
 
+import java.util.Objects;
+
 public class DisplaySizeMonitor {
+
+    private static class SessionInfo {
+        private Size size;
+        private int rotation;
+
+        public SessionInfo(Size size, int rotation) {
+            this.size = size;
+            this.rotation = rotation;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof SessionInfo))
+                return false;
+            SessionInfo that = (SessionInfo) o;
+            return rotation == that.rotation && Objects.equals(size, that.size);
+        }
+
+        @Override
+        public String toString() {
+            return "{" + "size=" + size + ", rotation=" + rotation + '}';
+        }
+    }
 
     public interface Listener {
         void onDisplaySizeChanged();
@@ -34,7 +61,7 @@ public class DisplaySizeMonitor {
 
     private int displayId = Device.DISPLAY_ID_NONE;
 
-    private Size sessionDisplaySize;
+    private SessionInfo sessionInfo;
 
     private Listener listener;
 
@@ -98,12 +125,16 @@ public class DisplaySizeMonitor {
         }
     }
 
-    private synchronized Size getSessionDisplaySize() {
-        return sessionDisplaySize;
+    private synchronized SessionInfo getSessionInfo() {
+        return sessionInfo;
     }
 
-    public synchronized void setSessionDisplaySize(Size sessionDisplaySize) {
-        this.sessionDisplaySize = sessionDisplaySize;
+    private synchronized void setSessionInfo(SessionInfo sessionInfo) {
+        this.sessionInfo = sessionInfo;
+    }
+
+    public void setSessionInfo(Size size, int rotation) {
+        setSessionInfo(new SessionInfo(size, rotation));
     }
 
     private void checkDisplaySizeChanged() {
@@ -112,29 +143,29 @@ public class DisplaySizeMonitor {
             Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
             // We can't compare with the current size, so reset unconditionally
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: requestReset(): " + getSessionDisplaySize() + " -> (unknown)");
+                Ln.v("DisplaySizeMonitor: requestReset(): " + getSessionInfo() + " -> (unknown)");
             }
-            setSessionDisplaySize(null);
+            setSessionInfo(null);
             listener.onDisplaySizeChanged();
         } else {
-            Size size = di.getSize();
+            SessionInfo si = new SessionInfo(di.getSize(), di.getRotation());
 
             // The field is hidden on purpose, to read it with synchronization
             @SuppressWarnings("checkstyle:HiddenField")
-            Size sessionDisplaySize = getSessionDisplaySize(); // synchronized
+            SessionInfo sessionInfo = getSessionInfo(); // synchronized
 
             // .equals() also works if sessionDisplaySize == null
-            if (!size.equals(sessionDisplaySize)) {
+            if (!si.equals(sessionInfo)) {
                 // Reset only if the size is different
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: requestReset(): " + sessionDisplaySize + " -> " + size);
+                    Ln.v("DisplaySizeMonitor: requestReset(): " + sessionInfo + " -> " + si);
                 }
                 // Set the new size immediately, so that a future onDisplayChanged() event called before the asynchronous prepare()
                 // considers that the current size is the requested size (to avoid a duplicate requestReset())
-                setSessionDisplaySize(size);
+                setSessionInfo(si);
                 listener.onDisplaySizeChanged();
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: Size not changed (" + size + "): do not requestReset()");
+                Ln.v("DisplaySizeMonitor: Size and rotation not changed (" + sessionInfo + "): do not requestReset()");
             }
         }
     }

@@ -114,7 +114,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             videoSize = displaySize;
             displayRotation = 0;
             // Set the current display size to avoid an unnecessary call to invalidate()
-            displaySizeMonitor.setSessionDisplaySize(displaySize);
+            displaySizeMonitor.setSessionInfo(displaySize, displayRotation);
         } else {
             DisplayInfo displayInfo = ServiceManager.getDisplayManager().getDisplayInfo(virtualDisplay.getDisplay().getDisplayId());
             displaySize = displayInfo.getSize();
