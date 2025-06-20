@@ -30,7 +30,10 @@ sc_audio_player_frame_sink_push(struct sc_frame_sink *sink,
 
 static bool
 sc_audio_player_frame_sink_open(struct sc_frame_sink *sink,
-                                const AVCodecContext *ctx) {
+                                const AVCodecContext *ctx,
+                                const struct sc_stream_session *session) {
+    (void) session;
+
     struct sc_audio_player *ap = DOWNCAST(sink);
 
 #ifdef SCRCPY_LAVU_HAS_CHLAYOUT

@@ -3,6 +3,7 @@ package com.genymobile.scrcpy.device;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.util.Codec;
 import com.genymobile.scrcpy.util.IO;
+import com.genymobile.scrcpy.util.Ln;
 
 import android.media.MediaCodec;
 
@@ -14,12 +15,13 @@ import java.util.Arrays;
 
 public final class Streamer {
 
-    private static final long PACKET_FLAG_CONFIG = 1L << 63;
-    private static final long PACKET_FLAG_KEY_FRAME = 1L << 62;
+    private static final long PACKET_FLAG_SESSION = 1L << 63;
+    private static final long PACKET_FLAG_CONFIG = 1L << 62;
+    private static final long PACKET_FLAG_KEY_FRAME = 1L << 61;
 
     private final FileDescriptor fd;
     private final Codec codec;
-    private final boolean sendCodecMeta;
+    private final boolean sendStreamMeta;
     private final boolean sendFrameMeta;
 
     private final ByteBuffer headerBuffer = ByteBuffer.allocate(12);
@@ -27,7 +29,7 @@ public final class Streamer {
     public Streamer(FileDescriptor fd, Codec codec, boolean sendCodecMeta, boolean sendFrameMeta) {
         this.fd = fd;
         this.codec = codec;
-        this.sendCodecMeta = sendCodecMeta;
+        this.sendStreamMeta = sendCodecMeta;
         this.sendFrameMeta = sendFrameMeta;
     }
 
@@ -36,7 +38,7 @@ public final class Streamer {
     }
 
     public void writeAudioHeader() throws IOException {
-        if (sendCodecMeta) {
+        if (sendStreamMeta) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
             buffer.flip();
@@ -44,12 +46,10 @@ public final class Streamer {
         }
     }
 
-    public void writeVideoHeader(Size videoSize) throws IOException {
-        if (sendCodecMeta) {
-            ByteBuffer buffer = ByteBuffer.allocate(12);
+    public void writeVideoHeader() throws IOException {
+        if (sendStreamMeta) {
+            ByteBuffer buffer = ByteBuffer.allocate(4);
             buffer.putInt(codec.getId());
-            buffer.putInt(videoSize.getWidth());
-            buffer.putInt(videoSize.getHeight());
             buffer.flip();
             IO.writeFully(fd, buffer);
         }
@@ -87,6 +87,18 @@ public final class Streamer {
         boolean config = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0;
         boolean keyFrame = (bufferInfo.flags & MediaCodec.BUFFER_FLAG_KEY_FRAME) != 0;
         writePacket(codecBuffer, pts, config, keyFrame);
+    }
+
+    public void writeSessionMeta(int width, int height) throws IOException {
+        if (sendStreamMeta) {
+            headerBuffer.clear();
+
+            headerBuffer.putInt((int) (PACKET_FLAG_SESSION >> 32)); // Set the first bit to 1
+            headerBuffer.putInt(width);
+            headerBuffer.putInt(height);
+            headerBuffer.flip();
+            IO.writeFully(fd, headerBuffer);
+        }
     }
 
     private void writeFrameMeta(FileDescriptor fd, int packetSize, long pts, boolean config, boolean keyFrame) throws IOException {

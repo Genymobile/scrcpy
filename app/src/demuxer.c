@@ -11,8 +11,8 @@
 
 #define SC_PACKET_HEADER_SIZE 12
 
-#define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 63)
-#define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 62)
+#define SC_PACKET_FLAG_CONFIG    (UINT64_C(1) << 62)
+#define SC_PACKET_FLAG_KEY_FRAME (UINT64_C(1) << 61)
 
 #define SC_PACKET_PTS_MASK (SC_PACKET_FLAG_KEY_FRAME - 1)
 
@@ -63,48 +63,75 @@ sc_demuxer_recv_codec_id(struct sc_demuxer *demuxer, uint32_t *codec_id) {
     return true;
 }
 
-static bool
-sc_demuxer_recv_video_size(struct sc_demuxer *demuxer, uint32_t *width,
-                           uint32_t *height) {
-    uint8_t data[8];
-    ssize_t r = net_recv_all(demuxer->socket, data, 8);
-    if (r < 8) {
-        return false;
-    }
-
-    *width = sc_read32be(data);
-    *height = sc_read32be(data + 4);
-    return true;
-}
-
-static bool
-sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
+static inline bool
+sc_demuxer_recv_header(struct sc_demuxer *demuxer,
+                       uint8_t buf[static SC_PACKET_HEADER_SIZE]) {
     // The video and audio streams contain a sequence of raw packets (as
     // provided by MediaCodec), each prefixed with a "meta" header.
     //
-    // The "meta" header length is 12 bytes:
+    // The "meta" header length is 12 bytes.
+    //
+    //
+    // If the MSB is 1, then it is a session packet (for a video stream only),
+    // which only contains a 12-byte header:
+    //
+    //  byte 0   byte 1   byte 2   byte 3
+    // 10000000 00000000 00000000 00000000
+    // ^<-------------------------------->
+    // |               padding
+    //  `- session packet flag
+    //
+    //  byte 4   byte 5   byte 6   byte 7   byte 8   byte 9   byte 10  byte 11
+    // ........ ........ ........ ........ ........ ........ ........ ........
+    // <---------------------------------> <--------------------------------->
+    //             video width                         video height
+    //
+    //
+    // If the MSB is 0, then it is a media packet, comprised of a 12-byte header
+    // followed by <packet_size> bytes containing the packet/frame:
+    //
     // [. . . . . . . .|. . . .]. . . . . . . . . . . . . . . ...
     //  <-------------> <-----> <-----------------------------...
     //        PTS        packet        raw packet
     //                    size
     //
-    // It is followed by <packet_size> bytes containing the packet/frame.
-    //
     // The most significant bits of the PTS are used for packet flags:
     //
-    //  byte 7   byte 6   byte 5   byte 4   byte 3   byte 2   byte 1   byte 0
-    // CK...... ........ ........ ........ ........ ........ ........ ........
-    // ^^<------------------------------------------------------------------->
-    // ||                                PTS
-    // | `- key frame
-    //  `-- config packet
+    //  byte 0   byte 1   byte 2   byte 3   byte 4   byte 5   byte 6   byte 7
+    // 0CK..... ........ ........ ........ ........ ........ ........ ........
+    // ^^^<------------------------------------------------------------------>
+    // |||                                PTS
+    // || `- key frame
+    // | `-- config packet
+    //  `--- media packet flag
+    //
+    //  byte 8   byte 9   byte 10  byte 11
+    // ........ ........ ........ ........ ........ ........ . . .
+    // <---------------------------------> <---------------- . . .
+    //            packet size                       raw packet
+    //
+    ssize_t r = net_recv_all(demuxer->socket, buf, SC_PACKET_HEADER_SIZE);
+    assert(r <= SC_PACKET_HEADER_SIZE);
+    return r == SC_PACKET_HEADER_SIZE;
+}
 
-    uint8_t header[SC_PACKET_HEADER_SIZE];
-    ssize_t r = net_recv_all(demuxer->socket, header, SC_PACKET_HEADER_SIZE);
-    if (r < SC_PACKET_HEADER_SIZE) {
-        return false;
-    }
+static bool
+sc_demuxer_is_session(const uint8_t *header) {
+    return header[0] & 0x80;
+}
 
+static void
+sc_demuxer_parse_session(const uint8_t *header,
+                         struct sc_stream_session *session) {
+    assert(sc_demuxer_is_session(header));
+    session->video.width = sc_read32be(&header[4]);
+    session->video.height = sc_read32be(&header[8]);
+}
+
+static bool
+sc_demuxer_recv_packet(struct sc_demuxer *demuxer, const uint8_t *header,
+                       AVPacket *packet) {
+    assert(!sc_demuxer_is_session(header));
     uint64_t pts_flags = sc_read64be(header);
     uint32_t len = sc_read32be(&header[8]);
     assert(len);
@@ -114,7 +141,7 @@ sc_demuxer_recv_packet(struct sc_demuxer *demuxer, AVPacket *packet) {
         return false;
     }
 
-    r = net_recv_all(demuxer->socket, packet->data, len);
+    ssize_t r = net_recv_all(demuxer->socket, packet->data, len);
     if (r < 0 || ((uint32_t) r) < len) {
         av_packet_unref(packet);
         return false;
@@ -187,17 +214,28 @@ run_demuxer(void *data) {
 
     codec_ctx->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
+    uint8_t header[SC_PACKET_HEADER_SIZE];
+    struct sc_stream_session session_data;
+
+    struct sc_stream_session *session = NULL;
     if (codec->type == AVMEDIA_TYPE_VIDEO) {
-        uint32_t width;
-        uint32_t height;
-        ok = sc_demuxer_recv_video_size(demuxer, &width, &height);
+        bool ok = sc_demuxer_recv_header(demuxer, header);
         if (!ok) {
             goto finally_free_context;
         }
 
-        codec_ctx->width = width;
-        codec_ctx->height = height;
+        if (!sc_demuxer_is_session(header)) {
+            LOGE("Unexpected packet (not a session header)");
+            goto finally_free_context;
+        }
+
+        session = &session_data;
+        sc_demuxer_parse_session(header, session);
+
+        codec_ctx->width = session_data.video.width;
+        codec_ctx->height = session_data.video.height;
         codec_ctx->pix_fmt = AV_PIX_FMT_YUV420P;
+
     } else {
         // Hardcoded audio properties
 #ifdef SCRCPY_LAVU_HAS_CHLAYOUT
@@ -219,7 +257,8 @@ run_demuxer(void *data) {
         goto finally_free_context;
     }
 
-    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec_ctx)) {
+    if (!sc_packet_source_sinks_open(&demuxer->packet_source, codec_ctx,
+                                     session)) {
         goto finally_free_context;
     }
 
@@ -241,27 +280,39 @@ run_demuxer(void *data) {
     }
 
     for (;;) {
-        bool ok = sc_demuxer_recv_packet(demuxer, packet);
+        bool ok = sc_demuxer_recv_header(demuxer, header);
         if (!ok) {
             // end of stream
             status = SC_DEMUXER_STATUS_EOS;
             break;
         }
 
-        if (must_merge_config_packet) {
-            // Prepend any config packet to the next media packet
-            ok = sc_packet_merger_merge(&merger, packet);
+        if (sc_demuxer_is_session(header)) {
+            sc_demuxer_parse_session(header, &session_data);
+            ok = sc_packet_source_sinks_push_session(&demuxer->packet_source,
+                                                     &session_data);
             if (!ok) {
-                av_packet_unref(packet);
+                // The sink already logged its concrete error
                 break;
             }
-        }
+        } else {
+            sc_demuxer_recv_packet(demuxer, header, packet);
 
-        ok = sc_packet_source_sinks_push(&demuxer->packet_source, packet);
-        av_packet_unref(packet);
-        if (!ok) {
-            // The sink already logged its concrete error
-            break;
+            if (must_merge_config_packet) {
+                // Prepend any config packet to the next media packet
+                ok = sc_packet_merger_merge(&merger, packet);
+                if (!ok) {
+                    av_packet_unref(packet);
+                    break;
+                }
+            }
+
+            ok = sc_packet_source_sinks_push(&demuxer->packet_source, packet);
+            av_packet_unref(packet);
+            if (!ok) {
+                // The sink already logged its concrete error
+                break;
+            }
         }
     }
 

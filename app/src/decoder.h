@@ -5,6 +5,7 @@
 
 #include <libavcodec/avcodec.h>
 
+#include "coords.h"
 #include "trait/frame_source.h"
 #include "trait/packet_sink.h"
 
@@ -16,6 +17,9 @@ struct sc_decoder {
 
     AVCodecContext *ctx;
     AVFrame *frame;
+
+    struct sc_stream_session session; // only initialized for video stream
+    struct sc_size frame_size;
 };
 
 // The name must be statically allocated (e.g. a string literal)
