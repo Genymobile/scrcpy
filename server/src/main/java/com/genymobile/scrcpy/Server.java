@@ -122,7 +122,7 @@ public final class Server {
                 if (audioSource.isDirect()) {
                     audioCapture = new AudioDirectCapture(audioSource);
                 } else {
-                    audioCapture = new AudioPlaybackCapture(options.getAudioDup());
+                    audioCapture = new AudioPlaybackCapture(options.getAudioDup(), options.getAudioMatchUids());
                 }
 
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
