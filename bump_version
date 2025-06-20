@@ -8,9 +8,10 @@
 #
 # Then check the diff manually to confirm that everything is ok.
 
+# exit immediately if something fails
 set -e
 
-if [[ $# != 1 ]]
+if [ $# -ne 1 ]
 then
     echo "Syntax: $0 <version>" >&2
     exit 1
@@ -18,7 +19,11 @@ fi
 
 VERSION="$1"
 
+# Split in array through the '.'
 a=( ${VERSION//./ } )
+
+# If {major,minor,patch} is not provided,
+# 0 (zero) is default
 MAJOR="${a[0]:-0}"
 MINOR="${a[1]:-0}"
 PATCH="${a[2]:-0}"
@@ -26,9 +31,26 @@ PATCH="${a[2]:-0}"
 # If VERSION is 1.23.4, then VERSION_CODE is 12304
 VERSION_CODE="$(( $MAJOR * 10000 + $MINOR * 100 + "$PATCH" ))"
 
-echo "$VERSION: major=$MAJOR minor=$MINOR patch=$PATCH [versionCode=$VERSION_CODE]"
+echo """
+$VERSION: \
+major=$MAJOR \
+minor=$MINOR \
+patch=$PATCH \
+[versionCode=${VERSION_CODE}] \
+"""
+
 sed -i "s/^\(\s*version: \)'[^']*'/\1'$VERSION'/" meson.build
-sed -i "s/^\(\s*versionCode \).*/\1$VERSION_CODE/;s/^\(\s*versionName \).*/\1\"$VERSION\"/" server/build.gradle
-sed -i "s/^\(SCRCPY_VERSION_NAME=\).*/\1$VERSION/" server/build_without_gradle.sh
-sed -i "s/^\(\s*VALUE \"ProductVersion\", \)\"[^\"]*\"/\1\"$VERSION\"/" app/scrcpy-windows.rc
+
+sed -i "{
+	s/^\(\s*versionCode \).*/\1$VERSION_CODE/
+	s/^\(\s*versionName \).*/\1\"$VERSION\"/
+}" server/build.gradle
+
+sed -i "s/^\(SCRCPY_VERSION_NAME=\).*/\1$VERSION/" \
+	server/build_without_gradle.sh
+
+sed -i "{
+	s/^\(\s*VALUE \"ProductVersion\", \)\"[^\"]*\"/\1\"$VERSION\"/
+}" app/scrcpy-windows.rc
+
 echo done
