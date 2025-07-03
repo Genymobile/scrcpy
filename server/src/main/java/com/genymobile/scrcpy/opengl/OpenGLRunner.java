@@ -226,33 +226,52 @@ public final class OpenGLRunner {
     public void stopAndRelease() {
         final Semaphore sem = new Semaphore(0);
 
-        handler.post(() -> {
-            stopped = true;
-            surfaceTexture.setOnFrameAvailableListener(null, handler);
+        boolean posted = false;
+        if (handlerThread != null
+                && handlerThread.isAlive()
+                && handlerThread.getLooper() != null
+                && handlerThread.getLooper().getThread().isAlive()) {
 
-            filter.release();
+            posted = handler.post(() -> {
+                try {
+                    performRelease();
+                } finally {
+                    sem.release();
+                }
+            });
+        }
 
-            int[] textures = {textureId};
-            GLES20.glDeleteTextures(1, textures, 0);
-            GLUtils.checkGlError();
+        if (!posted) {
 
-            EGL14.eglDestroySurface(eglDisplay, eglSurface);
-            EGL14.eglDestroyContext(eglDisplay, eglContext);
-            EGL14.eglTerminate(eglDisplay);
-            eglDisplay = EGL14.EGL_NO_DISPLAY;
-            eglContext = EGL14.EGL_NO_CONTEXT;
-            eglSurface = EGL14.EGL_NO_SURFACE;
-            surfaceTexture.release();
-            inputSurface.release();
-
+            performRelease();
             sem.release();
-        });
+        }
 
         try {
             sem.acquire();
         } catch (InterruptedException e) {
-            // Behave as if this method call was synchronous
             Thread.currentThread().interrupt();
         }
+    }
+
+    private void performRelease() {
+        stopped = true;
+        surfaceTexture.setOnFrameAvailableListener(null, handler);
+
+        filter.release();
+
+        int[] textures = {textureId};
+        GLES20.glDeleteTextures(1, textures, 0);
+        GLUtils.checkGlError();
+
+        EGL14.eglDestroySurface(eglDisplay, eglSurface);
+        EGL14.eglDestroyContext(eglDisplay, eglContext);
+        EGL14.eglTerminate(eglDisplay);
+        eglDisplay = EGL14.EGL_NO_DISPLAY;
+        eglContext = EGL14.EGL_NO_CONTEXT;
+        eglSurface = EGL14.EGL_NO_SURFACE;
+
+        surfaceTexture.release();
+        inputSurface.release();
     }
 }

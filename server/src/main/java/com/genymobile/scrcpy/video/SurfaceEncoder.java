@@ -12,6 +12,7 @@ import com.genymobile.scrcpy.util.CodecUtils;
 import com.genymobile.scrcpy.util.IO;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -92,6 +93,8 @@ public class SurfaceEncoder implements AsyncProcessor {
                     mediaCodec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
                     surface = mediaCodec.createInputSurface();
 
+                    capture.setupDisplay(surface);
+
                     capture.start(surface);
                     captureStarted = true;
 
@@ -143,6 +146,12 @@ public class SurfaceEncoder implements AsyncProcessor {
         } finally {
             mediaCodec.release();
             capture.release();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
         }
     }
 
@@ -311,6 +320,9 @@ public class SurfaceEncoder implements AsyncProcessor {
 
     @Override
     public void stop() {
+
+        capture.release();
+
         if (thread != null) {
             stopped.set(true);
             reset.reset();

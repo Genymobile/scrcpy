@@ -17,11 +17,13 @@ import com.genymobile.scrcpy.util.LogUtils;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 import com.genymobile.scrcpy.wrappers.SurfaceControl;
 
+import android.content.res.Resources;
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
 import android.view.Surface;
+import android.hardware.display.DisplayManager;
 
 import java.io.IOException;
 
@@ -79,17 +81,19 @@ public class ScreenCapture extends SurfaceCapture {
         Size displaySize = displayInfo.getSize();
         displaySizeMonitor.setSessionDisplaySize(displaySize);
 
-        if (captureOrientationLock == Orientation.Lock.LockedInitial) {
-            // The user requested to lock the video orientation to the current orientation
-            captureOrientationLock = Orientation.Lock.LockedValue;
-            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
-        }
+
 
         VideoFilter filter = new VideoFilter(displaySize);
 
         if (crop != null) {
             boolean transposed = (displayInfo.getRotation() % 2) != 0;
             filter.addCrop(crop, transposed);
+        }
+
+        if (captureOrientationLock == Orientation.Lock.LockedInitial) {
+            // The user requested to lock the video orientation to the current orientation
+            captureOrientationLock = Orientation.Lock.LockedValue;
+            captureOrientation = Orientation.fromRotation(displayInfo.getRotation());
         }
 
         boolean locked = captureOrientationLock != Orientation.Lock.Unlocked;
@@ -104,17 +108,19 @@ public class ScreenCapture extends SurfaceCapture {
     public void start(Surface surface) throws IOException {
         if (display != null) {
             SurfaceControl.destroyDisplay(display);
+            Ln.i("DESTROY_DISPLAY: " +display);
             display = null;
         }
         if (virtualDisplay != null) {
             virtualDisplay.release();
+            Ln.i("DESTROY_VIRTUAL_DISPLAY: " +virtualDisplay);
             virtualDisplay = null;
         }
 
         Size inputSize;
         if (transform != null) {
             // If there is a filter, it must receive the full display content
-            inputSize = displayInfo.getSize();
+            inputSize = videoSize;
             assert glRunner == null;
             OpenGLFilter glFilter = new AffineOpenGLFilter(transform);
             glRunner = new OpenGLRunner(glFilter);
@@ -125,6 +131,8 @@ public class ScreenCapture extends SurfaceCapture {
         }
 
         try {
+            int densityDpi = displayInfo.getDpi();
+            int flags    = DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
             virtualDisplay = ServiceManager.getDisplayManager()
                     .createVirtualDisplay("scrcpy", inputSize.getWidth(), inputSize.getHeight(), displayId, surface);
             Ln.d("Display: using DisplayManager API");
@@ -134,7 +142,13 @@ public class ScreenCapture extends SurfaceCapture {
 
                 Size deviceSize = displayInfo.getSize();
                 int layerStack = displayInfo.getLayerStack();
+
+
+                waitForDisplayReady(deviceSize, 500);
+                waitForDisplayStableResolution("scrcpy", 500, 5);
+
                 setDisplaySurface(display, surface, deviceSize.toRect(), inputSize.toRect(), layerStack);
+
                 Ln.d("Display: using SurfaceControl API");
             } catch (Exception surfaceControlException) {
                 Ln.e("Could not create display using DisplayManager", displayManagerException);
@@ -196,20 +210,110 @@ public class ScreenCapture extends SurfaceCapture {
     private static IBinder createDisplay() throws Exception {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
-        boolean secure = Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11 || (Build.VERSION.SDK_INT == AndroidVersions.API_30_ANDROID_11
-                && !"S".equals(Build.VERSION.CODENAME));
+        boolean secure = false;
         return SurfaceControl.createDisplay("scrcpy", secure);
     }
 
-    private static void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect, int layerStack) {
+    public void DestroyDisplay(){
+        if (display != null) {
+            SurfaceControl.destroyDisplay(display);
+            display = null;
+        }
+        if (virtualDisplay != null) {
+            virtualDisplay.release();
+            virtualDisplay = null;
+        }
+    }
+
+
+    public void setupDisplay(Surface surface){
+        if (display != null) {
+            SurfaceControl.destroyDisplay(display);
+            display = null;
+        }
+
+        try{
+            display = createDisplay();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+        Rect deviceRect = displayInfo.getSize().toRect();
+        Rect cropRect   = (crop != null) ? crop : deviceRect;
+        int layerStack  = displayInfo.getLayerStack();
+
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(display, surface);
-            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
+            SurfaceControl.setDisplayProjection(display, 0, deviceRect, cropRect);
             SurfaceControl.setDisplayLayerStack(display, layerStack);
         } finally {
             SurfaceControl.closeTransaction();
         }
+    }
+
+    private void waitForDisplayStableResolution(String displayName, long delayMs, int maxTries) {
+        int lastWidth = -1;
+        int lastHeight = -1;
+
+        for (int i = 0; i < maxTries; i++) {
+            DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+            if (info != null) {
+                int w = info.getSize().getWidth();
+                int h = info.getSize().getWidth();
+                if (w == lastWidth && h == lastHeight && w > 1 && h > 1) {
+                    Ln.d("Display stabilized: " + w + "x" + h);
+                    return;
+                }
+                lastWidth = w;
+                lastHeight = h;
+            }
+
+            try {
+                Thread.sleep(delayMs);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        Ln.w("Display resolution did not stabilize within expected time");
+    }
+
+
+    private void setDisplaySurface(IBinder display, Surface surface, Rect deviceRect, Rect displayRect, int layerStack) {
+        SurfaceControl.openTransaction();
+        try {
+            SurfaceControl.setDisplaySurface(display, surface);
+//            SurfaceControl.setDisplayProjection(display, 0, deviceRect, displayRect);
+            Rect cropRect   = this.crop;  // options.getCrop()
+            SurfaceControl.setDisplayProjection(display,0,deviceRect,cropRect);
+
+            SurfaceControl.setDisplayLayerStack(display, layerStack);
+        } finally {
+            SurfaceControl.closeTransaction();
+        }
+    }
+
+    private void waitForDisplayReady(Size expectedSize, int timeoutMs) {
+        final int interval = 50;
+        int waited = 0;
+        while (waited < timeoutMs) {
+            DisplayInfo info = ServiceManager.getDisplayManager().getDisplayInfo(displayId);
+            if (info != null && info.getSize().equals(expectedSize)) {
+                Ln.i("Display is now ready: " + info.getSize());
+                return;
+            }
+            try {
+                Thread.sleep(interval);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            waited += interval;
+        }
+        Ln.w("Display did not reach expected size in time: " + expectedSize);
     }
 
     @Override

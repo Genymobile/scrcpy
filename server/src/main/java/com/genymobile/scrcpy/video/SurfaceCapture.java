@@ -12,6 +12,9 @@ import java.io.IOException;
  */
 public abstract class SurfaceCapture {
 
+    public void setupDisplay(Surface surface) {
+    }
+
     public interface CaptureListener {
         void onInvalidated();
     }
