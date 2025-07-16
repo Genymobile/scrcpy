@@ -1,0 +1,178 @@
+<!-- Full Armaans Business Website with Business Sections Restored -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Earn Fire Business</title>
+  <style>
+    body { font-family: 'Poppins', sans-serif; margin: 0; padding: 0; background: #fff; color: #111; }
+    .cta { background: #e60000; color: white; padding: 0.8rem 1.5rem; border: none; border-radius: 30px; font-weight: bold; cursor: pointer; }
+    .section { padding: 2rem; text-align: center; }
+    .highlight { color: #e60000; font-weight: bold; }
+    .blue { color: #005792; }
+    .pink { color: #ff69b4; font-weight: bold; }
+    .container { max-width: 960px; margin: auto; padding: 1rem; }
+    .form-container { background: #f2f2f2; padding: 2rem; border-radius: 10px; max-width: 600px; margin: auto; }
+    input, select, textarea { width: 100%; padding: 0.8rem; margin: 0.5rem 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 0.8rem 2rem; background: #005792; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; margin: 1rem; background: #fafafa; }
+    .two-col { display: flex; flex-wrap: wrap; justify-content: space-around; }
+    @media(max-width: 768px) { .two-col { flex-direction: column; } }
+    .review-box { max-width: 700px; margin: auto; background: #f7f7f7; padding: 1rem; border-radius: 10px; }
+    .review-item { text-align: left; padding: 0.5rem; border-bottom: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+
+  <!-- Header / Homepage Top Section -->
+  <section class="section" style="background: white; border-bottom: 2px solid #eee;">
+    <div class="container">
+      <h1>🔥 Digital Earn Fire - <span class="highlight">Business</span></h1>
+      <p><em>"Join The Army of Earners – From ₹5K to Unlimited!"</em></p>
+      <p class="blue">Work From Home | Flexible Hours | Real Earnings</p>
+      <button class="cta" onclick="document.getElementById('joinForm').scrollIntoView({behavior:'smooth'})">Join Now</button>
+    </div>
+  </section>
+
+  <!-- Team Management Section -->
+  <section class="section">
+    <h2>🔧 Team Management Requirements</h2>
+    <div class="container">
+      <ul style="list-style: none; padding: 0; text-align: left; max-width: 600px; margin: auto;">
+        <li>👥 <strong>Team Size:</strong> 2-8 members</li>
+        <li>💬 <strong>Skills:</strong> Basic experience in social media, lead conversation</li>
+        <li>🌐 <strong>Languages:</strong> English / Hindi / Punjabi</li>
+        <li>⏱️ <strong>Active Hours:</strong> 2-3 hours daily mandatory</li>
+        <li>💸 <strong>Investment:</strong> ₹2,000 to ₹50,000</li>
+        <li>🎂 <strong>Age Limit:</strong> No age limit – anyone can join!</li>
+      </ul>
+      <p class="pink">"Age is just a number, your willpower makes the difference!"</p>
+    </div>
+  </section>
+
+  <!-- Business Options Section -->
+  <section class="section">
+    <h2>💼 Business Ke Options</h2>
+    <div class="container two-col">
+      <div class="card">
+        <h3>Option 1: Without Investment</h3>
+        <p>💰 Monthly Earning: ₹5,000 – ₹25,000</p>
+        <p>Fees: ₹300 → <strong>OFFER @ ₹250</strong></p>
+        <p><strong>Poor/middle class = FREE guidance</strong></p>
+        <p>⚠️ Warning: No fees = no money for first 2 tasks</p>
+        <p>💼 Kaam: Simple tasks + Full guidance</p>
+        <p>🔓 <strong>No Risk, No Stress</strong></p>
+      </div>
+
+      <div class="card">
+        <h3>Option 2: With Investment</h3>
+        <p>🔥 Monthly Earning: ₹20K – Unlimited</p>
+        <p>💰 Packages: ₹2,000 – ₹50,000</p>
+        <p>✅ Recommended: ₹4,000 – ₹8,000</p>
+        <p>📅 Daily Training + Weekly Webinar</p>
+        <p>🎯 Suitable for: Students, Housewives, Job persons</p>
+        <p>⏳ Dedication: Minimum 2 hours/day</p>
+        <p>📌 <strong>No Age Limit</strong></p>
+        <p>💡 "Jitni investment, utni growth!"</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Join Form Section -->
+  <section class="section">
+    <h2>🎯 Join Form</h2>
+    <div class="form-container">
+      <form id="joinForm">
+        <input type="text" id="name" name="name" placeholder="Your Name" required>
+        <input type="email" id="email" name="email" placeholder="Your Email" required>
+        <input type="text" id="qualification" name="qualification" placeholder="Your Qualification" required>
+                <input type="text" id="state" name="state" placeholder="Your State" required>
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="Your WhatsApp Number" required>
+        <button type="submit">🚀 Submit & Join</button>
+      </form>
+      <p id="msg" style="margin-top:1rem;color:green;"></p>
+      <p id="msg" style="margin-top:1rem;color:green;"></p>
+    </div>
+  </section>
+
+  <!-- Review Section -->
+  <section class="section">
+    <h2>⭐ User Reviews</h2>
+    <div class="review-box">
+      <form id="reviewForm">
+        <input type="text" id="reviewer" placeholder="Your Name" required>
+        <input type="email" id="reviewEmail" placeholder="Your Email" required>
+        <textarea id="reviewText" rows="4" placeholder="Write your review..." required></textarea>
+        <button type="submit">📢 Submit Review</button>
+      </form>
+      <div id="reviews"></div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="section">
+    <h2>📞 Contact Us</h2>
+    <p>
+      <a href="https://wa.me/919781825883" target="_blank"><button class="cta">📲 Contact on WhatsApp</button></a>
+      <a href="https://t.me/Digital_EarnFire" target="_blank"><button class="cta">🚀 Join Telegram Channel</button></a>
+    </p>
+    <p>Follow us: Instagram | Facebook | YouTube</p>
+  </section>
+
+  <script>
+  document.getElementById("joinForm").addEventListener("submit", function(event) {
+    event.preventDefault();
+    const data = {
+      name: document.getElementById("name").value,
+      email: document.getElementById("email").value,
+      qualification: document.getElementById("qualification").value,
+      state: document.getElementById("state").value,
+      whatsapp: document.getElementById("whatsapp").value,
+      time: new Date().toLocaleString()
+    };
+
+    fetch("https://api.sheety.co/04e4cadddaa71083835b94739b105f01/digitalEarnFireBusiness/sheet1", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sheet1: data
+      })
+    })
+    .then(response => response.json())
+    .then(result => {
+      alert("🎉 Successfully Joined! We will contact you soon.");
+document.getElementById("msg").innerText = "🎉 Successfully Joined! We will contact you soon.";
+      document.getElementById("joinForm").reset();
+    })
+    .catch(error => {
+      document.getElementById("msg").innerText = "❌ Error submitting the form. Please try again later.";
+      console.error("Error:", error);
+    });
+  });
+
+  document.getElementById("reviewForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    const name = document.getElementById("reviewer").value;
+    const email = document.getElementById("reviewEmail").value;
+    const text = document.getElementById("reviewText").value;
+    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+    reviews.push({ name, email, text, time: new Date().toLocaleString() });
+    localStorage.setItem("reviews", JSON.stringify(reviews));
+    displayReviews();
+    e.target.reset();
+  });
+
+  function displayReviews() {
+    const reviews = JSON.parse(localStorage.getItem("reviews") || "[]");
+    const reviewBox = document.getElementById("reviews");
+    reviewBox.innerHTML = reviews.map(r => `<div class='review-item'><strong>${r.name}</strong> (${r.email})<br>${r.text}<br><small>${r.time}</small></div>`).join("");
+  }
+
+  window.onload = displayReviews;
+</script>
+
+</body>
+</html>
