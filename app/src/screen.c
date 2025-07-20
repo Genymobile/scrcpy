@@ -8,6 +8,7 @@
 #include "icon.h"
 #include "options.h"
 #include "util/log.h"
+#include "im/camera.h"
 
 #define DISPLAY_MARGINS 96
 
@@ -335,6 +336,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->orientation = SC_ORIENTATION_0;
 
     screen->video = params->video;
+    screen->video_source = params->video_source;
 
     screen->req.x = params->window_x;
     screen->req.y = params->window_y;
@@ -867,7 +869,15 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         return true;
     }
 
-    sc_input_manager_handle_event(&screen->im, event);
+    switch (screen->video_source) {
+        case SC_VIDEO_SOURCE_DISPLAY:
+            sc_input_manager_handle_event(&screen->im, event);
+            break;
+        case SC_VIDEO_SOURCE_CAMERA:
+            sc_input_manager_handle_event_camera(&screen->im, event);
+            break;
+    }
+
     return true;
 }
 

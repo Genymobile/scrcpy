@@ -75,6 +75,13 @@ public class CameraCapture extends SurfaceCapture {
     private Handler cameraHandler;
     private CameraDevice cameraDevice;
     private Executor cameraExecutor;
+    private CameraCaptureSession session;
+    private CaptureRequest.Builder requestBuilder;
+    private boolean torchAvailable = false;
+    private boolean torchOn = false;
+    private float zoomLevel = 1f;
+    private float zoomStep = 0.025f;
+    private Range<Float> zoomRange = new Range<>(1f, 1f);
 
     private final AtomicBoolean disconnected = new AtomicBoolean();
 
@@ -90,6 +97,10 @@ public class CameraCapture extends SurfaceCapture {
         this.captureOrientation = options.getCaptureOrientation();
         assert captureOrientation != null;
         this.angle = options.getAngle();
+        if (options.getCameraZoomStep() > 0f) {
+            this.zoomStep = options.getCameraZoomStep();
+        }
+        this.torchOn = options.getCameraTorch();
     }
 
     @Override
@@ -106,6 +117,19 @@ public class CameraCapture extends SurfaceCapture {
             }
 
             Ln.i("Using camera '" + cameraId + "'");
+
+            CameraCharacteristics characteristics = ServiceManager.getCameraManager().getCameraCharacteristics(cameraId);
+
+            torchAvailable = Boolean.TRUE.equals(secureGet(characteristics, CameraCharacteristics.FLASH_INFO_AVAILABLE));
+            if (!torchAvailable && torchOn) {
+                Ln.w("Camera flash unit not found.");
+            }
+
+            zoomRange = secureGet(characteristics, CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+            if (zoomRange != null) {
+                Ln.d(String.format("Camera zoom range: [%f, %f]", zoomRange.getLower(), zoomRange.getUpper()));
+            }
+
             cameraDevice = openCamera(cameraId);
         } catch (CameraAccessException | InterruptedException e) {
             throw new IOException(e);
@@ -262,7 +286,7 @@ public class CameraCapture extends SurfaceCapture {
         }
 
         try {
-            CameraCaptureSession session = createCaptureSession(cameraDevice, surface);
+            session = createCaptureSession(cameraDevice, surface);
             CaptureRequest request = createCaptureRequest(surface);
             setRepeatingRequest(session, request);
         } catch (CameraAccessException | InterruptedException e) {
@@ -381,11 +405,15 @@ public class CameraCapture extends SurfaceCapture {
     }
 
     private CaptureRequest createCaptureRequest(Surface surface) throws CameraAccessException {
-        CaptureRequest.Builder requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
+        requestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
         requestBuilder.addTarget(surface);
 
         if (fps > 0) {
             requestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, new Range<>(fps, fps));
+        }
+
+        if (torchOn && torchAvailable) {
+            requestBuilder.set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_TORCH);
         }
 
         return requestBuilder.build();
@@ -421,6 +449,51 @@ public class CameraCapture extends SurfaceCapture {
 
     @Override
     public void requestInvalidate() {
-        // do nothing (the user could not request a reset anyway for now, since there is no controller for camera mirroring)
+        invalidate();
+    }
+
+    private static <T> T secureGet(CameraCharacteristics characteristics, CameraCharacteristics.Key<T> key) {
+        try {
+            return characteristics.get(key);
+        } catch (IllegalArgumentException e) {
+            Ln.w("Failed to get characteristic for key: " + key.getName(), e);
+            return null;
+        }
+    }
+
+    public void toggleTorch() {
+        if (torchAvailable) {
+            torchOn = !torchOn;
+            try {
+                requestBuilder.set(CaptureRequest.FLASH_MODE,
+                    (torchOn) ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_OFF);
+                setRepeatingRequest(session, requestBuilder.build());
+            } catch (CameraAccessException | InterruptedException e) {
+                Ln.e("Camera toggle torch error: ", e);
+            }
+        }
+    }
+
+    private void setZoom(float level) {
+        if (zoomRange == null) {
+            return;
+        }
+
+        try {
+            float zoomClamped = Math.max(zoomRange.getLower(), Math.min(level, zoomRange.getUpper()));
+            requestBuilder.set(CaptureRequest.CONTROL_ZOOM_RATIO, zoomClamped);
+            setRepeatingRequest(session, requestBuilder.build());
+            zoomLevel = zoomClamped;
+        } catch (CameraAccessException | InterruptedException e) {
+            Ln.e("Camera set zoom error: ", e);
+        }
+    }
+
+    public void zoomIn() {
+        setZoom(zoomLevel += zoomStep);
+    }
+
+    public void zoomOut() {
+        setZoom(zoomLevel -= zoomStep);
     }
 }

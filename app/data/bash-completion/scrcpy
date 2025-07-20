@@ -18,6 +18,8 @@ _scrcpy() {
         --camera-fps=
         --camera-high-speed
         --camera-size=
+        --camera-zoom-step=
+        --camera-torch
         --capture-orientation=
         --crop=
         -d --select-usb
@@ -197,6 +199,8 @@ _scrcpy() {
         |--camera-id \
         |--camera-fps \
         |--camera-size \
+        |--camera-zoom-step \
+        |--camera-torch \
         |--crop \
         |--display-id \
         |--max-fps \

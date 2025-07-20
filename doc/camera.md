@@ -147,6 +147,28 @@ scrcpy --video-source=camera --camera-size=1920x1080 --camera-fps=240
 [high speed]: https://developer.android.com/reference/android/hardware/camera2/CameraConstrainedHighSpeedCaptureSession
 
 
+## Torch
+
+- <kbd>MOD</kbd>+<kbd>q</kbd> to toggle the torch.
+
+To turn the torch on when starting the camera, add `--camera-torch`.
+
+```bash
+scrcpy --video-source=camera --camera-torch
+```
+
+## Zoom
+
+- <kbd>MOD</kbd>+<kbd>1</kbd> to zoom in.
+- <kbd>MOD</kbd>+<kbd>2</kbd> to zoom out.
+
+To change the camera zoom step, set `--camera-zoom-step`.
+
+```bash
+scrcpy --video-source=camera --camera-zoom-step=0.025
+```
+
+
 ## Brace expansion tip
 
 All camera options start with `--camera-`, so if your shell supports it, you can

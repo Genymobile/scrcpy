@@ -44,6 +44,8 @@ struct sc_server_params {
     uint32_t audio_bit_rate;
     const char *max_fps; // float to be parsed by the server
     const char *angle; // float to be parsed by the server
+    const char *camera_zoom_step; // float to be parsed by the server
+    bool camera_torch;
     sc_tick screen_off_timeout;
     enum sc_orientation capture_orientation;
     enum sc_orientation_lock capture_orientation_lock;

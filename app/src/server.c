@@ -354,6 +354,13 @@ execute_server(struct sc_server *server,
     if (params->camera_fps) {
         ADD_PARAM("camera_fps=%" PRIu16, params->camera_fps);
     }
+    if (params->camera_zoom_step) {
+        VALIDATE_STRING(params->camera_zoom_step);
+        ADD_PARAM("camera_zoom_step=%s", params->camera_zoom_step);
+    }
+    if (params->camera_torch) {
+        ADD_PARAM("camera_torch=true");
+    }
     if (params->camera_high_speed) {
         ADD_PARAM("camera_high_speed=true");
     }

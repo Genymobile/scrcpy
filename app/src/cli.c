@@ -93,6 +93,8 @@ enum {
     OPT_CAMERA_AR,
     OPT_CAMERA_FPS,
     OPT_CAMERA_HIGH_SPEED,
+    OPT_CAMERA_ZOOM_STEP,
+    OPT_CAMERA_TORCH,
     OPT_DISPLAY_ORIENTATION,
     OPT_RECORD_ORIENTATION,
     OPT_ORIENTATION,
@@ -562,6 +564,17 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
                 "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .longopt_id = OPT_CAMERA_ZOOM_STEP,
+        .longopt = "camera-zoom-step",
+        .argdesc = "value",
+        .text = "Specify the camera zoom step value.",
+    },
+    {
+        .longopt_id = OPT_CAMERA_TORCH,
+        .longopt = "camera-torch",
+        .text = "Turns the torch on when starting the camera.",
     },
     {
         .longopt_id = OPT_MOUSE,
@@ -1141,6 +1154,18 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "Right-click (when screen is off)" },
         .text = "Power on",
+    },
+    {
+        .shortcuts = { "MOD+q" },
+        .text = "Camera toggle torch",
+    },
+    {
+        .shortcuts = { "MOD+1" },
+        .text = "Camera zoom in",
+    },
+    {
+        .shortcuts = { "MOD+2" },
+        .text = "Camera zoom out",
     },
     {
         .shortcuts = { "MOD+o" },
@@ -2420,6 +2445,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_MAX_FPS:
                 opts->max_fps = optarg;
                 break;
+            case OPT_CAMERA_ZOOM_STEP:
+                opts->camera_zoom_step = optarg;
+                break;
+            case OPT_CAMERA_TORCH:
+                opts->camera_torch = true;
+                break;
             case 'm':
                 if (!parse_max_size(optarg, &opts->max_size)) {
                     return false;
@@ -3103,11 +3134,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         if (opts->camera_high_speed && !opts->camera_fps) {
             LOGE("--camera-high-speed requires an explicit --camera-fps value");
             return false;
-        }
-
-        if (opts->control) {
-            LOGI("Camera video source: control disabled");
-            opts->control = false;
         }
     } else if (opts->camera_id
             || opts->camera_ar

@@ -12,6 +12,7 @@ import com.genymobile.scrcpy.device.Position;
 import com.genymobile.scrcpy.device.Size;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.util.LogUtils;
+import com.genymobile.scrcpy.video.CameraCapture;
 import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.VirtualDisplayListener;
 import com.genymobile.scrcpy.wrappers.ClipboardManager;
@@ -99,6 +100,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     // Used for resetting video encoding on RESET_VIDEO message
     private SurfaceCapture surfaceCapture;
+    private CameraCapture cameraCapture;
 
     public Controller(ControlChannel controlChannel, CleanUp cleanUp, Options options) {
         this.displayId = options.getDisplayId();
@@ -150,6 +152,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     public void setSurfaceCapture(SurfaceCapture surfaceCapture) {
         this.surfaceCapture = surfaceCapture;
+        if (this.surfaceCapture instanceof CameraCapture) {
+            this.cameraCapture = (CameraCapture) this.surfaceCapture;
+        }
     }
 
     private UhidManager getUhidManager() {
@@ -330,6 +335,15 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
+                break;
+            case ControlMessage.TYPE_CAMERA_TOGGLE_TORCH:
+                cameraToggleTorch();
+                break;
+            case ControlMessage.TYPE_CAMERA_ZOOM_IN:
+                cameraZoomIn();
+                break;
+            case ControlMessage.TYPE_CAMERA_ZOOM_OUT:
+                cameraZoomOut();
                 break;
             default:
                 // do nothing
@@ -752,6 +766,24 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
             surfaceCapture.requestInvalidate();
+        }
+    }
+
+    private void cameraToggleTorch() {
+        if (cameraCapture != null) {
+            cameraCapture.toggleTorch();
+        }
+    }
+
+    private void cameraZoomIn() {
+        if (cameraCapture != null) {
+            cameraCapture.zoomIn();
+        }
+    }
+
+    private void cameraZoomOut() {
+        if (cameraCapture != null) {
+            cameraCapture.zoomOut();
         }
     }
 }

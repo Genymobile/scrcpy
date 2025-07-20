@@ -46,6 +46,9 @@ public class ControlMessageReader {
             case ControlMessage.TYPE_COLLAPSE_PANELS:
             case ControlMessage.TYPE_ROTATE_DEVICE:
             case ControlMessage.TYPE_OPEN_HARD_KEYBOARD_SETTINGS:
+            case ControlMessage.TYPE_CAMERA_TOGGLE_TORCH:
+            case ControlMessage.TYPE_CAMERA_ZOOM_IN:
+            case ControlMessage.TYPE_CAMERA_ZOOM_OUT:
             case ControlMessage.TYPE_RESET_VIDEO:
                 return ControlMessage.createEmpty(type);
             case ControlMessage.TYPE_UHID_CREATE:

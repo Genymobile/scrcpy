@@ -471,6 +471,8 @@ scrcpy(struct scrcpy_options *options) {
         .power_on = options->power_on,
         .kill_adb_on_close = options->kill_adb_on_close,
         .camera_high_speed = options->camera_high_speed,
+        .camera_zoom_step = options->camera_zoom_step,
+        .camera_torch = options->camera_torch,
         .vd_destroy_content = options->vd_destroy_content,
         .vd_system_decorations = options->vd_system_decorations,
         .list = options->list,
@@ -804,6 +806,7 @@ aoa_complete:
 
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
+            .video_source = options->video_source,
             .controller = controller,
             .fp = fp,
             .kp = kp,

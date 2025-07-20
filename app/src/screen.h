@@ -69,6 +69,8 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    enum sc_video_source video_source;
 };
 
 struct sc_screen_params {
@@ -100,6 +102,8 @@ struct sc_screen_params {
 
     bool fullscreen;
     bool start_fps_counter;
+
+    enum sc_video_source video_source;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

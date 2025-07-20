@@ -46,6 +46,8 @@ public class Options {
     private CameraAspectRatio cameraAspectRatio;
     private int cameraFps;
     private boolean cameraHighSpeed;
+    private float cameraZoomStep;
+    private boolean cameraTorch;
     private boolean showTouches;
     private boolean stayAwake;
     private int screenOffTimeout = -1;
@@ -174,6 +176,14 @@ public class Options {
 
     public boolean getCameraHighSpeed() {
         return cameraHighSpeed;
+    }
+
+    public float getCameraZoomStep() {
+        return cameraZoomStep;
+    }
+
+    public boolean getCameraTorch() {
+        return cameraTorch;
     }
 
     public boolean getShowTouches() {
@@ -473,6 +483,12 @@ public class Options {
                     break;
                 case "camera_high_speed":
                     options.cameraHighSpeed = Boolean.parseBoolean(value);
+                    break;
+                case "camera_zoom_step":
+                    options.cameraZoomStep = Float.parseFloat(value);
+                    break;
+                case "camera_torch":
+                    options.cameraTorch = Boolean.parseBoolean(value);
                     break;
                 case "new_display":
                     options.newDisplay = parseNewDisplay(value);

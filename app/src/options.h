@@ -262,6 +262,7 @@ struct scrcpy_options {
     uint32_t audio_bit_rate;
     const char *max_fps; // float to be parsed by the server
     const char *angle; // float to be parsed by the server
+    const char *camera_zoom_step; // float to be parsed by the server
     enum sc_orientation capture_orientation;
     enum sc_orientation_lock capture_orientation_lock;
     enum sc_orientation display_orientation;
@@ -314,6 +315,7 @@ struct scrcpy_options {
     bool require_audio;
     bool kill_adb_on_close;
     bool camera_high_speed;
+    bool camera_torch;
 #define SC_OPTION_LIST_ENCODERS 0x1
 #define SC_OPTION_LIST_DISPLAYS 0x2
 #define SC_OPTION_LIST_CAMERAS 0x4
