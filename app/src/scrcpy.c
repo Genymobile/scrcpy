@@ -93,7 +93,7 @@ struct scrcpy {
 
 #ifdef _WIN32
 static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
-    if (ctrl_type == CTRL_C_EVENT) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
         sc_push_event(SDL_QUIT);
         return TRUE;
     }
