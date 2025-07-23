@@ -154,6 +154,10 @@ install it manually and make it available from the `PATH`:
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
 
+When following the rest of the build instructions below, make sure you use the
+MinGW terminal within MSYS2.
+
+
 ### macOS
 
 Install the packages with [Homebrew]:
