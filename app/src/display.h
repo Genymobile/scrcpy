@@ -22,7 +22,7 @@ struct sc_display {
 
     struct sc_opengl gl;
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-    SDL_GLContext *gl_context;
+    SDL_GLContext gl_context;
 #endif
 
     bool mipmaps;
