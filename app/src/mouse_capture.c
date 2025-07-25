@@ -85,7 +85,7 @@ sc_mouse_capture_set_active(struct sc_mouse_capture *mc, bool capture) {
     // Workaround for SDL bug on macOS:
     // <https://github.com/libsdl-org/SDL/issues/5340>
     if (capture) {
-        int mouse_x, mouse_y;
+        float mouse_x, mouse_y;
         SDL_GetGlobalMouseState(&mouse_x, &mouse_y);
 
         int x, y, w, h;
