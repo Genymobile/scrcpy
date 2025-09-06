@@ -1,6 +1,7 @@
 #include "keyboard_aoa.h"
 
 #include <assert.h>
+#include <unistd.h>
 
 #include "input_events.h"
 #include "util/log.h"
@@ -62,6 +63,31 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
     }
 }
 
+static bool
+sc_key_processor_take_screenshot(struct sc_key_processor *kp) {
+
+    struct sc_keyboard_aoa *kb = DOWNCAST(kp);
+
+    struct sc_hid_input hid_input;
+
+    sc_hid_keyboard_generate_screenshot_press_input(&hid_input);
+    if (!sc_aoa_push_input(kb->aoa, &hid_input)) {
+        LOGW("Could not push AOA HID input (screenshot press)");
+        return false;
+    }
+
+    // sleep for 100ms
+    usleep(100000);
+
+    sc_hid_keyboard_generate_screenshot_release_input(&hid_input);
+    if (!sc_aoa_push_input(kb->aoa, &hid_input)) {
+        LOGW("Could not push AOA HID input (screenshot release)");
+        return false;
+    }
+
+    return true;
+}
+
 bool
 sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
     kb->aoa = aoa;
@@ -84,6 +110,7 @@ sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa) {
         // Never forward text input via HID (all the keys are injected
         // separately)
         .process_text = NULL,
+        .take_screenshot = sc_key_processor_take_screenshot,
     };
 
     // Clipboard synchronization is requested over the control socket, while HID

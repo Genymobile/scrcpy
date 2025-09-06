@@ -17,6 +17,12 @@ struct sc_mouse_capture {
 
 };
 
+enum {
+    SC_MOUSE_CAPTURE_EVENT_UNCONSUMED,
+    SC_MOUSE_CAPTURE_EVENT_CONSUMED,
+    SC_MOUSE_CAPTURE_EVENT_CONSUMED_EXIT_CAPTURE_MODE,
+};
+
 void
 sc_mouse_capture_init(struct sc_mouse_capture *mc, SDL_Window *window,
                       uint8_t shortcut_mods);
@@ -30,8 +36,8 @@ sc_mouse_capture_is_active(struct sc_mouse_capture *mc);
 void
 sc_mouse_capture_toggle(struct sc_mouse_capture *mc);
 
-// Return true if it consumed the event
-bool
+// Return if it consumed the event
+int
 sc_mouse_capture_handle_event(struct sc_mouse_capture *mc,
                               const SDL_Event *event);
 
