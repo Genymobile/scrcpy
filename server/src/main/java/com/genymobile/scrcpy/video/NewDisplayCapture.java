@@ -36,7 +36,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private static final int VIRTUAL_DISPLAY_FLAG_TOUCH_FEEDBACK_DISABLED = 1 << 13;
     private static final int VIRTUAL_DISPLAY_FLAG_OWN_FOCUS = 1 << 14;
     private static final int VIRTUAL_DISPLAY_FLAG_DEVICE_DISPLAY_GROUP = 1 << 15;
-
+    private static final int VIRTUAL_DISPLAY_FLAG_PRESENTATION = 1 << 1;
     private final VirtualDisplayListener vdListener;
     private final NewDisplay newDisplay;
 
@@ -171,7 +171,8 @@ public class NewDisplayCapture extends SurfaceCapture {
             int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
                     | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
-                    | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
+                    | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT
+                    | VIRTUAL_DISPLAY_FLAG_PRESENTATION;
             if (vdDestroyContent) {
                 flags |= VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL;
             }
