@@ -54,6 +54,7 @@ enum {
     OPT_DISPLAY_BUFFER,
     OPT_VIDEO_BUFFER,
     OPT_V4L2_BUFFER,
+    OPT_SSH_TUNNEL,
     OPT_TUNNEL_HOST,
     OPT_TUNNEL_PORT,
     OPT_NO_CLIPBOARD_AUTOSYNC,
@@ -878,6 +879,12 @@ static const struct sc_option options[] = {
                 "For example, to use either LCtrl or LSuper for scrcpy "
                 "shortcuts, pass \"lctrl,lsuper\".\n"
                 "Default is \"lalt,lsuper\" (left-Alt or left-Super).",
+    },
+    {
+        .longopt_id = OPT_SSH_TUNNEL,
+        .longopt = "ssh-tunnel",
+        .argdesc = "user@host",
+        .text = "Spin up an SSH tunnel for remote scrcpy access.",
     },
     {
         .longopt_id = OPT_START_APP,
@@ -2619,6 +2626,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 if (!parse_shortcut_mods(optarg, &opts->shortcut_mods)) {
                     return false;
                 }
+                break;
+            case OPT_SSH_TUNNEL:
+                opts->ssh_tunnel_host = optarg;
                 break;
             case OPT_FORWARD_ALL_CLICKS:
                 LOGE("--forward-all-clicks has been removed, "
