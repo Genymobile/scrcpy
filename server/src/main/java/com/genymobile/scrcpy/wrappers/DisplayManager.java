@@ -139,7 +139,12 @@ public final class DisplayManager {
             int layerStack = cls.getDeclaredField("layerStack").getInt(displayInfo);
             int flags = cls.getDeclaredField("flags").getInt(displayInfo);
             int dpi = cls.getDeclaredField("logicalDensityDpi").getInt(displayInfo);
-            String uniqueId = (String) cls.getDeclaredField("uniqueId").get(displayInfo);
+            String uniqueId;
+            try {
+                uniqueId = (String) cls.getDeclaredField("uniqueId").get(displayInfo);
+            } catch (NoSuchFieldException ignore) {
+                uniqueId = null;
+            }
             return new DisplayInfo(displayId, new Size(width, height), rotation, layerStack, flags, dpi, uniqueId);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
