@@ -1,7 +1,6 @@
 package com.genymobile.scrcpy.util;
 
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.media.MediaFormat;
 
 import java.util.ArrayList;
@@ -26,7 +25,7 @@ public final class CodecUtils {
         }
     }
 
-    public static MediaCodecInfo[] getEncoders(MediaCodecList codecs, String mimeType) {
+    static MediaCodecInfo[] getEncoders(MediaCodecListCompat codecs, String mimeType) {
         List<MediaCodecInfo> result = new ArrayList<>();
         for (MediaCodecInfo codecInfo : codecs.getCodecInfos()) {
             if (codecInfo.isEncoder() && Arrays.asList(codecInfo.getSupportedTypes()).contains(mimeType)) {

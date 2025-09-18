@@ -19,7 +19,6 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
 
@@ -39,7 +38,7 @@ public final class LogUtils {
 
     private static String buildEncoderListMessage(String type, Codec[] codecs) {
         StringBuilder builder = new StringBuilder("List of ").append(type).append(" encoders:");
-        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        MediaCodecListCompat codecList = MediaCodecListCompat.regular();
         for (Codec codec : codecs) {
             MediaCodecInfo[] encoders = CodecUtils.getEncoders(codecList, codec.getMimeType());
             for (MediaCodecInfo info : encoders) {
