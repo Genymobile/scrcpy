@@ -5,7 +5,7 @@ android {
     compileSdk 35
     defaultConfig {
         applicationId "com.genymobile.scrcpy"
-        minSdkVersion 21
+        minSdkVersion 19
         targetSdkVersion 35
         versionCode 30303
         versionName "3.3.3"
