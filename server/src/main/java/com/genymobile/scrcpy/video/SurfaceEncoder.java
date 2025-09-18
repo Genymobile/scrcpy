@@ -206,8 +206,9 @@ public class SurfaceEncoder implements AsyncProcessor {
         return 0;
     }
 
-    private void encode(MediaCodec codec, Streamer streamer) throws IOException {
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+    private void encode(MediaCodec platformCodec, Streamer streamer) throws IOException {
+        final MediaCodecCompat codec = MediaCodecCompat.wrap(platformCodec);
+        final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         boolean eos;
         do {
