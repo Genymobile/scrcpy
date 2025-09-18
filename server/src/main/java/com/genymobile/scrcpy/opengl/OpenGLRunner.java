@@ -200,7 +200,7 @@ public final class OpenGLRunner {
             }
 
             render(outputSize);
-        }, handler);
+        });
     }
 
     private void render(Size outputSize) {
@@ -228,7 +228,7 @@ public final class OpenGLRunner {
 
         handler.post(() -> {
             stopped = true;
-            surfaceTexture.setOnFrameAvailableListener(null, handler);
+            surfaceTexture.setOnFrameAvailableListener(null);
 
             filter.release();
 
