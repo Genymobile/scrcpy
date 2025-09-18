@@ -7,9 +7,12 @@ import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Looper;
 import android.system.ErrnoException;
 import android.system.Os;
+
+import androidx.annotation.RequiresApi;
 
 import java.io.File;
 import java.io.IOException;
@@ -172,6 +175,39 @@ public final class CleanUp {
         notify();
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
+    private static class Api21 {
+
+        static void setsid() {
+            try {
+                Os.setsid();
+            } catch (ErrnoException e) {
+                Ln.e("setsid() failed", e);
+            }
+        }
+
+        private Api21() {
+        }
+    }
+
+    private static void setsid() {
+        // Start a new session to avoid being terminated along with the server process on some devices
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+            Api21.setsid();
+        } else {
+            try {
+                Object os = Class.forName("libcore.io.Libcore")
+                        .getField("os")
+                        .get(null);
+                os.getClass()
+                        .getMethod("setsid")
+                        .invoke(os);
+            } catch (Exception e) {
+                Ln.e("setsid() failed", e);
+            }
+        }
+    }
+
     public static void unlinkSelf() {
         try {
             new File(Server.SERVER_PATH).delete();
@@ -186,12 +222,7 @@ public final class CleanUp {
     }
 
     public static void main(String... args) {
-        try {
-            // Start a new session to avoid being terminated along with the server process on some devices
-            Os.setsid();
-        } catch (ErrnoException e) {
-            Ln.e("setsid() failed", e);
-        }
+        setsid();
         unlinkSelf();
 
         // Needed for workarounds
