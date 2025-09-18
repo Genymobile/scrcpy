@@ -7,7 +7,6 @@ import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.media.AudioRecord;
@@ -15,8 +14,11 @@ import android.media.MediaCodec;
 import android.os.Build;
 import android.os.SystemClock;
 
+import androidx.annotation.RequiresApi;
+
 import java.nio.ByteBuffer;
 
+@RequiresApi(AndroidVersions.API_30_ANDROID_11)
 public class AudioDirectCapture implements AudioCapture {
 
     private static final int SAMPLE_RATE = AudioConfig.SAMPLE_RATE;
@@ -34,7 +36,6 @@ public class AudioDirectCapture implements AudioCapture {
         this.audioSource = audioSource.getDirectAudioSource();
     }
 
-    @TargetApi(AndroidVersions.API_23_ANDROID_6_0)
     @SuppressLint({"WrongConstant", "MissingPermission"})
     private static AudioRecord createAudioRecord(int audioSource) {
         AudioRecord.Builder builder = new AudioRecord.Builder();
@@ -135,7 +136,6 @@ public class AudioDirectCapture implements AudioCapture {
     }
 
     @Override
-    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
         return reader.read(outDirectBuffer, outBufferInfo);
     }

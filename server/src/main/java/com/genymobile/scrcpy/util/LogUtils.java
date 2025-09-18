@@ -23,6 +23,8 @@ import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
 
+import androidx.annotation.RequiresApi;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -120,6 +122,7 @@ public final class LogUtils {
         }
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     private static boolean isCameraBackwardCompatible(CameraCharacteristics characteristics) {
         int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
         if (capabilities == null) {
@@ -135,6 +138,7 @@ public final class LogUtils {
         return false;
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
@@ -205,6 +209,7 @@ public final class LogUtils {
         return builder.toString();
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     private static SortedSet<Integer> getUniqueSet(Range<Integer>[] ranges) {
         SortedSet<Integer> set = new TreeSet<>();
         for (Range<Integer> range : ranges) {

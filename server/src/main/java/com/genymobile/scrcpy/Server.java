@@ -34,6 +34,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressLint("NewApi")
 public final class Server {
 
     public static final String SERVER_PATH;

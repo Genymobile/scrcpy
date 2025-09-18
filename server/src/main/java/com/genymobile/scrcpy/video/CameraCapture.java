@@ -34,6 +34,8 @@ import android.os.HandlerThread;
 import android.util.Range;
 import android.view.Surface;
 
+import androidx.annotation.RequiresApi;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -44,6 +46,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
+@RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
 public class CameraCapture extends SurfaceCapture {
 
     public static final float[] VFLIP_MATRIX = {

@@ -3,10 +3,12 @@ package com.genymobile.scrcpy.video;
 import android.annotation.SuppressLint;
 import android.hardware.camera2.CameraCharacteristics;
 
+import androidx.annotation.Nullable;
+
+@SuppressLint("InlinedApi")
 public enum CameraFacing {
     FRONT("front", CameraCharacteristics.LENS_FACING_FRONT),
     BACK("back", CameraCharacteristics.LENS_FACING_BACK),
-    @SuppressLint("InlinedApi") // introduced in API 23
     EXTERNAL("external", CameraCharacteristics.LENS_FACING_EXTERNAL);
 
     private final String name;
@@ -21,6 +23,7 @@ public enum CameraFacing {
         return value;
     }
 
+    @Nullable
     public static CameraFacing findByName(String name) {
         for (CameraFacing facing : CameraFacing.values()) {
             if (name.equals(facing.name)) {

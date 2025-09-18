@@ -12,8 +12,8 @@ import com.genymobile.scrcpy.wrappers.SurfaceControl;
 import com.genymobile.scrcpy.wrappers.WindowManager;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
 import android.app.ActivityOptions;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -24,6 +24,8 @@ import android.view.InputDevice;
 import android.view.InputEvent;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+
+import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -243,13 +245,18 @@ public final class Device {
         return result;
     }
 
+    @Nullable
     public static Intent getLaunchIntent(PackageManager pm, String packageName) {
         Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
         if (launchIntent != null) {
             return launchIntent;
         }
 
-        return pm.getLeanbackLaunchIntentForPackage(packageName);
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+            return pm.getLeanbackLaunchIntentForPackage(packageName);
+        }
+
+        return null;
     }
 
     private static DeviceApp toApp(PackageManager pm, ApplicationInfo appInfo) {

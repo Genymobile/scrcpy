@@ -2,8 +2,10 @@ package com.genymobile.scrcpy.audio;
 
 import com.genymobile.scrcpy.util.Codec;
 
+import android.annotation.SuppressLint;
 import android.media.MediaFormat;
 
+@SuppressLint("InlinedApi")
 public enum AudioCodec implements Codec {
     OPUS(0x6f_70_75_73, "opus", MediaFormat.MIMETYPE_AUDIO_OPUS),
     AAC(0x00_61_61_63, "aac", MediaFormat.MIMETYPE_AUDIO_AAC),

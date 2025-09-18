@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy.wrappers;
 
+import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.FakeContext;
 
 import android.annotation.SuppressLint;
@@ -7,6 +8,8 @@ import android.content.Context;
 import android.hardware.camera2.CameraManager;
 import android.os.IBinder;
 import android.os.IInterface;
+
+import androidx.annotation.RequiresApi;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -98,6 +101,7 @@ public final class ServiceManager {
         return activityManager;
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     public static CameraManager getCameraManager() {
         if (cameraManager == null) {
             try {
