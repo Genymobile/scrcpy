@@ -9,7 +9,6 @@ import com.genymobile.scrcpy.wrappers.ServiceManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Looper;
-import android.system.ErrnoException;
 import android.system.Os;
 
 import androidx.annotation.RequiresApi;
@@ -17,6 +16,8 @@ import androidx.annotation.RequiresApi;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import libcore.io.Libcore;
 
 /**
  * Handle the cleanup of scrcpy, even if the main process is killed.
@@ -175,36 +176,40 @@ public final class CleanUp {
         notify();
     }
 
-    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
-    private static class Api21 {
+    @SuppressWarnings("deprecation")
+    private static final class Api19 {
 
-        static void setsid() {
-            try {
-                Os.setsid();
-            } catch (ErrnoException e) {
-                Ln.e("setsid() failed", e);
-            }
+        static void setsid() throws Exception {
+            Libcore.os.setsid();
+        }
+
+        private Api19() {
+            // not instantiable
+        }
+    }
+
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
+    private static final class Api21 {
+
+        static void setsid() throws Exception {
+            Os.setsid();
         }
 
         private Api21() {
+            // not instantiable
         }
     }
 
     private static void setsid() {
-        // Start a new session to avoid being terminated along with the server process on some devices
-        if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
-            Api21.setsid();
-        } else {
-            try {
-                Object os = Class.forName("libcore.io.Libcore")
-                        .getField("os")
-                        .get(null);
-                os.getClass()
-                        .getMethod("setsid")
-                        .invoke(os);
-            } catch (Exception e) {
-                Ln.e("setsid() failed", e);
+        try {
+            // Start a new session to avoid being terminated along with the server process on some devices
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+                Api21.setsid();
+            } else {
+                Api19.setsid();
             }
+        } catch (Exception e) {
+            Ln.e("setsid() failed", e);
         }
     }
 

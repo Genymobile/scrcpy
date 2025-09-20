@@ -26,6 +26,7 @@ android {
 dependencies {
     testImplementation 'junit:junit:4.13.2'
     compileOnly rootProject.fileTree("thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar")
+    compileOnly(project(":luni"))
 }
 
 apply from: "$project.rootDir/config/android-checkstyle.gradle"
