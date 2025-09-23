@@ -2,6 +2,7 @@ package com.genymobile.scrcpy.control;
 
 import android.view.KeyEvent;
 import android.view.MotionEvent;
+
 import org.junit.Assert;
 import org.junit.Test;
 
