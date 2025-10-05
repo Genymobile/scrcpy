@@ -86,7 +86,7 @@ javac -encoding UTF-8 -bootclasspath "$ANDROID_JAR" \
 echo "Dexing..."
 cd "$CLASSES_DIR"
 
-if [[ $PLATFORM -lt 31 ]]
+if [[ ${PLATFORM%.*} -lt 31 ]]
 then
     # use dx
     "$BUILD_TOOLS_DIR/dx" --dex --output "$BUILD_DIR/classes.dex" \
