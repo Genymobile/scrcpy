@@ -386,8 +386,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     // The second condition is necessary to ignore the release of the modifier
     // key (because in this case mod is 0).
     uint16_t mods = im->sdl_shortcut_mods;
-    bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
-                    || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
+    bool is_shortcut_modifier_pressed =
+        sc_shortcut_mods_is_shortcut_mod(mods, mod);
+    bool is_key_a_shortcut_modifier =
+        sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
+    bool is_shortcut = is_shortcut_modifier_pressed || is_key_a_shortcut_modifier;
 
     if (down && !repeat) {
         if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
@@ -396,6 +399,17 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             im->key_repeat = 0;
             im->last_keycode = sdl_keycode;
             im->last_mod = mod;
+        }
+    }
+
+    // Handle F11 for fullscreen (no modifiers needed)
+    if (sdl_keycode == SDLK_F11 && video && !repeat && down) {
+        // Ensure no other modifiers like Shift, Ctrl, Alt, GUI are pressed with F11
+        // (KMOD_NUM, KMOD_CAPS, KMOD_MODE, KMOD_SCROLL are generally ok)
+        uint16_t problematic_mods = KMOD_CTRL | KMOD_SHIFT | KMOD_ALT | KMOD_GUI;
+        if (!(mod & problematic_mods)) {
+            sc_screen_toggle_fullscreen(im->screen);
+            return; // F11 handled, consume the event
         }
     }
 
@@ -506,6 +520,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 }
                 return;
             case SDLK_f:
+                // This is part of `is_shortcut`, so a modifier (Alt/Super) must be pressed.
                 if (video && !shift && !repeat && down) {
                     sc_screen_toggle_fullscreen(im->screen);
                 }
