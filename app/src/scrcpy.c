@@ -26,6 +26,7 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
+#include "microphone.h"
 #include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"
@@ -441,6 +442,7 @@ scrcpy(struct scrcpy_options *options) {
         .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
+        .microphone = options->microphone,
         .audio_dup = options->audio_dup,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
@@ -881,6 +883,14 @@ aoa_complete:
         }
         audio_demuxer_started = true;
     }
+
+		if (options->microphone) {
+			sc_thread mic_thread;
+			bool ok = sc_thread_create(&mic_thread, read_mic, "scrcpy-mic", &s->server.mic_socket);
+			if (!ok) {
+				goto end;
+			}
+		}
 
     // If the device screen is to be turned off, send the control message after
     // everything is set up

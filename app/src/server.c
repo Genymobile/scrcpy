@@ -11,6 +11,7 @@
 #include "util/env.h"
 #include "util/file.h"
 #include "util/log.h"
+#include "util/net.h"
 #include "util/net_intr.h"
 #include "util/process.h"
 #include "util/str.h"
@@ -564,6 +565,7 @@ sc_server_init(struct sc_server *server, const struct sc_server_params *params,
     server->video_socket = SC_SOCKET_NONE;
     server->audio_socket = SC_SOCKET_NONE;
     server->control_socket = SC_SOCKET_NONE;
+    server->mic_socket = SC_SOCKET_NONE;
 
     sc_adb_tunnel_init(&server->tunnel);
 
@@ -606,10 +608,12 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     bool video = server->params.video;
     bool audio = server->params.audio;
     bool control = server->params.control;
+    bool microphone = server->params.microphone;
 
     sc_socket video_socket = SC_SOCKET_NONE;
     sc_socket audio_socket = SC_SOCKET_NONE;
     sc_socket control_socket = SC_SOCKET_NONE;
+    sc_socket mic_socket = SC_SOCKET_NONE;
     if (!tunnel->forward) {
         if (video) {
             video_socket =
@@ -631,6 +635,14 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
             control_socket =
                 net_accept_intr(&server->intr, tunnel->server_socket);
             if (control_socket == SC_SOCKET_NONE) {
+                goto fail;
+            }
+        }
+
+        if (microphone) {
+            mic_socket =
+                net_accept_intr(&server->intr, tunnel->server_socket);
+            if (mic_socket == SC_SOCKET_NONE) {
                 goto fail;
             }
         }
@@ -690,11 +702,16 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
         }
     }
 
+    // Disable Nagle's algorithm for the control socket
+    // (it only impacts the sending side, so it is useless to set it
+    // for the other sockets)
     if (control_socket != SC_SOCKET_NONE) {
-        // Disable Nagle's algorithm for the control socket
-        // (it only impacts the sending side, so it is useless to set it
-        // for the other sockets)
         bool ok = net_set_tcp_nodelay(control_socket, true);
+        (void) ok; // error already logged
+    }
+
+    if (mic_socket != SC_SOCKET_NONE) {
+        bool ok = net_set_tcp_nodelay(mic_socket, true);
         (void) ok; // error already logged
     }
 
@@ -715,10 +732,12 @@ sc_server_connect_to(struct sc_server *server, struct sc_server_info *info) {
     assert(!video || video_socket != SC_SOCKET_NONE);
     assert(!audio || audio_socket != SC_SOCKET_NONE);
     assert(!control || control_socket != SC_SOCKET_NONE);
+    assert(!microphone || mic_socket != SC_SOCKET_NONE);
 
     server->video_socket = video_socket;
     server->audio_socket = audio_socket;
     server->control_socket = control_socket;
+    server->mic_socket = mic_socket;
 
     return true;
 
@@ -738,6 +757,12 @@ fail:
     if (control_socket != SC_SOCKET_NONE) {
         if (!net_close(control_socket)) {
             LOGW("Could not close control socket");
+        }
+    }
+
+    if (mic_socket != SC_SOCKET_NONE) {
+        if (!net_close(mic_socket)) {
+            LOGW("Could not close microphone socket");
         }
     }
 
@@ -1130,6 +1155,11 @@ run_server(void *data) {
         net_interrupt(server->control_socket);
     }
 
+    if (server->mic_socket != SC_SOCKET_NONE) {
+        // There is no control_socket if --no-microphone is set
+        net_interrupt(server->mic_socket);
+    }
+
     // Give some delay for the server to terminate properly
 #define WATCHDOG_DELAY SC_TICK_FROM_SEC(1)
     sc_tick deadline = sc_tick_now() + WATCHDOG_DELAY;
@@ -1197,6 +1227,9 @@ sc_server_destroy(struct sc_server *server) {
     }
     if (server->control_socket != SC_SOCKET_NONE) {
         net_close(server->control_socket);
+    }
+    if (server->mic_socket != SC_SOCKET_NONE) {
+        net_close(server->mic_socket);
     }
 
     free(server->serial);

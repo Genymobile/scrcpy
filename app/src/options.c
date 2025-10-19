@@ -103,6 +103,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .power_on = true,
     .video = true,
     .audio = true,
+    .microphone = true,
     .require_audio = false,
     .kill_adb_on_close = false,
     .camera_high_speed = false,
