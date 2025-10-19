@@ -25,6 +25,7 @@ src = [
     'src/keyboard_sdk.c',
     'src/mouse_capture.c',
     'src/mouse_sdk.c',
+    'src/microphone.c',
     'src/opengl.c',
     'src/options.c',
     'src/packet_merger.c',

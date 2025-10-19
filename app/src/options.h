@@ -312,6 +312,7 @@ struct scrcpy_options {
     bool power_on;
     bool video;
     bool audio;
+    bool microphone;
     bool require_audio;
     bool kill_adb_on_close;
     bool camera_high_speed;
