@@ -1,2 +1,12 @@
 #include "util/net.h"
-int read_mic(void *);
+
+struct sc_microphone_params {
+    sc_socket socket;
+    const char *audio_source;
+};
+
+void
+sc_microphone_list_audio_sources(void);
+
+int
+sc_microphone_run(void *data);
