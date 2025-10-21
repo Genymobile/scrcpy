@@ -26,7 +26,7 @@ public class Options {
     private int scid = -1; // 31-bit non-negative value, or -1
     private boolean video = true;
     private boolean audio = true;
-    private boolean microphone = true;
+    private boolean client_audio = false;
     private int maxSize;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
@@ -99,8 +99,8 @@ public class Options {
         return audio;
     }
 
-    public boolean getMicrophone() {
-        return microphone;
+    public boolean getClientAudio() {
+        return client_audio;
     }
 
     public int getMaxSize() {
@@ -342,8 +342,8 @@ public class Options {
                 case "audio":
                     options.audio = Boolean.parseBoolean(value);
                     break;
-                case "microphone":
-                    options.microphone = Boolean.parseBoolean(value);
+                case "client_audio":
+                    options.client_audio = Boolean.parseBoolean(value);
                     break;
                 case "video_codec":
                     VideoCodec videoCodec = VideoCodec.findByName(value);

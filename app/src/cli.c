@@ -48,6 +48,7 @@ enum {
     OPT_FORWARD_ALL_CLICKS,
     OPT_LEGACY_PASTE,
     OPT_ENCODER,
+    OPT_CLIENT_AUDIO_SOURCE,
     OPT_VIDEO_ENCODER,
     OPT_POWER_OFF_ON_CLOSE,
     OPT_V4L2_SINK,
@@ -116,6 +117,7 @@ enum {
     OPT_DISPLAY_IME_POLICY,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
+    OPT_LIST_AUDIO_SOURCES,
 };
 
 struct sc_option {
@@ -435,6 +437,16 @@ static const struct sc_option options[] = {
         .argdesc = "name",
     },
     {
+        .longopt_id = OPT_CLIENT_AUDIO_SOURCE,
+        .longopt = "client-audio-source",
+        .argdesc = "source",
+        .text = "Inject audio into the device microphone from a device or file.\n"
+                "The source can be:\n"
+                "  - A device name (e.g., \"Microphone\", \"default\")\n"
+                "  - A file path prefixed with \"file://\" (e.g., \"file:///path/to/audio.mp3\")\n"
+                "Supported file formats: MP3, OGG, WAV, FLAC, etc.",
+    },
+    {
         .shortopt = 'f',
         .longopt = "fullscreen",
         .text = "Start in fullscreen.",
@@ -543,6 +555,11 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_LIST_ENCODERS,
         .longopt = "list-encoders",
         .text = "List video and audio encoders available on the device.",
+    },
+    {
+        .longopt_id = OPT_LIST_AUDIO_SOURCES,
+        .longopt = "list-audio-sources",
+        .text = "List available audio input sources on the client computer.",
     },
     {
         // deprecated
@@ -2632,6 +2649,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("--encoder has been removed, "
                      "use --video-encoder or --audio-encoder.");
                 return false;
+            case OPT_CLIENT_AUDIO_SOURCE:
+                opts->client_audio_source = optarg;
+                break;
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
                 break;
@@ -2749,6 +2769,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_LIST_APPS:
                 opts->list |= SC_OPTION_LIST_APPS;
+                break;
+            case OPT_LIST_AUDIO_SOURCES:
+                args->list_audio_sources = true;
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
@@ -2921,8 +2944,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !opts->control && !otg) {
-        LOGE("No video, no audio, no control, no OTG: nothing to do");
+    if (!opts->video && !opts->audio && !opts->control && !otg && !opts->client_audio_source) {
+        LOGE("No video, no audio, no control, no OTG, no client audio: nothing to do");
         return false;
     }
 

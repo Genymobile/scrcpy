@@ -62,6 +62,7 @@ struct scrcpy {
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
+    struct sc_microphone_params microphone_params;
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
@@ -454,7 +455,7 @@ scrcpy(struct scrcpy_options *options) {
         .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
-        .microphone = options->microphone,
+        .client_audio = options->client_audio_source != NULL,
         .audio_dup = options->audio_dup,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
@@ -895,13 +896,16 @@ aoa_complete:
         audio_demuxer_started = true;
     }
 
-		if (options->microphone) {
-			sc_thread mic_thread;
-			bool ok = sc_thread_create(&mic_thread, read_mic, "scrcpy-mic", &s->server.mic_socket);
-			if (!ok) {
-				goto end;
-			}
-		}
+    if (options->client_audio_source) {
+        s->microphone_params.socket = s->server.client_mic_socket;
+        s->microphone_params.audio_source = options->client_audio_source;
+
+        sc_thread mic_thread;
+        bool ok = sc_thread_create(&mic_thread, sc_microphone_run, "scrcpy-clnt-mic", &s->microphone_params);
+        if (!ok) {
+            goto end;
+        }
+    }
 
     // If the device screen is to be turned off, send the control message after
     // everything is set up
