@@ -41,6 +41,7 @@ main_scrcpy(int argc, char *argv[]) {
         .help = false,
         .version = false,
         .pause_on_exit = SC_PAUSE_ON_EXIT_UNDEFINED,
+        .list_audio_sources = false,
     };
 
 #ifndef NDEBUG
@@ -68,23 +69,21 @@ main_scrcpy(int argc, char *argv[]) {
         goto end;
     }
 
-    // The current thread is the main thread
-    SC_MAIN_THREAD_ID = sc_thread_get_id();
-
 #ifdef SCRCPY_LAVF_REQUIRES_REGISTER_ALL
     av_register_all();
 #endif
 
-/*
-#ifdef HAVE_V4L2
-    if (args.opts.v4l2_device) {
-        avdevice_register_all();
-    }
-#endif
-*/
-
-    //needed for capturing microphone
+    //needed for capturing microphone and listing audio sources
     avdevice_register_all();
+
+    if (args.list_audio_sources) {
+        sc_microphone_list_audio_sources();
+        ret = SCRCPY_EXIT_SUCCESS;
+        goto end;
+    }
+
+    // The current thread is the main thread
+    SC_MAIN_THREAD_ID = sc_thread_get_id();
 
     if (!net_init()) {
         ret = SCRCPY_EXIT_FAILURE;

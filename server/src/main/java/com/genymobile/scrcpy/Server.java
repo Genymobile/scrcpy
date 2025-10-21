@@ -9,12 +9,16 @@ import android.media.AudioTrack;
 import android.media.MediaRecorder;
 import android.net.LocalSocket;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.BufferedInputStream;
 
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioDirectCapture;
 import com.genymobile.scrcpy.audio.AudioEncoder;
+import com.genymobile.scrcpy.audio.AudioDecoder;
 import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
 import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
@@ -91,12 +95,8 @@ public final class Server {
     }
 
     //https://github.com/Genymobile/scrcpy/issues/3880#issuecomment-1595722119
-    public static void poc(Object systemMain, BufferedInputStream bis) throws Exception {
-        Objects.requireNonNull(systemMain);
-
-        // var systemContext = systemMain.getSystemContext();
-        Method getSystemContextMethod = systemMain.getClass().getDeclaredMethod("getSystemContext");
-        Context systemContext = (Context) getSystemContextMethod.invoke(systemMain);
+    public static void poc(PipedInputStream pis) throws Exception {
+        Context systemContext = Workarounds.getSystemContext();
         Objects.requireNonNull(systemContext);
 
         // var audioMixRuleBuilder = new AudioMixingRule.Builder();
@@ -209,25 +209,17 @@ public final class Server {
 
         audioTrack.play();
 
-        /*
-        byte[] samples = new byte[440 * 100];
-        for (int i = 0; i < samples.length; i += 1) {
-                samples[i] = (byte)((i / 40) % 2 == 0 ? 0xff:0x00);
-        }
-        */
-
         new Thread(() -> {
             while (true) {
-                byte[] micData = new byte[50000];
+                byte[] audioBuffer = new byte[50000];
                 try {
-                    int readlen = bis.read(micData);
-                    int written = audioTrack.write(micData, 0, readlen);
-                    Ln.d("written " + written);
+                    int bytesRead = pis.read(audioBuffer);
+                    audioTrack.write(audioBuffer, 0, bytesRead);
                 } catch (Exception e) {
                     Ln.e(e.toString());
                 }
             }
-        }).start();
+        }, "client-audio-injector").start();
     }
 
     private static void scrcpy(Options options) throws IOException, ConfigurationException {
@@ -258,26 +250,14 @@ public final class Server {
         boolean control = options.getControl();
         boolean video = options.getVideo();
         boolean audio = options.getAudio();
-        boolean microphone = options.getMicrophone();
+        boolean client_audio = options.getClientAudio();
         boolean sendDummyByte = options.getSendDummyByte();
-
-        Object systemMain = null;
-        try {
-            @SuppressLint("PrivateApi")
-            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
-            @SuppressLint("DiscouragedPrivateApi")
-            Method systemMainMethod = activityThreadClass.getDeclaredMethod("systemMain");
-            systemMain = systemMainMethod.invoke(null);
-            Objects.requireNonNull(systemMain);
-        } catch (Exception e) {
-
-        }
 
         Workarounds.apply();
 
         List<AsyncProcessor> asyncProcessors = new ArrayList<>();
 
-        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, microphone, sendDummyByte);
+        DesktopConnection connection = DesktopConnection.open(scid, tunnelForward, video, audio, control, client_audio, sendDummyByte);
         try {
             if (options.getSendDeviceMeta()) {
                 connection.sendDeviceMeta(Device.getDeviceName());
@@ -334,13 +314,19 @@ public final class Server {
                 }
             }
 
-            if (microphone) {
+            if (client_audio) {
                 try {
-                    LocalSocket s = connection.getMicSocket();
+                    LocalSocket s = connection.getClientAudioSocket();
                     InputStream is = s.getInputStream();
                     BufferedInputStream bis = new BufferedInputStream(is);
-                    poc(systemMain, bis);
-                } catch (Exception e) {}
+                    PipedOutputStream pos = new PipedOutputStream();
+                    PipedInputStream pis = new PipedInputStream(pos, 65535);
+                    AudioDecoder decoder = new AudioDecoder();
+                    decoder.start(bis, pos);
+                    poc(pis);
+                } catch (Exception e) {
+                    Ln.e("audio exception: " + e);
+                }
             }
 
             Completion completion = new Completion(asyncProcessors.size());
