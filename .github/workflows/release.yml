@@ -124,7 +124,7 @@ jobs:
           path: release/work/build-linux-x86_64/dist-tar/
 
   build-win32:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -155,7 +155,7 @@ jobs:
           path: release/work/build-win32/dist-tar/
 
   build-win64:
-    runs-on: [self-hosted, linux, x64]
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
