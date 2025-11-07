@@ -11,6 +11,8 @@ scrcpy --new-display         # use the main display size and density
 scrcpy --new-display=/240    # use the main display size and 240 dpi
 ```
 
+The new virtual display is destroyed on exit.
+
 ## Start app
 
 On some devices, a launcher is available in the virtual display.
@@ -60,4 +62,16 @@ To move them to the main display instead, use:
 
 ```
 scrcpy --new-display --no-vd-destroy-content
+```
+
+
+## Display IME policy
+
+By default, the virtual display IME appears on the default display.
+
+To make it appear on the local display, use `--display-ime-policy=local`:
+
+```bash
+scrcpy --display-id=1 --display-ime-policy=local
+scrcpy --new-display --display-ime-policy=local
 ```

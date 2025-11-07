@@ -32,9 +32,11 @@ public enum Orientation {
         throw new IllegalArgumentException("Unknown orientation: " + name);
     }
 
-    public static Orientation fromRotation(int rotation) {
-        assert rotation >= 0 && rotation < 4;
-        return values()[rotation];
+    public static Orientation fromRotation(int ccwRotation) {
+        assert ccwRotation >= 0 && ccwRotation < 4;
+        // Display rotation is expressed counter-clockwise, orientation is expressed clockwise
+        int cwRotation = (4 - ccwRotation) % 4;
+        return values()[cwRotation];
     }
 
     public boolean isFlipped() {

@@ -202,8 +202,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-            brew install meson ninja nasm libiconv zlib automake autoconf \
-                libtool
+            brew install meson nasm libiconv zlib automake autoconf libtool
 
       - name: Build
         env:
@@ -245,7 +244,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: brew install meson ninja nasm libiconv zlib automake
+        run: brew install meson nasm libiconv zlib automake
              # autoconf and libtool are already installed on macos-13
 
       - name: Build

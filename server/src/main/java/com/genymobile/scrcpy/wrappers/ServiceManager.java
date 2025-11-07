@@ -54,7 +54,8 @@ public final class ServiceManager {
         return windowManager;
     }
 
-    public static DisplayManager getDisplayManager() {
+    // The DisplayManager may be used from both the Controller thread and the video (main) thread
+    public static synchronized DisplayManager getDisplayManager() {
         if (displayManager == null) {
             displayManager = DisplayManager.create();
         }

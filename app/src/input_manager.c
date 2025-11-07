@@ -897,12 +897,14 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
     struct sc_mouse_scroll_event evt = {
         .position = sc_input_manager_get_position(im, mouse_x, mouse_y),
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-        .hscroll = CLAMP(event->preciseX, -1.0f, 1.0f),
-        .vscroll = CLAMP(event->preciseY, -1.0f, 1.0f),
+        .hscroll = event->preciseX,
+        .vscroll = event->preciseY,
 #else
-        .hscroll = CLAMP(event->x, -1, 1),
-        .vscroll = CLAMP(event->y, -1, 1),
+        .hscroll = event->x,
+        .vscroll = event->y,
 #endif
+        .hscroll_int = event->x,
+        .vscroll_int = event->y,
         .buttons_state = im->mouse_buttons_state,
     };
 

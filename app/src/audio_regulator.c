@@ -76,8 +76,10 @@ sc_audio_regulator_pull(struct sc_audio_regulator *ar, uint8_t *out,
         // Wait until the buffer is filled up to at least target_buffering
         // before playing
         if (buffered_samples < ar->target_buffering) {
-            LOGV("[Audio] Inserting initial buffering silence: %" PRIu32
+#ifdef SC_AUDIO_REGULATOR_DEBUG
+            LOGD("[Audio] Inserting initial buffering silence: %" PRIu32
                  " samples", out_samples);
+#endif
             // Delay playback starting to reach the target buffering. Fill the
             // whole buffer with silence (len is small compared to the
             // arbitrary margin value).
@@ -98,8 +100,10 @@ sc_audio_regulator_pull(struct sc_audio_regulator *ar, uint8_t *out,
         // dropped to keep the latency minimal. However, this would cause very
         // audible glitches, so let the clock compensation restore the target
         // latency.
+#ifdef SC_AUDIO_REGULATOR_DEBUG
         LOGD("[Audio] Buffer underflow, inserting silence: %" PRIu32 " samples",
              silence);
+#endif
         memset(out + TO_BYTES(read), 0, TO_BYTES(silence));
 
         bool received = atomic_load_explicit(&ar->received,
@@ -136,6 +140,36 @@ sc_audio_regulator_get_swr_buf(struct sc_audio_regulator *ar,
 bool
 sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
     SwrContext *swr_ctx = ar->swr_ctx;
+
+    uint32_t input_samples = frame->nb_samples;
+
+    assert(frame->pts >= 0);
+    int64_t pts = frame->pts;
+    if (ar->next_expected_pts && pts - ar->next_expected_pts > 100000) {
+        LOGV("[Audio] Discontinuity detected: %" PRIi64 "µs",
+             pts - ar->next_expected_pts);
+        // More than 100ms: consider it as a discontinuity
+        // (typically because silence packets were not captured)
+        uint32_t can_read = sc_audiobuf_can_read(&ar->buf);
+        if (input_samples + can_read < ar->target_buffering) {
+            // Adjust buffering to the target value directly
+            uint32_t silence = ar->target_buffering - can_read - input_samples;
+            sc_audiobuf_write_silence(&ar->buf, silence);
+        }
+
+        // Reset state
+        ar->avg_buffering.avg = ar->target_buffering;
+        int ret = swr_set_compensation(swr_ctx, 0, 0);
+        (void) ret;
+        assert(!ret); // disabling compensation should never fail
+        ar->compensation_active = false;
+        ar->samples_since_resync = 0;
+        atomic_store_explicit(&ar->underflow, 0, memory_order_relaxed);
+    }
+
+    int64_t packet_duration = input_samples * INT64_C(1000000)
+                            / ar->sample_rate;
+    ar->next_expected_pts = pts + packet_duration;
 
     int64_t swr_delay = swr_get_delay(swr_ctx, ar->sample_rate);
     // No need to av_rescale_rnd(), input and output sample rates are the same.
@@ -209,6 +243,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
     if (played) {
         underflow = atomic_exchange_explicit(&ar->underflow, 0,
                                              memory_order_relaxed);
+        ar->underflow_report += underflow;
 
         max_buffered_samples = ar->target_buffering * 11 / 10
                              + 60 * ar->sample_rate / 1000 /* 60 ms */;
@@ -255,7 +290,7 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
     }
 
     // Number of samples added (or removed, if negative) for compensation
-    int32_t instant_compensation = (int32_t) written - frame->nb_samples;
+    int32_t instant_compensation = (int32_t) written - input_samples;
     // Inserting silence instantly increases buffering
     int32_t inserted_silence = (int32_t) underflow;
     // Dropping input samples instantly decreases buffering
@@ -311,7 +346,9 @@ sc_audio_regulator_push(struct sc_audio_regulator *ar, const AVFrame *frame) {
         int abs_max_diff = distance / 50;
         diff = CLAMP(diff, -abs_max_diff, abs_max_diff);
         LOGV("[Audio] Buffering: target=%" PRIu32 " avg=%f cur=%" PRIu32
-             " compensation=%d", ar->target_buffering, avg, can_read, diff);
+             " compensation=%d (underflow=%" PRIu32 ")",
+             ar->target_buffering, avg, can_read, diff, ar->underflow_report);
+        ar->underflow_report = 0;
 
         int ret = swr_set_compensation(swr_ctx, diff, distance);
         if (ret < 0) {
@@ -394,7 +431,9 @@ sc_audio_regulator_init(struct sc_audio_regulator *ar, size_t sample_size,
     atomic_init(&ar->played, false);
     atomic_init(&ar->received, false);
     atomic_init(&ar->underflow, 0);
+    ar->underflow_report = 0;
     ar->compensation_active = false;
+    ar->next_expected_pts = 0;
 
     return true;
 

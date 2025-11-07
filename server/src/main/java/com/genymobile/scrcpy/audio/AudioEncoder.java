@@ -55,6 +55,9 @@ public final class AudioEncoder implements AsyncProcessor {
     private final List<CodecOption> codecOptions;
     private final String encoderName;
 
+    private boolean recreatePts;
+    private long previousPts;
+
     // Capacity of 64 is in practice "infinite" (it is limited by the number of available MediaCodec buffers, typically 4).
     // So many pending tasks would lead to an unacceptable delay anyway.
     private final BlockingQueue<InputTask> inputTasks = new ArrayBlockingQueue<>(64);
@@ -118,11 +121,33 @@ public final class AudioEncoder implements AsyncProcessor {
             OutputTask task = outputTasks.take();
             ByteBuffer buffer = mediaCodec.getOutputBuffer(task.index);
             try {
+                if (recreatePts) {
+                    fixTimestamp(task.bufferInfo);
+                }
                 streamer.writePacket(buffer, task.bufferInfo);
             } finally {
                 mediaCodec.releaseOutputBuffer(task.index, false);
             }
         }
+    }
+
+    private void fixTimestamp(MediaCodec.BufferInfo bufferInfo) {
+        assert recreatePts;
+
+        if ((bufferInfo.flags & MediaCodec.BUFFER_FLAG_CODEC_CONFIG) != 0) {
+            // Config packet, nothing to fix
+            return;
+        }
+
+        long pts = bufferInfo.presentationTimeUs;
+        if (previousPts != 0) {
+            long now = System.nanoTime() / 1000;
+            // This specific encoder produces PTS matching the exact number of samples
+            long duration = pts - previousPts;
+            bufferInfo.presentationTimeUs = now - duration;
+        }
+
+        previousPts = pts;
     }
 
     @Override
@@ -193,6 +218,12 @@ public final class AudioEncoder implements AsyncProcessor {
 
             Codec codec = streamer.getCodec();
             mediaCodec = createMediaCodec(codec, encoderName);
+
+            // The default OPUS and FLAC encoders overwrite the input PTS with a value that matches the number of samples. This is not the behavior
+            // we want: it ignores any audio clock drift and hard silences (packets not produced on silence). To work around this behavior,
+            // regenerate PTS based on the current time and the packet duration.
+            String codecName = mediaCodec.getCanonicalName();
+            recreatePts = "c2.android.opus.encoder".equals(codecName) || "c2.android.flac.encoder".equals(codecName);
 
             mediaCodecThread = new HandlerThread("media-codec");
             mediaCodecThread.start();

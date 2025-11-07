@@ -93,7 +93,7 @@ struct scrcpy {
 
 #ifdef _WIN32
 static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
-    if (ctrl_type == CTRL_C_EVENT) {
+    if (ctrl_type == CTRL_C_EVENT || ctrl_type == CTRL_BREAK_EVENT) {
         sc_push_event(SDL_QUIT);
         return TRUE;
     }
@@ -106,6 +106,17 @@ sdl_set_hints(const char *render_driver) {
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
     }
+
+    // App name used in various contexts (such as PulseAudio)
+#if defined(SCRCPY_SDL_HAS_HINT_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_APP_NAME, "scrcpy")) {
+        LOGW("Could not set app name");
+    }
+#elif defined(SCRCPY_SDL_HAS_HINT_AUDIO_DEVICE_APP_NAME)
+    if (!SDL_SetHint(SDL_HINT_AUDIO_DEVICE_APP_NAME, "scrcpy")) {
+        LOGW("Could not set audio device app name");
+    }
+#endif
 
     // Linear filtering
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1")) {
@@ -165,7 +176,7 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s) {
+event_loop(struct scrcpy *s, bool has_screen) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
@@ -197,7 +208,7 @@ event_loop(struct scrcpy *s) {
                 break;
             }
             default:
-                if (!sc_screen_handle_event(&s->screen, &event)) {
+                if (has_screen && !sc_screen_handle_event(&s->screen, &event)) {
                     return SCRCPY_EXIT_FAILURE;
                 }
                 break;
@@ -436,6 +447,7 @@ scrcpy(struct scrcpy_options *options) {
         .control = options->control,
         .display_id = options->display_id,
         .new_display = options->new_display,
+        .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
         .audio_dup = options->audio_dup,
@@ -932,7 +944,7 @@ aoa_complete:
         }
     }
 
-    ret = event_loop(s);
+    ret = event_loop(s, options->window);
     terminate_event_loop();
     LOGD("quit...");
 

@@ -4,10 +4,10 @@ DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
 cd "$DEPS_DIR"
 . common
 
-VERSION=35.0.2
+VERSION=36.0.0
 FILENAME=platform-tools_r$VERSION-linux.zip
 PROJECT_DIR=platform-tools-$VERSION-linux
-SHA256SUM=acfdcccb123a8718c46c46c059b2f621140194e5ec1ac9d81715be3d6ab6cd0a
+SHA256SUM=0ead642c943ffe79701fccca8f5f1c69c4ce4f43df2eefee553f6ccb27cbfbe8
 
 cd "$SOURCES_DIR"
 

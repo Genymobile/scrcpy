@@ -191,7 +191,8 @@ sc_vecdeque_reallocdata_(void *ptr, size_t newcap, size_t item_size,
 
     size_t right_len = MIN(size, oldcap - oldorigin);
     assert(right_len);
-    memcpy(newptr, (char *) ptr + (oldorigin * item_size), right_len * item_size);
+    memcpy(newptr, (char *) ptr + (oldorigin * item_size),
+           right_len * item_size);
 
     if (size > right_len) {
         memcpy((char *) newptr + (right_len * item_size), ptr,

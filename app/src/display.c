@@ -170,6 +170,7 @@ sc_display_set_pending_frame(struct sc_display *display, const AVFrame *frame) {
         }
     }
 
+    av_frame_unref(display->pending.frame);
     int r = av_frame_ref(display->pending.frame, frame);
     if (r) {
         LOGE("Could not ref frame: %d", r);
@@ -180,6 +181,11 @@ sc_display_set_pending_frame(struct sc_display *display, const AVFrame *frame) {
 
     return true;
 }
+
+// Forward declaration
+static bool
+sc_display_update_texture_internal(struct sc_display *display,
+                                   const AVFrame *frame);
 
 static bool
 sc_display_apply_pending(struct sc_display *display) {
@@ -196,7 +202,8 @@ sc_display_apply_pending(struct sc_display *display) {
 
     if (display->pending.flags & SC_DISPLAY_PENDING_FLAG_FRAME) {
         assert(display->pending.frame);
-        bool ok = sc_display_update_texture(display, display->pending.frame);
+        bool ok = sc_display_update_texture_internal(display,
+                                                     display->pending.frame);
         if (!ok) {
             return false;
         }

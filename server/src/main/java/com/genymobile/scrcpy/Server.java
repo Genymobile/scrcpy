@@ -24,10 +24,13 @@ import com.genymobile.scrcpy.video.SurfaceCapture;
 import com.genymobile.scrcpy.video.SurfaceEncoder;
 import com.genymobile.scrcpy.video.VideoSource;
 
+import android.annotation.SuppressLint;
 import android.os.Build;
+import android.os.Looper;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -55,17 +58,7 @@ public final class Server {
                 this.fatalError = true;
             }
             if (running == 0 || this.fatalError) {
-                notify();
-            }
-        }
-
-        synchronized void await() {
-            try {
-                while (running > 0 && !fatalError) {
-                    wait();
-                }
-            } catch (InterruptedException e) {
-                // ignore
+                Looper.getMainLooper().quitSafely();
             }
         }
     }
@@ -80,9 +73,15 @@ public final class Server {
             throw new ConfigurationException("Camera mirroring is not supported");
         }
 
-        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10 && options.getNewDisplay() != null) {
-            Ln.e("New virtual display is not supported before Android 10");
-            throw new ConfigurationException("New virtual display is not supported");
+        if (Build.VERSION.SDK_INT < AndroidVersions.API_29_ANDROID_10) {
+            if (options.getNewDisplay() != null) {
+                Ln.e("New virtual display is not supported before Android 10");
+                throw new ConfigurationException("New virtual display is not supported");
+            }
+            if (options.getDisplayImePolicy() != -1) {
+                Ln.e("Display IME policy is not supported before Android 10");
+                throw new ConfigurationException("Display IME policy is not supported");
+            }
         }
 
         CleanUp cleanUp = null;
@@ -166,7 +165,7 @@ public final class Server {
                 });
             }
 
-            completion.await();
+            Looper.loop(); // interrupted by the Completion implementation
         } finally {
             if (cleanUp != null) {
                 cleanUp.interrupt();
@@ -195,6 +194,21 @@ public final class Server {
         }
     }
 
+    private static void prepareMainLooper() {
+        // Like Looper.prepareMainLooper(), but with quitAllowed set to true
+        Looper.prepare();
+        synchronized (Looper.class) {
+            try {
+                @SuppressLint("DiscouragedPrivateApi")
+                Field field = Looper.class.getDeclaredField("sMainLooper");
+                field.setAccessible(true);
+                field.set(null, Looper.myLooper());
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError(e);
+            }
+        }
+    }
+
     public static void main(String... args) {
         int status = 0;
         try {
@@ -214,6 +228,8 @@ public final class Server {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             Ln.e("Exception on thread " + t, e);
         });
+
+        prepareMainLooper();
 
         Options options = Options.parse(args);
 

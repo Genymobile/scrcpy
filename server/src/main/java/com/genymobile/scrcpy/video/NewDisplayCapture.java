@@ -25,6 +25,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager
     private static final int VIRTUAL_DISPLAY_FLAG_PUBLIC = android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC;
+    private static final int VIRTUAL_DISPLAY_FLAG_PRESENTATION = android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_PRESENTATION;
     private static final int VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY = android.hardware.display.DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY;
     private static final int VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 1 << 6;
     private static final int VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 << 7;
@@ -49,6 +50,7 @@ public class NewDisplayCapture extends SurfaceCapture {
     private Size mainDisplaySize;
     private int mainDisplayDpi;
     private int maxSize;
+    private int displayImePolicy;
     private final Rect crop;
     private final boolean captureOrientationLocked;
     private final Orientation captureOrientation;
@@ -68,6 +70,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.newDisplay = options.getNewDisplay();
         assert newDisplay != null;
         this.maxSize = options.getMaxSize();
+        this.displayImePolicy = options.getDisplayImePolicy();
         this.crop = options.getCrop();
         assert options.getCaptureOrientationLock() != null;
         this.captureOrientationLocked = options.getCaptureOrientationLock() != Orientation.Lock.Unlocked;
@@ -167,6 +170,7 @@ public class NewDisplayCapture extends SurfaceCapture {
         int virtualDisplayId;
         try {
             int flags = VIRTUAL_DISPLAY_FLAG_PUBLIC
+                    | VIRTUAL_DISPLAY_FLAG_PRESENTATION
                     | VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY
                     | VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH
                     | VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT;
@@ -190,6 +194,10 @@ public class NewDisplayCapture extends SurfaceCapture {
                     .createNewVirtualDisplay("scrcpy", displaySize.getWidth(), displaySize.getHeight(), dpi, surface, flags);
             virtualDisplayId = virtualDisplay.getDisplay().getDisplayId();
             Ln.i("New display: " + displaySize.getWidth() + "x" + displaySize.getHeight() + "/" + dpi + " (id=" + virtualDisplayId + ")");
+
+            if (displayImePolicy != -1) {
+                ServiceManager.getWindowManager().setDisplayImePolicy(virtualDisplayId, displayImePolicy);
+            }
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
         } catch (Exception e) {

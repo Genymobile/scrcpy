@@ -23,6 +23,7 @@ _scrcpy() {
         -d --select-usb
         --disable-screensaver
         --display-id=
+        --display-ime-policy=
         --display-orientation=
         -e --select-tcpip
         -f --fullscreen
@@ -121,7 +122,7 @@ _scrcpy() {
             return
             ;;
         --audio-source)
-            COMPREPLY=($(compgen -W 'output mic playback' -- "$cur"))
+            COMPREPLY=($(compgen -W 'output playback mic mic-unprocessed mic-camcorder mic-voice-recognition mic-voice-communication voice-call voice-call-uplink voice-call-downlink voice-performance' -- "$cur"))
             return
             ;;
         --camera-facing)
@@ -146,6 +147,10 @@ _scrcpy() {
             ;;
         --orientation|--display-orientation)
             COMPREPLY=($(compgen -W '0 90 180 270 flip0 flip90 flip180 flip270' -- "$cur"))
+            return
+            ;;
+        --display-ime-policy)
+            COMPREPLY=($(compgen -W 'local fallback hide' -- "$cur"))
             return
             ;;
         --record-orientation)
@@ -200,6 +205,7 @@ _scrcpy() {
         |-p|--port \
         |--push-target \
         |--rotation \
+        |--screen-off-timeout \
         |--tunnel-host \
         |--tunnel-port \
         |--v4l2-buffer \

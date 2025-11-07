@@ -225,7 +225,7 @@ sc_screen_render_novideo(struct sc_screen *screen) {
     (void) res; // any error already logged
 }
 
-#if defined(__APPLE__) || defined(__WINDOWS__)
+#if defined(__APPLE__) || defined(_WIN32)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
 
@@ -409,7 +409,7 @@ sc_screen_init(struct sc_screen *screen,
     } else {
         // without video, the icon is used as window content, it must be present
         LOGE("Could not load icon");
-        goto error_destroy_fps_counter;
+        goto error_destroy_window;
     }
 
     SDL_Surface *icon_novideo = params->video ? NULL : icon;

@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.AttributionSource;
 import android.content.ContentResolver;
@@ -10,6 +11,8 @@ import android.content.ContextWrapper;
 import android.content.IContentProvider;
 import android.os.Binder;
 import android.os.Process;
+
+import java.lang.reflect.Field;
 
 public final class FakeContext extends ContextWrapper {
 
@@ -72,7 +75,7 @@ public final class FakeContext extends ContextWrapper {
     @Override
     public AttributionSource getAttributionSource() {
         AttributionSource.Builder builder = new AttributionSource.Builder(Process.SHELL_UID);
-        builder.setPackageName("shell");
+        builder.setPackageName(PACKAGE_NAME);
         return builder.build();
     }
 
@@ -88,7 +91,35 @@ public final class FakeContext extends ContextWrapper {
     }
 
     @Override
+    public Context createPackageContext(String packageName, int flags) {
+        return this;
+    }
+
+    @Override
     public ContentResolver getContentResolver() {
         return contentResolver;
+    }
+
+    @SuppressLint("SoonBlockedPrivateApi")
+    @Override
+    public Object getSystemService(String name) {
+        Object service = super.getSystemService(name);
+        if (service == null) {
+            return null;
+        }
+
+        // "semclipboard" is a Samsung-internal service
+        // See <https://github.com/Genymobile/scrcpy/issues/6224>
+        if (Context.CLIPBOARD_SERVICE.equals(name) || "semclipboard".equals(name)) {
+            try {
+                Field field = service.getClass().getDeclaredField("mContext");
+                field.setAccessible(true);
+                field.set(service, this);
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return service;
     }
 }

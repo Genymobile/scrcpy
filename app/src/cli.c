@@ -113,6 +113,7 @@ enum {
     OPT_ANGLE,
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
+    OPT_DISPLAY_IME_POLICY,
 };
 
 struct sc_option {
@@ -216,13 +217,31 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_AUDIO_SOURCE,
         .longopt = "audio-source",
         .argdesc = "source",
-        .text = "Select the audio source (output, mic or playback).\n"
-                "The \"output\" source forwards the whole audio output, and "
-                "disables playback on the device.\n"
-                "The \"playback\" source captures the audio playback (Android "
-                "apps can opt-out, so the whole output is not necessarily "
+        .text = "Select the audio source. Possible values are:\n"
+                " - \"output\": forwards the whole audio output, and disables "
+                "playback on the device.\n"
+                " - \"playback\": captures the audio playback (Android apps "
+                "can opt-out, so the whole output is not necessarily "
                 "captured).\n"
-                "The \"mic\" source captures the microphone.\n"
+                " - \"mic\": captures the microphone.\n"
+                " - \"mic-unprocessed\": captures the microphone unprocessed "
+                "(raw) sound.\n"
+                " - \"mic-camcorder\": captures the microphone tuned for video "
+                "recording, with the same orientation as the camera if "
+                "available.\n"
+                " - \"mic-voice-recognition\": captures the microphone tuned "
+                "for voice recognition.\n"
+                " - \"mic-voice-communication\": captures the microphone tuned "
+                "for voice communications (it will for instance take advantage "
+                "of echo cancellation or automatic gain control if "
+                "available).\n"
+                " - \"voice-call\": captures voice call.\n"
+                " - \"voice-call-uplink\": captures voice call uplink only.\n"
+                " - \"voice-call-downlink\": captures voice call downlink "
+                "only.\n"
+                " - \"voice-performance\": captures audio meant to be "
+                "processed for live performance (karaoke), includes both the "
+                "microphone and the device playback.\n"
                 "Default is output.",
     },
     {
@@ -365,6 +384,19 @@ static const struct sc_option options[] = {
                 "The available display ids can be listed by:\n"
                 "    scrcpy --list-displays\n"
                 "Default is 0.",
+    },
+    {
+        .longopt_id = OPT_DISPLAY_IME_POLICY,
+        .longopt = "display-ime-policy",
+        .argdesc = "value",
+        .text = "Set the policy for selecting where the IME should be "
+                "displayed.\n"
+                "Possible values are \"local\", \"fallback\" and \"hide\".\n"
+                "\"local\" means that the IME should appear on the local "
+                "display.\n"
+                "\"fallback\" means that the IME should appear on a fallback "
+                "display (the default display).\n"
+                "\"hide\" means that the IME should be hidden.",
     },
     {
         .longopt_id = OPT_DISPLAY_ORIENTATION,
@@ -689,8 +721,7 @@ static const struct sc_option options[] = {
     {
         .longopt_id = OPT_NO_WINDOW,
         .longopt = "no-window",
-        .text = "Disable scrcpy window. Implies --no-video-playback and "
-                "--no-control.",
+        .text = "Disable scrcpy window. Implies --no-video-playback.",
     },
     {
         .longopt_id = OPT_ORIENTATION,
@@ -1616,6 +1647,25 @@ parse_audio_output_buffer(const char *s, sc_tick *tick) {
 }
 
 static bool
+parse_display_ime_policy(const char *s, enum sc_display_ime_policy *policy) {
+    if (!strcmp(s, "local")) {
+        *policy = SC_DISPLAY_IME_POLICY_LOCAL;
+        return true;
+    }
+    if (!strcmp(s, "fallback")) {
+        *policy = SC_DISPLAY_IME_POLICY_FALLBACK;
+        return true;
+    }
+    if (!strcmp(s, "hide")) {
+        *policy = SC_DISPLAY_IME_POLICY_HIDE;
+        return true;
+    }
+    LOGE("Unsupported display IME policy: %s (expected local, fallback or "
+         "hide)", s);
+    return false;
+}
+
+static bool
 parse_orientation(const char *s, enum sc_orientation *orientation) {
     if (!strcmp(s, "0")) {
         *orientation = SC_ORIENTATION_0;
@@ -2004,8 +2054,50 @@ parse_audio_source(const char *optarg, enum sc_audio_source *source) {
         return true;
     }
 
-    LOGE("Unsupported audio source: %s (expected output, mic or playback)",
-         optarg);
+    if (!strcmp(optarg, "mic-unprocessed")) {
+        *source = SC_AUDIO_SOURCE_MIC_UNPROCESSED;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-camcorder")) {
+        *source = SC_AUDIO_SOURCE_MIC_CAMCORDER;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-voice-recognition")) {
+        *source = SC_AUDIO_SOURCE_MIC_VOICE_RECOGNITION;
+        return true;
+    }
+
+    if (!strcmp(optarg, "mic-voice-communication")) {
+        *source = SC_AUDIO_SOURCE_MIC_VOICE_COMMUNICATION;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call-uplink")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL_UPLINK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-call-downlink")) {
+        *source = SC_AUDIO_SOURCE_VOICE_CALL_DOWNLINK;
+        return true;
+    }
+
+    if (!strcmp(optarg, "voice-performance")) {
+        *source = SC_AUDIO_SOURCE_VOICE_PERFORMANCE;
+        return true;
+    }
+
+    LOGE("Unsupported audio source: %s (expected output, mic, playback, "
+         "mic-unprocessed, mic-camcorder, mic-voice-recognition, "
+         "mic-voice-communication, voice-call, voice-call-uplink, "
+         "voice-call-downlink, voice-performance)", optarg);
     return false;
 }
 
@@ -2723,6 +2815,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NO_VD_SYSTEM_DECORATIONS:
                 opts->vd_system_decorations = false;
                 break;
+            case OPT_DISPLAY_IME_POLICY:
+                if (!parse_display_ime_policy(optarg,
+                                              &opts->display_ime_policy)) {
+                    return false;
+                }
+                break;
             default:
                 // getopt prints the error message on stderr
                 return false;
@@ -2761,9 +2859,10 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 #endif
 
     if (!opts->window) {
-        // Without window, there cannot be any video playback or control
+        // Without window, there cannot be any video playback
         opts->video_playback = false;
-        opts->control = false;
+        // Controls are still possible, allowing for options like
+        // --turn-screen-off
     }
 
     if (!opts->video) {
@@ -2978,6 +3077,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             return false;
         }
 
+        if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED) {
+            LOGE("--display-ime-policy is only available with "
+                 "--video-source=display");
+            return false;
+        }
+
         if (opts->camera_id && opts->camera_facing != SC_CAMERA_FACING_ANY) {
             LOGE("Cannot specify both --camera-id and --camera-facing");
             return false;
@@ -3016,6 +3121,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
 
     if (opts->display_id != 0 && opts->new_display) {
         LOGE("Cannot specify both --display-id and --new-display");
+        return false;
+    }
+
+    if (opts->display_ime_policy != SC_DISPLAY_IME_POLICY_UNDEFINED
+            && opts->display_id == 0 && !opts->new_display) {
+        LOGE("--display-ime-policy is only supported on a secondary display");
         return false;
     }
 

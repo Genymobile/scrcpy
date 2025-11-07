@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 #ifdef HAVE_V4L2
 # include <libavdevice/avdevice.h>
 #endif

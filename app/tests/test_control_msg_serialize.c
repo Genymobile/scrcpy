@@ -127,8 +127,8 @@ static void test_serialize_inject_scroll_event(void) {
                     .height = 1920,
                 },
             },
-            .hscroll = 1,
-            .vscroll = -1,
+            .hscroll = 16,
+            .vscroll = -16,
             .buttons = 1,
         },
     };
@@ -141,8 +141,8 @@ static void test_serialize_inject_scroll_event(void) {
         SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT,
         0x00, 0x00, 0x01, 0x04, 0x00, 0x00, 0x04, 0x02, // 260 1026
         0x04, 0x38, 0x07, 0x80, // 1080 1920
-        0x7F, 0xFF, // 1 (float encoded as i16)
-        0x80, 0x00, // -1 (float encoded as i16)
+        0x7F, 0xFF, // 16 (float encoded as i16 in the range [-16, 16])
+        0x80, 0x00, // -16 (float encoded as i16 in the range [-16, 16])
         0x00, 0x00, 0x00, 0x01, // 1
     };
     assert(!memcmp(buf, expected, sizeof(expected)));

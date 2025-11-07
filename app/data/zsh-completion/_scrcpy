@@ -1,4 +1,4 @@
-#compdef -N scrcpy -N scrcpy.exe
+#compdef scrcpy scrcpy.exe
 #
 # name: scrcpy
 # auth: hltdev [hltdev8642@gmail.com]
@@ -11,12 +11,12 @@ arguments=(
     '--always-on-top[Make scrcpy window always on top \(above other windows\)]'
     '--angle=[Rotate the video content by a custom angle, in degrees]'
     '--audio-bit-rate=[Encode the audio at the given bit-rate]'
-    '--audio-buffer=[Configure the audio buffering delay (in milliseconds)]'
+    '--audio-buffer=[Configure the audio buffering delay \(in milliseconds\)]'
     '--audio-codec=[Select the audio codec]:codec:(opus aac flac raw)'
     '--audio-codec-options=[Set a list of comma-separated key\:type=value options for the device audio encoder]'
     '--audio-dup=[Duplicate audio]'
     '--audio-encoder=[Use a specific MediaCodec audio encoder]'
-    '--audio-source=[Select the audio source]:source:(output mic playback)'
+    '--audio-source=[Select the audio source]:source:(output playback mic mic-unprocessed mic-camcorder mic-voice-recognition mic-voice-communication voice-call voice-call-uplink voice-call-downlink voice-performance)'
     '--audio-output-buffer=[Configure the size of the SDL audio output buffer (in milliseconds)]'
     {-b,--video-bit-rate=}'[Encode the video at the given bit-rate]'
     '--camera-ar=[Select the camera size by its aspect ratio]'
@@ -30,14 +30,15 @@ arguments=(
     {-d,--select-usb}'[Use USB device]'
     '--disable-screensaver[Disable screensaver while scrcpy is running]'
     '--display-id=[Specify the display id to mirror]'
+    '--display-ime-policy[Set the policy for selecting where the IME should be displayed]'
     '--display-orientation=[Set the initial display orientation]:orientation values:(0 90 180 270 flip0 flip90 flip180 flip270)'
     {-e,--select-tcpip}'[Use TCP/IP device]'
     {-f,--fullscreen}'[Start in fullscreen]'
     '--force-adb-forward[Do not attempt to use \"adb reverse\" to connect to the device]'
-    '-G[Use UHID/AOA gamepad (same as --gamepad=uhid or --gamepad=aoa, depending on OTG mode)]'
+    '-G[Use UHID/AOA gamepad \(same as --gamepad=uhid or --gamepad=aoa, depending on OTG mode\)]'
     '--gamepad=[Set the gamepad input mode]:mode:(disabled uhid aoa)'
     {-h,--help}'[Print the help]'
-    '-K[Use UHID/AOA keyboard (same as --keyboard=uhid or --keyboard=aoa, depending on OTG mode)]'
+    '-K[Use UHID/AOA keyboard \(same as --keyboard=uhid or --keyboard=aoa, depending on OTG mode\)]'
     '--keyboard=[Set the keyboard input mode]:mode:(disabled sdk uhid aoa)'
     '--kill-adb-on-close[Kill adb when scrcpy terminates]'
     '--legacy-paste[Inject computer clipboard text as a sequence of key events on Ctrl+v]'
@@ -47,7 +48,7 @@ arguments=(
     '--list-displays[List displays available on the device]'
     '--list-encoders[List video and audio encoders available on the device]'
     {-m,--max-size=}'[Limit both the width and height of the video to value]'
-    '-M[Use UHID/AOA mouse (same as --mouse=uhid or --mouse=aoa, depending on OTG mode)]'
+    '-M[Use UHID/AOA mouse \(same as --mouse=uhid or --mouse=aoa, depending on OTG mode\)]'
     '--max-fps=[Limit the frame rate of screen capture]'
     '--mouse=[Set the mouse input mode]:mode:(disabled sdk uhid aoa)'
     '--mouse-bind=[Configure bindings of secondary clicks]'

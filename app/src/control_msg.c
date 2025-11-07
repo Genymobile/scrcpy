@@ -127,10 +127,14 @@ sc_control_msg_serialize(const struct sc_control_msg *msg, uint8_t *buf) {
             return 32;
         case SC_CONTROL_MSG_TYPE_INJECT_SCROLL_EVENT:
             write_position(&buf[1], &msg->inject_scroll_event.position);
-            int16_t hscroll =
-                sc_float_to_i16fp(msg->inject_scroll_event.hscroll);
-            int16_t vscroll =
-                sc_float_to_i16fp(msg->inject_scroll_event.vscroll);
+            // Accept values in the range [-16, 16].
+            // Normalize to [-1, 1] in order to use sc_float_to_i16fp().
+            float hscroll_norm = msg->inject_scroll_event.hscroll / 16;
+            hscroll_norm = CLAMP(hscroll_norm, -1, 1);
+            float vscroll_norm = msg->inject_scroll_event.vscroll / 16;
+            vscroll_norm = CLAMP(vscroll_norm, -1, 1);
+            int16_t hscroll = sc_float_to_i16fp(hscroll_norm);
+            int16_t vscroll = sc_float_to_i16fp(vscroll_norm);
             sc_write16be(&buf[13], (uint16_t) hscroll);
             sc_write16be(&buf[15], (uint16_t) vscroll);
             sc_write32be(&buf[17], msg->inject_scroll_event.buttons);

@@ -83,9 +83,9 @@ process like the _adb daemon_).
 ## Mouse bindings
 
 By default, with SDK mouse:
- - right-click triggers BACK (or POWER on)
- - middle-click triggers HOME
- - the 4th click triggers APP_SWITCH
+ - right-click triggers `BACK` (or `POWER` on)
+ - middle-click triggers `HOME`
+ - the 4th click triggers `APP_SWITCH`
  - the 5th click expands the notification panel
 
 The secondary clicks may be forwarded to the device instead by pressing the
@@ -121,9 +121,9 @@ Each character must be one of the following:
 
  - `+`: forward the click to the device
  - `-`: ignore the click
- - `b`: trigger shortcut BACK (or turn screen on if off)
- - `h`: trigger shortcut HOME
- - `s`: trigger shortcut APP_SWITCH
+ - `b`: trigger shortcut `BACK` (or turn screen on if off)
+ - `h`: trigger shortcut `HOME`
+ - `s`: trigger shortcut `APP_SWITCH`
  - `n`: trigger shortcut "expand notification panel"
 
 For example:

@@ -56,6 +56,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .capture_orientation_lock = SC_ORIENTATION_UNLOCKED,
     .display_orientation = SC_ORIENTATION_0,
     .record_orientation = SC_ORIENTATION_0,
+    .display_ime_policy = SC_DISPLAY_IME_POLICY_UNDEFINED,
     .window_x = SC_WINDOW_POSITION_UNDEFINED,
     .window_y = SC_WINDOW_POSITION_UNDEFINED,
     .window_width = 0,

@@ -5,10 +5,10 @@ cd "$DEPS_DIR"
 . common
 process_args "$@"
 
-VERSION=2.30.10
+VERSION=2.32.8
 FILENAME=SDL-$VERSION.tar.gz
 PROJECT_DIR=SDL-release-$VERSION
-SHA256SUM=35a8b9c4f3635d85762b904ac60ca4e0806bff89faeb269caafbe80860d67168
+SHA256SUM=dd35e05644ae527848d02433bec24dd0ea65db59faecf1a0e5d1880c533dac2c
 
 cd "$SOURCES_DIR"
 
@@ -28,7 +28,7 @@ export CXXFLAGS="$CFLAGS"
 
 if [[ -d "$DIRNAME" ]]
 then
-    echo "'$PWD/$HDIRNAME' already exists, not reconfigured"
+    echo "'$PWD/$DIRNAME' already exists, not reconfigured"
     cd "$DIRNAME"
 else
     mkdir "$DIRNAME"
