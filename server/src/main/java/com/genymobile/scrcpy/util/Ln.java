@@ -75,11 +75,9 @@ public final class Ln {
         if (isEnabled(Level.WARN)) {
             Log.w(TAG, message, throwable);
             synchronized (CONSOLE_ERR) {
-                CONSOLE_ERR.print(PREFIX + "ERROR: " + message + '\n');
+                CONSOLE_ERR.print(PREFIX + "WARN: " + message + '\n');
                 if (throwable != null) {
-                    StringWriter sw = new StringWriter();
-                    throwable.printStackTrace(new PrintWriter(sw));
-                    CONSOLE_ERR.print(sw.toString());
+                    throwable.printStackTrace(CONSOLE_ERR);
                 }
             }
         }
@@ -95,9 +93,7 @@ public final class Ln {
             synchronized (CONSOLE_ERR) {
                 CONSOLE_ERR.print(PREFIX + "ERROR: " + message + '\n');
                 if (throwable != null) {
-                    StringWriter sw = new StringWriter();
-                    throwable.printStackTrace(new PrintWriter(sw));
-                    CONSOLE_ERR.print(sw.toString());
+                    throwable.printStackTrace(CONSOLE_ERR);
                 }
             }
         }
