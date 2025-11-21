@@ -47,7 +47,7 @@ Its features include:
 
 ## Prerequisites
 
-The Android device requires at least API 21 (Android 5.0).
+The Android device requires at least API 19 (Android 4.4).
 
 [Audio forwarding](doc/audio.md) is supported for API >= 30 (Android 11+).
 

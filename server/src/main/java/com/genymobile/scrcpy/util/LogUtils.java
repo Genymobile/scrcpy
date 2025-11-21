@@ -19,9 +19,10 @@ import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
-import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Range;
+
+import androidx.annotation.RequiresApi;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,7 @@ public final class LogUtils {
 
     private static String buildEncoderListMessage(String type, Codec[] codecs) {
         StringBuilder builder = new StringBuilder("List of ").append(type).append(" encoders:");
-        MediaCodecList codecList = new MediaCodecList(MediaCodecList.REGULAR_CODECS);
+        MediaCodecListCompat codecList = MediaCodecListCompat.regular();
         for (Codec codec : codecs) {
             MediaCodecInfo[] encoders = CodecUtils.getEncoders(codecList, codec.getMimeType());
             for (MediaCodecInfo info : encoders) {
@@ -120,6 +121,7 @@ public final class LogUtils {
         }
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     private static boolean isCameraBackwardCompatible(CameraCharacteristics characteristics) {
         int[] capabilities = characteristics.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES);
         if (capabilities == null) {
@@ -135,6 +137,7 @@ public final class LogUtils {
         return false;
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     public static String buildCameraListMessage(boolean includeSizes) {
         StringBuilder builder = new StringBuilder("List of cameras:");
         CameraManager cameraManager = ServiceManager.getCameraManager();
@@ -205,6 +208,7 @@ public final class LogUtils {
         return builder.toString();
     }
 
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
     private static SortedSet<Integer> getUniqueSet(Range<Integer>[] ranges) {
         SortedSet<Integer> set = new TreeSet<>();
         for (Range<Integer> range : ranges) {

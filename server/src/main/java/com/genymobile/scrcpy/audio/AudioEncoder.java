@@ -20,12 +20,15 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 
+import androidx.annotation.RequiresApi;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+@RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
 public final class AudioEncoder implements AsyncProcessor {
 
     private static class InputTask {

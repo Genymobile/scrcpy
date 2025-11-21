@@ -3,13 +3,15 @@ package com.genymobile.scrcpy.audio;
 import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 
-import android.annotation.TargetApi;
 import android.media.AudioRecord;
 import android.media.AudioTimestamp;
 import android.media.MediaCodec;
 
+import androidx.annotation.RequiresApi;
+
 import java.nio.ByteBuffer;
 
+@RequiresApi(AndroidVersions.API_24_ANDROID_7_0)
 public class AudioRecordReader {
 
     private static final long ONE_SAMPLE_US =
@@ -26,7 +28,6 @@ public class AudioRecordReader {
         this.recorder = recorder;
     }
 
-    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
         int r = recorder.read(outDirectBuffer, AudioConfig.MAX_READ_SIZE);
         if (r <= 0) {

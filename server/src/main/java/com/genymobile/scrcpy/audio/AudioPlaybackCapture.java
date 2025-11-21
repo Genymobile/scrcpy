@@ -5,7 +5,6 @@ import com.genymobile.scrcpy.FakeContext;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
@@ -14,9 +13,12 @@ import android.media.AudioRecord;
 import android.media.MediaCodec;
 import android.os.Build;
 
+import androidx.annotation.RequiresApi;
+
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
+@RequiresApi(AndroidVersions.API_33_ANDROID_13)
 public final class AudioPlaybackCapture implements AudioCapture {
 
     private final boolean keepPlayingOnDevice;
@@ -131,7 +133,6 @@ public final class AudioPlaybackCapture implements AudioCapture {
     }
 
     @Override
-    @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
         return reader.read(outDirectBuffer, outBufferInfo);
     }

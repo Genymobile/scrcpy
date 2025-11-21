@@ -13,6 +13,8 @@ import android.system.Os;
 import android.system.OsConstants;
 import android.util.ArrayMap;
 
+import androidx.annotation.RequiresApi;
+
 import java.io.FileDescriptor;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -20,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
+@RequiresApi(AndroidVersions.API_23_ANDROID_6_0)
 public final class UhidManager {
 
     // Linux: include/uapi/linux/uhid.h

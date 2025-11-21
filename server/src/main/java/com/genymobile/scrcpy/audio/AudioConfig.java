@@ -1,7 +1,12 @@
 package com.genymobile.scrcpy.audio;
 
+import com.genymobile.scrcpy.AndroidVersions;
+
 import android.media.AudioFormat;
 
+import androidx.annotation.RequiresApi;
+
+@RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
 public final class AudioConfig {
     public static final int SAMPLE_RATE = 48000;
     public static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_STEREO;

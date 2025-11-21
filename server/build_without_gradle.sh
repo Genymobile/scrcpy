@@ -23,14 +23,17 @@ BUILD_DIR="$(realpath ${BUILD_DIR:-build_manual})"
 CLASSES_DIR="$BUILD_DIR/classes"
 GEN_DIR="$BUILD_DIR/gen"
 SERVER_DIR=$(dirname "$0")
+ROOT_PROJECT_DIR=$(realpath $SERVER_DIR/..)
 SERVER_BINARY=scrcpy-server
 ANDROID_JAR="$PLATFORM_TOOLS/android.jar"
 ANDROID_AIDL="$PLATFORM_TOOLS/framework.aidl"
 LAMBDA_JAR="$BUILD_TOOLS_DIR/core-lambda-stubs.jar"
+ANDROIDX_ANNOTATION_JAR="$ROOT_PROJECT_DIR/thirdparty/androidx/annotation/1.3.0/annotation-1.3.0.jar"
 
 echo "Platform: android-$PLATFORM"
 echo "Build-tools: $BUILD_TOOLS"
 echo "Build dir: $BUILD_DIR"
+echo "Root project dir: $ROOT_PROJECT_DIR"
 
 rm -rf "$CLASSES_DIR" "$GEN_DIR" "$BUILD_DIR/$SERVER_BINARY" classes.dex
 mkdir -p "$CLASSES_DIR"
@@ -54,7 +57,8 @@ cd "$SERVER_DIR/src/main/aidl"
 
 # Fake sources to expose hidden Android types to the project
 FAKE_SRC=( \
-    android/content/*java \
+    android/content/*.java \
+    "$ROOT_PROJECT_DIR/luni/src/main/java/libcore/io/"*.java \
 )
 
 SRC=( \
@@ -77,7 +81,7 @@ done
 echo "Compiling java sources..."
 cd ../java
 javac -encoding UTF-8 -bootclasspath "$ANDROID_JAR" \
-    -cp "$LAMBDA_JAR:$GEN_DIR" \
+    -cp "$LAMBDA_JAR:$GEN_DIR:$ANDROIDX_ANNOTATION_JAR" \
     -d "$CLASSES_DIR" \
     -source 1.8 -target 1.8 \
     ${FAKE_SRC[@]} \

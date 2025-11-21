@@ -7,13 +7,17 @@ import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.os.BatteryManager;
+import android.os.Build;
 import android.os.Looper;
-import android.system.ErrnoException;
 import android.system.Os;
+
+import androidx.annotation.RequiresApi;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+
+import libcore.io.Libcore;
 
 /**
  * Handle the cleanup of scrcpy, even if the main process is killed.
@@ -172,6 +176,43 @@ public final class CleanUp {
         notify();
     }
 
+    @SuppressWarnings("deprecation")
+    private static final class Api19 {
+
+        static void setsid() throws Exception {
+            Libcore.os.setsid();
+        }
+
+        private Api19() {
+            // not instantiable
+        }
+    }
+
+    @RequiresApi(AndroidVersions.API_21_ANDROID_5_0)
+    private static final class Api21 {
+
+        static void setsid() throws Exception {
+            Os.setsid();
+        }
+
+        private Api21() {
+            // not instantiable
+        }
+    }
+
+    private static void setsid() {
+        try {
+            // Start a new session to avoid being terminated along with the server process on some devices
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+                Api21.setsid();
+            } else {
+                Api19.setsid();
+            }
+        } catch (Exception e) {
+            Ln.e("setsid() failed", e);
+        }
+    }
+
     public static void unlinkSelf() {
         try {
             new File(Server.SERVER_PATH).delete();
@@ -186,12 +227,7 @@ public final class CleanUp {
     }
 
     public static void main(String... args) {
-        try {
-            // Start a new session to avoid being terminated along with the server process on some devices
-            Os.setsid();
-        } catch (ErrnoException e) {
-            Ln.e("setsid() failed", e);
-        }
+        setsid();
         unlinkSelf();
 
         // Needed for workarounds

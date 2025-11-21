@@ -70,11 +70,11 @@ page at http://checkstyle.sourceforge.net/config.html -->
     <!-- defaults to sun.* packages -->
     <module name="RedundantImport" />
     <module name="UnusedImports" />
-    <module name="CustomImportOrder">
-        <property name="thirdPartyPackageRegExp" value=".*"/>
-        <property name="specialImportsRegExp" value="com.genymobile"/>
-        <property name="separateLineBetweenGroups" value="true"/>
-        <property name="customImportOrderRules" value="SPECIAL_IMPORTS###THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+    <module name="ImportOrder">
+      <property name="option" value="top"/>
+      <property name="ordered" value="true"/>
+      <property name="separated" value="true"/>
+      <property name="groups" value="com.genymobile,android,androidx,com,junit,net,org,java,javax"/>
     </module>
 
 

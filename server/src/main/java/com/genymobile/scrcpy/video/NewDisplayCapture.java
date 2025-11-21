@@ -19,8 +19,11 @@ import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.view.Surface;
 
+import androidx.annotation.RequiresApi;
+
 import java.io.IOException;
 
+@RequiresApi(AndroidVersions.API_20_ANDROID_4_4W)
 public class NewDisplayCapture extends SurfaceCapture {
 
     // Internal fields copied from android.hardware.display.DisplayManager

@@ -18,7 +18,8 @@
 #define SC_SERVER_FILENAME "scrcpy-server"
 
 #define SC_SERVER_PATH_DEFAULT PREFIX "/share/scrcpy/" SC_SERVER_FILENAME
-#define SC_DEVICE_SERVER_PATH "/data/local/tmp/scrcpy-server.jar"
+#define SC_DEVICE_ANDROID_DATA_PATH "/data/local/tmp"
+#define SC_DEVICE_SERVER_PATH SC_DEVICE_ANDROID_DATA_PATH "/scrcpy-server.jar"
 
 #define SC_ADB_PORT_DEFAULT 5555
 #define SC_SOCKET_NAME_PREFIX "scrcpy_"
@@ -215,16 +216,21 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
-    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
-    cmd[count++] = "app_process";
 
-#ifdef SERVER_DEBUGGER
     uint16_t sdk_version = sc_adb_get_device_sdk_version(&server->intr, serial);
     if (!sdk_version) {
         LOGE("Could not determine SDK version");
         return 0;
+    } else if (sdk_version < 21) {
+        cmd[count++] = "mkdir -p " SC_DEVICE_ANDROID_DATA_PATH "/dalvik-cache";
+        cmd[count++] = "&&";
+        cmd[count++] = "ANDROID_DATA=" SC_DEVICE_ANDROID_DATA_PATH;
     }
 
+    cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
+    cmd[count++] = "app_process";
+
+#ifdef SERVER_DEBUGGER
 # define SERVER_DEBUGGER_PORT "5005"
     const char *dbg;
     if (sdk_version < 28) {

@@ -25,8 +25,10 @@ public final class PowerManager {
         if (isScreenOnMethod == null) {
             if (Build.VERSION.SDK_INT >= AndroidVersions.API_34_ANDROID_14) {
                 isScreenOnMethod = manager.getClass().getMethod("isDisplayInteractive", int.class);
-            } else {
+            } else if (Build.VERSION.SDK_INT >= AndroidVersions.API_20_ANDROID_4_4W) {
                 isScreenOnMethod = manager.getClass().getMethod("isInteractive");
+            } else {
+                isScreenOnMethod = manager.getClass().getMethod("isScreenOn");
             }
         }
         return isScreenOnMethod;

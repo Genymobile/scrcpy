@@ -64,7 +64,10 @@ public class SurfaceEncoder implements AsyncProcessor {
 
     private void streamCapture() throws IOException, ConfigurationException {
         Codec codec = streamer.getCodec();
-        MediaCodec mediaCodec = createMediaCodec(codec, encoderName);
+        MediaCodec mediaCodec = null;
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+            mediaCodec = createMediaCodec(codec, encoderName);
+        }
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 
         capture.init(reset);
@@ -74,6 +77,9 @@ public class SurfaceEncoder implements AsyncProcessor {
             boolean headerWritten = false;
 
             do {
+                if (Build.VERSION.SDK_INT < AndroidVersions.API_21_ANDROID_5_0) {
+                    mediaCodec = createMediaCodec(codec, encoderName);
+                }
                 reset.consumeReset(); // If a capture reset was requested, it is implicitly fulfilled
                 capture.prepare();
                 Size size = capture.getSize();
@@ -134,14 +140,20 @@ public class SurfaceEncoder implements AsyncProcessor {
                             // ignore (just in case)
                         }
                     }
-                    mediaCodec.reset();
+                    if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+                        mediaCodec.reset();
+                    } else {
+                        mediaCodec.release();
+                    }
                     if (surface != null) {
                         surface.release();
                     }
                 }
             } while (alive);
         } finally {
-            mediaCodec.release();
+            if (Build.VERSION.SDK_INT >= AndroidVersions.API_21_ANDROID_5_0) {
+                mediaCodec.release();
+            }
             capture.release();
         }
     }
@@ -194,8 +206,9 @@ public class SurfaceEncoder implements AsyncProcessor {
         return 0;
     }
 
-    private void encode(MediaCodec codec, Streamer streamer) throws IOException {
-        MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
+    private void encode(MediaCodec platformCodec, Streamer streamer) throws IOException {
+        final MediaCodecCompat codec = MediaCodecCompat.wrap(platformCodec);
+        final MediaCodec.BufferInfo bufferInfo = new MediaCodec.BufferInfo();
 
         boolean eos;
         do {
