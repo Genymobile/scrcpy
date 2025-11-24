@@ -2,6 +2,7 @@ package com.genymobile.scrcpy;
 
 import com.genymobile.scrcpy.audio.AudioCaptureException;
 import com.genymobile.scrcpy.util.Ln;
+import com.genymobile.scrcpy.util.Reflection;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -18,33 +19,25 @@ import android.os.Looper;
 import android.os.Parcel;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 @SuppressLint("PrivateApi,BlockedPrivateApi,SoonBlockedPrivateApi,DiscouragedPrivateApi")
 public final class Workarounds {
 
-    private static final Class<?> ACTIVITY_THREAD_CLASS;
     private static final Object ACTIVITY_THREAD;
 
     static {
         try {
-            // ActivityThread activityThread = new ActivityThread();
-            ACTIVITY_THREAD_CLASS = Class.forName("android.app.ActivityThread");
-            Constructor<?> activityThreadConstructor = ACTIVITY_THREAD_CLASS.getDeclaredConstructor();
-            activityThreadConstructor.setAccessible(true);
-            ACTIVITY_THREAD = activityThreadConstructor.newInstance();
+            Class<?> ACTIVITY_THREAD_CLASS = Class.forName("android.app.ActivityThread");
+            ACTIVITY_THREAD = Reflection.createInstance(ACTIVITY_THREAD_CLASS);
+            // ActivityThread.sCurrentActivityThread = ACTIVITY_THREAD;
+            Reflection.setField(ACTIVITY_THREAD_CLASS, null, "sCurrentActivityThread", ACTIVITY_THREAD);
+            // ACTIVITY_THREAD.mSystemThread = true;
+            Reflection.setField(ACTIVITY_THREAD, "mSystemThread", true);
 
-            // ActivityThread.sCurrentActivityThread = activityThread;
-            Field sCurrentActivityThreadField = ACTIVITY_THREAD_CLASS.getDeclaredField("sCurrentActivityThread");
-            sCurrentActivityThreadField.setAccessible(true);
-            sCurrentActivityThreadField.set(null, ACTIVITY_THREAD);
-
-            // activityThread.mSystemThread = true;
-            Field mSystemThreadField = ACTIVITY_THREAD_CLASS.getDeclaredField("mSystemThread");
-            mSystemThreadField.setAccessible(true);
-            mSystemThreadField.setBoolean(ACTIVITY_THREAD, true);
+            // debug log
+            Ln.i(">>>ACTIVITY_THREAD.sCurrentActivityThread -> " + Reflection.getField(ACTIVITY_THREAD_CLASS, null, "sCurrentActivityThread"));
+            Ln.i(">>>ACTIVITY_THREAD.mSystemThread -> " + Reflection.getField(ACTIVITY_THREAD, "mSystemThread"));
         } catch (Exception e) {
             throw new AssertionError(e);
         }
@@ -68,33 +61,31 @@ public final class Workarounds {
         // <https://github.com/Genymobile/scrcpy/issues/5182>
         boolean mustFillAppInfo = !Build.BRAND.equalsIgnoreCase("ONYX");
 
-        if (mustFillAppInfo) {
-            fillAppInfo();
-        }
+        // For test
+        // if (mustFillAppInfo) {
+        fillAppInfo();
+        // }
 
         fillAppContext();
     }
 
     private static void fillAppInfo() {
         try {
-            // ActivityThread.AppBindData appBindData = new ActivityThread.AppBindData();
             Class<?> appBindDataClass = Class.forName("android.app.ActivityThread$AppBindData");
-            Constructor<?> appBindDataConstructor = appBindDataClass.getDeclaredConstructor();
-            appBindDataConstructor.setAccessible(true);
-            Object appBindData = appBindDataConstructor.newInstance();
+            Object appBindData = Reflection.createInstance(appBindDataClass);
 
             ApplicationInfo applicationInfo = new ApplicationInfo();
             applicationInfo.packageName = FakeContext.PACKAGE_NAME;
 
             // appBindData.appInfo = applicationInfo;
-            Field appInfoField = appBindDataClass.getDeclaredField("appInfo");
-            appInfoField.setAccessible(true);
-            appInfoField.set(appBindData, applicationInfo);
+            Reflection.setField(appBindData, "appInfo", applicationInfo);
 
-            // activityThread.mBoundApplication = appBindData;
-            Field mBoundApplicationField = ACTIVITY_THREAD_CLASS.getDeclaredField("mBoundApplication");
-            mBoundApplicationField.setAccessible(true);
-            mBoundApplicationField.set(ACTIVITY_THREAD, appBindData);
+            // ACTIVITY_THREAD.mBoundApplication = appBindData;
+            Reflection.setField(ACTIVITY_THREAD, "mBoundApplication", appBindData);
+
+            // debug log
+            Ln.i(">>>appBindData.appInfo -> " + Reflection.getField(appBindData, "appInfo"));
+            Ln.i(">>>ACTIVITY_THREAD.mBoundApplication -> " + Reflection.getField(ACTIVITY_THREAD, "mBoundApplication"));
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app info: " + throwable.getMessage());
@@ -104,14 +95,15 @@ public final class Workarounds {
     private static void fillAppContext() {
         try {
             Application app = new Application();
-            Field baseField = ContextWrapper.class.getDeclaredField("mBase");
-            baseField.setAccessible(true);
-            baseField.set(app, FakeContext.get());
+            // app.mBase = FakeContext.get();
+            Reflection.setField(ContextWrapper.class, app, "mBase", FakeContext.get());
 
-            // activityThread.mInitialApplication = app;
-            Field mInitialApplicationField = ACTIVITY_THREAD_CLASS.getDeclaredField("mInitialApplication");
-            mInitialApplicationField.setAccessible(true);
-            mInitialApplicationField.set(ACTIVITY_THREAD, app);
+            // ACTIVITY_THREAD.mInitialApplication = app;
+            Reflection.setField(ACTIVITY_THREAD, "mInitialApplication", app);
+
+            // debug log
+            Ln.i(">>>Application.mBase -> " + Reflection.getField(ContextWrapper.class, app, "mBase"));
+            Ln.i(">>>ACTIVITY_THREAD.mInitialApplication -> " + Reflection.getField(ACTIVITY_THREAD, "mInitialApplication"));
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not fill app context: " + throwable.getMessage());
@@ -122,16 +114,14 @@ public final class Workarounds {
         try {
             Class<?> configurationControllerClass = Class.forName("android.app.ConfigurationController");
             Class<?> activityThreadInternalClass = Class.forName("android.app.ActivityThreadInternal");
+            // new ConfigurationController(ACTIVITY_THREAD);
+            Object configurationController = Reflection.createInstance(configurationControllerClass, new Class[]{activityThreadInternalClass}, ACTIVITY_THREAD);
+            // ACTIVITY_THREAD.mConfigurationController = new ConfigurationController(ACTIVITY_THREAD);
+            Reflection.setField(ACTIVITY_THREAD, "mConfigurationController", configurationController);
 
-            // configurationController = new ConfigurationController(ACTIVITY_THREAD);
-            Constructor<?> configurationControllerConstructor = configurationControllerClass.getDeclaredConstructor(activityThreadInternalClass);
-            configurationControllerConstructor.setAccessible(true);
-            Object configurationController = configurationControllerConstructor.newInstance(ACTIVITY_THREAD);
-
-            // ACTIVITY_THREAD.mConfigurationController = configurationController;
-            Field configurationControllerField = ACTIVITY_THREAD_CLASS.getDeclaredField("mConfigurationController");
-            configurationControllerField.setAccessible(true);
-            configurationControllerField.set(ACTIVITY_THREAD, configurationController);
+            // debug log
+            Ln.i(">>>Created ConfigurationController -> " + configurationController);
+            Ln.i(">>>ACTIVITY_THREAD.mConfigurationController -> " + Reflection.getField(ACTIVITY_THREAD, "mConfigurationController"));
         } catch (Throwable throwable) {
             Ln.d("Could not fill configuration: " + throwable.getMessage());
         }
@@ -139,8 +129,7 @@ public final class Workarounds {
 
     static Context getSystemContext() {
         try {
-            Method getSystemContextMethod = ACTIVITY_THREAD_CLASS.getDeclaredMethod("getSystemContext");
-            return (Context) getSystemContextMethod.invoke(ACTIVITY_THREAD);
+            return Reflection.invokeMethod(ACTIVITY_THREAD,"getSystemContext");
         } catch (Throwable throwable) {
             // this is a workaround, so failing is not an error
             Ln.d("Could not get system context: " + throwable.getMessage());
@@ -159,14 +148,10 @@ public final class Workarounds {
         // As a result, the modified code was not executed.
         try {
             // AudioRecord audioRecord = new AudioRecord(0L);
-            Constructor<AudioRecord> audioRecordConstructor = AudioRecord.class.getDeclaredConstructor(long.class);
-            audioRecordConstructor.setAccessible(true);
-            AudioRecord audioRecord = audioRecordConstructor.newInstance(0L);
+            AudioRecord audioRecord = Reflection.createInstance(AudioRecord.class, 0L);
 
             // audioRecord.mRecordingState = RECORDSTATE_STOPPED;
-            Field mRecordingStateField = AudioRecord.class.getDeclaredField("mRecordingState");
-            mRecordingStateField.setAccessible(true);
-            mRecordingStateField.set(audioRecord, AudioRecord.RECORDSTATE_STOPPED);
+            Reflection.setField(audioRecord, "mRecordingState", AudioRecord.RECORDSTATE_STOPPED);
 
             Looper looper = Looper.myLooper();
             if (looper == null) {
@@ -174,44 +159,42 @@ public final class Workarounds {
             }
 
             // audioRecord.mInitializationLooper = looper;
-            Field mInitializationLooperField = AudioRecord.class.getDeclaredField("mInitializationLooper");
-            mInitializationLooperField.setAccessible(true);
-            mInitializationLooperField.set(audioRecord, looper);
+            Reflection.setField(audioRecord, "mInitializationLooper", looper);
 
             // Create `AudioAttributes` with fixed capture preset
             int capturePreset = source;
             AudioAttributes.Builder audioAttributesBuilder = new AudioAttributes.Builder();
-            Method setInternalCapturePresetMethod = AudioAttributes.Builder.class.getMethod("setInternalCapturePreset", int.class);
-            setInternalCapturePresetMethod.invoke(audioAttributesBuilder, capturePreset);
+            Reflection.invokeMethod(audioAttributesBuilder, "setInternalCapturePreset", capturePreset);
             AudioAttributes attributes = audioAttributesBuilder.build();
 
             // audioRecord.mAudioAttributes = attributes;
-            Field mAudioAttributesField = AudioRecord.class.getDeclaredField("mAudioAttributes");
-            mAudioAttributesField.setAccessible(true);
-            mAudioAttributesField.set(audioRecord, attributes);
+            Reflection.setField(audioRecord, "mAudioAttributes", attributes);
 
             // audioRecord.audioParamCheck(capturePreset, sampleRate, encoding);
-            Method audioParamCheckMethod = AudioRecord.class.getDeclaredMethod("audioParamCheck", int.class, int.class, int.class);
-            audioParamCheckMethod.setAccessible(true);
-            audioParamCheckMethod.invoke(audioRecord, capturePreset, sampleRate, encoding);
+            Reflection.invokeMethod(audioRecord, "audioParamCheck", capturePreset, sampleRate, encoding);
 
             // audioRecord.mChannelCount = channels
-            Field mChannelCountField = AudioRecord.class.getDeclaredField("mChannelCount");
-            mChannelCountField.setAccessible(true);
-            mChannelCountField.set(audioRecord, channels);
+            Reflection.setField(audioRecord, "mChannelCount", channels);
 
             // audioRecord.mChannelMask = channelMask
-            Field mChannelMaskField = AudioRecord.class.getDeclaredField("mChannelMask");
-            mChannelMaskField.setAccessible(true);
-            mChannelMaskField.set(audioRecord, channelMask);
+            Reflection.setField(audioRecord, "mChannelMask", channelMask);
 
             int minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, encoding);
             int bufferSizeInBytes = minBufferSize * 8;
 
             // audioRecord.audioBuffSizeCheck(bufferSizeInBytes)
-            Method audioBuffSizeCheckMethod = AudioRecord.class.getDeclaredMethod("audioBuffSizeCheck", int.class);
-            audioBuffSizeCheckMethod.setAccessible(true);
-            audioBuffSizeCheckMethod.invoke(audioRecord, bufferSizeInBytes);
+            Reflection.invokeMethod(audioRecord, "audioBuffSizeCheck", bufferSizeInBytes);
+            Ln.i(">>>Created empty AudioRecord -> " + audioRecord);
+            Ln.i(">>>AudioRecord.mRecordingState -> " + Reflection.getField(audioRecord, "mRecordingState"));
+            Ln.i(">>>AudioRecord.mInitializationLooper -> " + Reflection.getField(audioRecord, "mInitializationLooper"));
+            Ln.i(">>>AudioAttributes.Builder after setInternalCapturePreset -> " + Reflection.getField(audioAttributesBuilder, "mSource"));
+            Ln.i(">>>AudioRecord.mAudioAttributes -> " + Reflection.getField(audioRecord, "mAudioAttributes"));
+            Ln.i(">>>AudioRecord.mRecordSource -> " + Reflection.getField(audioRecord, "mRecordSource"));
+            Ln.i(">>>AudioRecord.mSampleRate -> " + Reflection.getField(audioRecord, "mSampleRate"));
+            Ln.i(">>>AudioRecord.mAudioFormat -> " + Reflection.getField(audioRecord, "mAudioFormat"));
+            Ln.i(">>>AudioRecord.mChannelCount -> " + Reflection.getField(audioRecord, "mChannelCount"));
+            Ln.i(">>>AudioRecord.mChannelMask -> " + Reflection.getField(audioRecord, "mChannelMask"));
+            Ln.i(">>>AudioRecord bufferSizeInBytes -> " + bufferSizeInBytes);
 
             final int channelIndexMask = 0;
 
@@ -221,16 +204,28 @@ public final class Workarounds {
             int initResult;
             if (Build.VERSION.SDK_INT < AndroidVersions.API_31_ANDROID_12) {
                 // private native final int native_setup(Object audiorecord_this,
-                // Object /*AudioAttributes*/ attributes,
-                // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
-                // int buffSizeInBytes, int[] sessionId, String opPackageName,
-                // long nativeRecordInJavaObj);
-                Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class, int.class,
-                        int.class, int.class, int.class, int[].class, String.class, long.class);
-                nativeSetupMethod.setAccessible(true);
-                initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes, sampleRateArray,
-                        channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session, FakeContext.get().getOpPackageName(),
-                        0L);
+                //     Object /*AudioAttributes*/ attributes,
+                //     int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
+                //     int buffSizeInBytes, int[] sessionId, String opPackageName,
+                //     long nativeRecordInJavaObj);
+                Class<?>[] nativeSetupParamTypes = new Class[]{
+                        Object.class, Object.class, int[].class, int.class,
+                        int.class, int.class, int.class, int[].class, String.class, long.class
+                };
+                initResult = Reflection.invokeMethodWithParam(
+                        AudioRecord.class,
+                        audioRecord,
+                        "native_setup",
+                        nativeSetupParamTypes,
+                        new WeakReference<>(audioRecord),
+                        attributes,
+                        sampleRateArray,
+                        channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes,
+                        session,
+                        FakeContext.get().getOpPackageName(),
+                        0L
+                );
+                Ln.i(">>>Invoked native_setup without AttributionSource, result -> " + initResult);
             } else {
                 // Assume `context` is never `null`
                 AttributionSource attributionSource = FakeContext.get().getAttributionSource();
@@ -241,31 +236,59 @@ public final class Workarounds {
                 Method asScopedParcelStateMethod = AttributionSource.class.getDeclaredMethod("asScopedParcelState");
                 asScopedParcelStateMethod.setAccessible(true);
 
-                try (AutoCloseable attributionSourceState = (AutoCloseable) asScopedParcelStateMethod.invoke(attributionSource)) {
-                    Method getParcelMethod = attributionSourceState.getClass().getDeclaredMethod("getParcel");
-                    Parcel attributionSourceParcel = (Parcel) getParcelMethod.invoke(attributionSourceState);
+
+                try (AutoCloseable attributionSourceState = Reflection.invokeMethod(attributionSource, "asScopedParcelState")) {
+                    Parcel attributionSourceParcel = Reflection.invokeMethod(attributionSourceState, "getParcel");
+                    Ln.i(">>>Obtained AttributionSource Parcel -> " + attributionSourceParcel);
 
                     if (Build.VERSION.SDK_INT < AndroidVersions.API_34_ANDROID_14) {
                         // private native int native_setup(Object audiorecordThis,
-                        // Object /*AudioAttributes*/ attributes,
-                        // int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
-                        // int buffSizeInBytes, int[] sessionId, @NonNull Parcel attributionSource,
-                        // long nativeRecordInJavaObj, int maxSharedAudioHistoryMs);
-                        Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class,
-                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class);
-                        nativeSetupMethod.setAccessible(true);
-                        initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes,
-                                sampleRateArray, channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session,
-                                attributionSourceParcel, 0L, 0);
+                        //     Object /*AudioAttributes*/ attributes,
+                        //     int[] sampleRate, int channelMask, int channelIndexMask, int audioFormat,
+                        //     int buffSizeInBytes, int[] sessionId, @NonNull Parcel attributionSource,
+                        //     long nativeRecordInJavaObj, int maxSharedAudioHistoryMs);
+                        Class<?>[] nativeSetupParamTypes = new Class[]{
+                                Object.class, Object.class, int[].class,
+                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class
+                        };
+                        initResult = Reflection.invokeMethodWithParam(
+                                AudioRecord.class,
+                                audioRecord,
+                                "native_setup",
+                                nativeSetupParamTypes,
+                                new WeakReference<>(audioRecord),
+                                attributes,
+                                sampleRateArray,
+                                channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes,
+                                session,
+                                attributionSourceParcel,
+                                0L,
+                                0
+                        );
+                        Ln.i(">>>Invoked native_setup with AttributionSource, result -> " + initResult);
                     } else {
                         // Android 14 added a new int parameter "halInputFlags"
                         // <https://github.com/aosp-mirror/platform_frameworks_base/commit/f6135d75db79b1d48fad3a3b3080d37be20a2313>
-                        Method nativeSetupMethod = AudioRecord.class.getDeclaredMethod("native_setup", Object.class, Object.class, int[].class,
-                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class, int.class);
-                        nativeSetupMethod.setAccessible(true);
-                        initResult = (int) nativeSetupMethod.invoke(audioRecord, new WeakReference<AudioRecord>(audioRecord), attributes,
-                                sampleRateArray, channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes, session,
-                                attributionSourceParcel, 0L, 0, 0);
+                        Class<?>[] nativeSetupParamTypes = new Class[]{
+                                Object.class, Object.class, int[].class,
+                                int.class, int.class, int.class, int.class, int[].class, Parcel.class, long.class, int.class, int.class
+                        };
+                        initResult = Reflection.invokeMethodWithParam(
+                                AudioRecord.class,
+                                audioRecord,
+                                "native_setup",
+                                nativeSetupParamTypes,
+                                new WeakReference<>(audioRecord),
+                                attributes,
+                                sampleRateArray,
+                                channelMask, channelIndexMask, audioRecord.getAudioFormat(), bufferSizeInBytes,
+                                session,
+                                attributionSourceParcel,
+                                0L,
+                                0,
+                                0
+                        );
+                        Ln.i(">>>Invoked native_setup with AttributionSource (Android 14), result -> " + initResult);
                     }
                 }
             }
@@ -276,19 +299,16 @@ public final class Workarounds {
             }
 
             // mSampleRate = sampleRate[0]
-            Field mSampleRateField = AudioRecord.class.getDeclaredField("mSampleRate");
-            mSampleRateField.setAccessible(true);
-            mSampleRateField.set(audioRecord, sampleRateArray[0]);
+            Reflection.setField(audioRecord, "mSampleRate", sampleRateArray[0]);
+            Ln.i(">>>AudioRecord.mSampleRate -> " + Reflection.getField(audioRecord, "mSampleRate"));
 
             // audioRecord.mSessionId = session[0]
-            Field mSessionIdField = AudioRecord.class.getDeclaredField("mSessionId");
-            mSessionIdField.setAccessible(true);
-            mSessionIdField.set(audioRecord, session[0]);
+            Reflection.setField(audioRecord, "mSessionId", session[0]);
+            Ln.i(">>>AudioRecord.mSessionId -> " + Reflection.getField(audioRecord, "mSessionId"));
 
             // audioRecord.mState = AudioRecord.STATE_INITIALIZED
-            Field mStateField = AudioRecord.class.getDeclaredField("mState");
-            mStateField.setAccessible(true);
-            mStateField.set(audioRecord, AudioRecord.STATE_INITIALIZED);
+            Reflection.setField(audioRecord, "mState", AudioRecord.STATE_INITIALIZED);
+            Ln.i(">>>AudioRecord.mState -> " + Reflection.getField(audioRecord, "mState"));
 
             return audioRecord;
         } catch (Exception e) {
