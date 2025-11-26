@@ -111,6 +111,7 @@ enum {
     OPT_RENDER_FIT,
     OPT_IGNORE_VIDEO_ENCODER_CONSTRAINTS,
     OPT_NO_TERMINAL_TITLE,
+    OPT_TCP_RESTREAM,
 };
 
 struct sc_option {
@@ -909,6 +910,15 @@ static const struct sc_option options[] = {
                 "connected over USB), enables TCP/IP mode, then connects to "
                 "this address before starting.\n"
                 "Prefix the address with a '+' to force a reconnection.",
+    },
+    {
+        .longopt_id = OPT_TCP_RESTREAM,
+        .longopt = "tcp-restream",
+        .argdesc = "port",
+        .text = "Stream video packets to a TCP server on the specified port.\n"
+                "Clients can connect to receive raw H.264/H.265 packets for "
+                "decoding (e.g., with PyAV in Python).\n"
+                "Implicitly disables video and audio playback.",
     },
     {
         .longopt_id = OPT_TIME_LIMIT,
@@ -2944,6 +2954,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_NO_TERMINAL_TITLE:
                 opts->update_terminal_title = false;
+            case OPT_TCP_RESTREAM:
+                if (!parse_port(optarg, &opts->tcp_restream_port)) {
+                    return false;
+                }
+                // Implicitly disable video and audio playback
+                opts->video_playback = false;
+                opts->audio_playback = false;
                 break;
             default:
                 // getopt prints the error message on stderr
@@ -3000,8 +3017,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2) {
-        LOGI("No video playback, no recording, no V4L2 sink: video disabled");
+            && !v4l2 && !opts->tcp_restream_port) {
+        LOGI("No video playback, no recording, no V4L2 sink, no TCP restream: "
+             "video disabled");
         opts->video = false;
     }
 
