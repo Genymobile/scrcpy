@@ -8,6 +8,7 @@
 #include <libavutil/audio_fifo.h>
 #include <libavutil/time.h>
 #include <libswresample/swresample.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -121,19 +122,27 @@ sc_microphone_run(void *data) {
     sc_socket mic_socket = params->socket;
     const char *audio_source = params->audio_source;
 
+    int ret = 1;
     const char *input_path = NULL;
     bool is_file = parse_audio_source(audio_source, &input_path);
 
     AVInputFormat *input_format = NULL;
     AVFormatContext *fmt_ctx = NULL;
+    AVCodecContext *in_codec_ctx = NULL;
+    AVCodecContext *opus_ctx = NULL;
+    SwrContext *swr_ctx = NULL;
+    AVPacket *in_pkt = NULL;
+    AVPacket *out_pkt = NULL;
+    AVFrame *in_frame = NULL;
+    AVFrame *out_frame = NULL;
+    AVAudioFifo *fifo = NULL;
 
     if (is_file) {
         // Open audio file (MP3, OGG, WAV, etc.)
         LOGD("Opening audio file: %s", input_path);
         if (avformat_open_input(&fmt_ctx, input_path, NULL, NULL) < 0) {
             fprintf(stderr, "Could not open audio file '%s'\n", input_path);
-            net_close(mic_socket);
-            return 1;
+            goto cleanup;
         }
     } else {
         // Open audio device
@@ -143,22 +152,18 @@ sc_microphone_run(void *data) {
         input_format = av_find_input_format(format_name);
         if (!input_format) {
             fprintf(stderr, "Could not find audio input format '%s'\n", format_name);
-            net_close(mic_socket);
-            return 1;
+            goto cleanup;
         }
 
         if (avformat_open_input(&fmt_ctx, input_path, input_format, NULL) < 0) {
             fprintf(stderr, "Could not open audio device '%s'\n", input_path);
-            net_close(mic_socket);
-            return 1;
+            goto cleanup;
         }
     }
 
     if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
         fprintf(stderr, "Could not read stream info\n");
-        avformat_close_input(&fmt_ctx);
-        net_close(mic_socket);
-        return 1;
+        goto cleanup;
     }
 
     int audio_stream_index = 0;
@@ -167,19 +172,19 @@ sc_microphone_run(void *data) {
     AVCodec *in_codec = avcodec_find_decoder(in_codecpar->codec_id);
     if (!in_codec) {
         fprintf(stderr, "Input codec not found\n");
-        avformat_close_input(&fmt_ctx);
-        net_close(mic_socket);
-        return 1;
+        goto cleanup;
     }
 
-    AVCodecContext *in_codec_ctx = avcodec_alloc_context3(in_codec);
+    in_codec_ctx = avcodec_alloc_context3(in_codec);
+    if (!in_codec_ctx) {
+        fprintf(stderr, "Could not allocate input codec context\n");
+        goto cleanup;
+    }
+
     avcodec_parameters_to_context(in_codec_ctx, in_codecpar);
     if (avcodec_open2(in_codec_ctx, in_codec, NULL) < 0) {
         fprintf(stderr, "Could not open input codec\n");
-        avcodec_free_context(&in_codec_ctx);
-        avformat_close_input(&fmt_ctx);
-        net_close(mic_socket);
-        return 1;
+        goto cleanup;
     }
 
     LOGD("Input: sample_fmt=%d, sample_rate=%d, channels=%d\n",
@@ -190,13 +195,15 @@ sc_microphone_run(void *data) {
     AVCodec *opus_codec = avcodec_find_encoder(AV_CODEC_ID_OPUS);
     if (!opus_codec) {
         fprintf(stderr, "Opus encoder not found\n");
-        avcodec_free_context(&in_codec_ctx);
-        avformat_close_input(&fmt_ctx);
-        net_close(mic_socket);
-        return 1;
+        goto cleanup;
     }
 
-    AVCodecContext *opus_ctx = avcodec_alloc_context3(opus_codec);
+    opus_ctx = avcodec_alloc_context3(opus_codec);
+    if (!opus_ctx) {
+        fprintf(stderr, "Could not allocate Opus codec context\n");
+        goto cleanup;
+    }
+
     opus_ctx->sample_fmt = AV_SAMPLE_FMT_S16; // Opus uses 16-bit PCM
     opus_ctx->sample_rate = 48000;            // Opus standard sample rate
     opus_ctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
@@ -204,41 +211,55 @@ sc_microphone_run(void *data) {
 
     if (avcodec_open2(opus_ctx, opus_codec, NULL) < 0) {
         fprintf(stderr, "Could not open Opus encoder\n");
-        avcodec_free_context(&opus_ctx);
-        avcodec_free_context(&in_codec_ctx);
-        avformat_close_input(&fmt_ctx);
-        net_close(mic_socket);
-        return 1;
+        goto cleanup;
     }
     LOGD("opus_ctx->frame_size = %d\n", opus_ctx->frame_size);
 
-    LOGD("Opus encoder: sample_rate=%d, channels=%d, bit_rate=%d fmt=%d\n",
+    LOGD("Opus encoder: sample_rate=%d, channels=%d, bit_rate=%" PRId64 " fmt=%d\n",
        opus_ctx->sample_rate, opus_ctx->ch_layout.nb_channels,
        opus_ctx->bit_rate, opus_ctx->sample_fmt);
 
     // Setup resampler (ALSA format -> Opus format)
-    SwrContext *swr_ctx = swr_alloc();
+    swr_ctx = swr_alloc();
+    if (!swr_ctx) {
+        fprintf(stderr, "Could not allocate resampler\n");
+        goto cleanup;
+    }
+
     swr_alloc_set_opts2(&swr_ctx, &opus_ctx->ch_layout, opus_ctx->sample_fmt,
                                             opus_ctx->sample_rate, &in_codec_ctx->ch_layout,
                                             in_codec_ctx->sample_fmt, in_codec_ctx->sample_rate, 0,
                                             NULL);
-    swr_init(swr_ctx);
+    if (swr_init(swr_ctx) < 0) {
+        fprintf(stderr, "Could not initialize resampler\n");
+        goto cleanup;
+    }
 
-    AVPacket *in_pkt = av_packet_alloc();
-    AVPacket *out_pkt = av_packet_alloc();
-    AVFrame *in_frame = av_frame_alloc();
-    AVFrame *out_frame = av_frame_alloc();
+    in_pkt = av_packet_alloc();
+    out_pkt = av_packet_alloc();
+    in_frame = av_frame_alloc();
+    out_frame = av_frame_alloc();
+    if (!in_pkt || !out_pkt || !in_frame || !out_frame) {
+        fprintf(stderr, "Could not allocate packets/frames\n");
+        goto cleanup;
+    }
 
     out_frame->format = opus_ctx->sample_fmt;
     out_frame->ch_layout = opus_ctx->ch_layout;
     out_frame->sample_rate = opus_ctx->sample_rate;
     out_frame->nb_samples = opus_ctx->frame_size;
     LOGD("setting nb_samples to %d\n", opus_ctx->frame_size);
-    av_frame_get_buffer(out_frame, 0);
+    if (av_frame_get_buffer(out_frame, 0) < 0) {
+        fprintf(stderr, "Could not allocate frame buffer\n");
+        goto cleanup;
+    }
 
-    AVAudioFifo *fifo =
-            av_audio_fifo_alloc(opus_ctx->sample_fmt, opus_ctx->ch_layout.nb_channels,
+    fifo = av_audio_fifo_alloc(opus_ctx->sample_fmt, opus_ctx->ch_layout.nb_channels,
                                                     opus_ctx->frame_size * 2);
+    if (!fifo) {
+        fprintf(stderr, "Could not allocate audio FIFO\n");
+        goto cleanup;
+    }
 
     printf("Recording audio with Opus encoding...\n");
     if (is_file) {
@@ -252,19 +273,22 @@ sc_microphone_run(void *data) {
     // Calculate frame duration in microseconds: (frame_size / sample_rate) * 1000000
     int64_t opus_frame_duration_us = (opus_ctx->frame_size * 1000000LL) / opus_ctx->sample_rate;
 
+    // Flag to track if we should stop (e.g., socket closed)
+    bool should_stop = false;
+
     // Main loop - for files, this will restart from beginning when reaching EOF
-    while (true) {
-        int ret = av_read_frame(fmt_ctx, in_pkt);
+    while (!should_stop) {
+        int read_ret = av_read_frame(fmt_ctx, in_pkt);
 
         // If EOF reached on a file, seek back to start and continue
-        if (ret == AVERROR_EOF && is_file) {
+        if (read_ret == AVERROR_EOF && is_file) {
             LOGD("File ended, looping back to start");
             av_seek_frame(fmt_ctx, audio_stream_index, 0, AVSEEK_FLAG_BACKWARD);
             avcodec_flush_buffers(in_codec_ctx);
             continue;
         }
 
-        if (ret < 0) {
+        if (read_ret < 0) {
             // For device input, any error means we should stop
             if (!is_file) {
                 break;
@@ -303,10 +327,22 @@ sc_microphone_run(void *data) {
                     sc_write32be(size_buf, size);
 
                     // Send packet size (4 bytes, big-endian)
-                    net_send_all(mic_socket, size_buf, 4);
+                    ssize_t sent = net_send_all(mic_socket, size_buf, 4);
+                    if (sent < 4) {
+                        LOGD("Failed to send packet size, socket closed");
+                        should_stop = true;
+                        av_packet_unref(out_pkt);
+                        break;
+                    }
 
                     // Send Opus packet
-                    net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+                    sent = net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+                    if (sent < (ssize_t)out_pkt->size) {
+                        LOGD("Failed to send packet data, socket closed");
+                        should_stop = true;
+                        av_packet_unref(out_pkt);
+                        break;
+                    }
 
                     av_packet_unref(out_pkt);
 
@@ -363,8 +399,17 @@ sc_microphone_run(void *data) {
                     uint8_t size_buf[4];
                     sc_write32be(size_buf, size);
 
-                    net_send_all(mic_socket, size_buf, 4);
-                    net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+                    ssize_t sent = net_send_all(mic_socket, size_buf, 4);
+                    if (sent < 4) {
+                        av_packet_unref(out_pkt);
+                        break;  // Socket closed, skip remaining flush
+                    }
+
+                    sent = net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+                    if (sent < (ssize_t)out_pkt->size) {
+                        av_packet_unref(out_pkt);
+                        break;  // Socket closed, skip remaining flush
+                    }
 
                     av_packet_unref(out_pkt);
                 }
@@ -378,8 +423,17 @@ sc_microphone_run(void *data) {
             uint8_t size_buf[4];
             sc_write32be(size_buf, size);
 
-            net_send_all(mic_socket, size_buf, 4);
-            net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+            ssize_t sent = net_send_all(mic_socket, size_buf, 4);
+            if (sent < 4) {
+                av_packet_unref(out_pkt);
+                break;  // Socket closed, skip remaining flush
+            }
+
+            sent = net_send_all(mic_socket, out_pkt->data, out_pkt->size);
+            if (sent < (ssize_t)out_pkt->size) {
+                av_packet_unref(out_pkt);
+                break;  // Socket closed, skip remaining flush
+            }
 
             av_packet_unref(out_pkt);
         }
@@ -389,21 +443,46 @@ sc_microphone_run(void *data) {
     }
 
     LOGD("Audio streaming ended");
+    ret = 0;  // Success
 
-    // Cleanup
-    av_audio_fifo_free(fifo);
-    swr_free(&swr_ctx);
-    av_frame_free(&out_frame);
-    av_frame_free(&in_frame);
-    av_packet_free(&out_pkt);
-    av_packet_free(&in_pkt);
-    avcodec_free_context(&opus_ctx);
-    avcodec_free_context(&in_codec_ctx);
-    avformat_close_input(&fmt_ctx);
+cleanup:
+    // Cleanup all resources in reverse order of allocation
+    if (fifo) {
+        av_audio_fifo_free(fifo);
+    }
+    if (swr_ctx) {
+        swr_free(&swr_ctx);
+    }
+    if (out_frame) {
+        av_frame_free(&out_frame);
+    }
+    if (in_frame) {
+        av_frame_free(&in_frame);
+    }
+    if (out_pkt) {
+        av_packet_free(&out_pkt);
+    }
+    if (in_pkt) {
+        av_packet_free(&in_pkt);
+    }
+    if (opus_ctx) {
+        avcodec_free_context(&opus_ctx);
+    }
+    if (in_codec_ctx) {
+        avcodec_free_context(&in_codec_ctx);
+    }
+    if (fmt_ctx) {
+        avformat_close_input(&fmt_ctx);
+    }
 
     // Close the socket
-    net_close(mic_socket);
-    LOGD("Microphone socket closed");
+    if (mic_socket != SC_SOCKET_NONE) {
+        if (!net_close(mic_socket)) {
+            LOGW("Could not close microphone socket");
+        } else {
+            LOGD("Microphone socket closed");
+        }
+    }
 
-    return 0;
+    return ret;
 }

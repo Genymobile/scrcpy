@@ -70,6 +70,7 @@ struct scrcpy {
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
     struct sc_microphone_params microphone_params;
+    sc_thread microphone_thread;
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
@@ -980,15 +981,16 @@ aoa_complete:
         audio_demuxer_started = true;
     }
 
+    bool microphone_started = false;
     if (options->client_audio_source) {
         s->microphone_params.socket = s->server.client_mic_socket;
         s->microphone_params.audio_source = options->client_audio_source;
 
-        sc_thread mic_thread;
-        bool ok = sc_thread_create(&mic_thread, sc_microphone_run, "scrcpy-clnt-mic", &s->microphone_params);
+        bool ok = sc_thread_create(&s->microphone_thread, sc_microphone_run, "scrcpy-clnt-mic", &s->microphone_params);
         if (!ok) {
             goto end;
         }
+        microphone_started = true;
     }
 
     // If the device screen is to be turned off, send the control message after
@@ -1135,6 +1137,10 @@ end:
 
     if (audio_demuxer_started) {
         sc_demuxer_join(&s->audio_demuxer);
+    }
+
+    if (microphone_started) {
+        sc_thread_join(&s->microphone_thread, NULL);
     }
 
     if (video_regulator_initialized) {
