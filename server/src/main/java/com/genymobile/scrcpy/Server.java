@@ -211,7 +211,7 @@ public final class Server {
 
         new Thread(() -> {
             while (true) {
-                byte[] audioBuffer = new byte[50000];
+                byte[] audioBuffer = new byte[8192];
                 try {
                     int bytesRead = pis.read(audioBuffer);
                     audioTrack.write(audioBuffer, 0, bytesRead);
