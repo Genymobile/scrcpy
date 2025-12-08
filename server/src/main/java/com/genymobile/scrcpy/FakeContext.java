@@ -21,44 +21,56 @@ public final class FakeContext extends ContextWrapper {
 
     private static final FakeContext INSTANCE = new FakeContext();
 
+    /**
+     * Returns the appropriate FakeContext:
+     * - UID 1000 (system) -> impersonates 'android'
+     * - others -> normal shell context
+     */
     public static FakeContext get() {
+        int uid = Process.myUid();
+        if (uid == 1000) { // UID_SYSTEM
+            // Return a context that impersonates the 'android' package
+            return new FakeContext(Workarounds.getSystemContext());
+        }
+        // Normal shell context
         return INSTANCE;
     }
 
     private final ContentResolver contentResolver = new ContentResolver(this) {
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
-        // @Override (but super-class method not visible)
         protected IContentProvider acquireProvider(Context c, String name) {
             return ServiceManager.getActivityManager().getContentProviderExternal(name, new Binder());
         }
 
         @SuppressWarnings("unused")
-        // @Override (but super-class method not visible)
         public boolean releaseProvider(IContentProvider icp) {
             return false;
         }
 
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
-        // @Override (but super-class method not visible)
         protected IContentProvider acquireUnstableProvider(Context c, String name) {
             return null;
         }
 
         @SuppressWarnings("unused")
-        // @Override (but super-class method not visible)
         public boolean releaseUnstableProvider(IContentProvider icp) {
             return false;
         }
 
         @SuppressWarnings("unused")
-        // @Override (but super-class method not visible)
         public void unstableProviderDied(IContentProvider icp) {
             // ignore
         }
     };
 
+    // Default constructor for INSTANCE
     private FakeContext() {
         super(Workarounds.getSystemContext());
+    }
+
+    // Constructor for custom base context (e.g., UID 1000)
+    private FakeContext(Context base) {
+        super(base);
     }
 
     @Override
@@ -79,7 +91,6 @@ public final class FakeContext extends ContextWrapper {
         return builder.build();
     }
 
-    // @Override to be added on SDK upgrade for Android 14
     @SuppressWarnings("unused")
     public int getDeviceId() {
         return 0;
@@ -109,7 +120,6 @@ public final class FakeContext extends ContextWrapper {
         }
 
         // "semclipboard" is a Samsung-internal service
-        // See <https://github.com/Genymobile/scrcpy/issues/6224>
         if (Context.CLIPBOARD_SERVICE.equals(name) || "semclipboard".equals(name)) {
             try {
                 Field field = service.getClass().getDeclaredField("mContext");
