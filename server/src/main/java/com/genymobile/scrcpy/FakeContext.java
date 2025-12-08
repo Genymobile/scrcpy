@@ -21,18 +21,7 @@ public final class FakeContext extends ContextWrapper {
 
     private static final FakeContext INSTANCE = new FakeContext();
 
-    /**
-     * Returns the appropriate FakeContext:
-     * - UID 1000 (system) -> impersonates 'android'
-     * - others -> normal shell context
-     */
     public static FakeContext get() {
-        int uid = Process.myUid();
-        if (uid == 1000) { // UID_SYSTEM
-            // Return a context that impersonates the 'android' package
-            return new FakeContext(Workarounds.getSystemContext());
-        }
-        // Normal shell context
         return INSTANCE;
     }
 
