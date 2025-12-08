@@ -37,27 +37,32 @@ public final class FakeContext extends ContextWrapper {
     }
 
     private final ContentResolver contentResolver = new ContentResolver(this) {
+        // @Override (but super-class method not visible)
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
         protected IContentProvider acquireProvider(Context c, String name) {
             return ServiceManager.getActivityManager().getContentProviderExternal(name, new Binder());
         }
 
         @SuppressWarnings("unused")
+        // @Override (but super-class method not visible)
         public boolean releaseProvider(IContentProvider icp) {
             return false;
         }
 
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
+        // @Override (but super-class method not visible)
         protected IContentProvider acquireUnstableProvider(Context c, String name) {
             return null;
         }
 
         @SuppressWarnings("unused")
+        // @Override (but super-class method not visible)
         public boolean releaseUnstableProvider(IContentProvider icp) {
             return false;
         }
 
         @SuppressWarnings("unused")
+        // @Override (but super-class method not visible)
         public void unstableProviderDied(IContentProvider icp) {
             // ignore
         }
@@ -91,6 +96,7 @@ public final class FakeContext extends ContextWrapper {
         return builder.build();
     }
 
+    // @Override to be added on SDK upgrade for Android 14
     @SuppressWarnings("unused")
     public int getDeviceId() {
         return 0;
@@ -120,6 +126,7 @@ public final class FakeContext extends ContextWrapper {
         }
 
         // "semclipboard" is a Samsung-internal service
+        // See <https://github.com/Genymobile/scrcpy/issues/6224>
         if (Context.CLIPBOARD_SERVICE.equals(name) || "semclipboard".equals(name)) {
             try {
                 Field field = service.getClass().getDeclaredField("mContext");
