@@ -37,8 +37,8 @@ public final class FakeContext extends ContextWrapper {
     }
 
     private final ContentResolver contentResolver = new ContentResolver(this) {
-        // @Override (but super-class method not visible)
         @SuppressWarnings({"unused", "ProtectedMemberInFinalClass"})
+        // @Override (but super-class method not visible)
         protected IContentProvider acquireProvider(Context c, String name) {
             return ServiceManager.getActivityManager().getContentProviderExternal(name, new Binder());
         }
