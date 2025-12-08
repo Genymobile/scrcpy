@@ -57,14 +57,8 @@ public final class FakeContext extends ContextWrapper {
         }
     };
 
-    // Default constructor for INSTANCE
     private FakeContext() {
         super(Workarounds.getSystemContext());
-    }
-
-    // Constructor for custom base context (e.g., UID 1000)
-    private FakeContext(Context base) {
-        super(base);
     }
 
     @Override
