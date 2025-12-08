@@ -210,13 +210,17 @@ public final class Server {
         audioTrack.play();
 
         new Thread(() -> {
+            byte[] audioBuffer = new byte[4096];
             while (true) {
-                byte[] audioBuffer = new byte[8192];
                 try {
                     int bytesRead = pis.read(audioBuffer);
+                    if (bytesRead <= 0) {
+                      break;
+                    }
                     audioTrack.write(audioBuffer, 0, bytesRead);
                 } catch (Exception e) {
                     Ln.e(e.toString());
+                    break;
                 }
             }
         }, "client-audio-injector").start();
@@ -320,7 +324,8 @@ public final class Server {
                     InputStream is = s.getInputStream();
                     BufferedInputStream bis = new BufferedInputStream(is);
                     PipedOutputStream pos = new PipedOutputStream();
-                    PipedInputStream pis = new PipedInputStream(pos, 65535);
+                    //PipedInputStream pis = new PipedInputStream(pos, 65535);
+                    PipedInputStream pis = new PipedInputStream(pos, 500*1024);
                     AudioDecoder decoder = new AudioDecoder();
                     decoder.start(bis, pos);
                     poc(pis);
