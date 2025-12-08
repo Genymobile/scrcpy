@@ -45,7 +45,10 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->last_mod = 0;
     im->key_repeat = 0;
 
+    im->key_repeat = 0;
+
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
+    im->disable_adb_control = params->disable_adb_control;
 }
 
 static void
@@ -55,6 +58,9 @@ send_keycode(struct sc_input_manager *im, enum android_keycode keycode,
 
     // send DOWN event
     struct sc_control_msg msg;
+    if (im->disable_adb_control) {
+        return;
+    }
     msg.type = SC_CONTROL_MSG_TYPE_INJECT_KEYCODE;
     msg.inject_keycode.action = action == SC_ACTION_DOWN
                               ? AKEY_EVENT_ACTION_DOWN
@@ -314,6 +320,10 @@ sc_input_manager_process_text_input(struct sc_input_manager *im,
                                     const SDL_TextInputEvent *event) {
     if (!im->kp->ops->process_text) {
         // The key processor does not support text input
+        return;
+    }
+
+    if (im->disable_adb_control) {
         return;
     }
 
@@ -608,6 +618,10 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         .mods_state = sc_mods_state_from_sdl(event->keysym.mod),
     };
 
+    if (im->disable_adb_control && !im->kp->hid) {
+        return;
+    }
+
     assert(im->kp->ops->process_key);
     im->kp->ops->process_key(im->kp, &evt, ack_to_wait);
 }
@@ -645,6 +659,10 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
         .yrel = event->yrel,
         .buttons_state = im->mouse_buttons_state,
     };
+
+    if (im->disable_adb_control && !im->mp->hid) {
+        return;
+    }
 
     assert(im->mp->ops->process_mouse_motion);
     im->mp->ops->process_mouse_motion(im->mp, &evt);
@@ -690,6 +708,10 @@ sc_input_manager_process_touch(struct sc_input_manager *im,
         .pointer_id = event->fingerId,
         .pressure = event->pressure,
     };
+
+    if (im->disable_adb_control) {
+        return;
+    }
 
     im->mp->ops->process_touch(im->mp, &evt);
 }
@@ -824,6 +846,10 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
         .buttons_state = im->mouse_buttons_state,
     };
 
+    if (im->disable_adb_control && !im->mp->hid) {
+        return;
+    }
+
     assert(im->mp->ops->process_mouse_click);
     im->mp->ops->process_mouse_click(im->mp, &evt);
 
@@ -907,6 +933,10 @@ sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
         .vscroll_int = event->y,
         .buttons_state = im->mouse_buttons_state,
     };
+
+    if (im->disable_adb_control && !im->mp->hid) {
+        return;
+    }
 
     im->mp->ops->process_mouse_scroll(im->mp, &evt);
 }

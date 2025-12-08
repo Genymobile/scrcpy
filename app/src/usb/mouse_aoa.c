@@ -75,6 +75,7 @@ sc_mouse_aoa_init(struct sc_mouse_aoa *mouse, struct sc_aoa *aoa) {
     mouse->mouse_processor.ops = &ops;
 
     mouse->mouse_processor.relative_mode = true;
+    mouse->mouse_processor.hid = true;
 
     return true;
 }

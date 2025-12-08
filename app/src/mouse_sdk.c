@@ -161,4 +161,5 @@ sc_mouse_sdk_init(struct sc_mouse_sdk *m, struct sc_controller *controller,
     m->mouse_processor.ops = &ops;
 
     m->mouse_processor.relative_mode = false;
+    m->mouse_processor.hid = false;
 }

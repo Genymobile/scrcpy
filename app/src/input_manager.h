@@ -44,6 +44,7 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+    bool disable_adb_control;
 };
 
 struct sc_input_manager_params {
@@ -57,6 +58,7 @@ struct sc_input_manager_params {
     struct sc_mouse_bindings mouse_bindings;
     bool legacy_paste;
     bool clipboard_autosync;
+    bool disable_adb_control;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values
 };
 

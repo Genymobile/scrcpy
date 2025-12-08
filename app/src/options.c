@@ -91,6 +91,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .legacy_paste = false,
     .power_off_on_close = false,
     .clipboard_autosync = true,
+    .disable_adb_control = false,
     .downsize_on_error = true,
     .tcpip = false,
     .tcpip_dst = NULL,

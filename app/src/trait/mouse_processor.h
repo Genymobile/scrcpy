@@ -22,6 +22,7 @@ struct sc_mouse_processor {
      * pointer must be "captured" by the UI.
      */
     bool relative_mode;
+    bool hid;
 };
 
 struct sc_mouse_processor_ops {

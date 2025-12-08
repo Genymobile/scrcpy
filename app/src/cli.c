@@ -61,6 +61,7 @@ enum {
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
+    OPT_OTG_MIRROR,
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
@@ -744,6 +745,14 @@ static const struct sc_option options[] = {
                 "--keyboard=disabled and --mouse=disabled.\n"
                 "It may only work over USB.\n"
                 "See --keyboard, --mouse and --gamepad.",
+    },
+    {
+        .longopt_id = OPT_OTG_MIRROR,
+        .longopt = "otg-mirror",
+        .text = "Run in OTG mode with mirroring enabled.\n"
+                "This enables HID input (like --otg), but keeps video/audio mirroring enabled.\n"
+                "ADB control is disabled (like --no-control), so all inputs behave as physical\n"
+                "HID events.",
     },
     {
         .shortopt = 'p',
@@ -2686,6 +2695,26 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
+
+            case OPT_OTG_MIRROR:
+#ifdef HAVE_USB
+                opts->otg = false; // Do not use scrcpy_otg(), use scrcpy() to keep ADB alive for video
+                opts->disable_adb_control = true;
+                opts->control = true; // start controller for server, but disable inputs in InputManager
+                opts->video = true;
+                opts->audio = true;
+                // Force UHID if not specified otherwise (AOA conflicts with ADB on Windows)
+                if (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AUTO) {
+                    opts->keyboard_input_mode = SC_KEYBOARD_INPUT_MODE_UHID;
+                }
+                if (opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AUTO) {
+                    opts->mouse_input_mode = SC_MOUSE_INPUT_MODE_UHID;
+                }
+                break;
+#else
+                LOGE("OTG mode (--otg-mirror) is disabled.");
+                return false;
+#endif
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
@@ -3269,7 +3298,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
 # ifdef _WIN32
-    if (!otg && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
+    // Modified: Allow AOA if disable_adb_control is true (for --otg-mirror)
+    if (!otg && !opts->disable_adb_control && (opts->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_AOA
                 || opts->mouse_input_mode == SC_MOUSE_INPUT_MODE_AOA)) {
         LOGE("On Windows, it is not possible to open a USB device already open "
              "by another process (like adb).");

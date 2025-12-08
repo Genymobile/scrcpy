@@ -78,6 +78,7 @@ sc_mouse_uhid_init(struct sc_mouse_uhid *mouse,
     mouse->mouse_processor.ops = &ops;
 
     mouse->mouse_processor.relative_mode = true;
+    mouse->mouse_processor.hid = true;
 
     struct sc_hid_open hid_open;
     sc_hid_mouse_generate_open(&hid_open);
