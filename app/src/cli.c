@@ -846,8 +846,8 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_ROOT,
         .longopt = "root",
         .text = "By default, scrcpy simply uses the ADB shell user context to "
-                "execute the server on the device. This will instruct scrcpy "
-                "use the `su` command to run the server as the system user in "
+                "execute the server on the device. This option instructs it to"
+                "use the 'su' command to run the server as the system user in "
                 "order to retain the ability to create a secure display. This "
                 "allows apps that use `FLAG_SECURE` to be mirrored to your PC."
     },
