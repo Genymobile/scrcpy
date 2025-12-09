@@ -250,8 +250,9 @@ execute_server(struct sc_server *server,
         // 5. Provide user feedback
         if (params->root && !can_use_root && needs_root_for_secure_display) {
             fprintf(stderr,
-                    "WARNING: --root requested but 'su 1000' failed and secure display is unavailable on Android 12+.\n"
-                    "Secure content will not be mirrored.\n");
+                    "WARNING: root requested but 'su 1000' failed and secure display is unavailable\n"
+                    "on Android 12+. Secure content cannot be mirrored.\n"
+                    "Please see <https://github.com/Genymobile/scrcpy/issues/2129> for details.\n");
         }
         if (root_enabled) {
             cmd[count++] = "su";
