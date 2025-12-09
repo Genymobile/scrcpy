@@ -215,7 +215,7 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
-    if (params->root) {
+    if (params->root_enabled) {
         cmd[count++] = "su";
         cmd[count++] = "1000";
         cmd[count++] = "-c";
