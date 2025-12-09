@@ -799,8 +799,7 @@ aoa_complete:
     assert(options->control == !!controller);
 
     if (options->window) {
-        const char *window_title =
-            options->window_title ? options->window_title : info->device_name;
+
 
         struct sc_screen_params screen_params = {
             .video = options->video_playback,
@@ -814,7 +813,7 @@ aoa_complete:
             .clipboard_autosync = options->clipboard_autosync,
             .disable_adb_control = options->disable_adb_control,
             .shortcut_mods = options->shortcut_mods,
-            .window_title = window_title,
+            .window_title = options->window_title ? options->window_title : info->device_name,
             .always_on_top = options->always_on_top,
             .window_x = options->window_x,
             .window_y = options->window_y,
