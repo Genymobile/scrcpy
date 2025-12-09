@@ -215,10 +215,49 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
-    if (params->root_enabled) {
-        cmd[count++] = "su";
-        cmd[count++] = "1000";
-        cmd[count++] = "-c";
+    if (params->root) {
+        // 1. Check if 'su 1000 -c true' works
+        char check_cmd[128];
+        snprintf(check_cmd, sizeof(check_cmd), "adb -s %s shell su 1000 -c true >/dev/null 2>&1", serial);
+        int su_status = system(check_cmd);
+        bool can_use_root = (su_status == 0);
+        
+        // 2. Check if secure display is possible under shell
+        int sdk_version = 0;
+        char codename[32] = {0};
+        
+        snprintf(check_cmd, sizeof(check_cmd), "adb -s %s shell getprop ro.build.version.sdk", serial);
+        FILE *fp = popen(check_cmd, "r");
+        if (fp) {
+            fscanf(fp, "%d", &sdk_version);
+            pclose(fp);
+        }
+        
+        snprintf(check_cmd, sizeof(check_cmd), "adb -s %s shell getprop ro.build.version.codename", serial);
+        fp = popen(check_cmd, "r");
+        if (fp) {
+            fscanf(fp, "%15s", codename);
+            pclose(fp);
+        }
+        
+        // 3. Determine secure display capability as upstream JAR does
+        bool shell_can_create_secure_display = (sdk_version < 30 || (sdk_version == 30 && strcmp(codename, "S") != 0));
+        
+        // 4. Compute whether root should actually be enabled
+        bool needs_root_for_secure_display = !shell_can_create_secure_display;
+        bool root_enabled = params->root && can_use_root && needs_root_for_secure_display;
+        
+        // 5. Provide user feedback
+        if (params->root && !can_use_root && needs_root_for_secure_display) {
+            fprintf(stderr,
+                    "WARNING: --root requested but 'su 1000' failed and secure display is unavailable on Android 12+.\n"
+                    "Secure content will not be mirrored.\n");
+        }
+        if (root_enabled) {
+            cmd[count++] = "su";
+            cmd[count++] = "1000";
+            cmd[count++] = "-c";
+        }
     }
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
     cmd[count++] = "app_process";

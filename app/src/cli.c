@@ -2736,40 +2736,6 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_ROOT:
                 opts->root = true;
-
-                // 1. Check if 'su 1000 -c true' works
-                int su_status = system("adb shell su 1000 -c true >/dev/null 2>&1");
-                bool can_use_root = (su_status == 0);
-
-                // 2. Check if secure display is possible under shell
-                int sdk_version = 0;
-                char codename[16] = {0};
-
-                FILE *fp = popen("adb shell getprop ro.build.version.sdk", "r");
-                if (fp) {
-                    fscanf(fp, "%d", &sdk_version);
-                    pclose(fp);
-                }
-            
-                fp = popen("adb shell getprop ro.build.version.codename", "r");
-                if (fp) {
-                    fscanf(fp, "%15s", codename);
-                    pclose(fp);
-                }
-            
-                // 3. Determine secure display capability as upstream JAR does
-                bool shell_can_create_secure_display = (sdk_version < 30 || (sdk_version == 30 && strcmp(codename, "S") != 0));
-                
-                // 4. Compute whether root should actually be enabled
-                bool needs_root_for_secure_display = !shell_can_create_secure_display;
-                opts->root_enabled = opts->root && can_use_root && needs_root_for_secure_display;
-                
-                // 5. Provide user feedback
-                if (opts->root && !can_use_root && needs_root_for_secure_display) {
-                    fprintf(stderr,
-                            "WARNING: --root requested but 'su 1000' failed and secure display is unavailable on Android 12+.\n"
-                            "Secure content will not be mirrored.\n");
-                }
                 break;
             case OPT_AUDIO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->audio_buffer)) {
