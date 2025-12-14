@@ -26,7 +26,7 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
-#include "microphone.h"
+#include "client_audio.h"
 #include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"

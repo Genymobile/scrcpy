@@ -17,7 +17,7 @@
 #include "util/net.h"
 #include "util/thread.h"
 #include "version.h"
-#include "microphone.h"
+#include "client_audio.h"
 
 #ifdef _WIN32
 #include <windows.h>
