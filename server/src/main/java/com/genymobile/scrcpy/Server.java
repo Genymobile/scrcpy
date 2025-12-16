@@ -1,24 +1,12 @@
 package com.genymobile.scrcpy;
 
-import java.util.Objects;
-import android.content.Context;
-import android.media.AudioAttributes;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioTrack;
-import android.media.MediaRecorder;
 import android.net.LocalSocket;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.io.BufferedInputStream;
 
 import com.genymobile.scrcpy.audio.AudioCapture;
 import com.genymobile.scrcpy.audio.AudioCodec;
+import com.genymobile.scrcpy.audio.AudioDecoder;
 import com.genymobile.scrcpy.audio.AudioDirectCapture;
 import com.genymobile.scrcpy.audio.AudioEncoder;
-import com.genymobile.scrcpy.audio.AudioDecoder;
 import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
 import com.genymobile.scrcpy.audio.AudioRawRecorder;
 import com.genymobile.scrcpy.audio.AudioSource;
@@ -47,9 +35,10 @@ import android.system.Os;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
+import java.io.InputStream;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,146 +73,6 @@ public final class Server {
 
     private Server() {
         // not instantiable
-    }
-
-    private static AudioAttributes createAudioAttributes(int capturePreset) throws Exception {
-        AudioAttributes.Builder audioAttributesBuilder = new AudioAttributes.Builder();
-        Method setCapturePresetMethod =
-            audioAttributesBuilder.getClass().getDeclaredMethod("setCapturePreset", int.class);
-        setCapturePresetMethod.invoke(audioAttributesBuilder, capturePreset);
-        return audioAttributesBuilder.build();
-    }
-
-    //https://github.com/Genymobile/scrcpy/issues/3880#issuecomment-1595722119
-    public static void poc(PipedInputStream pis) throws Exception {
-        Context systemContext = Workarounds.getSystemContext();
-        Objects.requireNonNull(systemContext);
-
-        // var audioMixRuleBuilder = new AudioMixingRule.Builder();
-        @SuppressLint("PrivateApi")
-        Class<?> audioMixRuleBuilderClass =
-                        Class.forName("android.media.audiopolicy.AudioMixingRule$Builder");
-        Object audioMixRuleBuilder = audioMixRuleBuilderClass.newInstance();
-
-        try {
-            // Added in Android 13, but previous versions don't work because lack of permission.
-            // audioMixRuleBuilder.setTargetMixRole(MIX_ROLE_INJECTOR);
-            Method setTargetMixRoleMethod =
-                            audioMixRuleBuilder.getClass().getDeclaredMethod("setTargetMixRole", int.class);
-            int MIX_ROLE_INJECTOR = 1;
-            setTargetMixRoleMethod.invoke(audioMixRuleBuilder, MIX_ROLE_INJECTOR);
-        } catch (Exception ignored) {
-        }
-
-        Method addMixRuleMethod = audioMixRuleBuilder.getClass()
-                        .getDeclaredMethod("addMixRule", int.class, Object.class);
-        int RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET = 0x1 << 1;
-
-        // audioMixRuleBuilder.addMixRuleMethod(RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-        //     createAudioAttributes(MediaRecorder.AudioSource.DEFAULT));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.DEFAULT));
-        // audioMixRuleBuilder.addMixRuleMethod(RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-        //     createAudioAttributes(MediaRecorder.AudioSource.MIC));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.MIC));
-        // audioMixRuleBuilder.addMixRuleMethod(RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-        //     createAudioAttributes(MediaRecorder.AudioSource.VOICE_COMMUNICATION));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-                                                        createAudioAttributes(
-                                                                        MediaRecorder.AudioSource.VOICE_COMMUNICATION));
-        // audioMixRuleBuilder.addMixRuleMethod(RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-        //     createAudioAttributes(MediaRecorder.AudioSource.UNPROCESSED));
-        addMixRuleMethod.invoke(audioMixRuleBuilder, RULE_MATCH_ATTRIBUTE_CAPTURE_PRESET,
-                                                        createAudioAttributes(MediaRecorder.AudioSource.UNPROCESSED));
-
-        // var audioMixingRule = audioMixRuleBuilder.build();
-        Method audioMixRuleBuildMethod = audioMixRuleBuilder.getClass().getDeclaredMethod("build");
-        Object audioMixingRule = audioMixRuleBuildMethod.invoke(audioMixRuleBuilder);
-        Objects.requireNonNull(audioMixingRule);
-
-        // var audioMixBuilder = new AudioMix.Builder(audioMixingRule);
-        @SuppressLint("PrivateApi")
-        Class<?> audioMixBuilderClass = Class.forName("android.media.audiopolicy.AudioMix$Builder");
-        Constructor audioMixBuilderConstructor =
-                        audioMixBuilderClass.getDeclaredConstructor(audioMixingRule.getClass());
-        Object audioMixBuilder = audioMixBuilderConstructor.newInstance(audioMixingRule);
-
-        Object audioFormat = new AudioFormat.Builder().setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-            .setSampleRate(48000)
-            .setChannelMask(AudioFormat.CHANNEL_IN_STEREO)
-            .build();
-
-        // audioMixBuilder.setFormat(audioFormat);
-        Method setFormatMethod =
-            audioMixBuilder.getClass().getDeclaredMethod("setFormat", AudioFormat.class);
-        setFormatMethod.invoke(audioMixBuilder, audioFormat);
-
-        // audioMixBuilder.setRouteFlags(ROUTE_FLAG_LOOP_BACK);
-        Method setRouteFlagsMethod =
-            audioMixBuilder.getClass().getDeclaredMethod("setRouteFlags", int.class);
-        int ROUTE_FLAG_LOOP_BACK = 0x1 << 1;
-        setRouteFlagsMethod.invoke(audioMixBuilder, ROUTE_FLAG_LOOP_BACK);
-
-        // var audioMix = audioMixBuilder.build();
-        Method audioMixBuildMethod = audioMixBuilder.getClass().getDeclaredMethod("build");
-        Object audioMix = audioMixBuildMethod.invoke(audioMixBuilder);
-        Objects.requireNonNull(audioMix);
-
-        // var audioPolicyBuilder = new AudioPolicy.Builder(systemContext);
-        @SuppressLint("PrivateApi")
-        Class<?> audioPolicyBuilderClass =
-                        Class.forName("android.media.audiopolicy.AudioPolicy$Builder");
-        Constructor audioPolicyBuilderConstructor =
-                        audioPolicyBuilderClass.getDeclaredConstructor(Context.class);
-        Object audioPolicyBuilder = audioPolicyBuilderConstructor.newInstance(systemContext);
-
-        // audioPolicyBuilder.addMix(audioMix);
-        Method addMixMethod =
-                        audioPolicyBuilder.getClass().getDeclaredMethod("addMix", audioMix.getClass());
-        addMixMethod.invoke(audioPolicyBuilder, audioMix);
-
-        // var audioPolicy = audioPolicyBuilder.build();
-        Method audioPolicyBuildMethod = audioPolicyBuilder.getClass().getDeclaredMethod("build");
-        Object audioPolicy = audioPolicyBuildMethod.invoke(audioPolicyBuilder);
-        Objects.requireNonNull(audioPolicy);
-
-        Object audioManager = (AudioManager) systemContext.getSystemService(AudioManager.class);
-
-        // audioManager.registerAudioPolicy(audioPolicy);
-        Method registerAudioPolicyMethod = audioManager.getClass()
-                        .getDeclaredMethod("registerAudioPolicy", audioPolicy.getClass());
-        // noinspection DataFlowIssue
-        int result = (int) registerAudioPolicyMethod.invoke(audioManager, audioPolicy);
-
-        if (result != 0) {
-            Ln.d("registerAudioPolicy failed");
-            return;
-        }
-
-        // var audioTrack = audioPolicy.createAudioTrackSource(audioMix);
-        Method createAudioTrackSourceMethod = audioPolicy.getClass()
-                        .getDeclaredMethod("createAudioTrackSource", audioMix.getClass());
-        AudioTrack audioTrack = (AudioTrack) createAudioTrackSourceMethod.invoke(audioPolicy, audioMix);
-        Objects.requireNonNull(audioTrack);
-
-        audioTrack.play();
-
-        new Thread(() -> {
-            byte[] audioBuffer = new byte[4096];
-            while (true) {
-                try {
-                    int bytesRead = pis.read(audioBuffer);
-                    if (bytesRead <= 0) {
-                      break;
-                    }
-                    audioTrack.write(audioBuffer, 0, bytesRead);
-                } catch (Exception e) {
-                    Ln.e(e.toString());
-                    break;
-                }
-            }
-        }, "client-audio-injector").start();
     }
 
     private static void scrcpy(Options options) throws IOException, ConfigurationException {
@@ -324,13 +173,12 @@ public final class Server {
                     InputStream is = s.getInputStream();
                     BufferedInputStream bis = new BufferedInputStream(is);
                     PipedOutputStream pos = new PipedOutputStream();
-                    //PipedInputStream pis = new PipedInputStream(pos, 65535);
-                    PipedInputStream pis = new PipedInputStream(pos, 500*1024);
+                    PipedInputStream pis = new PipedInputStream(pos, 500 * 1024);
                     AudioDecoder decoder = new AudioDecoder();
                     decoder.start(bis, pos);
-                    poc(pis);
+                    AudioInjector.injectAudio(pis);
                 } catch (Exception e) {
-                    Ln.e("audio exception: " + e);
+                    Ln.e("Client audio injection error", e);
                 }
             }
 
