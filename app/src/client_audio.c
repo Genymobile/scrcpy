@@ -47,73 +47,73 @@ sc_microphone_list_audio_sources(void) {
     AVInputFormat *input_format = av_find_input_format(format_name);
 
     if (!input_format) {
-        fprintf(stderr, "Could not find audio input format '%s'\n", format_name);
+        LOGE("Could not find audio input format '%s'", format_name);
         return;
     }
 
-    printf("Audio input format: %s (%s)\n",
+    LOGI("Audio input format: %s (%s)",
          input_format->name,
          input_format->long_name ? input_format->long_name : "no description");
-    printf("\nAvailable audio sources:\n");
+    LOGI("Available audio sources:");
 
     AVDeviceInfoList *device_list = NULL;
     int ret = avdevice_list_input_sources(input_format, NULL, NULL, &device_list);
 
     if (ret < 0) {
-        fprintf(stderr, "Could not list audio devices (error code: %d)\n", ret);
-        fprintf(stderr, "Note: You can still use device names directly with --client-audio-source\n");
-        fprintf(stderr, "Common device names:\n");
+        LOGE("Could not list audio devices (error code: %d)", ret);
+        LOGI("Note: You can still use device names directly with --client-audio-source");
+        LOGI("Common device names:");
 #ifdef _WIN32
-        fprintf(stderr, "  - \"audio=DEVICE_NAME\" (for dshow)\n");
-        fprintf(stderr, "  - Try running 'ffmpeg -list_devices true -f dshow -i dummy' to see available devices\n");
+        LOGI("  - \"audio=DEVICE_NAME\" (for dshow)");
+        LOGI("  - Try running 'ffmpeg -list_devices true -f dshow -i dummy' to see available devices");
 #elif defined(__APPLE__)
-        fprintf(stderr, "  - \":0\" (default microphone)\n");
-        fprintf(stderr, "  - Try running 'ffmpeg -f avfoundation -list_devices true -i \"\"' to see available devices\n");
+        LOGI("  - \":0\" (default microphone)");
+        LOGI("  - Try running 'ffmpeg -f avfoundation -list_devices true -i \"\"' to see available devices");
 #else
-        fprintf(stderr, "  - \"default\" (default ALSA device)\n");
-        fprintf(stderr, "  - \"hw:0,0\" (hardware device)\n");
-        fprintf(stderr, "  - Try running 'arecord -L' to list available devices\n");
+        LOGI("  - \"default\" (default ALSA device)");
+        LOGI("  - \"hw:0,0\" (hardware device)");
+        LOGI("  - Try running 'arecord -L' to list available devices");
 #endif
         return;
     }
 
     if (device_list->nb_devices == 0) {
-        printf("  No audio input devices found.\n");
+        LOGI("  No audio input devices found.");
     } else {
         for (int i = 0; i < device_list->nb_devices; i++) {
             AVDeviceInfo *device = device_list->devices[i];
-            printf("  %s", device->device_name);
             if (device->device_description) {
-                printf(" (%s)", device->device_description);
+                LOGI("  %s (%s)", device->device_name, device->device_description);
+            } else {
+                LOGI("  %s", device->device_name);
             }
-            printf("\n");
         }
     }
 
     avdevice_free_list_devices(&device_list);
 
-    printf("\nHow to use:\n");
-    printf("  Use the device name exactly as shown above with --client-audio-source\n");
-    printf("\nCommon microphone devices:\n");
+    LOGI("How to use:");
+    LOGI("  Use the device name exactly as shown above with --client-audio-source");
+    LOGI("Common microphone devices:");
 #ifdef _WIN32
-    printf("  - \"audio=DEVICE_NAME\" (use the exact name from the list)\n");
+    LOGI("  - \"audio=DEVICE_NAME\" (use the exact name from the list)");
 #elif defined(__APPLE__)
-    printf("  - \":0\" or \":1\" (device indices for macOS)\n");
-    printf("  - \"default\" (default microphone)\n");
+    LOGI("  - \":0\" or \":1\" (device indices for macOS)");
+    LOGI("  - \"default\" (default microphone)");
 #else
-    printf("  - \"default\" (usually your default microphone)\n");
-    printf("  - \"hw:CARD,DEV\" devices are hardware devices\n");
-    printf("  - \"pulse\" uses PulseAudio (if available)\n");
-    printf("  Tip: Devices with \"capture\", \"input\", or \"microphone\" are likely input devices\n");
+    LOGI("  - \"default\" (usually your default microphone)");
+    LOGI("  - \"hw:CARD,DEV\" devices are hardware devices");
+    LOGI("  - \"pulse\" uses PulseAudio (if available)");
+    LOGI("  Tip: Devices with \"capture\", \"input\", or \"microphone\" are likely input devices");
 #endif
-    printf("\nExamples:\n");
-    printf("  scrcpy --client-audio-source default\n");
+    LOGI("Examples:");
+    LOGI("  scrcpy --client-audio-source default");
 #ifdef _WIN32
-    printf("  scrcpy --client-audio-source \"audio=Microphone (Realtek Audio)\"\n");
+    LOGI("  scrcpy --client-audio-source \"audio=Microphone (Realtek Audio)\"");
 #else
-    printf("  scrcpy --client-audio-source \"hw:0,0\"\n");
+    LOGI("  scrcpy --client-audio-source \"hw:0,0\"");
 #endif
-    printf("  scrcpy --client-audio-source file:///path/to/audio.mp3\n");
+    LOGI("  scrcpy --client-audio-source file:///path/to/audio.mp3");
 }
 
 int
@@ -141,7 +141,7 @@ sc_microphone_run(void *data) {
         // Open audio file (MP3, OGG, WAV, etc.)
         LOGD("Opening audio file: %s", input_path);
         if (avformat_open_input(&fmt_ctx, input_path, NULL, NULL) < 0) {
-            fprintf(stderr, "Could not open audio file '%s'\n", input_path);
+            LOGE("Could not open audio file '%s'", input_path);
             goto cleanup;
         }
     } else {
@@ -151,18 +151,18 @@ sc_microphone_run(void *data) {
 
         input_format = av_find_input_format(format_name);
         if (!input_format) {
-            fprintf(stderr, "Could not find audio input format '%s'\n", format_name);
+            LOGE("Could not find audio input format '%s'", format_name);
             goto cleanup;
         }
 
         if (avformat_open_input(&fmt_ctx, input_path, input_format, NULL) < 0) {
-            fprintf(stderr, "Could not open audio device '%s'\n", input_path);
+            LOGE("Could not open audio device '%s'", input_path);
             goto cleanup;
         }
     }
 
     if (avformat_find_stream_info(fmt_ctx, NULL) < 0) {
-        fprintf(stderr, "Could not read stream info\n");
+        LOGE("Could not read stream info");
         goto cleanup;
     }
 
@@ -171,36 +171,36 @@ sc_microphone_run(void *data) {
             fmt_ctx->streams[audio_stream_index]->codecpar;
     AVCodec *in_codec = avcodec_find_decoder(in_codecpar->codec_id);
     if (!in_codec) {
-        fprintf(stderr, "Input codec not found\n");
+        LOGE("Input codec not found");
         goto cleanup;
     }
 
     in_codec_ctx = avcodec_alloc_context3(in_codec);
     if (!in_codec_ctx) {
-        fprintf(stderr, "Could not allocate input codec context\n");
+        LOGE("Could not allocate input codec context");
         goto cleanup;
     }
 
     avcodec_parameters_to_context(in_codec_ctx, in_codecpar);
     if (avcodec_open2(in_codec_ctx, in_codec, NULL) < 0) {
-        fprintf(stderr, "Could not open input codec\n");
+        LOGE("Could not open input codec");
         goto cleanup;
     }
 
-    LOGD("Input: sample_fmt=%d, sample_rate=%d, channels=%d\n",
+    LOGD("Input: sample_fmt=%d, sample_rate=%d, channels=%d",
        in_codec_ctx->sample_fmt, in_codec_ctx->sample_rate,
        in_codec_ctx->ch_layout.nb_channels);
 
     // Setup Opus encoder
     AVCodec *opus_codec = avcodec_find_encoder(AV_CODEC_ID_OPUS);
     if (!opus_codec) {
-        fprintf(stderr, "Opus encoder not found\n");
+        LOGE("Opus encoder not found");
         goto cleanup;
     }
 
     opus_ctx = avcodec_alloc_context3(opus_codec);
     if (!opus_ctx) {
-        fprintf(stderr, "Could not allocate Opus codec context\n");
+        LOGE("Could not allocate Opus codec context");
         goto cleanup;
     }
 
@@ -210,19 +210,19 @@ sc_microphone_run(void *data) {
     opus_ctx->bit_rate = 128000; // 128 kbps
 
     if (avcodec_open2(opus_ctx, opus_codec, NULL) < 0) {
-        fprintf(stderr, "Could not open Opus encoder\n");
+        LOGE("Could not open Opus encoder");
         goto cleanup;
     }
-    LOGD("opus_ctx->frame_size = %d\n", opus_ctx->frame_size);
+    LOGD("opus_ctx->frame_size = %d", opus_ctx->frame_size);
 
-    LOGD("Opus encoder: sample_rate=%d, channels=%d, bit_rate=%" PRId64 " fmt=%d\n",
+    LOGD("Opus encoder: sample_rate=%d, channels=%d, bit_rate=%" PRId64 " fmt=%d",
        opus_ctx->sample_rate, opus_ctx->ch_layout.nb_channels,
        opus_ctx->bit_rate, opus_ctx->sample_fmt);
 
     // Setup resampler (ALSA format -> Opus format)
     swr_ctx = swr_alloc();
     if (!swr_ctx) {
-        fprintf(stderr, "Could not allocate resampler\n");
+        LOGE("Could not allocate resampler");
         goto cleanup;
     }
 
@@ -231,7 +231,7 @@ sc_microphone_run(void *data) {
                                             in_codec_ctx->sample_fmt, in_codec_ctx->sample_rate, 0,
                                             NULL);
     if (swr_init(swr_ctx) < 0) {
-        fprintf(stderr, "Could not initialize resampler\n");
+        LOGE("Could not initialize resampler");
         goto cleanup;
     }
 
@@ -240,7 +240,7 @@ sc_microphone_run(void *data) {
     in_frame = av_frame_alloc();
     out_frame = av_frame_alloc();
     if (!in_pkt || !out_pkt || !in_frame || !out_frame) {
-        fprintf(stderr, "Could not allocate packets/frames\n");
+        LOGE("Could not allocate packets/frames");
         goto cleanup;
     }
 
@@ -248,22 +248,22 @@ sc_microphone_run(void *data) {
     out_frame->ch_layout = opus_ctx->ch_layout;
     out_frame->sample_rate = opus_ctx->sample_rate;
     out_frame->nb_samples = opus_ctx->frame_size;
-    LOGD("setting nb_samples to %d\n", opus_ctx->frame_size);
+    LOGD("setting nb_samples to %d", opus_ctx->frame_size);
     if (av_frame_get_buffer(out_frame, 0) < 0) {
-        fprintf(stderr, "Could not allocate frame buffer\n");
+        LOGE("Could not allocate frame buffer");
         goto cleanup;
     }
 
     fifo = av_audio_fifo_alloc(opus_ctx->sample_fmt, opus_ctx->ch_layout.nb_channels,
                                                     opus_ctx->frame_size * 2);
     if (!fifo) {
-        fprintf(stderr, "Could not allocate audio FIFO\n");
+        LOGE("Could not allocate audio FIFO");
         goto cleanup;
     }
 
-    printf("Recording audio with Opus encoding...\n");
+    LOGI("Recording audio with Opus encoding...");
     if (is_file) {
-        printf("File will loop continuously. Press Ctrl+C to stop.\n");
+        LOGI("File will loop continuously. Press Ctrl+C to stop.");
     }
 
     // For file playback: track timing to simulate real-time playback
