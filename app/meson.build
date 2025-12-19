@@ -11,6 +11,7 @@ src = [
     'src/compat.c',
     'src/control_msg.c',
     'src/controller.c',
+    'src/control_forwarder.c',
     'src/decoder.c',
     'src/demuxer.c',
     'src/device_msg.c',

@@ -347,6 +347,7 @@ struct scrcpy_options {
     bool ignore_video_encoder_constraints;
     bool update_terminal_title;
     uint16_t tcp_restream_port; // 0 = disabled
+    uint16_t tcp_control_forwarding_port; // 0 = disabled
 };
 
 extern const struct scrcpy_options scrcpy_options_default;

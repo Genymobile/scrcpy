@@ -16,6 +16,7 @@
 
 #include "audio_player.h"
 #include "controller.h"
+#include "control_forwarder.h"
 #include "decoder.h"
 #include "demuxer.h"
 #include "events.h"
@@ -60,6 +61,7 @@ struct scrcpy {
     struct sc_recorder recorder;
     struct sc_video_regulator video_regulator;
     struct sc_tcp_sink tcp_sink;
+    struct sc_control_forwarder control_forwarder;
     struct sc_delay_buffer video_buffer;
 #ifdef HAVE_V4L2
     struct sc_v4l2_sink v4l2_sink;
@@ -345,6 +347,8 @@ scrcpy(struct scrcpy_options *options) {
     bool recorder_started = false;
     bool tcp_sink_initialized = false;
     bool tcp_sink_started = false;
+    bool control_forwarder_initialized = false;
+    bool control_forwarder_started = false;
 #ifdef HAVE_V4L2
     bool v4l2_sink_initialized = false;
 #endif
@@ -773,6 +777,23 @@ aoa_complete:
             goto end;
         }
         controller_started = true;
+        
+        // Start control forwarder if requested
+        if (options->tcp_control_forwarding_port) {
+            if (!sc_control_forwarder_init(&s->control_forwarder,
+                                           options->tcp_control_forwarding_port)) {
+                goto end;
+            }
+            control_forwarder_initialized = true;
+            
+            if (!sc_control_forwarder_start(&s->control_forwarder, &s->controller)) {
+                goto end;
+            }
+            control_forwarder_started = true;
+            
+            LOGI("TCP control forwarding enabled on port %u",
+                 options->tcp_control_forwarding_port);
+        }
     }
 
     // There is a controller if and only if control is enabled
@@ -960,6 +981,9 @@ end:
     if (tcp_sink_started) {
         sc_tcp_sink_stop(&s->tcp_sink);
     }
+    if (control_forwarder_started) {
+        sc_control_forwarder_stop(&s->control_forwarder);
+    }
     if (screen_initialized) {
         sc_screen_interrupt(&s->screen);
     }
@@ -1053,6 +1077,13 @@ end:
     }
     if (tcp_sink_initialized) {
         sc_tcp_sink_destroy(&s->tcp_sink);
+    }
+    
+    if (control_forwarder_started) {
+        sc_control_forwarder_join(&s->control_forwarder);
+    }
+    if (control_forwarder_initialized) {
+        sc_control_forwarder_destroy(&s->control_forwarder);
     }
 
     if (file_pusher_initialized) {
