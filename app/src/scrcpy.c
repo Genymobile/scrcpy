@@ -457,6 +457,8 @@ scrcpy(struct scrcpy_options *options) {
         .audio_codec_options = options->audio_codec_options,
         .video_encoder = options->video_encoder,
         .audio_encoder = options->audio_encoder,
+        .audio_ignore_apps = options->audio_ignore_apps,
+        .audio_filter_apps = options->audio_filter_apps,
         .camera_id = options->camera_id,
         .camera_size = options->camera_size,
         .camera_ar = options->camera_ar,

@@ -384,6 +384,14 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->audio_encoder);
         ADD_PARAM("audio_encoder=%s", params->audio_encoder);
     }
+    if (params->audio_ignore_apps) {
+        VALIDATE_STRING(params->audio_ignore_apps);
+        ADD_PARAM("audio_ignore_apps=%s", params->audio_ignore_apps);
+    }
+    if (params->audio_filter_apps) {
+        VALIDATE_STRING(params->audio_filter_apps);
+        ADD_PARAM("audio_filter_apps=%s", params->audio_filter_apps);
+    }
     if (params->power_off_on_close) {
         ADD_PARAM("power_off_on_close=true");
     }

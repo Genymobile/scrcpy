@@ -13,6 +13,7 @@ import com.genymobile.scrcpy.opengl.OpenGLRunner;
 import com.genymobile.scrcpy.util.AffineMatrix;
 import com.genymobile.scrcpy.util.Ln;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
+import com.genymobile.scrcpy.audio.AudioPlaybackCapture;
 
 import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
@@ -56,7 +57,10 @@ public class NewDisplayCapture extends SurfaceCapture {
     private final Orientation captureOrientation;
     private final float angle;
     private final boolean vdDestroyContent;
+
     private final boolean vdSystemDecorations;
+    private final java.util.List<String> audioIgnoreApps;
+    private final java.util.List<String> audioFilterApps;
 
     private VirtualDisplay virtualDisplay;
     private Size videoSize;
@@ -79,6 +83,8 @@ public class NewDisplayCapture extends SurfaceCapture {
         this.angle = options.getAngle();
         this.vdDestroyContent = options.getVDDestroyContent();
         this.vdSystemDecorations = options.getVDSystemDecorations();
+        this.audioIgnoreApps = options.getAudioIgnoreApps();
+        this.audioFilterApps = options.getAudioFilterApps();
     }
 
     @Override
@@ -166,6 +172,129 @@ public class NewDisplayCapture extends SurfaceCapture {
         displayTransform = AffineMatrix.multiplyAll(displayRotationMatrix, eventTransform);
     }
 
+    private AudioPlaybackCapture audioCapture;
+    private Thread appMonitorThread;
+    private volatile boolean monitorRunning;
+
+    public void setAudioCapture(AudioPlaybackCapture audioCapture) {
+        Ln.i("NewDisplayCapture: setAudioCapture called with " + audioCapture);
+        this.audioCapture = audioCapture;
+    }
+
+    private void startAppMonitor(int displayId) {
+        Ln.d("startAppMonitor called for displayId: " + displayId);
+        if (audioCapture == null) {
+            Ln.w("audioCapture is null in startAppMonitor, skipping monitor");
+            return;
+        }
+
+        monitorRunning = true;
+        appMonitorThread = new Thread(() -> {
+            Ln.d("AppMonitor thread started");
+            String lastPackageName = null;
+            int lastUid = -2; // Force update on first detection
+            com.genymobile.scrcpy.wrappers.ActivityManager am = ServiceManager.getActivityManager();
+            com.genymobile.scrcpy.wrappers.PackageManager pm = ServiceManager.getPackageManager();
+
+            while (monitorRunning) {
+                try {
+                    // Increase limit to 50 to ensure we find tasks even if many background tasks exist
+                    java.util.List<android.app.ActivityManager.RunningTaskInfo> tasks = am.getRunningTasks(50);
+                    boolean foundTopApp = false;
+                    if (tasks != null) {
+                        for (android.app.ActivityManager.RunningTaskInfo task : tasks) {
+                            int taskDisplayId = getTaskDisplayId(task);
+                            String paramPkg = task.topActivity != null ? task.topActivity.getPackageName() : "null";
+
+                            if (audioFilterApps != null && audioFilterApps.contains(paramPkg)) {
+                                continue;
+                            }
+
+                            if (taskDisplayId == displayId && task.topActivity != null) {
+                                if (!foundTopApp) {
+                                    // This is the FIRST task we found for this display -> It is the Top App
+                                    foundTopApp = true;
+                                    String packageName = paramPkg;
+                                    if (!packageName.equals(lastPackageName)) {
+                                        Ln.i("App changed on display " + displayId + ": " + packageName);
+                                        lastPackageName = packageName;
+
+                                        int newUid = -1;
+                                        if (audioIgnoreApps != null && audioIgnoreApps.contains(packageName)) {
+                                            Ln.i("App ignored (forcing global audio): " + packageName);
+                                            newUid = -1;
+                                        } else {
+                                            // Resolve UID
+                                            try {
+                                                android.content.pm.ApplicationInfo info = pm.getApplicationInfo(packageName, 0, 0);
+                                                if (info != null) {
+                                                    newUid = info.uid;
+                                                }
+                                            } catch (Exception e) {
+                                                Ln.e("Could not get UID for " + packageName, e);
+                                            }
+                                        }
+
+                                        if (newUid != lastUid) {
+                                            Ln.i("Updating audio capture target UID: " + newUid + " for package: " + packageName);
+                                            audioCapture.setTargetUid(newUid);
+                                            lastUid = newUid;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+
+                    }
+
+                    if (!foundTopApp) {
+                        if (!"SYSTEM".equals(lastPackageName)) {
+                            Ln.i("No app detected on display " + displayId + ", switching to Global Audio");
+                            lastPackageName = "SYSTEM";
+                            if (lastUid != -1) {
+                                audioCapture.setTargetUid(-1);
+                                lastUid = -1;
+                            }
+                        }
+                    }
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    break;
+                } catch (Exception e) {
+                    Ln.e("App monitor error", e);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException ignored) {
+                        // ignored
+                    }
+                }
+            }
+        }, "AppMonitor");
+        appMonitorThread.start();
+    }
+
+    @android.annotation.SuppressLint("BlockedPrivateApi")
+    private static int getTaskDisplayId(android.app.ActivityManager.RunningTaskInfo task) {
+        try {
+            Class<?> taskInfoClass = Class.forName("android.app.TaskInfo");
+            java.lang.reflect.Field displayIdField = taskInfoClass.getDeclaredField("displayId");
+            displayIdField.setAccessible(true);
+            return displayIdField.getInt(task);
+        } catch (Exception e) {
+            Ln.w("Could not get displayId from task", e);
+            return -1;
+        }
+    }
+
+    private void stopAppMonitor() {
+        monitorRunning = false;
+        if (appMonitorThread != null) {
+            appMonitorThread.interrupt();
+            appMonitorThread = null;
+        }
+    }
+
     public void startNew(Surface surface) {
         int virtualDisplayId;
         try {
@@ -200,6 +329,9 @@ public class NewDisplayCapture extends SurfaceCapture {
             }
 
             displaySizeMonitor.start(virtualDisplayId, this::invalidate);
+
+            startAppMonitor(virtualDisplayId);
+
         } catch (Exception e) {
             Ln.e("Could not create display", e);
             throw new AssertionError("Could not create display");
@@ -219,6 +351,7 @@ public class NewDisplayCapture extends SurfaceCapture {
             startNew(surface);
         } else {
             virtualDisplay.setSurface(surface);
+            startAppMonitor(virtualDisplay.getDisplay().getDisplayId());
         }
 
         if (vdListener != null) {
@@ -229,6 +362,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void stop() {
+        stopAppMonitor();
         if (glRunner != null) {
             glRunner.stopAndRelease();
             glRunner = null;
@@ -237,6 +371,7 @@ public class NewDisplayCapture extends SurfaceCapture {
 
     @Override
     public void release() {
+        stopAppMonitor();
         displaySizeMonitor.stopAndRelease();
 
         if (virtualDisplay != null) {

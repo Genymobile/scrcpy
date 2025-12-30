@@ -1,5 +1,6 @@
 package com.genymobile.scrcpy;
 
+import java.util.Arrays;
 import com.genymobile.scrcpy.audio.AudioCodec;
 import com.genymobile.scrcpy.audio.AudioSource;
 import com.genymobile.scrcpy.device.Device;
@@ -55,6 +56,8 @@ public class Options {
 
     private String videoEncoder;
     private String audioEncoder;
+    private List<String> audioIgnoreApps;
+    private List<String> audioFilterApps;
     private boolean powerOffScreenOnClose;
     private boolean clipboardAutosync = true;
     private boolean downsizeOnError = true;
@@ -206,6 +209,14 @@ public class Options {
 
     public String getAudioEncoder() {
         return audioEncoder;
+    }
+
+    public List<String> getAudioIgnoreApps() {
+        return audioIgnoreApps;
+    }
+
+    public List<String> getAudioFilterApps() {
+        return audioFilterApps;
     }
 
     public boolean getPowerOffScreenOnClose() {
@@ -414,6 +425,17 @@ public class Options {
                     if (!value.isEmpty()) {
                         options.audioEncoder = value;
                     }
+                    break;
+                case "audio_ignore_apps":
+                    if (!value.isEmpty()) {
+                        options.audioIgnoreApps = Arrays.asList(value.split(","));
+                    }
+                    break;
+                case "audio_filter_apps":
+                    if (!value.isEmpty()) {
+                        options.audioFilterApps = Arrays.asList(value.split(","));
+                    }
+                    break;
                 case "power_off_on_close":
                     options.powerOffScreenOnClose = Boolean.parseBoolean(value);
                     break;

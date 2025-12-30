@@ -98,6 +98,7 @@ enum {
     OPT_ORIENTATION,
     OPT_KEYBOARD,
     OPT_MOUSE,
+    OPT_AUDIO_FILTER_APPS,
     OPT_HID_KEYBOARD_DEPRECATED,
     OPT_HID_MOUSE_DEPRECATED,
     OPT_NO_WINDOW,
@@ -114,6 +115,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_AUDIO_IGNORE_APPS,
 };
 
 struct sc_option {
@@ -212,6 +214,24 @@ static const struct sc_option options[] = {
         .text = "Use a specific MediaCodec audio encoder (depending on the "
                 "codec provided by --audio-codec).\n"
                 "The available encoders can be listed by --list-encoders.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_IGNORE_APPS,
+        .longopt = "audio-ignore-apps",
+        .argdesc = "pkg",
+        .text = "Ignore specific applications for AppMonitor (audio isolation).\n"
+                "When these apps are detected, AppMonitor switches to Global "
+                "Capture (UID -1) to prevent audio stream issues.\n"
+                "Can be comma-separated list.",
+    },
+    {
+        .longopt_id = OPT_AUDIO_FILTER_APPS,
+        .longopt = "audio-filter-apps",
+        .argdesc = "pkg",
+        .text = "Filter (ignore) applications for AppMonitor detection.\n"
+                "These apps will be completely ignored, allowing AppMonitor to "
+                "detect the app beneath them (e.g. for transparent overlays).\n"
+                "Can be comma-separated list.",
     },
     {
         .longopt_id = OPT_AUDIO_SOURCE,
@@ -2608,6 +2628,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_AUDIO_ENCODER:
                 opts->audio_encoder = optarg;
+                break;
+            case OPT_AUDIO_IGNORE_APPS:
+                opts->audio_ignore_apps = optarg;
+                break;
+            case OPT_AUDIO_FILTER_APPS:
+                opts->audio_filter_apps = optarg;
                 break;
             case OPT_FORCE_ADB_FORWARD:
                 opts->force_adb_forward = true;

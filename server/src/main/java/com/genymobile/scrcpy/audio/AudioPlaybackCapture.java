@@ -28,6 +28,25 @@ public final class AudioPlaybackCapture implements AudioCapture {
         this.keepPlayingOnDevice = keepPlayingOnDevice;
     }
 
+    private int targetUid = -1;
+    private final Object restartLock = new Object();
+    private boolean restartRequested = false;
+
+    public void setTargetUid(int uid) {
+        synchronized (restartLock) {
+            if (this.targetUid != uid) {
+                Ln.i("AudioPlaybackCapture: setTargetUid changed from " + this.targetUid + " to " + uid);
+                this.targetUid = uid;
+                restartRequested = true;
+                if (recorder != null) {
+                    recorder.release();
+                }
+            }
+        }
+    }
+
+    private Object currentAudioPolicy;
+
     @SuppressLint("PrivateApi")
     private AudioRecord createAudioRecord() throws AudioCaptureException {
         // See <https://github.com/Genymobile/scrcpy/issues/4380>
@@ -43,12 +62,41 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Method setTargetMixRoleMethod = audioMixingRuleBuilderClass.getMethod("setTargetMixRole", int.class);
             setTargetMixRoleMethod.invoke(audioMixingRuleBuilder, mixRolePlayersConstant);
 
-            AudioAttributes attributes = new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build();
-
             // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_ATTRIBUTE_USAGE, attributes);
             int ruleMatchAttributeUsageConstant = audioMixingRuleClass.getField("RULE_MATCH_ATTRIBUTE_USAGE").getInt(null);
             Method addMixRuleMethod = audioMixingRuleBuilderClass.getMethod("addMixRule", int.class, Object.class);
-            addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+
+            if (targetUid >= 0) {
+                // audioMixingRuleBuilder.addMixRule(AudioMixingRule.RULE_MATCH_UID, targetUid);
+                int ruleMatchUidConstant;
+                try {
+                     ruleMatchUidConstant = audioMixingRuleClass.getField("RULE_MATCH_UID").getInt(null);
+                } catch (Exception e) {
+                     ruleMatchUidConstant = 4; // RULE_MATCH_UID = 4
+                }
+                addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchUidConstant, Integer.valueOf(targetUid));
+                Ln.i("Added UID rule for targetUid: " + targetUid);
+
+                for (int usage = 0; usage <= 16; usage++) {
+                    try {
+                        AudioAttributes attributes = new AudioAttributes.Builder().setUsage(usage).build();
+                        addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+                    } catch (Exception e) {
+                        // Ignore invalid usages if any
+                    }
+                }
+                Ln.i("Added explicit usage rules (0-16) for targetUid: " + targetUid);
+            } else {
+                for (int usage = 0; usage <= 16; usage++) {
+                    try {
+                        AudioAttributes attributes = new AudioAttributes.Builder().setUsage(usage).build();
+                        addMixRuleMethod.invoke(audioMixingRuleBuilder, ruleMatchAttributeUsageConstant, attributes);
+                    } catch (Exception e) {
+                        // Ignore invalid usages if any
+                    }
+                }
+                Ln.i("No target UID set, global audio capture enabled (All Usages 0-16)");
+            }
 
             // AudioMixingRule audioMixingRule = builder.build();
             Object audioMixingRule = audioMixingRuleBuilderClass.getMethod("build").invoke(audioMixingRuleBuilder);
@@ -97,6 +145,7 @@ public final class AudioPlaybackCapture implements AudioCapture {
             if (result != 0) {
                 throw new RuntimeException("registerAudioPolicy() returned " + result);
             }
+            this.currentAudioPolicy = audioPolicy; // Store it!
 
             // audioPolicy.createAudioRecordSink(audioPolicy);
             Method createAudioRecordSinkClass = audioPolicyClass.getMethod("createAudioRecordSink", audioMixClass);
@@ -105,6 +154,21 @@ public final class AudioPlaybackCapture implements AudioCapture {
             Ln.e("Could not capture audio playback", e);
             throw new AudioCaptureException();
         }
+    }
+
+    private void unregisterAudioPolicy() {
+         if (currentAudioPolicy != null) {
+             try {
+                 Ln.d("Unregistering AudioPolicy");
+                 Class<?> audioPolicyClass = Class.forName("android.media.audiopolicy.AudioPolicy");
+                 Method unregisterMethod = AudioManager.class.getDeclaredMethod("unregisterAudioPolicyAsyncStatic", audioPolicyClass);
+                 unregisterMethod.setAccessible(true);
+                 unregisterMethod.invoke(null, currentAudioPolicy);
+             } catch (Exception e) {
+                 Ln.w("Could not unregister audio policy", e);
+             }
+             currentAudioPolicy = null;
+         }
     }
 
     @Override
@@ -117,6 +181,13 @@ public final class AudioPlaybackCapture implements AudioCapture {
 
     @Override
     public void start() throws AudioCaptureException {
+        unregisterAudioPolicy();
+        try {
+            // Give some time for the async unregistration to settle
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            // ignore
+        }
         recorder = createAudioRecord();
         recorder.startRecording();
         reader = new AudioRecordReader(recorder);
@@ -127,12 +198,45 @@ public final class AudioPlaybackCapture implements AudioCapture {
         if (recorder != null) {
             // Will call .stop() if necessary, without throwing an IllegalStateException
             recorder.release();
+            recorder = null; // Important to set null so check in restart works
         }
+        unregisterAudioPolicy(); // Cleanup!
     }
 
     @Override
     @TargetApi(AndroidVersions.API_24_ANDROID_7_0)
     public int read(ByteBuffer outDirectBuffer, MediaCodec.BufferInfo outBufferInfo) {
-        return reader.read(outDirectBuffer, outBufferInfo);
+        synchronized (restartLock) {
+            if (restartRequested) {
+                try {
+                    start();
+                    restartRequested = false;
+                } catch (AudioCaptureException e) {
+                    Ln.e("And restart failed", e);
+                    return -1;
+                }
+            }
+        }
+        if (reader == null) {
+            return -1;
+        }
+        int r = reader.read(outDirectBuffer, outBufferInfo);
+        if (r < 0) {
+            synchronized (restartLock) {
+                if (restartRequested) {
+                    // try to restart immediately to avoid returning error
+                   return read(outDirectBuffer, outBufferInfo);
+                }
+            }
+        }
+        if (r == 0) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                return -1;
+            }
+            return read(outDirectBuffer, outBufferInfo);
+        }
+        return r;
     }
 }

@@ -76,12 +76,10 @@ public final class ActivityManager {
                 // old version
                 args = new Object[]{name, FakeContext.ROOT_UID, token};
             }
-            // ContentProviderHolder providerHolder = getContentProviderExternal(...);
             Object providerHolder = method.invoke(manager, args);
             if (providerHolder == null) {
                 return null;
             }
-            // IContentProvider provider = providerHolder.provider;
             Field providerField = providerHolder.getClass().getDeclaredField("provider");
             providerField.setAccessible(true);
             return (IContentProvider) providerField.get(providerHolder);
@@ -157,9 +155,19 @@ public final class ActivityManager {
     public void forceStopPackage(String packageName) {
         try {
             Method method = getForceStopPackageMethod();
-            method.invoke(manager, packageName, /* userId */ /* UserHandle.USER_CURRENT */ -2);
+            method.invoke(manager, packageName, -2);
         } catch (Throwable e) {
             Ln.e("Could not invoke method", e);
+        }
+    }
+
+    public java.util.List<android.app.ActivityManager.RunningTaskInfo> getRunningTasks(int maxNum) {
+        try {
+            Method method = manager.getClass().getMethod("getTasks", int.class);
+            return (java.util.List<android.app.ActivityManager.RunningTaskInfo>) method.invoke(manager, maxNum);
+        } catch (Throwable e) {
+            Ln.e("Could not invoke getTasks", e);
+            return null;
         }
     }
 }

@@ -116,14 +116,17 @@ public final class Server {
                 asyncProcessors.add(controller);
             }
 
+            AudioCapture audioCapture = null;
             if (audio) {
                 AudioCodec audioCodec = options.getAudioCodec();
                 AudioSource audioSource = options.getAudioSource();
-                AudioCapture audioCapture;
+                Ln.i("Server: Audio Source: " + audioSource + " (isDirect=" + audioSource.isDirect() + ")");
+
                 if (audioSource.isDirect()) {
                     audioCapture = new AudioDirectCapture(audioSource);
                 } else {
-                    audioCapture = new AudioPlaybackCapture(options.getAudioDup());
+                    // Force disable audio duplication for isolation
+                    audioCapture = new AudioPlaybackCapture(false);
                 }
 
                 Streamer audioStreamer = new Streamer(connection.getAudioFd(), audioCodec, options.getSendCodecMeta(), options.getSendFrameMeta());
@@ -143,7 +146,15 @@ public final class Server {
                 if (options.getVideoSource() == VideoSource.DISPLAY) {
                     NewDisplay newDisplay = options.getNewDisplay();
                     if (newDisplay != null) {
-                        surfaceCapture = new NewDisplayCapture(controller, options);
+                        NewDisplayCapture ndc = new NewDisplayCapture(controller, options);
+                        if (audioCapture instanceof AudioPlaybackCapture) {
+                            Ln.i("Server: Setting AudioPlaybackCapture for NewDisplayCapture");
+                            ndc.setAudioCapture((AudioPlaybackCapture) audioCapture);
+                        } else {
+                            Ln.w("Server: audioCapture is NOT AudioPlaybackCapture: " + (audioCapture == null ? "null" : audioCapture.getClass().getName()));
+                            Ln.w("Server: To filter audio by app, you likely need --audio-source=playback");
+                        }
+                        surfaceCapture = ndc;
                     } else {
                         assert options.getDisplayId() != Device.DISPLAY_ID_NONE;
                         surfaceCapture = new ScreenCapture(controller, options);

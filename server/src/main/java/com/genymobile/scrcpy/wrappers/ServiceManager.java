@@ -31,10 +31,10 @@ public final class ServiceManager {
     private static StatusBarManager statusBarManager;
     private static ClipboardManager clipboardManager;
     private static ActivityManager activityManager;
+    private static PackageManager packageManager;
     private static CameraManager cameraManager;
 
     private ServiceManager() {
-        /* not instantiable */
     }
 
     static IInterface getService(String service, String type) {
@@ -54,7 +54,6 @@ public final class ServiceManager {
         return windowManager;
     }
 
-    // The DisplayManager may be used from both the Controller thread and the video (main) thread
     public static synchronized DisplayManager getDisplayManager() {
         if (displayManager == null) {
             displayManager = DisplayManager.create();
@@ -85,7 +84,6 @@ public final class ServiceManager {
 
     public static ClipboardManager getClipboardManager() {
         if (clipboardManager == null) {
-            // May be null, some devices have no clipboard manager
             clipboardManager = ClipboardManager.create();
         }
         return clipboardManager;
@@ -96,6 +94,13 @@ public final class ServiceManager {
             activityManager = ActivityManager.create();
         }
         return activityManager;
+    }
+
+    public static PackageManager getPackageManager() {
+        if (packageManager == null) {
+            packageManager = PackageManager.create();
+        }
+        return packageManager;
     }
 
     public static CameraManager getCameraManager() {

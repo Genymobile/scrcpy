@@ -32,6 +32,8 @@ struct sc_server_params {
     const char *audio_codec_options;
     const char *video_encoder;
     const char *audio_encoder;
+    const char *audio_ignore_apps;
+    const char *audio_filter_apps;
     const char *camera_id;
     const char *camera_size;
     const char *camera_ar;
