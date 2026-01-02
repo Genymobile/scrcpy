@@ -558,7 +558,7 @@ static const struct sc_option options[] = {
     },
     {
         .longopt_id = OPT_LIST_AUDIO_SOURCES,
-        .longopt = "list-audio-sources",
+        .longopt = "list-client-audio-sources",
         .text = "List available audio input sources on the client computer.",
     },
     {
