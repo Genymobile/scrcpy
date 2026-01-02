@@ -2970,6 +2970,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+    if (opts->client_audio_source &&
+        (opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL ||
+         opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL_UPLINK)) {
+        LOGE("--client-audio-source is incompatible with --audio-source=voice-call and --audio-source=voice-call-uplink");
+        return false;
+    }
+
     if (otg) {
         if (!opts->control) {
             LOGE("--no-control is not allowed in OTG mode");

@@ -563,6 +563,12 @@ public class Options {
             options.displayId = Device.DISPLAY_ID_NONE;
         }
 
+        if (options.client_audio &&
+            (options.audioSource == AudioSource.VOICE_CALL ||
+             options.audioSource == AudioSource.VOICE_CALL_UPLINK)) {
+            throw new IllegalArgumentException("client_audio is incompatible with audio_source=voice-call and audio_source=voice-call-uplink");
+        }
+
         return options;
     }
 
