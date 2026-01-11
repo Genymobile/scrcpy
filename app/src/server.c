@@ -215,6 +215,11 @@ execute_server(struct sc_server *server,
     cmd[count++] = "-s";
     cmd[count++] = serial;
     cmd[count++] = "shell";
+    if (params->root) {
+        cmd[count++] = "su";
+        cmd[count++] = "1000";
+        cmd[count++] = "-c";
+    }
     cmd[count++] = "CLASSPATH=" SC_DEVICE_SERVER_PATH;
     cmd[count++] = "app_process";
 

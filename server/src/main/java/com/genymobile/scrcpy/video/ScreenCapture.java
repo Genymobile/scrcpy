@@ -21,6 +21,7 @@ import android.graphics.Rect;
 import android.hardware.display.VirtualDisplay;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.Process;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -196,8 +197,8 @@ public class ScreenCapture extends SurfaceCapture {
     private static IBinder createDisplay() throws Exception {
         // Since Android 12 (preview), secure displays could not be created with shell permissions anymore.
         // On Android 12 preview, SDK_INT is still R (not S), but CODENAME is "S".
-        boolean secure = Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11 || (Build.VERSION.SDK_INT == AndroidVersions.API_30_ANDROID_11
-                && !"S".equals(Build.VERSION.CODENAME));
+        boolean secure = (Build.VERSION.SDK_INT < AndroidVersions.API_30_ANDROID_11 || (Build.VERSION.SDK_INT == AndroidVersions.API_30_ANDROID_11
+                && !"S".equals(Build.VERSION.CODENAME))) || android.os.Process.myUid() == 1000;
         return SurfaceControl.createDisplay("scrcpy", secure);
     }
 

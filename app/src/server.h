@@ -70,6 +70,7 @@ struct sc_server_params {
     bool camera_high_speed;
     bool vd_destroy_content;
     bool vd_system_decorations;
+    bool root;
     uint8_t list;
 };
 

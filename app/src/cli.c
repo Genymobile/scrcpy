@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_ROOT,
 };
 
 struct sc_option {
@@ -840,6 +841,15 @@ static const struct sc_option options[] = {
         .text = "By default, scrcpy mirrors only the video when audio capture "
                 "fails on the device. This option makes scrcpy fail if audio "
                 "is enabled but does not work."
+    },
+    {
+        .longopt_id = OPT_ROOT,
+        .longopt = "root",
+        .text = "By default, scrcpy simply uses the ADB shell user context to "
+                "execute the server on the device. This option instructs it to "
+                "use the 'su' command to run the server as the system user in "
+                "order to retain the ability to create a secure display. This "
+                "allows apps that use `FLAG_SECURE` to be mirrored to your PC."
     },
     {
         // deprecated
@@ -2723,6 +2733,9 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
+                break;
+            case OPT_ROOT:
+                opts->root = true;
                 break;
             case OPT_AUDIO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->audio_buffer)) {
