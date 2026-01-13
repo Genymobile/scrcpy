@@ -2739,16 +2739,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->clipboard_autosync = false;
                 LOGI("Clipboard autosync breaks when root is used to create a"
                      " secure display.\n"
-                     "We have not yet found a workaround to get clipboard data"
-                     " while the server\n"
-                     "is being ran as root. The reason it works as UID 2000"
-                     " (shell) is because\n"
-                     "that user has an associated package which the server runs"
-                     " in the context of.\n"
-                     "We are physically unable to retain or fake this context"
-                     " when running as UID 0.\n"
-                     "A contributor is currently attempting to find a solution"
-                     " to this problem.");
+                     "The shell user has direct Binder bypasses such that it"
+                     " is allowed access to the\n"
+                     "clipboard unrestricted. However, the system user does not"
+                     " have this bypass.\n"
+                     "It can't read its contents or set up listeners, but it"
+                     " has write permissions.\n"
+                     "Until further notice, clipboard autosync will be forcibly"
+                     " disabled with --root.");
                 break;
             case OPT_AUDIO_BUFFER:
                 if (!parse_buffering_time(optarg, &opts->audio_buffer)) {
