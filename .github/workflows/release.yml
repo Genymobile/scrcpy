@@ -17,10 +17,10 @@ jobs:
       GRADLE: gradle  # use native gradle instead of ./gradlew in scripts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -34,10 +34,10 @@ jobs:
       GRADLE: gradle  # use native gradle instead of ./gradlew in scripts
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -46,7 +46,7 @@ jobs:
         run: release/build_server.sh
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: scrcpy-server
           path: release/work/build-server/server/scrcpy-server
@@ -55,10 +55,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -70,7 +70,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
         # Same as build-linux-x86_64
       - name: Install dependencies
@@ -110,7 +110,7 @@ jobs:
             fi
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
         # https://wiki.libsdl.org/SDL3/README-linux#build-dependencies
       - name: Install dependencies
@@ -138,7 +138,7 @@ jobs:
             tar -C .. -cvf dist.tar.gz dist/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-linux-x86_64-intermediate
           path: release/work/build-linux-x86_64/dist-tar/
@@ -147,7 +147,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
@@ -167,7 +167,7 @@ jobs:
             tar -C .. -cvf dist.tar.gz dist/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-win32-intermediate
           path: release/work/build-win32/dist-tar/
@@ -176,7 +176,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
@@ -196,7 +196,7 @@ jobs:
             tar -C .. -cvf dist.tar.gz dist/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
@@ -214,7 +214,7 @@ jobs:
             fi
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
@@ -239,7 +239,7 @@ jobs:
             tar -C .. -cvf dist.tar.gz dist/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-macos-aarch64-intermediate
           path: release/work/build-macos-aarch64/dist-tar/
@@ -257,7 +257,7 @@ jobs:
             fi
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: brew install meson nasm libiconv zlib automake
@@ -282,7 +282,7 @@ jobs:
             tar -C .. -cvf dist.tar.gz dist/
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-macos-x86_64-intermediate
           path: release/work/build-macos-x86_64/dist-tar/
@@ -294,16 +294,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download build-linux-x86_64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-linux-x86_64-intermediate
           path: release/work/build-linux-x86_64/dist-tar/
@@ -318,7 +318,7 @@ jobs:
         run: release/package_client.sh linux-x86_64 tar.gz
 
       - name: Upload release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-linux-x86_64
           path: release/output/
@@ -330,16 +330,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download build-win32
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-win32-intermediate
           path: release/work/build-win32/dist-tar/
@@ -354,7 +354,7 @@ jobs:
         run: release/package_client.sh win32 zip
 
       - name: Upload release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-win32
           path: release/output/
@@ -366,16 +366,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download build-win64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-win64-intermediate
           path: release/work/build-win64/dist-tar/
@@ -390,7 +390,7 @@ jobs:
         run: release/package_client.sh win64 zip
 
       - name: Upload release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-win64
           path: release/output
@@ -402,16 +402,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download build-macos-aarch64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-macos-aarch64-intermediate
           path: release/work/build-macos-aarch64/dist-tar/
@@ -426,7 +426,7 @@ jobs:
         run: release/package_client.sh macos-aarch64 tar.gz
 
       - name: Upload release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-macos-aarch64
           path: release/output/
@@ -438,16 +438,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download build-macos
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build-macos-x86_64-intermediate
           path: release/work/build-macos-x86_64/dist-tar/
@@ -462,7 +462,7 @@ jobs:
         run: release/package_client.sh macos-x86_64 tar.gz
 
       - name: Upload release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-macos-x86_64
           path: release/output/
@@ -478,40 +478,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Download scrcpy-server
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: scrcpy-server
           path: release/work/build-server/server/
 
       - name: Download release-linux-x86_64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-linux-x86_64
           path: release/output/
 
       - name: Download release-win32
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-win32
           path: release/output/
 
       - name: Download release-win64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-win64
           path: release/output/
 
       - name: Download release-macos-aarch64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-macos-aarch64
           path: release/output/
 
       - name: Download release-macos-x86_64
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: release-macos-x86_64
           path: release/output/
@@ -523,7 +523,7 @@ jobs:
         run: release/generate_checksums.sh
 
       - name: Upload release artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: scrcpy-release-${{ env.VERSION }}
           path: release/output
