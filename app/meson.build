@@ -191,8 +191,7 @@ executable('scrcpy', src,
 datadir = get_option('datadir') # by default 'share'
 
 install_man('scrcpy.1')
-install_data('data/icon.png',
-             rename: 'scrcpy.png',
+install_data('data/scrcpy.png',
              install_dir: datadir / 'icons/hicolor/256x256/apps')
 install_data('data/zsh-completion/_scrcpy',
              install_dir: datadir / 'zsh/site-functions')
@@ -289,6 +288,6 @@ endif
 
 if meson.version().version_compare('>= 0.58.0')
        devenv = environment()
-       devenv.set('SCRCPY_ICON_PATH', meson.current_source_dir() / 'data/icon.png')
+       devenv.set('SCRCPY_ICON_PATH', meson.current_source_dir() / 'data/scrcpy.png')
        meson.add_devenv(devenv)
 endif
