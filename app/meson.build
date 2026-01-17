@@ -288,6 +288,6 @@ endif
 
 if meson.version().version_compare('>= 0.58.0')
        devenv = environment()
-       devenv.set('SCRCPY_ICON_PATH', meson.current_source_dir() / 'data/scrcpy.png')
+       devenv.set('SCRCPY_ICON_DIR', meson.current_source_dir() / 'data')
        meson.add_devenv(devenv)
 endif

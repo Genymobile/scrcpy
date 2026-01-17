@@ -20,6 +20,6 @@ then
     exit 1
 fi
 
-SCRCPY_ICON_PATH="app/data/scrcpy.png" \
+SCRCPY_ICON_DIR="app/data" \
 SCRCPY_SERVER_PATH="$BUILDDIR/server/scrcpy-server" \
 "$BUILDDIR/app/scrcpy" "$@"
