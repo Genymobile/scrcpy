@@ -19,7 +19,7 @@
 #endif
 #include "util/log.h"
 
-#define SCRCPY_PORTABLE_ICON_FILENAME "icon.png"
+#define SCRCPY_PORTABLE_ICON_FILENAME "scrcpy.png"
 #define SCRCPY_DEFAULT_ICON_PATH \
     PREFIX "/share/icons/hicolor/256x256/apps/scrcpy.png"
 
