@@ -14,33 +14,39 @@
 
 #include "config.h"
 #include "util/env.h"
-#ifdef PORTABLE
-# include "util/file.h"
-#endif
+#include "util/file.h"
 #include "util/log.h"
 
-#define SCRCPY_PORTABLE_ICON_FILENAME "scrcpy.png"
-#define SCRCPY_DEFAULT_ICON_PATH \
-    PREFIX "/share/icons/hicolor/256x256/apps/scrcpy.png"
+#define SCRCPY_ICON_FILENAME "scrcpy.png"
+#define SCRCPY_DEFAULT_ICON_DIR PREFIX "/share/icons/hicolor/256x256/apps"
 
 static char *
 get_icon_path(void) {
-    char *icon_path = sc_get_env("SCRCPY_ICON_PATH");
-    if (icon_path) {
+    char *icon_path;
+
+    char *icon_dir = sc_get_env("SCRCPY_ICON_DIR");
+    if (icon_dir) {
         // if the envvar is set, use it
-        LOGD("Using SCRCPY_ICON_PATH: %s", icon_path);
+        icon_path = sc_file_build_path(icon_dir, SCRCPY_ICON_FILENAME);
+        free(icon_dir);
+        if (!icon_path) {
+            LOG_OOM();
+            return NULL;
+        }
+        LOGD("Using icon from SCRCPY_ICON_DIR: %s", icon_path);
         return icon_path;
     }
 
 #ifndef PORTABLE
-    LOGD("Using icon: " SCRCPY_DEFAULT_ICON_PATH);
-    icon_path = strdup(SCRCPY_DEFAULT_ICON_PATH);
+    icon_path =
+        sc_file_build_path(SCRCPY_DEFAULT_ICON_DIR, SCRCPY_ICON_FILENAME);
     if (!icon_path) {
         LOG_OOM();
         return NULL;
     }
+    LOGD("Using icon: %s", icon_path);
 #else
-    icon_path = sc_file_get_local_path(SCRCPY_PORTABLE_ICON_FILENAME);
+    icon_path = sc_file_get_local_path(SCRCPY_ICON_FILENAME);
     if (!icon_path) {
         LOGE("Could not get icon path");
         return NULL;

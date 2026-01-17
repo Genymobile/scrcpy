@@ -1249,8 +1249,8 @@ static const struct sc_envvar envvars[] = {
                 "--tcpip=<addr>) is specified",
     },
     {
-        .name = "SCRCPY_ICON_PATH",
-        .text = "Path to the program icon",
+        .name = "SCRCPY_ICON_DIR",
+        .text = "Path to the icon directory",
     },
     {
         .name = "SCRCPY_SERVER_PATH",
