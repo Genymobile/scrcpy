@@ -172,8 +172,7 @@ Additionally, if you want to build the server, install Java 17 from Caskroom, an
 make it available from the `PATH`:
 
 ```bash
-brew tap homebrew/cask-versions
-brew install adoptopenjdk/openjdk/adoptopenjdk17
+brew install --cask temurin@17
 export JAVA_HOME="$(/usr/libexec/java_home --version 1.17)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
