@@ -1,0 +1,5 @@
+Purpose: Brief description of the AI instruction set for scrcpy.
+Instrument: Cursor AI agent configured via .cursorrules and docs/ai/*.
+Scope: Helps edit C client (app/), Java server (server/), and docs with guardrails.
+Focus: Safe refactors, bug fixes, doc updates; ask confirmation for protocol/CLI/release changes.
+Output requirements: plan, code diffs, explanations, verification steps.

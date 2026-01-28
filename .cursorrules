@@ -1,0 +1,98 @@
+rules:
+  project:
+    name: "scrcpy"
+    description: >
+      Native application for mirroring and controlling Android devices from a desktop
+      (Linux/Windows/macOS). Consists of a C client (`app/`) and an Android Java server
+      (`server/`), plus documentation in `doc/`.
+
+  allowed_operations:
+    - read
+    - write
+    - refactor
+    - add_tests
+    - update_docs
+
+  forbidden_paths:
+    # Do not touch release automation unless explicitly asked
+    - "/release/"
+    # Do not modify GitHub metadata without explicit request
+    - "/.github/"
+    # Do not change gradle wrapper binaries
+    - "/gradle/wrapper/"
+    - "/server/gradle/wrapper/"
+
+  protected_code_markers:
+    # Code between these markers must not be edited automatically
+    start: "AI:DO_NOT_EDIT-START"
+    end: "AI:DO_NOT_EDIT-END"
+
+  response_format:
+    require_plan: true
+    require_code_diffs: true
+    require_explanation: true
+    require_verification_steps: true
+    # Use unified diff format when possible
+    diff_style: "unified"
+
+  style_guidelines:
+    general:
+      - "Follow existing code style in each file (brace position, spacing, naming)."
+      - "Prefer small, focused changes over large refactors."
+      - "Keep functions short and cohesive; extract helpers when needed."
+    c:
+      - "Match existing formatting in app/*.c and app/*.h (4 spaces, no tabs)."
+      - "Keep lines <= 100 characters where reasonable."
+      - "Check for correct error handling and resource cleanup (free/close)."
+      - "Update or add comments when behavior changes."
+    java:
+      - "Match existing style in server/src/main/java (2 or 4 spaces as in file)."
+      - "Use descriptive method and variable names; avoid abbreviations."
+      - "Keep Android API compatibility as in server code (check AndroidVersions)."
+    docs:
+      - "User-facing docs live in doc/*.md; keep language concise and practical."
+      - "Prefer adding examples with real command lines and options."
+
+  testing:
+    commands:
+      - "For Android server: ./server/gradlew test"
+      - "For C client (Meson): meson setup builddir && ninja -C builddir"
+      - "For C client (release helper): ./release/test_client.sh"
+    expectations:
+      - "Run at least the relevant subset of tests when changing logic."
+      - "Document in the answer which commands were (or should be) run."
+
+  ask_confirmation:
+    # The agent must ask the user before performing these kinds of changes
+    - "Изменение CLI-интерфейса scrcpy (добавление/удаление опций)."
+    - "Изменение протокола между клиентом (C) и Android-сервером (Java)."
+    - "Существенное изменение или удаление публичных функций/классов."
+    - "Изменение скриптов в /release/ или сборочных файлов (meson.build, build.gradle)."
+    - "Удаление кода или файлов."
+
+  agent_questions_policy:
+    must_ask_when:
+      - "Требуется изменить поведение, описанное в README.md или doc/*.md."
+      - "Есть несколько несовместимых вариантов реализации без явного предпочтения."
+      - "Изменения могут повлиять на совместимость с существующими пользователями или API."
+    may_assume_when:
+      - "Речь идет о локальной рефакторинг-правке без изменения внешнего поведения."
+      - "Исправляется очевидная ошибка (crash, утечка ресурсов, опечатка)."
+
+  file_headers:
+    require_purpose_comment: true
+    c_template: "/* Purpose: <краткое назначение файла>. Maintainer: AI-assisted change. */"
+    java_template: "// Purpose: <краткое назначение файла>. Maintainer: AI-assisted change."
+    docs_template: "<!-- Purpose: <краткое назначение файла>. Generated/edited with AI assistance. -->"
+
+  git_conventions:
+    commit_message_prefix: "[AI]"
+    examples:
+      - "[AI] Fix resource leak in video encoder"
+      - "[AI] Add CLI option for max FPS"
+
+  verification_triggers:
+    - "При изменении логики запуска/подключения указать пример полной команды scrcpy."
+    - "При изменении опций видео/аудио указать ожидаемый эффект для пользователя."
+    - "Для каждого изменения перечислить файлы, команды для сборки/тестов и ожидаемый результат."
+
