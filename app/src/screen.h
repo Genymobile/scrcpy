@@ -22,6 +22,10 @@
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
 
+#ifdef __APPLE__
+# define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+#endif
+
 struct sc_screen {
     struct sc_frame_sink frame_sink; // frame sink trait
 
@@ -50,6 +54,9 @@ struct sc_screen {
 
     SDL_Window *window;
     SDL_Renderer *renderer;
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    SDL_GLContext gl_context;
+#endif
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 

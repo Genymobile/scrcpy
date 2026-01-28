@@ -11,10 +11,6 @@
 #include "coords.h"
 #include "opengl.h"
 
-#ifdef __APPLE__
-# define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-#endif
-
 enum sc_texture_type {
     SC_TEXTURE_TYPE_FRAME,
     SC_TEXTURE_TYPE_ICON,
@@ -28,9 +24,6 @@ struct sc_texture {
     enum sc_texture_type texture_type;
 
     struct sc_opengl gl;
-#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-    SDL_GLContext gl_context;
-#endif
 
     bool mipmaps;
     uint32_t texture_id; // only set if mipmaps is enabled

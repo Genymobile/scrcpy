@@ -14,30 +14,9 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps) {
 
     tex->mipmaps = false;
 
-#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-    display->gl_context = NULL;
-#endif
-
     // starts with "opengl"
     bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
     if (use_opengl) {
-
-#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-        // Persuade macOS to give us something better than OpenGL 2.1.
-        // If we create a Core Profile context, we get the best OpenGL version.
-        bool ok = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                                      SDL_GL_CONTEXT_PROFILE_CORE);
-        if (!ok) {
-            LOGW("Could not set a GL Core Profile Context");
-        }
-
-        LOGD("Creating OpenGL Core Profile context");
-        display->gl_context = SDL_GL_CreateContext(window);
-        if (!display->gl_context) {
-            LOGE("Could not create OpenGL context: %s", SDL_GetError());
-            return false;
-        }
-#endif
 
         struct sc_opengl *gl = &tex->gl;
         sc_opengl_init(gl);
@@ -69,9 +48,6 @@ sc_texture_init(struct sc_texture *tex, SDL_Renderer *renderer, bool mipmaps) {
 
 void
 sc_texture_destroy(struct sc_texture *tex) {
-#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
-    SDL_GL_DestroyContext(tex->gl_context);
-#endif
     if (tex->texture) {
         SDL_DestroyTexture(tex->texture);
     }

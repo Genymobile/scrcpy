@@ -417,6 +417,31 @@ sc_screen_init(struct sc_screen *screen,
         goto error_destroy_window;
     }
 
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    screen->gl_context = NULL;
+    // starts with "opengl"
+    const char *renderer_name = SDL_GetRendererName(screen->renderer);
+    bool use_opengl = renderer_name && !strncmp(renderer_name, "opengl", 6);
+    if (use_opengl) {
+
+        LOGD("Attempting to get better OpenGL version");
+        // Persuade macOS to give us something better than OpenGL 2.1.
+        // If we create a Core Profile context, we get the best OpenGL version.
+        bool ok = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+				      SDL_GL_CONTEXT_PROFILE_CORE);
+	if (!ok) {
+	    LOGW("Could not set a GL Core Profile Context");
+	}
+
+	LOGD("Creating OpenGL Core Profile context");
+	screen->gl_context = SDL_GL_CreateContext(screen->window);
+	if (!screen->gl_context) {
+	    LOGE("Could not create OpenGL context: %s", SDL_GetError());
+	    goto error_destroy_window;
+	}
+    }
+#endif
+
     bool mipmaps = params->video;
     ok = sc_texture_init(&screen->tex, screen->renderer, mipmaps);
     if (!ok) {
@@ -522,6 +547,11 @@ error_destroy_texture:
 error_destroy_renderer:
     SDL_DestroyRenderer(screen->renderer);
 error_destroy_window:
+#ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
+    if (!screen->gl_context) {
+        SDL_GL_DestroyContext(screen->gl_context);
+    }
+#endif
     SDL_DestroyWindow(screen->window);
 error_destroy_fps_counter:
     sc_fps_counter_destroy(&screen->fps_counter);
