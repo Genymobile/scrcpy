@@ -54,6 +54,30 @@ sc_microphone_list_audio_sources(void) {
     LOGI("Audio input format: %s (%s)",
          input_format->name,
          input_format->long_name ? input_format->long_name : "no description");
+
+#ifdef __APPLE__
+    LOGI("Listing devices via avfoundation (see output above/below):");
+
+    AVDictionary *options = NULL;
+    av_dict_set(&options, "list_devices", "true", 0);
+
+    AVFormatContext *fmt_ctx = NULL;
+    avformat_open_input(&fmt_ctx, "", input_format, &options);
+
+    av_dict_free(&options);
+    if (fmt_ctx) {
+        avformat_close_input(&fmt_ctx);
+    }
+
+    LOGI("How to use:");
+    LOGI("  Use the audio device index with --client-audio-source");
+    LOGI("  Format: \":AUDIO_INDEX\" (e.g., \":0\" for first audio device)");
+    LOGI("Examples:");
+    LOGI("  scrcpy --client-audio-source :0");
+    LOGI("  scrcpy --client-audio-source file:///path/to/audio.mp3");
+    return;
+#endif
+
     LOGI("Available audio sources:");
 
     AVDeviceInfoList *device_list = NULL;
@@ -66,9 +90,6 @@ sc_microphone_list_audio_sources(void) {
 #ifdef _WIN32
         LOGI("  - \"audio=DEVICE_NAME\" (for dshow)");
         LOGI("  - Try running 'ffmpeg -list_devices true -f dshow -i dummy' to see available devices");
-#elif defined(__APPLE__)
-        LOGI("  - \":0\" (default microphone)");
-        LOGI("  - Try running 'ffmpeg -f avfoundation -list_devices true -i \"\"' to see available devices");
 #else
         LOGI("  - \"default\" (default ALSA device)");
         LOGI("  - \"hw:0,0\" (hardware device)");
@@ -93,13 +114,10 @@ sc_microphone_list_audio_sources(void) {
     avdevice_free_list_devices(&device_list);
 
     LOGI("How to use:");
-    LOGI("  Use the device name exactly as shown above with --client-audio-source");
+    LOGI("  Pass the device names shown above as --client-audio-source <device>");
     LOGI("Common microphone devices:");
 #ifdef _WIN32
     LOGI("  - \"audio=DEVICE_NAME\" (use the exact name from the list)");
-#elif defined(__APPLE__)
-    LOGI("  - \":0\" or \":1\" (device indices for macOS)");
-    LOGI("  - \"default\" (default microphone)");
 #else
     LOGI("  - \"default\" (usually your default microphone)");
     LOGI("  - \"hw:CARD,DEV\" devices are hardware devices");
@@ -289,8 +307,15 @@ sc_microphone_run(void *data) {
         }
 
         if (read_ret < 0) {
-            // For device input, any error means we should stop
+            // EAGAIN means no data available yet, retry
+            if (read_ret == AVERROR(EAGAIN)) {
+                av_usleep(1000);
+                continue;
+            }
             if (!is_file) {
+                char errbuf[128];
+                av_strerror(read_ret, errbuf, sizeof(errbuf));
+                LOGD("av_read_frame error: %d (%s)", read_ret, errbuf);
                 break;
             }
             continue;
