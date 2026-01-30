@@ -2565,8 +2565,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->audio_codec_options = optarg;
                 break;
             case OPT_CLIENT_AUDIO_SOURCE:
+#ifdef HAVE_CLIENT_AUDIO
                 opts->client_audio_source = optarg;
                 break;
+#else
+                LOGE("Client audio (--client-audio-source) is disabled in this build");
+                return false;
+#endif
             case OPT_VIDEO_ENCODER:
                 opts->video_encoder = optarg;
                 break;
@@ -2671,8 +2676,13 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 opts->list |= SC_OPTION_LIST_APPS;
                 break;
             case OPT_LIST_AUDIO_SOURCES:
+#ifdef HAVE_CLIENT_AUDIO
                 args->list_audio_sources = true;
                 break;
+#else
+                LOGE("Client audio (--list-client-audio-sources) is disabled in this build");
+                return false;
+#endif
             case OPT_REQUIRE_AUDIO:
                 opts->require_audio = true;
                 break;
@@ -2856,8 +2866,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         opts->audio = false;
     }
 
-    if (!opts->video && !opts->audio && !opts->control && !otg && !opts->client_audio_source) {
-        LOGE("No video, no audio, no control, no OTG, no client audio: nothing to do");
+    bool has_client_audio = false;
+#ifdef HAVE_CLIENT_AUDIO
+    has_client_audio = opts->client_audio_source != NULL;
+#endif
+    if (!opts->video && !opts->audio && !opts->control && !otg && !has_client_audio) {
+        LOGE("No video, no audio, no control, no OTG: nothing to do");
         return false;
     }
 
@@ -2970,12 +2984,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
         }
     }
 
+#ifdef HAVE_CLIENT_AUDIO
     if (opts->client_audio_source &&
         (opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL ||
          opts->audio_source == SC_AUDIO_SOURCE_VOICE_CALL_UPLINK)) {
         LOGE("--client-audio-source is incompatible with --audio-source=voice-call and --audio-source=voice-call-uplink");
         return false;
     }
+#endif
 
     if (otg) {
         if (!opts->control) {
