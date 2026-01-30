@@ -26,7 +26,9 @@
 #include "recorder.h"
 #include "screen.h"
 #include "server.h"
-#include "client_audio.h"
+#ifdef HAVE_CLIENT_AUDIO
+# include "client_audio.h"
+#endif
 #include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"
@@ -62,8 +64,10 @@ struct scrcpy {
 #endif
     struct sc_controller controller;
     struct sc_file_pusher file_pusher;
+#ifdef HAVE_CLIENT_AUDIO
     struct sc_microphone_params microphone_params;
     sc_thread microphone_thread;
+#endif
 #ifdef HAVE_USB
     struct sc_usb usb;
     struct sc_aoa aoa;
@@ -456,7 +460,11 @@ scrcpy(struct scrcpy_options *options) {
         .display_ime_policy = options->display_ime_policy,
         .video = options->video,
         .audio = options->audio,
+#ifdef HAVE_CLIENT_AUDIO
         .client_audio = options->client_audio_source != NULL,
+#else
+        .client_audio = false,
+#endif
         .audio_dup = options->audio_dup,
         .show_touches = options->show_touches,
         .stay_awake = options->stay_awake,
@@ -897,6 +905,7 @@ aoa_complete:
         audio_demuxer_started = true;
     }
 
+#ifdef HAVE_CLIENT_AUDIO
     bool microphone_started = false;
     if (options->client_audio_source) {
         s->microphone_params.socket = s->server.client_mic_socket;
@@ -908,6 +917,7 @@ aoa_complete:
         }
         microphone_started = true;
     }
+#endif
 
     // If the device screen is to be turned off, send the control message after
     // everything is set up
@@ -1041,9 +1051,11 @@ end:
         sc_demuxer_join(&s->audio_demuxer);
     }
 
+#ifdef HAVE_CLIENT_AUDIO
     if (microphone_started) {
         sc_thread_join(&s->microphone_thread, NULL);
     }
+#endif
 
 #ifdef HAVE_V4L2
     if (v4l2_sink_initialized) {

@@ -2,7 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
-#ifdef HAVE_V4L2
+#ifdef HAVE_CLIENT_AUDIO
 # include <libavdevice/avdevice.h>
 #endif
 #include <SDL3/SDL.h>
@@ -17,7 +17,9 @@
 #include "util/net.h"
 #include "util/thread.h"
 #include "version.h"
-#include "client_audio.h"
+#ifdef HAVE_CLIENT_AUDIO
+# include "client_audio.h"
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -73,6 +75,7 @@ main_scrcpy(int argc, char *argv[]) {
     av_register_all();
 #endif
 
+#ifdef HAVE_CLIENT_AUDIO
     //needed for capturing microphone and listing audio sources
     avdevice_register_all();
 
@@ -81,6 +84,7 @@ main_scrcpy(int argc, char *argv[]) {
         ret = SCRCPY_EXIT_SUCCESS;
         goto end;
     }
+#endif
 
     // The current thread is the main thread
     SC_MAIN_THREAD_ID = sc_thread_get_id();
