@@ -23,9 +23,10 @@ enum {
 };
 
 bool
-sc_push_event_impl(uint32_t type, const char *name);
+sc_push_event_impl(uint32_t type, void* ptr, const char *name);
 
-#define sc_push_event(TYPE) sc_push_event_impl(TYPE, # TYPE)
+#define sc_push_event(TYPE) sc_push_event_impl(TYPE, NULL, # TYPE)
+#define sc_push_event_with_data(TYPE, PTR) sc_push_event_impl(TYPE, PTR, # TYPE)
 
 typedef void (*sc_runnable_fn)(void *userdata);
 
