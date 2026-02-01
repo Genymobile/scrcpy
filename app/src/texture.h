@@ -41,4 +41,7 @@ sc_texture_set_from_frame(struct sc_texture *tex, const AVFrame *frame);
 bool
 sc_texture_set_from_surface(struct sc_texture *tex, SDL_Surface *surface);
 
+void
+sc_texture_reset(struct sc_texture *tex);
+
 #endif
