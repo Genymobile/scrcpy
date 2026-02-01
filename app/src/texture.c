@@ -225,3 +225,11 @@ sc_texture_set_from_surface(struct sc_texture *tex, SDL_Surface *surface) {
 
     return true;
 }
+
+void
+sc_texture_reset(struct sc_texture *tex) {
+    if (tex->texture) {
+        SDL_DestroyTexture(tex->texture);
+        tex->texture = NULL;
+    }
+}
