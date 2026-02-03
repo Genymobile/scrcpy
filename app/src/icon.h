@@ -5,10 +5,12 @@
 
 #include <SDL3/SDL_surface.h>
 
+#define SC_ICON_FILENAME_SCRCPY "scrcpy.png"
+
 SDL_Surface *
-scrcpy_icon_load(void);
+sc_icon_load(const char *filename);
 
 void
-scrcpy_icon_destroy(SDL_Surface *icon);
+sc_icon_destroy(SDL_Surface *icon);
 
 #endif

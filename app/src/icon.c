@@ -17,17 +17,16 @@
 #include "util/file.h"
 #include "util/log.h"
 
-#define SCRCPY_ICON_FILENAME "scrcpy.png"
 #define SCRCPY_DEFAULT_ICON_DIR PREFIX "/share/icons/hicolor/256x256/apps"
 
 static char *
-get_icon_path(void) {
+get_icon_path(const char *filename) {
     char *icon_path;
 
     char *icon_dir = sc_get_env("SCRCPY_ICON_DIR");
     if (icon_dir) {
         // if the envvar is set, use it
-        icon_path = sc_file_build_path(icon_dir, SCRCPY_ICON_FILENAME);
+        icon_path = sc_file_build_path(icon_dir, filename);
         free(icon_dir);
         if (!icon_path) {
             LOG_OOM();
@@ -38,15 +37,14 @@ get_icon_path(void) {
     }
 
 #ifndef PORTABLE
-    icon_path =
-        sc_file_build_path(SCRCPY_DEFAULT_ICON_DIR, SCRCPY_ICON_FILENAME);
+    icon_path = sc_file_build_path(SCRCPY_DEFAULT_ICON_DIR, filename);
     if (!icon_path) {
         LOG_OOM();
         return NULL;
     }
     LOGD("Using icon: %s", icon_path);
 #else
-    icon_path = sc_file_get_local_path(SCRCPY_ICON_FILENAME);
+    icon_path = sc_file_get_local_path(filename);
     if (!icon_path) {
         LOGE("Could not get icon path");
         return NULL;
@@ -183,7 +181,7 @@ to_sdl_pixel_format(enum AVPixelFormat fmt) {
 }
 
 static SDL_Surface *
-load_from_path(const char *path) {
+sc_icon_load_from_full_path(const char *path) {
     AVFrame *frame = decode_image(path);
     if (!frame) {
         return NULL;
@@ -280,19 +278,19 @@ error:
 }
 
 SDL_Surface *
-scrcpy_icon_load(void) {
-    char *icon_path = get_icon_path();
+sc_icon_load(const char *filename) {
+    char *icon_path = get_icon_path(filename);
     if (!icon_path) {
         return NULL;
     }
 
-    SDL_Surface *icon = load_from_path(icon_path);
+    SDL_Surface *icon = sc_icon_load_from_full_path(icon_path);
     free(icon_path);
     return icon;
 }
 
 void
-scrcpy_icon_destroy(SDL_Surface *icon) {
+sc_icon_destroy(SDL_Surface *icon) {
     SDL_PropertiesID props = SDL_GetSurfaceProperties(icon);
     assert(props);
     AVFrame *frame = SDL_GetPointerProperty(props, "sc_frame", NULL);
