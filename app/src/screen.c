@@ -820,7 +820,9 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         return true;
     }
 
-    sc_input_manager_handle_event(&screen->im, event);
+    if (screen->has_frame) {
+        sc_input_manager_handle_event(&screen->im, event);
+    }
     return true;
 }
 
