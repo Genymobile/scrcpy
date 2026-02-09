@@ -10,6 +10,7 @@
 
 #include "cli.h"
 #include "options.h"
+#include "util/config_file.h"
 #include "scrcpy.h"
 #include "usb/scrcpy_otg.h"
 #include "util/log.h"
@@ -47,7 +48,14 @@ main_scrcpy(int argc, char *argv[]) {
 
     enum scrcpy_exit_code ret;
 
-    if (!scrcpy_parse_args(&args, argc, argv)) {
+    struct sc_config_argv ca = {0};
+    if (!sc_config_argv_init(&ca, argc, argv)) {
+        ret = SCRCPY_EXIT_FAILURE;
+        goto end;
+    }
+
+    if (!scrcpy_parse_args(&args, ca.argc, ca.argv)) {
+        sc_config_argv_destroy(&ca);
         ret = SCRCPY_EXIT_FAILURE;
         goto end;
     }
@@ -93,6 +101,8 @@ main_scrcpy(int argc, char *argv[]) {
 #endif
 
 end:
+    sc_config_argv_destroy(&ca);
+
     if (args.pause_on_exit == SC_PAUSE_ON_EXIT_TRUE ||
             (args.pause_on_exit == SC_PAUSE_ON_EXIT_IF_ERROR &&
                 ret != SCRCPY_EXIT_SUCCESS)) {
