@@ -229,7 +229,7 @@ jobs:
           path: release/work/build-macos-aarch64/dist-tar/
 
   build-macos-x86_64:
-    runs-on: macos-13
+    runs-on: macos-15-intel
     steps:
       - name: Check architecture
         run: |

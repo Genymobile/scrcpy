@@ -172,8 +172,7 @@ Additionally, if you want to build the server, install Java 17 from Caskroom, an
 make it available from the `PATH`:
 
 ```bash
-brew tap homebrew/cask-versions
-brew install adoptopenjdk/openjdk/adoptopenjdk17
+brew install openjdk@17
 export JAVA_HOME="$(/usr/libexec/java_home --version 1.17)"
 export PATH="$JAVA_HOME/bin:$PATH"
 ```
@@ -233,10 +232,10 @@ install` must be run as root)._
 
 #### Option 2: Use prebuilt server
 
- - [`scrcpy-server-v3.3.3`][direct-scrcpy-server]  
-   <sub>SHA-256: `7e70323ba7f259649dd4acce97ac4fefbae8102b2c6d91e2e7be613fd5354be0`</sub>
+ - [`scrcpy-server-v3.3.4`][direct-scrcpy-server]  
+   <sub>SHA-256: `8588238c9a5a00aa542906b6ec7e6d5541d9ffb9b5d0f6e1bc0e365e2303079e`</sub>
 
-[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.3/scrcpy-server-v3.3.3
+[direct-scrcpy-server]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-server-v3.3.4
 
 Download the prebuilt server somewhere, and specify its path during the Meson
 configuration:
@@ -271,7 +270,7 @@ This installs several files:
  - `/usr/local/bin/scrcpy` (main app)
  - `/usr/local/share/scrcpy/scrcpy-server` (server to push to the device)
  - `/usr/local/share/man/man1/scrcpy.1` (manpage)
- - `/usr/local/share/icons/hicolor/256x256/apps/icon.png` (app icon)
+ - `/usr/local/share/icons/hicolor/256x256/apps/scrcpy.png` (app icon)
  - `/usr/local/share/zsh/site-functions/_scrcpy` (zsh completion)
  - `/usr/local/share/bash-completion/completions/scrcpy` (bash completion)
 

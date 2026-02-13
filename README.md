@@ -2,7 +2,7 @@
 source for the project. Do not download releases from random websites, even if
 their name contains `scrcpy`.**
 
-# scrcpy (v3.3.3)
+# scrcpy (v3.3.4)
 
 <img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
 
@@ -210,7 +210,7 @@ work][donate]:
 ## License
 
     Copyright (C) 2018 Genymobile
-    Copyright (C) 2018-2025 Romain Vimont
+    Copyright (C) 2018-2026 Romain Vimont
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

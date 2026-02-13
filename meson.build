@@ -1,5 +1,5 @@
 project('scrcpy', 'c',
-        version: '3.3.3',
+        version: '3.3.4',
         meson_version: '>= 0.49',
         default_options: [
             'c_std=c11',

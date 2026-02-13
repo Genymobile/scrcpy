@@ -6,9 +6,9 @@ import com.genymobile.scrcpy.util.Ln;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Application;
+import android.app.Instrumentation;
 import android.content.AttributionSource;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.pm.ApplicationInfo;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -103,10 +103,7 @@ public final class Workarounds {
 
     private static void fillAppContext() {
         try {
-            Application app = new Application();
-            Field baseField = ContextWrapper.class.getDeclaredField("mBase");
-            baseField.setAccessible(true);
-            baseField.set(app, FakeContext.get());
+            Application app = Instrumentation.newApplication(Application.class, FakeContext.get());
 
             // activityThread.mInitialApplication = app;
             Field mInitialApplicationField = ACTIVITY_THREAD_CLASS.getDeclaredField("mInitialApplication");

@@ -6,15 +6,14 @@
 
 Download a static build of the [latest release]:
 
- - [`scrcpy-macos-aarch64-v3.3.3.tar.gz`][direct-macos-aarch64] (aarch64)  
-   <sub>SHA-256: `b93299468f19ae89ac70f7c1453914c41f1f2bcd31f6ab530038da885c19581f`</sub>
-
- - [`scrcpy-macos-x86_64-v3.3.3.tar.gz`][direct-macos-x86_64] (x86_64)  
-   <sub>SHA-256: `c767fc1d41e4ae26e40558656570962f474739924fd22ee023d8754889ee4366`</sub>
+ - [`scrcpy-macos-aarch64-v3.3.4.tar.gz`][direct-macos-aarch64] (aarch64)  
+   <sub>SHA-256: `8fef43520405dd523c74e1530ac68febcc5a405ea89712c874936675da8513dd`</sub>
+ - [`scrcpy-macos-x86_64-v3.3.4.tar.gz`][direct-macos-x86_64] (x86_64)  
+   <sub>SHA-256: `cf9b3453a33279b6009dfb256b1a84c374bd4c30a71edd74bacab28d72a5d929`</sub>
 
 [latest release]: https://github.com/Genymobile/scrcpy/releases/latest
-[direct-macos-aarch64]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.3/scrcpy-macos-aarch64-v3.3.3.tar.gz
-[direct-macos-x86_64]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.3/scrcpy-macos-x86_64-v3.3.3.tar.gz
+[direct-macos-aarch64]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-macos-aarch64-v3.3.4.tar.gz
+[direct-macos-x86_64]: https://github.com/Genymobile/scrcpy/releases/download/v3.3.4/scrcpy-macos-x86_64-v3.3.4.tar.gz
 
 and extract it.
 

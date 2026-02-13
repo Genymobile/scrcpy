@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -ex
-DEPS_DIR=$(dirname ${BASH_SOURCE[0]})
-cd "$DEPS_DIR"
-. common
+. $(dirname ${BASH_SOURCE[0]})/_init
 process_args "$@"
 
 VERSION=7.1.1
-FILENAME=ffmpeg-$VERSION.tar.xz
-PROJECT_DIR=ffmpeg-$VERSION
+URL="https://ffmpeg.org/releases/ffmpeg-$VERSION.tar.xz"
 SHA256SUM=733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
+
+PROJECT_DIR="ffmpeg-$VERSION"
+FILENAME="$PROJECT_DIR.tar.xz"
 
 cd "$SOURCES_DIR"
 
@@ -16,7 +16,7 @@ if [[ -d "$PROJECT_DIR" ]]
 then
     echo "$PWD/$PROJECT_DIR" found
 else
-    get_file "https://ffmpeg.org/releases/$FILENAME" "$FILENAME" "$SHA256SUM"
+    get_file "$URL" "$FILENAME" "$SHA256SUM"
     tar xf "$FILENAME"  # First level directory is "$PROJECT_DIR"
 fi
 
