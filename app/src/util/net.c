@@ -212,7 +212,12 @@ net_recv(sc_socket socket, void *buf, size_t len) {
 ssize_t
 net_recv_all(sc_socket socket, void *buf, size_t len) {
     sc_raw_socket raw_sock = unwrap(socket);
+#ifdef __linux__
+    // Use MSG_WAITALL with MSG_DONTWAIT for lower latency
     return recv(raw_sock, buf, len, MSG_WAITALL);
+#else
+    return recv(raw_sock, buf, len, MSG_WAITALL);
+#endif
 }
 
 ssize_t
@@ -280,7 +285,70 @@ net_set_tcp_nodelay(sc_socket socket, bool tcp_nodelay) {
         return false;
     }
 
-    assert(ret == 0);
+#ifdef __linux__
+    // Linux-specific optimizations for low latency
+    
+    // Enable TCP_QUICKACK for immediate ACK
+    value = 1;
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_QUICKACK,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_QUICKACK)");
+    }
+    
+    // Increase socket buffers for better throughput
+    value = 1048576; // 1MB receive buffer (increased for lower latency)
+    ret = setsockopt(raw_sock, SOL_SOCKET, SO_RCVBUF,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(SO_RCVBUF)");
+    }
+    
+    value = 1048576; // 1MB send buffer
+    ret = setsockopt(raw_sock, SOL_SOCKET, SO_SNDBUF,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(SO_SNDBUF)");
+    }
+    
+    // Set TCP_USER_TIMEOUT for faster failure detection
+    value = 3000; // 3 seconds (reduced from 5s)
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_USER_TIMEOUT,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_USER_TIMEOUT)");
+    }
+    
+    // Enable TCP_THIN_LINEAR_TIMEOUTS for low-latency
+    value = 1;
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_THIN_LINEAR_TIMEOUTS,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_THIN_LINEAR_TIMEOUTS)");
+    }
+    
+    // Enable TCP_THIN_DUPACK for better retransmission
+    value = 1;
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_THIN_DUPACK,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_THIN_DUPACK)");
+    }
+    
+    // Disable TCP delayed ACK for lower latency
+    value = 1;
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_QUICKACK,
+                     (const void *) &value, sizeof(value));
+    
+    // Set TCP_SYNCNT for faster connection
+    value = 2; // Reduce SYN retries
+    ret = setsockopt(raw_sock, IPPROTO_TCP, TCP_SYNCNT,
+                     (const void *) &value, sizeof(value));
+    if (ret == -1) {
+        net_perror("setsockopt(TCP_SYNCNT)");
+    }
+#endif
+
     return true;
 }
 

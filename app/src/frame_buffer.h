@@ -4,9 +4,8 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <libavutil/frame.h>
-
-#include "util/thread.h"
 
 // forward declarations
 typedef struct AVFrame AVFrame;
@@ -24,9 +23,7 @@ struct sc_frame_buffer {
     AVFrame *pending_frame;
     AVFrame *tmp_frame; // To preserve the pending frame on error
 
-    sc_mutex mutex;
-
-    bool pending_frame_consumed;
+    atomic_int pending_frame_consumed;
 };
 
 bool

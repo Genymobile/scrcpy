@@ -37,9 +37,13 @@ static bool
 sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
     bool is_config = packet->pts == AV_NOPTS_VALUE;
     if (is_config) {
-        // nothing to do
         return true;
     }
+
+#ifdef __linux__
+    // Prefetch packet data for better cache utilization
+    __builtin_prefetch(packet->data, 0, 3);
+#endif
 
     int ret = avcodec_send_packet(decoder->ctx, packet);
     if (ret < 0 && ret != AVERROR(EAGAIN)) {
@@ -48,7 +52,7 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
         return false;
     }
 
-    for (;;) {
+    while (true) {
         ret = avcodec_receive_frame(decoder->ctx, decoder->frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
             break;
@@ -60,12 +64,14 @@ sc_decoder_push(struct sc_decoder *decoder, const AVPacket *packet) {
             return false;
         }
 
-        // a frame was received
-        bool ok = sc_frame_source_sinks_push(&decoder->frame_source,
-                                             decoder->frame);
+#ifdef __linux__
+        // Prefetch frame data
+        __builtin_prefetch(decoder->frame->data[0], 0, 3);
+#endif
+
+        bool ok = sc_frame_source_sinks_push(&decoder->frame_source, decoder->frame);
         av_frame_unref(decoder->frame);
         if (!ok) {
-            // Error already logged
             return false;
         }
     }

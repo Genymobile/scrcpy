@@ -20,9 +20,12 @@
  * immediately follows a config packet to prepend the config packet payload.
  */
 
+#define SC_PACKET_MERGER_CONFIG_MAX_SIZE 4096
+
 struct sc_packet_merger {
-    uint8_t *config;
+    uint8_t config[SC_PACKET_MERGER_CONFIG_MAX_SIZE];
     size_t config_size;
+    bool has_config;
 };
 
 void

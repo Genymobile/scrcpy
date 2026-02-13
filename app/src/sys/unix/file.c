@@ -56,6 +56,11 @@ char *
 sc_file_get_executable_path(void) {
 // <https://stackoverflow.com/a/1024937/1987178>
 #ifdef __linux__
+    static char *cached_path = NULL;
+    if (cached_path) {
+        return strdup(cached_path);
+    }
+    
     char buf[PATH_MAX + 1]; // +1 for the null byte
     ssize_t len = readlink("/proc/self/exe", buf, PATH_MAX);
     if (len == -1) {
@@ -63,6 +68,7 @@ sc_file_get_executable_path(void) {
         return NULL;
     }
     buf[len] = '\0';
+    cached_path = strdup(buf);
     return strdup(buf);
 #elif defined(__APPLE__)
     char buf[PATH_MAX];

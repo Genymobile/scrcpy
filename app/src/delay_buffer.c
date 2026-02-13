@@ -51,21 +51,16 @@ run_buffering(void *data) {
         }
 
         struct sc_delayed_frame dframe = sc_vecdeque_pop(&db->queue);
-
-        sc_tick max_deadline = sc_tick_now() + db->delay;
-        // PTS (written by the server) are expressed in microseconds
         sc_tick pts = SC_TICK_FROM_US(dframe.frame->pts);
+        sc_tick max_deadline = sc_tick_now() + db->delay;
 
         bool timed_out = false;
         while (!db->stopped && !timed_out) {
-            sc_tick deadline = sc_clock_to_system_time(&db->clock, pts)
-                             + db->delay;
+            sc_tick deadline = sc_clock_to_system_time(&db->clock, pts) + db->delay;
             if (deadline > max_deadline) {
                 deadline = max_deadline;
             }
-
-            timed_out =
-                !sc_cond_timedwait(&db->wait_cond, &db->mutex, deadline);
+            timed_out = !sc_cond_timedwait(&db->wait_cond, &db->mutex, deadline);
         }
 
         bool stopped = db->stopped;
@@ -86,7 +81,6 @@ run_buffering(void *data) {
         if (!ok) {
             LOGE("Delayed frame could not be pushed, stopping");
             sc_mutex_lock(&db->mutex);
-            // Prevent to push any new frame
             db->stopped = true;
             sc_mutex_unlock(&db->mutex);
             goto stopped;
@@ -96,7 +90,6 @@ run_buffering(void *data) {
 stopped:
     assert(db->stopped);
 
-    // Flush queue
     while (!sc_vecdeque_is_empty(&db->queue)) {
         struct sc_delayed_frame *dframe = sc_vecdeque_popref(&db->queue);
         sc_delayed_frame_destroy(dframe);

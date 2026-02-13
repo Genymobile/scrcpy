@@ -31,6 +31,13 @@ sc_display_init_novideo_icon(struct sc_display *display,
 bool
 sc_display_init(struct sc_display *display, SDL_Window *window,
                 SDL_Surface *icon_novideo, bool mipmaps) {
+#ifdef __linux__
+    // Linux-specific: Prefer OpenGL for better performance
+    SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengl");
+    SDL_SetHint(SDL_HINT_RENDER_OPENGL_SHADERS, "1");
+    SDL_SetHint(SDL_HINT_RENDER_BATCHING, "1");
+#endif
+    
     display->renderer =
         SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (!display->renderer) {
@@ -42,6 +49,8 @@ sc_display_init(struct sc_display *display, SDL_Window *window,
     int r = SDL_GetRendererInfo(display->renderer, &renderer_info);
     const char *renderer_name = r ? NULL : renderer_info.name;
     LOGI("Renderer: %s", renderer_name ? renderer_name : "(unknown)");
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1");
 
     display->mipmaps = false;
 

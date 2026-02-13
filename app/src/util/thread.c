@@ -6,6 +6,11 @@
 #include <string.h>
 #include <SDL2/SDL_thread.h>
 
+#ifdef __linux__
+# include <pthread.h>
+# include <sched.h>
+#endif
+
 #include "util/log.h"
 
 sc_thread_id SC_MAIN_THREAD_ID;
@@ -56,6 +61,27 @@ sc_thread_set_priority(enum sc_thread_priority priority) {
         LOGD("Could not set thread priority: %s", SDL_GetError());
         return false;
     }
+
+#ifdef __linux__
+    // Linux-specific: Try to set real-time scheduling for critical threads
+    if (priority == SC_THREAD_PRIORITY_TIME_CRITICAL || 
+        priority == SC_THREAD_PRIORITY_HIGH) {
+        
+        struct sched_param param;
+        param.sched_priority = (priority == SC_THREAD_PRIORITY_TIME_CRITICAL) ? 10 : 5;
+        
+        // Try SCHED_FIFO first (requires CAP_SYS_NICE or root)
+        if (pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == 0) {
+            LOGD("Real-time scheduling (SCHED_FIFO) enabled for thread");
+        } else {
+            // Fallback to SCHED_RR
+            if (pthread_setschedparam(pthread_self(), SCHED_RR, &param) == 0) {
+                LOGD("Real-time scheduling (SCHED_RR) enabled for thread");
+            }
+            // If both fail, SDL priority is still set (non-fatal)
+        }
+    }
+#endif
 
     return true;
 }
