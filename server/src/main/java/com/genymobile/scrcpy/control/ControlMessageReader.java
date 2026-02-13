@@ -60,6 +60,8 @@ public class ControlMessageReader {
                 return parseStartApp();
             case ControlMessage.TYPE_CAMERA_SET_TORCH:
                 return parseCameraSetTorch();
+            case ControlMessage.TYPE_SET_IMAGE_CLIPBOARD:
+                return parseSetImageClipboard();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -173,6 +175,14 @@ public class ControlMessageReader {
     private ControlMessage parseCameraSetTorch() throws IOException {
         boolean on = dis.readBoolean();
         return ControlMessage.createCameraSetTorch(on);
+    }
+
+    private ControlMessage parseSetImageClipboard() throws IOException {
+        long sequence = dis.readLong();
+        boolean paste = dis.readByte() != 0;
+        String mimeType = parseString();
+        byte[] data = parseByteArray(4); // Read image data
+        return ControlMessage.createSetImageClipboard(sequence, paste, mimeType, data);
     }
 
     private Position parsePosition() throws IOException {

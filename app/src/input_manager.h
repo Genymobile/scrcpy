@@ -71,4 +71,9 @@ void
 sc_input_manager_handle_event(struct sc_input_manager *im,
                               const SDL_Event *event);
 
+// Send image clipboard from computer to device
+bool
+sc_input_manager_set_device_image_clipboard(struct sc_input_manager *im, bool paste,
+                                           uint64_t sequence);
+
 #endif
