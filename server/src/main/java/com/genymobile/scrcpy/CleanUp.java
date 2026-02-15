@@ -7,7 +7,6 @@ import com.genymobile.scrcpy.util.SettingsException;
 import com.genymobile.scrcpy.wrappers.ServiceManager;
 
 import android.app.NotificationManager;
-import android.content.Context;
 import android.os.BatteryManager;
 import android.os.Looper;
 import android.system.ErrnoException;
@@ -82,14 +81,13 @@ public final class CleanUp {
             }
         }
 
-        int previousDoNotDisturbMode = NotificationManager.INTERRUPTION_FILTER_NONE;
+        int previousDoNotDisturbMode = -1;
         if (options.getDoNotDisturb()) {
             try {
-                FakeContext context = FakeContext.get();
-                NotificationManager notificationManager = (NotificationManager) context
-                        .getSystemService(Context.NOTIFICATION_SERVICE);
+                NotificationManager notificationManager = ServiceManager.getNotificationManager();
                 previousDoNotDisturbMode = notificationManager.getCurrentInterruptionFilter();
                 notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALARMS);
+
             } catch (Exception e) {
                 Ln.e("Could not set dnd mode", e);
             }
@@ -282,6 +280,11 @@ public final class CleanUp {
                 Ln.i("Restoring display power");
                 Device.setDisplayPower(targetDisplayId, true);
             }
+        }
+
+        if(previousDoNotDisturbMode != -1) {
+            Ln.i("Restoring DoNotDisturbMode");
+            ServiceManager.getNotificationManager().setInterruptionFilter(previousDoNotDisturbMode);
         }
 
         System.exit(0);
