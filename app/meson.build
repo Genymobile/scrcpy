@@ -180,7 +180,7 @@ configure_file(configuration: conf, output: 'config.h')
 
 src_dir = include_directories('src')
 
-executable('scrcpy', src,
+scrcpy_exe = executable('scrcpy', src,
            dependencies: dependencies,
            include_directories: src_dir,
            install: true,
@@ -278,6 +278,10 @@ if get_option('buildtype') == 'debug'
                          c_args: ['-DSDL_MAIN_HANDLED', '-DSC_TEST'])
         test(t[0], exe)
     endforeach
+
+    test('ssh_tunnel_integration',
+         find_program('tests/test_ssh_tunnel_integration.sh'),
+         depends: scrcpy_exe)
 endif
 
 if meson.version().version_compare('>= 0.58.0')

@@ -254,6 +254,7 @@ struct scrcpy_options {
     struct sc_mouse_bindings mouse_bindings;
     enum sc_camera_facing camera_facing;
     struct sc_port_range port_range;
+    const char *ssh_tunnel_host;
     uint32_t tunnel_host;
     uint16_t tunnel_port;
     uint8_t shortcut_mods; // OR of enum sc_shortcut_mod values

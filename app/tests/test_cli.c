@@ -96,6 +96,22 @@ static void test_options(void) {
     assert(opts->window_borderless);
 }
 
+static void test_parse_ssh_tunnel(void) {
+    struct scrcpy_cli_args args = {
+        .opts = scrcpy_options_default,
+        .help = false,
+        .version = false,
+    };
+
+    char *argv[] = {"scrcpy", "--ssh-tunnel=user@host"};
+
+    bool ok = scrcpy_parse_args(&args, 2, argv);
+    assert(ok);
+
+    const struct scrcpy_options *opts = &args.opts;
+    assert(!strcmp(opts->ssh_tunnel_host, "user@host"));
+}
+
 static void test_options2(void) {
     struct scrcpy_cli_args args = {
         .opts = scrcpy_options_default,
@@ -158,5 +174,6 @@ int main(int argc, char *argv[]) {
     test_options();
     test_options2();
     test_parse_shortcut_mods();
+    test_parse_ssh_tunnel();
     return 0;
 }

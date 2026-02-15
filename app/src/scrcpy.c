@@ -37,7 +37,9 @@
 # include "usb/usb.h"
 #endif
 #include "util/acksync.h"
+#include "util/env.h"
 #include "util/log.h"
+#include "util/process.h"
 #include "util/rand.h"
 #include "util/timeout.h"
 #include "util/tick.h"
@@ -385,6 +387,42 @@ scrcpy(struct scrcpy_options *options) {
     memset(&scrcpy, 42, sizeof(scrcpy));
 #endif
     struct scrcpy *s = &scrcpy;
+
+    sc_pid ssh_tunnel_pid = SC_PROCESS_NONE;
+
+    if (options->ssh_tunnel_host) {
+        LOGI("Starting SSH tunnel to %s", options->ssh_tunnel_host);
+
+#ifdef _WIN32
+        if (_putenv_s("ADB_SERVER_SOCKET", "tcp:localhost:5038")) {
+            LOGE("Failed to set ADB_SERVER_SOCKET");
+            return SCRCPY_EXIT_FAILURE;
+        }
+#else
+        if (setenv("ADB_SERVER_SOCKET", "tcp:localhost:5038", 1)) {
+            LOGE("Failed to set ADB_SERVER_SOCKET");
+            return SCRCPY_EXIT_FAILURE;
+        }
+#endif
+        const char *mock_ssh_path = sc_get_env("SCRCPY_MOCK_SSH_PATH");
+        const char *ssh_executable = mock_ssh_path ? mock_ssh_path : "ssh";
+        const char *cmd[] = {ssh_executable, "-CN", "-L5038:localhost:5037",
+                             "-R27183:localhost:27183",
+                             options->ssh_tunnel_host, NULL};
+        enum sc_process_result res =
+            sc_process_execute(cmd, &ssh_tunnel_pid,
+                               SC_PROCESS_NO_STDOUT | SC_PROCESS_NO_STDERR);
+        free((void *)mock_ssh_path);
+
+        if (res != SC_PROCESS_SUCCESS) {
+            LOGE("Failed to execute ssh");
+            return SCRCPY_EXIT_FAILURE;
+        }
+
+        options->tunnel_host = 0x7f000001; // 127.0.0.1
+        options->tunnel_port = 27183;
+        options->force_adb_forward = true;
+    }
 
     // Minimal SDL initialization
     if (SDL_Init(SDL_INIT_EVENTS)) {
@@ -958,6 +996,14 @@ aoa_complete:
 end:
     if (timeout_started) {
         sc_timeout_stop(&s->timeout);
+    }
+
+    if (ssh_tunnel_pid != SC_PROCESS_NONE) {
+        LOGI("Terminating SSH tunnel");
+        if (!sc_process_terminate(ssh_tunnel_pid)) {
+            LOGW("Could not terminate SSH tunnel");
+        }
+        sc_process_wait(ssh_tunnel_pid, true);
     }
 
     // The demuxer is not stopped explicitly, because it will stop by itself on
