@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <SDL2/SDL.h>
+#include "adb/adb.h"
 
 #ifdef _WIN32
 // not needed here, but winsock2.h must never be included AFTER windows.h
@@ -29,6 +30,7 @@
 #include "uhid/gamepad_uhid.h"
 #include "uhid/keyboard_uhid.h"
 #include "uhid/mouse_uhid.h"
+
 #ifdef HAVE_USB
 # include "usb/aoa_hid.h"
 # include "usb/gamepad_aoa.h"
@@ -36,11 +38,13 @@
 # include "usb/mouse_aoa.h"
 # include "usb/usb.h"
 #endif
+
 #include "util/acksync.h"
 #include "util/log.h"
 #include "util/rand.h"
 #include "util/timeout.h"
 #include "util/tick.h"
+
 #ifdef HAVE_V4L2
 # include "v4l2_sink.h"
 #endif
@@ -176,11 +180,15 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
 }
 
 static enum scrcpy_exit_code
-event_loop(struct scrcpy *s, bool has_screen) {
+event_loop(struct scrcpy *s, bool has_screen, const struct scrcpy_options *options) {
     SDL_Event event;
     while (SDL_WaitEvent(&event)) {
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
+                if (options && options->exit_on_app_close) {
+                    LOGI("Target app closed; exiting");
+                    return SCRCPY_EXIT_SUCCESS;
+                }
                 LOGW("Device disconnected");
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_DEMUXER_ERROR:
@@ -261,7 +269,7 @@ await_for_server(bool *connected) {
 
 static void
 sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
-                     void *userdata) {
+        void *userdata) {
     (void) recorder;
     (void) userdata;
 
@@ -272,7 +280,7 @@ sc_recorder_on_ended(struct sc_recorder *recorder, bool success,
 
 static void
 sc_video_demuxer_on_ended(struct sc_demuxer *demuxer,
-                          enum sc_demuxer_status status, void *userdata) {
+        enum sc_demuxer_status status, void *userdata) {
     (void) demuxer;
     (void) userdata;
 
@@ -288,7 +296,7 @@ sc_video_demuxer_on_ended(struct sc_demuxer *demuxer,
 
 static void
 sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
-                          enum sc_demuxer_status status, void *userdata) {
+        enum sc_demuxer_status status, void *userdata) {
     (void) demuxer;
 
     const struct scrcpy_options *options = userdata;
@@ -299,14 +307,14 @@ sc_audio_demuxer_on_ended(struct sc_demuxer *demuxer,
         sc_push_event(SC_EVENT_DEVICE_DISCONNECTED);
     } else if (status == SC_DEMUXER_STATUS_ERROR
             || (status == SC_DEMUXER_STATUS_DISABLED
-                && options->require_audio)) {
+            && options->require_audio)) {
         sc_push_event(SC_EVENT_DEMUXER_ERROR);
     }
 }
 
 static void
 sc_controller_on_ended(struct sc_controller *controller, bool error,
-                       void *userdata) {
+        void *userdata) {
     // Note: this function may be called twice, once from the controller thread
     // and once from the receiver thread
     (void) controller;
@@ -422,64 +430,65 @@ scrcpy(struct scrcpy_options *options) {
     uint32_t scid = scrcpy_generate_scid();
 
     struct sc_server_params params = {
-        .scid = scid,
-        .req_serial = options->serial,
-        .select_usb = options->select_usb,
-        .select_tcpip = options->select_tcpip,
-        .log_level = options->log_level,
-        .video_codec = options->video_codec,
-        .audio_codec = options->audio_codec,
-        .video_source = options->video_source,
-        .audio_source = options->audio_source,
-        .camera_facing = options->camera_facing,
-        .crop = options->crop,
-        .port_range = options->port_range,
-        .tunnel_host = options->tunnel_host,
-        .tunnel_port = options->tunnel_port,
-        .max_size = options->max_size,
-        .video_bit_rate = options->video_bit_rate,
-        .audio_bit_rate = options->audio_bit_rate,
-        .max_fps = options->max_fps,
-        .angle = options->angle,
-        .screen_off_timeout = options->screen_off_timeout,
-        .capture_orientation = options->capture_orientation,
-        .capture_orientation_lock = options->capture_orientation_lock,
-        .control = options->control,
-        .display_id = options->display_id,
-        .new_display = options->new_display,
-        .display_ime_policy = options->display_ime_policy,
-        .video = options->video,
-        .audio = options->audio,
-        .audio_dup = options->audio_dup,
-        .show_touches = options->show_touches,
-        .stay_awake = options->stay_awake,
-        .video_codec_options = options->video_codec_options,
-        .audio_codec_options = options->audio_codec_options,
-        .video_encoder = options->video_encoder,
-        .audio_encoder = options->audio_encoder,
-        .camera_id = options->camera_id,
-        .camera_size = options->camera_size,
-        .camera_ar = options->camera_ar,
-        .camera_fps = options->camera_fps,
-        .force_adb_forward = options->force_adb_forward,
-        .power_off_on_close = options->power_off_on_close,
-        .clipboard_autosync = options->clipboard_autosync,
-        .downsize_on_error = options->downsize_on_error,
-        .tcpip = options->tcpip,
-        .tcpip_dst = options->tcpip_dst,
-        .cleanup = options->cleanup,
-        .power_on = options->power_on,
-        .kill_adb_on_close = options->kill_adb_on_close,
-        .camera_high_speed = options->camera_high_speed,
-        .vd_destroy_content = options->vd_destroy_content,
-        .vd_system_decorations = options->vd_system_decorations,
-        .list = options->list,
+            .scid = scid,
+            .req_serial = options->serial,
+            .select_usb = options->select_usb,
+            .select_tcpip = options->select_tcpip,
+            .log_level = options->log_level,
+            .video_codec = options->video_codec,
+            .audio_codec = options->audio_codec,
+            .video_source = options->video_source,
+            .audio_source = options->audio_source,
+            .camera_facing = options->camera_facing,
+            .crop = options->crop,
+            .port_range = options->port_range,
+            .tunnel_host = options->tunnel_host,
+            .tunnel_port = options->tunnel_port,
+            .max_size = options->max_size,
+            .video_bit_rate = options->video_bit_rate,
+            .audio_bit_rate = options->audio_bit_rate,
+            .max_fps = options->max_fps,
+            .angle = options->angle,
+            .screen_off_timeout = options->screen_off_timeout,
+            .capture_orientation = options->capture_orientation,
+            .capture_orientation_lock = options->capture_orientation_lock,
+            .control = options->control,
+            .display_id = options->display_id,
+            .new_display = options->new_display,
+            .display_ime_policy = options->display_ime_policy,
+            .video = options->video,
+            .audio = options->audio,
+            .audio_dup = options->audio_dup,
+            .show_touches = options->show_touches,
+            .stay_awake = options->stay_awake,
+            .video_codec_options = options->video_codec_options,
+            .audio_codec_options = options->audio_codec_options,
+            .video_encoder = options->video_encoder,
+            .audio_encoder = options->audio_encoder,
+            .camera_id = options->camera_id,
+            .camera_size = options->camera_size,
+            .camera_ar = options->camera_ar,
+            .camera_fps = options->camera_fps,
+            .force_adb_forward = options->force_adb_forward,
+            .power_off_on_close = options->power_off_on_close,
+            .clipboard_autosync = options->clipboard_autosync,
+            .downsize_on_error = options->downsize_on_error,
+            .tcpip = options->tcpip,
+            .tcpip_dst = options->tcpip_dst,
+            .cleanup = options->cleanup,
+            .power_on = options->power_on,
+            .kill_adb_on_close = options->kill_adb_on_close,
+            .camera_high_speed = options->camera_high_speed,
+            .vd_destroy_content = options->vd_destroy_content,
+            .vd_system_decorations = options->vd_system_decorations,
+            .exit_on_app_close = options->exit_on_app_close,
+            .list = options->list,
     };
 
     static const struct sc_server_callbacks cbs = {
-        .on_connection_failed = sc_server_on_connection_failed,
-        .on_connected = sc_server_on_connected,
-        .on_disconnected = sc_server_on_disconnected,
+            .on_connection_failed = sc_server_on_connection_failed,
+            .on_connected = sc_server_on_connected,
+            .on_disconnected = sc_server_on_disconnected,
     };
     if (!sc_server_init(&s->server, &params, &cbs, NULL)) {
         return SCRCPY_EXIT_FAILURE;
@@ -566,7 +575,7 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->video_playback && options->control) {
         if (!sc_file_pusher_init(&s->file_pusher, serial,
-                                 options->push_target)) {
+                options->push_target)) {
             goto end;
         }
         fp = &s->file_pusher;
@@ -575,18 +584,18 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->video) {
         static const struct sc_demuxer_callbacks video_demuxer_cbs = {
-            .on_ended = sc_video_demuxer_on_ended,
+                .on_ended = sc_video_demuxer_on_ended,
         };
         sc_demuxer_init(&s->video_demuxer, "video", s->server.video_socket,
-                        &video_demuxer_cbs, NULL);
+                &video_demuxer_cbs, NULL);
     }
 
     if (options->audio) {
         static const struct sc_demuxer_callbacks audio_demuxer_cbs = {
-            .on_ended = sc_audio_demuxer_on_ended,
+                .on_ended = sc_audio_demuxer_on_ended,
         };
         sc_demuxer_init(&s->audio_demuxer, "audio", s->server.audio_socket,
-                        &audio_demuxer_cbs, options);
+                &audio_demuxer_cbs, options);
     }
 
     bool needs_video_decoder = options->video_playback;
@@ -597,22 +606,22 @@ scrcpy(struct scrcpy_options *options) {
     if (needs_video_decoder) {
         sc_decoder_init(&s->video_decoder, "video");
         sc_packet_source_add_sink(&s->video_demuxer.packet_source,
-                                  &s->video_decoder.packet_sink);
+                &s->video_decoder.packet_sink);
     }
     if (needs_audio_decoder) {
         sc_decoder_init(&s->audio_decoder, "audio");
         sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
-                                  &s->audio_decoder.packet_sink);
+                &s->audio_decoder.packet_sink);
     }
 
     if (options->record_filename) {
         static const struct sc_recorder_callbacks recorder_cbs = {
-            .on_ended = sc_recorder_on_ended,
+                .on_ended = sc_recorder_on_ended,
         };
         if (!sc_recorder_init(&s->recorder, options->record_filename,
-                              options->record_format, options->video,
-                              options->audio, options->record_orientation,
-                              &recorder_cbs, NULL)) {
+                options->record_format, options->video,
+                options->audio, options->record_orientation,
+                &recorder_cbs, NULL)) {
             goto end;
         }
         recorder_initialized = true;
@@ -624,11 +633,11 @@ scrcpy(struct scrcpy_options *options) {
 
         if (options->video) {
             sc_packet_source_add_sink(&s->video_demuxer.packet_source,
-                                      &s->recorder.video_packet_sink);
+                    &s->recorder.video_packet_sink);
         }
         if (options->audio) {
             sc_packet_source_add_sink(&s->audio_demuxer.packet_source,
-                                      &s->recorder.audio_packet_sink);
+                    &s->recorder.audio_packet_sink);
         }
     }
 
@@ -639,11 +648,11 @@ scrcpy(struct scrcpy_options *options) {
 
     if (options->control) {
         static const struct sc_controller_callbacks controller_cbs = {
-            .on_ended = sc_controller_on_ended,
+                .on_ended = sc_controller_on_ended,
         };
 
         if (!sc_controller_init(&s->controller, s->server.control_socket,
-            &controller_cbs, NULL)) {
+                &controller_cbs, NULL)) {
             goto end;
         }
         controller_initialized = true;
@@ -751,8 +760,8 @@ aoa_complete:
 
         if (options->keyboard_input_mode == SC_KEYBOARD_INPUT_MODE_SDK) {
             sc_keyboard_sdk_init(&s->keyboard_sdk, &s->controller,
-                                 options->key_inject_mode,
-                                 options->forward_key_repeat);
+                    options->key_inject_mode,
+                    options->forward_key_repeat);
             kp = &s->keyboard_sdk.key_processor;
         } else if (options->keyboard_input_mode
                 == SC_KEYBOARD_INPUT_MODE_UHID) {
@@ -766,7 +775,7 @@ aoa_complete:
 
         if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_SDK) {
             sc_mouse_sdk_init(&s->mouse_sdk, &s->controller,
-                              options->mouse_hover);
+                    options->mouse_hover);
             mp = &s->mouse_sdk.mouse_processor;
         } else if (options->mouse_input_mode == SC_MOUSE_INPUT_MODE_UHID) {
             bool ok = sc_mouse_uhid_init(&s->mouse_uhid, &s->controller);
@@ -800,30 +809,30 @@ aoa_complete:
 
     if (options->window) {
         const char *window_title =
-            options->window_title ? options->window_title : info->device_name;
+                options->window_title ? options->window_title : info->device_name;
 
         struct sc_screen_params screen_params = {
-            .video = options->video_playback,
-            .controller = controller,
-            .fp = fp,
-            .kp = kp,
-            .mp = mp,
-            .gp = gp,
-            .mouse_bindings = options->mouse_bindings,
-            .legacy_paste = options->legacy_paste,
-            .clipboard_autosync = options->clipboard_autosync,
-            .shortcut_mods = options->shortcut_mods,
-            .window_title = window_title,
-            .always_on_top = options->always_on_top,
-            .window_x = options->window_x,
-            .window_y = options->window_y,
-            .window_width = options->window_width,
-            .window_height = options->window_height,
-            .window_borderless = options->window_borderless,
-            .orientation = options->display_orientation,
-            .mipmaps = options->mipmaps,
-            .fullscreen = options->fullscreen,
-            .start_fps_counter = options->start_fps_counter,
+                .video = options->video_playback,
+                .controller = controller,
+                .fp = fp,
+                .kp = kp,
+                .mp = mp,
+                .gp = gp,
+                .mouse_bindings = options->mouse_bindings,
+                .legacy_paste = options->legacy_paste,
+                .clipboard_autosync = options->clipboard_autosync,
+                .shortcut_mods = options->shortcut_mods,
+                .window_title = window_title,
+                .always_on_top = options->always_on_top,
+                .window_x = options->window_x,
+                .window_y = options->window_y,
+                .window_width = options->window_width,
+                .window_height = options->window_height,
+                .window_borderless = options->window_borderless,
+                .orientation = options->display_orientation,
+                .mipmaps = options->mipmaps,
+                .fullscreen = options->fullscreen,
+                .start_fps_counter = options->start_fps_counter,
         };
 
         if (!sc_screen_init(&s->screen, &screen_params)) {
@@ -835,7 +844,7 @@ aoa_complete:
             struct sc_frame_source *src = &s->video_decoder.frame_source;
             if (options->video_buffer) {
                 sc_delay_buffer_init(&s->video_buffer,
-                                     options->video_buffer, true);
+                        options->video_buffer, true);
                 sc_frame_source_add_sink(src, &s->video_buffer.frame_sink);
                 src = &s->video_buffer.frame_source;
             }
@@ -846,9 +855,9 @@ aoa_complete:
 
     if (options->audio_playback) {
         sc_audio_player_init(&s->audio_player, options->audio_buffer,
-                             options->audio_output_buffer);
+                options->audio_output_buffer);
         sc_frame_source_add_sink(&s->audio_decoder.frame_source,
-                                 &s->audio_player.frame_sink);
+                &s->audio_player.frame_sink);
     }
 
 #ifdef HAVE_V4L2
@@ -909,7 +918,7 @@ aoa_complete:
 
         sc_tick deadline = sc_tick_now() + options->time_limit;
         static const struct sc_timeout_callbacks cbs = {
-            .on_timeout = sc_timeout_on_timeout,
+                .on_timeout = sc_timeout_on_timeout,
         };
 
         ok = sc_timeout_start(&s->timeout, deadline, &cbs, NULL);
@@ -944,8 +953,28 @@ aoa_complete:
         }
     }
 
-    ret = event_loop(s, options->window);
+    ret = event_loop(s, options->window, options);
     terminate_event_loop();
+
+
+    if (options->stop_app) {
+        LOGI("Stopping app [%s]", options->start_app);
+        const char *cmd[512];
+        cmd[0] = sc_adb_get_executable();
+        cmd[1] = "shell";
+        int idx = 0;
+        if (options->serial) {
+            idx = 2;
+            cmd[2] = "-s";
+            cmd[3] = options->serial;
+        }
+        cmd[idx + 2] = "am";
+        cmd[idx + 3] = "force-stop";
+        cmd[idx + 4] = options->start_app;
+        cmd[idx + 5] = NULL;
+        sc_adb_execute(cmd, 0);
+    }
+
     LOGD("quit...");
 
     if (options->video_playback) {
@@ -955,7 +984,7 @@ aoa_complete:
         sc_screen_hide_window(&s->screen);
     }
 
-end:
+    end:
     if (timeout_started) {
         sc_timeout_stop(&s->timeout);
     }

@@ -70,6 +70,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
     private static final ScheduledExecutorService EXECUTOR = Executors.newSingleThreadScheduledExecutor();
     private ExecutorService startAppExecutor;
+    private AppMonitor appMonitor;
 
     private Thread thread;
 
@@ -82,6 +83,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final DeviceMessageSender sender;
     private final boolean clipboardAutosync;
     private final boolean powerOn;
+    private final boolean exitOnAppClose;
 
     private final KeyCharacterMap charMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD);
 
@@ -106,6 +108,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         this.cleanUp = cleanUp;
         this.clipboardAutosync = options.getClipboardAutosync();
         this.powerOn = options.getPowerOn();
+        this.exitOnAppClose = options.getExitOnAppClose();
         initPointers();
         sender = new DeviceMessageSender(controlChannel);
 
@@ -691,6 +694,33 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Ln.i("Starting app \"" + app.getName() + "\" [" + app.getPackageName() + "] on display " + startAppDisplayId + "...");
         Device.startApp(app.getPackageName(), startAppDisplayId, forceStopBeforeStart);
+
+        // Start monitoring the app if exit_on_app_close is enabled
+        if (exitOnAppClose) {
+            if (appMonitor != null) {
+                appMonitor.stop();
+            }
+            // Pass the display ID to monitor the app on the specific display
+            appMonitor = new AppMonitor(app.getPackageName(), startAppDisplayId, this::onAppClosed);
+            appMonitor.start();
+        }
+    }
+
+    private void onAppClosed() {
+        Ln.i("Monitored app closed, requesting scrcpy exit");
+        // Stop the app monitor
+        if (appMonitor != null) {
+            appMonitor.stop();
+            appMonitor = null;
+        }
+
+        // Terminate the server process to close the connection
+        // This will cause the client to detect the disconnection and exit
+        try {
+            System.exit(0);
+        } catch (Exception e) {
+            Ln.w("Error handling app close: " + e.getMessage());
+        }
     }
 
     private int getStartAppDisplayId() {

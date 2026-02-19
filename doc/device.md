@@ -149,28 +149,28 @@ scrcpy --list-apps
 
 An app, selected by its package name, can be launched on start:
 
-```
+```bash
 scrcpy --start-app=org.mozilla.firefox
 ```
 
 This feature can be used to run an app in a [virtual
 display](virtual_display.md):
 
-```
+```bash
 scrcpy --new-display=1920x1080 --start-app=org.videolan.vlc
 ```
 
 The app can be optionally forced-stop before being started, by adding a `+`
 prefix:
 
-```
+```bash
 scrcpy --start-app=+org.mozilla.firefox
 ```
 
 For convenience, it is also possible to select an app by its name, by adding a
 `?` prefix:
 
-```
+```bash
 scrcpy --start-app=?firefox
 ```
 
@@ -179,6 +179,23 @@ passing the package name is recommended.
 
 The `+` and `?` prefixes can be combined (in that order):
 
-```
+```bash
 scrcpy --start-app=+?firefox
 ```
+
+Also, if you add a '-' as a suffix, scrcpy will exit when the app is closed, alike `--exit-on-close` (see below):
+
+```bash
+scrcpy --start-app=org.mozilla.firefox-
+```
+
+### Exit when started app closes
+
+If you want scrcpy to exit automatically when the started app closes, use the `--exit-on-close` option together with `--start-app`:
+
+```bash
+scrcpy --start-app=<package> --exit-on-close
+```
+
+- This is useful for kiosk, automation, or demo scenarios.
+- `--exit-on-close` only works when used with `--start-app`.

@@ -417,6 +417,9 @@ execute_server(struct sc_server *server,
     if (!params->vd_system_decorations) {
         ADD_PARAM("vd_system_decorations=false");
     }
+    if (params->exit_on_app_close) {
+        ADD_PARAM("exit_on_app_close=true");
+    }
     if (params->list & SC_OPTION_LIST_ENCODERS) {
         ADD_PARAM("list_encoders=true");
     }
@@ -752,7 +755,6 @@ sc_server_on_terminated(void *userdata) {
     sc_intr_interrupt(&server->intr);
 
     server->cbs->on_disconnected(server, server->cbs_userdata);
-
     LOGD("Server terminated");
 }
 
