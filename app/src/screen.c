@@ -198,7 +198,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
 // changed, so that the content rectangle is recomputed
 static void
 sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
-    assert(!screen->video || screen->has_video_window);
+    assert(screen->window_shown);
 
     if (update_content_rect) {
         sc_screen_update_content_rect(screen);
@@ -341,7 +341,7 @@ sc_screen_init(struct sc_screen *screen,
                const struct sc_screen_params *params) {
     screen->resize_pending = false;
     screen->has_frame = false;
-    screen->has_video_window = false;
+    screen->window_shown = false;
     screen->paused = false;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
@@ -532,6 +532,7 @@ sc_screen_init(struct sc_screen *screen,
 
     if (!screen->video) {
         // Show the window immediately
+        screen->window_shown = true;
         sc_sdl_show_window(screen->window);
 
         if (sc_screen_is_relative_mode(screen)) {
@@ -588,6 +589,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
         sc_fps_counter_start(&screen->fps_counter);
     }
 
+    screen->window_shown = true;
     sc_sdl_show_window(screen->window);
     sc_screen_update_content_rect(screen);
 }
@@ -595,6 +597,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
 void
 sc_screen_hide_window(struct sc_screen *screen) {
     sc_sdl_hide_window(screen->window);
+    screen->window_shown = false;
 }
 
 void
@@ -722,8 +725,7 @@ sc_screen_apply_frame(struct sc_screen *screen) {
     }
 
     assert(screen->has_frame);
-    if (!screen->has_video_window) {
-        screen->has_video_window = true;
+    if (!screen->window_shown) {
         // this is the very first frame, show the window
         sc_screen_show_initial_window(screen);
 
@@ -853,8 +855,6 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
-    // !video implies !has_video_window
-    assert(screen->video || !screen->has_video_window);
     switch (event->type) {
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
@@ -864,28 +864,27 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             return;
         }
         case SDL_EVENT_WINDOW_EXPOSED:
-            if (!screen->video || screen->has_video_window) {
-                sc_screen_render(screen, true);
-            }
+            sc_screen_render(screen, true);
             return;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            if (screen->has_video_window) {
+            // This event can be triggered before the window is shown
+            if (screen->window_shown) {
                 sc_screen_render(screen, true);
             }
             return;
         case SDL_EVENT_WINDOW_RESTORED:
-            if (screen->has_video_window && is_windowed(screen)) {
+            if (screen->video && is_windowed(screen)) {
                 apply_pending_resize(screen);
                 sc_screen_render(screen, true);
             }
             return;
         case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
             LOGD("Switched to fullscreen mode");
-            assert(screen->has_video_window);
+            assert(screen->video);
             return;
         case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
             LOGD("Switched to windowed mode");
-            assert(screen->has_video_window);
+            assert(screen->video);
             if (is_windowed(screen)) {
                 apply_pending_resize(screen);
                 sc_screen_render(screen, true);
