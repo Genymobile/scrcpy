@@ -15,6 +15,7 @@ src = [
     'src/delay_buffer.c',
     'src/demuxer.c',
     'src/device_msg.c',
+    'src/disconnect.c',
     'src/events.c',
     'src/icon.c',
     'src/file_pusher.c',
