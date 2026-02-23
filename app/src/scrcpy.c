@@ -209,17 +209,18 @@ event_loop(struct scrcpy *s, bool has_screen) {
 }
 
 static void
-terminate_event_loop(void) {
+terminate_runnables_on_event_loop(void) {
     sc_reject_new_runnables();
 
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
-        if (event.type == SC_EVENT_RUN_ON_MAIN_THREAD) {
-            // Make sure all posted runnables are run, to avoid memory leaks
-            sc_runnable_fn run = event.user.data1;
-            void *userdata = event.user.data2;
-            run(userdata);
-        }
+    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT,
+                          SC_EVENT_RUN_ON_MAIN_THREAD,
+                          SC_EVENT_RUN_ON_MAIN_THREAD) == 1) {
+        assert(event.type == SC_EVENT_RUN_ON_MAIN_THREAD);
+        // Make sure all posted runnables are run, to avoid memory leaks
+        sc_runnable_fn run = event.user.data1;
+        void *userdata = event.user.data2;
+        run(userdata);
     }
 }
 
@@ -946,7 +947,7 @@ aoa_complete:
     }
 
     ret = event_loop(s, options->window);
-    terminate_event_loop();
+    terminate_runnables_on_event_loop();
     LOGD("quit...");
 
     if (options->window) {
