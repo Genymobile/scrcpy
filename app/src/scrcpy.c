@@ -173,6 +173,9 @@ event_loop(struct scrcpy *s, bool has_screen) {
         switch (event.type) {
             case SC_EVENT_DEVICE_DISCONNECTED:
                 LOGW("Device disconnected");
+                if (has_screen) {
+                    sc_screen_handle_event(&s->screen, &event);
+                }
                 return SCRCPY_EXIT_DISCONNECTED;
             case SC_EVENT_DEMUXER_ERROR:
                 LOGE("Demuxer error");
@@ -415,6 +418,7 @@ scrcpy(struct scrcpy_options *options) {
     bool screen_initialized = false;
     bool timeout_initialized = false;
     bool timeout_started = false;
+    bool disconnected = false;
 
     struct sc_acksync *acksync = NULL;
 
@@ -948,14 +952,7 @@ aoa_complete:
 
     ret = event_loop(s, options->window);
     terminate_runnables_on_event_loop();
-    LOGD("quit...");
-
-    if (options->window) {
-        // Close the window immediately on closing, because screen_destroy()
-        // may only be called once the video demuxer thread is joined (it may
-        // take time)
-        sc_screen_hide_window(&s->screen);
-    }
+    disconnected = ret == SCRCPY_EXIT_DISCONNECTED;
 
 end:
     if (timeout_started) {
@@ -998,6 +995,17 @@ end:
     if (server_started) {
         // shutdown the sockets and kill the server
         sc_server_stop(&s->server);
+    }
+
+    if (screen_initialized) {
+        if (disconnected) {
+            sc_screen_handle_disconnection(&s->screen);
+        }
+        LOGD("Quit...");
+
+        // Close the window immediately, because sc_screen_destroy() may only be
+        // called once the video demuxer thread is joined (it may take time)
+        sc_screen_hide_window(&s->screen);
     }
 
     if (timeout_started) {

@@ -12,6 +12,7 @@
 
 #include "controller.h"
 #include "coords.h"
+#include "disconnect.h"
 #include "fps_counter.h"
 #include "frame_buffer.h"
 #include "input_manager.h"
@@ -76,6 +77,10 @@ struct sc_screen {
 
     bool paused;
     AVFrame *resume_frame;
+
+    bool disconnected;
+    bool disconnect_started;
+    struct sc_disconnect disconnect;
 };
 
 struct sc_screen_params {
@@ -115,7 +120,7 @@ bool
 sc_screen_init(struct sc_screen *screen, const struct sc_screen_params *params);
 
 // request to interrupt any inner thread
-// must be called before screen_join()
+// must be called before sc_screen_join()
 void
 sc_screen_interrupt(struct sc_screen *screen);
 
@@ -158,6 +163,10 @@ sc_screen_set_paused(struct sc_screen *screen, bool paused);
 // react to SDL events
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event);
+
+// run the event loop once the device is disconnected
+void
+sc_screen_handle_disconnection(struct sc_screen *screen);
 
 // convert point from window coordinates to frame coordinates
 // x and y are expressed in pixels

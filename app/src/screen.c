@@ -184,7 +184,7 @@ compute_content_rect(struct sc_size render_size, struct sc_size content_size,
 static void
 sc_screen_update_content_rect(struct sc_screen *screen) {
     // Only upscale video frames, not icon
-    bool can_upscale = screen->video;
+    bool can_upscale = screen->video && !screen->disconnected;
 
     struct sc_size render_size =
         sc_sdl_get_render_output_size(screen->renderer);
@@ -366,6 +366,8 @@ sc_screen_init(struct sc_screen *screen,
     screen->paused = false;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
+    screen->disconnected = false;
+    screen->disconnect_started = false;
 
     screen->video = params->video;
     screen->camera = params->camera;
@@ -626,9 +628,19 @@ sc_screen_interrupt(struct sc_screen *screen) {
     sc_fps_counter_interrupt(&screen->fps_counter);
 }
 
+static void
+sc_screen_interrupt_disconnect(struct sc_screen *screen) {
+    if (screen->disconnect_started) {
+        sc_disconnect_interrupt(&screen->disconnect);
+    }
+}
+
 void
 sc_screen_join(struct sc_screen *screen) {
     sc_fps_counter_join(&screen->fps_counter);
+    if (screen->disconnect_started) {
+        sc_disconnect_join(&screen->disconnect);
+    }
 }
 
 void
@@ -636,6 +648,9 @@ sc_screen_destroy(struct sc_screen *screen) {
 #ifndef NDEBUG
     assert(!screen->open);
 #endif
+    if (screen->disconnect_started) {
+        sc_disconnect_destroy(&screen->disconnect);
+    }
     sc_texture_destroy(&screen->tex);
     av_frame_free(&screen->frame);
 #ifdef SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -645,6 +660,17 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
     sc_frame_buffer_destroy(&screen->fb);
+
+    SDL_Event event;
+    int nevents = SDL_PeepEvents(&event, 1, SDL_GETEVENT,
+                                 SC_EVENT_DISCONNECTED_ICON_LOADED,
+                                 SC_EVENT_DISCONNECTED_ICON_LOADED);
+    if (nevents == 1) {
+        assert(event.type == SC_EVENT_DISCONNECTED_ICON_LOADED);
+        // The event was posted, but not handled, the icon must be freed
+        SDL_Surface *dangling_icon = event.user.data1;
+        sc_icon_destroy(dangling_icon);
+    }
 }
 
 static void
@@ -857,6 +883,27 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
                                             content_size.height);
 }
 
+static void
+sc_disconnect_on_icon_loaded(struct sc_disconnect *d, SDL_Surface *icon,
+                             void *userdata) {
+    (void) d;
+    (void) userdata;
+
+    bool ok = sc_push_event_with_data(SC_EVENT_DISCONNECTED_ICON_LOADED, icon);
+    if (!ok) {
+        sc_icon_destroy(icon);
+    }
+}
+
+static void
+sc_disconnect_on_timeout(struct sc_disconnect *d, void *userdata) {
+    (void) d;
+    (void) userdata;
+
+    bool ok = sc_push_event(SC_EVENT_DISCONNECTED_TIMEOUT);
+    (void) ok; // ignore failure
+}
+
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     switch (event->type) {
@@ -904,6 +951,31 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                 sc_screen_render(screen, true);
             }
             return;
+        case SC_EVENT_DEVICE_DISCONNECTED:
+            assert(!screen->disconnected);
+            screen->disconnected = true;
+            if (!screen->window_shown) {
+                // No window open
+                return;
+            }
+
+            sc_input_manager_handle_event(&screen->im, event);
+
+            sc_texture_reset(&screen->tex);
+            sc_screen_render(screen, true);
+
+            sc_tick deadline = sc_tick_now() + SC_TICK_FROM_SEC(2);
+            static const struct sc_disconnect_callbacks cbs = {
+                .on_icon_loaded = sc_disconnect_on_icon_loaded,
+                .on_timeout = sc_disconnect_on_timeout,
+            };
+            bool ok =
+                sc_disconnect_start(&screen->disconnect, deadline, &cbs, NULL);
+            if (ok) {
+                screen->disconnect_started = true;
+            }
+
+            return;
     }
 
     if (sc_screen_is_relative_mode(screen)
@@ -913,6 +985,55 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     }
 
     sc_input_manager_handle_event(&screen->im, event);
+}
+
+void
+sc_screen_handle_disconnection(struct sc_screen *screen) {
+    if (!screen->window_shown) {
+        // No window open, quit immediately
+        return;
+    }
+
+    if (!screen->disconnect_started) {
+        // If sc_disconnect_start() failed, quit immediately
+        return;
+    }
+
+    SDL_Event event;
+    while (SDL_WaitEvent(&event)) {
+        switch (event.type) {
+            case SDL_EVENT_WINDOW_EXPOSED:
+                sc_screen_render(screen, true);
+                break;
+            case SC_EVENT_DISCONNECTED_ICON_LOADED: {
+                SDL_Surface *icon_disconnected = event.user.data1;
+                assert(icon_disconnected);
+
+                bool ok = sc_texture_set_from_surface(&screen->tex,
+                                                      icon_disconnected);
+                if (ok) {
+                    screen->content_size.width = icon_disconnected->w;
+                    screen->content_size.height = icon_disconnected->h;
+                    sc_screen_render(screen, true);
+                } else {
+                    // not fatal
+                    LOGE("Could not set disconnected icon");
+                }
+
+                sc_icon_destroy(icon_disconnected);
+                break;
+            }
+            case SC_EVENT_DISCONNECTED_TIMEOUT:
+                LOGD("Closing after device disconnection");
+                return;
+            case SDL_EVENT_QUIT:
+                LOGD("User requested to quit");
+                sc_screen_interrupt_disconnect(screen);
+                return;
+            default:
+                sc_input_manager_handle_event(&screen->im, &event);
+        }
+    }
 }
 
 struct sc_point
