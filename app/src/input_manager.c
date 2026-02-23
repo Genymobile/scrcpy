@@ -7,6 +7,7 @@
 
 #include "android/input.h"
 #include "android/keycodes.h"
+#include "events.h"
 #include "input_events.h"
 #include "screen.h"
 #include "shortcut_mod.h"
@@ -46,6 +47,8 @@ sc_input_manager_init(struct sc_input_manager *im,
     im->key_repeat = 0;
 
     im->next_sequence = 1; // 0 is reserved for SC_SEQUENCE_INVALID
+
+    im->disconnected = false;
 }
 
 static void
@@ -349,7 +352,7 @@ apply_orientation_transform(struct sc_input_manager *im,
 static void
 sc_input_manager_process_text_input(struct sc_input_manager *im,
                                     const SDL_TextInputEvent *event) {
-    if (im->camera || !im->kp || im->screen->paused) {
+    if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -417,6 +420,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool control = im->controller;
     bool paused = im->screen->paused;
     bool video = im->screen->video;
+    bool disconnected = im->disconnected;
 
     SDL_Keycode sdl_keycode = event->key;
     uint16_t mod = event->mod;
@@ -433,7 +437,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
     bool is_shortcut = sc_shortcut_mods_is_shortcut_mod(mods, mod)
                     || sc_shortcut_mods_is_shortcut_key(mods, sdl_keycode);
 
-    if (down && !repeat) {
+    if (down && !repeat && !disconnected) {
         if (sdl_keycode == im->last_keycode && mod == im->last_mod) {
             ++im->key_repeat;
         } else {
@@ -508,6 +512,12 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     switch_fps_counter_state(im);
                 }
                 return;
+        }
+
+        if (disconnected) {
+            // Only handle shortcuts that do not interact with the device (since
+            // it is disconnected)
+            return;
         }
 
         // Flatten conditions to avoid additional indentation levels
@@ -718,7 +728,7 @@ sc_input_manager_get_position(struct sc_input_manager *im, int32_t x,
 static void
 sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
                                       const SDL_MouseMotionEvent *event) {
-    if (im->camera || !im->mp || im->screen->paused) {
+    if (im->camera || !im->mp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -757,7 +767,7 @@ sc_input_manager_process_mouse_motion(struct sc_input_manager *im,
 static void
 sc_input_manager_process_touch(struct sc_input_manager *im,
                                const SDL_TouchFingerEvent *event) {
-    if (im->camera || !im->mp || im->screen->paused) {
+    if (im->camera || !im->mp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -812,7 +822,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
     // some mouse events do not interact with the device, so process the event
     // even if control is disabled
 
-    if (im->camera) {
+    if (im->camera || im->disconnected) {
         return;
     }
 
@@ -983,7 +993,7 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
 static void
 sc_input_manager_process_mouse_wheel(struct sc_input_manager *im,
                                      const SDL_MouseWheelEvent *event) {
-    if (im->camera || !im->kp || im->screen->paused) {
+    if (im->camera || !im->kp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -1013,7 +1023,7 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
                                        const SDL_GamepadDeviceEvent *event) {
     // Handle device added or removed even if paused
 
-    if (im->camera || !im->gp) {
+    if (im->camera || !im->gp || im->disconnected) {
         return;
     }
 
@@ -1058,7 +1068,7 @@ sc_input_manager_process_gamepad_device(struct sc_input_manager *im,
 static void
 sc_input_manager_process_gamepad_axis(struct sc_input_manager *im,
                                       const SDL_GamepadAxisEvent *event) {
-    if (im->camera || !im->gp || im->screen->paused) {
+    if (im->camera || !im->gp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -1078,7 +1088,7 @@ sc_input_manager_process_gamepad_axis(struct sc_input_manager *im,
 static void
 sc_input_manager_process_gamepad_button(struct sc_input_manager *im,
                                        const SDL_GamepadButtonEvent *event) {
-    if (im->camera || !im->gp || im->screen->paused) {
+    if (im->camera || !im->gp || im->screen->paused || im->disconnected) {
         return;
     }
 
@@ -1104,7 +1114,7 @@ is_apk(const char *file) {
 static void
 sc_input_manager_process_file(struct sc_input_manager *im,
                               const SDL_DropEvent *event) {
-    if (im->camera || !im->controller) {
+    if (im->camera || !im->controller || im->disconnected) {
         return;
     }
 
@@ -1124,6 +1134,16 @@ sc_input_manager_process_file(struct sc_input_manager *im,
     bool ok = sc_file_pusher_request(im->fp, action, file);
     if (!ok) {
         free(file);
+    }
+}
+
+static void
+sc_input_manager_on_device_disconnected(struct sc_input_manager *im) {
+    im->disconnected = true;
+
+    struct sc_fps_counter *fps_counter = &im->screen->fps_counter;
+    if (sc_fps_counter_is_started(fps_counter)) {
+        sc_fps_counter_stop(fps_counter);
     }
 }
 
@@ -1166,6 +1186,9 @@ sc_input_manager_handle_event(struct sc_input_manager *im,
             break;
         case SDL_EVENT_DROP_FILE:
             sc_input_manager_process_file(im, &event->drop);
+            break;
+        case SC_EVENT_DEVICE_DISCONNECTED:
+            sc_input_manager_on_device_disconnected(im);
             break;
     }
 }

@@ -46,6 +46,8 @@ struct sc_input_manager {
     uint16_t last_mod;
 
     uint64_t next_sequence; // used for request acknowledgements
+
+    bool disconnected;
 };
 
 struct sc_input_manager_params {
