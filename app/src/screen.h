@@ -70,7 +70,6 @@ struct sc_screen {
     enum sc_orientation orientation;
     // rectangle of the content (excluding black borders)
     struct SDL_FRect rect;
-    bool has_frame;
     bool window_shown;
 
     AVFrame *frame;

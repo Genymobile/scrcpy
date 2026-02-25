@@ -210,7 +210,6 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     bool ok = false;
     SDL_Texture *texture = screen->tex.texture;
     if (!texture) {
-        LOGW("No texture to render");
         goto end;
     }
 
@@ -280,14 +279,25 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
                           const AVCodecContext *ctx,
                           const struct sc_stream_session *session) {
     assert(ctx->pix_fmt == AV_PIX_FMT_YUV420P);
-    (void) session;
 
     struct sc_screen *screen = DOWNCAST(sink);
-    (void) screen;
 
     if (ctx->width <= 0 || ctx->width > 0xFFFF
             || ctx->height <= 0 || ctx->height > 0xFFFF) {
         LOGE("Invalid video size: %dx%d", ctx->width, ctx->height);
+        return false;
+    }
+
+    // content_size can be written from this thread, because it is never read
+    // from the main thread before handling SC_EVENT_OPEN_WINDOW (which acts as
+    // a synchronization point) when video is enabled
+    screen->frame_size.width = session->video.width;
+    screen->frame_size.height = session->video.height;
+    screen->content_size = get_oriented_size(screen->frame_size,
+                                             screen->orientation);
+
+    bool ok = sc_push_event(SC_EVENT_OPEN_WINDOW);
+    if (!ok) {
         return false;
     }
 
@@ -340,7 +350,6 @@ bool
 sc_screen_init(struct sc_screen *screen,
                const struct sc_screen_params *params) {
     screen->resize_pending = false;
-    screen->has_frame = false;
     screen->window_shown = false;
     screen->paused = false;
     screen->resume_frame = NULL;
@@ -694,14 +703,14 @@ sc_screen_set_orientation(struct sc_screen *screen,
 static bool
 sc_screen_apply_frame(struct sc_screen *screen) {
     assert(screen->video);
+    assert(screen->window_shown);
 
     sc_fps_counter_add_rendered_frame(&screen->fps_counter);
 
     AVFrame *frame = screen->frame;
     struct sc_size new_frame_size = {frame->width, frame->height};
 
-    if (!screen->has_frame
-            || screen->frame_size.width != new_frame_size.width
+    if (screen->frame_size.width != new_frame_size.width
             || screen->frame_size.height != new_frame_size.height) {
 
         // frame dimension changed
@@ -709,30 +718,13 @@ sc_screen_apply_frame(struct sc_screen *screen) {
 
         struct sc_size new_content_size =
             get_oriented_size(new_frame_size, screen->orientation);
-        if (screen->has_frame) {
-            set_content_size(screen, new_content_size);
-            sc_screen_update_content_rect(screen);
-        } else {
-            // This is the first frame
-            screen->has_frame = true;
-            screen->content_size = new_content_size;
-        }
+        set_content_size(screen, new_content_size);
+        sc_screen_update_content_rect(screen);
     }
 
     bool ok = sc_texture_set_from_frame(&screen->tex, frame);
     if (!ok) {
         return false;
-    }
-
-    assert(screen->has_frame);
-    if (!screen->window_shown) {
-        // this is the very first frame, show the window
-        sc_screen_show_initial_window(screen);
-
-        if (sc_screen_is_relative_mode(screen)) {
-            // Capture mouse on start
-            sc_mouse_capture_set_active(&screen->mc, true);
-        }
     }
 
     sc_screen_render(screen, false);
@@ -856,6 +848,16 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 void
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
     switch (event->type) {
+        case SC_EVENT_OPEN_WINDOW:
+            sc_screen_show_initial_window(screen);
+
+            if (sc_screen_is_relative_mode(screen)) {
+                // Capture mouse on start
+                sc_mouse_capture_set_active(&screen->mc, true);
+            }
+
+            sc_screen_render(screen, false);
+            return;
         case SC_EVENT_NEW_FRAME: {
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
