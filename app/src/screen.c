@@ -205,11 +205,23 @@ sc_screen_render(struct sc_screen *screen, bool update_content_rect) {
     }
 
     SDL_Renderer *renderer = screen->renderer;
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     sc_sdl_render_clear(renderer);
 
     bool ok = false;
     SDL_Texture *texture = screen->tex.texture;
     if (!texture) {
+        // Draw a dark 10x10 square in the top-right corner to distinguish a
+        // black frame from the absence of a frame
+        struct sc_size render_size = sc_sdl_get_render_output_size(renderer);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0x33, 0xff);
+        SDL_FRect rect = {
+            .x = render_size.width - 20,
+            .y = 10,
+            .w = 10,
+            .h = 10,
+        };
+        SDL_RenderFillRect(renderer, &rect);
         goto end;
     }
 
