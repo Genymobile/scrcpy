@@ -280,7 +280,6 @@ sc_screen_frame_sink_open(struct sc_frame_sink *sink,
                           const AVCodecContext *ctx,
                           const struct sc_stream_session *session) {
     assert(ctx->pix_fmt == AV_PIX_FMT_YUV420P);
-    (void) ctx;
     (void) session;
 
     struct sc_screen *screen = DOWNCAST(sink);
