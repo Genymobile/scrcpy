@@ -1700,7 +1700,7 @@ parse_orientation(const char *s, enum sc_orientation *orientation) {
         return true;
     }
     LOGE("Unsupported orientation: %s (expected 0, 90, 180, 270, flip0, "
-         "flip90, flip180 or flip270)", optarg);
+         "flip90, flip180 or flip270)", s);
     return false;
 }
 
