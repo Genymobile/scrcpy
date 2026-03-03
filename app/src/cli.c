@@ -603,6 +603,7 @@ static const struct sc_option options[] = {
                 " 'b': trigger shortcut BACK (or turn screen on if off)\n"
                 " 'h': trigger shortcut HOME\n"
                 " 's': trigger shortcut APP_SWITCH\n"
+                " 'i': trigger shortcut INFO\n"
                 " 'n': trigger shortcut \"expand notification panel\"\n"
                 "Default is 'bhsn:++++' for SDK mouse, and '++++:bhsn' for AOA "
                 "and UHID.",
@@ -1121,6 +1122,10 @@ static const struct sc_shortcut shortcuts[] = {
     {
         .shortcuts = { "MOD+s", "4th-click" },
         .text = "Click on APP_SWITCH",
+    },
+    {
+        .shortcuts = { "MOD+i" },
+        .text = "Click on INFO",
     },
     {
         .shortcuts = { "MOD+m" },
@@ -2296,6 +2301,9 @@ parse_mouse_binding(char c, enum sc_mouse_binding *b) {
             return true;
         case 's':
             *b = SC_MOUSE_BINDING_APP_SWITCH;
+            return true;
+        case 'i':
+            *b = SC_MOUSE_BINDING_INFO;
             return true;
         case 'n':
             *b = SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL;

@@ -84,6 +84,11 @@ action_app_switch(struct sc_input_manager *im, enum sc_action action) {
 }
 
 static inline void
+action_info(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_INFO, action, "INFO");
+}
+
+static inline void
 action_power(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_POWER, action, "POWER");
 }
@@ -416,6 +421,10 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             case SDLK_s:
                 if (im->kp && !shift && !repeat && !paused) {
                     action_app_switch(im, action);
+                }
+            case SDLK_i:
+                if (im->kp && !shift && !repeat && !paused) {
+                    action_info(im, action);
                 }
                 return;
             case SDLK_m:
