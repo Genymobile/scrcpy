@@ -84,11 +84,6 @@ action_app_switch(struct sc_input_manager *im, enum sc_action action) {
 }
 
 static inline void
-action_info(struct sc_input_manager *im, enum sc_action action) {
-    send_keycode(im, AKEYCODE_INFO, action, "INFO");
-}
-
-static inline void
 action_power(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_POWER, action, "POWER");
 }
@@ -106,6 +101,11 @@ action_volume_down(struct sc_input_manager *im, enum sc_action action) {
 static inline void
 action_menu(struct sc_input_manager *im, enum sc_action action) {
     send_keycode(im, AKEYCODE_MENU, action, "MENU");
+}
+
+static inline void
+action_info(struct sc_input_manager *im, enum sc_action action) {
+    send_keycode(im, AKEYCODE_INFO, action, "INFO");
 }
 
 // turn the screen on if it was off, press BACK otherwise
@@ -422,11 +422,6 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                 if (im->kp && !shift && !repeat && !paused) {
                     action_app_switch(im, action);
                 }
-            case SDLK_i:
-                if (im->kp && !shift && !repeat && !paused) {
-                    action_info(im, action);
-                }
-                return;
             case SDLK_m:
                 if (im->kp && !shift && !repeat && !paused) {
                     action_menu(im, action);
@@ -435,6 +430,11 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             case SDLK_p:
                 if (im->kp && !shift && !repeat && !paused) {
                     action_power(im, action);
+                }
+                return;
+            case SDLK_i:
+                if (im->kp && !shift && !repeat && !paused) {
+                    action_info(im, action);
                 }
                 return;
             case SDLK_o:
@@ -776,11 +776,6 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     action_app_switch(im, action);
                 }
                 return;
-            case SC_MOUSE_BINDING_INFO:
-                if (im->kp) {
-                    action_info(im, action);
-                }
-                return;
             case SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL:
                 if (down) {
                     if (event->clicks < 2) {
@@ -788,6 +783,11 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     } else {
                         expand_settings_panel(im);
                     }
+                }
+                return;
+            case SC_MOUSE_BINDING_INFO:
+                if (im->kp) {
+                    action_info(im, action);
                 }
                 return;
             default:
