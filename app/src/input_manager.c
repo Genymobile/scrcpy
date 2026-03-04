@@ -776,6 +776,11 @@ sc_input_manager_process_mouse_button(struct sc_input_manager *im,
                     action_app_switch(im, action);
                 }
                 return;
+            case SC_MOUSE_BINDING_INFO:
+                if (im->kp) {
+                    action_info(im, action);
+                }
+                return;
             case SC_MOUSE_BINDING_EXPAND_NOTIFICATION_PANEL:
                 if (down) {
                     if (event->clicks < 2) {
