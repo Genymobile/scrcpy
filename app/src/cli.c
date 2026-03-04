@@ -106,6 +106,8 @@ enum {
     OPT_AUDIO_DUP,
     OPT_GAMEPAD,
     OPT_NEW_DISPLAY,
+    OPT_ADAPTIVE_NEW_DISPLAY,
+    OPT_ADAPTIVE_SCALE,
     OPT_LIST_APPS,
     OPT_START_APP,
     OPT_SCREEN_OFF_TIMEOUT,
@@ -631,6 +633,22 @@ static const struct sc_option options[] = {
                 "    --new-display=1920x1080/420  # force 420 dpi\n"
                 "    --new-display         # main display size and density\n"
                 "    --new-display=/240    # main display size and 240 dpi",
+    },
+    {
+        .longopt_id = OPT_ADAPTIVE_NEW_DISPLAY,
+        .longopt = "adaptive-new-display",
+        .argdesc = "[<width>x<height>][/<dpi>]",
+        .optional_arg = true,
+        .text = "Create a new display that adapts to the scrcpy window size.\n"
+                "When the window is resized, the virtual display is resized "
+                "accordingly and its density is updated.",
+    },
+    {
+        .longopt_id = OPT_ADAPTIVE_SCALE,
+        .longopt = "adaptive-scale",
+        .argdesc = "<scale>",
+        .text = "Set adaptive scale factor (dpi = scale * 160). "
+                "Default is 1.0 (dpi=160).",
     },
     {
         .longopt_id = OPT_NO_AUDIO,
@@ -2797,6 +2815,20 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_NEW_DISPLAY:
                 opts->new_display = optarg ? optarg : "";
                 break;
+            case OPT_ADAPTIVE_NEW_DISPLAY:
+                opts->adaptive_new_display = true;
+                opts->new_display = optarg ? optarg : "";
+                break;
+            case OPT_ADAPTIVE_SCALE: {
+                char *endptr = NULL;
+                double value = strtod(optarg, &endptr);
+                if (!endptr || *endptr != '\0' || value <= 0.0) {
+                    LOGE("Invalid adaptive scale: %s", optarg);
+                    return false;
+                }
+                opts->adaptive_scale = value;
+                break;
+            }
             case OPT_START_APP:
                 opts->start_app = optarg;
                 break;

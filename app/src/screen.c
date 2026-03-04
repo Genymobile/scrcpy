@@ -4,6 +4,7 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
+#include "control_msg.h"
 #include "events.h"
 #include "icon.h"
 #include "options.h"
@@ -26,6 +27,38 @@ get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
     return oriented_size;
 }
 
+static uint16_t
+get_window_dpi(const struct sc_screen *screen) {
+    if (screen->adaptive_new_display) {
+        double scale = screen->vd_scale > 0.0 ? screen->vd_scale : 1.0;
+        uint32_t dpi = (uint32_t) (scale * 160.0 + 0.5);
+        if (dpi == 0) {
+            dpi = 1;
+        } else if (dpi > 65535) {
+            dpi = 65535;
+        }
+        return (uint16_t) dpi;
+    }
+
+    int display_index = SDL_GetWindowDisplayIndex(screen->window);
+    if (display_index < 0) {
+        return 0;
+    }
+    float ddpi = 0.f;
+    float hdpi = 0.f;
+    float vdpi = 0.f;
+    if (SDL_GetDisplayDPI(display_index, &ddpi, &hdpi, &vdpi) != 0) {
+        return 0;
+    }
+    if (ddpi <= 0.f) {
+        return 0;
+    }
+    if (ddpi > 65535.f) {
+        ddpi = 65535.f;
+    }
+    return (uint16_t) (ddpi + 0.5f);
+}
+
 // get the window size in a struct sc_size
 static struct sc_size
 get_window_size(const struct sc_screen *screen) {
@@ -37,6 +70,60 @@ get_window_size(const struct sc_screen *screen) {
     size.width = width;
     size.height = height;
     return size;
+}
+
+static void
+sc_screen_schedule_vd_resize(struct sc_screen *screen) {
+    if (!screen->adaptive_new_display) {
+        return;
+    }
+    if (!screen->vd_resize_enabled) {
+        return;
+    }
+    // screen->im.controller may be NULL if --no-control
+    if (!screen->im.controller) {
+        return;
+    }
+    struct sc_size size = get_window_size(screen);
+    if (size.width == 0 || size.height == 0) {
+        return;
+    }
+    if (size.width < 64 || size.height < 64) {
+        return;
+    }
+    screen->vd_resize_size = size;
+    screen->vd_resize_pending = true;
+    screen->vd_resize_deadline_ms = SDL_GetTicks() + 250;
+}
+
+static void
+sc_screen_maybe_send_vd_resize(struct sc_screen *screen) {
+    if (!screen->vd_resize_pending) {
+        return;
+    }
+    uint32_t now = SDL_GetTicks();
+    if (now < screen->vd_resize_deadline_ms) {
+        return;
+    }
+    if (screen->vd_last_sent_valid
+            && screen->vd_last_sent_size.width == screen->vd_resize_size.width
+            && screen->vd_last_sent_size.height == screen->vd_resize_size.height) {
+        screen->vd_resize_pending = false;
+        return;
+    }
+    uint16_t dpi = get_window_dpi(screen);
+    struct sc_control_msg msg = {
+        .type = SC_CONTROL_MSG_TYPE_SET_DISPLAY_SIZE,
+    };
+    msg.set_display_size.width = (uint16_t) screen->vd_resize_size.width;
+    msg.set_display_size.height = (uint16_t) screen->vd_resize_size.height;
+    msg.set_display_size.dpi = dpi;
+    if (sc_controller_push_msg(screen->im.controller, &msg)) {
+        screen->vd_last_sent_size = screen->vd_resize_size;
+        screen->vd_last_sent_valid = true;
+        screen->vd_last_sent_dpi = dpi;
+    }
+    screen->vd_resize_pending = false;
 }
 
 static struct sc_point
@@ -333,6 +420,15 @@ sc_screen_init(struct sc_screen *screen,
     screen->paused = false;
     screen->resume_frame = NULL;
     screen->orientation = SC_ORIENTATION_0;
+    screen->new_display = params->new_display;
+    screen->adaptive_new_display = params->adaptive_new_display;
+    screen->vd_resize_pending = false;
+    screen->vd_resize_enabled = false;
+    screen->vd_initial_resize_sent = false;
+    screen->vd_last_sent_valid = false;
+    screen->vd_last_sent_dpi = 0;
+    screen->vd_resize_deadline_ms = 0;
+    screen->vd_scale = params->adaptive_scale;
 
     screen->video = params->video;
 
@@ -491,9 +587,22 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
     int y = screen->req.y != SC_WINDOW_POSITION_UNDEFINED
           ? screen->req.y : (int) SDL_WINDOWPOS_CENTERED;
 
-    struct sc_size window_size =
-        get_initial_optimal_size(screen->content_size, screen->req.width,
-                                                       screen->req.height);
+    struct sc_size window_size;
+    if (screen->adaptive_new_display
+            && !screen->req.width && !screen->req.height) {
+        struct sc_size bounds;
+        if (get_preferred_display_bounds(&bounds)) {
+            window_size = get_optimal_size(bounds, screen->content_size, true);
+        } else {
+            window_size = get_initial_optimal_size(screen->content_size,
+                                                   screen->req.width,
+                                                   screen->req.height);
+        }
+    } else {
+        window_size = get_initial_optimal_size(screen->content_size,
+                                               screen->req.width,
+                                               screen->req.height);
+    }
 
     set_window_size(screen, window_size);
     SDL_SetWindowPosition(screen->window, x, y);
@@ -556,6 +665,14 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
 static void
 set_content_size(struct sc_screen *screen, struct sc_size new_content_size) {
     assert(screen->video);
+
+    if (screen->new_display) {
+        // For new-display, keep the window size controlled by the user.
+        // Do not auto-resize the window to the content size to avoid
+        // feedback loops with virtual display resizing.
+        screen->content_size = new_content_size;
+        return;
+    }
 
     if (!screen->fullscreen && !screen->maximized && !screen->minimized) {
         resize_for_content(screen, screen->content_size, new_content_size);
@@ -671,6 +788,11 @@ sc_screen_apply_frame(struct sc_screen *screen) {
         screen->has_frame = true;
         // this is the very first frame, show the window
         sc_screen_show_initial_window(screen);
+        screen->vd_resize_enabled = true;
+        if (screen->adaptive_new_display && !screen->vd_initial_resize_sent) {
+            sc_screen_schedule_vd_resize(screen);
+            screen->vd_initial_resize_sent = true;
+        }
 
         if (sc_screen_is_relative_mode(screen)) {
             // Capture mouse on start
@@ -800,6 +922,7 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 
 bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
+    sc_screen_maybe_send_vd_resize(screen);
     switch (event->type) {
         case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size
@@ -811,6 +934,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             return true;
         }
         case SC_EVENT_NEW_FRAME: {
+            sc_screen_maybe_send_vd_resize(screen);
             bool ok = sc_screen_update_frame(screen);
             if (!ok) {
                 LOGE("Frame update failed\n");
@@ -836,6 +960,9 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
                     break;
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     sc_screen_render(screen, true);
+                    break;
+                case SDL_WINDOWEVENT_RESIZED:
+                    sc_screen_schedule_vd_resize(screen);
                     break;
                 case SDL_WINDOWEVENT_MAXIMIZED:
                     screen->maximized = true;

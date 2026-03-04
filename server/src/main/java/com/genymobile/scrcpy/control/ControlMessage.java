@@ -25,6 +25,7 @@ public final class ControlMessage {
     public static final int TYPE_OPEN_HARD_KEYBOARD_SETTINGS = 15;
     public static final int TYPE_START_APP = 16;
     public static final int TYPE_RESET_VIDEO = 17;
+    public static final int TYPE_SET_DISPLAY_SIZE = 18;
 
     public static final long SEQUENCE_INVALID = 0;
 
@@ -53,6 +54,9 @@ public final class ControlMessage {
     private boolean on;
     private int vendorId;
     private int productId;
+    private int displayWidth;
+    private int displayHeight;
+    private int displayDpi;
 
     private ControlMessage() {
     }
@@ -166,6 +170,15 @@ public final class ControlMessage {
         return msg;
     }
 
+    public static ControlMessage createSetDisplaySize(int width, int height, int dpi) {
+        ControlMessage msg = new ControlMessage();
+        msg.type = TYPE_SET_DISPLAY_SIZE;
+        msg.displayWidth = width;
+        msg.displayHeight = height;
+        msg.displayDpi = dpi;
+        return msg;
+    }
+
     public int getType() {
         return type;
     }
@@ -248,5 +261,17 @@ public final class ControlMessage {
 
     public int getProductId() {
         return productId;
+    }
+
+    public int getDisplayWidth() {
+        return displayWidth;
+    }
+
+    public int getDisplayHeight() {
+        return displayHeight;
+    }
+
+    public int getDisplayDpi() {
+        return displayDpi;
     }
 }

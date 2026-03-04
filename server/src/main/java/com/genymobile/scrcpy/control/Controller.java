@@ -96,6 +96,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     private final MotionEvent.PointerCoords[] pointerCoords = new MotionEvent.PointerCoords[PointersState.MAX_POINTERS];
 
     private boolean keepDisplayPowerOff;
+    private String lastStartedAppPackage;
+    private boolean lastStartedAppForceStop;
+    private boolean pendingRelaunchOnResize;
 
     // Used for resetting video encoding on RESET_VIDEO message
     private SurfaceCapture surfaceCapture;
@@ -145,6 +148,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
             synchronized (displayDataAvailable) {
                 displayDataAvailable.notify();
             }
+        }
+        if (pendingRelaunchOnResize && lastStartedAppPackage != null) {
+            pendingRelaunchOnResize = false;
+            Ln.i("Relaunching app \"" + lastStartedAppPackage + "\" on resized display " + virtualDisplayId + "...");
+            Device.startApp(lastStartedAppPackage, virtualDisplayId, lastStartedAppForceStop);
         }
     }
 
@@ -330,6 +338,9 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                 break;
             case ControlMessage.TYPE_RESET_VIDEO:
                 resetVideo();
+                break;
+            case ControlMessage.TYPE_SET_DISPLAY_SIZE:
+                setDisplaySize(msg.getDisplayWidth(), msg.getDisplayHeight(), msg.getDisplayDpi());
                 break;
             default:
                 // do nothing
@@ -691,6 +702,8 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
 
         Ln.i("Starting app \"" + app.getName() + "\" [" + app.getPackageName() + "] on display " + startAppDisplayId + "...");
         Device.startApp(app.getPackageName(), startAppDisplayId, forceStopBeforeStart);
+        lastStartedAppPackage = app.getPackageName();
+        lastStartedAppForceStop = forceStopBeforeStart;
     }
 
     private int getStartAppDisplayId() {
@@ -752,6 +765,20 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         if (surfaceCapture != null) {
             Ln.i("Video capture reset");
             surfaceCapture.requestInvalidate();
+        }
+    }
+
+    private void setDisplaySize(int width, int height, int dpi) {
+        if (surfaceCapture instanceof com.genymobile.scrcpy.video.NewDisplayCapture) {
+            com.genymobile.scrcpy.video.NewDisplayCapture nd =
+                    (com.genymobile.scrcpy.video.NewDisplayCapture) surfaceCapture;
+            Ln.i("Resize virtual display to " + width + "x" + height + "/" + dpi);
+            if (lastStartedAppPackage != null) {
+                pendingRelaunchOnResize = true;
+            }
+            nd.setDisplaySize(width, height, dpi);
+        } else {
+            Ln.w("Display resize ignored: not a virtual display capture");
         }
     }
 }
