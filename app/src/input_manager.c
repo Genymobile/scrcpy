@@ -529,7 +529,7 @@ sc_input_manager_process_key(struct sc_input_manager *im,
                     sc_screen_resize_to_pixel_perfect(im->screen);
                 }
                 return;
-            case SDLK_i:
+            case SDLK_q:
                 if (video && !shift && !repeat && down) {
                     switch_fps_counter_state(im);
                 }
