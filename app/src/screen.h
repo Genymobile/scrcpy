@@ -79,6 +79,7 @@ struct sc_screen {
     struct sc_size vd_last_sent_size;
     bool vd_last_sent_valid;
     uint16_t vd_last_sent_dpi;
+    uint16_t vd_fixed_dpi;
     uint32_t vd_resize_deadline_ms;
     double vd_scale;
 };
@@ -115,6 +116,7 @@ struct sc_screen_params {
     bool new_display;
     bool adaptive_new_display;
     double adaptive_scale;
+    uint16_t adaptive_dpi;
 };
 
 // initialize screen, create window, renderer and texture (window is hidden)

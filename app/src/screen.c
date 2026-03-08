@@ -11,6 +11,7 @@
 #include "util/log.h"
 
 #define DISPLAY_MARGINS 96
+#define SC_VD_RESIZE_DEBOUNCE_MS 250
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
@@ -29,6 +30,9 @@ get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
 
 static uint16_t
 get_window_dpi(const struct sc_screen *screen) {
+    if (screen->vd_fixed_dpi) {
+        return screen->vd_fixed_dpi;
+    }
     if (screen->adaptive_new_display) {
         double scale = screen->vd_scale > 0.0 ? screen->vd_scale : 1.0;
         uint32_t dpi = (uint32_t) (scale * 160.0 + 0.5);
@@ -85,15 +89,13 @@ sc_screen_schedule_vd_resize(struct sc_screen *screen) {
         return;
     }
     struct sc_size size = get_window_size(screen);
-    if (size.width == 0 || size.height == 0) {
-        return;
-    }
     if (size.width < 64 || size.height < 64) {
         return;
     }
     screen->vd_resize_size = size;
     screen->vd_resize_pending = true;
-    screen->vd_resize_deadline_ms = SDL_GetTicks() + 250;
+    screen->vd_resize_deadline_ms = SDL_GetTicks()
+                                    + SC_VD_RESIZE_DEBOUNCE_MS;
 }
 
 static void
@@ -427,6 +429,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->vd_initial_resize_sent = false;
     screen->vd_last_sent_valid = false;
     screen->vd_last_sent_dpi = 0;
+    screen->vd_fixed_dpi = params->adaptive_dpi;
     screen->vd_resize_deadline_ms = 0;
     screen->vd_scale = params->adaptive_scale;
 
@@ -922,7 +925,6 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
 
 bool
 sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
-    sc_screen_maybe_send_vd_resize(screen);
     switch (event->type) {
         case SC_EVENT_SCREEN_INIT_SIZE: {
             // The initial size is passed via screen->frame_size

@@ -111,6 +111,7 @@ const struct scrcpy_options scrcpy_options_default = {
     .new_display = NULL,
     .adaptive_new_display = false,
     .adaptive_scale = 0.0,
+    .adaptive_dpi = 0,
     .start_app = NULL,
     .angle = NULL,
     .vd_destroy_content = true,

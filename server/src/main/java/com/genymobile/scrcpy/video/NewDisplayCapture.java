@@ -298,10 +298,7 @@ public class NewDisplayCapture extends SurfaceCapture {
                 displaySizeMonitor.setSessionDisplaySize(requestedDisplaySize);
                 Ln.i("Virtual display resized in-place to " + width + "x" + height + "/" + newDpi);
             } catch (Exception e) {
-                Ln.w("Virtual display resize failed, fallback to recreate", e);
-                displaySizeMonitor.stopAndRelease();
-                virtualDisplay.release();
-                virtualDisplay = null;
+                Ln.w("Virtual display resize failed, keeping existing display", e);
             }
         }
 
