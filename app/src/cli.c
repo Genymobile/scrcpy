@@ -962,13 +962,24 @@ static const struct sc_option options[] = {
         .longopt = "stream-sink",
         .argdesc = "url",
         .text = "Stream the device video (and audio, if enabled) as MPEG-TS "
-                "over SRT to the given URL.\n"
-                "Example: srt://0.0.0.0:8080\n"
-                "scrcpy acts as the SRT listener (server) by default; "
-                "?mode=listener is appended automatically if not present.\n"
-                "Connect with any SRT-compatible player, e.g.:\n"
-                "  VLC: srt://127.0.0.1:8080\n"
-                "  ffplay: -i srt://127.0.0.1:8080",
+                "to the given URL. Tuned for low-latency live streaming.\n"
+                "\n"
+                "Supported protocols and auto-applied server settings:\n"
+                "  srt://HOST:PORT  SRT (recommended); adds ?mode=listener "
+                "and ?latency=50 automatically\n"
+                "  tcp://HOST:PORT  raw TCP; adds ?listen=1 automatically\n"
+                "  udp://HOST:PORT  UDP (lowest latency, unreliable)\n"
+                "  rtp://HOST:PORT  RTP over UDP\n"
+                "Unknown protocols are used as-is (with a warning).\n"
+                "\n"
+                "Low-latency client examples (connect after starting scrcpy):\n"
+                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
+                "-i srt://127.0.0.1:8080\n"
+                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
+                "-i tcp://127.0.0.1:8080\n"
+                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
+                "-i udp://127.0.0.1:8080\n"
+                "  VLC: Media > Open Network Stream > srt://127.0.0.1:8080",
     },
     {
         .longopt_id = OPT_V4L2_SINK,

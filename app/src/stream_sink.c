@@ -18,6 +18,111 @@
 
 static const AVRational SCRCPY_TIME_BASE = {1, 1000000}; // timestamps in us
 
+/** Return true if `key=` appears in the URL's query string. */
+static bool
+sc_url_has_param(const char *url, const char *key) {
+    const char *q = strchr(url, '?');
+    if (!q) {
+        return false;
+    }
+    size_t klen = strlen(key);
+    const char *p = q + 1;
+    while (*p) {
+        if (!strncmp(p, key, klen) && p[klen] == '=') {
+            return true;
+        }
+        const char *amp = strchr(p, '&');
+        if (!amp) {
+            break;
+        }
+        p = amp + 1;
+    }
+    return false;
+}
+
+/** Append "key=value" to url. Returns a newly allocated string. */
+static char *
+sc_url_append_param(const char *url, const char *key, const char *value) {
+    const char *sep = strchr(url, '?') ? "&" : "?";
+    size_t len = strlen(url) + strlen(sep) + strlen(key) + 1 /* '=' */
+                 + strlen(value) + 1 /* '\0' */;
+    char *result = malloc(len);
+    if (!result) {
+        LOG_OOM();
+        return NULL;
+    }
+    snprintf(result, len, "%s%s%s=%s", url, sep, key, value);
+    return result;
+}
+
+/**
+ * Build the connect URL for the stream sink.
+ *
+ * For known protocols:
+ *  - srt://  adds ?mode=listener and ?latency=50 (ms) if not already set
+ *            (override with ?latency=200 or higher for WAN links)
+ *  - tcp://  adds ?listen=1 if not already set
+ *  - udp://, rtp://  connectionless; returned as-is
+ * Unknown protocols emit a warning and are returned as-is.
+ *
+ * Returns a newly allocated string; the caller must free it.
+ */
+static char *
+sc_stream_sink_build_connect_url(const char *url) {
+    bool is_srt = !strncmp(url, "srt://", 6);
+    bool is_tcp = !strncmp(url, "tcp://", 6);
+    bool is_udp = !strncmp(url, "udp://", 6);
+    bool is_rtp = !strncmp(url, "rtp://", 6);
+
+    if (!is_srt && !is_tcp && !is_udp && !is_rtp) {
+        LOGW("Stream sink: unrecognized protocol in \"%s\"; "
+             "no listener mode or latency tuning applied", url);
+        return strdup(url);
+    }
+
+    char *result = strdup(url);
+    if (!result) {
+        LOG_OOM();
+        return NULL;
+    }
+
+    if (is_srt) {
+        // scrcpy acts as the SRT listener (server) by default
+        if (!sc_url_has_param(result, "mode")) {
+            char *tmp = sc_url_append_param(result, "mode", "listener");
+            free(result);
+            if (!tmp) {
+                return NULL;
+            }
+            result = tmp;
+        }
+        // Keep SRT protocol latency low (default 120 ms is too high for live
+        // screen mirroring; 50 ms is comfortable for LAN).
+        // Users on high-latency WAN links can override with e.g. ?latency=200.
+        if (!sc_url_has_param(result, "latency")) {
+            char *tmp = sc_url_append_param(result, "latency", "50");
+            free(result);
+            if (!tmp) {
+                return NULL;
+            }
+            result = tmp;
+        }
+    } else if (is_tcp) {
+        // scrcpy acts as the TCP server, waiting for a player to connect
+        if (!sc_url_has_param(result, "listen")) {
+            char *tmp = sc_url_append_param(result, "listen", "1");
+            free(result);
+            if (!tmp) {
+                return NULL;
+            }
+            result = tmp;
+        }
+    }
+    // udp:// and rtp:// are connectionless; no listener mode needed
+
+    return result;
+}
+
 static AVPacket *
 sc_stream_sink_packet_ref(const AVPacket *packet) {
     AVPacket *p = av_packet_alloc();
@@ -181,22 +286,9 @@ sc_stream_sink_process_header(struct sc_stream_sink *sink) {
     }
 
     {
-        // Build the SRT listener URL. If the user already specified
-        // mode=, use the URL as-is; otherwise append ?mode=listener
-        // so that scrcpy acts as the SRT server waiting for a player.
-        const char *connect_url = sink->url;
-        char *alloc_url = NULL;
-        if (!strstr(sink->url, "mode=")) {
-            const char *sep = strchr(sink->url, '?') ? "&" : "?";
-            const char *suffix = "mode=listener";
-            size_t len = strlen(sink->url) + strlen(sep) + strlen(suffix) + 1;
-            alloc_url = malloc(len);
-            if (!alloc_url) {
-                LOG_OOM();
-                goto end;
-            }
-            snprintf(alloc_url, len, "%s%s%s", sink->url, sep, suffix);
-            connect_url = alloc_url;
+        char *connect_url = sc_stream_sink_build_connect_url(sink->url);
+        if (!connect_url) {
+            goto end;
         }
 
         AVIOInterruptCB int_cb = {
@@ -208,10 +300,10 @@ sc_stream_sink_process_header(struct sc_stream_sink *sink) {
 
         int r = avio_open2(&sink->ctx->pb, connect_url, AVIO_FLAG_WRITE,
                            &int_cb, NULL);
-        free(alloc_url);
+        free(connect_url);
         if (r < 0) {
             if (!sink->stopped) {
-                LOGE("Failed to open SRT server on %s", sink->url);
+                LOGE("Failed to open stream server on %s", sink->url);
             }
             goto end;
         }
@@ -692,6 +784,15 @@ sc_stream_sink_init(struct sc_stream_sink *sink, const char *url,
         LOG_OOM();
         goto error_cond_destroy;
     }
+
+    // Flush every packet immediately to the network: essential for live
+    // streaming where any output buffering adds perceivable latency.
+    // Trade-off: slightly higher CPU/network overhead per packet.
+    sink->ctx->flags |= AVFMT_FLAG_FLUSH_PACKETS;
+    // Limit interleave buffering so that audio and video are not held
+    // waiting for each other longer than 100 ms (AV_TIME_BASE / 10).
+    // Default (0) means "no limit", which causes unbounded buffering.
+    sink->ctx->max_interleave_delta = AV_TIME_BASE / 10; // 100 ms
 
     // contrary to the deprecated API (av_oformat_next()), av_muxer_iterate()
     // returns (on purpose) a pointer-to-const, but AVFormatContext.oformat
