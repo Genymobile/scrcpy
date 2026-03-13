@@ -181,26 +181,37 @@ sc_stream_sink_process_header(struct sc_stream_sink *sink) {
     }
 
     {
-        // Open the TCP server: this blocks until a client connects (or
-        // sink->stopped is set, via the interrupt callback)
-        char url[64];
-        snprintf(url, sizeof(url),
-                 "tcp://0.0.0.0:%" PRIu16 "?listen=1", sink->port);
+        // Build the SRT listener URL. If the user already specified
+        // mode=, use the URL as-is; otherwise append ?mode=listener
+        // so that scrcpy acts as the SRT server waiting for a player.
+        const char *connect_url = sink->url;
+        char *alloc_url = NULL;
+        if (!strstr(sink->url, "mode=")) {
+            const char *sep = strchr(sink->url, '?') ? "&" : "?";
+            const char *suffix = "mode=listener";
+            size_t len = strlen(sink->url) + strlen(sep) + strlen(suffix) + 1;
+            alloc_url = malloc(len);
+            if (!alloc_url) {
+                LOG_OOM();
+                goto end;
+            }
+            snprintf(alloc_url, len, "%s%s%s", sink->url, sep, suffix);
+            connect_url = alloc_url;
+        }
 
         AVIOInterruptCB int_cb = {
             .callback = sc_stream_sink_interrupt_cb,
             .opaque = sink,
         };
 
-        LOGI("Stream sink: waiting for client on tcp://127.0.0.1:%" PRIu16,
-             sink->port);
+        LOGI("SRT sink: waiting for client on %s", sink->url);
 
-        int r = avio_open2(&sink->ctx->pb, url, AVIO_FLAG_WRITE,
+        int r = avio_open2(&sink->ctx->pb, connect_url, AVIO_FLAG_WRITE,
                            &int_cb, NULL);
+        free(alloc_url);
         if (r < 0) {
             if (!sink->stopped) {
-                LOGE("Failed to open stream server on port %" PRIu16,
-                     sink->port);
+                LOGE("Failed to open SRT server on %s", sink->url);
             }
             goto end;
         }
@@ -238,8 +249,7 @@ sc_stream_sink_process_packets(struct sc_stream_sink *sink) {
         return false;
     }
 
-    LOGI("Stream sink: streaming started on tcp://127.0.0.1:%" PRIu16,
-         sink->port);
+    LOGI("SRT sink: streaming started on %s", sink->url);
 
     AVPacket *video_pkt = NULL;
     AVPacket *audio_pkt = NULL;
@@ -635,17 +645,21 @@ sc_stream_sink_audio_packet_sink_disable(struct sc_packet_sink *sink) {
 }
 
 bool
-sc_stream_sink_init(struct sc_stream_sink *sink, uint16_t port,
+sc_stream_sink_init(struct sc_stream_sink *sink, const char *url,
                     bool video, bool audio) {
     assert(video || audio);
 
-    sink->port = port;
+    sink->url = strdup(url);
+    if (!sink->url) {
+        LOG_OOM();
+        return false;
+    }
     sink->video = video;
     sink->audio = audio;
 
     bool ok = sc_mutex_init(&sink->mutex);
     if (!ok) {
-        return false;
+        goto error_url_free;
     }
 
     ok = sc_cond_init(&sink->cond);
@@ -666,7 +680,7 @@ sc_stream_sink_init(struct sc_stream_sink *sink, uint16_t port,
     sc_stream_sink_stream_init(&sink->video_stream);
     sc_stream_sink_stream_init(&sink->audio_stream);
 
-    // Allocate the output format context with mpegts (ideal for TCP streaming)
+    // Allocate the output format context with mpegts (for network streaming)
     const AVOutputFormat *oformat = av_guess_format("mpegts", NULL, NULL);
     if (!oformat) {
         LOGE("Could not find mpegts muxer");
@@ -712,6 +726,8 @@ error_cond_destroy:
     sc_cond_destroy(&sink->cond);
 error_mutex_destroy:
     sc_mutex_destroy(&sink->mutex);
+error_url_free:
+    free(sink->url);
 
     return false;
 }
@@ -746,4 +762,5 @@ sc_stream_sink_destroy(struct sc_stream_sink *sink) {
     sc_cond_destroy(&sink->cond);
     sc_mutex_destroy(&sink->mutex);
     avformat_free_context(sink->ctx);
+    free(sink->url);
 }

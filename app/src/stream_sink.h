@@ -4,7 +4,6 @@
 #include "common.h"
 
 #include <stdbool.h>
-#include <stdint.h>
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 
@@ -34,7 +33,7 @@ struct sc_stream_sink {
     bool audio;
     bool video;
 
-    uint16_t port;
+    char *url;
 
     AVFormatContext *ctx;
 
@@ -57,7 +56,7 @@ struct sc_stream_sink {
 };
 
 bool
-sc_stream_sink_init(struct sc_stream_sink *sink, uint16_t port,
+sc_stream_sink_init(struct sc_stream_sink *sink, const char *url,
                     bool video, bool audio);
 
 bool

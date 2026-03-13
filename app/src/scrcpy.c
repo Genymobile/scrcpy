@@ -636,8 +636,8 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
-    if (options->stream_port) {
-        if (!sc_stream_sink_init(&s->stream_sink, options->stream_port,
+    if (options->srt_sink) {
+        if (!sc_stream_sink_init(&s->stream_sink, options->srt_sink,
                                  options->video, options->audio)) {
             goto end;
         }
