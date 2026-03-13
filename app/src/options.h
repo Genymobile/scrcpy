@@ -281,6 +281,7 @@ struct scrcpy_options {
     const char *v4l2_device;
     sc_tick v4l2_buffer;
 #endif
+    uint16_t stream_port; // 0 means disabled
 #ifdef HAVE_USB
     bool otg;
 #endif

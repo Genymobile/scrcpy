@@ -114,6 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
+    OPT_STREAM_PORT,
 };
 
 struct sc_option {
@@ -955,6 +956,15 @@ static const struct sc_option options[] = {
 #else
                 "Default is info.",
 #endif
+    },
+    {
+        .longopt_id = OPT_STREAM_PORT,
+        .longopt = "stream-port",
+        .argdesc = "port",
+        .text = "Start a TCP server that streams the device video (and audio, "
+                "if enabled) as MPEG-TS on the given port. "
+                "Once started, connect with any compatible player using "
+                "tcp://127.0.0.1:<port> (e.g. in OBS Media Source or VLC).",
     },
     {
         .longopt_id = OPT_V4L2_SINK,
@@ -2686,6 +2696,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
+            case OPT_STREAM_PORT:
+                if (!parse_port(optarg, &opts->stream_port)) {
+                    return false;
+                }
+                break;
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
                 opts->v4l2_device = optarg;
