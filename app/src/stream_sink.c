@@ -719,7 +719,7 @@ error_mutex_destroy:
 bool
 sc_stream_sink_start(struct sc_stream_sink *sink) {
     bool ok = sc_thread_create(&sink->thread, run_stream_sink,
-                               "scrcpy-stream-sink", sink);
+                               "scrcpy-stream", sink);
     if (!ok) {
         LOGE("Could not start stream sink thread");
         return false;
