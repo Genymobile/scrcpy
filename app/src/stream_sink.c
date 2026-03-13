@@ -714,7 +714,7 @@ run_stream_sink(void *data) {
 
         bool thread_ok = sc_thread_create(&client->thread,
                                           run_stream_sink_client,
-                                          "scrcpy-stream-client", client);
+                                          "scrcpy-sclient", client);
         if (!thread_ok) {
             LOGE("Stream sink: could not create client thread");
             sc_mutex_lock(&sink->mutex);
