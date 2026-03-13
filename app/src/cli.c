@@ -114,7 +114,7 @@ enum {
     OPT_NO_VD_SYSTEM_DECORATIONS,
     OPT_NO_VD_DESTROY_CONTENT,
     OPT_DISPLAY_IME_POLICY,
-    OPT_SRT_SINK,
+    OPT_STREAM_SINK,
 };
 
 struct sc_option {
@@ -958,8 +958,8 @@ static const struct sc_option options[] = {
 #endif
     },
     {
-        .longopt_id = OPT_SRT_SINK,
-        .longopt = "srt-sink",
+        .longopt_id = OPT_STREAM_SINK,
+        .longopt = "stream-sink",
         .argdesc = "url",
         .text = "Stream the device video (and audio, if enabled) as MPEG-TS "
                 "over SRT to the given URL.\n"
@@ -2700,8 +2700,8 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 LOGE("OTG mode (--otg) is disabled.");
                 return false;
 #endif
-            case OPT_SRT_SINK:
-                opts->srt_sink = optarg;
+            case OPT_STREAM_SINK:
+                opts->stream_sink = optarg;
                 break;
             case OPT_V4L2_SINK:
 #ifdef HAVE_V4L2
@@ -2893,15 +2893,15 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
     }
 
     if (opts->video && !opts->video_playback && !opts->record_filename
-            && !v4l2 && !opts->srt_sink) {
-        LOGI("No video playback, no recording, no V4L2 sink, no SRT sink: "
+            && !v4l2 && !opts->stream_sink) {
+        LOGI("No video playback, no recording, no V4L2 sink, no stream sink: "
              "video disabled");
         opts->video = false;
     }
 
     if (opts->audio && !opts->audio_playback && !opts->record_filename
-            && !opts->srt_sink) {
-        LOGI("No audio playback, no recording, no SRT sink: audio disabled");
+            && !opts->stream_sink) {
+        LOGI("No audio playback, no recording, no stream sink: audio disabled");
         opts->audio = false;
     }
 

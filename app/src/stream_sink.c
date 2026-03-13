@@ -204,7 +204,7 @@ sc_stream_sink_process_header(struct sc_stream_sink *sink) {
             .opaque = sink,
         };
 
-        LOGI("SRT sink: waiting for client on %s", sink->url);
+        LOGI("Stream sink: waiting for client on %s", sink->url);
 
         int r = avio_open2(&sink->ctx->pb, connect_url, AVIO_FLAG_WRITE,
                            &int_cb, NULL);
@@ -249,7 +249,7 @@ sc_stream_sink_process_packets(struct sc_stream_sink *sink) {
         return false;
     }
 
-    LOGI("SRT sink: streaming started on %s", sink->url);
+    LOGI("Stream sink: streaming started on %s", sink->url);
 
     AVPacket *video_pkt = NULL;
     AVPacket *audio_pkt = NULL;
