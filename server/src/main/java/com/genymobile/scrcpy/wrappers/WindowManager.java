@@ -25,6 +25,9 @@ public final class WindowManager {
     // android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM
     public static final int WINDOWING_MODE_FREEFORM = 5;
 
+    // android.window.DisplayAreaOrganizer.FEATURE_DEFAULT_TASK_CONTAINER
+    private static final int FEATURE_DEFAULT_TASK_CONTAINER = 1;
+
     private final IInterface manager;
     private Method getRotationMethod;
 
@@ -280,6 +283,7 @@ public final class WindowManager {
     @TargetApi(AndroidVersions.API_34_ANDROID_14)
     @SuppressWarnings("unchecked")
     public void setDisplayWindowingMode(int displayId, int windowingMode) {
+        // A Binder token used to identify this organizer during registration/unregistration with the system server
         IBinder organizerBinder = new Binder();
         Object organizerProxy = null;
         Object daoController = null;
@@ -299,7 +303,7 @@ public final class WindowManager {
             // Get the IDisplayAreaOrganizerController
             daoController = windowOrganizerController.getClass().getMethod("getDisplayAreaOrganizerController").invoke(windowOrganizerController);
 
-            // Create a no-op IDisplayAreaOrganizer proxy for registration
+            // Create a no-op IDisplayAreaOrganizer proxy for registration; callbacks are ignored since we unregister immediately
             Class<?> idaoClass = Class.forName("android.window.IDisplayAreaOrganizer");
             organizerProxy = Proxy.newProxyInstance(
                     ClassLoader.getSystemClassLoader(),
@@ -312,11 +316,10 @@ public final class WindowManager {
                     }
             );
 
-            // Register the organizer for FEATURE_DEFAULT_TASK_CONTAINER (1) to get display area tokens
-            int featureDefaultTaskContainer = 1;
+            // Register the organizer to get display area tokens
             Object parceledList = daoController.getClass()
                     .getMethod("registerOrganizer", idaoClass, int.class)
-                    .invoke(daoController, organizerProxy, featureDefaultTaskContainer);
+                    .invoke(daoController, organizerProxy, FEATURE_DEFAULT_TASK_CONTAINER);
 
             List<Object> displayAreaInfos = (List<Object>) parceledList.getClass().getMethod("getList").invoke(parceledList);
 
