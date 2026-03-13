@@ -18,6 +18,9 @@ struct sc_stream_sink_stream {
     int64_t last_pts;
 };
 
+/* Per-connection client state (defined in stream_sink.c). */
+struct sc_stream_sink_client;
+
 struct sc_stream_sink {
     struct sc_packet_sink video_packet_sink;
     struct sc_packet_sink audio_packet_sink;
@@ -35,6 +38,8 @@ struct sc_stream_sink {
 
     char *url;
 
+    // Template format context (no pb): holds stream definitions and codec
+    // parameters used to initialise a fresh context for each new connection.
     AVFormatContext *ctx;
 
     sc_thread thread;
@@ -42,6 +47,9 @@ struct sc_stream_sink {
     sc_cond cond;
     // set on sc_stream_sink_stop(), packet_sink close or streaming failure
     bool stopped;
+
+    // Init-phase queues: used only until template_ready is set.
+    // After that, each sc_stream_sink_client has its own queues.
     struct sc_stream_sink_queue video_queue;
     struct sc_stream_sink_queue audio_queue;
 
@@ -51,8 +59,18 @@ struct sc_stream_sink {
 
     bool audio_expects_config_packet;
 
+    // Stream indices shared by every per-client AVFormatContext (all clients
+    // copy the template streams in the same order).
     struct sc_stream_sink_stream video_stream;
     struct sc_stream_sink_stream audio_stream;
+
+    // Set to true once codec params + extradata are applied to the template
+    // context.  Before this point packets are buffered in the init-phase queues
+    // above; after this point they are fanned out to active client queues.
+    bool template_ready;
+
+    // Linked list of currently active client connections (protected by mutex).
+    struct sc_stream_sink_client *clients;
 };
 
 bool
