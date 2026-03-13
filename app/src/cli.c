@@ -961,25 +961,12 @@ static const struct sc_option options[] = {
         .longopt_id = OPT_STREAM_SINK,
         .longopt = "stream-sink",
         .argdesc = "url",
-        .text = "Stream the device video (and audio, if enabled) as MPEG-TS "
-                "to the given URL. Tuned for low-latency live streaming.\n"
-                "\n"
-                "Supported protocols and auto-applied server settings:\n"
-                "  srt://HOST:PORT  SRT (recommended); adds ?mode=listener "
-                "and ?latency=50 automatically\n"
-                "  tcp://HOST:PORT  raw TCP; adds ?listen=1 automatically\n"
-                "  udp://HOST:PORT  UDP (lowest latency, unreliable)\n"
-                "  rtp://HOST:PORT  RTP over UDP\n"
-                "Unknown protocols are used as-is (with a warning).\n"
-                "\n"
-                "Low-latency client examples (connect after starting scrcpy):\n"
-                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
-                "-i srt://127.0.0.1:8080\n"
-                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
-                "-i tcp://127.0.0.1:8080\n"
-                "  ffplay -fflags nobuffer -flags low_delay -framedrop "
-                "-i udp://127.0.0.1:8080\n"
-                "  VLC: Media > Open Network Stream > srt://127.0.0.1:8080",
+        .text = "Stream the device video and audio as MPEG-TS to the given URL.\n"
+                "Supported protocols are srt, udp and tcp.\n"
+                "The URL is passed to the FFmpeg muxer, so it may contain "
+                "additional options (e.g. srt://HOST:PORT?latency=200).\n"
+                "For faster startup of clients, you may want to set "
+                "--video-codec-options=i-frame-interval:float=1.0."
     },
     {
         .longopt_id = OPT_V4L2_SINK,

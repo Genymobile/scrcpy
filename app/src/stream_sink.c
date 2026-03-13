@@ -99,17 +99,6 @@ sc_stream_sink_build_connect_url(const char *url) {
             }
             result = tmp;
         }
-        // Keep SRT protocol latency low (default 120 ms is too high for live
-        // screen mirroring; 50 ms is comfortable for LAN).
-        // Users on high-latency WAN links can override with e.g. ?latency=200.
-        if (!sc_url_has_param(result, "latency")) {
-            char *tmp = sc_url_append_param(result, "latency", "50");
-            free(result);
-            if (!tmp) {
-                return NULL;
-            }
-            result = tmp;
-        }
     } else if (is_tcp) {
         // scrcpy acts as the TCP server, waiting for a player to connect
         if (!sc_url_has_param(result, "listen")) {
@@ -121,9 +110,20 @@ sc_stream_sink_build_connect_url(const char *url) {
             result = tmp;
         }
     }
-    // udp:// and rtp:// are connectionless; no listener mode needed
+    // udp:// is connectionless; no listener mode needed
 
     return result;
+}
+
+/**
+ * Check if a URL uses a connectionless protocol (UDP).
+ *
+ * For this protocol, only a single output stream is needed,
+ * not multiple client connections.
+ */
+static inline bool
+sc_stream_sink_is_connectionless(const char *url) {
+    return !strncmp(url, "udp://", 6);
 }
 
 static AVPacket *
@@ -562,10 +562,24 @@ run_stream_sink_client(void *data) {
 
     sc_stream_sink_client_run_stream(client);
 
-    // Close this client's network connection.
+    // WORKAROUND: SRT epoll deadlock on disconnect
+    // When closing SRT sockets, FFmpeg's interrupt callback and SRT's internal
+    // epoll management conflict, causing "no sockets to check, this would deadlock".
+    // Root cause: FFmpeg may call interrupt_callback during avio_close(), but SRT
+    // has already removed the socket from epoll, causing state inconsistency.
+    // TODO: Remove this workaround once SRT/FFmpeg fix the socket lifecycle interaction.
+    // For now, only skip avio_close() for SRT; other protocols are safe.
+    bool is_srt = sink->url && !strncmp(sink->url, "srt://", 6);
+
     if (client->ctx->pb) {
-        avio_close(client->ctx->pb);
-        client->ctx->pb = NULL;
+        if (is_srt) {
+            // SRT workaround: don't call avio_close(), let avformat_free_context() handle it
+            client->ctx->pb = NULL;
+        } else {
+            // Safe for TCP, UDP and other protocols
+            avio_close(client->ctx->pb);
+            client->ctx->pb = NULL;
+        }
     }
 
     // Mark as finished so the accept loop can join and free us.
@@ -615,9 +629,12 @@ sc_stream_sink_reap_dead_clients(struct sc_stream_sink *sink) {
 }
 
 /**
- * Accept loop: initialises the template context once, then repeatedly accepts
- * incoming connections, spawning a per-client thread for each.  Runs until
- * sink->stopped is set (by sc_stream_sink_stop() or device EOS).
+ * Main streaming loop: initialises the template context once, then either:
+ *  - For connection-oriented protocols (TCP, SRT): repeatedly accepts incoming
+ *    connections, spawning a per-client thread for each.
+ *  - For connectionless protocols (UDP, RTP): creates a single output stream
+ *    and writes all packets to it directly.
+ * Runs until sink->stopped is set (by sc_stream_sink_stop() or device EOS).
  */
 
 // Forward declaration: defined below alongside the other packet-sink callbacks.
@@ -633,17 +650,35 @@ run_stream_sink(void *data) {
         goto stop;
     }
 
+    bool is_connectionless = sc_stream_sink_is_connectionless(sink->url);
+
     char *connect_url = sc_stream_sink_build_connect_url(sink->url);
     if (!connect_url) {
         goto stop;
     }
 
-    LOGI("Stream sink: listening for clients on %s", sink->url);
+    if (is_connectionless) {
+        LOGI("Stream sink: streaming to %s", connect_url);
+    } else {
+        LOGI("Stream sink: listening for clients on %s", connect_url);
+    }
+
+    bool connectionless_done = false;
 
     while (!sink->stopped) {
+        // For connectionless protocols, only attempt one connection
+        if (is_connectionless && connectionless_done) {
+            // Keep the single client thread running; just wait until stopped
+            sc_mutex_lock(&sink->mutex);
+            while (!sink->stopped) {
+                sc_cond_wait(&sink->cond, &sink->mutex);
+            }
+            sc_mutex_unlock(&sink->mutex);
+            break;
+        }
+
         // Reap any client threads that finished since the last iteration.
         sc_stream_sink_reap_dead_clients(sink);
-
         AVIOInterruptCB int_cb = {
             .callback = sc_stream_sink_interrupt_cb,
             .opaque = sink,
@@ -673,7 +708,10 @@ run_stream_sink(void *data) {
             calloc(1, sizeof(struct sc_stream_sink_client));
         if (!client) {
             LOG_OOM();
-            avio_close(client_ctx->pb);
+            bool is_srt = sink->url && !strncmp(sink->url, "srt://", 6);
+            if (!is_srt) {
+                avio_close(client_ctx->pb);
+            }
             client_ctx->pb = NULL;
             avformat_free_context(client_ctx);
             continue;
@@ -698,8 +736,7 @@ run_stream_sink(void *data) {
         // Write the MPEG-TS stream header for this client.
         if (avformat_write_header(client_ctx, NULL) < 0) {
             LOGE("Stream sink: failed to write stream header to client");
-            avio_close(client_ctx->pb);
-            client_ctx->pb = NULL;
+            client_ctx->pb = NULL;  // Don't avio_close() - causes SRT epoll issues
             avformat_free_context(client_ctx);
             free(client);
             continue;
@@ -723,9 +760,11 @@ run_stream_sink(void *data) {
             sc_stream_sink_queue_clear(&client->video_queue);
             sc_stream_sink_queue_clear(&client->audio_queue);
             sc_mutex_unlock(&sink->mutex);
-            // avformat_write_header already moved pb ownership; close it.
             if (client_ctx->pb) {
-                avio_close(client_ctx->pb);
+                bool is_srt = sink->url && !strncmp(sink->url, "srt://", 6);
+                if (!is_srt) {
+                    avio_close(client_ctx->pb);
+                }
                 client_ctx->pb = NULL;
             }
             avformat_free_context(client_ctx);
@@ -736,6 +775,13 @@ run_stream_sink(void *data) {
         }
 
         LOGI("Stream sink: client connected on %s", sink->url);
+
+        if (is_connectionless) {
+            // For connectionless protocols (UDP, RTP), we only need a single
+            // stream. Mark it as done and the loop will now wait instead of
+            // trying to accept new connections.
+            connectionless_done = true;
+        }
     }
 
     free(connect_url);
@@ -762,7 +808,10 @@ stop:
         struct sc_stream_sink_client *next = head->next;
         sc_thread_join(&head->thread, NULL);
         if (head->ctx->pb) {
-            avio_close(head->ctx->pb);
+            bool is_srt = sink->url && !strncmp(sink->url, "srt://", 6);
+            if (!is_srt) {
+                avio_close(head->ctx->pb);
+            }
             head->ctx->pb = NULL;
         }
         avformat_free_context(head->ctx);
