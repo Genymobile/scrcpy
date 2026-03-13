@@ -4,6 +4,7 @@
 #include "common.h"
 
 #include <stdbool.h>
+#include <stdatomic.h>
 #include <libavcodec/packet.h>
 #include <libavformat/avformat.h>
 
@@ -46,7 +47,7 @@ struct sc_stream_sink {
     sc_mutex mutex;
     sc_cond cond;
     // set on sc_stream_sink_stop(), packet_sink close or streaming failure
-    bool stopped;
+    atomic_bool stopped;
 
     // Init-phase queues: used only until template_ready is set.
     // After that, each sc_stream_sink_client has its own queues.
