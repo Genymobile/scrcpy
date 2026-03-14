@@ -4,11 +4,15 @@ import com.genymobile.scrcpy.AndroidVersions;
 import com.genymobile.scrcpy.util.Ln;
 
 import android.annotation.TargetApi;
+import android.os.Binder;
 import android.os.Build;
+import android.os.IBinder;
 import android.os.IInterface;
 import android.view.IDisplayWindowListener;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.List;
 
 public final class WindowManager {
 
@@ -17,6 +21,12 @@ public final class WindowManager {
     public static final int DISPLAY_IME_POLICY_LOCAL = 0;
     public static final int DISPLAY_IME_POLICY_FALLBACK_DISPLAY = 1;
     public static final int DISPLAY_IME_POLICY_HIDE = 2;
+
+    // android.app.WindowConfiguration.WINDOWING_MODE_FREEFORM
+    public static final int WINDOWING_MODE_FREEFORM = 5;
+
+    // android.window.DisplayAreaOrganizer.FEATURE_DEFAULT_TASK_CONTAINER
+    private static final int FEATURE_DEFAULT_TASK_CONTAINER = 1;
 
     private final IInterface manager;
     private Method getRotationMethod;
@@ -262,6 +272,93 @@ public final class WindowManager {
             }
         } catch (ReflectiveOperationException e) {
             Ln.e("Could not invoke method", e);
+        }
+    }
+
+    /**
+     * Set the windowing mode of a display's default task area via WindowContainerTransaction.
+     *
+     * This is required for Android desktop mode to operate in freeform windowing mode on virtual displays.
+     */
+    @TargetApi(AndroidVersions.API_34_ANDROID_14)
+    @SuppressWarnings("unchecked")
+    public void setDisplayWindowingMode(int displayId, int windowingMode) {
+        // A Binder token used to identify this organizer during registration/unregistration with the system server
+        IBinder organizerBinder = new Binder();
+        Object organizerProxy = null;
+        Object daoController = null;
+        try {
+            // Get the IWindowOrganizerController
+            Class<?> serviceManagerClass = Class.forName("android.os.ServiceManager");
+            Method getServiceMethod = serviceManagerClass.getDeclaredMethod("getService", String.class);
+            IBinder wocBinder = (IBinder) getServiceMethod.invoke(null, "window_organizer");
+            if (wocBinder == null) {
+                Ln.w("window_organizer service not available");
+                return;
+            }
+
+            Class<?> iWocStubClass = Class.forName("android.window.IWindowOrganizerController$Stub");
+            Object windowOrganizerController = iWocStubClass.getDeclaredMethod("asInterface", IBinder.class).invoke(null, wocBinder);
+
+            // Get the IDisplayAreaOrganizerController
+            daoController = windowOrganizerController.getClass().getMethod("getDisplayAreaOrganizerController").invoke(windowOrganizerController);
+
+            // Create a no-op IDisplayAreaOrganizer proxy for registration; callbacks are ignored since we unregister immediately
+            Class<?> idaoClass = Class.forName("android.window.IDisplayAreaOrganizer");
+            organizerProxy = Proxy.newProxyInstance(
+                    ClassLoader.getSystemClassLoader(),
+                    new Class[]{idaoClass},
+                    (proxy, method, args) -> {
+                        if ("asBinder".equals(method.getName())) {
+                            return organizerBinder;
+                        }
+                        return null;
+                    }
+            );
+
+            // Register the organizer to get display area tokens
+            Object parceledList = daoController.getClass()
+                    .getMethod("registerOrganizer", idaoClass, int.class)
+                    .invoke(daoController, organizerProxy, FEATURE_DEFAULT_TASK_CONTAINER);
+
+            List<Object> displayAreaInfos = (List<Object>) parceledList.getClass().getMethod("getList").invoke(parceledList);
+
+            // Find the display area token matching our virtual display
+            Object targetToken = null;
+            for (Object info : displayAreaInfos) {
+                Object displayAreaInfo = info.getClass().getMethod("getDisplayAreaInfo").invoke(info);
+                int daDisplayId = displayAreaInfo.getClass().getDeclaredField("displayId").getInt(displayAreaInfo);
+                if (daDisplayId == displayId) {
+                    targetToken = displayAreaInfo.getClass().getDeclaredField("token").get(displayAreaInfo);
+                    break;
+                }
+            }
+
+            if (targetToken != null) {
+                // Create a WindowContainerTransaction to set the windowing mode
+                Class<?> wctClass = Class.forName("android.window.WindowContainerTransaction");
+                Object wct = wctClass.getDeclaredConstructor().newInstance();
+
+                Class<?> tokenClass = Class.forName("android.window.WindowContainerToken");
+                wctClass.getMethod("setWindowingMode", tokenClass, int.class).invoke(wct, targetToken, windowingMode);
+
+                // Apply the transaction
+                windowOrganizerController.getClass().getMethod("applyTransaction", wctClass).invoke(windowOrganizerController, wct);
+            } else {
+                Ln.w("Could not find display area for display " + displayId);
+            }
+        } catch (Exception e) {
+            Ln.w("Could not set windowing mode for display " + displayId, e);
+        } finally {
+            // Always unregister the organizer
+            if (organizerProxy != null && daoController != null) {
+                try {
+                    Class<?> idaoClass = Class.forName("android.window.IDisplayAreaOrganizer");
+                    daoController.getClass().getMethod("unregisterOrganizer", idaoClass).invoke(daoController, organizerProxy);
+                } catch (Exception e) {
+                    Ln.w("Could not unregister display area organizer", e);
+                }
+            }
         }
     }
 }
