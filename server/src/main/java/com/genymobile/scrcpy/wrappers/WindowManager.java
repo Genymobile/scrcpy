@@ -283,22 +283,33 @@ public final class WindowManager {
     @TargetApi(AndroidVersions.API_34_ANDROID_14)
     @SuppressWarnings("unchecked")
     public void setDisplayWindowingMode(int displayId, int windowingMode) {
-        // A Binder token used to identify this organizer during registration/unregistration with the system server
-        IBinder organizerBinder = new Binder();
+        // A Binder token with the correct AIDL interface descriptor, so that any system server
+        // callbacks during registration are properly identified and silently handled
+        IBinder organizerBinder = new Binder() {
+            {
+                attachInterface(null, "android.window.IDisplayAreaOrganizer");
+            }
+
+            @Override
+            protected boolean onTransact(int code, android.os.Parcel data, android.os.Parcel reply, int flags)
+                    throws android.os.RemoteException {
+                if (super.onTransact(code, data, reply, flags)) {
+                    return true;
+                }
+                // Silently accept any organizer callback transactions
+                return true;
+            }
+        };
         Object organizerProxy = null;
         Object daoController = null;
         try {
-            // Get the IWindowOrganizerController
-            Class<?> serviceManagerClass = Class.forName("android.os.ServiceManager");
-            Method getServiceMethod = serviceManagerClass.getDeclaredMethod("getService", String.class);
-            IBinder wocBinder = (IBinder) getServiceMethod.invoke(null, "window_organizer");
-            if (wocBinder == null) {
+            // Get the IWindowOrganizerController via ServiceManager
+            IInterface windowOrganizerController = ServiceManager.getService("window_organizer",
+                    "android.window.IWindowOrganizerController");
+            if (windowOrganizerController == null) {
                 Ln.w("window_organizer service not available");
                 return;
             }
-
-            Class<?> iWocStubClass = Class.forName("android.window.IWindowOrganizerController$Stub");
-            Object windowOrganizerController = iWocStubClass.getDeclaredMethod("asInterface", IBinder.class).invoke(null, wocBinder);
 
             // Get the IDisplayAreaOrganizerController
             daoController = windowOrganizerController.getClass().getMethod("getDisplayAreaOrganizerController").invoke(windowOrganizerController);
