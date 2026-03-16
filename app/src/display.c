@@ -349,10 +349,17 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
     // Draw screenshot flash overlay if active
     if (display->flash_active) {
         sc_tick elapsed = sc_tick_now() - display->flash_start;
-        sc_tick duration = SC_TICK_FROM_MS(300);
+        sc_tick duration = SC_TICK_FROM_MS(500);
         if (elapsed < duration) {
-            // Fade from white (alpha 180) to transparent over 300ms
-            uint8_t alpha = (uint8_t) (180 * (duration - elapsed) / duration);
+            // Full white for first 100ms, then fade out
+            uint8_t alpha;
+            sc_tick fade_start = SC_TICK_FROM_MS(100);
+            if (elapsed < fade_start) {
+                alpha = 255;
+            } else {
+                alpha = (uint8_t) (255 * (duration - elapsed)
+                                       / (duration - fade_start));
+            }
             SDL_SetRenderDrawBlendMode(display->renderer, SDL_BLENDMODE_BLEND);
             SDL_SetRenderDrawColor(display->renderer, 255, 255, 255, alpha);
             SDL_RenderFillRect(display->renderer, NULL);
