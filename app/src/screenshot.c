@@ -222,29 +222,47 @@ end:
 
 bool
 sc_screenshot_save(const AVFrame *frame, enum sc_orientation orientation) {
+    LOGD("Screenshot save requested (orientation=%d)", orientation);
+
     if (!frame || !frame->data[0]) {
         LOGW("No frame available for screenshot");
         return false;
     }
 
-    char filename[64];
+    LOGD("Frame available: %dx%d format=%d",
+         frame->width, frame->height, frame->format);
+
+    char filename[512];
     if (!generate_filename(filename, sizeof(filename))) {
         LOGE("Could not generate screenshot filename");
         return false;
     }
+
+    LOGD("Screenshot target path: %s", filename);
 
     AVFrame *rgb_frame = convert_to_rgb(frame);
     if (!rgb_frame) {
         return false;
     }
 
+    LOGD("Converted to RGB: %dx%d", rgb_frame->width, rgb_frame->height);
+
     // Apply orientation to the RGB frame
     AVFrame *oriented = apply_orientation(rgb_frame, orientation);
     const AVFrame *final_frame = oriented ? oriented : rgb_frame;
 
+    if (oriented) {
+        LOGD("Orientation applied: %dx%d", oriented->width, oriented->height);
+    } else {
+        LOGD("No orientation transform needed");
+    }
+
+    LOGD("Encoding PNG...");
     bool ok = encode_png(final_frame, filename);
     if (ok) {
         LOGI("Screenshot saved to %s", filename);
+    } else {
+        LOGE("Failed to encode/save screenshot");
     }
 
     if (oriented) {

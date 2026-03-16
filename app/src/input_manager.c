@@ -402,7 +402,15 @@ sc_input_manager_process_key(struct sc_input_manager *im,
 
     // Ctrl+Shift+S: screenshot (independent of MOD key)
     if (ctrl && shift && sdl_keycode == SDLK_s && !repeat && down && video) {
-        sc_screenshot_save(im->screen->frame, im->screen->orientation);
+        LOGD("Screenshot shortcut triggered (Ctrl+Shift+S)");
+        bool ok = sc_screenshot_save(im->screen->frame,
+                                     im->screen->orientation);
+        if (ok) {
+            LOGD("Screenshot saved successfully, triggering flash overlay");
+            sc_display_flash(&im->screen->display);
+        } else {
+            LOGD("Screenshot save failed");
+        }
         return;
     }
 

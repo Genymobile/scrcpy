@@ -346,6 +346,31 @@ sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
         }
     }
 
+    // Draw screenshot flash overlay if active
+    if (display->flash_active) {
+        sc_tick elapsed = sc_tick_now() - display->flash_start;
+        sc_tick duration = SC_TICK_FROM_MS(300);
+        if (elapsed < duration) {
+            // Fade from white (alpha 180) to transparent over 300ms
+            uint8_t alpha = (uint8_t) (180 * (duration - elapsed) / duration);
+            SDL_SetRenderDrawBlendMode(display->renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(display->renderer, 255, 255, 255, alpha);
+            SDL_RenderFillRect(display->renderer, NULL);
+            LOGD("Screenshot flash: alpha=%d, elapsed=%" PRItick "ms",
+                 alpha, SC_TICK_TO_MS(elapsed));
+        } else {
+            display->flash_active = false;
+            LOGD("Screenshot flash finished");
+        }
+    }
+
     SDL_RenderPresent(display->renderer);
     return SC_DISPLAY_RESULT_OK;
+}
+
+void
+sc_display_flash(struct sc_display *display) {
+    display->flash_start = sc_tick_now();
+    display->flash_active = true;
+    LOGD("Screenshot flash triggered");
 }

@@ -11,6 +11,7 @@
 #include "coords.h"
 #include "opengl.h"
 #include "options.h"
+#include "util/tick.h"
 
 #ifdef __APPLE__
 # define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -36,6 +37,10 @@ struct sc_display {
     } pending;
 
     bool has_frame;
+
+    // Screenshot flash overlay
+    sc_tick flash_start;
+    bool flash_active;
 };
 
 enum sc_display_result {
@@ -60,5 +65,8 @@ sc_display_update_texture(struct sc_display *display, const AVFrame *frame);
 enum sc_display_result
 sc_display_render(struct sc_display *display, const SDL_Rect *geometry,
                   enum sc_orientation orientation);
+
+void
+sc_display_flash(struct sc_display *display);
 
 #endif
