@@ -400,17 +400,54 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
-    // Ctrl+Shift+L: open logcat in a new terminal window
+    // Ctrl+Shift+L: open logcat filtered to foreground app
     if (ctrl && shift && sdl_keycode == SDLK_l && !repeat && down) {
-        LOGI("Opening logcat in new terminal window...");
+        // Get the foreground app's package name from the device
+        FILE *fp = popen(
+            "adb shell \"dumpsys activity activities"
+            " | grep mResumedActivity"
+            " | head -1"
+            " | sed 's|.* \\([^ ]*/\\).*|\\1|'"
+            " | sed 's|/||'\"", "r");
+        char pkg[256] = {0};
+        if (fp) {
+            if (fgets(pkg, sizeof(pkg), fp)) {
+                // Strip trailing whitespace/newline
+                size_t len = strlen(pkg);
+                while (len > 0 && (pkg[len-1] == '\n' || pkg[len-1] == '\r'
+                                   || pkg[len-1] == ' ')) {
+                    pkg[--len] = '\0';
+                }
+            }
+            pclose(fp);
+        }
+
+        if (pkg[0]) {
+            LOGI("Opening logcat for foreground app: %s", pkg);
+            char cmd[1024];
 #ifdef __APPLE__
-        system("osascript -e 'tell application \"Terminal\" to do script "
-               "\"adb logcat\"' &");
+            snprintf(cmd, sizeof(cmd),
+                "osascript -e 'tell application \"Terminal\" to do script "
+                "\"adb logcat --pid=$(adb shell pidof %s)\"' &", pkg);
 #else
-        system("x-terminal-emulator -e adb logcat &"
-               " || xterm -e adb logcat &"
-               " || gnome-terminal -- adb logcat &");
+            snprintf(cmd, sizeof(cmd),
+                "x-terminal-emulator -e sh -c "
+                "\"adb logcat --pid=\\$(adb shell pidof %s)\" &"
+                " || xterm -e sh -c "
+                "\"adb logcat --pid=\\$(adb shell pidof %s)\" &",
+                pkg, pkg);
 #endif
+            system(cmd);
+        } else {
+            LOGI("Could not detect foreground app, opening unfiltered logcat");
+#ifdef __APPLE__
+            system("osascript -e 'tell application \"Terminal\" to do script "
+                   "\"adb logcat\"' &");
+#else
+            system("x-terminal-emulator -e adb logcat &"
+                   " || xterm -e adb logcat &");
+#endif
+        }
         return;
     }
 
