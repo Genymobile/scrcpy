@@ -400,6 +400,20 @@ sc_input_manager_process_key(struct sc_input_manager *im,
         }
     }
 
+    // Ctrl+Shift+L: open logcat in a new terminal window
+    if (ctrl && shift && sdl_keycode == SDLK_l && !repeat && down) {
+        LOGI("Opening logcat in new terminal window...");
+#ifdef __APPLE__
+        system("osascript -e 'tell application \"Terminal\" to do script "
+               "\"adb logcat\"' &");
+#else
+        system("x-terminal-emulator -e adb logcat &"
+               " || xterm -e adb logcat &"
+               " || gnome-terminal -- adb logcat &");
+#endif
+        return;
+    }
+
     // Ctrl+Shift+S: screenshot (independent of MOD key)
     if (ctrl && shift && sdl_keycode == SDLK_s && !repeat && down && video) {
         LOGD("Screenshot shortcut triggered (Ctrl+Shift+S)");
