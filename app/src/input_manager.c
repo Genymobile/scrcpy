@@ -9,6 +9,7 @@
 #include "android/keycodes.h"
 #include "input_events.h"
 #include "screen.h"
+#include "screenshot.h"
 #include "shortcut_mod.h"
 #include "util/log.h"
 
@@ -397,6 +398,12 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             im->last_keycode = sdl_keycode;
             im->last_mod = mod;
         }
+    }
+
+    // Ctrl+Shift+S: screenshot (independent of MOD key)
+    if (ctrl && shift && sdl_keycode == SDLK_s && !repeat && down && video) {
+        sc_screenshot_save(im->screen->frame, im->screen->orientation);
+        return;
     }
 
     if (is_shortcut) {
