@@ -273,34 +273,91 @@ static void *
 query_focused_view(void *arg) {
     (void) arg;
 
-    // Small delay to let the app process the key event
-    struct timespec ts = {0, 50000000}; // 50ms
+    // Delay to let the app process the key event
+    struct timespec ts = {0, 100000000}; // 100ms
     nanosleep(&ts, NULL);
 
-    // Query the currently focused view from the device
+    // Use uiautomator to find the focused element - this gives us
+    // the actual view ID, class, text, and bounds
     FILE *fp = popen(
-        "adb shell dumpsys activity top 2>/dev/null"
-        " | grep -E 'mCurrentFocus|mFocusedView|focus'", "r");
+        "adb shell uiautomator dump /dev/tty 2>/dev/null"
+        " | tr '>' '\\n'"
+        " | grep 'focused=\"true\"'", "r");
     if (!fp) {
         return NULL;
     }
 
-    char line[512];
+    char line[1024];
     while (fgets(line, sizeof(line), fp)) {
-        // Strip trailing newline
         size_t len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') {
             line[len - 1] = '\0';
         }
-        // Skip empty lines
         if (line[0] == '\0') {
             continue;
         }
-        // Trim leading whitespace for cleaner output
-        char *p = line;
-        while (*p == ' ') p++;
-        if (*p) {
-            LOGI("[FOCUS] %s", p);
+
+        // Parse out useful attributes: resource-id, class, text, bounds
+        char *rid = strstr(line, "resource-id=\"");
+        char *cls = strstr(line, "class=\"");
+        char *txt = strstr(line, "text=\"");
+        char *bnd = strstr(line, "bounds=\"");
+
+        char id_buf[128] = "?";
+        char cls_buf[128] = "?";
+        char txt_buf[128] = "";
+        char bnd_buf[64] = "";
+
+        if (rid) {
+            rid += 13; // skip resource-id="
+            char *end = strchr(rid, '"');
+            if (end) {
+                size_t n = (size_t)(end - rid);
+                if (n >= sizeof(id_buf)) n = sizeof(id_buf) - 1;
+                memcpy(id_buf, rid, n);
+                id_buf[n] = '\0';
+            }
+        }
+        if (cls) {
+            cls += 7; // skip class="
+            char *end = strchr(cls, '"');
+            if (end) {
+                // Get just the simple class name (after last dot)
+                char *dot = end;
+                while (dot > cls && *dot != '.') dot--;
+                if (*dot == '.') dot++;
+                size_t n = (size_t)(end - dot);
+                if (n >= sizeof(cls_buf)) n = sizeof(cls_buf) - 1;
+                memcpy(cls_buf, dot, n);
+                cls_buf[n] = '\0';
+            }
+        }
+        if (txt) {
+            txt += 6; // skip text="
+            char *end = strchr(txt, '"');
+            if (end && end != txt) {
+                size_t n = (size_t)(end - txt);
+                if (n >= sizeof(txt_buf)) n = sizeof(txt_buf) - 1;
+                memcpy(txt_buf, txt, n);
+                txt_buf[n] = '\0';
+            }
+        }
+        if (bnd) {
+            bnd += 8; // skip bounds="
+            char *end = strchr(bnd, '"');
+            if (end) {
+                size_t n = (size_t)(end - bnd);
+                if (n >= sizeof(bnd_buf)) n = sizeof(bnd_buf) - 1;
+                memcpy(bnd_buf, bnd, n);
+                bnd_buf[n] = '\0';
+            }
+        }
+
+        if (txt_buf[0]) {
+            LOGI("[FOCUS] %s (%s) text=\"%s\" %s",
+                 id_buf, cls_buf, txt_buf, bnd_buf);
+        } else {
+            LOGI("[FOCUS] %s (%s) %s", id_buf, cls_buf, bnd_buf);
         }
     }
 
