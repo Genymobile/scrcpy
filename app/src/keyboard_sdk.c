@@ -289,6 +289,25 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
 
     struct sc_control_msg msg;
     if (convert_input_key(event, &msg, kb->key_inject_mode, kb->repeat)) {
+        // Log D-pad events for debugging
+        enum android_keycode kc = msg.inject_keycode.keycode;
+        const char *dpad_name = NULL;
+        switch (kc) {
+            case AKEYCODE_DPAD_UP:    dpad_name = "UP";    break;
+            case AKEYCODE_DPAD_DOWN:  dpad_name = "DOWN";  break;
+            case AKEYCODE_DPAD_LEFT:  dpad_name = "LEFT";  break;
+            case AKEYCODE_DPAD_RIGHT: dpad_name = "RIGHT"; break;
+            case AKEYCODE_DPAD_CENTER: dpad_name = "CENTER"; break;
+            default: break;
+        }
+        if (dpad_name) {
+            const char *action_str =
+                msg.inject_keycode.action == AKEY_EVENT_ACTION_DOWN
+                    ? "PRESS" : "RELEASE";
+            LOGI("[DPAD] %s %s (repeat=%d)", dpad_name, action_str,
+                 (int) kb->repeat);
+        }
+
         if (!sc_controller_push_msg(kb->controller, &msg)) {
             LOGW("Could not request 'inject keycode'");
         }
