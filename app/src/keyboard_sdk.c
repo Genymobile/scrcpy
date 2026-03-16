@@ -2,7 +2,9 @@
 
 #include <assert.h>
 #include <ctype.h>
+#include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -267,6 +269,45 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
     return true;
 }
 
+static void *
+query_focused_view(void *arg) {
+    (void) arg;
+
+    // Small delay to let the app process the key event
+    struct timespec ts = {0, 50000000}; // 50ms
+    nanosleep(&ts, NULL);
+
+    // Query the currently focused view from the device
+    FILE *fp = popen(
+        "adb shell dumpsys activity top 2>/dev/null"
+        " | grep -E 'mCurrentFocus|mFocusedView|focus'", "r");
+    if (!fp) {
+        return NULL;
+    }
+
+    char line[512];
+    while (fgets(line, sizeof(line), fp)) {
+        // Strip trailing newline
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+        // Skip empty lines
+        if (line[0] == '\0') {
+            continue;
+        }
+        // Trim leading whitespace for cleaner output
+        char *p = line;
+        while (*p == ' ') p++;
+        if (*p) {
+            LOGI("[FOCUS] %s", p);
+        }
+    }
+
+    pclose(fp);
+    return NULL;
+}
+
 static void
 sc_key_processor_process_key(struct sc_key_processor *kp,
                              const struct sc_key_event *event,
@@ -306,6 +347,13 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
                     ? "PRESS" : "RELEASE";
             LOGI("[DPAD] %s %s (repeat=%d)", dpad_name, action_str,
                  (int) kb->repeat);
+
+            // On key release, query what the app focused
+            if (msg.inject_keycode.action == AKEY_EVENT_ACTION_UP) {
+                pthread_t tid;
+                pthread_create(&tid, NULL, query_focused_view, NULL);
+                pthread_detach(tid);
+            }
         }
 
         if (!sc_controller_push_msg(kb->controller, &msg)) {
