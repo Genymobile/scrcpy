@@ -1,6 +1,8 @@
 #include "screenshot.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include <libavcodec/avcodec.h>
@@ -13,12 +15,19 @@
 
 static bool
 generate_filename(char *buf, size_t size) {
+    const char *home = getenv("HOME");
+    if (!home) {
+        home = ".";
+    }
+
     time_t now = time(NULL);
     struct tm *tm = localtime(&now);
     if (!tm) {
         return false;
     }
-    int ret = snprintf(buf, size, "scrcpy_%04d%02d%02d-%02d%02d%02d.png",
+    int ret = snprintf(buf, size,
+                       "%s/Downloads/scrcpy_%04d%02d%02d-%02d%02d%02d.png",
+                       home,
                        tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
                        tm->tm_hour, tm->tm_min, tm->tm_sec);
     return ret > 0 && (size_t) ret < size;
