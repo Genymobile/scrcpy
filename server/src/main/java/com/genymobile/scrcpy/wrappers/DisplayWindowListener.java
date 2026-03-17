@@ -23,6 +23,17 @@ public class DisplayWindowListener extends IDisplayWindowListener.Stub {
         // empty default implementation
     }
 
+    // Android 16 added these methods to IDisplayWindowListener.
+    // They are not in the SDK stubs, so no @Override, but they must exist
+    // to prevent AbstractMethodError when the binder dispatches to them.
+    public void onDisplayAnimationsDisabledChanged(int displayId, boolean animationsDisabled) {
+        // empty default implementation
+    }
+
+    public void onDisplayAddSystemDecorations(int displayId) {
+        // empty default implementation
+    }
+
     @Override
     public boolean onTransact(int code, Parcel data, Parcel reply, int flags) throws RemoteException {
         try {
