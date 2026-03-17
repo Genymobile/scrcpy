@@ -283,57 +283,58 @@ query_focused_view(void *arg) {
     snprintf(direction, sizeof(direction), "%s", ctx->direction);
     free(ctx);
 
-    // Delay to let the app process the key event and write logcat
+    // Delay to let the app process the key event
     struct timespec ts = {0, 300000000}; // 300ms
     nanosleep(&ts, NULL);
 
-    // Read the app's own DPAD logs from logcat.
-    // The app logs lines like:
-    //   D DPAD: dispatchKeyEvent: key=KEYCODE_DPAD_LEFT action=UP
-    //           dest=Timer focus=MaterialButton(id=preset3m)
-    // We grab the most recent focus= value from action=UP lines.
+    // Use dumpsys activity top to get the currently focused view.
+    // This works universally with any app, unlike logcat-based approaches
+    // which require the app to log focus info with a specific tag.
+    //
+    // We look for "mCurrentFocus" or "mFocused" lines in the view hierarchy,
+    // and also grab the activity/fragment info from the top of the output.
     FILE *fp = popen(
-        "adb logcat -d -s DPAD:D 2>/dev/null"
-        " | grep 'action=UP'"
-        " | tail -1", "r");
+        "adb shell dumpsys activity top 2>/dev/null"
+        " | grep -E '(mCurrentFocus|mFocusedView|ACTIVITY|mFocused|"
+        "getCurrentFocus|isFocused.*true)'"
+        " | tail -5", "r");
     if (!fp) {
-        LOGW("[FOCUS] Could not read logcat");
+        LOGW("[FOCUS] Could not run dumpsys");
         return NULL;
     }
 
-    char line[2048];
     char focus_info[512] = "";
-    char dest_info[128] = "";
+    char activity_info[256] = "";
+    char line[2048];
 
-    if (fgets(line, sizeof(line), fp)) {
+    while (fgets(line, sizeof(line), fp)) {
         size_t len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
 
-        // Extract focus=... from the line
-        char *f = strstr(line, "focus=");
-        if (f) {
-            f += 6; // skip "focus="
-            snprintf(focus_info, sizeof(focus_info), "%s", f);
+        // Grab ACTIVITY line for context
+        if (strstr(line, "ACTIVITY")) {
+            // Trim leading whitespace
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            snprintf(activity_info, sizeof(activity_info), "%s", p);
+            continue;
         }
 
-        // Extract dest=... from the line
-        char *d = strstr(line, "dest=");
-        if (d) {
-            d += 5; // skip "dest="
-            char *space = strchr(d, ' ');
-            if (space) {
-                size_t n = (size_t)(space - d);
-                if (n >= sizeof(dest_info)) n = sizeof(dest_info) - 1;
-                memcpy(dest_info, d, n);
-                dest_info[n] = '\0';
-            } else {
-                snprintf(dest_info, sizeof(dest_info), "%s", d);
-            }
+        // Grab focus info - prefer mFocusedView or isFocused lines
+        if (strstr(line, "mFocused") || strstr(line, "isFocused")
+                || strstr(line, "mCurrentFocus")
+                || strstr(line, "getCurrentFocus")) {
+            char *p = line;
+            while (*p == ' ' || *p == '\t') p++;
+            snprintf(focus_info, sizeof(focus_info), "%s", p);
         }
     }
     pclose(fp);
 
     if (focus_info[0]) {
+        if (activity_info[0]) {
+            LOGI("[DPAD %s] %s", direction, activity_info);
+        }
         // Show transition
         if (prev_focus_cls[0]) {
             if (strcmp(prev_focus_cls, focus_info) != 0) {
@@ -345,15 +346,35 @@ query_focused_view(void *arg) {
         } else {
             LOGI("[DPAD %s] Focus: %s", direction, focus_info);
         }
-
-        if (dest_info[0]) {
-            LOGI("[DPAD %s] Screen: %s", direction, dest_info);
-        }
-
         // Save for next comparison
         snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", focus_info);
     } else {
-        LOGW("[DPAD %s] No focus info found in app logcat", direction);
+        // Fallback: try dumpsys window to get at least the focused window
+        FILE *fp2 = popen(
+            "adb shell dumpsys window windows 2>/dev/null"
+            " | grep -E 'mCurrentFocus|mFocusedApp'"
+            " | head -2", "r");
+        if (fp2) {
+            char win_info[512] = "";
+            while (fgets(line, sizeof(line), fp2)) {
+                size_t l = strlen(line);
+                if (l > 0 && line[l - 1] == '\n') line[l - 1] = '\0';
+                char *p = line;
+                while (*p == ' ' || *p == '\t') p++;
+                if (*p) {
+                    snprintf(win_info, sizeof(win_info), "%s", p);
+                }
+            }
+            pclose(fp2);
+
+            if (win_info[0]) {
+                LOGI("[DPAD %s] Window: %s", direction, win_info);
+            } else {
+                LOGW("[DPAD %s] No focus info available", direction);
+            }
+        } else {
+            LOGW("[DPAD %s] No focus info available", direction);
+        }
     }
 
     return NULL;
