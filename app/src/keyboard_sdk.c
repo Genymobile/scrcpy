@@ -270,20 +270,7 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
 }
 
 // Store previous focus state so we can show transitions
-static char prev_focus_id[128] = "";
 static char prev_focus_cls[1024] = "";
-static char prev_focus_txt[128] = "";
-
-// Format a focus element as a readable string
-static void
-format_focus_str(char *dst, size_t dst_size,
-                 const char *id, const char *cls, const char *txt) {
-    if (txt[0]) {
-        snprintf(dst, dst_size, "%s (%s) \"%s\"", id[0] ? id : "(no-id)", cls, txt);
-    } else {
-        snprintf(dst, dst_size, "%s (%s)", id[0] ? id : "(no-id)", cls);
-    }
-}
 
 struct dpad_query_ctx {
     char direction[16];
@@ -296,95 +283,77 @@ query_focused_view(void *arg) {
     snprintf(direction, sizeof(direction), "%s", ctx->direction);
     free(ctx);
 
-    // Delay to let the app process the key event
-    struct timespec ts = {0, 200000000}; // 200ms
+    // Delay to let the app process the key event and write logcat
+    struct timespec ts = {0, 300000000}; // 300ms
     nanosleep(&ts, NULL);
 
-    // Use dumpsys activity top to find the focused view.
-    // In the View Hierarchy, focused views are marked with a leading asterisk.
+    // Read the app's own DPAD logs from logcat.
+    // The app logs lines like:
+    //   D DPAD: dispatchKeyEvent: key=KEYCODE_DPAD_LEFT action=UP
+    //           dest=Timer focus=MaterialButton(id=preset3m)
+    // We grab the most recent focus= value from action=UP lines.
     FILE *fp = popen(
-        "adb shell dumpsys activity top 2>/dev/null", "r");
+        "adb logcat -d -s DPAD:D 2>/dev/null"
+        " | grep 'action=UP'"
+        " | tail -1", "r");
     if (!fp) {
-        LOGW("[FOCUS] Could not run dumpsys activity top");
+        LOGW("[FOCUS] Could not read logcat");
         return NULL;
     }
 
     char line[2048];
-    bool in_view_hierarchy = false;
-    bool found_focus = false;
-    char focused_line[1024] = "";
+    char focus_info[512] = "";
+    char dest_info[128] = "";
 
-    while (fgets(line, sizeof(line), fp)) {
+    if (fgets(line, sizeof(line), fp)) {
         size_t len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
 
-        // Detect start of View Hierarchy section
-        if (strstr(line, "View Hierarchy:")) {
-            in_view_hierarchy = true;
-            continue;
+        // Extract focus=... from the line
+        char *f = strstr(line, "focus=");
+        if (f) {
+            f += 6; // skip "focus="
+            snprintf(focus_info, sizeof(focus_info), "%s", f);
         }
 
-        // End of View Hierarchy on blank line or next section
-        if (in_view_hierarchy && line[0] != ' ' && line[0] != '\0'
-            && line[0] != '*') {
-            // If we already found focus, stop
-            if (found_focus) break;
-            in_view_hierarchy = false;
-            continue;
-        }
-
-        if (!in_view_hierarchy) continue;
-
-        // Look for lines containing "hasFocus" or starting with asterisk
-        // The focused view line typically looks like:
-        //   * com.example.app/com.example.ClassName{...}
-        // or contains hasFocus=true in the properties
-        char *trimmed = line;
-        while (*trimmed == ' ') trimmed++;
-
-        if (trimmed[0] == '*') {
-            // This is the focused view
-            snprintf(focused_line, sizeof(focused_line), "%s", trimmed + 1);
-            // Trim leading space after asterisk
-            char *fl = focused_line;
-            while (*fl == ' ') fl++;
-            if (fl != focused_line) {
-                memmove(focused_line, fl, strlen(fl) + 1);
+        // Extract dest=... from the line
+        char *d = strstr(line, "dest=");
+        if (d) {
+            d += 5; // skip "dest="
+            char *space = strchr(d, ' ');
+            if (space) {
+                size_t n = (size_t)(space - d);
+                if (n >= sizeof(dest_info)) n = sizeof(dest_info) - 1;
+                memcpy(dest_info, d, n);
+                dest_info[n] = '\0';
+            } else {
+                snprintf(dest_info, sizeof(dest_info), "%s", d);
             }
-            found_focus = true;
         }
     }
     pclose(fp);
 
-    if (found_focus) {
-        // Parse the view info from the focused line
-        // Format is typically: ClassName{hash VFED..C. ........ X,Y-X,Y #id app:id/name}
-        char curr_str[1024];
-        snprintf(curr_str, sizeof(curr_str), "%s", focused_line);
-
-        // Build previous focus description
-        char prev_str[256];
-        format_focus_str(prev_str, sizeof(prev_str),
-                         prev_focus_id, prev_focus_cls, prev_focus_txt);
-
-        // Check if focus changed
+    if (focus_info[0]) {
+        // Show transition
         if (prev_focus_cls[0]) {
-            if (strcmp(prev_focus_cls, curr_str) != 0) {
+            if (strcmp(prev_focus_cls, focus_info) != 0) {
                 LOGI("[DPAD %s] Focus moved: %s -> %s",
-                     direction, prev_focus_cls, curr_str);
+                     direction, prev_focus_cls, focus_info);
             } else {
-                LOGI("[DPAD %s] Focus unchanged: %s", direction, curr_str);
+                LOGI("[DPAD %s] Focus unchanged: %s", direction, focus_info);
             }
         } else {
-            LOGI("[DPAD %s] Focus: %s", direction, curr_str);
+            LOGI("[DPAD %s] Focus: %s", direction, focus_info);
         }
 
-        // Save current as previous (store full line in cls for comparison)
-        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", curr_str);
-        prev_focus_id[0] = '\0';
-        prev_focus_txt[0] = '\0';
+        if (dest_info[0]) {
+            LOGI("[DPAD %s] Screen: %s", direction, dest_info);
+        }
+
+        // Save for next comparison
+        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", focus_info);
     } else {
-        LOGW("[DPAD %s] No focused view found in View Hierarchy", direction);
+        LOGW("[DPAD %s] No focus info found in app logcat", direction);
     }
 
     return NULL;
