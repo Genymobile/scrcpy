@@ -271,32 +271,8 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
 
 // Store previous focus state so we can show transitions
 static char prev_focus_id[128] = "";
-static char prev_focus_cls[128] = "";
+static char prev_focus_cls[1024] = "";
 static char prev_focus_txt[128] = "";
-
-// Parse a single XML attribute value into dst buffer
-static void
-parse_xml_attr(const char *line, const char *attr_name, char *dst, size_t dst_size) {
-    dst[0] = '\0';
-    char *p = strstr(line, attr_name);
-    if (!p) return;
-    p += strlen(attr_name);
-    char *end = strchr(p, '"');
-    if (!end) return;
-    size_t n = (size_t)(end - p);
-    if (n >= dst_size) n = dst_size - 1;
-    memcpy(dst, p, n);
-    dst[n] = '\0';
-}
-
-// Get just the simple class name after the last dot
-static void
-simplify_class_name(char *cls) {
-    char *dot = strrchr(cls, '.');
-    if (dot) {
-        memmove(cls, dot + 1, strlen(dot + 1) + 1);
-    }
-}
 
 // Format a focus element as a readable string
 static void
@@ -321,75 +297,81 @@ query_focused_view(void *arg) {
     free(ctx);
 
     // Delay to let the app process the key event
-    struct timespec ts = {0, 150000000}; // 150ms
+    struct timespec ts = {0, 200000000}; // 200ms
     nanosleep(&ts, NULL);
 
-    // 1) Log the focused window/activity
+    // Use dumpsys activity top to find the focused view.
+    // In the View Hierarchy, focused views are marked with a leading asterisk.
     FILE *fp = popen(
-        "adb shell dumpsys window 2>/dev/null"
-        " | grep -E 'mCurrentFocus|mFocusedWindow'", "r");
-    if (fp) {
-        char line[512];
-        while (fgets(line, sizeof(line), fp)) {
-            size_t len = strlen(line);
-            if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
-            char *p = line;
-            while (*p == ' ') p++;
-            if (*p) {
-                LOGI("[WINDOW] %s", p);
-            }
-        }
-        pclose(fp);
-    }
-
-    // 2) Query focused element via uiautomator
-    fp = popen(
-        "adb shell uiautomator dump /dev/tty 2>/dev/null"
-        " | tr '>' '\\n'"
-        " | grep 'focused=\"true\"'", "r");
+        "adb shell dumpsys activity top 2>/dev/null", "r");
     if (!fp) {
-        LOGW("[FOCUS] Could not query UI hierarchy");
+        LOGW("[FOCUS] Could not run dumpsys activity top");
         return NULL;
     }
 
     char line[2048];
+    bool in_view_hierarchy = false;
     bool found_focus = false;
+    char focused_line[1024] = "";
+
     while (fgets(line, sizeof(line), fp)) {
         size_t len = strlen(line);
         if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
-        if (line[0] == '\0') continue;
 
-        char id[128], cls[128], txt[128], bnd[64], desc[256], pkg[128];
-        char selected[16], enabled[16], clickable[16], scrollable[16];
+        // Detect start of View Hierarchy section
+        if (strstr(line, "View Hierarchy:")) {
+            in_view_hierarchy = true;
+            continue;
+        }
 
-        parse_xml_attr(line, "resource-id=\"", id, sizeof(id));
-        parse_xml_attr(line, "class=\"", cls, sizeof(cls));
-        parse_xml_attr(line, "text=\"", txt, sizeof(txt));
-        parse_xml_attr(line, "bounds=\"", bnd, sizeof(bnd));
-        parse_xml_attr(line, "content-desc=\"", desc, sizeof(desc));
-        parse_xml_attr(line, "package=\"", pkg, sizeof(pkg));
-        parse_xml_attr(line, "selected=\"", selected, sizeof(selected));
-        parse_xml_attr(line, "enabled=\"", enabled, sizeof(enabled));
-        parse_xml_attr(line, "clickable=\"", clickable, sizeof(clickable));
-        parse_xml_attr(line, "scrollable=\"", scrollable, sizeof(scrollable));
+        // End of View Hierarchy on blank line or next section
+        if (in_view_hierarchy && line[0] != ' ' && line[0] != '\0'
+            && line[0] != '*') {
+            // If we already found focus, stop
+            if (found_focus) break;
+            in_view_hierarchy = false;
+            continue;
+        }
 
-        simplify_class_name(cls);
+        if (!in_view_hierarchy) continue;
 
-        // Build current focus description
-        char curr_str[256];
-        format_focus_str(curr_str, sizeof(curr_str), id, cls, txt);
+        // Look for lines containing "hasFocus" or starting with asterisk
+        // The focused view line typically looks like:
+        //   * com.example.app/com.example.ClassName{...}
+        // or contains hasFocus=true in the properties
+        char *trimmed = line;
+        while (*trimmed == ' ') trimmed++;
+
+        if (trimmed[0] == '*') {
+            // This is the focused view
+            snprintf(focused_line, sizeof(focused_line), "%s", trimmed + 1);
+            // Trim leading space after asterisk
+            char *fl = focused_line;
+            while (*fl == ' ') fl++;
+            if (fl != focused_line) {
+                memmove(focused_line, fl, strlen(fl) + 1);
+            }
+            found_focus = true;
+        }
+    }
+    pclose(fp);
+
+    if (found_focus) {
+        // Parse the view info from the focused line
+        // Format is typically: ClassName{hash VFED..C. ........ X,Y-X,Y #id app:id/name}
+        char curr_str[1024];
+        snprintf(curr_str, sizeof(curr_str), "%s", focused_line);
 
         // Build previous focus description
         char prev_str[256];
         format_focus_str(prev_str, sizeof(prev_str),
                          prev_focus_id, prev_focus_cls, prev_focus_txt);
 
-        // Show the transition
+        // Check if focus changed
         if (prev_focus_cls[0]) {
-            if (strcmp(prev_focus_id, id) != 0
-                || strcmp(prev_focus_txt, txt) != 0) {
+            if (strcmp(prev_focus_cls, curr_str) != 0) {
                 LOGI("[DPAD %s] Focus moved: %s -> %s",
-                     direction, prev_str, curr_str);
+                     direction, prev_focus_cls, curr_str);
             } else {
                 LOGI("[DPAD %s] Focus unchanged: %s", direction, curr_str);
             }
@@ -397,27 +379,14 @@ query_focused_view(void *arg) {
             LOGI("[DPAD %s] Focus: %s", direction, curr_str);
         }
 
-        // Log element details
-        LOGI("[FOCUS]   bounds=%s pkg=%s", bnd, pkg);
-        if (desc[0]) {
-            LOGI("[FOCUS]   content-desc=\"%s\"", desc);
-        }
-        LOGI("[FOCUS]   selected=%s enabled=%s clickable=%s scrollable=%s",
-             selected, enabled, clickable, scrollable);
-
-        // Save for next comparison
-        snprintf(prev_focus_id, sizeof(prev_focus_id), "%s", id);
-        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", cls);
-        snprintf(prev_focus_txt, sizeof(prev_focus_txt), "%s", txt);
-
-        found_focus = true;
+        // Save current as previous (store full line in cls for comparison)
+        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", curr_str);
+        prev_focus_id[0] = '\0';
+        prev_focus_txt[0] = '\0';
+    } else {
+        LOGW("[DPAD %s] No focused view found in View Hierarchy", direction);
     }
 
-    if (!found_focus) {
-        LOGW("[DPAD %s] No focused element found in UI hierarchy", direction);
-    }
-
-    pclose(fp);
     return NULL;
 }
 
