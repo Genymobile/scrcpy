@@ -4,7 +4,7 @@ their name contains `scrcpy`.**
 
 # scrcpy (v3.3.4)
 
-<img src="app/data/icon.svg" width="128" height="128" alt="scrcpy" align="right" />
+<img src="app/data/scrcpy.svg" width="128" height="128" alt="scrcpy" align="right" />
 
 _pronounced "**scr**een **c**o**py**"_
 
