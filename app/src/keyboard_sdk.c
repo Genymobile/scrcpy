@@ -269,96 +269,152 @@ convert_input_key(const struct sc_key_event *event, struct sc_control_msg *msg,
     return true;
 }
 
+// Store previous focus state so we can show transitions
+static char prev_focus_id[128] = "";
+static char prev_focus_cls[128] = "";
+static char prev_focus_txt[128] = "";
+
+// Parse a single XML attribute value into dst buffer
+static void
+parse_xml_attr(const char *line, const char *attr_name, char *dst, size_t dst_size) {
+    dst[0] = '\0';
+    char *p = strstr(line, attr_name);
+    if (!p) return;
+    p += strlen(attr_name);
+    char *end = strchr(p, '"');
+    if (!end) return;
+    size_t n = (size_t)(end - p);
+    if (n >= dst_size) n = dst_size - 1;
+    memcpy(dst, p, n);
+    dst[n] = '\0';
+}
+
+// Get just the simple class name after the last dot
+static void
+simplify_class_name(char *cls) {
+    char *dot = strrchr(cls, '.');
+    if (dot) {
+        memmove(cls, dot + 1, strlen(dot + 1) + 1);
+    }
+}
+
+// Format a focus element as a readable string
+static void
+format_focus_str(char *dst, size_t dst_size,
+                 const char *id, const char *cls, const char *txt) {
+    if (txt[0]) {
+        snprintf(dst, dst_size, "%s (%s) \"%s\"", id[0] ? id : "(no-id)", cls, txt);
+    } else {
+        snprintf(dst, dst_size, "%s (%s)", id[0] ? id : "(no-id)", cls);
+    }
+}
+
+struct dpad_query_ctx {
+    char direction[16];
+};
+
 static void *
 query_focused_view(void *arg) {
-    (void) arg;
+    struct dpad_query_ctx *ctx = (struct dpad_query_ctx *)arg;
+    char direction[16];
+    snprintf(direction, sizeof(direction), "%s", ctx->direction);
+    free(ctx);
 
     // Delay to let the app process the key event
-    struct timespec ts = {0, 100000000}; // 100ms
+    struct timespec ts = {0, 150000000}; // 150ms
     nanosleep(&ts, NULL);
 
-    // Use uiautomator to find the focused element - this gives us
-    // the actual view ID, class, text, and bounds
+    // 1) Log the focused window/activity
     FILE *fp = popen(
+        "adb shell dumpsys window 2>/dev/null"
+        " | grep -E 'mCurrentFocus|mFocusedWindow'", "r");
+    if (fp) {
+        char line[512];
+        while (fgets(line, sizeof(line), fp)) {
+            size_t len = strlen(line);
+            if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
+            char *p = line;
+            while (*p == ' ') p++;
+            if (*p) {
+                LOGI("[WINDOW] %s", p);
+            }
+        }
+        pclose(fp);
+    }
+
+    // 2) Query focused element via uiautomator
+    fp = popen(
         "adb shell uiautomator dump /dev/tty 2>/dev/null"
         " | tr '>' '\\n'"
         " | grep 'focused=\"true\"'", "r");
     if (!fp) {
+        LOGW("[FOCUS] Could not query UI hierarchy");
         return NULL;
     }
 
-    char line[1024];
+    char line[2048];
+    bool found_focus = false;
     while (fgets(line, sizeof(line), fp)) {
         size_t len = strlen(line);
-        if (len > 0 && line[len - 1] == '\n') {
-            line[len - 1] = '\0';
-        }
-        if (line[0] == '\0') {
-            continue;
-        }
+        if (len > 0 && line[len - 1] == '\n') line[len - 1] = '\0';
+        if (line[0] == '\0') continue;
 
-        // Parse out useful attributes: resource-id, class, text, bounds
-        char *rid = strstr(line, "resource-id=\"");
-        char *cls = strstr(line, "class=\"");
-        char *txt = strstr(line, "text=\"");
-        char *bnd = strstr(line, "bounds=\"");
+        char id[128], cls[128], txt[128], bnd[64], desc[256], pkg[128];
+        char selected[16], enabled[16], clickable[16], scrollable[16];
 
-        char id_buf[128] = "?";
-        char cls_buf[128] = "?";
-        char txt_buf[128] = "";
-        char bnd_buf[64] = "";
+        parse_xml_attr(line, "resource-id=\"", id, sizeof(id));
+        parse_xml_attr(line, "class=\"", cls, sizeof(cls));
+        parse_xml_attr(line, "text=\"", txt, sizeof(txt));
+        parse_xml_attr(line, "bounds=\"", bnd, sizeof(bnd));
+        parse_xml_attr(line, "content-desc=\"", desc, sizeof(desc));
+        parse_xml_attr(line, "package=\"", pkg, sizeof(pkg));
+        parse_xml_attr(line, "selected=\"", selected, sizeof(selected));
+        parse_xml_attr(line, "enabled=\"", enabled, sizeof(enabled));
+        parse_xml_attr(line, "clickable=\"", clickable, sizeof(clickable));
+        parse_xml_attr(line, "scrollable=\"", scrollable, sizeof(scrollable));
 
-        if (rid) {
-            rid += 13; // skip resource-id="
-            char *end = strchr(rid, '"');
-            if (end) {
-                size_t n = (size_t)(end - rid);
-                if (n >= sizeof(id_buf)) n = sizeof(id_buf) - 1;
-                memcpy(id_buf, rid, n);
-                id_buf[n] = '\0';
-            }
-        }
-        if (cls) {
-            cls += 7; // skip class="
-            char *end = strchr(cls, '"');
-            if (end) {
-                // Get just the simple class name (after last dot)
-                char *dot = end;
-                while (dot > cls && *dot != '.') dot--;
-                if (*dot == '.') dot++;
-                size_t n = (size_t)(end - dot);
-                if (n >= sizeof(cls_buf)) n = sizeof(cls_buf) - 1;
-                memcpy(cls_buf, dot, n);
-                cls_buf[n] = '\0';
-            }
-        }
-        if (txt) {
-            txt += 6; // skip text="
-            char *end = strchr(txt, '"');
-            if (end && end != txt) {
-                size_t n = (size_t)(end - txt);
-                if (n >= sizeof(txt_buf)) n = sizeof(txt_buf) - 1;
-                memcpy(txt_buf, txt, n);
-                txt_buf[n] = '\0';
-            }
-        }
-        if (bnd) {
-            bnd += 8; // skip bounds="
-            char *end = strchr(bnd, '"');
-            if (end) {
-                size_t n = (size_t)(end - bnd);
-                if (n >= sizeof(bnd_buf)) n = sizeof(bnd_buf) - 1;
-                memcpy(bnd_buf, bnd, n);
-                bnd_buf[n] = '\0';
-            }
-        }
+        simplify_class_name(cls);
 
-        if (txt_buf[0]) {
-            LOGI("[FOCUS] %s (%s) text=\"%s\" %s",
-                 id_buf, cls_buf, txt_buf, bnd_buf);
+        // Build current focus description
+        char curr_str[256];
+        format_focus_str(curr_str, sizeof(curr_str), id, cls, txt);
+
+        // Build previous focus description
+        char prev_str[256];
+        format_focus_str(prev_str, sizeof(prev_str),
+                         prev_focus_id, prev_focus_cls, prev_focus_txt);
+
+        // Show the transition
+        if (prev_focus_cls[0]) {
+            if (strcmp(prev_focus_id, id) != 0
+                || strcmp(prev_focus_txt, txt) != 0) {
+                LOGI("[DPAD %s] Focus moved: %s -> %s",
+                     direction, prev_str, curr_str);
+            } else {
+                LOGI("[DPAD %s] Focus unchanged: %s", direction, curr_str);
+            }
         } else {
-            LOGI("[FOCUS] %s (%s) %s", id_buf, cls_buf, bnd_buf);
+            LOGI("[DPAD %s] Focus: %s", direction, curr_str);
         }
+
+        // Log element details
+        LOGI("[FOCUS]   bounds=%s pkg=%s", bnd, pkg);
+        if (desc[0]) {
+            LOGI("[FOCUS]   content-desc=\"%s\"", desc);
+        }
+        LOGI("[FOCUS]   selected=%s enabled=%s clickable=%s scrollable=%s",
+             selected, enabled, clickable, scrollable);
+
+        // Save for next comparison
+        snprintf(prev_focus_id, sizeof(prev_focus_id), "%s", id);
+        snprintf(prev_focus_cls, sizeof(prev_focus_cls), "%s", cls);
+        snprintf(prev_focus_txt, sizeof(prev_focus_txt), "%s", txt);
+
+        found_focus = true;
+    }
+
+    if (!found_focus) {
+        LOGW("[DPAD %s] No focused element found in UI hierarchy", direction);
     }
 
     pclose(fp);
@@ -399,17 +455,20 @@ sc_key_processor_process_key(struct sc_key_processor *kp,
             default: break;
         }
         if (dpad_name) {
-            const char *action_str =
-                msg.inject_keycode.action == AKEY_EVENT_ACTION_DOWN
-                    ? "PRESS" : "RELEASE";
-            LOGI("[DPAD] %s %s (repeat=%d)", dpad_name, action_str,
-                 (int) kb->repeat);
-
-            // On key release, query what the app focused
-            if (msg.inject_keycode.action == AKEY_EVENT_ACTION_UP) {
-                pthread_t tid;
-                pthread_create(&tid, NULL, query_focused_view, NULL);
-                pthread_detach(tid);
+            if (msg.inject_keycode.action == AKEY_EVENT_ACTION_DOWN) {
+                LOGI("[DPAD] %s PRESS (repeat=%d)", dpad_name,
+                     (int) kb->repeat);
+            } else {
+                LOGI("[DPAD] %s RELEASE -> querying focus...", dpad_name);
+                // On release, spawn thread to query what changed
+                struct dpad_query_ctx *ctx = malloc(sizeof(*ctx));
+                if (ctx) {
+                    snprintf(ctx->direction, sizeof(ctx->direction),
+                             "%s", dpad_name);
+                    pthread_t tid;
+                    pthread_create(&tid, NULL, query_focused_view, ctx);
+                    pthread_detach(tid);
+                }
             }
         }
 
