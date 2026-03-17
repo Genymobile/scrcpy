@@ -218,7 +218,8 @@ sc_delay_buffer_frame_sink_push(struct sc_frame_sink *sink,
         return sc_frame_source_sinks_push(&db->frame_source, frame);
     }
 
-    struct sc_delayed_packet *dpacket = sc_vecdeque_push_hole(&db->queue);
+    struct sc_delayed_packet *dpacket =
+        sc_vecdeque_push_uninitialized(&db->queue);
     if (!dpacket) {
         sc_mutex_unlock(&db->mutex);
         LOG_OOM();
@@ -255,7 +256,8 @@ sc_delay_buffer_frame_sink_push_session(struct sc_frame_sink *sink,
         return false;
     }
 
-    struct sc_delayed_packet *dpacket = sc_vecdeque_push_hole(&db->queue);
+    struct sc_delayed_packet *dpacket =
+        sc_vecdeque_push_uninitialized(&db->queue);
     if (!dpacket) {
         sc_mutex_unlock(&db->mutex);
         LOG_OOM();
