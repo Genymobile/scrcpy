@@ -264,10 +264,12 @@ public class SurfaceEncoder implements AsyncProcessor {
         format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, DEFAULT_I_FRAME_INTERVAL);
         // display the very first frame, and recover from bad quality when no new frames
         format.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, REPEAT_FRAME_DELAY_US); // µs
-        // real-time priority
-        format.setInteger(MediaFormat.KEY_PRIORITY, 0);
-        // output 1 frame as soon as 1 frame is queued
-        format.setInteger(MediaFormat.KEY_LATENCY, 1);
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
+            // real-time priority
+            format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+            // output 1 frame as soon as 1 frame is queued
+            format.setInteger(MediaFormat.KEY_LATENCY, 1);
+        }
         if (maxFps > 0) {
             // The key existed privately before Android 10:
             // <https://android.googlesource.com/platform/frameworks/base/+/625f0aad9f7a259b6881006ad8710adce57d1384%5E%21/>
