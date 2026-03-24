@@ -323,6 +323,7 @@ public class CameraCapture extends SurfaceCapture {
                     currentSession = session;
                 } catch (CameraAccessException e) {
                     Ln.e("Camera error", e);
+                    disconnected.set(true);
                     invalidate();
                 }
             }
@@ -330,6 +331,7 @@ public class CameraCapture extends SurfaceCapture {
             @Override
             public void onConfigureFailed(CameraCaptureSession session) {
                 Ln.e("Camera configuration error");
+                disconnected.set(true);
                 invalidate();
             }
         });
