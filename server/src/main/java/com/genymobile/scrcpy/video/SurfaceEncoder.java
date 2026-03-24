@@ -267,6 +267,8 @@ public class SurfaceEncoder implements AsyncProcessor {
         if (Build.VERSION.SDK_INT >= AndroidVersions.API_23_ANDROID_6_0) {
             // real-time priority
             format.setInteger(MediaFormat.KEY_PRIORITY, 0);
+        }
+        if (Build.VERSION.SDK_INT >= AndroidVersions.API_26_ANDROID_8_0) {
             // output 1 frame as soon as 1 frame is queued
             format.setInteger(MediaFormat.KEY_LATENCY, 1);
         }
