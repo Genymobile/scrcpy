@@ -305,6 +305,9 @@ execute_server(struct sc_server *server,
         VALIDATE_STRING(params->max_fps);
         ADD_PARAM("max_fps=%s", params->max_fps);
     }
+    if (params->min_size_alignment != 1) {
+        ADD_PARAM("min_size_alignment=%" PRIu8, params->min_size_alignment);
+    }
     if (params->angle) {
         VALIDATE_STRING(params->angle);
         ADD_PARAM("angle=%s", params->angle);

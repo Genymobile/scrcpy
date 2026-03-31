@@ -297,6 +297,16 @@ Same as \fB\-\-mouse=uhid\fR, or \fB\-\-mouse=aoa\fR if \fB\-\-otg\fR is set.
 Limit the framerate of screen capture (officially supported since Android 10, but may work on earlier versions).
 
 .TP
+.BI "\-\-min\-size\-alignment " alignment
+Configure the minimum video size alignment.
+
+This is a power-of-2 value (1, 2, 4, 8 or 16) that the video width and height must be multiples of.
+
+The actual alignment will be the maximum of this value and the video codec's alignment requirement.
+
+Default is 1.
+
+.TP
 .BI "\-\-mouse " mode
 Select how to send mouse inputs to the device.
 

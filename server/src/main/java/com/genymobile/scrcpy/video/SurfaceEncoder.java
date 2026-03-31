@@ -43,6 +43,7 @@ public class SurfaceEncoder implements AsyncProcessor {
     private final int videoBitRate;
     private final float maxFps;
     private final boolean downsizeOnError;
+    private final int minSizeAlignment;
 
     private boolean firstFrameSent;
     private int consecutiveErrors;
@@ -60,6 +61,7 @@ public class SurfaceEncoder implements AsyncProcessor {
         this.codecOptions = options.getVideoCodecOptions();
         this.encoderName = options.getVideoEncoder();
         this.downsizeOnError = options.getDownsizeOnError();
+        this.minSizeAlignment = options.getMinSizeAlignment();
     }
 
     private void streamCapture() throws IOException, ConfigurationException {
@@ -70,6 +72,10 @@ public class SurfaceEncoder implements AsyncProcessor {
                 .getVideoCapabilities();
         int alignment = caps != null ? Math.max(caps.getWidthAlignment(), caps.getHeightAlignment()) : 8;
         Ln.d("Video codec size alignment requirement: " + alignment + "px");
+        if (alignment < minSizeAlignment) {
+            alignment = minSizeAlignment;
+            Ln.d("Actual video size alignment: " + alignment + "px");
+        }
 
         MediaFormat format = createFormat(codec.getMimeType(), videoBitRate, maxFps, codecOptions);
 

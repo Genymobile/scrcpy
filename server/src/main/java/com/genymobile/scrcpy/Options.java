@@ -27,6 +27,7 @@ public class Options {
     private boolean video = true;
     private boolean audio = true;
     private int maxSize;
+    private int minSizeAlignment = 1;
     private VideoCodec videoCodec = VideoCodec.H264;
     private AudioCodec audioCodec = AudioCodec.OPUS;
     private VideoSource videoSource = VideoSource.DISPLAY;
@@ -100,6 +101,10 @@ public class Options {
 
     public int getMaxSize() {
         return maxSize;
+    }
+
+    public int getMinSizeAlignment() {
+        return minSizeAlignment;
     }
 
     public VideoCodec getVideoCodec() {
@@ -370,6 +375,13 @@ public class Options {
                     break;
                 case "max_size":
                     options.maxSize = Integer.parseInt(value);
+                    break;
+                case "min_size_alignment":
+                    int align = Integer.parseInt(value);
+                    if (align < 1 || align > 16 || (align & (align - 1)) != 0) {
+                        throw new IllegalArgumentException("min_size_alignment (" + align + ") must be 1, 2, 4, 8 or 16");
+                    }
+                    options.minSizeAlignment = align;
                     break;
                 case "video_bit_rate":
                     options.videoBitRate = Integer.parseInt(value);

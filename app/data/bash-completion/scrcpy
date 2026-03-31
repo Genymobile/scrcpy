@@ -45,6 +45,7 @@ _scrcpy() {
         -m --max-size=
         -M
         --max-fps=
+        --min-size-alignment=
         --mouse=
         --mouse-bind=
         -n --no-control
@@ -187,6 +188,10 @@ _scrcpy() {
         -s|--serial)
             # Use 'adb devices' to list serial numbers
             COMPREPLY=($(compgen -W "$("${ADB:-adb}" devices | awk '$2 == "device" {print $1}')" -- ${cur}))
+            return
+            ;;
+        --min-size-alignment)
+            COMPREPLY=($(compgen -> '1 2 4 8 16' -- "$cur"))
             return
             ;;
         --audio-bit-rate \

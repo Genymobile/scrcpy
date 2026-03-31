@@ -116,6 +116,7 @@ enum {
     OPT_DISPLAY_IME_POLICY,
     OPT_CAMERA_TORCH,
     OPT_CAMERA_ZOOM,
+    OPT_MIN_SIZE_ALIGNMENT,
 };
 
 struct sc_option {
@@ -575,6 +576,17 @@ static const struct sc_option options[] = {
         .argdesc = "value",
         .text = "Limit the frame rate of screen capture (officially supported "
                 "since Android 10, but may work on earlier versions).",
+    },
+    {
+        .longopt_id = OPT_MIN_SIZE_ALIGNMENT,
+        .longopt = "min-size-alignment",
+        .argdesc = "alignment",
+        .text = "Configure the minimum video size alignment.\n"
+                "This is a power-of-2 value (1, 2, 4, 8 or 16) that the video "
+                "width and height must be multiples of.\n"
+                "The actual alignment will be the maximum of this value and "
+                "the video codec's alignment requirement.\n"
+                "Default is 1.",
     },
     {
         .longopt_id = OPT_MOUSE,
@@ -1642,6 +1654,22 @@ parse_max_size(const char *s, uint16_t *max_size) {
     }
 
     *max_size = (uint16_t) value;
+    return true;
+}
+
+static bool
+parse_min_size_alignment(const char *s, uint8_t *min_size_alignment) {
+    long value;
+    bool ok = parse_integer_arg(s, &value, false, 1, 16, "min size alignment");
+    if (!ok) {
+        return false;
+    }
+    if (value & (value - 1)) {
+        LOGE("The minimum size alignment (%ld) must be a power-of-2", value);
+        return false;
+    }
+
+    *min_size_alignment = (uint8_t) value;
     return true;
 }
 
@@ -2853,6 +2881,12 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_DISPLAY_IME_POLICY:
                 if (!parse_display_ime_policy(optarg,
                                               &opts->display_ime_policy)) {
+                    return false;
+                }
+                break;
+            case OPT_MIN_SIZE_ALIGNMENT:
+                if (!parse_min_size_alignment(optarg,
+                                              &opts->min_size_alignment)) {
                     return false;
                 }
                 break;
