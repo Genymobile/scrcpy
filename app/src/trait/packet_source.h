@@ -7,7 +7,7 @@
 
 #include "trait/packet_sink.h"
 
-#define SC_PACKET_SOURCE_MAX_SINKS 2
+#define SC_PACKET_SOURCE_MAX_SINKS 3
 
 /**
  * Packet source trait
