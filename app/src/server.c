@@ -578,9 +578,10 @@ device_read_info(struct sc_intr *intr, sc_socket device_socket,
         LOGE("Could not retrieve device information");
         return false;
     }
-    // in case the client sends garbage
+    // in case the client sends garbage, ensure null-termination
     buf[SC_DEVICE_NAME_FIELD_LENGTH - 1] = '\0';
-    memcpy(info->device_name, (char *) buf, sizeof(info->device_name));
+    strncpy(info->device_name, (char *) buf, sizeof(info->device_name) - 1);
+    info->device_name[sizeof(info->device_name) - 1] = '\0';
 
     return true;
 }
