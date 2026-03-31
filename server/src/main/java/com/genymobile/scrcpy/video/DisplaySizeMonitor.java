@@ -98,8 +98,10 @@ public class DisplaySizeMonitor {
         }
     }
 
-    private synchronized Size getSessionDisplaySize() {
-        return sessionDisplaySize;
+    private synchronized Size getAndSetSessionDisplaySize(Size sessionDisplaySize) {
+        Size oldDisplaySize = this.sessionDisplaySize;
+        this.sessionDisplaySize = sessionDisplaySize;
+        return oldDisplaySize;
     }
 
     public synchronized void setSessionDisplaySize(Size sessionDisplaySize) {
@@ -111,27 +113,20 @@ public class DisplaySizeMonitor {
         if (di == null) {
             Ln.w("DisplayInfo for " + displayId + " cannot be retrieved");
             // We can't compare with the current size, so reset unconditionally
+            Size oldDisplaySize = getAndSetSessionDisplaySize(null); // exchange with synchronization
             if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                Ln.v("DisplaySizeMonitor: requestReset(): " + getSessionDisplaySize() + " -> (unknown)");
+                Ln.v("DisplaySizeMonitor: requestReset(): " + oldDisplaySize + " -> (unknown)");
             }
-            setSessionDisplaySize(null);
             listener.onDisplaySizeChanged();
         } else {
             Size size = di.getSize();
 
-            // The field is hidden on purpose, to read it with synchronization
-            @SuppressWarnings("checkstyle:HiddenField")
-            Size sessionDisplaySize = getSessionDisplaySize(); // synchronized
-
-            // .equals() also works if sessionDisplaySize == null
-            if (!size.equals(sessionDisplaySize)) {
+            Size oldDisplaySize = getAndSetSessionDisplaySize(size); // exchange with synchronization
+            if (!size.equals(oldDisplaySize)) {
                 // Reset only if the size is different
                 if (Ln.isEnabled(Ln.Level.VERBOSE)) {
-                    Ln.v("DisplaySizeMonitor: requestReset(): " + sessionDisplaySize + " -> " + size);
+                    Ln.v("DisplaySizeMonitor: requestReset(): " + oldDisplaySize + " -> " + size);
                 }
-                // Set the new size immediately, so that a future onDisplayChanged() event called before the asynchronous prepare()
-                // considers that the current size is the requested size (to avoid a duplicate requestReset())
-                setSessionDisplaySize(size);
                 listener.onDisplaySizeChanged();
             } else if (Ln.isEnabled(Ln.Level.VERBOSE)) {
                 Ln.v("DisplaySizeMonitor: Size not changed (" + size + "): do not requestReset()");
