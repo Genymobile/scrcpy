@@ -31,7 +31,6 @@ public final class Size {
 
     public Size limit(int maxSize) {
         assert maxSize >= 0 : "Max size may not be negative";
-        assert maxSize % 8 == 0 : "Max size must be a multiple of 8";
 
         if (maxSize == 0) {
             // No limit
@@ -55,13 +54,14 @@ public final class Size {
     }
 
     /**
-     * Round both dimensions of this size to be a multiple of 8 (as required by many encoders).
+     * Round both dimensions of this size to be multiples of {@code alignment}.
      *
-     * @return The current size rounded.
+     * @param alignment the required alignment
+     * @return the current size rounded
      */
-    public Size round8() {
-        if (isMultipleOf8()) {
-            // Already a multiple of 8
+    public Size round(int alignment) {
+        if (isMultipleOf(alignment)) {
+            // Already aligned
             return this;
         }
 
@@ -69,8 +69,8 @@ public final class Size {
         int major = portrait ? height : width;
         int minor = portrait ? width : height;
 
-        major &= ~7; // round down to not exceed the initial size
-        minor = (minor + 4) & ~7; // round to the nearest to minimize aspect ratio distortion
+        major = major / alignment * alignment; // round down to not exceed the initial size
+        minor = (minor + (alignment / 2)) / alignment * alignment; // round to the nearest to minimize aspect ratio distortion
         if (minor > major) {
             minor = major;
         }
@@ -80,8 +80,8 @@ public final class Size {
         return new Size(w, h);
     }
 
-    public boolean isMultipleOf8() {
-        return (width & 7) == 0 && (height & 7) == 0;
+    public boolean isMultipleOf(int alignment) {
+        return width % alignment == 0 && height % alignment == 0;
     }
 
     public Rect toRect() {

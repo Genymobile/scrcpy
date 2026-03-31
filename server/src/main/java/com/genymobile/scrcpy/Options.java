@@ -369,7 +369,7 @@ public class Options {
                     options.audioDup = Boolean.parseBoolean(value);
                     break;
                 case "max_size":
-                    options.maxSize = Integer.parseInt(value) & ~7; // multiple of 8
+                    options.maxSize = Integer.parseInt(value);
                     break;
                 case "video_bit_rate":
                     options.videoBitRate = Integer.parseInt(value);

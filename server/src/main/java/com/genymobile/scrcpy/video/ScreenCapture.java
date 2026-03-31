@@ -97,7 +97,7 @@ public class ScreenCapture extends SurfaceCapture {
         filter.addAngle(angle);
 
         transform = filter.getInverseTransform();
-        videoSize = filter.getOutputSize().limit(maxSize).round8();
+        videoSize = filter.getOutputSize().limit(maxSize).round(getAlignment());
     }
 
     @Override

@@ -133,12 +133,13 @@ public class NewDisplayCapture extends SurfaceCapture {
         filter.addOrientation(displayRotation, captureOrientationLocked, captureOrientation);
         filter.addAngle(angle);
 
+        int alignment = getAlignment();
         Size filteredSize = filter.getOutputSize();
-        if (!filteredSize.isMultipleOf8() || (maxSize != 0 && filteredSize.getMax() > maxSize)) {
+        if (!filteredSize.isMultipleOf(alignment) || (maxSize != 0 && filteredSize.getMax() > maxSize)) {
             if (maxSize != 0) {
                 filteredSize = filteredSize.limit(maxSize);
             }
-            filteredSize = filteredSize.round8();
+            filteredSize = filteredSize.round(alignment);
             filter.addResize(filteredSize);
         }
 
