@@ -616,7 +616,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         // Screen is off
         // Only press POWER on ACTION_DOWN
         if (action != KeyEvent.ACTION_DOWN) {
-            // do nothing,
+            // do nothing
             return true;
         }
 
