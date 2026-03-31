@@ -349,7 +349,10 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
                     }
                     return true;
                 case ControlMessage.TYPE_ROTATE_DEVICE:
-                    Device.rotateDevice(getActionDisplayId());
+                    int actionDisplayId = getActionDisplayId();
+                    if (actionDisplayId != Device.DISPLAY_ID_NONE) {
+                        Device.rotateDevice(actionDisplayId);
+                    }
                     return true;
                 case ControlMessage.TYPE_UHID_CREATE:
                     getUhidManager().open(msg.getId(), msg.getVendorId(), msg.getProductId(), msg.getText(), msg.getData());
@@ -407,9 +410,11 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         }
 
         int actionDisplayId = getActionDisplayId();
-        for (KeyEvent event : events) {
-            if (!Device.injectEvent(event, actionDisplayId, Device.INJECT_MODE_ASYNC)) {
-                return false;
+        if (actionDisplayId != Device.DISPLAY_ID_NONE) {
+            for (KeyEvent event : events) {
+                if (!Device.injectEvent(event, actionDisplayId, Device.INJECT_MODE_ASYNC)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -670,11 +675,19 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
     }
 
     private boolean injectKeyEvent(int action, int keyCode, int repeat, int metaState, int injectMode) {
-        return Device.injectKeyEvent(action, keyCode, repeat, metaState, getActionDisplayId(), injectMode);
+        int actionDisplayId = getActionDisplayId();
+        if (actionDisplayId == Device.DISPLAY_ID_NONE) {
+            return false;
+        }
+        return Device.injectKeyEvent(action, keyCode, repeat, metaState, actionDisplayId, injectMode);
     }
 
     private boolean pressReleaseKeycode(int keyCode, int injectMode) {
-        return Device.pressReleaseKeycode(keyCode, getActionDisplayId(), injectMode);
+        int actionDisplayId = getActionDisplayId();
+        if (actionDisplayId == Device.DISPLAY_ID_NONE) {
+            return false;
+        }
+        return Device.pressReleaseKeycode(keyCode, actionDisplayId, injectMode);
     }
 
     private int getActionDisplayId() {
@@ -686,8 +699,7 @@ public class Controller implements AsyncProcessor, VirtualDisplayListener {
         // Virtual display created by --new-display, use the virtualDisplayId
         DisplayData data = displayData.get();
         if (data == null) {
-            // If no virtual display id is initialized yet, use the main display id
-            return 0;
+            return Device.DISPLAY_ID_NONE;
         }
 
         return data.virtualDisplayId;
