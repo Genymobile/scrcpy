@@ -19,7 +19,9 @@ struct sc_keyboard_aoa {
 };
 
 bool
-sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb, struct sc_aoa *aoa);
+sc_keyboard_aoa_init(struct sc_keyboard_aoa *kb,
+                     struct sc_aoa *aoa,
+                     bool use_logical_scancodes);
 
 void
 sc_keyboard_aoa_destroy(struct sc_keyboard_aoa *kb);

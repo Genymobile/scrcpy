@@ -61,6 +61,7 @@ enum {
     OPT_RAW_KEY_EVENTS,
     OPT_NO_DOWNSIZE_ON_ERROR,
     OPT_OTG,
+    OPT_OTG_EMULATE_QWERTY,
     OPT_NO_CLEANUP,
     OPT_PRINT_FPS,
     OPT_NO_POWER_ON,
@@ -744,6 +745,14 @@ static const struct sc_option options[] = {
                 "--keyboard=disabled and --mouse=disabled.\n"
                 "It may only work over USB.\n"
                 "See --keyboard, --mouse and --gamepad.",
+    },
+    {
+        .longopt_id = OPT_OTG_EMULATE_QWERTY,
+        .longopt = "otg-emulate-qwerty",
+        .text = "When running in OTG mode, send the keypress corresponding to "
+                "the logical layout rather than the physical layout.\n"
+                "Useful when using an AZERTY, Dvorak or Colemak layout to "
+                "control a device configured to use QWERTY.",
     },
     {
         .shortopt = 'p',
@@ -2681,6 +2690,14 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
             case OPT_OTG:
 #ifdef HAVE_USB
                 opts->otg = true;
+                break;
+#else
+                LOGE("OTG mode (--otg) is disabled.");
+                return false;
+#endif
+            case OPT_OTG_EMULATE_QWERTY:
+#ifdef HAVE_USB
+                opts->otg_emulate_qwerty = true;
                 break;
 #else
                 LOGE("OTG mode (--otg) is disabled.");

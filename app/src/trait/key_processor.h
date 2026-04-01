@@ -29,6 +29,14 @@ struct sc_key_processor {
      */
     bool hid;
 
+    /**
+     * Set by the implementation to indicate that scancodes should be falsified
+     * such that keystrokes are sent as though the logical keymap were the
+     * physical keymap. Useful when using an AZERTY, Dvorak or Colemak layout
+     * to control a device configured to use QWERTY.
+     */
+    bool use_logical_scancodes;
+
     const struct sc_key_processor_ops *ops;
 };
 
