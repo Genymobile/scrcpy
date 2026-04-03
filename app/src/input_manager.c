@@ -525,10 +525,14 @@ sc_input_manager_process_key(struct sc_input_manager *im,
             // Controls for all sources
             switch (sdl_keycode) {
                 case SDLK_R:
-                    if (!repeat && shift && down && !paused) {
-                        reset_video(im);
+                    // Only capture if shift is set
+                    if (shift) {
+                        if (!repeat && down && !paused) {
+                            reset_video(im);
+                        }
+                        return;
                     }
-                    return;
+                    break;
             }
         }
 
