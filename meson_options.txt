@@ -6,3 +6,4 @@ option('static', type: 'boolean', value: false, description: 'Use static depende
 option('server_debugger', type: 'boolean', value: false, description: 'Run a server debugger and wait for a client to be attached')
 option('v4l2', type: 'boolean', value: true, description: 'Enable V4L2 feature when supported')
 option('usb', type: 'boolean', value: true, description: 'Enable HID/OTG features when supported')
+option('client_audio', type: 'boolean', value: true, description: 'Enable client audio forwarding (requires libavdevice)')
