@@ -26,7 +26,7 @@ import java.util.List;
  *
  * This differs from DisplayManager's DisplayListener in a couple ways:
  *  - onDisplayAdded is always called after the display is actually added to the WM hierarchy.
- *    This corresponds to the DisplayContent and not the raw Dislay from DisplayManager.
+ *    This corresponds to the DisplayContent and not the raw Display from DisplayManager.
  *  - onDisplayConfigurationChanged is called for all configuration changes, not just changes
  *    to displayinfo (eg. windowing-mode).
  *
