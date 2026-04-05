@@ -409,7 +409,7 @@ with any client which uses the same protocol.
 
 For simplicity, some [server-specific options] have been added to produce raw
 streams easily:
- - `send_device_meta=false`: disable the device metata (in practice, the device
+ - `send_device_meta=false`: disable the device metadata (in practice, the device
    name) sent on the _first_ socket
  - `send_frame_meta=false`: disable the 12-byte header for each packet
  - `send_dummy_byte`: disable the dummy byte sent on forward connections
