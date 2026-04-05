@@ -140,7 +140,7 @@ sdl_set_hints(const char *render_driver) {
 }
 
 static void
-sdl_configure(bool video_playback, bool disable_screensaver) {
+sdl_configure(bool disable_screensaver) {
 #ifdef _WIN32
     // Clean up properly on Ctrl+C on Windows
     bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
@@ -148,10 +148,6 @@ sdl_configure(bool video_playback, bool disable_screensaver) {
         LOGW("Could not set Ctrl+C handler");
     }
 #endif // _WIN32
-
-    if (!video_playback) {
-        return;
-    }
 
     if (disable_screensaver) {
         bool ok = SDL_DisableScreenSaver();
@@ -543,7 +539,7 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
-    sdl_configure(options->video_playback, options->disable_screensaver);
+    sdl_configure(options->disable_screensaver);
 
     // Await for server without blocking Ctrl+C handling
     bool connected;
