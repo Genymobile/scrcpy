@@ -30,6 +30,17 @@ If encoding fails, scrcpy automatically tries again with a lower definition
 For camera mirroring, the `--max-size` value is used to select the camera source
 size instead (among the available resolutions).
 
+The size is rounded to a multiple of the _alignment_ required by the encoder, a
+power-of-2 value (1, 2, 4, 8 or 16) that the video width and height must be
+multiples of.
+
+The alignment can be forced to a minimum value. For instance, to force the width
+and height to be multiples of 8:
+
+```bash
+scrcpy --min-size-alignment=8
+```
+
 
 ## Bit rate
 
