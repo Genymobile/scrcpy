@@ -99,6 +99,15 @@ static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
     }
     return FALSE;
 }
+
+static void
+sdl_configure_ctrl_c_windows(void) {
+    // Clean up properly on Ctrl+C on Windows
+    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
+    if (!ok) {
+        LOGW("Could not set Ctrl+C handler");
+    }
+}
 #endif // _WIN32
 
 static void
@@ -142,17 +151,6 @@ sdl_set_hints(const char *render_driver, bool disable_screensaver) {
             && !SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1")) {
         LOGW("Could not enable screensaver");
     }
-}
-
-static void
-sdl_configure(void) {
-#ifdef _WIN32
-    // Clean up properly on Ctrl+C on Windows
-    bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
-    if (!ok) {
-        LOGW("Could not set Ctrl+C handler");
-    }
-#endif // _WIN32
 }
 
 static enum scrcpy_exit_code
@@ -480,6 +478,10 @@ scrcpy(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
+#ifdef _WIN32
+    sdl_configure_ctrl_c_windows();
+#endif
+
     // Set hints before starting the server thread to avoid race conditions in
     // SDL
     sdl_set_hints(options->render_driver, options->disable_screensaver);
@@ -530,8 +532,6 @@ scrcpy(struct scrcpy_options *options) {
             goto end;
         }
     }
-
-    sdl_configure();
 
     // Await for server without blocking Ctrl+C handling
     bool connected;
