@@ -487,11 +487,9 @@ scrcpy(struct scrcpy_options *options) {
         return SCRCPY_EXIT_FAILURE;
     }
 
-    if (options->window) {
-        // Set hints before starting the server thread to avoid race conditions
-        // in SDL
-        sdl_set_hints(options->render_driver);
-    }
+    // Set hints before starting the server thread to avoid race conditions in
+    // SDL
+    sdl_set_hints(options->render_driver);
 
     if (!sc_server_start(&s->server)) {
         goto end;
