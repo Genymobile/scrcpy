@@ -102,7 +102,7 @@ static BOOL WINAPI windows_ctrl_handler(DWORD ctrl_type) {
 #endif // _WIN32
 
 static void
-sdl_set_hints(const char *render_driver) {
+sdl_set_hints(const char *render_driver, bool disable_screensaver) {
     if (render_driver && !SDL_SetHint(SDL_HINT_RENDER_DRIVER, render_driver)) {
         LOGW("Could not set render driver");
     }
@@ -137,10 +137,15 @@ sdl_set_hints(const char *render_driver) {
     if (!SDL_SetHint(SDL_HINT_JOYSTICK_ALLOW_BACKGROUND_EVENTS, "1")) {
         LOGW("Could not allow joystick background events");
     }
+
+    if (!disable_screensaver
+            && !SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1")) {
+        LOGW("Could not enable screensaver");
+    }
 }
 
 static void
-sdl_configure(bool disable_screensaver) {
+sdl_configure(void) {
 #ifdef _WIN32
     // Clean up properly on Ctrl+C on Windows
     bool ok = SetConsoleCtrlHandler(windows_ctrl_handler, TRUE);
@@ -148,18 +153,6 @@ sdl_configure(bool disable_screensaver) {
         LOGW("Could not set Ctrl+C handler");
     }
 #endif // _WIN32
-
-    if (disable_screensaver) {
-        bool ok = SDL_DisableScreenSaver();
-        if (!ok) {
-            LOGW("Could not disable screen saver");
-        }
-    } else {
-        bool ok = SDL_EnableScreenSaver();
-        if (!ok) {
-            LOGW("Could not enable screen saver");
-        }
-    }
 }
 
 static enum scrcpy_exit_code
@@ -488,7 +481,7 @@ scrcpy(struct scrcpy_options *options) {
 
     // Set hints before starting the server thread to avoid race conditions in
     // SDL
-    sdl_set_hints(options->render_driver);
+    sdl_set_hints(options->render_driver, options->disable_screensaver);
 
     if (!sc_server_start(&s->server)) {
         goto end;
@@ -537,7 +530,7 @@ scrcpy(struct scrcpy_options *options) {
         }
     }
 
-    sdl_configure(options->disable_screensaver);
+    sdl_configure();
 
     // Await for server without blocking Ctrl+C handling
     bool connected;
