@@ -20,7 +20,17 @@ struct sc_controller {
     sc_mutex mutex;
     sc_cond msg_cond;
     bool stopped;
+
     struct sc_control_msg_queue queue;
+
+    // The RESIZE_DISPLAY control message is never enqueued, it has top priority
+    // and a new request overwrites any previous one
+    struct {
+        // enabled if width != 0
+        uint16_t width;
+        uint16_t height;
+    } resize_display;
+
     struct sc_receiver receiver;
 
     const struct sc_controller_callbacks *cbs;
@@ -57,5 +67,9 @@ sc_controller_join(struct sc_controller *controller);
 bool
 sc_controller_push_msg(struct sc_controller *controller,
                        const struct sc_control_msg *msg);
+
+void
+sc_controller_resize_display(struct sc_controller *controller,
+                             uint16_t width, uint16_t height);
 
 #endif
