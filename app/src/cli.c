@@ -107,6 +107,7 @@ enum {
     OPT_NO_WINDOW_ASPECT_RATIO_LOCK,
     OPT_KEEP_ACTIVE,
     OPT_BACKGROUND_COLOR,
+    OPT_RENDER_FIT,
 };
 
 struct sc_option {
@@ -791,6 +792,19 @@ static const struct sc_option options[] = {
                 "Supported names are currently \"direct3d\", \"opengl\", "
                 "\"opengles2\", \"opengles\", \"metal\" and \"software\".\n"
                 "<https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>",
+    },
+    {
+        .longopt_id = OPT_RENDER_FIT,
+        .longopt = "render-fit",
+        .argdesc = "mode",
+        .text = "Set the render-fit mode to configure how the rendering fits "
+                "the window.\n"
+                "Possible values are \"letterbox\" and \"unscaled\".\n"
+                "\"letterbox\": preserve the aspect ratio and fit the window "
+                "as best as possible (black bars are added either at the top "
+                "and bottom or at the sides if needed).\n"
+                "\"unscaled\": render the display without scaling.\n"
+                "Default is \"letterbox\".",
     },
     {
         .longopt_id = OPT_REQUIRE_AUDIO,
@@ -2410,6 +2424,22 @@ parse_hex_color(const char *s, uint32_t *color) {
 }
 
 static bool
+parse_render_fit(const char *optarg, enum sc_render_fit *mode) {
+    if (!strcmp(optarg, "letterbox")) {
+        *mode = SC_RENDER_FIT_LETTERBOX;
+        return true;
+    }
+
+    if (!strcmp(optarg, "unscaled")) {
+        *mode = SC_RENDER_FIT_UNSCALED;
+        return true;
+    }
+
+    LOGE("Unsupported render-fit: %s (expected letterbox or unscaled)", optarg);
+    return false;
+}
+
+static bool
 parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                        const char *optstring, const struct option *longopts) {
     struct scrcpy_options *opts = &args->opts;
@@ -2847,6 +2877,11 @@ parse_args_with_getopt(struct scrcpy_cli_args *args, int argc, char *argv[],
                 break;
             case OPT_BACKGROUND_COLOR:
                 if (!parse_hex_color(optarg, &opts->background_color)) {
+                    return false;
+                }
+                break;
+            case OPT_RENDER_FIT:
+                if (!parse_render_fit(optarg, &opts->render_fit)) {
                     return false;
                 }
                 break;

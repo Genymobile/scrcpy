@@ -87,6 +87,7 @@ arguments=(
     '--record-format=[Force recording format]:format:(mp4 mkv m4a mka opus aac flac wav)'
     '--record-orientation=[Set the record orientation]:orientation values:(0 90 180 270)'
     '--render-driver=[Request SDL to use the given render driver]:driver name:(direct3d opengl opengles2 opengles metal software)'
+    '--render-fit=[Set the render-fit mode]:mode:(letterbox unscaled)'
     '--require-audio=[Make scrcpy fail if audio is enabled but does not work]'
     {-s,--serial=}'[The device serial number \(mandatory for multiple devices only\)]:serial:($("${ADB-adb}" devices | awk '\''$2 == "device" {print $1}'\''))'
     {-S,--turn-screen-off}'[Turn the device screen off immediately]'

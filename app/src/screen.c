@@ -158,16 +158,30 @@ sc_screen_is_relative_mode(struct sc_screen *screen) {
 
 static void
 compute_content_rect(struct sc_size render_size, struct sc_size content_size,
-                     bool is_icon, SDL_FRect *rect) {
-    if (is_icon && content_size.width <= render_size.width
+                     bool is_icon, enum sc_render_fit render_fit,
+                     SDL_FRect *rect) {
+    if (is_icon) {
+        if (content_size.width <= render_size.width
                 && content_size.height <= render_size.height) {
-        // Center without upscaling
-        rect->x = (render_size.width - content_size.width) / 2.f;
-        rect->y = (render_size.height - content_size.height) / 2.f;
+            // Center without upscaling
+            rect->x = (render_size.width - content_size.width) / 2.f;
+            rect->y = (render_size.height - content_size.height) / 2.f;
+            rect->w = content_size.width;
+            rect->h = content_size.height;
+            return;
+        }
+    } else if (render_fit == SC_RENDER_FIT_UNSCALED) {
+        // Cast to float first because input sizes are unsigned
+        float x = ((float) render_size.width - content_size.width) / 2.f;
+        float y = ((float) render_size.height - content_size.height) / 2.f;
+        rect->x = MAX(0, x);
+        rect->y = MAX(0, y);
         rect->w = content_size.width;
         rect->h = content_size.height;
         return;
     }
+
+    assert(is_icon || render_fit == SC_RENDER_FIT_LETTERBOX);
 
     if (is_optimal_size(render_size, content_size)) {
         rect->x = 0;
@@ -202,7 +216,7 @@ sc_screen_update_content_rect(struct sc_screen *screen) {
     struct sc_size render_size =
         sc_sdl_get_render_output_size(screen->renderer);
     compute_content_rect(render_size, screen->content_size, is_icon,
-                         &screen->rect);
+                         screen->render_fit, &screen->rect);
 }
 
 // render the texture to the renderer
@@ -396,6 +410,7 @@ sc_screen_init(struct sc_screen *screen,
     screen->video = params->video;
     screen->camera = params->camera;
     screen->window_aspect_ratio_lock = params->window_aspect_ratio_lock;
+    screen->render_fit = params->render_fit;
 
     screen->bg.r = (params->background_color >> 16) & 0xFF;
     screen->bg.g = (params->background_color >> 8) & 0xFF;
@@ -901,8 +916,37 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         return;
     }
 
-    struct sc_point point = sc_sdl_get_window_position(screen->window);
     struct sc_size window_size = sc_sdl_get_window_size(screen->window);
+
+    if (screen->render_fit == SC_RENDER_FIT_UNSCALED) {
+        struct sc_size content_size = screen->content_size;
+        set_aspect_ratio(screen, content_size);
+        sc_sdl_set_window_size(screen->window, content_size);
+
+        int32_t x_offset = 0;
+        if (content_size.width < window_size.width) {
+            x_offset = (window_size.width - content_size.width) / 2;
+        }
+        int32_t y_offset = 0;
+        if (content_size.height < window_size.height) {
+            y_offset = (window_size.height - content_size.height) / 2;
+        }
+        assert(x_offset >= 0 && y_offset >= 0);
+        if (x_offset || y_offset) {
+            struct sc_point pos = sc_sdl_get_window_position(screen->window);
+            pos.x += x_offset;
+            pos.y += y_offset;
+            sc_sdl_set_window_position(screen->window, pos);
+        }
+
+        LOGD("Resized to content size: %ux%u", content_size.width,
+                                               content_size.height);
+        return;
+    }
+
+    assert(screen->render_fit == SC_RENDER_FIT_LETTERBOX);
+
+    struct sc_point point = sc_sdl_get_window_position(screen->window);
 
     struct sc_size optimal_size =
         get_optimal_size(window_size, screen->content_size, false);
