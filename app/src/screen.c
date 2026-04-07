@@ -261,6 +261,14 @@ end:
     sc_sdl_render_present(renderer);
 }
 
+static void
+sc_screen_on_resize(struct sc_screen *screen) {
+    // This event can be triggered before the window is shown
+    if (screen->window_shown) {
+        sc_screen_render(screen, true);
+    }
+}
+
 #if defined(__APPLE__) || defined(_WIN32)
 # define CONTINUOUS_RESIZING_WORKAROUND
 #endif
@@ -276,10 +284,10 @@ event_watcher(void *data, SDL_Event *event) {
     struct sc_screen *screen = data;
     assert(screen->video);
 
-    if (event->type == SDL_EVENT_WINDOW_RESIZED) {
+    if (event->type == SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED) {
         // In practice, it seems to always be called from the same thread in
         // that specific case. Anyway, it's just a workaround.
-        sc_screen_render(screen, true);
+        sc_screen_on_resize(screen);
     }
 
     return true;
@@ -928,10 +936,7 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
             sc_screen_render(screen, true);
             return;
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-            // This event can be triggered before the window is shown
-            if (screen->window_shown) {
-                sc_screen_render(screen, true);
-            }
+            sc_screen_on_resize(screen);
             return;
         case SDL_EVENT_WINDOW_RESTORED:
             if (screen->video && is_windowed(screen)) {
