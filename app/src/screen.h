@@ -64,6 +64,8 @@ struct sc_screen {
     SDL_GLContext gl_context;
 #endif
 
+    enum sc_render_fit render_fit;
+
     struct sc_size frame_size;
     struct sc_size content_size; // rotated frame_size
 
@@ -117,6 +119,7 @@ struct sc_screen_params {
     bool window_aspect_ratio_lock;
     bool window_borderless;
 
+    enum sc_render_fit render_fit;
     enum sc_orientation orientation;
     bool mipmaps;
 
