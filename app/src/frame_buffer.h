@@ -24,8 +24,6 @@ struct sc_frame_buffer {
     AVFrame *pending_frame;
     AVFrame *tmp_frame; // To preserve the pending frame on error
 
-    sc_mutex mutex;
-
     bool pending_frame_consumed;
 };
 
@@ -36,8 +34,10 @@ void
 sc_frame_buffer_destroy(struct sc_frame_buffer *fb);
 
 bool
-sc_frame_buffer_push(struct sc_frame_buffer *fb, const AVFrame *frame,
-                     bool *skipped);
+sc_frame_buffer_has_frame(struct sc_frame_buffer *fb);
+
+bool
+sc_frame_buffer_push(struct sc_frame_buffer *fb, const AVFrame *frame);
 
 void
 sc_frame_buffer_consume(struct sc_frame_buffer *fb, AVFrame *dst);
