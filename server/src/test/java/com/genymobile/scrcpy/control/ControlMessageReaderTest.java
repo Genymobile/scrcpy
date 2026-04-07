@@ -473,6 +473,26 @@ public class ControlMessageReaderTest {
     }
 
     @Test
+    public void testParseResizeDisplay() throws IOException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        dos.writeByte(ControlMessage.TYPE_RESIZE_DISPLAY);
+        dos.writeShort(1920);
+        dos.writeShort(1080);
+        byte[] packet = bos.toByteArray();
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(packet);
+        ControlMessageReader reader = new ControlMessageReader(bis);
+
+        ControlMessage event = reader.read();
+        Assert.assertEquals(ControlMessage.TYPE_RESIZE_DISPLAY, event.getType());
+        Assert.assertEquals(1920, event.getWidth());
+        Assert.assertEquals(1080, event.getHeight());
+
+        Assert.assertEquals(-1, bis.read()); // EOS
+    }
+
+    @Test
     public void testMultiEvents() throws IOException {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(bos);
