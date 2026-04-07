@@ -935,9 +935,12 @@ sc_screen_handle_event(struct sc_screen *screen, const SDL_Event *event) {
         case SDL_EVENT_WINDOW_EXPOSED:
             sc_screen_render(screen, true);
             return;
+// If defined, then the actions are already performed by the event watcher
+#ifndef CONTINUOUS_RESIZING_WORKAROUND
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
             sc_screen_on_resize(screen);
             return;
+#endif
         case SDL_EVENT_WINDOW_RESTORED:
             if (screen->video && is_windowed(screen)) {
                 apply_pending_resize(screen);
