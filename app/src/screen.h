@@ -22,6 +22,7 @@
 #include "trait/key_processor.h"
 #include "trait/frame_sink.h"
 #include "trait/mouse_processor.h"
+#include "util/thread.h"
 
 #ifdef __APPLE__
 # define SC_DISPLAY_FORCE_OPENGL_CORE_PROFILE
@@ -41,8 +42,10 @@ struct sc_screen {
     struct sc_texture tex;
     struct sc_input_manager im;
     struct sc_mouse_capture mc; // only used in mouse relative mode
-    struct sc_frame_buffer fb;
     struct sc_fps_counter fps_counter;
+
+    struct sc_mutex mutex;
+    struct sc_frame_buffer fb; // protected by mutex
 
     // The initial requested window properties
     struct {
