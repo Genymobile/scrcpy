@@ -92,10 +92,6 @@ sc_controller_destroy(struct sc_controller *controller) {
 bool
 sc_controller_push_msg(struct sc_controller *controller,
                        const struct sc_control_msg *msg) {
-    if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
-        sc_control_msg_log(msg);
-    }
-
     bool pushed = false;
 
     sc_mutex_lock(&controller->mutex);
@@ -165,6 +161,10 @@ run_controller(void *data) {
         assert(!sc_vecdeque_is_empty(&controller->queue));
         struct sc_control_msg msg = sc_vecdeque_pop(&controller->queue);
         sc_mutex_unlock(&controller->mutex);
+
+        if (sc_get_log_level() <= SC_LOG_LEVEL_VERBOSE) {
+            sc_control_msg_log(&msg);
+        }
 
         bool eos;
         bool ok = process_msg(controller, &msg, &eos);
