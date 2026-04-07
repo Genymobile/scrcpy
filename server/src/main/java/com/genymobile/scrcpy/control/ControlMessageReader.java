@@ -60,6 +60,8 @@ public class ControlMessageReader {
                 return parseStartApp();
             case ControlMessage.TYPE_CAMERA_SET_TORCH:
                 return parseCameraSetTorch();
+            case ControlMessage.TYPE_RESIZE_DISPLAY:
+                return parseResizeDisplay();
             default:
                 throw new ControlProtocolException("Unknown event type: " + type);
         }
@@ -173,6 +175,12 @@ public class ControlMessageReader {
     private ControlMessage parseCameraSetTorch() throws IOException {
         boolean on = dis.readBoolean();
         return ControlMessage.createCameraSetTorch(on);
+    }
+
+    private ControlMessage parseResizeDisplay() throws IOException {
+        int width = dis.readUnsignedShort();
+        int height = dis.readUnsignedShort();
+        return ControlMessage.createResizeDisplay(width, height);
     }
 
     private Position parsePosition() throws IOException {
