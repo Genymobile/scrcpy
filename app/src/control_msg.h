@@ -46,6 +46,7 @@ enum sc_control_msg_type {
     SC_CONTROL_MSG_TYPE_CAMERA_SET_TORCH,
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_IN,
     SC_CONTROL_MSG_TYPE_CAMERA_ZOOM_OUT,
+    SC_CONTROL_MSG_TYPE_RESIZE_DISPLAY,
 };
 
 enum sc_copy_key {
@@ -117,6 +118,10 @@ struct sc_control_msg {
         struct {
             bool on;
         } camera_set_torch;
+        struct {
+            uint16_t width;
+            uint16_t height;
+        } resize_display;
     };
 };
 
