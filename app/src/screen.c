@@ -348,8 +348,10 @@ sc_screen_frame_sink_push(struct sc_frame_sink *sink, const AVFrame *frame) {
     struct sc_screen *screen = DOWNCAST(sink);
     assert(screen->video);
 
-    bool previous_skipped;
-    bool ok = sc_frame_buffer_push(&screen->fb, frame, &previous_skipped);
+    sc_mutex_lock(&screen->mutex);
+    bool previous_skipped = sc_frame_buffer_has_frame(&screen->fb);
+    bool ok = sc_frame_buffer_push(&screen->fb, frame);
+    sc_mutex_unlock(&screen->mutex);
     if (!ok) {
         return false;
     }
@@ -395,9 +397,14 @@ sc_screen_init(struct sc_screen *screen,
     screen->req.fullscreen = params->fullscreen;
     screen->req.start_fps_counter = params->start_fps_counter;
 
-    bool ok = sc_frame_buffer_init(&screen->fb);
+    bool ok = sc_mutex_init(&screen->mutex);
     if (!ok) {
         return false;
+    }
+
+    ok = sc_frame_buffer_init(&screen->fb);
+    if (!ok) {
+        goto error_destroy_mutex;
     }
 
     if (!sc_fps_counter_init(&screen->fps_counter)) {
@@ -597,6 +604,8 @@ error_destroy_fps_counter:
     sc_fps_counter_destroy(&screen->fps_counter);
 error_destroy_frame_buffer:
     sc_frame_buffer_destroy(&screen->fb);
+error_destroy_mutex:
+    sc_mutex_destroy(&screen->mutex);
 
     return false;
 }
@@ -677,6 +686,7 @@ sc_screen_destroy(struct sc_screen *screen) {
     SDL_DestroyWindow(screen->window);
     sc_fps_counter_destroy(&screen->fps_counter);
     sc_frame_buffer_destroy(&screen->fb);
+    sc_mutex_destroy(&screen->mutex);
 
     SDL_Event event;
     int nevents = SDL_PeepEvents(&event, 1, SDL_GETEVENT,
@@ -801,12 +811,16 @@ sc_screen_update_frame(struct sc_screen *screen) {
         } else {
             av_frame_unref(screen->resume_frame);
         }
+        sc_mutex_lock(&screen->mutex);
         sc_frame_buffer_consume(&screen->fb, screen->resume_frame);
+        sc_mutex_unlock(&screen->mutex);
         return true;
     }
 
     av_frame_unref(screen->frame);
+    sc_mutex_lock(&screen->mutex);
     sc_frame_buffer_consume(&screen->fb, screen->frame);
+    sc_mutex_unlock(&screen->mutex);
     return sc_screen_apply_frame(screen);
 }
 
