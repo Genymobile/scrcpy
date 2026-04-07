@@ -2140,7 +2140,7 @@ parse_keyboard(const char *optarg, enum sc_keyboard_input_mode *mode) {
 #endif
     }
 
-    LOGE("Unsupported keyboard: %s (expected disabled, sdk, uhid and aoa)",
+    LOGE("Unsupported keyboard: %s (expected disabled, sdk, uhid or aoa)",
          optarg);
     return false;
 }
