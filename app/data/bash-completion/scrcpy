@@ -82,6 +82,7 @@ _scrcpy() {
         --record-format=
         --record-orientation=
         --render-driver=
+        --render-fit=
         --require-audio
         -s --serial=
         -S --turn-screen-off
@@ -176,6 +177,10 @@ _scrcpy() {
             ;;
         --render-driver)
             COMPREPLY=($(compgen -W 'direct3d opengl opengles2 opengles metal software' -- "$cur"))
+            return
+            ;;
+        --render-fit)
+            COMPREPLY=($(compgen -W 'letterbox unscaled' -- "$cur"))
             return
             ;;
         --shortcut-mod)

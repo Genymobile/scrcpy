@@ -525,6 +525,17 @@ Supported names are currently "direct3d", "opengl", "opengles2", "opengles", "me
 <https://wiki.libsdl.org/SDL_HINT_RENDER_DRIVER>
 
 .TP
+.BI "\-\-render\-fit " mode
+Set the render-fit mode to configure how the rendering fits the window.
+
+Possible values are "letterbox" and "unscaled":
+
+ - "letterbox": preserve the aspect ratio and fit the window as best as possible (black bars are added either at the top and bottom or at the sides if needed).
+ - "unscaled": render the display without scaling.
+
+Default is "letterbox".
+
+.TP
 .B \-\-require\-audio
 By default, scrcpy mirrors only the video if audio capture fails on the device. This option makes scrcpy fail if audio is enabled but does not work.
 
