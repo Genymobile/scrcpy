@@ -602,17 +602,19 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
                                                        screen->req.height);
 
     assert(is_windowed(screen));
-    sc_sdl_set_window_size(screen->window, window_size);
-    sc_sdl_set_window_position(screen->window, position);
 
     if (screen->req.preserve_aspect_ratio) {
         float aspect_ratio = (float) screen->content_size.width / screen->content_size.height;
         sc_sdl_set_window_aspect_ratio(screen->window, aspect_ratio, aspect_ratio);
     }
 
+    sc_sdl_set_window_size(screen->window, window_size);
+    sc_sdl_set_window_position(screen->window, position);
+
     if (screen->req.fullscreen) {
         sc_screen_toggle_fullscreen(screen);
     }
+
     if (screen->req.start_fps_counter) {
         sc_fps_counter_start(&screen->fps_counter);
     }
