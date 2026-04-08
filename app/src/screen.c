@@ -14,6 +14,17 @@
 
 #define DOWNCAST(SINK) container_of(SINK, struct sc_screen, frame_sink)
 
+static void
+set_window_size_ar(struct sc_screen *screen, struct sc_size window_size) {
+    assert(window_size.width && window_size.height);
+    float ar = (float) window_size.width / window_size.height;
+    bool ok = SDL_SetWindowAspectRatio(screen->window, ar, ar);
+    if (!ok) {
+        LOGW("Could not set window aspect ratio: %s", SDL_GetError());
+    }
+    sc_sdl_set_window_size(screen->window, window_size);
+}
+
 static inline struct sc_size
 get_oriented_size(struct sc_size size, enum sc_orientation orientation) {
     struct sc_size oriented_size;
@@ -609,7 +620,7 @@ sc_screen_show_initial_window(struct sc_screen *screen) {
                                                        screen->req.height);
 
     assert(is_windowed(screen));
-    sc_sdl_set_window_size(screen->window, window_size);
+    set_window_size_ar(screen, window_size);
     sc_sdl_set_window_position(screen->window, position);
 
     if (screen->req.fullscreen) {
@@ -695,7 +706,7 @@ resize_for_content(struct sc_screen *screen, struct sc_size old_content_size,
     };
     target_size = get_optimal_size(target_size, new_content_size, true);
     assert(is_windowed(screen));
-    sc_sdl_set_window_size(screen->window, target_size);
+    set_window_size_ar(screen, target_size);
 }
 
 static void
@@ -871,7 +882,7 @@ sc_screen_resize_to_fit(struct sc_screen *screen) {
         .y = point.y + (window_size.height - optimal_size.height) / 2,
     };
 
-    sc_sdl_set_window_size(screen->window, optimal_size);
+    set_window_size_ar(screen, optimal_size);
     sc_sdl_set_window_position(screen->window, new_position);
     LOGD("Resized to optimal size: %ux%u", optimal_size.width,
                                            optimal_size.height);
@@ -886,7 +897,7 @@ sc_screen_resize_to_pixel_perfect(struct sc_screen *screen) {
     }
 
     struct sc_size content_size = screen->content_size;
-    sc_sdl_set_window_size(screen->window, content_size);
+    set_window_size_ar(screen, content_size);
     LOGD("Resized to pixel-perfect: %ux%u", content_size.width,
                                             content_size.height);
 }
