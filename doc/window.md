@@ -25,6 +25,14 @@ The initial window position and size may be specified:
 scrcpy --window-x=100 --window-y=100 --window-width=800 --window-height=600
 ```
 
+## Preserve aspect ratio
+
+The window aspect ratio can be enforced to always fit the video source on platforms that support it:
+
+```bash
+scrcpy --window-preserve-aspect-ratio
+```
+
 ## Borderless
 
 To disable window decorations:
